@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Tilari
+Comment=Local bookkeeping for Kitsas .kitsas files. Not a Kitsas Oy product.
+Exec=tilari
+Icon=tilari
+Terminal=false
+Categories=Office;Finance;
+MimeType=application/x-kitsas;
+StartupNotify=true

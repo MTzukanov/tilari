@@ -1,0 +1,23 @@
+#!/bin/sh
+# AppImage entry. APPDIR is set by the runtime; after extract, derive it from $0.
+set -e
+if [ -n "${APPDIR:-}" ] && [ -x "$APPDIR/usr/bin/node" ]; then
+  HERE="$APPDIR"
+else
+  HERE=$(dirname "$(readlink -f "$0")")
+  if [ ! -x "$HERE/usr/bin/node" ]; then
+    HERE=$(cd "$HERE/../.." && pwd)
+  fi
+fi
+
+export TILARI_STATIC="$HERE/usr/share/tilari/www"
+export PATH="$HERE/usr/bin:${PATH:-}"
+if [ -d "$HERE/usr/lib" ]; then
+  export LD_LIBRARY_PATH="$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
+if [ -d "$HERE/usr/lib64" ]; then
+  export LD_LIBRARY_PATH="$HERE/usr/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
+
+cd "$HERE/usr/share/tilari/server"
+exec "$HERE/usr/bin/node" --import tsx src/launcher.ts "$@"
