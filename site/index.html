@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Tilari – käyttötavat</title>
+    <title>Tilari – kirjanpito selaimessa</title>
     <meta
       name="description"
-      content="Tilari-kirjanpidon käyttötavat: yksi HTML-tiedosto, paikallinen palvelin, VPN, tallennus selaimessa, Supabase-lokero sekä Dropbox ja Google Drive."
+      content="Tilari on kirjanpito-ohjelma selaimessa. Sopii kenelle tahansa; Kitsas-tiedostot avautuvat tässä versiossa. Käyttötavat: yksi HTML, paikallinen palvelin, VPN, Supabase, Dropbox."
     />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css" />
@@ -22,7 +22,7 @@
           <img src="favicon.svg" alt="" width="32" height="32" />
           <div>
             <strong>Tilari</strong>
-            <span>Käyttöohje · kirjanpidon tavat</span>
+            <span>Käyttöohje · kirjanpito selaimessa</span>
           </div>
         </a>
         <div class="mast-actions">
@@ -39,6 +39,12 @@
       <nav class="toc" aria-label="Sisällys">
         <h2>Sisällys</h2>
         <ol>
+          <li><a href="#mita">Mitä Tilari on</a></li>
+          <li><a href="#lisaa">Mitä Tilari lisää</a></li>
+          <li><a href="#kenelle">Kenelle</a></li>
+          <li><a href="#tila">Mitä on ja mitä ei</a></li>
+          <li><a href="#pyyda">Pyydä ominaisuuksia</a></li>
+          <li><a href="#muista">Muista</a></li>
           <li><a href="#valitse">Valitse tapa</a></li>
           <li><a href="#kasittely">Kaksi käsittelytapaa</a></li>
           <li><a href="#html">Yksi HTML-tiedosto</a></li>
@@ -48,26 +54,32 @@
           <li><a href="#selaimet">Selaimet ja tallennus</a></li>
           <li><a href="#supabase">Supabase-lokero</a></li>
           <li><a href="#pilvi">Dropbox ja Google Drive</a></li>
-          <li><a href="#lisaa">Mitä Tilari lisää</a></li>
-          <li><a href="#kenelle">Kenelle</a></li>
-          <li><a href="#tila">Mitä on ja mitä ei</a></li>
-          <li><a href="#pyyda">Pyydä ominaisuuksia</a></li>
-          <li><a href="#muista">Muista</a></li>
         </ol>
       </nav>
 
       <main>
-        <h1>Tilarin käyttötavat</h1>
+        <h1 id="mita">Mitä Tilari on</h1>
         <p class="lead">
-          Tilari on paikallinen kirjanpito-ohjelma, joka avaa ja tallentaa saman
-          <code>.kitsas</code>-tiedoston kuin työpöytä-Kitsas. Tässä versiossa tiedoston voi
-          avata vuorotellen kummassa tahansa; myöhempi Tilari voi tästä poiketa.
-          Se ei ole Kitsas Oy:n tuote, eikä Kitsas Oy tue sitä.
+          Tilari on kirjanpito-ohjelma, jota käytät selaimessa. Kirjaat menot, tulot ja siirrot,
+          liität kuitteja, selaat tasetta ja tuloslaskelmaa ja teet tilinpäätöksen. Kirjanpito
+          elää tiedostossa tai lokerossa, jonka <strong>sinä</strong> hallitset — ei Tilarin
+          pilvitilillä.
+        </p>
+        <p>
+          Et tarvitse Kitsasta käyttääksesi Tilaria. Voit luoda uuden suomalaisen yrityskirjan
+          suoraan selaimessa ja pitää kirjaa siitä eteenpäin.
+        </p>
+        <p>
+          Jos käytät jo työpöytä-Kitsasta (avoimen lähdekoodin kirjanpito), tämä versio avaa ja
+          tallentaa saman <code>.kitsas</code>-tiedoston. Tiedoston voi avata vuorotellen
+          kummassa tahansa; myöhempi Tilari voi tästä poiketa. Tilari ei ole Kitsas Oy:n tuote,
+          eikä Kitsas Oy tue sitä.
         </p>
         <div class="note">
           <p>
-            Kirjanpito elää tiedostossa tai lokerossa, ei “pilvitilillä”. Valitse alta tapa, joka
-            sopii siihen, kuka käyttää kirjaa ja missä tiedosto asuu.
+            Aloita kokeilemalla: <a href="tilari.html">avaa Tilari</a>, luo kirja, kirjaa tosite.
+            Alla on, mitä ohjelma tekee ja kenelle se sopii. Käyttötavat (HTML, oma kone, lokero)
+            ovat sivun loppupuolella.
           </p>
         </div>
 
@@ -79,12 +91,171 @@
               <a href="tilari.html">yksi HTML-tiedosto</a> — käynnistyessä luot uuden kirjan.
             </li>
             <li><strong>Toimii kokonaan selaimessa</strong> — tai tavallisena verkkosovelluksena.</li>
-            <li><strong>Muutosloki</strong> istunnossa.</li>
+            <li>Raportit, joista pääsee klikkaamalla tositteeseen; <strong>muutosloki</strong> istunnossa.</li>
             <li><strong>Tilinpäätös</strong> onnistuu. Arkistoa ei vielä ole.</li>
-            <li>Lokero: <strong>oma Supabase</strong> tai <strong>oma VPS</strong>.</li>
+            <li>Kirja sinun tiedostossasi tai omassa lokerossa (<strong>Supabase</strong> / <strong>VPS</strong>).</li>
           </ul>
         </div>
 
+        <h2 id="lisaa">Mitä Tilari lisää</h2>
+        <p>
+          Tilari on täysi kirjanpito selaimessa, ei pelkkä katselin. Päivittäiseen käyttöön se
+          tuo asioita, joita työpöytäohjelmissa harvoin on samassa muodossa — ja jotka auttavat,
+          vaikka et olisi käyttänyt Kitsasta lainkaan.
+        </p>
+        <ul>
+          <li>
+            <strong>Selain ilman asennusta:</strong> yksi HTML-tiedosto, paikallinen palvelin tai
+            oma lokero. Voit kokeilla heti ja pitää kirjaa puhelimessa tai USB-tikulla.
+          </li>
+          <li>
+            <strong>Aikanavigointi:</strong> <strong>Kuukausi</strong> / <strong>Tilikausi</strong> /
+            <strong>Kaikki</strong> ja edellinen/seuraava raporteissa ja pääkirjassa. Kuukausi
+            kerrallaan on luonteva tapa katsoa, miltä kausi näyttää.
+          </li>
+          <li>
+            <strong>Raportit, joista pääsee perille:</strong> taseesta tilille ja tositteeseen,
+            plus kuukausikaaviot (liikevaihto, tulos, verot).
+          </li>
+          <li><strong>Juokseva saldo</strong> pääkirjassa — näet tilin kertymän rivi riviltä.</li>
+          <li><strong>Muutosloki</strong> istunnossa: mitä ehdit muuttaa ennen tallennusta.</li>
+          <li>
+            <strong>Tallenna kun haluat:</strong> työ voi pysyä selaimessa; Chromium voi myös
+            kirjoittaa suoraan avattuun tiedostoon.
+          </li>
+          <li>
+            Valinnainen lokero: <strong>oma Supabase</strong> (salaus selaimessa) tai
+            <strong>oma VPS</strong> — ei Tilarin pilveä.
+          </li>
+          <li>Linux-, Windows- ja macOS-paketit, jos haluat ohjelman omalle koneelle.</li>
+        </ul>
+        <p>
+          Jos tunnet jo Kitsaksen: nämä ovat asioita, joita työpöytä-Kitsaksessa ei ole samassa
+          muodossa. Työpöytä-Kitsas on edelleen viite ominaisuuksille, joita Tilarissa ei vielä
+          ole (yhdistys ja taloyhtiö, tilikartan muokkain, arkisto). Tässä versiossa sama
+          <code>.kitsas</code>-tiedosto käy molemmissa.
+        </p>
+
+        <h2 id="kenelle">Kenelle</h2>
+        <p>
+          Tilari on hyödyllinen <strong>kenelle tahansa</strong>, joka haluaa pitää suomalaista
+          kahdenkertaista kirjanpitoa itse: freelancer, toiminimi, pieni osakeyhtiö, tai
+          kirjanpitäjä joka haluaa selaimen eikä erillistä työpöytäohjelmaa. Et tarvitse
+          Kitsas-taustaa — uusi yrityskirja syntyy käynnistyessä.
+        </p>
+        <p>
+          <strong>Erityisen luontevaa</strong> se on, jos tunnet jo Kitsaksen: sama tiedosto,
+          samat kirjaussäännöt, selainkäyttöliittymä ja Tilarin omat näkymät (aika, klikkaukset
+          raporteista, muutosloki).
+        </p>
+        <p>
+          Tekijä on testannut Tilarin <strong>omassa käytössä</strong>: suomalainen
+          <strong>osakeyhtiö</strong> ja suhteellisen vähän tositteita (tyypillinen
+          kevytyrittäjä / freelancer). Suuria kirjoja, yhdistystä, asunto-osakeyhtiötä,
+          toiminimeä ja muita ALV-asetuksia ei ole testattu arjessa. Tiedosto
+          todennäköisesti aukeaa; toimintaa niissä ei ole taattu. Kerro, jos käytät Tilaria
+          toisenlaisessa kirjassa — se auttaa priorisoimaan.
+        </p>
+
+        <h2 id="tila">Mitä on ja mitä ei</h2>
+        <p>
+          Arjen kirjanpitoon riittää yleensä: avaa tai luo kirja, kirjaa meno / tulo / siirto,
+          liitä kuitti, katso raportit ja tee tilinpäätös. Alla tarkempi lista tästä versiosta.
+          Seuraavaa ei ole aikataulutettu — kerro tarpeesta
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussionsissa</a>.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Alue</th>
+              <th>Tila</th>
+              <th>Huomio</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Avaa olemassa oleva <code>.kitsas</code></td>
+              <td>Mukana</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Luo <strong>uusi</strong> tyhjä kirja</td>
+              <td>Mukana</td>
+              <td>Käynnistyessä. Yritystilikartta: nimi, Y-tunnus, ensimmäinen tilikausi, ALV, harjoitus. Yhdistys ja taloyhtiö edelleen työpöytä-Kitsaksessa</td>
+            </tr>
+            <tr>
+              <td>Meno / tulo / siirto / muu</td>
+              <td>Mukana</td>
+              <td>Päivittäinen kirjaus</td>
+            </tr>
+            <tr>
+              <td>Tiliote</td>
+              <td>Osittain</td>
+              <td>Muokkaus ja rivin irrotus omaksi tositteeksi. Ei pankkiaineiston tuontia</td>
+            </tr>
+            <tr>
+              <td>Liitteet</td>
+              <td>Osittain</td>
+              <td>Lataus ja esikatselu. Ei OCR/tulkintaa, ei automaattista kutistusta</td>
+            </tr>
+            <tr>
+              <td>Tililuettelo</td>
+              <td>Ei vielä</td>
+              <td>Tilikartta luetaan tiedostosta; ei muokkainta</td>
+            </tr>
+            <tr>
+              <td>ALV</td>
+              <td>Osittain</td>
+              <td>HTML-ilmoitus; ei lähetystä OmaVeroon</td>
+            </tr>
+            <tr>
+              <td>Tilinpäätös</td>
+              <td>Mukana</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Arkisto</td>
+              <td>Ei vielä</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Laskutus / kierto / palkat</td>
+              <td>Ei vielä</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="pyyda">Pyydä ominaisuuksia</h2>
+        <p>
+          Tilari kehittyy sen mukaan, mitä oikeasti käytetään. Jos kaipaat puuttuvaa toimintoa
+          (Kitsaksesta tuttua tai uutta ideaa), avaa keskustelu
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussionsissa</a>.
+          Et tarvitse Kitsas-taustaa: kerro, mitä arjen kirjanpito kaipaa.
+        </p>
+
+        <h2 id="muista">Muista</h2>
+        <ul>
+          <li>
+            Kirja on sinun tiedostosi. Tallenna. Tilarilla ei ole pilvikopiota puolestasi, ellei
+            lokero ole sinun.
+          </li>
+          <li>
+            Tallennettu <code>.kitsas</code>-tiedosto on tässä versiossa vaihdettavissa
+            työpöytä-Kitsaksen kanssa. Sulje työpöytä-Kitsas ennen kuin Tilarilla
+            kirjoitetaan samaan polkuun.
+          </li>
+          <li>
+            Vie Kitsas-työpöydälle kelpaava tiedosto Tilarin tallennuksella (liitteet kootaan
+            tiedostoon). Lokeron sisäinen työkopio voi olla “laiha” eikä aukea Kitsaksessa sellaisenaan.
+          </li>
+          <li>Tilarissa ei ole laskutusta eikä kiertoa tässä versiossa.</li>
+        </ul>
+
+        <h2 id="valitse">Valitse tapa</h2>
+        <p>
+          Kirja avataan aina selaimessa. Valitse, missä tiedosto asuu ja kuka sitä käyttää.
+        </p>
         <div class="cards">
           <a class="featured" href="tilari.html">
             <strong>Yksi HTML</strong>
@@ -115,8 +286,6 @@
             <span>Synkronoitu kansio tai Androidin avaa/tallenna.</span>
           </a>
         </div>
-
-        <h2 id="valitse">Valitse tapa</h2>
         <table>
           <thead>
             <tr>
@@ -146,7 +315,7 @@
               <td><a href="#pilvi">Synkronoitu kansio</a> (työpöytä: Chrome/Edge)</td>
             </tr>
             <tr>
-              <td>Julkinen osoite (esim. tilari.fi) ja kirjautuminen portilla</td>
+              <td>Julkinen osoite ja kirjautuminen portilla</td>
               <td><a href="#vps">Oma VPS</a>; tämä ohje ei korvaa ylläpitäjän asennusta</td>
             </tr>
           </tbody>
@@ -351,7 +520,7 @@
 
         <h2 id="vps">Oma VPS</h2>
         <p>
-          Julkinen osoite (esim. tilari.fi) ja kirjautuminen portilla. Palvelin pitää kirjat
+          Julkinen osoite ja kirjautuminen portilla. Palvelin pitää kirjat
           <strong>lokerossa</strong>. Käytä Tilaria tavallisena verkkosovelluksena tai käsittele
           kirjaa selaimessa ja tallenna lokeroon. Asennus on ylläpitäjän tehtävä; tämä ohje ei
           korvaa sitä.
@@ -509,127 +678,6 @@ create policy "tilari_locker_delete"
           Jos sama kirja kiertää puhelimen ja tietokoneen välillä jatkuvasti, VPN-lokero tai
           Supabase on vähemmän virhealtis kuin Lataukset-kansio.
         </p>
-
-        <h2 id="lisaa">Mitä Tilari lisää</h2>
-        <p>
-          Käynnistyessä voit luoda uuden suomalaisen yrityskirjan selaimessa. Työpöytä-Kitsas on
-          edelleen viite ominaisuuksille, joita Tilarissa ei vielä ole (yhdistys ja taloyhtiö,
-          tilikartan muokkain, arkisto). Tilari lisää:
-        </p>
-        <ul>
-          <li>Selain: yksi HTML-tiedosto, paikallinen palvelin tai oma lokero</li>
-          <li>Aikanavigointi: <strong>Kuukausi</strong> / <strong>Tilikausi</strong> / <strong>Kaikki</strong> ja edellinen/seuraava raporteissa ja pääkirjassa</li>
-          <li>Raportit, joista pääsee klikkaamalla taseesta tilille ja tositteeseen, sekä kuukausikaaviot (liikevaihto, tulos, verot)</li>
-          <li>Juokseva saldo pääkirjassa</li>
-          <li><strong>Muutosloki</strong> istunnossa</li>
-          <li><strong>Täysin toimiva selaimessa:</strong> työkopio säilyy; Chromium voi tallentaa suoraan tiedostoon</li>
-          <li>
-            Valinnainen lokero: <strong>oma Supabase</strong> (salaus selaimessa) tai
-            <strong>oma VPS</strong> (Node HTTP -palvelin)
-          </li>
-          <li>
-            Tavallinen verkkosovellus (jokainen toiminto on pyyntö) tai paikallinen työ selaimessa,
-            tallennus kun haluat
-          </li>
-          <li>Linux-, Windows- ja macOS-paketit ilman Qt-työkaluketjua</li>
-        </ul>
-
-        <h2 id="kenelle">Kenelle</h2>
-        <p>
-          Tekijä on tehnyt Tilarin <strong>omaan käyttöön</strong>: suomalainen
-          <strong>osakeyhtiö</strong> ja suhteellisen vähän tositteita (tyypillinen
-          kevytyrittäjä / freelancer). Suuria kirjoja, yhdistystä, asunto-osakeyhtiötä,
-          toiminimeä ja muita ALV-asetuksia ei ole testattu arjessa. Tiedosto
-          todennäköisesti aukeaa; toimintaa niissä ei ole taattu.
-        </p>
-
-        <h2 id="tila">Mitä on ja mitä ei</h2>
-        <p>
-          Tässä versiossa. Seuraavaa ei ole aikataulutettu — kerro tarpeesta
-          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussionsissa</a>.
-        </p>
-        <table>
-          <thead>
-            <tr>
-              <th>Alue</th>
-              <th>Tila</th>
-              <th>Huomio</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Avaa olemassa oleva <code>.kitsas</code></td>
-              <td>Mukana</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Luo <strong>uusi</strong> tyhjä kirja</td>
-              <td>Mukana</td>
-              <td>Käynnistyessä. Yritystilikartta: nimi, Y-tunnus, ensimmäinen tilikausi, ALV, harjoitus. Yhdistys ja taloyhtiö edelleen työpöytä-Kitsaksessa</td>
-            </tr>
-            <tr>
-              <td>Meno / tulo / siirto / muu</td>
-              <td>Mukana</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Tiliote</td>
-              <td>Osittain</td>
-              <td>Muokkaus ja rivin irrotus omaksi tositteeksi. Ei pankkiaineiston tuontia</td>
-            </tr>
-            <tr>
-              <td>Liitteet</td>
-              <td>Osittain</td>
-              <td>Lataus ja esikatselu. Ei OCR/tulkintaa, ei automaattista kutistusta</td>
-            </tr>
-            <tr>
-              <td>Tililuettelo</td>
-              <td>Ei vielä</td>
-              <td>Tilikartta luetaan tiedostosta; ei muokkainta</td>
-            </tr>
-            <tr>
-              <td>ALV</td>
-              <td>Osittain</td>
-              <td>HTML-ilmoitus; ei lähetystä OmaVeroon</td>
-            </tr>
-            <tr>
-              <td>Tilinpäätös</td>
-              <td>Mukana</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Arkisto</td>
-              <td>Ei vielä</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Laskutus / kierto / palkat</td>
-              <td>Ei vielä</td>
-              <td></td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h2 id="pyyda">Pyydä ominaisuuksia</h2>
-        <p>
-          Jos kaipaat Kitsaksen vanhaa toimintoa tai uutta Tilarin ideaa, avaa keskustelu
-          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussionsissa</a>.
-          Tekijä priorisoi sen mukaan, mitä oikeasti käytetään.
-        </p>
-
-        <h2 id="muista">Muista</h2>
-        <ul>
-          <li>
-            Tallennettu <code>.kitsas</code>-tiedosto on tässä versiossa vaihdettavissa
-            työpöytä-Kitsaksen kanssa. Sulje työpöytä-Kitsas ennen kuin Tilarilla
-            kirjoitetaan samaan polkuun.
-          </li>
-          <li>
-            Vie Kitsas-työpöydälle kelpaava tiedosto Tilarin tallennuksella (liitteet kootaan
-            tiedostoon). Lokeron sisäinen työkopio voi olla “laiha” eikä aukea Kitsaksessa sellaisenaan.
-          </li>
-          <li>Tilarissa ei ole laskutusta eikä kiertoa tässä versiossa.</li>
-        </ul>
       </main>
 
       <footer class="foot">

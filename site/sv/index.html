@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Tilari – arbetssätt</title>
+    <title>Tilari – bokföring i webbläsaren</title>
     <meta
       name="description"
-      content="Tilaris arbetssätt: en HTML-fil, lokal server, VPN, sparande i webbläsaren, Supabase-skåp samt Dropbox och Google Drive."
+      content="Tilari är bokföring i webbläsaren. Användbart för vem som helst; Kitsas-filer öppnas i den här versionen. Arbetssätt: en HTML-fil, lokal server, VPN, Supabase, Dropbox."
     />
     <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="../styles.css" />
@@ -22,7 +22,7 @@
           <img src="../favicon.svg" alt="" width="32" height="32" />
           <div>
             <strong>Tilari</strong>
-            <span>Användarguide · sätt att föra böckerna</span>
+            <span>Användarguide · bokföring i webbläsaren</span>
           </div>
         </a>
         <div class="mast-actions">
@@ -39,6 +39,12 @@
       <nav class="toc" aria-label="Innehåll">
         <h2>Innehåll</h2>
         <ol>
+          <li><a href="#what">Vad Tilari är</a></li>
+          <li><a href="#adds">Vad Tilari lägger till</a></li>
+          <li><a href="#audience">För vem</a></li>
+          <li><a href="#status">Vad som ingår och vad som inte gör det</a></li>
+          <li><a href="#request">Be om funktioner</a></li>
+          <li><a href="#remember">Kom ihåg</a></li>
           <li><a href="#choose">Välj upplägg</a></li>
           <li><a href="#engines">Två behandlingslägen</a></li>
           <li><a href="#html">En HTML-fil</a></li>
@@ -48,26 +54,32 @@
           <li><a href="#browsers">Webbläsare och sparande</a></li>
           <li><a href="#supabase">Supabase-skåp</a></li>
           <li><a href="#cloud">Dropbox och Google Drive</a></li>
-          <li><a href="#adds">Vad Tilari lägger till</a></li>
-          <li><a href="#audience">För vem</a></li>
-          <li><a href="#status">Vad som ingår och vad som inte gör det</a></li>
-          <li><a href="#request">Be om funktioner</a></li>
-          <li><a href="#remember">Kom ihåg</a></li>
         </ol>
       </nav>
 
       <main>
-        <h1>Så använder du Tilari</h1>
+        <h1 id="what">Vad Tilari är</h1>
         <p class="lead">
-          Tilari är ett lokalt bokföringsprogram som öppnar och sparar samma
-          <code>.kitsas</code>-fil som skrivbords-Kitsas. I den här versionen kan
-          filen växlas mellan de två; en senare Tilari kan avvika från det.
-          Det är inte en produkt från Kitsas Oy, och Kitsas Oy stöder den inte.
+          Tilari är ett bokföringsprogram som du använder i webbläsaren. Du bokför utgifter,
+          inkomster och överföringar, bifogar kvitton, bläddrar i balans- och resultaträkning
+          och gör bokslut. Bokföringen lever i en fil eller ett skåp som <strong>du</strong>
+          styr — inte på ett Tilari-molnkonto.
+        </p>
+        <p>
+          Du behöver inte Kitsas för att använda Tilari. Du kan skapa en ny finsk företagsbok
+          i webbläsaren och föra böckerna därifrån.
+        </p>
+        <p>
+          Om du redan använder skrivbords-Kitsas (bokföring med öppen källkod) öppnar och
+          sparar den här versionen samma <code>.kitsas</code>-fil. Filen kan växlas mellan de
+          två; en senare Tilari kan avvika från det. Tilari är inte en produkt från Kitsas Oy,
+          och Kitsas Oy stöder den inte.
         </p>
         <div class="note">
           <p>
-            Bokföringen lever i en fil eller ett skåp, inte på ett “molnkonto”. Välj
-            det upplägg som passar vem som använder boken och var filen ska ligga.
+            Börja med att prova: <a href="../tilari.html">öppna Tilari</a>, skapa en bok, boka
+            ett verifikat. Nedan står vad programmet gör och för vem. Arbetssätten (HTML, den
+            här datorn, ett skåp) kommer senare på sidan.
           </p>
         </div>
 
@@ -79,12 +91,169 @@
               <a href="../tilari.html">en HTML-fil</a> — vid start skapar du en ny bok.
             </li>
             <li><strong>Fungerar helt i webbläsaren</strong> — eller som en vanlig webbapp.</li>
-            <li><strong>Ändringslogg</strong> i sessionen.</li>
+            <li>Rapporter du kan klicka dig fram till ett verifikat i; <strong>ändringslogg</strong> i sessionen.</li>
             <li><strong>Bokslut</strong> går att göra. Arkiv finns inte ännu.</li>
-            <li>Skåp: <strong>egen Supabase</strong> eller <strong>egen VPS</strong>.</li>
+            <li>Boken i din fil eller ditt eget skåp (<strong>Supabase</strong> / <strong>VPS</strong>).</li>
           </ul>
         </div>
 
+        <h2 id="adds">Vad Tilari lägger till</h2>
+        <p>
+          Tilari är full bokföring i webbläsaren, inte bara en visare. I vardagsarbetet ger den
+          saker som skrivbordsprogram sällan samlar på samma ställe — till nytta även om du
+          aldrig har använt Kitsas.
+        </p>
+        <ul>
+          <li>
+            <strong>Webbläsare utan installation:</strong> en HTML-fil, en lokal server eller
+            ett eget skåp. Prova nu; för böckerna i telefonen eller på ett USB-minne.
+          </li>
+          <li>
+            <strong>Tidsnavigering:</strong> <strong>Månad</strong> / <strong>Räkenskapsår</strong> /
+            <strong>Alla</strong> och föregående/nästa på rapporter och huvudbok. En månad i
+            taget är ett naturligt sätt att se hur perioden ser ut.
+          </li>
+          <li>
+            <strong>Rapporter du kan följa:</strong> balansräkning → konto → verifikat, plus
+            månadsdiagram (omsättning, resultat, skatt).
+          </li>
+          <li><strong>Löpande saldo</strong> i huvudboken — kontots ackumulering rad för rad.</li>
+          <li><strong>Ändringslogg</strong> i sessionen: vad du hunnit ändra före sparandet.</li>
+          <li>
+            <strong>Spara när du vill:</strong> arbetet kan stanna i fliken; Chromium kan också
+            skriva den fil du öppnade.
+          </li>
+          <li>
+            Valfritt skåp: <strong>din Supabase</strong> (krypterat i webbläsaren) eller
+            <strong>egen VPS</strong> — inte Tilaris moln.
+          </li>
+          <li>Linux-, Windows- och macOS-paket om du vill ha programmet på den här datorn.</li>
+        </ul>
+        <p>
+          Om du redan känner Kitsas: det här är saker som skrivbords-Kitsas inte visar på samma
+          sätt. Skrivbords-Kitsas är fortfarande referensen för det Tilari inte har kopierat än
+          (förening och bostadsaktiebolag, kontoplansredigerare, arkiv). I den här versionen
+          fungerar samma <code>.kitsas</code>-fil i båda.
+        </p>
+
+        <h2 id="audience">För vem</h2>
+        <p>
+          Tilari är användbart för <strong>vem som helst</strong> som vill föra finsk dubbel
+          bokföring själv: frilansare, enskild näringsidkare, litet aktiebolag, eller en
+          bokförare som vill ha en webbläsare i stället för ett separat skrivbordsprogram. Du
+          behöver ingen Kitsas-bakgrund — en ny företagsbok skapas vid start.
+        </p>
+        <p>
+          Det är <strong>särskilt naturligt</strong> om du redan känner Kitsas: samma fil, samma
+          bokföringsregler, ett webbläsargränssnitt och Tilaris egna vyer (tid, klickbara
+          rapporter, ändringslogg).
+        </p>
+        <p>
+          Författaren har testat Tilari i <strong>eget bruk</strong>: ett finskt
+          <strong>aktiebolag</strong> med relativt få verifikat (typiskt för frilansare). Stora
+          böcker, förening, bostadsaktiebolag, enskild näringsidkare och andra momsupplägg har inte
+          testats i vardagen. Filen öppnas troligen; beteendet där är inte garanterat. Säg till om
+          du använder Tilari i en annan sorts bok — det hjälper prioriteringen.
+        </p>
+
+        <h2 id="status">Vad som ingår och vad som inte gör det</h2>
+        <p>
+          För vardagsbokföring räcker det oftast: öppna eller skapa en bok, boka utgift /
+          inkomst / överföring, bifoga ett kvitto, läs rapporterna och gör bokslut. Tabellen är
+          den här versionen. Det finns ingen publicerad tidplan — fråga i
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Område</th>
+              <th>Status</th>
+              <th>Anmärkning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Öppna en befintlig <code>.kitsas</code></td>
+              <td>Ingår</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Skapa en <strong>ny</strong> tom bok</td>
+              <td>Ingår</td>
+              <td>Vid start. Företagskontoplan: namn, FO-nummer, första räkenskapsår, moms, övning. Förening och bostadsaktiebolag startas fortfarande i skrivbords-Kitsas</td>
+            </tr>
+            <tr>
+              <td>Utgift / inkomst / överföring / övrigt</td>
+              <td>Ingår</td>
+              <td>Daglig bokföring</td>
+            </tr>
+            <tr>
+              <td>Kontoutdrag</td>
+              <td>Delvis</td>
+              <td>Redigera och dela en rad till ett eget verifikat. Ingen import av bankfil</td>
+            </tr>
+            <tr>
+              <td>Bilagor</td>
+              <td>Delvis</td>
+              <td>Uppladdning och förhandsvisning. Ingen OCR/tolkning, ingen automatisk förminskning</td>
+            </tr>
+            <tr>
+              <td>Kontoplan</td>
+              <td>Inte ännu</td>
+              <td>Konton läses från filen; ingen redigerare</td>
+            </tr>
+            <tr>
+              <td>Moms</td>
+              <td>Delvis</td>
+              <td>HTML-deklaration; ingen inskickning till OmaVero</td>
+            </tr>
+            <tr>
+              <td>Bokslut</td>
+              <td>Ingår</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Arkiv</td>
+              <td>Inte ännu</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Fakturering / attestflöde / lön</td>
+              <td>Inte ännu</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="request">Be om funktioner</h2>
+        <p>
+          Tilari växer efter vad som faktiskt används. Om du saknar en funktion (något du känner
+          från Kitsas, eller en ny idé), öppna en tråd i
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
+          Du behöver ingen Kitsas-bakgrund: berätta vad vardagsbokföringen behöver.
+        </p>
+
+        <h2 id="remember">Kom ihåg</h2>
+        <ul>
+          <li>
+            Boken är din fil. Spara den. Tilari håller ingen molnkopia åt dig om inte skåpet är
+            ditt.
+          </li>
+          <li>
+            En sparad <code>.kitsas</code>-fil är utbytbar med skrivbords-Kitsas i den här
+            versionen. Avsluta skrivbords-Kitsas innan Tilari skriver till samma sökväg.
+          </li>
+          <li>
+            En sparning avsedd för skrivbords-Kitsas samlar bilagor i filen. Skåpets interna
+            arbetskopia kan vara “mager” och öppnas inte i Kitsas som den är.
+          </li>
+          <li>Fakturering och attestflöde ingår inte i den här versionen.</li>
+        </ul>
+
+        <h2 id="choose">Välj upplägg</h2>
+        <p>
+          Boken öppnas alltid i webbläsaren. Välj var filen ska ligga och vem som använder den.
+        </p>
         <div class="cards">
           <a class="featured" href="../tilari.html">
             <strong>En HTML-fil</strong>
@@ -115,8 +284,6 @@
             <span>Synkad mapp, eller öppna/spara på Android.</span>
           </a>
         </div>
-
-        <h2 id="choose">Välj upplägg</h2>
         <table>
           <thead>
             <tr>
@@ -507,125 +674,6 @@ create policy "tilari_locker_delete"
           Om samma bok flyttas mellan en telefon och en PC hela tiden är ett VPN-skåp eller
           Supabase mindre felbenäget än mappen Hämtade filer.
         </p>
-
-        <h2 id="adds">Vad Tilari lägger till</h2>
-        <p>
-          Vid start kan du skapa en ny finsk företagskontoplan i webbläsaren. Skrivbords-Kitsas
-          är fortfarande referensen för det Tilari inte har kopierat ännu (förening och
-          bostadsaktiebolag, kontoplansredigerare, arkiv). Tilari lägger till:
-        </p>
-        <ul>
-          <li>Webbläsare: en HTML-fil, en lokal server eller ett eget skåp</li>
-          <li>Tidsnavigering: <strong>Månad</strong> / <strong>Räkenskapsår</strong> / <strong>Alla</strong> och föregående/nästa på rapporter och huvudbok</li>
-          <li>Klickbara rapporter (balansräkning → konto → verifikat) och månadsdiagram (omsättning, resultat, skatt)</li>
-          <li>Löpande saldo i huvudboken</li>
-          <li><strong>Ändringslogg</strong> i sessionen</li>
-          <li><strong>Fungerar helt i webbläsaren:</strong> en arbetskopia i fliken; Chromium kan spara över originalfilen</li>
-          <li>
-            Valfritt skåp: <strong>din Supabase</strong>-bucket (krypterad i webbläsaren), eller en
-            <strong>egen VPS</strong> (Node HTTP-lager)
-          </li>
-          <li>
-            En vanlig webbapp (varje åtgärd är en förfrågan), eller arbeta lokalt i fliken och spara
-            när du vill
-          </li>
-          <li>Linux-, Windows- och macOS-paket utan Qt-verktygskedja</li>
-        </ul>
-
-        <h2 id="audience">För vem</h2>
-        <p>
-          Författaren har gjort Tilari för <strong>egen bokföring</strong>: ett finskt
-          <strong>aktiebolag</strong> med relativt få verifikat (typiskt för frilansare). Stora
-          böcker, förening, bostadsaktiebolag, enskild näringsidkare och andra momsupplägg har inte
-          testats i vardagen. Filen öppnas troligen; beteendet där är inte garanterat.
-        </p>
-
-        <h2 id="status">Vad som ingår och vad som inte gör det</h2>
-        <p>
-          Den här versionen. Det finns ingen publicerad tidplan — fråga i
-          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
-        </p>
-        <table>
-          <thead>
-            <tr>
-              <th>Område</th>
-              <th>Status</th>
-              <th>Anmärkning</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Öppna en befintlig <code>.kitsas</code></td>
-              <td>Ingår</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Skapa en <strong>ny</strong> tom bok</td>
-              <td>Ingår</td>
-              <td>Vid start. Företagskontoplan: namn, FO-nummer, första räkenskapsår, moms, övning. Förening och bostadsaktiebolag startas fortfarande i skrivbords-Kitsas</td>
-            </tr>
-            <tr>
-              <td>Utgift / inkomst / överföring / övrigt</td>
-              <td>Ingår</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Kontoutdrag</td>
-              <td>Delvis</td>
-              <td>Redigera och dela en rad till ett eget verifikat. Ingen import av bankfil</td>
-            </tr>
-            <tr>
-              <td>Bilagor</td>
-              <td>Delvis</td>
-              <td>Uppladdning och förhandsvisning. Ingen OCR/tolkning, ingen automatisk förminskning</td>
-            </tr>
-            <tr>
-              <td>Kontoplan</td>
-              <td>Inte ännu</td>
-              <td>Konton läses från filen; ingen redigerare</td>
-            </tr>
-            <tr>
-              <td>Moms</td>
-              <td>Delvis</td>
-              <td>HTML-deklaration; ingen inskickning till OmaVero</td>
-            </tr>
-            <tr>
-              <td>Bokslut</td>
-              <td>Ingår</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Arkiv</td>
-              <td>Inte ännu</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Fakturering / attestflöde / lön</td>
-              <td>Inte ännu</td>
-              <td></td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h2 id="request">Be om funktioner</h2>
-        <p>
-          Om du saknar en gammal Kitsas-funktion eller har en ny Tilaridé, öppna en tråd i
-          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
-          Arbetet prioriteras efter vad som faktiskt används.
-        </p>
-
-        <h2 id="remember">Kom ihåg</h2>
-        <ul>
-          <li>
-            En sparad <code>.kitsas</code>-fil är utbytbar med skrivbords-Kitsas i den här
-            versionen. Avsluta skrivbords-Kitsas innan Tilari skriver till samma sökväg.
-          </li>
-          <li>
-            En sparning avsedd för skrivbords-Kitsas samlar bilagor i filen. Skåpets interna
-            arbetskopia kan vara “mager” och öppnas inte i Kitsas som den är.
-          </li>
-          <li>Fakturering och attestflöde ingår inte i den här versionen.</li>
-        </ul>
       </main>
 
       <footer class="foot">

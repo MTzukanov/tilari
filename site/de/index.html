@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Tilari – Arbeitsweisen</title>
+    <title>Tilari – Buchhaltung im Browser</title>
     <meta
       name="description"
-      content="Tilaris Arbeitsweisen: eine HTML-Datei, lokaler Server, VPN, Speichern im Browser, Supabase-Schließfach sowie Dropbox und Google Drive."
+      content="Tilari ist Buchhaltung im Browser. Nützlich für alle; Kitsas-Dateien öffnen in dieser Version. Arbeitsweisen: eine HTML-Datei, lokaler Server, VPN, Supabase, Dropbox."
     />
     <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="../styles.css" />
@@ -22,7 +22,7 @@
           <img src="../favicon.svg" alt="" width="32" height="32" />
           <div>
             <strong>Tilari</strong>
-            <span>Benutzerhandbuch · so führen Sie die Bücher</span>
+            <span>Benutzerhandbuch · Buchhaltung im Browser</span>
           </div>
         </a>
         <div class="mast-actions">
@@ -39,6 +39,12 @@
       <nav class="toc" aria-label="Inhalt">
         <h2>Inhalt</h2>
         <ol>
+          <li><a href="#what">Was Tilari ist</a></li>
+          <li><a href="#adds">Was Tilari hinzufügt</a></li>
+          <li><a href="#audience">Für wen</a></li>
+          <li><a href="#status">Was enthalten ist und was nicht</a></li>
+          <li><a href="#request">Funktionen anfragen</a></li>
+          <li><a href="#remember">Merken</a></li>
           <li><a href="#choose">Setup wählen</a></li>
           <li><a href="#engines">Zwei Verarbeitungsmodi</a></li>
           <li><a href="#html">Eine HTML-Datei</a></li>
@@ -48,26 +54,34 @@
           <li><a href="#browsers">Browser und Speichern</a></li>
           <li><a href="#supabase">Supabase-Schließfach</a></li>
           <li><a href="#cloud">Dropbox und Google Drive</a></li>
-          <li><a href="#adds">Was Tilari hinzufügt</a></li>
-          <li><a href="#audience">Für wen</a></li>
-          <li><a href="#status">Was enthalten ist und was nicht</a></li>
-          <li><a href="#request">Funktionen anfragen</a></li>
-          <li><a href="#remember">Merken</a></li>
         </ol>
       </nav>
 
       <main>
-        <h1>So verwenden Sie Tilari</h1>
+        <h1 id="what">Was Tilari ist</h1>
         <p class="lead">
-          Tilari ist ein lokales Buchhaltungsprogramm, das dieselbe
-          <code>.kitsas</code>-Datei öffnet und speichert wie Desktop-Kitsas. In dieser Version
-          kann die Datei zwischen beiden wechseln; eine spätere Tilari kann davon abweichen.
-          Es ist kein Produkt von Kitsas Oy, und Kitsas Oy unterstützt es nicht.
+          Tilari ist ein Buchhaltungsprogramm, das Sie im Browser nutzen. Sie buchen Ausgaben,
+          Einnahmen und Umbuchungen, hängen Belege an, blättern in Bilanz und
+          Gewinn- und Verlustrechnung und machen den Jahresabschluss. Die Bücher leben in einer
+          Datei oder einem Schließfach, das <strong>Sie</strong> steuern — nicht in einem
+          Tilari-Cloud-Konto.
+        </p>
+        <p>
+          Sie brauchen Kitsas nicht, um Tilari zu nutzen. Sie können im Browser ein neues
+          finnisches Unternehmensbuch anlegen und die Bücher von dort führen.
+        </p>
+        <p>
+          Wenn Sie bereits Desktop-Kitsas nutzen (Buchhaltung mit offenem Quellcode), öffnet und
+          speichert diese Version dieselbe <code>.kitsas</code>-Datei. Die Datei kann zwischen
+          beiden wechseln; eine spätere Tilari kann davon abweichen. Tilari ist kein Produkt von
+          Kitsas Oy, und Kitsas Oy unterstützt es nicht.
         </p>
         <div class="note">
           <p>
-            Die Bücher leben in einer Datei oder einem Schließfach, nicht in einem „Cloud-Konto“.
-            Wählen Sie das Setup, das dazu passt, wer das Buch nutzt und wo die Datei liegen soll.
+            Fangen Sie mit einem Versuch an: <a href="../tilari.html">Tilari öffnen</a>, Buch
+            anlegen, Beleg buchen. Darunter steht, was das Programm tut und für wen. Die
+            Arbeitsweisen (HTML, dieser Rechner, ein Schließfach) kommen weiter unten auf der
+            Seite.
           </p>
         </div>
 
@@ -79,12 +93,171 @@
               <a href="../tilari.html">eine HTML-Datei</a> — beim Start legen Sie ein neues Buch an.
             </li>
             <li><strong>Vollständig im Browser</strong> — oder als normale Web-App.</li>
-            <li><strong>Änderungsprotokoll</strong> in der Sitzung.</li>
+            <li>Berichte, in denen Sie zum Beleg durchklicken; <strong>Änderungsprotokoll</strong> in der Sitzung.</li>
             <li><strong>Jahresabschluss</strong> ist möglich. Archiv gibt es noch nicht.</li>
-            <li>Schließfach: <strong>eigenes Supabase</strong> oder <strong>eigener VPS</strong>.</li>
+            <li>Das Buch in Ihrer Datei oder Ihrem eigenen Schließfach (<strong>Supabase</strong> / <strong>VPS</strong>).</li>
           </ul>
         </div>
 
+        <h2 id="adds">Was Tilari hinzufügt</h2>
+        <p>
+          Tilari ist volle Buchhaltung im Browser, kein reiner Betrachter. Für die Alltagsarbeit
+          bringt es Dinge, die Desktop-Programme selten an derselben Stelle bündeln — nützlich
+          auch, wenn Sie Kitsas nie genutzt haben.
+        </p>
+        <ul>
+          <li>
+            <strong>Browser ohne Installation:</strong> eine HTML-Datei, ein lokaler Server oder
+            ein eigenes Schließfach. Jetzt ausprobieren; Bücher am Telefon oder auf einem USB-Stick führen.
+          </li>
+          <li>
+            <strong>Zeitnavigation:</strong> <strong>Monat</strong> / <strong>Geschäftsjahr</strong> /
+            <strong>Alle</strong> und vor/zurück in Berichten und Hauptbuch. Ein Monat nach dem
+            anderen ist ein natürlicher Blick auf die Periode.
+          </li>
+          <li>
+            <strong>Berichte, denen Sie folgen können:</strong> Bilanz → Konto → Beleg, plus
+            Monatsdiagramme (Umsatz, Ergebnis, Steuer).
+          </li>
+          <li><strong>Laufender Saldo</strong> im Hauptbuch — die Kontosumme Zeile für Zeile.</li>
+          <li><strong>Änderungsprotokoll</strong> in der Sitzung: was Sie vor dem Speichern geändert haben.</li>
+          <li>
+            <strong>Speichern, wenn Sie wollen:</strong> die Arbeit kann im Tab bleiben; Chromium
+            kann auch die geöffnete Datei schreiben.
+          </li>
+          <li>
+            Optionales Schließfach: <strong>Ihr Supabase</strong> (im Browser verschlüsselt) oder
+            <strong>eigener VPS</strong> — keine Tilari-Cloud.
+          </li>
+          <li>Linux-, Windows- und macOS-Pakete, wenn Sie das Programm auf diesem Rechner wollen.</li>
+        </ul>
+        <p>
+          Wenn Sie Kitsas schon kennen: das sind Dinge, die Desktop-Kitsas nicht in derselben
+          Form zeigt. Desktop-Kitsas bleibt die Referenz für das, was Tilari noch nicht kopiert
+          hat (Verein und Wohnungsaktiengesellschaft, Kontenplan-Editor, Archiv). In dieser
+          Version funktioniert dieselbe <code>.kitsas</code>-Datei in beiden.
+        </p>
+
+        <h2 id="audience">Für wen</h2>
+        <p>
+          Tilari ist nützlich für <strong>jede Person</strong>, die finnische doppelte
+          Buchhaltung selbst führen will: Freiberufler, Einzelunternehmen, kleine Kapitalgesellschaft
+          oder Buchhalter, die einen Browser statt eines eigenen Desktop-Programms wollen. Sie
+          brauchen keinen Kitsas-Hintergrund — ein neues Unternehmensbuch entsteht beim Start.
+        </p>
+        <p>
+          Es ist <strong>besonders natürlich</strong>, wenn Sie Kitsas schon kennen: dieselbe
+          Datei, dieselben Buchungsregeln, eine Browser-Oberfläche und Tilaris eigene Sichten
+          (Zeit, Durchklick-Berichte, Änderungsprotokoll).
+        </p>
+        <p>
+          Der Autor hat Tilari im <strong>eigenen Gebrauch</strong> getestet: eine finnische
+          <strong>Osakeyhtiö</strong> (Kapitalgesellschaft, vergleichbar einer GmbH) mit
+          relativ wenigen Belegen (typisch für Freiberufler). Große Bücher, Verein,
+          Wohnungsaktiengesellschaft, Einzelunternehmen und andere USt-Setups wurden nicht im
+          Alltag getestet. Die Datei öffnet sich wahrscheinlich; das Verhalten dort ist nicht
+          garantiert. Sagen Sie Bescheid, wenn Sie Tilari in einem anderen Buch nutzen — das hilft
+          bei der Priorität.
+        </p>
+
+        <h2 id="status">Was enthalten ist und was nicht</h2>
+        <p>
+          Für die Alltagsbuchhaltung reicht meist: Buch öffnen oder anlegen, Ausgabe / Einnahme /
+          Umbuchung buchen, Beleg anhängen, Berichte lesen und den Jahresabschluss machen. Die
+          Tabelle gilt für diese Version. Es gibt keinen veröffentlichten Zeitplan — fragen Sie in
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Bereich</th>
+              <th>Status</th>
+              <th>Hinweis</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Bestehende <code>.kitsas</code> öffnen</td>
+              <td>Enthalten</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Ein <strong>neues</strong> leeres Buch anlegen</td>
+              <td>Enthalten</td>
+              <td>Beim Start. Unternehmenskontenplan: Name, Handelsregisternummer, erstes Geschäftsjahr, USt, Übung. Verein und Wohnungsaktiengesellschaft starten weiterhin in Desktop-Kitsas</td>
+            </tr>
+            <tr>
+              <td>Ausgabe / Einnahme / Umbuchung / Sonstiges</td>
+              <td>Enthalten</td>
+              <td>Tägliche Buchung</td>
+            </tr>
+            <tr>
+              <td>Kontoauszug</td>
+              <td>Teilweise</td>
+              <td>Zeile bearbeiten und auf einen eigenen Beleg aufteilen. Kein Bankdatei-Import</td>
+            </tr>
+            <tr>
+              <td>Anlagen</td>
+              <td>Teilweise</td>
+              <td>Hochladen und Vorschau. Keine OCR/Auswertung, keine automatische Verkleinerung</td>
+            </tr>
+            <tr>
+              <td>Kontenplan</td>
+              <td>Noch nicht</td>
+              <td>Konten werden aus der Datei gelesen; kein Editor</td>
+            </tr>
+            <tr>
+              <td>Umsatzsteuer</td>
+              <td>Teilweise</td>
+              <td>HTML-Erklärung; keine Übermittlung an OmaVero</td>
+            </tr>
+            <tr>
+              <td>Jahresabschluss</td>
+              <td>Enthalten</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Archiv</td>
+              <td>Noch nicht</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Fakturierung / Freigabelauf / Lohn</td>
+              <td>Noch nicht</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="request">Funktionen anfragen</h2>
+        <p>
+          Tilari wächst danach, was wirklich genutzt wird. Wenn Sie eine Funktion vermissen
+          (etwas Vertrautes aus Kitsas oder eine neue Idee), öffnen Sie einen Thread in
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
+          Sie brauchen keinen Kitsas-Hintergrund: sagen Sie, was die Alltagsbuchhaltung braucht.
+        </p>
+
+        <h2 id="remember">Merken</h2>
+        <ul>
+          <li>
+            Das Buch ist Ihre Datei. Speichern Sie. Tilari hält keine Cloud-Kopie für Sie, es sei
+            denn, das Schließfach ist Ihres.
+          </li>
+          <li>
+            Eine gespeicherte <code>.kitsas</code>-Datei ist in dieser Version mit Desktop-Kitsas
+            austauschbar. Beenden Sie Desktop-Kitsas, bevor Tilari denselben Pfad schreibt.
+          </li>
+          <li>
+            Ein Speichern für Desktop-Kitsas packt Anlagen in die Datei. Die interne Arbeitskopie
+            des Schließfachs kann „mager“ sein und öffnet sich in Kitsas nicht so.
+          </li>
+          <li>Fakturierung und Freigabelauf sind in dieser Version nicht enthalten.</li>
+        </ul>
+
+        <h2 id="choose">Setup wählen</h2>
+        <p>
+          Das Buch öffnet sich immer im Browser. Wählen Sie, wo die Datei liegt und wer sie nutzt.
+        </p>
         <div class="cards">
           <a class="featured" href="../tilari.html">
             <strong>Eine HTML-Datei</strong>
@@ -115,8 +288,6 @@
             <span>Synchronisierter Ordner oder Android öffnen/speichern.</span>
           </a>
         </div>
-
-        <h2 id="choose">Setup wählen</h2>
         <table>
           <thead>
             <tr>
@@ -517,127 +688,6 @@ create policy "tilari_locker_delete"
           Wenn dasselbe Buch ständig zwischen Telefon und PC wandert, ist ein VPN-Schließfach oder
           Supabase weniger fehleranfällig als der Downloads-Ordner.
         </p>
-
-        <h2 id="adds">Was Tilari hinzufügt</h2>
-        <p>
-          Beim Start können Sie im Browser ein neues finnisches Unternehmenskontobuch anlegen.
-          Desktop-Kitsas bleibt die Referenz für das, was Tilari noch nicht kopiert hat (Verein und
-          Wohnungsaktiengesellschaft, Kontenplan-Editor, Archiv). Tilari fügt hinzu:
-        </p>
-        <ul>
-          <li>Browser: eine HTML-Datei, ein lokaler Server oder ein eigenes Schließfach</li>
-          <li>Zeitnavigation: <strong>Monat</strong> / <strong>Geschäftsjahr</strong> / <strong>Alle</strong> und vor/zurück in Berichten und Hauptbuch</li>
-          <li>Durchklickbare Berichte (Bilanz → Konto → Beleg) und Monatsdiagramme (Umsatz, Ergebnis, Steuer)</li>
-          <li>Laufender Saldo im Hauptbuch</li>
-          <li><strong>Änderungsprotokoll</strong> in der Sitzung</li>
-          <li><strong>Vollständig im Browser:</strong> eine Arbeitskopie im Tab; Chromium kann über die Originaldatei speichern</li>
-          <li>
-            Optionales Schließfach: <strong>Ihr Supabase</strong>-Bucket (im Browser verschlüsselt)
-            oder ein <strong>eigener VPS</strong> (Node-HTTP-Speicher)
-          </li>
-          <li>
-            Eine normale Web-App (jede Aktion ist eine Anfrage), oder lokal im Tab arbeiten und
-            speichern, wenn Sie wollen
-          </li>
-          <li>Linux-, Windows- und macOS-Pakete ohne Qt-Toolchain</li>
-        </ul>
-
-        <h2 id="audience">Für wen</h2>
-        <p>
-          Der Autor hat Tilari für <strong>die eigene Buchhaltung</strong> gebaut: eine finnische
-          <strong>Aktiengesellschaft</strong> mit relativ wenigen Belegen (typisch für Freiberufler).
-          Große Bücher, Verein, Wohnungsaktiengesellschaft, Einzelunternehmen und andere USt-Setups
-          wurden nicht im Alltag getestet. Die Datei öffnet sich wahrscheinlich; das Verhalten dort
-          ist nicht garantiert.
-        </p>
-
-        <h2 id="status">Was enthalten ist und was nicht</h2>
-        <p>
-          Diese Version. Es gibt keinen veröffentlichten Zeitplan — fragen Sie in
-          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
-        </p>
-        <table>
-          <thead>
-            <tr>
-              <th>Bereich</th>
-              <th>Status</th>
-              <th>Hinweis</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Bestehende <code>.kitsas</code> öffnen</td>
-              <td>Enthalten</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Ein <strong>neues</strong> leeres Buch anlegen</td>
-              <td>Enthalten</td>
-              <td>Beim Start. Unternehmenskontenplan: Name, Handelsregisternummer, erstes Geschäftsjahr, USt, Übung. Verein und Wohnungsaktiengesellschaft starten weiterhin in Desktop-Kitsas</td>
-            </tr>
-            <tr>
-              <td>Ausgabe / Einnahme / Umbuchung / Sonstiges</td>
-              <td>Enthalten</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Kontoauszug</td>
-              <td>Teilweise</td>
-              <td>Zeile bearbeiten und auf einen eigenen Beleg aufteilen. Kein Bankdatei-Import</td>
-            </tr>
-            <tr>
-              <td>Anlagen</td>
-              <td>Teilweise</td>
-              <td>Hochladen und Vorschau. Keine OCR/Auswertung, keine automatische Verkleinerung</td>
-            </tr>
-            <tr>
-              <td>Kontenplan</td>
-              <td>Noch nicht</td>
-              <td>Konten werden aus der Datei gelesen; kein Editor</td>
-            </tr>
-            <tr>
-              <td>Umsatzsteuer</td>
-              <td>Teilweise</td>
-              <td>HTML-Erklärung; keine Übermittlung an OmaVero</td>
-            </tr>
-            <tr>
-              <td>Jahresabschluss</td>
-              <td>Enthalten</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Archiv</td>
-              <td>Noch nicht</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Fakturierung / Freigabelauf / Lohn</td>
-              <td>Noch nicht</td>
-              <td></td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h2 id="request">Funktionen anfragen</h2>
-        <p>
-          Wenn Sie eine alte Kitsas-Funktion vermissen oder eine neue Tilari-Idee haben, öffnen Sie
-          einen Thread in
-          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
-          Die Arbeit wird danach priorisiert, was wirklich genutzt wird.
-        </p>
-
-        <h2 id="remember">Merken</h2>
-        <ul>
-          <li>
-            Eine gespeicherte <code>.kitsas</code>-Datei ist in dieser Version mit Desktop-Kitsas
-            austauschbar. Beenden Sie Desktop-Kitsas, bevor Tilari denselben Pfad schreibt.
-          </li>
-          <li>
-            Ein Speichern für Desktop-Kitsas packt Anlagen in die Datei. Die interne Arbeitskopie
-            des Schließfachs kann „mager“ sein und öffnet sich in Kitsas nicht so.
-          </li>
-          <li>Fakturierung und Freigabelauf sind in dieser Version nicht enthalten.</li>
-        </ul>
       </main>
 
       <footer class="foot">

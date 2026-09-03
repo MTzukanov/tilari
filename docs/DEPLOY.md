@@ -11,7 +11,7 @@ Tilari has no app login; VPN membership is the gate.
 
 Public **docs + single-file app** can live on GitHub Pages ([PAGES.md](PAGES.md)),
 including a custom domain. Do not point the same hostname at both Pages and
-this tunnel (`tilari.fi` here is the VPS).
+this tunnel.
 
 **Stack:** GitHub Actions runs the shared [Test](TESTING.md#ci) workflow
 (including Playwright), then builds `frontend/dist` and rsyncs it with the Node
@@ -40,9 +40,9 @@ Books and uploads: `~/tilari/data` (container `/data`, locker files in `/data/bo
 ## Cloudflare
 
 1. Zero Trust → Networks → Tunnels → create a tunnel. Put the token in the GitHub secret `TUNNEL_TOKEN` (not only on the VPS).
-2. Public hostname `tilari.fi` → service **`http://tilari:8000`** (Compose service name, not `127.0.0.1`).
-3. Access application on `tilari.fi`: allowlisted emails, MFA.
-4. DNS for `tilari.fi` is the tunnel CNAME Cloudflare creates. Do not point `tilari.fi` at the VPS A record.
+2. Public hostname → service **`http://tilari:8000`** (Compose service name, not `127.0.0.1`). Use a name that is not the Pages custom domain.
+3. Access application on that hostname: allowlisted emails, MFA.
+4. DNS for the hostname is the tunnel CNAME Cloudflare creates. Do not point it at the VPS A record.
 
 ## Local check of Compose (no tunnel)
 

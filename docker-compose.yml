@@ -5,7 +5,7 @@
 #   # after TUNNEL_TOKEN is in .env:
 #   docker compose --profile tunnel up -d
 #
-# Tunnel public hostname tilari.fi must target http://tilari:8000
+# Tunnel public hostname must target http://tilari:8000
 # (Compose DNS), not 127.0.0.1.
 
 services:

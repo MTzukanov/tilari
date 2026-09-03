@@ -246,6 +246,11 @@ main h1 {
   color: var(--muted);
 }
 
+h1,
+h2 {
+  scroll-margin-top: 0.75rem;
+}
+
 h2 {
   margin: 2.25rem 0 0.75rem;
   padding-top: 0.5rem;

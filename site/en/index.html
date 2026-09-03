@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Tilari – ways to work</title>
+    <title>Tilari – bookkeeping in the browser</title>
     <meta
       name="description"
-      content="Tilari working modes: single HTML file, local server, VPN, in-place browser save, Supabase locker, and Dropbox or Google Drive."
+      content="Tilari is bookkeeping in the browser. Useful for anyone; Kitsas files open in this version. Ways to work: one HTML file, local server, VPN, Supabase, Dropbox."
     />
     <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="../styles.css" />
@@ -22,7 +22,7 @@
           <img src="../favicon.svg" alt="" width="32" height="32" />
           <div>
             <strong>Tilari</strong>
-            <span>User guide · ways to keep the books</span>
+            <span>User guide · bookkeeping in the browser</span>
           </div>
         </a>
         <div class="mast-actions">
@@ -39,6 +39,12 @@
       <nav class="toc" aria-label="Contents">
         <h2>Contents</h2>
         <ol>
+          <li><a href="#what">What Tilari is</a></li>
+          <li><a href="#adds">What Tilari adds</a></li>
+          <li><a href="#audience">Who this is for</a></li>
+          <li><a href="#status">What is in and what is not</a></li>
+          <li><a href="#request">Request features</a></li>
+          <li><a href="#remember">Things to remember</a></li>
           <li><a href="#choose">Choose a setup</a></li>
           <li><a href="#engines">Two processing modes</a></li>
           <li><a href="#html">One HTML file</a></li>
@@ -48,26 +54,32 @@
           <li><a href="#browsers">Browsers and saving</a></li>
           <li><a href="#supabase">Supabase locker</a></li>
           <li><a href="#cloud">Dropbox and Google Drive</a></li>
-          <li><a href="#adds">What Tilari adds</a></li>
-          <li><a href="#audience">Who this is for</a></li>
-          <li><a href="#status">What is in and what is not</a></li>
-          <li><a href="#request">Request features</a></li>
-          <li><a href="#remember">Things to remember</a></li>
         </ol>
       </nav>
 
       <main>
-        <h1>How to run Tilari</h1>
+        <h1 id="what">What Tilari is</h1>
         <p class="lead">
-          Tilari is a local-first ledger that opens and writes the same
-          <code>.kitsas</code> files as desktop Kitsas. In this version you can
-          switch a saved file between the two; that may change in a later Tilari.
-          It is not a Kitsas Oy product, and Kitsas Oy does not support it.
+          Tilari is a bookkeeping program you use in the browser. You record expenses, income and
+          transfers, attach receipts, browse the balance sheet and profit and loss, and close the
+          year. The books live in a file or a locker that <strong>you</strong> control — not in a
+          Tilari cloud account.
+        </p>
+        <p>
+          You do not need Kitsas to use Tilari. You can create a new Finnish business book in the
+          browser and keep the books from there.
+        </p>
+        <p>
+          If you already use desktop Kitsas (open-source bookkeeping), this version opens and
+          writes the same <code>.kitsas</code> file. You can switch a saved file between the two;
+          that may change in a later Tilari. Tilari is not a Kitsas Oy product, and Kitsas Oy
+          does not support it.
         </p>
         <div class="note">
           <p>
-            The books live in a file or a locker, not in a Tilari cloud account. Pick the setup
-            that matches who uses the book and where the file should sit.
+            Start by trying it: <a href="../tilari.html">open Tilari</a>, create a book, post a
+            voucher. Below is what the program does and who it is for. Ways to run it (HTML, this
+            computer, a locker) come later on the page.
           </p>
         </div>
 
@@ -79,12 +91,171 @@
               <a href="../tilari.html">one HTML file</a> — on start you create a new book.
             </li>
             <li><strong>Fully working in the browser</strong> — or as a normal web app.</li>
-            <li>In-session <strong>change log</strong>.</li>
+            <li>Reports you can click through to a voucher; in-session <strong>change log</strong>.</li>
             <li><strong>Fiscal statement (tilinpäätös)</strong> is in. No archive yet.</li>
-            <li>Locker: <strong>your Supabase</strong>, or <strong>your own VPS</strong>.</li>
+            <li>The book in your file or your own locker (<strong>Supabase</strong> / <strong>VPS</strong>).</li>
           </ul>
         </div>
 
+        <h2 id="adds">What Tilari adds</h2>
+        <p>
+          Tilari is full bookkeeping in the browser, not a viewer. For day-to-day use it brings
+          things desktop programs rarely put in the same place — useful even if you have never
+          used Kitsas.
+        </p>
+        <ul>
+          <li>
+            <strong>Browser, no install:</strong> one HTML file, a local server, or your own
+            locker. Try it now; keep the books on a phone or a USB stick.
+          </li>
+          <li>
+            <strong>Time navigation:</strong> <abbr title="Kuukausi">Month</abbr> /
+            <abbr title="Tilikausi">financial year</abbr> / <abbr title="Kaikki">all</abbr> and
+            prev/next on reports and ledgers. A month at a time is a natural way to see how the
+            period looks.
+          </li>
+          <li>
+            <strong>Reports you can follow:</strong> balance sheet → account → voucher, plus
+            monthly charts (turnover, profit, tax).
+          </li>
+          <li><strong>Running balance</strong> on the account ledger — the account total row by row.</li>
+          <li>In-session <strong>change log</strong>: what you changed before you saved.</li>
+          <li>
+            <strong>Save when you choose:</strong> work can stay in the tab; Chromium can also
+            write the file you opened.
+          </li>
+          <li>
+            Optional locker: <strong>your Supabase</strong> (encrypted in the browser) or
+            <strong>your own VPS</strong> — not a Tilari cloud.
+          </li>
+          <li>Linux, Windows, and macOS packs if you want a program on this computer.</li>
+        </ul>
+        <p>
+          If you already know Kitsas: these are things desktop Kitsas does not present the same
+          way. Desktop Kitsas remains the reference for what Tilari has not copied yet
+          (associations and housing companies, chart editor, archive). In this version the same
+          <code>.kitsas</code> file works in both.
+        </p>
+
+        <h2 id="audience">Who this is for</h2>
+        <p>
+          Tilari is useful for <strong>anyone</strong> who wants to keep Finnish double-entry
+          books themselves: a freelancer, a sole trader, a small limited company, or a bookkeeper
+          who wants a browser instead of a separate desktop program. You do not need a Kitsas
+          background — a new business book is created on start.
+        </p>
+        <p>
+          It is <strong>especially natural</strong> if you already know Kitsas: the same file,
+          the same posting rules, a browser UI, and Tilari’s own views (time, click-through
+          reports, change log).
+        </p>
+        <p>
+          The author has tested Tilari in <strong>his own use</strong>: a Finnish
+          <strong>osakeyhtiö</strong> (limited company) with relatively few vouchers (typical for
+          freelancers). Large ledgers, associations, housing companies, sole traders, and other
+          VAT setups have not been a daily test bed. Files should still open; behaviour there is
+          not guaranteed. Say so if you use Tilari on a different kind of book — that helps
+          prioritise.
+        </p>
+
+        <h2 id="status">What is in and what is not</h2>
+        <p>
+          For day-to-day books you usually need: open or create a book, post expense / income /
+          transfer, attach a receipt, read reports, and close the year. The table is this
+          version. There is no published schedule — ask in
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th>Status</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Open an existing <code>.kitsas</code></td>
+              <td>In</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Create a <strong>new</strong> empty book</td>
+              <td>In</td>
+              <td>On start. Business chart: name, business id, first financial year, VAT, practice. Associations and housing companies still start in desktop Kitsas</td>
+            </tr>
+            <tr>
+              <td>Expense / income / transfer / other</td>
+              <td>In</td>
+              <td>Daily posting</td>
+            </tr>
+            <tr>
+              <td>Bank statement (tiliote)</td>
+              <td>Partial</td>
+              <td>Edit and split a line to its own voucher. No bank-file import</td>
+            </tr>
+            <tr>
+              <td>Attachments</td>
+              <td>Partial</td>
+              <td>Upload and preview. No OCR / parse, no auto-shrink</td>
+            </tr>
+            <tr>
+              <td>Chart of accounts (tililuettelo)</td>
+              <td>Not yet</td>
+              <td>Accounts are read from the file; no editor</td>
+            </tr>
+            <tr>
+              <td>VAT (ALV)</td>
+              <td>Partial</td>
+              <td>HTML declaration; no OmaVero submit</td>
+            </tr>
+            <tr>
+              <td>Fiscal statement (tilinpäätös)</td>
+              <td>In</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Archive (arkisto)</td>
+              <td>Not yet</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Invoicing / workflow / payroll</td>
+              <td>Not yet</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="request">Request features</h2>
+        <p>
+          Tilari grows by what people actually use. If you miss a function (something familiar
+          from Kitsas, or a new idea), open a thread in
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
+          You do not need a Kitsas background: say what day-to-day bookkeeping needs.
+        </p>
+
+        <h2 id="remember">Things to remember</h2>
+        <ul>
+          <li>
+            The book is your file. Save it. Tilari does not keep a cloud copy for you unless the
+            locker is yours.
+          </li>
+          <li>
+            A saved <code>.kitsas</code> file is interchangeable with desktop Kitsas in this
+            version. Quit desktop Kitsas before Tilari writes the same path.
+          </li>
+          <li>
+            A save meant for desktop Kitsas reassembles attachments into the file. The locker’s
+            internal working copy can be “lean” and will not open in Kitsas as-is.
+          </li>
+          <li>Billing and workflow are not in this version.</li>
+        </ul>
+
+        <h2 id="choose">Choose a setup</h2>
+        <p>
+          The book always opens in the browser. Pick where the file lives and who uses it.
+        </p>
         <div class="cards">
           <a class="featured" href="../tilari.html">
             <strong>One HTML file</strong>
@@ -115,8 +286,6 @@
             <span>Mounted folder, or Android open/save.</span>
           </a>
         </div>
-
-        <h2 id="choose">Choose a setup</h2>
         <table>
           <thead>
             <tr>
@@ -506,126 +675,6 @@ create policy "tilari_locker_delete"
           If the same book moves between a phone and a PC all the time, a VPN locker or Supabase
           is less error-prone than the Downloads folder.
         </p>
-
-        <h2 id="adds">What Tilari adds</h2>
-        <p>
-          On start you can create a new Finnish business-chart book in the browser. Desktop Kitsas
-          remains the reference for what Tilari has not copied yet (associations and housing
-          companies, chart editor, archive). Tilari adds:
-        </p>
-        <ul>
-          <li>Browser: one HTML file, a local server, or your own locker</li>
-          <li>Time navigation: <abbr title="Kuukausi">Month</abbr> / <abbr title="Tilikausi">financial year</abbr> / <abbr title="Kaikki">all</abbr> and prev/next on reports and ledgers</li>
-          <li>Click-through reports (balance sheet → account → voucher) and monthly charts (turnover, profit, tax)</li>
-          <li>Running balance on the account ledger</li>
-          <li>In-session <strong>change log</strong></li>
-          <li><strong>Fully working in the browser:</strong> a working copy in the tab; Chromium can save over the original file</li>
-          <li>
-            Optional locker: <strong>your Supabase</strong> bucket (encrypted in the browser), or a
-            <strong>self-hosted VPS</strong> (Node HTTP store)
-          </li>
-          <li>
-            A normal web app (each action is a request), or work locally in the tab and save when
-            you choose
-          </li>
-          <li>Linux, Windows, and macOS packs without a Qt toolchain</li>
-        </ul>
-
-        <h2 id="audience">Who this is for</h2>
-        <p>
-          The author built Tilari for <strong>his own books</strong>: a Finnish
-          <strong>osakeyhtiö</strong> (limited company) with relatively few vouchers
-          (typical for freelancers). Large ledgers, associations, housing companies,
-          sole traders, and other VAT setups have not been a daily test bed. Files
-          should still open; behaviour there is not guaranteed.
-        </p>
-
-        <h2 id="status">What is in and what is not</h2>
-        <p>
-          This version. There is no published schedule — ask in
-          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
-        </p>
-        <table>
-          <thead>
-            <tr>
-              <th>Area</th>
-              <th>Status</th>
-              <th>Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Open an existing <code>.kitsas</code></td>
-              <td>In</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Create a <strong>new</strong> empty book</td>
-              <td>In</td>
-              <td>On start. Business chart: name, business id, first financial year, VAT, practice. Associations and housing companies still start in desktop Kitsas</td>
-            </tr>
-            <tr>
-              <td>Expense / income / transfer / other</td>
-              <td>In</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Bank statement (tiliote)</td>
-              <td>Partial</td>
-              <td>Edit and split a line to its own voucher. No bank-file import</td>
-            </tr>
-            <tr>
-              <td>Attachments</td>
-              <td>Partial</td>
-              <td>Upload and preview. No OCR / parse, no auto-shrink</td>
-            </tr>
-            <tr>
-              <td>Chart of accounts (tililuettelo)</td>
-              <td>Not yet</td>
-              <td>Accounts are read from the file; no editor</td>
-            </tr>
-            <tr>
-              <td>VAT (ALV)</td>
-              <td>Partial</td>
-              <td>HTML declaration; no OmaVero submit</td>
-            </tr>
-            <tr>
-              <td>Fiscal statement (tilinpäätös)</td>
-              <td>In</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Archive (arkisto)</td>
-              <td>Not yet</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>Invoicing / workflow / payroll</td>
-              <td>Not yet</td>
-              <td></td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h2 id="request">Request features</h2>
-        <p>
-          If you miss an old Kitsas feature or have a new Tilari idea, open a thread in
-          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
-          Work is prioritized by what people actually use.
-        </p>
-
-        <h2 id="remember">Things to remember</h2>
-        <ul>
-          <li>
-            A saved <code>.kitsas</code> file is interchangeable with desktop Kitsas in this
-            version. Quit desktop Kitsas before Tilari writes the same path.
-          </li>
-          <li>
-            A save meant for desktop Kitsas reassembles attachments into the file. The locker’s
-            internal working copy can be “lean” and will not open in Kitsas as-is.
-          </li>
-          <li>Billing and workflow are not in this version.</li>
-        </ul>
       </main>
 
       <footer class="foot">
