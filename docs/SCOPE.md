@@ -12,26 +12,20 @@ Tilari is a **local-first** (then self-hosted) read-write app on the same
 
 ## Tested on
 
-The author built Tilari for **his own books**: a Finnish
-<abbr title="osakeyhtiö">limited company</abbr> with relatively few vouchers
-(typical for freelancers). Large ledgers, associations, housing companies,
-sole traders, and other VAT setups have not been a daily test
-bed. Files should still open; behaviour there is untested.
+The author built Tilari for **his own books**: a Finnish limited company with relatively few vouchers (typical for freelancers). Large ledgers, associations, housing companies, sole traders, and other VAT setups have not been a daily test bed. Files should still open; behaviour there is untested.
 
 ## What Tilari adds (not in desktop Kitsas)
 
-- Run in the browser: one HTML file, a local server, or a self-hosted locker
-- Time navigation: <abbr title="Kuukausi">Month</abbr> /
-  <abbr title="Tilikausi">financial year</abbr> /
-  <abbr title="Kaikki">all</abbr> chips and prev/next
-  on reports and ledgers
-- Click-through reports: balance sheet → account ledger → voucher, plus an overview with
-  monthly bars (turnover, profit, tax paid)
+On start, Tilari can create a new Finnish business-chart book in the browser. Desktop Kitsas remains the reference for what Tilari has not copied yet (other entity types, chart editor, archive). Tilari adds:
+
+- Browser app: one HTML file, a local server, or a self-hosted locker
+- Time navigation (Month / financial year / all, prev/next) on reports and ledgers
+- Click-through reports: balance sheet → account ledger → voucher, plus an overview with monthly bars (turnover, profit, tax paid)
 - Running **balance** on the account ledger
-- Practice mode and an in-session change log
-- Working copy in the tab (OPFS); Chromium can save over the original file
-- Optional opaque locker: Node HTTP, or your own Supabase bucket with
-  client-side encryption
+- In-session **change log**
+- Fully working in the browser (OPFS working copy; Chromium can save in place)
+- Optional locker: **your Supabase** bucket (encrypted in the tab), or a **self-hosted VPS** (Node HTTP store)
+- Use it as a normal web app (each action is a request), or work locally in the tab and save when you choose
 - Linux / Windows / macOS packs without a Qt toolchain
 
 ## Status
@@ -39,7 +33,7 @@ bed. Files should still open; behaviour there is untested.
 | Area | Status | Notes |
 |------|--------|-------|
 | Open an existing `.kitsas` | In | File picker, last path, locker |
-| Create a **new** empty book | In | Business chart (`yritys`) only: name, Y-tunnus, first fiscal year, VAT, practice. Unsaved OPFS copy until Save. Associations / housing companies still start in desktop Kitsas |
+| Create a **new** empty book | In | On start. Business chart (`yritys`) only: name, Y-tunnus, first fiscal year, VAT, practice. Unsaved OPFS copy until Save. Associations / housing companies still start in desktop Kitsas |
 | Expense / income / transfer / other | In | Types 100, 200, 300, 0 |
 | Notes voucher (type 800) | In | Header + files, no lines |
 | Bank statement (type 400) | Partial | View/edit and split a line onto its own voucher. No bank-file import; not the full Kitsas bank-statement workflow |
@@ -49,7 +43,7 @@ bed. Files should still open; behaviour there is untested.
 | Overview charts | In | Tilari addition |
 | Balance-sheet itemization | Partial | `eraid` grouping is there; not a full Kitsas itemization tool |
 | VAT | Partial | Periods and cash-basis codes used in the author’s books; HTML declaration. No OmaVero submit. See [VAT.md](VAT.md) |
-| Fiscal years + statements | In | Dashboard and ten-step closing. No annual report or consolidation. See [STATEMENT.md](STATEMENT.md) |
+| Fiscal statement (tilinpäätös) | In | Dashboard and ten-step closing. See [STATEMENT.md](STATEMENT.md) |
 | Chart of accounts | Not yet | Accounts are read from the file and used when booking; no editor |
 | Archive | Not yet | Kitsas stores the archive path outside the SQLite file |
 | Partners | Partial | Create-on-the-fly when booking; no full partner register |

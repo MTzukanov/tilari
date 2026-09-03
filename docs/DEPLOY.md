@@ -2,7 +2,7 @@
 
 Deployment shape is usually **browser wasm + locker** (mode 3 in
 [WORKING_MODES.md](WORKING_MODES.md)). Desktop AppImage remains
-[PACKAGING.md](PACKAGING.md). User-facing HTML (fi/en): [`../site/`](../site/).
+[PACKAGING.md](PACKAGING.md). User-facing HTML (fi/en/sv/de): [`../site/`](../site/).
 
 **Private network instead of a public hostname:** install the same stack on a
 VPN (Tailscale / WireGuard / company VPN) and bind `--lan` or publish

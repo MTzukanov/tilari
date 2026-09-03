@@ -1,47 +1,40 @@
 # Tilari
 
-[![Test](https://github.com/MTzukanov/tilari/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/MTzukanov/tilari/actions/workflows/test.yml)
+![Test](https://github.com/MTzukanov/tilari/actions/workflows/test.yml/badge.svg?branch=main)
 
-Tilari is a local-first bookkeeping app for Kitsas `.kitsas` files (schema
-**KpVersio 24**). As of this version those files are **fully interchangeable**:
-save in Tilari and open in desktop Kitsas, or the other way around. That is a
-current promise, not a forever one — a later Tilari might grow its own format
-or a schema bump; until then there is no Tilari-only file.
+Tilari is a local-first bookkeeping app for Kitsas `.kitsas` files (schema **KpVersio 24**). As of this version those files are **fully interchangeable**: save in Tilari and open in desktop Kitsas, or the other way around. That is a current promise, not a forever one — a later Tilari might grow its own format or a schema bump; until then there is no Tilari-only file.
 
-The book stays in a file or a locker you control, not in a Tilari cloud
-account. Close desktop Kitsas before Tilari writes the same path (WAL lock).
-Details: [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
+The book stays in a file or a locker you control, not in a Tilari cloud account. Close desktop Kitsas before Tilari writes the same path (WAL lock). Details: [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
 
 This is **not** a Kitsas Oy product and is **not supported by Kitsas Oy**.
 
 ## Why
 
-Desktop Kitsas ([kitupiikki](https://github.com/artoh/kitupiikki)) is a large
-Qt/C++ application. Extending it is slow: a browser UI, new save modes, or a
-locker that is not the official cloud all mean working in that desktop codebase,
-and a mistake there breaks people who still need the Qt app.
+Desktop Kitsas ([kitupiikki](https://github.com/artoh/kitupiikki)) is a large Qt/C++ application. Tilari is a separate GPL-3 program on the same schema that has a browser UI, extra save modes, and a locker that is not the official cloud.
 
-Tilari is a separate GPL-3 implementation of the same schema and posting rules.
-Compatibility is the floor; what Tilari adds on top of Kitsas, and what is still
-missing, is listed below.
+Compatibility is the floor; what Tilari adds, and what is still missing, is listed below.
 
-Finnish-first UI, with Swedish, English, and German catalogs filled. Number
-and date formats are independent of UI language and default to Finnish.
-On first visit the app asks which language to use and stores the choice in
-`localStorage`. Glossary: [docs/VOCABULARY.md](docs/VOCABULARY.md).
+Finnish-first UI, with Swedish, English, and German catalogs filled. Number and date formats are independent of UI language and default to Finnish. On first visit the app asks which language to use and stores the choice in `localStorage`. Glossary: [docs/VOCABULARY.md](docs/VOCABULARY.md).
 
-User guide: [site/index.html](site/index.html) (Finnish), [site/en/](site/en/)
-(English). Do **not** commit live company books; tests use `testdb/`.
+User guide: [site/index.html](site/index.html) (Finnish), [site/en/](site/en/) (English), [site/sv/](site/sv/) (Swedish), [site/de/](site/de/) (German). Do **not** commit live company books; tests use `testdb/`.
 
 ---
 
 ## Quick start
 
-```bash
-# First time: install root + workspaces
-npm install && npm run install:all
+Fastest: one HTML file in the browser. On start you create a new book (or open an existing `.kitsas`).
 
-# Dev: API (:8000) + Vite UI (:5173) with HMR for both
+Live: [tilari.html](https://mtzukanov.github.io/tilari/tilari.html)
+
+```bash
+cd frontend && npm install && npm run build:singlefile
+# open frontend/dist-single/index.html
+```
+
+Dev (API `:8000` + Vite `:5173`, HMR for both):
+
+```bash
+npm install && npm run install:all
 npm run dev
 # open http://127.0.0.1:5173  (proxies /api -> :8000)
 ```
@@ -67,15 +60,9 @@ Desktop packs (AppImage / Windows / macOS): [docs/PACKAGING.md](docs/PACKAGING.m
 
 ### Choosing a book
 
-The API starts **with no book open**. A reload (`tsx watch`, tests, agents)
-clears the in-memory ledger session and must not silently point the UI at a
-leftover path or another file.
+On start there is no book open. Create a new Finnish business-chart book, pick an existing `.kitsas`, or open one from a locker. Recents live in `localStorage` (`tilari.recentBooks`).
 
-1. UI bookkeeping-file dropdown: **Choose a new file** uploads via
-   `POST /api/open`, recent files reopen via `POST /api/open-path`
-   (`localStorage` `tilari.recentBooks`).
-2. If the process `session_id` changed, the UI drops the live book and asks
-   again instead of showing a stale ledger.
+A Node reload (`tsx watch`, tests) clears the in-memory session; the UI asks again instead of showing a leftover path.
 
 Close Kitsas desktop before sharing the same file if you need a consistent snapshot (desktop uses WAL + exclusive lock).
 
@@ -83,38 +70,25 @@ Close Kitsas desktop before sharing the same file if you need a consistent snaps
 
 ## Tested on
 
-The author built Tilari for **his own books**: a Finnish
-<abbr title="osakeyhtiö">limited company</abbr> with relatively few vouchers
-(typical for freelancers). Large ledgers, associations, housing companies,
-sole traders, and other VAT setups are **not tested**. Files should still
-open; do not assume they behave.
+The author built Tilari for **his own books**: a Finnish limited company with relatively few vouchers (typical for freelancers). Large ledgers, associations, housing companies, sole traders, and other VAT setups are **not tested**. Files should still open; do not assume they behave.
 
 ## What Tilari adds (on top of Kitsas)
 
-Desktop Kitsas remains the reference for features Tilari has not copied yet
-(other entity types, chart editor, archive). Tilari can create a new Finnish
-business-chart book in the browser. Tilari adds:
+On start, Tilari can create a new Finnish business-chart book in the browser. Desktop Kitsas remains the reference for what Tilari has not copied yet (other entity types, chart editor, archive). Tilari adds:
 
 - Browser app: one HTML file, a local server, or a self-hosted locker
-- Time navigation (<abbr title="Kuukausi">Month</abbr> /
-  <abbr title="Tilikausi">financial year</abbr> /
-  <abbr title="Kaikki">all</abbr>, prev/next) on
-  reports and ledgers
+- Time navigation (Month / financial year / all, prev/next) on reports and ledgers
 - Click-through reports (balance sheet → account → voucher) and monthly overview charts
 - Running balance on the account ledger
-- Practice mode and an in-session change log
-- OPFS working copy; Chromium can save in place
-- Optional locker (Node HTTP, or your own Supabase bucket, encrypted in the tab)
-- When a Tilari Node backend is connected: process the book **in the browser**
-  or **on the server** (see below)
+- In-session **change log**
+- Fully working in the browser (OPFS working copy; Chromium can save in place)
+- Optional locker: **your Supabase** bucket (encrypted in the tab), or a **self-hosted VPS** (Node HTTP store)
+- Use it as a normal web app (each action is a request), or work locally in the tab and save when you choose
 - Linux / Windows / macOS packs without Qt
 
 ### Client-side vs server-side processing
 
-The UI always runs in the browser. If a Tilari **Node** process is connected,
-opening a book asks **In this browser** vs **On the server**.
-Same posting rules either way (one TypeScript `Ledger`). Without Node (single
-HTML, Pages, Supabase locker) only the client engine exists.
+Use Tilari as a normal web app (each action is a request to the server), or work locally in the tab and save when you choose. The UI always runs in the browser. If a Tilari **Node** process is connected, opening a book asks **In this browser** vs **On the server**. Same posting rules either way (one TypeScript `Ledger`). Without Node (single HTML, Pages, Supabase locker) only the client engine exists.
 
 | | **In this browser** (default) | **On the server** |
 |--|-------------------------------|------------------|
@@ -126,32 +100,27 @@ HTML, Pages, Supabase locker) only the client engine exists.
 | Network | Needed to load/save a remote locker | Needed for every operation |
 | Supabase locker | Yes | No |
 
-Daily work and shared lockers: keep **In this browser**. On the server is for
-one operator, a private host, and a book that is too heavy for the device.
-Full write-up: [docs/WORKING_MODES.md](docs/WORKING_MODES.md#two-processing-engines-when-a-backend-is-connected).
+Daily work and shared lockers: keep **In this browser**. On the server is for one operator, a private host, and a book that is too heavy for the device. Full write-up: [docs/WORKING_MODES.md](docs/WORKING_MODES.md#two-processing-engines-when-a-backend-is-connected).
 
 ## Limitations and next
 
-There is no published schedule. Ask for a missing Kitsas feature or a new
-Tilari idea in
-[GitHub Discussions](https://github.com/MTzukanov/tilari/discussions).
+There is no published schedule. Ask for a missing Kitsas feature or a new Tilari idea in [GitHub Discussions](https://github.com/MTzukanov/tilari/discussions).
 
 | Area | Status | Notes |
 |------|--------|-------|
 | Open an existing `.kitsas` | In | |
-| Create a **new** empty book | In | Business chart only; associations / housing companies still start in desktop Kitsas |
+| Create a **new** empty book | In | On start. Business chart only; associations / housing companies still start in desktop Kitsas |
 | Expense / income / transfer / other | In | |
 | Bank statement | Partial | Edit and split a line; no bank-file import |
 | Attachments | Partial | Upload and preview. No OCR / parse, no auto-shrink |
 | Chart of accounts | Not yet | Chart of accounts is read-only |
-| Archive | Not yet | |
 | VAT | Partial | HTML declaration; no OmaVero submit |
-| Financial statements | In | No annual report / consolidation |
+| Fiscal statement (tilinpäätös) | In | |
+| Archive | Not yet | |
 | Billing / workflow / payroll | Not yet | |
 | UI languages | In | Finnish, Swedish, English, German. First visit asks and stores `tilari.locale`. |
 
-Full table: [docs/SCOPE.md](docs/SCOPE.md). Working modes:
-[docs/WORKING_MODES.md](docs/WORKING_MODES.md).
+Full table: [docs/SCOPE.md](docs/SCOPE.md). Working modes: [docs/WORKING_MODES.md](docs/WORKING_MODES.md).
 
 ---
 
@@ -161,7 +130,9 @@ Full table: [docs/SCOPE.md](docs/SCOPE.md). Working modes:
 |-----|----------|
 | [site/index.html](site/index.html) | User guide, Finnish (GitHub Pages) |
 | [site/en/](site/en/) | User guide, English (GitHub Pages) |
-| `tilari.html` | Single-file app on Pages (built in CI, not in git) |
+| [site/sv/](site/sv/) | User guide, Swedish (GitHub Pages) |
+| [site/de/](site/de/) | User guide, German (GitHub Pages) |
+| [tilari.html](https://mtzukanov.github.io/tilari/tilari.html) | Single-file app on Pages (built in CI, not in git) |
 | [docs/PAGES.md](docs/PAGES.md) | Pages publish + custom domain |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | ADRs (license, cents, posting, storage) |
 | [docs/SCOPE.md](docs/SCOPE.md) | In / partial / not yet, plus what Tilari adds |
@@ -178,8 +149,7 @@ Full table: [docs/SCOPE.md](docs/SCOPE.md). Working modes:
 | [LICENSE](LICENSE) | GPL-3 + Kitsas extra conditions (full text) |
 | [THIRD_PARTY.md](THIRD_PARTY.md) | Notices for React, sql.js, tsx, esbuild, Node |
 
-Schema and posting rules are ported from the open-source Kitsas desktop app.
-This repo is a separate product.
+Schema and posting rules are ported from the open-source Kitsas desktop app. This repo is a separate product.
 
 ---
 
@@ -201,10 +171,7 @@ Frontend (declared vs resolved from `package-lock.json`):
 | @vitejs/plugin-react | ^6.0.4 | 6.0.5 |
 | oxlint | ^1.75.0 | (see lockfile) |
 
-Ledger math runs in TypeScript (browser sql.js by default; optional Node HTTP
-engine). A Node process also hosts the optional opaque file locker. Server:
-`sql.js` + Node 24 (`node:sqlite` for locker lean-split). See
-[`docs/VERSIONS.md`](docs/VERSIONS.md).
+Ledger math runs in TypeScript (browser sql.js by default; optional Node HTTP engine). A Node process also hosts the optional opaque file locker. Server: `sql.js` + Node 24 (`node:sqlite` for locker lean-split). See [docs/VERSIONS.md](docs/VERSIONS.md).
 
 ---
 
@@ -221,7 +188,7 @@ tilari/
 |-- docs/WORKING_MODES.md     # single HTML, locker, VPN, browsers
 |-- docs/PAGES.md             # GitHub Pages user HTML
 |-- docs/PACKAGING.md         # local launcher + desktop packs
-|-- site/                     # user guide HTML (fi + en) for Pages
+|-- site/                     # user guide HTML (fi + en + sv + de) for Pages
 |-- scripts/run-desktop.sh    # one process: API + production UI
 |-- packaging/common/         # shared App payload staging
 |-- packaging/appimage/       # Linux AppImage
@@ -287,8 +254,7 @@ Base: `http://127.0.0.1:8000` (or via Vite proxy `/api/...`).
 | `vastattavaa` | Liabilities / equity (`2...`, including `BE` / `T`) |
 | `tulos` | P&L (`>= '3'` as text) |
 
-Balances are **computed** from journal lines (`Vienti`, cents → EUR), not stored.
-Posted only: `Tosite.tila >= 100` (voucher status).
+Balances are **computed** from journal lines (`Vienti`, cents → EUR), not stored. Posted only: `Tosite.tila >= 100` (voucher status).
 
 ### Ledger running balance
 
@@ -300,7 +266,7 @@ Posted only: `Tosite.tila >= 100` (voucher status).
 
 ## Kitsas data model (short)
 
-Authoritative schema: [kitupiikki `luo.sql`](https://github.com/artoh/kitupiikki) (version **24** via `Asetus.KpVersio`).
+Authoritative schema: [kitupiikki](https://github.com/artoh/kitupiikki) `luo.sql` (version **24** via `Asetus.KpVersio`).
 
 | Table | Role |
 |-------|------|
@@ -323,8 +289,7 @@ Reference C++ routes (in kitupiikki):
 
 ## Security notes (not implemented)
 
-Intended later for VPS: Tailscale and/or Caddy + Authelia, localhost-bound API, short-lived encrypted uploads.
-**Not** wired in this repo yet.
+Intended later for VPS: Tailscale and/or Caddy + Authelia, localhost-bound API, short-lived encrypted uploads. **Not** wired in this repo yet.
 
 Current defaults: API on `127.0.0.1:8000`, CORS for Vite only. Uploads land in temp -- fine for local use only.
 
@@ -338,19 +303,13 @@ Current defaults: API on `127.0.0.1:8000`, CORS for Vite only. Uploads land in t
 | Empty / wrong book | Choose `.kitsas` again; use **Open recent** if offered |
 | File locked / stale | Close Kitsas desktop; re-upload |
 | Finnish text broken | Sources must be UTF-8; avoid Windows-1252 dash bytes (`0x97`) |
-| Port 8000 in use | `ss -tlnp | grep 8000` then kill that PID |
-| Month shows opening balance 0 | Early months may have no prior activity; <abbr title="Kuukausi">Month</abbr> from a full year opens the **end** month |
+| Port 8000 in use | `ss -tlnp` and look for `:8000`, then stop that process |
+| Month shows opening balance 0 | Early months may have no prior activity; Month from a full year opens the **end** month |
 
 ---
 
 ## License / provenance
 
-Tilari is **GPL-3.0-or-later** with extra conditions in [LICENSE](LICENSE), matching
-upstream Kitsas ([kitupiikki](https://github.com/artoh/kitupiikki)). Schema and
-posting rules are ported from that open-source Qt code. This repo is a separate
-product; Kitsas Oy does not support it.
+Tilari is **GPL-3.0-or-later** with extra conditions in [LICENSE](LICENSE), matching upstream Kitsas ([kitupiikki](https://github.com/artoh/kitupiikki)). Schema and posting rules are ported from that open-source Qt code. This repo is a separate product; Kitsas Oy does not support it.
 
-Bundled libraries (React, sql.js, and in desktop/Docker packs tsx, esbuild, and
-Node.js) keep their own MIT notices in [THIRD_PARTY.md](THIRD_PARTY.md). Desktop
-zips also include `NODE_LICENSE` from the official Node distribution.
-
+Bundled libraries (React, sql.js, and in desktop/Docker packs tsx, esbuild, and Node.js) keep their own MIT notices in [THIRD_PARTY.md](THIRD_PARTY.md). Desktop zips also include `NODE_LICENSE` from the official Node distribution.

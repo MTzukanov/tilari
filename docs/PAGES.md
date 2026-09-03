@@ -2,19 +2,21 @@
 
 Operator-facing HTML lives in [`site/`](../site/), not in this `docs/` folder.
 The single-file app is **built in CI** (`frontend` `build:singlefile`) and
-published as `tilari.html` next to the guides. Do not commit that generated
-file.
+published as [`tilari.html`](https://mtzukanov.github.io/tilari/tilari.html)
+next to the guides. Do not commit that generated file.
 
 | Path | Audience | Language |
 |------|----------|----------|
 | [`site/index.html`](../site/index.html) | People who *use* Tilari | Finnish (default) |
 | [`site/en/index.html`](../site/en/index.html) | Same | English |
-| `tilari.html` (CI only) | The app, one file, https | UI is Finnish |
+| [`site/sv/index.html`](../site/sv/index.html) | Same | Swedish |
+| [`site/de/index.html`](../site/de/index.html) | Same | German |
+| `tilari.html` (CI only) | The app, one file, https | Finnish-first UI |
 | This `docs/` tree | Developers and agents | English Markdown |
 
 Architecture of the modes (wasm vs locker vs On the server): [WORKING_MODES.md](WORKING_MODES.md).
 Keep that file in sync when you change user-visible save/locker behaviour; then
-update both HTML pages (they are not generated).
+update all four HTML pages (they are not generated).
 
 `https://…/tilari.html` is a **secure context**: OPFS, in-place save (Chromium
 desktop), and the Supabase locker work. The same bytes opened as `file://`
@@ -31,7 +33,7 @@ skips deploy.
 In the GitHub repo: **Settings → Pages → Build and deployment → Source:
 GitHub Actions**. First publish needs that click (or `workflow_dispatch`).
 
-Paths in the HTML are relative (`styles.css`, `en/`, `../`, `tilari.html`) so
+Paths in the HTML are relative (`styles.css`, `en/`, `sv/`, `de/`, `../`, `tilari.html`) so
 the site works at `https://<org>.github.io/<repo>/` and on a custom domain.
 
 Do not point Pages at `docs/` — Jekyll would mix ADRs with the user guide.

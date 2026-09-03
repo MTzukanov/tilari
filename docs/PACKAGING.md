@@ -77,7 +77,7 @@ distribution).
 
 ```bash
 cd frontend && npm run build:singlefile
-# → frontend/dist-single/index.html  (~1.4MB, JS/CSS/WASM inlined)
+# → frontend/dist-single/index.html  (~1.7MB, JS/CSS/WASM inlined)
 ```
 
 Double-click or open via `file://`. Expected limits vs a normal static host:
@@ -87,4 +87,5 @@ blocked, and no locker/`http` engine. Wasm ledger + file picker still work.
 Operator comparison (why a local pack beats this file):
 [WORKING_MODES.md — Local Node vs single HTML](WORKING_MODES.md#local-node-vs-single-html).
 User HTML: [`../site/index.html`](../site/index.html). CI publishes the same
-build as `tilari.html` on GitHub Pages ([PAGES.md](PAGES.md)).
+build as [tilari.html](https://mtzukanov.github.io/tilari/tilari.html) on GitHub
+Pages ([PAGES.md](PAGES.md)).

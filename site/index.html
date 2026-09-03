@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="styles.css" />
     <link rel="alternate" hreflang="fi" href="./" />
     <link rel="alternate" hreflang="en" href="en/" />
+    <link rel="alternate" hreflang="sv" href="sv/" />
+    <link rel="alternate" hreflang="de" href="de/" />
   </head>
   <body>
     <div class="wrap">
@@ -28,6 +30,8 @@
           <nav class="lang" aria-label="Kieli">
             <a href="./" aria-current="page">Suomi</a>
             <a href="en/">English</a>
+            <a href="sv/">Svenska</a>
+            <a href="de/">Deutsch</a>
           </nav>
         </div>
       </header>
@@ -40,6 +44,7 @@
           <li><a href="#html">Yksi HTML-tiedosto</a></li>
           <li><a href="#paikallinen">Palvelin omalla koneella</a></li>
           <li><a href="#vpn">Palvelin VPN-verkossa</a></li>
+          <li><a href="#vps">Oma VPS</a></li>
           <li><a href="#selaimet">Selaimet ja tallennus</a></li>
           <li><a href="#supabase">Supabase-lokero</a></li>
           <li><a href="#pilvi">Dropbox ja Google Drive</a></li>
@@ -66,8 +71,22 @@
           </p>
         </div>
 
+        <div class="highlights">
+          <h2>Miksi Tilari</h2>
+          <ul>
+            <li>
+              <strong>Kokeile heti:</strong>
+              <a href="tilari.html">yksi HTML-tiedosto</a> — käynnistyessä luot uuden kirjan.
+            </li>
+            <li><strong>Toimii kokonaan selaimessa</strong> — tai tavallisena verkkosovelluksena.</li>
+            <li><strong>Muutosloki</strong> istunnossa.</li>
+            <li><strong>Tilinpäätös</strong> onnistuu. Arkistoa ei vielä ole.</li>
+            <li>Lokero: <strong>oma Supabase</strong> tai <strong>oma VPS</strong>.</li>
+          </ul>
+        </div>
+
         <div class="cards">
-          <a href="tilari.html">
+          <a class="featured" href="tilari.html">
             <strong>Yksi HTML</strong>
             <span>Avaa tässä selaimessa, tai lataa USB:lle. Ei asennusta.</span>
           </a>
@@ -79,13 +98,17 @@
             <strong>VPN</strong>
             <span>Muutama laite, ei julkista osoitetta.</span>
           </a>
+          <a class="featured" href="#supabase">
+            <strong>Supabase</strong>
+            <span>Oma pilvilokero ilman Tilari-palvelinta.</span>
+          </a>
+          <a class="featured" href="#vps">
+            <strong>VPS</strong>
+            <span>Julkinen osoite, kirjat omalla palvelimella.</span>
+          </a>
           <a href="#selaimet">
             <strong>Selaimet</strong>
             <span>Mitkä kirjoittavat suoraan samaan tiedostoon.</span>
-          </a>
-          <a href="#supabase">
-            <strong>Supabase</strong>
-            <span>Oma pilvilokero ilman Tilari-palvelinta.</span>
           </a>
           <a href="#pilvi">
             <strong>Dropbox / Drive</strong>
@@ -115,7 +138,7 @@
               <td><a href="#vpn">Palvelin VPN-verkossa</a></td>
             </tr>
             <tr>
-              <td>Kirja omassa Supabase-projektissa, Tilari vaikkapa staattiselta sivulta</td>
+              <td>Kirja omassa Supabase-projektissa</td>
               <td><a href="#supabase">Supabase-lokero</a></td>
             </tr>
             <tr>
@@ -124,7 +147,7 @@
             </tr>
             <tr>
               <td>Julkinen osoite (esim. tilari.fi) ja kirjautuminen portilla</td>
-              <td>Ylläpitäjän VPS-asennus; tämä ohje ei korvaa sitä</td>
+              <td><a href="#vps">Oma VPS</a>; tämä ohje ei korvaa ylläpitäjän asennusta</td>
             </tr>
           </tbody>
         </table>
@@ -136,9 +159,10 @@
 
         <h2 id="kasittely">Kaksi käsittelytapaa</h2>
         <p>
-          Käyttöliittymä on aina selaimessa. <strong>Missä kirjanpito lasketaan</strong> on eri
-          valinta. Kun Tilari-<strong>palvelin</strong> (Node) on yhteydessä, kirjaa avatessa
-          kysytään:
+          Voit käyttää Tilaria <strong>tavallisena verkkosovelluksena</strong> (jokainen toiminto
+          on pyyntö palvelimelle) tai <strong>paikallisesti selaimessa</strong> ja tallentaa kun
+          haluat. Käyttöliittymä on aina selaimessa. Kun Tilari-<strong>palvelin</strong> (Node) on
+          yhteydessä, kirjaa avatessa kysytään:
         </p>
         <ul>
           <li>
@@ -200,7 +224,7 @@
 
         <h2 id="html">Yksi HTML-tiedosto</h2>
         <p>
-          Sama ohjelma yhtenä tiedostona (noin 1,4&nbsp;Mt). Tällä sivustolla se on
+          Sama ohjelma yhtenä tiedostona (noin 1,7&nbsp;Mt). Tällä sivustolla se on
           <a href="tilari.html"><code>tilari.html</code></a> —
           <a href="tilari.html">avaa se tästä</a>. Voit myös tallentaa tiedoston ja avata sen ilman
           verkkoa.
@@ -323,6 +347,14 @@
         <p>
           “Palvelimella”-käsittely pitää kirjan auki vain yhdelle käyttäjälle kerrallaan. Toimistossa
           pidä oletus <strong>Tässä selaimessa</strong> ja jaa kirja lokeron kautta.
+        </p>
+
+        <h2 id="vps">Oma VPS</h2>
+        <p>
+          Julkinen osoite (esim. tilari.fi) ja kirjautuminen portilla. Palvelin pitää kirjat
+          <strong>lokerossa</strong>. Käytä Tilaria tavallisena verkkosovelluksena tai käsittele
+          kirjaa selaimessa ja tallenna lokeroon. Asennus on ylläpitäjän tehtävä; tämä ohje ei
+          korvaa sitä.
         </p>
 
         <h2 id="selaimet">Mitkä selaimet tallentavat suoraan tiedostoon</h2>
@@ -480,17 +512,25 @@ create policy "tilari_locker_delete"
 
         <h2 id="lisaa">Mitä Tilari lisää</h2>
         <p>
-          Työpöytä-Kitsas on edelleen paikka, jossa perustat uuden yrityksen ja
-          jossa ovat toiminnot, joita Tilarissa ei vielä ole. Tilari tuo sen päälle:
+          Käynnistyessä voit luoda uuden suomalaisen yrityskirjan selaimessa. Työpöytä-Kitsas on
+          edelleen viite ominaisuuksille, joita Tilarissa ei vielä ole (yhdistys ja taloyhtiö,
+          tilikartan muokkain, arkisto). Tilari lisää:
         </p>
         <ul>
           <li>Selain: yksi HTML-tiedosto, paikallinen palvelin tai oma lokero</li>
           <li>Aikanavigointi: <strong>Kuukausi</strong> / <strong>Tilikausi</strong> / <strong>Kaikki</strong> ja edellinen/seuraava raporteissa ja pääkirjassa</li>
           <li>Raportit, joista pääsee klikkaamalla taseesta tilille ja tositteeseen, sekä kuukausikaaviot (liikevaihto, tulos, verot)</li>
           <li>Juokseva saldo pääkirjassa</li>
-          <li>Harjoitustila ja istunnon muutosloki</li>
-          <li>Työkopio selaimessa; Chromium voi tallentaa suoraan alkuperäiseen tiedostoon</li>
-          <li>Valinnainen lokero (Node tai oma Supabase, salaus selaimessa)</li>
+          <li><strong>Muutosloki</strong> istunnossa</li>
+          <li><strong>Täysin toimiva selaimessa:</strong> työkopio säilyy; Chromium voi tallentaa suoraan tiedostoon</li>
+          <li>
+            Valinnainen lokero: <strong>oma Supabase</strong> (salaus selaimessa) tai
+            <strong>oma VPS</strong> (Node HTTP -palvelin)
+          </li>
+          <li>
+            Tavallinen verkkosovellus (jokainen toiminto on pyyntö) tai paikallinen työ selaimessa,
+            tallennus kun haluat
+          </li>
           <li>Linux-, Windows- ja macOS-paketit ilman Qt-työkaluketjua</li>
         </ul>
 
@@ -525,7 +565,7 @@ create policy "tilari_locker_delete"
             <tr>
               <td>Luo <strong>uusi</strong> tyhjä kirja</td>
               <td>Mukana</td>
-              <td>Yritystilikartta: nimi, Y-tunnus, ensimmäinen tilikausi, ALV, harjoitus. Yhdistys ja taloyhtiö edelleen työpöytä-Kitsaksessa</td>
+              <td>Käynnistyessä. Yritystilikartta: nimi, Y-tunnus, ensimmäinen tilikausi, ALV, harjoitus. Yhdistys ja taloyhtiö edelleen työpöytä-Kitsaksessa</td>
             </tr>
             <tr>
               <td>Meno / tulo / siirto / muu</td>
@@ -548,11 +588,6 @@ create policy "tilari_locker_delete"
               <td>Tilikartta luetaan tiedostosta; ei muokkainta</td>
             </tr>
             <tr>
-              <td>Arkisto</td>
-              <td>Ei vielä</td>
-              <td></td>
-            </tr>
-            <tr>
               <td>ALV</td>
               <td>Osittain</td>
               <td>HTML-ilmoitus; ei lähetystä OmaVeroon</td>
@@ -560,7 +595,12 @@ create policy "tilari_locker_delete"
             <tr>
               <td>Tilinpäätös</td>
               <td>Mukana</td>
-              <td>Ei toimintakertomusta eikä konsernia</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Arkisto</td>
+              <td>Ei vielä</td>
+              <td></td>
             </tr>
             <tr>
               <td>Laskutus / kierto / palkat</td>

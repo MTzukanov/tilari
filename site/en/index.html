@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="../styles.css" />
     <link rel="alternate" hreflang="en" href="./" />
     <link rel="alternate" hreflang="fi" href="../" />
+    <link rel="alternate" hreflang="sv" href="../sv/" />
+    <link rel="alternate" hreflang="de" href="../de/" />
   </head>
   <body>
     <div class="wrap">
@@ -28,6 +30,8 @@
           <nav class="lang" aria-label="Language">
             <a href="../">Suomi</a>
             <a href="./" aria-current="page">English</a>
+            <a href="../sv/">Svenska</a>
+            <a href="../de/">Deutsch</a>
           </nav>
         </div>
       </header>
@@ -40,6 +44,7 @@
           <li><a href="#html">One HTML file</a></li>
           <li><a href="#local">Server on this computer</a></li>
           <li><a href="#vpn">Server on a VPN</a></li>
+          <li><a href="#vps">Your own VPS</a></li>
           <li><a href="#browsers">Browsers and saving</a></li>
           <li><a href="#supabase">Supabase locker</a></li>
           <li><a href="#cloud">Dropbox and Google Drive</a></li>
@@ -66,8 +71,22 @@
           </p>
         </div>
 
+        <div class="highlights">
+          <h2>Why Tilari</h2>
+          <ul>
+            <li>
+              <strong>Try it now:</strong>
+              <a href="../tilari.html">one HTML file</a> — on start you create a new book.
+            </li>
+            <li><strong>Fully working in the browser</strong> — or as a normal web app.</li>
+            <li>In-session <strong>change log</strong>.</li>
+            <li><strong>Fiscal statement (tilinpäätös)</strong> is in. No archive yet.</li>
+            <li>Locker: <strong>your Supabase</strong>, or <strong>your own VPS</strong>.</li>
+          </ul>
+        </div>
+
         <div class="cards">
-          <a href="../tilari.html">
+          <a class="featured" href="../tilari.html">
             <strong>One HTML file</strong>
             <span>Open in this browser, or download for USB. No install.</span>
           </a>
@@ -79,13 +98,17 @@
             <strong>VPN</strong>
             <span>A few devices, no public website.</span>
           </a>
+          <a class="featured" href="#supabase">
+            <strong>Supabase</strong>
+            <span>Your own cloud locker without a Tilari server.</span>
+          </a>
+          <a class="featured" href="#vps">
+            <strong>VPS</strong>
+            <span>Public hostname, books on your server.</span>
+          </a>
           <a href="#browsers">
             <strong>Browsers</strong>
             <span>Which ones overwrite the file in place.</span>
-          </a>
-          <a href="#supabase">
-            <strong>Supabase</strong>
-            <span>Your own cloud locker without a Tilari server.</span>
           </a>
           <a href="#cloud">
             <strong>Dropbox / Drive</strong>
@@ -115,7 +138,7 @@
               <td><a href="#vpn">Server on a VPN</a></td>
             </tr>
             <tr>
-              <td>The book in your own Supabase project, Tilari from a static page</td>
+              <td>The book in your own Supabase project</td>
               <td><a href="#supabase">Supabase locker</a></td>
             </tr>
             <tr>
@@ -124,12 +147,12 @@
             </tr>
             <tr>
               <td>A public hostname and a login gate</td>
-              <td>Your admin’s VPS deploy; this page does not replace that</td>
+              <td><a href="#vps">Your own VPS</a>; this page does not replace the admin’s deploy</td>
             </tr>
           </tbody>
         </table>
         <p>
-          In every setup the book opens in the browser. The UI is Finnish. The default engine is
+          In every setup the book opens in the browser. The default engine is
           <abbr title="Tässä selaimessa"><strong>In this browser</strong></abbr>: posting runs on your device.
           <abbr title="Palvelimella"><strong>On the server</strong></abbr> appears only when a Tilari server is
           running (not with a Supabase locker).
@@ -137,8 +160,9 @@
 
         <h2 id="engines">Two processing modes</h2>
         <p>
-          The UI always runs in the browser. <strong>Where the ledger is computed</strong> is a
-          separate choice. When a Tilari <strong>Node</strong> backend is connected, opening a
+          Use Tilari as a <strong>normal web app</strong> (each action is a request to the server)
+          or work <strong>locally in the tab</strong> and save when you choose. The UI always runs
+          in the browser. When a Tilari <strong>Node</strong> backend is connected, opening a
           book asks:
         </p>
         <ul>
@@ -200,7 +224,7 @@
 
         <h2 id="html">One HTML file</h2>
         <p>
-          The same program as a single file (about 1.4&nbsp;MB). On this site it is
+          The same program as a single file (about 1.7&nbsp;MB). On this site it is
           <a href="../tilari.html"><code>tilari.html</code></a> —
           <a href="../tilari.html">open it here</a>. You can also save the file and open it offline.
         </p>
@@ -322,6 +346,13 @@
         <p>
           <abbr title="Palvelimella"><strong>On the server</strong></abbr> processing keeps one book open for one operator. In an
           office keep the default <abbr title="Tässä selaimessa"><strong>In this browser</strong></abbr> and share through the locker.
+        </p>
+
+        <h2 id="vps">Your own VPS</h2>
+        <p>
+          A public hostname and a login gate. The server keeps books in a <strong>locker</strong>.
+          Use Tilari as a normal web app, or process the book in the browser and save to the
+          locker. Setup is for the admin; this page does not replace that.
         </p>
 
         <h2 id="browsers">Which browsers save the file in place</h2>
@@ -478,17 +509,25 @@ create policy "tilari_locker_delete"
 
         <h2 id="adds">What Tilari adds</h2>
         <p>
-          Desktop Kitsas is still where you create a new company and where features
-          Tilari has not copied yet live. On top of that, Tilari adds:
+          On start you can create a new Finnish business-chart book in the browser. Desktop Kitsas
+          remains the reference for what Tilari has not copied yet (associations and housing
+          companies, chart editor, archive). Tilari adds:
         </p>
         <ul>
           <li>Browser: one HTML file, a local server, or your own locker</li>
           <li>Time navigation: <abbr title="Kuukausi">Month</abbr> / <abbr title="Tilikausi">financial year</abbr> / <abbr title="Kaikki">all</abbr> and prev/next on reports and ledgers</li>
           <li>Click-through reports (balance sheet → account → voucher) and monthly charts (turnover, profit, tax)</li>
           <li>Running balance on the account ledger</li>
-          <li>Practice mode and an in-session change log</li>
-          <li>A working copy in the tab; Chromium can save over the original file</li>
-          <li>Optional locker (Node, or your own Supabase bucket, encrypted in the browser)</li>
+          <li>In-session <strong>change log</strong></li>
+          <li><strong>Fully working in the browser:</strong> a working copy in the tab; Chromium can save over the original file</li>
+          <li>
+            Optional locker: <strong>your Supabase</strong> bucket (encrypted in the browser), or a
+            <strong>self-hosted VPS</strong> (Node HTTP store)
+          </li>
+          <li>
+            A normal web app (each action is a request), or work locally in the tab and save when
+            you choose
+          </li>
           <li>Linux, Windows, and macOS packs without a Qt toolchain</li>
         </ul>
 
@@ -523,7 +562,7 @@ create policy "tilari_locker_delete"
             <tr>
               <td>Create a <strong>new</strong> empty book</td>
               <td>In</td>
-              <td>Business chart: name, business id, first financial year, VAT, practice. Associations and housing companies still start in desktop Kitsas</td>
+              <td>On start. Business chart: name, business id, first financial year, VAT, practice. Associations and housing companies still start in desktop Kitsas</td>
             </tr>
             <tr>
               <td>Expense / income / transfer / other</td>
@@ -546,19 +585,19 @@ create policy "tilari_locker_delete"
               <td>Accounts are read from the file; no editor</td>
             </tr>
             <tr>
-              <td>Archive (arkisto)</td>
-              <td>Not yet</td>
-              <td></td>
-            </tr>
-            <tr>
               <td>VAT (ALV)</td>
               <td>Partial</td>
               <td>HTML declaration; no OmaVero submit</td>
             </tr>
             <tr>
-              <td>Year-end closing</td>
+              <td>Fiscal statement (tilinpäätös)</td>
               <td>In</td>
-              <td>No annual report / group accounts</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Archive (arkisto)</td>
+              <td>Not yet</td>
+              <td></td>
             </tr>
             <tr>
               <td>Invoicing / workflow / payroll</td>

@@ -17,7 +17,7 @@ opaque locker). When Node is connected, the open dialog also chooses
 See [DEPLOY.md](DEPLOY.md), ADR-014 / ADR-015 / ADR-016 in
 [DECISIONS.md](DECISIONS.md).
 
-End-user HTML (Finnish + English, GitHub Pages): [`../site/`](../site/).
+End-user HTML (Finnish, English, Swedish, German; GitHub Pages): [`../site/`](../site/).
 How that site is published: [PAGES.md](PAGES.md).
 
 ### How people actually run it
@@ -37,9 +37,7 @@ The table above is the architecture. Operators usually pick one of these
 
 ## Two processing engines (when a backend is connected)
 
-The UI always runs in the browser. **Where the ledger is computed** is a
-separate choice. When a Tilari **Node** process is reachable (`/api`), opening a
-book asks:
+The UI always runs in the browser. Use Tilari as a **normal web app** (each action is a request to the server) or work **locally in the tab** and save when you choose. When a Tilari **Node** process is reachable (`/api`), opening a book asks:
 
 | UI label | Engine | Where posting and reports run |
 |----------|--------|-------------------------------|
@@ -104,7 +102,7 @@ One file you can double-click or open via `file://`. No server, no network.
 
 ```bash
 cd frontend && npm run build:singlefile
-# → frontend/dist-single/index.html  (~1.4MB; JS/CSS/WASM inlined)
+# → frontend/dist-single/index.html  (~1.7MB; JS/CSS/WASM inlined)
 ```
 
 **What works**
@@ -123,7 +121,8 @@ cd frontend && npm run build:singlefile
 Use this for a quick offline trial or emailing a self-contained demo. Details:
 [PACKAGING.md](PACKAGING.md).
 
-GitHub Pages publishes the **same build** as `tilari.html` over **https**
+GitHub Pages publishes the **same build** as
+[tilari.html](https://mtzukanov.github.io/tilari/tilari.html) over **https**
 ([PAGES.md](PAGES.md)). That host is a secure context, so it behaves like
 [mode 2](#2-static-html-website) (OPFS, Chromium in-place save, Supabase
 locker) while remaining one file. Still no Node locker and no server-side processing.
@@ -298,7 +297,7 @@ math in the tab by default. The desktop pack is still worth it.
 | Node locker (`/api/books`) | No | Yes (`KITSAS_BOOKS_DIR`) |
 | On the server (`http` engine) | No | Yes |
 | Phone / other device on LAN | No | `--lan` prints `TILARI_LAN_URL=` |
-| Size / install | ~1.4 MB one file | Node payload (AppImage / zip / `run-desktop.sh`) |
+| Size / install | ~1.7 MB one file | Node payload (AppImage / zip / `run-desktop.sh`) |
 
 Use single HTML for a demo stick or an air-gapped look. Use the local pack
 for real books.
@@ -443,4 +442,6 @@ between a phone and a PC without babysitting Downloads.
 Related: [ENGINE_OPTIONS.md](ENGINE_OPTIONS.md), [STORAGE.md](STORAGE.md),
 [COMPATIBILITY.md](COMPATIBILITY.md) (close desktop Kitsas before sharing WAL files).
 User-facing HTML: [`../site/index.html`](../site/index.html) (fi),
-[`../site/en/`](../site/en/) (en).
+[`../site/en/`](../site/en/) (en),
+[`../site/sv/`](../site/sv/) (sv),
+[`../site/de/`](../site/de/) (de).

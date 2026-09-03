@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tilari – Arbeitsweisen</title>
+    <meta
+      name="description"
+      content="Tilaris Arbeitsweisen: eine HTML-Datei, lokaler Server, VPN, Speichern im Browser, Supabase-Schließfach sowie Dropbox und Google Drive."
+    />
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="alternate" hreflang="de" href="./" />
+    <link rel="alternate" hreflang="fi" href="../" />
+    <link rel="alternate" hreflang="en" href="../en/" />
+    <link rel="alternate" hreflang="sv" href="../sv/" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="mast">
+        <a class="brand" href="./">
+          <img src="../favicon.svg" alt="" width="32" height="32" />
+          <div>
+            <strong>Tilari</strong>
+            <span>Benutzerhandbuch · so führen Sie die Bücher</span>
+          </div>
+        </a>
+        <div class="mast-actions">
+          <a class="open-app" href="../tilari.html">Tilari öffnen</a>
+          <nav class="lang" aria-label="Sprache">
+            <a href="../">Suomi</a>
+            <a href="../en/">English</a>
+            <a href="../sv/">Svenska</a>
+            <a href="./" aria-current="page">Deutsch</a>
+          </nav>
+        </div>
+      </header>
+
+      <nav class="toc" aria-label="Inhalt">
+        <h2>Inhalt</h2>
+        <ol>
+          <li><a href="#choose">Setup wählen</a></li>
+          <li><a href="#engines">Zwei Verarbeitungsmodi</a></li>
+          <li><a href="#html">Eine HTML-Datei</a></li>
+          <li><a href="#local">Server auf diesem Rechner</a></li>
+          <li><a href="#vpn">Server im VPN</a></li>
+          <li><a href="#vps">Eigener VPS</a></li>
+          <li><a href="#browsers">Browser und Speichern</a></li>
+          <li><a href="#supabase">Supabase-Schließfach</a></li>
+          <li><a href="#cloud">Dropbox und Google Drive</a></li>
+          <li><a href="#adds">Was Tilari hinzufügt</a></li>
+          <li><a href="#audience">Für wen</a></li>
+          <li><a href="#status">Was enthalten ist und was nicht</a></li>
+          <li><a href="#request">Funktionen anfragen</a></li>
+          <li><a href="#remember">Merken</a></li>
+        </ol>
+      </nav>
+
+      <main>
+        <h1>So verwenden Sie Tilari</h1>
+        <p class="lead">
+          Tilari ist ein lokales Buchhaltungsprogramm, das dieselbe
+          <code>.kitsas</code>-Datei öffnet und speichert wie Desktop-Kitsas. In dieser Version
+          kann die Datei zwischen beiden wechseln; eine spätere Tilari kann davon abweichen.
+          Es ist kein Produkt von Kitsas Oy, und Kitsas Oy unterstützt es nicht.
+        </p>
+        <div class="note">
+          <p>
+            Die Bücher leben in einer Datei oder einem Schließfach, nicht in einem „Cloud-Konto“.
+            Wählen Sie das Setup, das dazu passt, wer das Buch nutzt und wo die Datei liegen soll.
+          </p>
+        </div>
+
+        <div class="highlights">
+          <h2>Warum Tilari</h2>
+          <ul>
+            <li>
+              <strong>Jetzt ausprobieren:</strong>
+              <a href="../tilari.html">eine HTML-Datei</a> — beim Start legen Sie ein neues Buch an.
+            </li>
+            <li><strong>Vollständig im Browser</strong> — oder als normale Web-App.</li>
+            <li><strong>Änderungsprotokoll</strong> in der Sitzung.</li>
+            <li><strong>Jahresabschluss</strong> ist möglich. Archiv gibt es noch nicht.</li>
+            <li>Schließfach: <strong>eigenes Supabase</strong> oder <strong>eigener VPS</strong>.</li>
+          </ul>
+        </div>
+
+        <div class="cards">
+          <a class="featured" href="../tilari.html">
+            <strong>Eine HTML-Datei</strong>
+            <span>In diesem Browser öffnen oder auf USB laden. Keine Installation.</span>
+          </a>
+          <a href="#local">
+            <strong>Dieser Rechner</strong>
+            <span>Alltagsarbeit. Arbeitskopie plus optionales Schließfach.</span>
+          </a>
+          <a href="#vpn">
+            <strong>VPN</strong>
+            <span>Einige Geräte, keine öffentliche Website.</span>
+          </a>
+          <a class="featured" href="#supabase">
+            <strong>Supabase</strong>
+            <span>Eigenes Cloud-Schließfach ohne Tilari-Server.</span>
+          </a>
+          <a class="featured" href="#vps">
+            <strong>VPS</strong>
+            <span>Öffentlicher Hostname, Bücher auf Ihrem Server.</span>
+          </a>
+          <a href="#browsers">
+            <strong>Browser</strong>
+            <span>Welche die Datei an Ort und Stelle überschreiben.</span>
+          </a>
+          <a href="#cloud">
+            <strong>Dropbox / Drive</strong>
+            <span>Synchronisierter Ordner oder Android öffnen/speichern.</span>
+          </a>
+        </div>
+
+        <h2 id="choose">Setup wählen</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Sie möchten</th>
+              <th>Verwenden</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Test, USB-Stick, keine Installation</td>
+              <td><a href="#html">Eine HTML-Datei</a></td>
+            </tr>
+            <tr>
+              <td>Tägliche Buchhaltung auf einem Rechner</td>
+              <td><a href="#local">Lokaler Server und Browser</a></td>
+            </tr>
+            <tr>
+              <td>Dasselbe Schließfach zu Hause, im Büro oder am Telefon, ohne öffentliche URL</td>
+              <td><a href="#vpn">Server im VPN</a></td>
+            </tr>
+            <tr>
+              <td>Das Buch in einem eigenen Supabase-Projekt</td>
+              <td><a href="#supabase">Supabase-Schließfach</a></td>
+            </tr>
+            <tr>
+              <td>Eine <code>.kitsas</code>-Datei in Dropbox oder Drive</td>
+              <td><a href="#cloud">Synchronisierter Ordner</a> (Desktop: Chrome/Edge)</td>
+            </tr>
+            <tr>
+              <td>Einen öffentlichen Hostnamen und ein Anmeldetor</td>
+              <td><a href="#vps">Eigener VPS</a>; diese Seite ersetzt nicht die Admin-Installation</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          In jedem Setup öffnet sich das Buch im Browser. Standard ist
+          <strong>In diesem Browser</strong>: die Berechnung läuft auf Ihrem Gerät.
+          <strong>Auf dem Server</strong> erscheint nur, wenn ein Tilari-Server läuft (nicht mit
+          einem Supabase-Schließfach).
+        </p>
+
+        <h2 id="engines">Zwei Verarbeitungsmodi</h2>
+        <p>
+          Nutzen Sie Tilari als <strong>normale Web-App</strong> (jede Aktion ist eine Anfrage
+          an den Server) oder arbeiten Sie <strong>lokal im Tab</strong> und speichern Sie, wenn
+          Sie wollen. Die Oberfläche läuft immer im Browser. Wenn ein Tilari-<strong>Node</strong>-Backend
+          verbunden ist, fragt das Öffnen:
+        </p>
+        <ul>
+          <li>
+            <strong>In diesem Browser</strong> (Standard) — Client: SQLite läuft in diesem Tab.
+            Der Server kann die Datei trotzdem im Schließfach speichern, interpretiert aber keine Belege.
+          </li>
+          <li>
+            <strong>Auf dem Server</strong> — Server: dieselbe Berechnung läuft im Node-Prozess.
+            Jede Aktion geht über die API.
+          </li>
+        </ul>
+        <p>
+          Ohne Node-Backend (eine HTML-Datei, diese Site, ein Supabase-Schließfach) gibt es nur
+          <strong>In diesem Browser</strong>. Das Schließfach (wo die Datei liegt) ist nicht dasselbe
+          wie der Verarbeitungsmodus: Sie können das Buch im Server-Schließfach halten und trotzdem
+          im Tab verarbeiten.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>In diesem Browser (Client)</th>
+              <th>Auf dem Server</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Vorteile</td>
+              <td>
+                Das Buch wird nur in diesem Tab interpretiert. Mehrere Tabs oder Personen können
+                Bücher öffnen (Speichern ins Schließfach nutzt ETag-Konflikte). Sobald die Datei im
+                Tab ist, kann die Arbeit weitergehen, wenn das Netz abbricht. Ein Node-Neustart
+                löscht die Arbeitskopie nicht.
+              </td>
+              <td>
+                Ein schweres Buch auf einem schwachen Telefon: SQLite wandert auf den Host. Dieselben
+                Buchungsregeln wie im Browser. Erneutes Öffnen kann schneller sein, solange der Prozess
+                noch eine Sitzung hat.
+              </td>
+            </tr>
+            <tr>
+              <td>Nachteile</td>
+              <td>
+                Ein großes Buch auf einem schwachen Gerät kann langsam sein. Das ganze Buch wird
+                in den Browser geladen. Ungespeicherte Änderungen leben in diesem Tab, bis Sie speichern.
+              </td>
+              <td>
+                <strong>Ein offenes Buch pro Serverprozess.</strong> Ein zweites Öffnen ersetzt das
+                erste — kein Mehrbenutzerbetrieb. Jede Aktion braucht das Netz. Ein Neustart löscht
+                die Sitzung. Der Server <em>sieht</em> die Buchhaltung. Nicht verfügbar mit einem
+                Supabase-Schließfach.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Für die Alltagsarbeit und ein geteiltes Schließfach: behalten Sie
+          <strong>In diesem Browser</strong>.
+          <strong>Auf dem Server</strong> ist für eine Bedienung auf einem privaten Host, wenn das
+          Buch für das Gerät zu schwer ist.
+        </p>
+
+        <h2 id="html">Eine HTML-Datei</h2>
+        <p>
+          Dasselbe Programm als eine Datei (etwa 1,7&nbsp;MB). Auf dieser Site ist sie
+          <a href="../tilari.html"><code>tilari.html</code></a> —
+          <a href="../tilari.html">hier öffnen</a>. Sie können die Datei auch speichern und offline öffnen.
+        </p>
+        <h3>Unter dieser URL (https)</h3>
+        <p>
+          Der Browser behandelt die Seite als sicheren Kontext: die Arbeitskopie überlebt ein
+          Neuladen, Chrome/Edge kann an Ort und Stelle speichern, und das
+          <a href="#supabase">Supabase-Schließfach</a> funktioniert, wenn CORS diesen Origin
+          erlaubt. Es gibt keinen Tilari-Server: kein <strong>Auf dem Server</strong> und kein
+          Node-Buchschließfach.
+        </p>
+        <h3>Eine Datei auf dem Datenträger (USB, E-Mail)</h3>
+        <ol>
+          <li>Speichern Sie <a href="../tilari.html"><code>tilari.html</code></a> und doppelklicken Sie sie.</li>
+          <li>Wählen Sie <strong>Neue Datei wählen…</strong> und eine <code>.kitsas</code>.</li>
+          <li>Speichern mit <strong>Speichern unter…</strong> — der Browser lädt eine neue Datei herunter.</li>
+        </ol>
+        <p>
+          Unter <code>file://</code> stirbt die Arbeitskopie meist beim Neuladen, Überschreiben an
+          Ort und Stelle schlägt fehl, und Sie sollten der Verschlüsselung (Supabase) nicht
+          vertrauen. Gut für eine Demo. Für echte Bücher nutzen Sie die
+          <a href="#local">lokale Installation</a> oder die
+          <a href="../tilari.html">https-Kopie</a>.
+        </p>
+
+        <h2 id="local">Server und Client auf diesem Rechner</h2>
+        <p>
+          Das übliche Setup für eine Maschine: das Tilariprogramm (AppImage,
+          <code>Tilari.exe</code>, <code>Tilari.app</code> oder ein lokaler Server, den die Administration startet)
+          öffnet einen Browser unter <code>http://127.0.0.1:8000</code>.
+        </p>
+        <h3>Welcher Vorteil gegenüber einer einzelnen HTML-Datei?</h3>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Eine HTML-Datei</th>
+              <th>Server auf diesem Rechner</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Änderungen überleben ein Neuladen der Seite</td>
+              <td>Nein</td>
+              <td>Ja (Arbeitskopie im Browser)</td>
+            </tr>
+            <tr>
+              <td>In die geöffnete Datei speichern</td>
+              <td>Selten</td>
+              <td>Ja, auf Chrome/Edge am Desktop</td>
+            </tr>
+            <tr>
+              <td>Bücher in einem Tilari-Schließfach auf dieser Maschine</td>
+              <td>Nein</td>
+              <td>Ja (<strong>Vom Server öffnen…</strong>)</td>
+            </tr>
+            <tr>
+              <td>Schweres Buch: auf dem Server verarbeiten</td>
+              <td>Nein</td>
+              <td>Ja, wenn Sie <strong>Auf dem Server</strong> wählen</td>
+            </tr>
+            <tr>
+              <td>Dasselbe Buch vom Telefon im selben WLAN</td>
+              <td>Nein</td>
+              <td>Ja, wenn der Server im LAN lauscht</td>
+            </tr>
+            <tr>
+              <td>Installation</td>
+              <td>Eine Datei</td>
+              <td>Ein Programmpaket</td>
+            </tr>
+          </tbody>
+        </table>
+        <h3>So gehen Sie vor</h3>
+        <ol>
+          <li>Starten Sie Tilari. Ein Browser-Tab öffnet sich von selbst.</li>
+          <li>
+            Öffnen Sie ein Buch von der Platte (<strong>Neue Datei wählen…</strong>) oder aus dem
+            Schließfach (<strong>Vom Server öffnen…</strong>).
+          </li>
+          <li>
+            Auf Chrome oder Edge am Desktop schreibt <strong>Speichern</strong> dieselbe
+            <code>.kitsas</code>, wenn die Datei verknüpft ist. In anderen Browsern nutzen Sie
+            <strong>Speichern unter…</strong>.
+          </li>
+        </ol>
+        <p>
+          Beenden Sie Desktop-Kitsas, bevor Sie dieselbe Datei in Tilari öffnen. Kitsas hält eine
+          exklusive Sperre.
+        </p>
+
+        <h2 id="vpn">Server und Client im VPN</h2>
+        <p>
+          Dasselbe Programm wie auf Ihrem Rechner, auf einer Maschine im VPN
+          (Tailscale, WireGuard, Firmen-VPN). Andere VPN-Geräte öffnen die Adresse im Browser,
+          zum Beispiel <code>http://100.x.x.x:8000</code>. Eine öffentliche Website brauchen Sie nicht.
+        </p>
+        <p>
+          Tilari hat keine Benutzerkonten. <strong>Jede Person, die die Adresse erreicht, sieht
+          die Bücher im Schließfach und kann darin speichern.</strong> Die VPN-Mitgliedschaft ist
+          die Zugangskontrolle. Teilen Sie die Adresse nicht im offenen WLAN.
+        </p>
+        <h3>Für die Person, die installiert</h3>
+        <ol>
+          <li>Installieren Sie Tilari auf einer Maschine, die anbleibt (NAS, Heimserver, Büro-PC).</li>
+          <li>Nehmen Sie diese Maschine in dasselbe VPN wie die Nutzergeräte.</li>
+          <li>
+            Starten Sie den Server so, dass er auf der VPN-Adresse lauscht (LAN-Bindung, z. B.
+            <code>--lan</code>, gibt <code>TILARI_LAN_URL=</code> aus).
+          </li>
+          <li>
+            Öffnen Sie diese URL auf den anderen Geräten. Bücher liegen im Schließfach dieser
+            Maschine; speichern Sie mit <strong>Auf den Server speichern</strong>.
+          </li>
+        </ol>
+        <p>
+          Wenn zwei Personen dasselbe Buch gleichzeitig bearbeiten, kann das zweite Speichern
+          abgelehnt werden („die Datei hat sich geändert“). Nutzen Sie dann
+          <strong>Auf den Server speichern unter…</strong> statt die Arbeit der anderen zu überschreiben.
+        </p>
+        <p>
+          <strong>Auf dem Server</strong>-Verarbeitung hält ein Buch für eine Bedienung offen. Im
+          Büro behalten Sie den Standard <strong>In diesem Browser</strong> und teilen über das
+          Schließfach.
+        </p>
+
+        <h2 id="vps">Eigener VPS</h2>
+        <p>
+          Ein öffentlicher Hostname und ein Anmeldetor. Der Server hält Bücher in einem
+          <strong>Schließfach</strong>. Nutzen Sie Tilari als normale Web-App, oder verarbeiten Sie
+          das Buch im Browser und speichern Sie ins Schließfach. Die Installation ist Sache der
+          Administration; diese Seite ersetzt das nicht.
+        </p>
+
+        <h2 id="browsers">Welche Browser die Datei an Ort und Stelle speichern</h2>
+        <p>
+          <strong>Speichern</strong> in der Kopfzeile versucht, denselben Pfad zu schreiben, den
+          Sie geöffnet haben. Das funktioniert nur in manchen Browsern, und nur wenn die Seite
+          <code>https://</code> oder <code>localhost</code> ist (nicht eine einzelne HTML-Datei).
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Browser</th>
+              <th>Geöffnete Datei überschreiben</th>
+              <th>In der Praxis</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Chrome, Edge, Opera, Brave (Windows, macOS, Linux)</td>
+              <td>Ja</td>
+              <td>
+                <strong>Neue Datei wählen…</strong> verknüpft die Datei.
+                <strong>Speichern</strong> aktualisiert sie. Ein Dropbox-Ordner funktioniert, wenn
+                er ein echtes Verzeichnis auf der Platte ist.
+              </td>
+            </tr>
+            <tr>
+              <td>Firefox</td>
+              <td>Nein</td>
+              <td>Die Arbeitskopie im Browser überlebt. Auf der Platte nutzen Sie <strong>Speichern unter…</strong>.</td>
+            </tr>
+            <tr>
+              <td>Safari (Mac, iPhone, iPad)</td>
+              <td>Nein</td>
+              <td>Wie Firefox: eine Kopie herunterladen.</td>
+            </tr>
+            <tr>
+              <td>Chrome auf Android</td>
+              <td>Nicht zuverlässig</td>
+              <td>
+                Öffnen Sie aus Dropbox oder Drive mit dem Android-Dokumentwähler. Speichern ist eine
+                Kopie (Downloads oder „Speichern unter“).
+              </td>
+            </tr>
+            <tr>
+              <td>iPhone / iPad, andere Browser</td>
+              <td>Nein</td>
+              <td>Teilen oder <strong>Speichern unter…</strong>. Ein Schließfach (VPN oder Supabase) ist oft einfacher.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Wenn der Browser nicht an Ort und Stelle schreiben kann, sagt das Menü, Sie sollen
+          <strong>Speichern unter…</strong> nutzen. Sie können auch
+          <strong>Originaldatei verknüpfen…</strong>, wenn die API existiert, das Buch aber ohne
+          Schreibrecht geöffnet wurde.
+        </p>
+
+        <h2 id="supabase">Supabase als Schließfach</h2>
+        <p>
+          Sie können Bücher in einem eigenen Supabase-Projekt halten. Sie brauchen keinen
+          Tilari-Server: öffnen Sie Tilari von einem statischen Host (oder einer lokalen Installation)
+          und verbinden Sie das Schließfach im Browser. Die Verarbeitung bleibt
+          <strong>In diesem Browser</strong>. <strong>Auf dem Server</strong> wird nicht angeboten.
+        </p>
+        <h3>Einmalige Einrichtung (Supabase-Konsole)</h3>
+        <ol>
+          <li>Erstellen Sie ein Projekt auf supabase.com und öffnen Sie <strong>Project Settings → API</strong>.</li>
+          <li>
+            Kopieren Sie die <strong>Project URL</strong> und den <strong>anon public</strong>-Schlüssel.
+            Fügen Sie niemals den <code>service_role</code>-Schlüssel in Tilari ein — der Schlüssel
+            ist nur für ein Backend.
+          </li>
+          <li>
+            In Storage erstellen Sie einen <strong>privaten</strong> Bucket namens <code>tilari</code>
+            (kein öffentliches CDN).
+          </li>
+          <li>
+            Storage-Richtlinien (RLS) auf diesem Bucket für das Präfix <code>tilari/</code>
+            (anon-Rolle, select / insert / update / delete).
+          </li>
+          <li>
+            Storage CORS: der Tilari-https-Origin, Methoden GET, POST, PUT, DELETE, Header
+            <code>authorization</code>, <code>apikey</code>, <code>content-type</code>,
+            <code>x-upsert</code>. Eine <code>file://</code>-HTML-Datei funktioniert nicht zuverlässig.
+          </li>
+        </ol>
+        <p>Beispiel-RLS-Richtlinien:</p>
+        <pre><code>create policy "tilari_locker_select"
+  on storage.objects for select to anon
+  using (bucket_id = 'tilari' and name like 'tilari/%');
+create policy "tilari_locker_insert"
+  on storage.objects for insert to anon
+  with check (bucket_id = 'tilari' and name like 'tilari/%');
+create policy "tilari_locker_update"
+  on storage.objects for update to anon
+  using (bucket_id = 'tilari' and name like 'tilari/%');
+create policy "tilari_locker_delete"
+  on storage.objects for delete to anon
+  using (bucket_id = 'tilari' and name like 'tilari/%');</code></pre>
+        <h3>In Tilari verbinden</h3>
+        <ol>
+          <li><strong>Vom Server öffnen…</strong> → <strong>Eigenes Supabase</strong>.</li>
+          <li>
+            Fügen Sie Project URL, Anon-Schlüssel, Bucket (Standard <code>tilari</code>) und das
+            <strong>Verschlüsselungsgeheimnis</strong> ein (mindestens 8 Zeichen). Sie können mit
+            <strong>Erzeugen</strong> ein Geheimnis anlegen — kopieren Sie es sofort woanders hin.
+          </li>
+          <li><strong>Verbinden</strong>. Bücher erscheinen in der Liste; speichern Sie wie sonst ins Schließfach.</li>
+        </ol>
+        <p>
+          Dateien werden im Browser vor dem Hochladen verschlüsselt. URL und Anon-Schlüssel öffnen
+          den Bucket; das Geheimnis öffnet die Dateien. Ein verlorenes Geheimnis bedeutet verlorene
+          Bücher. Die Einstellungen bleiben nur in diesem Tab; das Schließen des Tabs trennt die
+          Verbindung.
+        </p>
+
+        <h2 id="cloud">Dropbox-Ordner und Android (Drive / Dropbox)</h2>
+        <h3>Desktop: gemountetes Dropbox oder Google Drive</h3>
+        <p>
+          Tilari hat keine Dropbox- oder Drive-Anmeldung. Nutzen Sie den Ordner, den der
+          Desktop-Client auf die Platte synchronisiert.
+        </p>
+        <ol>
+          <li>Installieren Sie Dropbox oder Google Drive so, dass das Buch ein echter Ordner auf der Maschine ist.</li>
+          <li>
+            Öffnen Sie das Buch mit <strong>Chrome oder Edge</strong> aus diesem Ordner, damit
+            <strong>Speichern</strong> dieselbe Datei schreibt.
+          </li>
+          <li>Der Hersteller-Client lädt die neuen Bytes auf andere Geräte.</li>
+        </ol>
+        <p>
+          Firefox und Safari laden eine Kopie herunter: legen Sie sie selbst in den synchronisierten
+          Ordner zurück, sonst entstehen parallele Dateien. Lassen Sie Desktop-Kitsas nicht auf
+          demselben Pfad offen. Wenn zwei Personen gleichzeitig speichern, behält die Cloud den
+          letzten Schreibvorgang — Tilaris Schließfach-Konfliktwarnung gilt nicht.
+        </p>
+        <h3>Android: aus Dropbox oder Drive öffnen und speichern</h3>
+        <p>
+          Das Telefon bekommt nicht dieselbe „diesen Pfad schreiben“-Verknüpfung wie Chrome am Desktop.
+        </p>
+        <ul>
+          <li>
+            <strong>Öffnen:</strong> <strong>Neue Datei wählen…</strong> → Android-Dokumentwähler
+            → Dropbox, Google Drive oder Dateien. Tilari liest die Bytes.
+          </li>
+          <li>
+            <strong>Speichern:</strong> <strong>Speichern unter…</strong> legt eine Kopie in Downloads
+            oder in der Ortsauswahl des Browsers ab. Laden Sie sie von dort nach Drive oder Dropbox,
+            oder nutzen Sie das Systemziel „Speichern unter“, wenn der Browser eines zeigt.
+          </li>
+        </ul>
+        <p>
+          Wenn dasselbe Buch ständig zwischen Telefon und PC wandert, ist ein VPN-Schließfach oder
+          Supabase weniger fehleranfällig als der Downloads-Ordner.
+        </p>
+
+        <h2 id="adds">Was Tilari hinzufügt</h2>
+        <p>
+          Beim Start können Sie im Browser ein neues finnisches Unternehmenskontobuch anlegen.
+          Desktop-Kitsas bleibt die Referenz für das, was Tilari noch nicht kopiert hat (Verein und
+          Wohnungsaktiengesellschaft, Kontenplan-Editor, Archiv). Tilari fügt hinzu:
+        </p>
+        <ul>
+          <li>Browser: eine HTML-Datei, ein lokaler Server oder ein eigenes Schließfach</li>
+          <li>Zeitnavigation: <strong>Monat</strong> / <strong>Geschäftsjahr</strong> / <strong>Alle</strong> und vor/zurück in Berichten und Hauptbuch</li>
+          <li>Durchklickbare Berichte (Bilanz → Konto → Beleg) und Monatsdiagramme (Umsatz, Ergebnis, Steuer)</li>
+          <li>Laufender Saldo im Hauptbuch</li>
+          <li><strong>Änderungsprotokoll</strong> in der Sitzung</li>
+          <li><strong>Vollständig im Browser:</strong> eine Arbeitskopie im Tab; Chromium kann über die Originaldatei speichern</li>
+          <li>
+            Optionales Schließfach: <strong>Ihr Supabase</strong>-Bucket (im Browser verschlüsselt)
+            oder ein <strong>eigener VPS</strong> (Node-HTTP-Speicher)
+          </li>
+          <li>
+            Eine normale Web-App (jede Aktion ist eine Anfrage), oder lokal im Tab arbeiten und
+            speichern, wenn Sie wollen
+          </li>
+          <li>Linux-, Windows- und macOS-Pakete ohne Qt-Toolchain</li>
+        </ul>
+
+        <h2 id="audience">Für wen</h2>
+        <p>
+          Der Autor hat Tilari für <strong>die eigene Buchhaltung</strong> gebaut: eine finnische
+          <strong>Aktiengesellschaft</strong> mit relativ wenigen Belegen (typisch für Freiberufler).
+          Große Bücher, Verein, Wohnungsaktiengesellschaft, Einzelunternehmen und andere USt-Setups
+          wurden nicht im Alltag getestet. Die Datei öffnet sich wahrscheinlich; das Verhalten dort
+          ist nicht garantiert.
+        </p>
+
+        <h2 id="status">Was enthalten ist und was nicht</h2>
+        <p>
+          Diese Version. Es gibt keinen veröffentlichten Zeitplan — fragen Sie in
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Bereich</th>
+              <th>Status</th>
+              <th>Hinweis</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Bestehende <code>.kitsas</code> öffnen</td>
+              <td>Enthalten</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Ein <strong>neues</strong> leeres Buch anlegen</td>
+              <td>Enthalten</td>
+              <td>Beim Start. Unternehmenskontenplan: Name, Handelsregisternummer, erstes Geschäftsjahr, USt, Übung. Verein und Wohnungsaktiengesellschaft starten weiterhin in Desktop-Kitsas</td>
+            </tr>
+            <tr>
+              <td>Ausgabe / Einnahme / Umbuchung / Sonstiges</td>
+              <td>Enthalten</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Kontoauszug</td>
+              <td>Teilweise</td>
+              <td>Zeile bearbeiten und auf einen eigenen Beleg aufteilen. Kein Bankdatei-Import</td>
+            </tr>
+            <tr>
+              <td>Anlagen</td>
+              <td>Teilweise</td>
+              <td>Hochladen und Vorschau. Keine OCR/Auswertung, keine automatische Verkleinerung</td>
+            </tr>
+            <tr>
+              <td>Kontenplan</td>
+              <td>Noch nicht</td>
+              <td>Konten werden aus der Datei gelesen; kein Editor</td>
+            </tr>
+            <tr>
+              <td>Umsatzsteuer</td>
+              <td>Teilweise</td>
+              <td>HTML-Erklärung; keine Übermittlung an OmaVero</td>
+            </tr>
+            <tr>
+              <td>Jahresabschluss</td>
+              <td>Enthalten</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Archiv</td>
+              <td>Noch nicht</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Fakturierung / Freigabelauf / Lohn</td>
+              <td>Noch nicht</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="request">Funktionen anfragen</h2>
+        <p>
+          Wenn Sie eine alte Kitsas-Funktion vermissen oder eine neue Tilari-Idee haben, öffnen Sie
+          einen Thread in
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
+          Die Arbeit wird danach priorisiert, was wirklich genutzt wird.
+        </p>
+
+        <h2 id="remember">Merken</h2>
+        <ul>
+          <li>
+            Eine gespeicherte <code>.kitsas</code>-Datei ist in dieser Version mit Desktop-Kitsas
+            austauschbar. Beenden Sie Desktop-Kitsas, bevor Tilari denselben Pfad schreibt.
+          </li>
+          <li>
+            Ein Speichern für Desktop-Kitsas packt Anlagen in die Datei. Die interne Arbeitskopie
+            des Schließfachs kann „mager“ sein und öffnet sich in Kitsas nicht so.
+          </li>
+          <li>Fakturierung und Freigabelauf sind in dieser Version nicht enthalten.</li>
+        </ul>
+      </main>
+
+      <footer class="foot">
+        <p>
+          © 2026 Tilari. Kompatibel mit Kitsas-<code>.kitsas</code>-Dateien. Kein Produkt von
+          Kitsas Oy. Lizenz: <a href="../LICENSE">GPL-3</a>. Bibliotheken:
+          <a href="../THIRD_PARTY.md">THIRD_PARTY.md</a>. Entwicklerdokumentation (englisches
+          Markdown) liegt im Ordner <code>docs/</code>.
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

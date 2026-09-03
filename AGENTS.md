@@ -6,7 +6,7 @@ Context for AI coding agents working in this repository. Prefer this file over r
 
 Local-first **Node** + React (Vite) **read-write** ledger for Kitsas `.kitsas` SQLite books (schema 24). As of this version the saved file is fully interchangeable with desktop Kitsas; that can change later ([COMPATIBILITY.md](docs/COMPATIBILITY.md)). Built and tested on a Finnish limited company with a modest voucher count; other entity types are untested. **Not a Kitsas Oy product**; do not use the Kitsas Oy name as if this were theirs. License: GPL-3 with extra conditions in [LICENSE](LICENSE). Bundled libraries: [THIRD_PARTY.md](THIRD_PARTY.md).
 
-Human docs: [README.md](README.md). User HTML (fi/en, GitHub Pages): [site/](site/). How Pages is published: [docs/PAGES.md](docs/PAGES.md). Decisions: [docs/DECISIONS.md](docs/DECISIONS.md). Scope: [docs/SCOPE.md](docs/SCOPE.md). Testing: [docs/TESTING.md](docs/TESTING.md). Working modes: [docs/WORKING_MODES.md](docs/WORKING_MODES.md). Packaging: [docs/PACKAGING.md](docs/PACKAGING.md). VPS: [docs/DEPLOY.md](docs/DEPLOY.md).
+Human docs: [README.md](README.md). User HTML (fi/en/sv/de, GitHub Pages): [site/](site/). How Pages is published: [docs/PAGES.md](docs/PAGES.md). Decisions: [docs/DECISIONS.md](docs/DECISIONS.md). Scope: [docs/SCOPE.md](docs/SCOPE.md). Testing: [docs/TESTING.md](docs/TESTING.md). Working modes: [docs/WORKING_MODES.md](docs/WORKING_MODES.md). Packaging: [docs/PACKAGING.md](docs/PACKAGING.md). VPS: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Toolchain (verified)
 
@@ -130,8 +130,8 @@ Rules already encoded:
   number/date formats are separate; formats default to Finnish. Accounting
   glossary: [docs/VOCABULARY.md](docs/VOCABULARY.md).
 - Brand: **Tilari** + horse mark + disclaimer. Never Kitsas Oy product branding.
-- User-facing mode docs are static HTML in `site/` (fi + en), not generated from Markdown.
-  If you change save, locker, or engine UX, update both HTML pages and [docs/WORKING_MODES.md](docs/WORKING_MODES.md).
+- User-facing mode docs are static HTML in `site/` (fi + en + sv + de), not generated from Markdown.
+  If you change save, locker, or engine UX, update all four HTML pages and [docs/WORKING_MODES.md](docs/WORKING_MODES.md).
   Pages also publishes `tilari.html` from `npm run build:singlefile` in CI; do not commit `frontend/dist-single/`.
 
 ## Out of scope (unless user asks)

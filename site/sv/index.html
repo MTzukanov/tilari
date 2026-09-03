@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tilari – arbetssätt</title>
+    <meta
+      name="description"
+      content="Tilaris arbetssätt: en HTML-fil, lokal server, VPN, sparande i webbläsaren, Supabase-skåp samt Dropbox och Google Drive."
+    />
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="alternate" hreflang="sv" href="./" />
+    <link rel="alternate" hreflang="fi" href="../" />
+    <link rel="alternate" hreflang="en" href="../en/" />
+    <link rel="alternate" hreflang="de" href="../de/" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="mast">
+        <a class="brand" href="./">
+          <img src="../favicon.svg" alt="" width="32" height="32" />
+          <div>
+            <strong>Tilari</strong>
+            <span>Användarguide · sätt att föra böckerna</span>
+          </div>
+        </a>
+        <div class="mast-actions">
+          <a class="open-app" href="../tilari.html">Öppna Tilari</a>
+          <nav class="lang" aria-label="Språk">
+            <a href="../">Suomi</a>
+            <a href="../en/">English</a>
+            <a href="./" aria-current="page">Svenska</a>
+            <a href="../de/">Deutsch</a>
+          </nav>
+        </div>
+      </header>
+
+      <nav class="toc" aria-label="Innehåll">
+        <h2>Innehåll</h2>
+        <ol>
+          <li><a href="#choose">Välj upplägg</a></li>
+          <li><a href="#engines">Två behandlingslägen</a></li>
+          <li><a href="#html">En HTML-fil</a></li>
+          <li><a href="#local">Server på den här datorn</a></li>
+          <li><a href="#vpn">Server i ett VPN</a></li>
+          <li><a href="#vps">Egen VPS</a></li>
+          <li><a href="#browsers">Webbläsare och sparande</a></li>
+          <li><a href="#supabase">Supabase-skåp</a></li>
+          <li><a href="#cloud">Dropbox och Google Drive</a></li>
+          <li><a href="#adds">Vad Tilari lägger till</a></li>
+          <li><a href="#audience">För vem</a></li>
+          <li><a href="#status">Vad som ingår och vad som inte gör det</a></li>
+          <li><a href="#request">Be om funktioner</a></li>
+          <li><a href="#remember">Kom ihåg</a></li>
+        </ol>
+      </nav>
+
+      <main>
+        <h1>Så använder du Tilari</h1>
+        <p class="lead">
+          Tilari är ett lokalt bokföringsprogram som öppnar och sparar samma
+          <code>.kitsas</code>-fil som skrivbords-Kitsas. I den här versionen kan
+          filen växlas mellan de två; en senare Tilari kan avvika från det.
+          Det är inte en produkt från Kitsas Oy, och Kitsas Oy stöder den inte.
+        </p>
+        <div class="note">
+          <p>
+            Bokföringen lever i en fil eller ett skåp, inte på ett “molnkonto”. Välj
+            det upplägg som passar vem som använder boken och var filen ska ligga.
+          </p>
+        </div>
+
+        <div class="highlights">
+          <h2>Varför Tilari</h2>
+          <ul>
+            <li>
+              <strong>Prova nu:</strong>
+              <a href="../tilari.html">en HTML-fil</a> — vid start skapar du en ny bok.
+            </li>
+            <li><strong>Fungerar helt i webbläsaren</strong> — eller som en vanlig webbapp.</li>
+            <li><strong>Ändringslogg</strong> i sessionen.</li>
+            <li><strong>Bokslut</strong> går att göra. Arkiv finns inte ännu.</li>
+            <li>Skåp: <strong>egen Supabase</strong> eller <strong>egen VPS</strong>.</li>
+          </ul>
+        </div>
+
+        <div class="cards">
+          <a class="featured" href="../tilari.html">
+            <strong>En HTML-fil</strong>
+            <span>Öppna i den här webbläsaren, eller ladda ner till USB. Ingen installation.</span>
+          </a>
+          <a href="#local">
+            <strong>Den här datorn</strong>
+            <span>Vardagsarbete. Arbetskopia plus valfritt skåp.</span>
+          </a>
+          <a href="#vpn">
+            <strong>VPN</strong>
+            <span>Några enheter, ingen offentlig webbplats.</span>
+          </a>
+          <a class="featured" href="#supabase">
+            <strong>Supabase</strong>
+            <span>Eget molnskåp utan Tilari-server.</span>
+          </a>
+          <a class="featured" href="#vps">
+            <strong>VPS</strong>
+            <span>Offentlig adress, böcker på din server.</span>
+          </a>
+          <a href="#browsers">
+            <strong>Webbläsare</strong>
+            <span>Vilka som skriver över filen på plats.</span>
+          </a>
+          <a href="#cloud">
+            <strong>Dropbox / Drive</strong>
+            <span>Synkad mapp, eller öppna/spara på Android.</span>
+          </a>
+        </div>
+
+        <h2 id="choose">Välj upplägg</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Du vill</th>
+              <th>Använd</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Prov, USB-sticka, ingen installation</td>
+              <td><a href="#html">En HTML-fil</a></td>
+            </tr>
+            <tr>
+              <td>Daglig bokföring på en maskin</td>
+              <td><a href="#local">Lokal server och webbläsare</a></td>
+            </tr>
+            <tr>
+              <td>Samma skåp hemma, på kontoret eller i telefonen, utan offentlig URL</td>
+              <td><a href="#vpn">Server i ett VPN</a></td>
+            </tr>
+            <tr>
+              <td>Boken i ett eget Supabase-projekt</td>
+              <td><a href="#supabase">Supabase-skåp</a></td>
+            </tr>
+            <tr>
+              <td>En <code>.kitsas</code>-fil i Dropbox eller Drive</td>
+              <td><a href="#cloud">Synkad mapp</a> (skrivbord: Chrome/Edge)</td>
+            </tr>
+            <tr>
+              <td>Ett offentligt värdnamn och inloggningsport</td>
+              <td><a href="#vps">Egen VPS</a>; den här sidan ersätter inte administratörens installation</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          I varje upplägg öppnas boken i webbläsaren. Standardläget är
+          <strong>I den här webbläsaren</strong>: beräkningen körs på din enhet.
+          <strong>På servern</strong> visas bara när en Tilari-server körs (inte med ett
+          Supabase-skåp).
+        </p>
+
+        <h2 id="engines">Två behandlingslägen</h2>
+        <p>
+          Använd Tilari som en <strong>vanlig webbapp</strong> (varje åtgärd är en förfrågan
+          till servern) eller arbeta <strong>lokalt i fliken</strong> och spara när du vill.
+          Användargränssnittet körs alltid i webbläsaren. När en Tilari-<strong>Node</strong>-backend
+          är ansluten frågas vid öppning:
+        </p>
+        <ul>
+          <li>
+            <strong>I den här webbläsaren</strong> (standard) — klientsida: SQLite körs i den här
+            fliken. Servern kan fortfarande lagra filen i ett skåp, men den tolkar inte verifikat.
+          </li>
+          <li>
+            <strong>På servern</strong> — serversida: samma beräkning körs i Node-processen.
+            Varje åtgärd går via API:t.
+          </li>
+        </ul>
+        <p>
+          Utan Node-backend (en HTML-fil, den här sajten, ett Supabase-skåp) finns bara
+          <strong>I den här webbläsaren</strong>. Skåpet (var filen ligger) är inte samma sak som
+          behandlingsläget: du kan ha boken i serverns skåp och ändå behandla den i fliken.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>I den här webbläsaren (klient)</th>
+              <th>På servern</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Fördelar</td>
+              <td>
+                Boken tolkas bara i den här fliken. Flera flikar eller personer kan öppna böcker
+                (sparande till skåpet använder ETag-konflikter). När filen är i fliken kan arbetet
+                fortsätta om nätet droppar. En Node-omstart raderar inte arbetskopian.
+              </td>
+              <td>
+                En tung bok på en svag telefon: SQLite flyttas till värden. Samma bokföringsregler
+                som i webbläsaren. Återöppning kan gå fortare medan processen fortfarande har en session.
+              </td>
+            </tr>
+            <tr>
+              <td>Nackdelar</td>
+              <td>
+                En stor bok på en svag enhet kan vara långsam. Hela boken laddas in i
+                webbläsaren. Osparade ändringar lever i den här fliken tills du sparar.
+              </td>
+              <td>
+                <strong>En öppen bok per serverprocess.</strong> En andra öppning ersätter den
+                första — inte fleranvändarläge. Varje åtgärd kräver nät. En omstart rensar
+                sessionen. Servern <em>ser</em> bokföringen. Inte tillgängligt med ett Supabase-skåp.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          För vardagsarbete och ett delat skåp: behåll <strong>I den här webbläsaren</strong>.
+          <strong>På servern</strong> är för en operatör på en privat värd när boken är för tung
+          för enheten.
+        </p>
+
+        <h2 id="html">En HTML-fil</h2>
+        <p>
+          Samma program som en enda fil (cirka 1,7&nbsp;MB). På den här sajten är den
+          <a href="../tilari.html"><code>tilari.html</code></a> —
+          <a href="../tilari.html">öppna den här</a>. Du kan också spara filen och öppna den offline.
+        </p>
+        <h3>På den här URL:en (https)</h3>
+        <p>
+          Webbläsaren behandlar sidan som en säker kontext: arbetskopian överlever en omladdning,
+          Chrome/Edge kan spara på plats, och <a href="#supabase">Supabase-skåpet</a> fungerar om
+          CORS tillåter den här origin. Det finns ingen Tilari-server: inget
+          <strong>På servern</strong> och inget Node-bokskåp.
+        </p>
+        <h3>En fil på disken (USB, e-post)</h3>
+        <ol>
+          <li>Spara <a href="../tilari.html"><code>tilari.html</code></a> och dubbelklicka på den.</li>
+          <li>Välj <strong>Välj en ny fil…</strong> och peka ut en <code>.kitsas</code>.</li>
+          <li>Spara med <strong>Spara som…</strong> — webbläsaren laddar ner en ny fil.</li>
+        </ol>
+        <p>
+          På <code>file://</code> dör arbetskopian vanligtvis vid omladdning, överskrivning på plats
+          misslyckas, och du bör inte lita på kryptering (Supabase). Bra för en demo. För riktiga
+          böcker använd <a href="#local">lokal installation</a> eller
+          <a href="../tilari.html">https-kopian</a>.
+        </p>
+
+        <h2 id="local">Server och klient på den här datorn</h2>
+        <p>
+          Det här är det vanliga upplägget för en maskin: Tilariprogrammet (AppImage,
+          <code>Tilari.exe</code>, <code>Tilari.app</code> eller en lokal server som administratören startar)
+          öppnar en webbläsare på <code>http://127.0.0.1:8000</code>.
+        </p>
+        <h3>Vilken fördel har det jämfört med en enda HTML-fil?</h3>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>En HTML-fil</th>
+              <th>Server på den här datorn</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Ändringar överlever en sidomladdning</td>
+              <td>Nej</td>
+              <td>Ja (arbetskopia i webbläsaren)</td>
+            </tr>
+            <tr>
+              <td>Spara i filen du öppnade</td>
+              <td>Sällan</td>
+              <td>Ja, på Chrome/Edge-skrivbord</td>
+            </tr>
+            <tr>
+              <td>Böcker i ett Tilariskåp på den här maskinen</td>
+              <td>Nej</td>
+              <td>Ja (<strong>Öppna från servern…</strong>)</td>
+            </tr>
+            <tr>
+              <td>Tung bok: behandla på servern</td>
+              <td>Nej</td>
+              <td>Ja, om du väljer <strong>På servern</strong></td>
+            </tr>
+            <tr>
+              <td>Samma bok från en telefon i samma Wi-Fi</td>
+              <td>Nej</td>
+              <td>Ja, om servern lyssnar på LAN</td>
+            </tr>
+            <tr>
+              <td>Installation</td>
+              <td>En fil</td>
+              <td>Ett programpaket</td>
+            </tr>
+          </tbody>
+        </table>
+        <h3>Så här gör du</h3>
+        <ol>
+          <li>Starta Tilari. En webbläsarflik öppnas av sig själv.</li>
+          <li>
+            Öppna en bok från disken (<strong>Välj en ny fil…</strong>) eller från skåpet
+            (<strong>Öppna från servern…</strong>).
+          </li>
+          <li>
+            På Chrome eller Edge på skrivbordet skriver <strong>Spara</strong> samma
+            <code>.kitsas</code> om filen är kopplad. I andra webbläsare använd
+            <strong>Spara som…</strong>.
+          </li>
+        </ol>
+        <p>
+          Avsluta skrivbords-Kitsas innan du öppnar samma fil i Tilari. Kitsas håller ett
+          exklusivt lås.
+        </p>
+
+        <h2 id="vpn">Server och klient i ett VPN</h2>
+        <p>
+          Samma program som på din egen dator, som körs på en maskin i ett VPN
+          (Tailscale, WireGuard, företags-VPN). Andra VPN-enheter öppnar adressen i en webbläsare,
+          till exempel <code>http://100.x.x.x:8000</code>. Du behöver ingen offentlig webbplats.
+        </p>
+        <p>
+          Tilari har inga användarkonton. <strong>Alla som når adressen kan se skåpets
+          böcker och spara till dem.</strong> VPN-medlemskap är åtkomstkontrollen. Dela inte
+          adressen på öppet Wi-Fi.
+        </p>
+        <h3>För den som installerar</h3>
+        <ol>
+          <li>Installera Tilari på en maskin som är påslagen (NAS, hemmaserver, kontors-PC).</li>
+          <li>Anslut den maskinen till samma VPN som de som ska använda den.</li>
+          <li>
+            Starta servern så att den lyssnar på VPN-adressen (LAN-bindning, t.ex. <code>--lan</code>,
+            skriver ut <code>TILARI_LAN_URL=</code>).
+          </li>
+          <li>
+            Öppna den URL:en på de andra enheterna. Böcker ligger i den maskinens skåp; spara med
+            <strong>Spara till servern</strong>.
+          </li>
+        </ol>
+        <p>
+          Om två personer redigerar samma bok samtidigt kan den andra sparningen avvisas
+          (“filen har ändrats”). Använd då <strong>Spara till servern som…</strong> i stället för
+          att skriva över den andras arbete.
+        </p>
+        <p>
+          <strong>På servern</strong>-behandling håller en bok öppen för en operatör. På ett
+          kontor behåll standarden <strong>I den här webbläsaren</strong> och dela via skåpet.
+        </p>
+
+        <h2 id="vps">Egen VPS</h2>
+        <p>
+          Ett offentligt värdnamn och en inloggningsport. Servern håller böcker i ett
+          <strong>skåp</strong>. Använd Tilari som en vanlig webbapp, eller behandla boken i
+          webbläsaren och spara till skåpet. Installationen är administratörens uppgift; den här
+          sidan ersätter inte den.
+        </p>
+
+        <h2 id="browsers">Vilka webbläsare sparar filen på plats</h2>
+        <p>
+          <strong>Spara</strong> i sidhuvudet försöker skriva samma sökväg som du öppnade. Det
+          fungerar bara i vissa webbläsare, och bara när sidan är <code>https://</code> eller
+          <code>localhost</code> (inte en ensam HTML-fil).
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Webbläsare</th>
+              <th>Skriv över den öppnade filen</th>
+              <th>I praktiken</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Chrome, Edge, Opera, Brave (Windows, macOS, Linux)</td>
+              <td>Ja</td>
+              <td>
+                <strong>Välj en ny fil…</strong> kopplar filen.
+                <strong>Spara</strong> uppdaterar den. En Dropbox-mapp fungerar om den är en riktig
+                katalog på disken.
+              </td>
+            </tr>
+            <tr>
+              <td>Firefox</td>
+              <td>Nej</td>
+              <td>Arbetskopian i webbläsaren överlever. På disken, använd <strong>Spara som…</strong>.</td>
+            </tr>
+            <tr>
+              <td>Safari (Mac, iPhone, iPad)</td>
+              <td>Nej</td>
+              <td>Samma som Firefox: ladda ner en kopia.</td>
+            </tr>
+            <tr>
+              <td>Chrome på Android</td>
+              <td>Inte tillförlitligt</td>
+              <td>
+                Öppna från Dropbox eller Drive med Androids dokumentväljare. Sparande är en kopia
+                (Hämtade filer eller “Spara till”).
+              </td>
+            </tr>
+            <tr>
+              <td>iPhone / iPad, andra webbläsare</td>
+              <td>Nej</td>
+              <td>Dela eller <strong>Spara som…</strong>. Ett skåp (VPN eller Supabase) är ofta enklare.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Om webbläsaren inte kan skriva på plats säger menyn att du ska använda
+          <strong>Spara som…</strong>. Du kan också
+          <strong>Koppla originalfil…</strong> när API:t finns men boken öppnades utan
+          skrivrätt.
+        </p>
+
+        <h2 id="supabase">Supabase som skåp</h2>
+        <p>
+          Du kan hålla böcker i ett eget Supabase-projekt. Du behöver ingen Tilari-server: öppna
+          Tilari från en statisk värd (eller en lokal installation) och anslut skåpet i webbläsaren.
+          Behandlingen stannar <strong>I den här webbläsaren</strong>. <strong>På servern</strong>
+          erbjuds inte.
+        </p>
+        <h3>Engångsinställning (Supabase-konsolen)</h3>
+        <ol>
+          <li>Skapa ett projekt på supabase.com och öppna <strong>Project Settings → API</strong>.</li>
+          <li>
+            Kopiera <strong>Project URL</strong> och <strong>anon public</strong>-nyckeln. Klistra
+            aldrig in <code>service_role</code>-nyckeln i Tilari — den nyckeln är bara för en backend.
+          </li>
+          <li>
+            I Storage, skapa en <strong>privat</strong> bucket med namnet <code>tilari</code> (inte en
+            offentlig CDN).
+          </li>
+          <li>
+            Storage-policyer (RLS) på den bucketen för prefixet <code>tilari/</code> (anon-roll,
+            select / insert / update / delete).
+          </li>
+          <li>
+            Storage CORS: Tilaris https-origin, metoderna GET, POST, PUT, DELETE, rubrikerna
+            <code>authorization</code>, <code>apikey</code>, <code>content-type</code>,
+            <code>x-upsert</code>. En <code>file://</code>-HTML-fil fungerar inte tillförlitligt.
+          </li>
+        </ol>
+        <p>Exempel på RLS-policyer:</p>
+        <pre><code>create policy "tilari_locker_select"
+  on storage.objects for select to anon
+  using (bucket_id = 'tilari' and name like 'tilari/%');
+create policy "tilari_locker_insert"
+  on storage.objects for insert to anon
+  with check (bucket_id = 'tilari' and name like 'tilari/%');
+create policy "tilari_locker_update"
+  on storage.objects for update to anon
+  using (bucket_id = 'tilari' and name like 'tilari/%');
+create policy "tilari_locker_delete"
+  on storage.objects for delete to anon
+  using (bucket_id = 'tilari' and name like 'tilari/%');</code></pre>
+        <h3>Anslut i Tilari</h3>
+        <ol>
+          <li><strong>Öppna från servern…</strong> → <strong>Egen Supabase</strong>.</li>
+          <li>
+            Klistra in Project URL, anon-nyckel, bucket (standard <code>tilari</code>) och
+            <strong>krypteringsnyckel</strong> (minst 8 tecken). Du kan
+            <strong>Skapa</strong> en nyckel — kopiera den någon annanstans genast.
+          </li>
+          <li><strong>Anslut</strong>. Böcker syns i listan; spara till skåpet som vanligt.</li>
+        </ol>
+        <p>
+          Filer krypteras i webbläsaren före uppladdning. URL och anon-nyckel öppnar bucketen;
+          hemligheten öppnar filerna. En förlorad hemlighet betyder förlorade böcker. Inställningarna
+          stannar bara i den här fliken; stänger du fliken bryts anslutningen.
+        </p>
+
+        <h2 id="cloud">Dropbox-mapp och Android (Drive / Dropbox)</h2>
+        <h3>Skrivbord: monterad Dropbox eller Google Drive</h3>
+        <p>
+          Tilari har ingen Dropbox- eller Drive-inloggning. Använd mappen som skrivbordsklienten
+          synkar till disken.
+        </p>
+        <ol>
+          <li>Installera Dropbox eller Google Drive så att boken är en riktig mapp på maskinen.</li>
+          <li>
+            Öppna boken med <strong>Chrome eller Edge</strong> från den mappen så att
+            <strong>Spara</strong> skriver samma fil.
+          </li>
+          <li>Leverantörsklienten laddar upp de nya bytena till andra enheter.</li>
+        </ol>
+        <p>
+          Firefox och Safari laddar ner en kopia: lägg tillbaka den i den synkade mappen själv,
+          annars får du parallella filer. Lämna inte skrivbords-Kitsas öppen på samma sökväg. Om två
+          personer sparar samtidigt behåller molnet den sista skrivningen — Tilaris
+          skåpkonfliktvarning gäller inte.
+        </p>
+        <h3>Android: öppna och spara från Dropbox eller Drive</h3>
+        <p>
+          Telefonen får inte samma “skriv den här sökvägen”-koppling som Chrome på skrivbordet.
+        </p>
+        <ul>
+          <li>
+            <strong>Öppna:</strong> <strong>Välj en ny fil…</strong> → Androids
+            dokumentväljare → Dropbox, Google Drive eller Filer. Tilari läser bytena.
+          </li>
+          <li>
+            <strong>Spara:</strong> <strong>Spara som…</strong> lägger en kopia i Hämtade filer eller
+            i webbläsarens platssida. Ladda upp den till Drive eller Dropbox därifrån, eller använd
+            systemets “Spara till” om webbläsaren visar en.
+          </li>
+        </ul>
+        <p>
+          Om samma bok flyttas mellan en telefon och en PC hela tiden är ett VPN-skåp eller
+          Supabase mindre felbenäget än mappen Hämtade filer.
+        </p>
+
+        <h2 id="adds">Vad Tilari lägger till</h2>
+        <p>
+          Vid start kan du skapa en ny finsk företagskontoplan i webbläsaren. Skrivbords-Kitsas
+          är fortfarande referensen för det Tilari inte har kopierat ännu (förening och
+          bostadsaktiebolag, kontoplansredigerare, arkiv). Tilari lägger till:
+        </p>
+        <ul>
+          <li>Webbläsare: en HTML-fil, en lokal server eller ett eget skåp</li>
+          <li>Tidsnavigering: <strong>Månad</strong> / <strong>Räkenskapsår</strong> / <strong>Alla</strong> och föregående/nästa på rapporter och huvudbok</li>
+          <li>Klickbara rapporter (balansräkning → konto → verifikat) och månadsdiagram (omsättning, resultat, skatt)</li>
+          <li>Löpande saldo i huvudboken</li>
+          <li><strong>Ändringslogg</strong> i sessionen</li>
+          <li><strong>Fungerar helt i webbläsaren:</strong> en arbetskopia i fliken; Chromium kan spara över originalfilen</li>
+          <li>
+            Valfritt skåp: <strong>din Supabase</strong>-bucket (krypterad i webbläsaren), eller en
+            <strong>egen VPS</strong> (Node HTTP-lager)
+          </li>
+          <li>
+            En vanlig webbapp (varje åtgärd är en förfrågan), eller arbeta lokalt i fliken och spara
+            när du vill
+          </li>
+          <li>Linux-, Windows- och macOS-paket utan Qt-verktygskedja</li>
+        </ul>
+
+        <h2 id="audience">För vem</h2>
+        <p>
+          Författaren har gjort Tilari för <strong>egen bokföring</strong>: ett finskt
+          <strong>aktiebolag</strong> med relativt få verifikat (typiskt för frilansare). Stora
+          böcker, förening, bostadsaktiebolag, enskild näringsidkare och andra momsupplägg har inte
+          testats i vardagen. Filen öppnas troligen; beteendet där är inte garanterat.
+        </p>
+
+        <h2 id="status">Vad som ingår och vad som inte gör det</h2>
+        <p>
+          Den här versionen. Det finns ingen publicerad tidplan — fråga i
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Område</th>
+              <th>Status</th>
+              <th>Anmärkning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Öppna en befintlig <code>.kitsas</code></td>
+              <td>Ingår</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Skapa en <strong>ny</strong> tom bok</td>
+              <td>Ingår</td>
+              <td>Vid start. Företagskontoplan: namn, FO-nummer, första räkenskapsår, moms, övning. Förening och bostadsaktiebolag startas fortfarande i skrivbords-Kitsas</td>
+            </tr>
+            <tr>
+              <td>Utgift / inkomst / överföring / övrigt</td>
+              <td>Ingår</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Kontoutdrag</td>
+              <td>Delvis</td>
+              <td>Redigera och dela en rad till ett eget verifikat. Ingen import av bankfil</td>
+            </tr>
+            <tr>
+              <td>Bilagor</td>
+              <td>Delvis</td>
+              <td>Uppladdning och förhandsvisning. Ingen OCR/tolkning, ingen automatisk förminskning</td>
+            </tr>
+            <tr>
+              <td>Kontoplan</td>
+              <td>Inte ännu</td>
+              <td>Konton läses från filen; ingen redigerare</td>
+            </tr>
+            <tr>
+              <td>Moms</td>
+              <td>Delvis</td>
+              <td>HTML-deklaration; ingen inskickning till OmaVero</td>
+            </tr>
+            <tr>
+              <td>Bokslut</td>
+              <td>Ingår</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Arkiv</td>
+              <td>Inte ännu</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Fakturering / attestflöde / lön</td>
+              <td>Inte ännu</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="request">Be om funktioner</h2>
+        <p>
+          Om du saknar en gammal Kitsas-funktion eller har en ny Tilaridé, öppna en tråd i
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
+          Arbetet prioriteras efter vad som faktiskt används.
+        </p>
+
+        <h2 id="remember">Kom ihåg</h2>
+        <ul>
+          <li>
+            En sparad <code>.kitsas</code>-fil är utbytbar med skrivbords-Kitsas i den här
+            versionen. Avsluta skrivbords-Kitsas innan Tilari skriver till samma sökväg.
+          </li>
+          <li>
+            En sparning avsedd för skrivbords-Kitsas samlar bilagor i filen. Skåpets interna
+            arbetskopia kan vara “mager” och öppnas inte i Kitsas som den är.
+          </li>
+          <li>Fakturering och attestflöde ingår inte i den här versionen.</li>
+        </ul>
+      </main>
+
+      <footer class="foot">
+        <p>
+          © 2026 Tilari. Kompatibel med Kitsas <code>.kitsas</code>-filer. Inte en produkt från
+          Kitsas Oy. Licens: <a href="../LICENSE">GPL-3</a>. Bibliotek:
+          <a href="../THIRD_PARTY.md">THIRD_PARTY.md</a>. Utvecklardokumentation (engelsk Markdown)
+          finns i mappen <code>docs/</code>.
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

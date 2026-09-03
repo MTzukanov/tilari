@@ -27,7 +27,7 @@ npm run dev
 npm install
 npm run dev      # http://127.0.0.1:5173
 npm run build
-npm run build:singlefile   # one HTML in dist-single/ (double-click trial)
+npm run build:singlefile   # one HTML in dist-single/ (open in a browser)
 npx tsc -b --noEmit
 npm test                 # vitest
 npm run test:e2e         # Playwright (golden book, ports 18000/15173)
