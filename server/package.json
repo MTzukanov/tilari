@@ -1,0 +1,24 @@
+{
+  "name": "@tilari/server",
+  "private": true,
+  "version": "0.1.0",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "launcher": "tsx src/launcher.ts",
+    "smoke": "tsx src/smoke.ts",
+    "test": "tsx --test 'src/**/*.test.ts'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "sql.js": "^1.14.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/sql.js": "^1.4.11",
+    "tsx": "^4.20.5",
+    "typescript": "~6.0.2"
+  }
+}

@@ -1,0 +1,16 @@
+/** Horse mark, same filled-glyph language as the sidebar icons. */
+export function TilariMark({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className ?? 'tilari-mark'}
+      viewBox="0 0 24 24"
+      aria-hidden
+    >
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M9 2.4 10.9 6.2c2.6-.4 6.3.8 9.1 3.2 1.8 1.5 1.7 3.6.2 4.5-1.3.8-3.5.7-5.1.1L13.6 16 12 21.2H8.3l1.4-6.1C8 13.2 7.5 9.8 8.2 6.8L6.8 5.8 9 2.4zm7.6 7.9a1.15 1.15 0 1 1-2.3 0 1.15 1.15 0 0 1 2.3 0z"
+      />
+    </svg>
+  )
+}

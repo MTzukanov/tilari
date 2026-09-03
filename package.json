@@ -1,0 +1,12 @@
+{
+  "name": "tilari",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "dev": "concurrently -k -n server,frontend -c blue,magenta \"npm run dev --prefix server\" \"npm run dev --prefix frontend\"",
+    "install:all": "npm install --prefix server && npm install --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

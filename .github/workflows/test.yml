@@ -1,0 +1,93 @@
+# Shared test suite. Push to main updates the README badge. Pages deploys after
+# this workflow succeeds (workflow_run). VPS still calls this via workflow_call
+# on tags so a tag is not tested twice on main.
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            server/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install server dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Frontend lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Server typecheck
+        working-directory: server
+        run: npm run typecheck
+
+      - name: Frontend typecheck
+        working-directory: frontend
+        run: npx tsc -b --noEmit
+
+      - name: Server tests
+        working-directory: server
+        run: npm test
+
+      - name: Server smoke (golden book via Ledger)
+        working-directory: server
+        run: npm run smoke
+
+      - name: Frontend unit tests
+        working-directory: frontend
+        run: npm test
+
+      - name: Frontend e2e (Vite + wasm)
+        working-directory: frontend
+        timeout-minutes: 15
+        run: npm run test:e2e
+
+      - name: Desktop e2e (production UI + Node launcher)
+        working-directory: frontend
+        timeout-minutes: 10
+        run: npm run test:desktop
+
+      - name: Upload Playwright output
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-output
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
