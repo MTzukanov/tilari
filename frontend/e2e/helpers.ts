@@ -103,7 +103,18 @@ export async function clearTilariStorage(page: Page) {
 }
 
 export async function confirmEngineOpen(page: Page, engine: 'wasm' | 'http') {
-  await expect(page.getByRole('heading', { name: 'Missä kirja avataan?' })).toBeVisible()
+  const dialog = page.getByRole('heading', { name: 'Missä kirja avataan?' })
+  // Without a same-origin Node API the app opens wasm directly (no dialog).
+  const appeared = await dialog
+    .waitFor({ state: 'visible', timeout: 5_000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!appeared) {
+    if (engine === 'http') {
+      throw new Error('Engine dialog did not appear; http engine needs a same-origin Node API')
+    }
+    return
+  }
   const label = engine === 'http' ? 'Palvelimella' : 'Tässä selaimessa'
   const radio = page.getByRole('radio', { name: label })
   await radio.click()
@@ -113,8 +124,8 @@ export async function confirmEngineOpen(page: Page, engine: 'wasm' | 'http') {
 
 /** File menu option — works with or without a book open (empty-state is a button). */
 export async function openServerBookList(page: Page) {
-  await page.getByLabel('Kirjanpitotiedosto').selectOption({ label: 'Avaa palvelimelta…' })
-  await expect(page.getByRole('heading', { name: 'Avaa palvelimelta…' })).toBeVisible()
+  await page.getByLabel('Kirjanpitotiedosto').selectOption({ label: 'Avaa omasta säilytyksestä…' })
+  await expect(page.getByRole('heading', { name: 'Oma säilytys (BYO)' })).toBeVisible()
 }
 
 async function openKitsasFile(page: Page, bookPath: string) {

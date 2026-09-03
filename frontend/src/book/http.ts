@@ -16,6 +16,18 @@ export function apiFetch(path: string, init: RequestInit = {}): Promise<Response
   } as RequestInit)
 }
 
+/** True when `url` is a Tilari Node `/api/health` JSON body (`{ ok: true }`). SPA HTML is not health. */
+export async function probeNodeApi(url = '/api/health', timeoutMs = 1500): Promise<boolean> {
+  try {
+    const res = await apiFetch(url, { signal: AbortSignal.timeout(timeoutMs) })
+    if (!res.ok) return false
+    const json: unknown = await res.json()
+    return typeof json === 'object' && json !== null && (json as { ok?: unknown }).ok === true
+  } catch {
+    return false
+  }
+}
+
 export async function parseHttpError(res: Response): Promise<string> {
   const text = await res.text()
   if (res.status === 409) return 'etag_mismatch'

@@ -54,7 +54,7 @@ import { periodContaining } from '../shared/periodNav'
 import { normalizeSessionChanges } from '../book/sessionLog'
 import { resetBodyScrollLock } from '../shared/scrollLock'
 import { getBookServiceEpoch, getEngine, resetBookService, resolveEngine, setEngine, withEngine } from '../book/engine'
-import { lockerSupportsHttpEngine } from '../book/persist/locker'
+import { getActiveLocker, lockerSupportsHttpEngine, probeSameOriginNode } from '../book/persist/locker'
 import { forcedEngineForPath } from '../book/openPath'
 import {
   clearStoredPracticeDate,
@@ -165,7 +165,9 @@ export function BookShell() {
     if (err instanceof Error && err.message === 'file_picker_unsupported') return t('file.linkUnsupported')
     if (err instanceof Error && err.message === 'reload_unavailable') return t('file.reloadUnavailable')
     if (err instanceof Error && err.message === 'locker_http_unsupported') return t('file.lockerHttpUnsupported')
-    if (err instanceof Error && err.message === 'locker_not_configured') return t('file.lockerNeedConnect')
+    if (err instanceof Error && err.message === 'locker_not_configured') return t('file.lockerNotConfigured')
+    if (err instanceof Error && err.message === 'locker_http_url') return t('file.lockerHttpNeedConnect')
+    if (err instanceof Error && err.message === 'locker_http_unreachable') return t('file.lockerHttpUnreachable')
     if (err instanceof Error && err.message === 'locker_service_role') return t('file.lockerServiceRole')
     if (err instanceof Error && err.message === 'locker_bad_secret') return t('file.lockerBadSecret')
     if (err instanceof Error && err.message === 'locker_secret') return t('file.lockerNeedSecret')
@@ -328,6 +330,7 @@ export function BookShell() {
       if (openingRef.current) return
       try {
         const session = loadBookSession()
+        await probeSameOriginNode()
         // Engine preference applies to the next open; only restore via session.engine when one is saved.
         const bookEngine: EngineKind = session?.engine ?? 'wasm'
         const health = await withEngine(bookEngine, () => fetchHealth())
@@ -487,16 +490,19 @@ export function BookShell() {
   function queueOpen(pending: PendingOpen) {
     const hadBook = Boolean(meta)
     if (meta && !confirmDiscard()) return
-    if (!lockerSupportsHttpEngine()) {
-      void executeOpen('wasm', pending, hadBook)
-      return
-    }
-    const forced = pending.type === 'path' ? pending.forcedEngine : undefined
-    if (forced) {
-      void executeOpen(forced, pending, hadBook)
-      return
-    }
-    setPendingOpen(pending)
+    void (async () => {
+      await probeSameOriginNode()
+      if (!lockerSupportsHttpEngine()) {
+        await executeOpen('wasm', pending, hadBook)
+        return
+      }
+      const forced = pending.type === 'path' ? pending.forcedEngine : undefined
+      if (forced) {
+        await executeOpen(forced, pending, hadBook)
+        return
+      }
+      setPendingOpen(pending)
+    })()
   }
 
   async function onChooseNewFile() {
@@ -575,10 +581,16 @@ export function BookShell() {
   }
 
   async function refreshLockerList() {
+    await probeSameOriginNode({ force: true })
     if (!lockerSupportsHttpEngine() && getEngine() === 'http' && !meta) {
       setEngine('wasm')
       resetBookService()
       setServiceEpoch(getBookServiceEpoch())
+    }
+    if (!getActiveLocker().isReady()) {
+      setLockerBooks([])
+      setError(null)
+      return
     }
     try {
       setLockerBooks(await listLockerBooks())
@@ -815,7 +827,7 @@ export function BookShell() {
       meta={meta}
       ready={ready}
       dirty={dirty}
-      opening={opening}
+      opening={opening || !ready}
       saving={saving}
       busy={busy}
       attSync={attSync}
@@ -919,6 +931,7 @@ export function BookShell() {
               {t('file.fromServer')}
             </button>
           </div>
+          <p className="muted file-prompt-byo">{t('file.storageOptionalHint')}</p>
         </section>
       ) : null}
 

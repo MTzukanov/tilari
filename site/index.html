@@ -401,9 +401,11 @@
         <h3>Tässä osoitteessa (https)</h3>
         <p>
           Selain pitää sivua luotettavana: työkopio säilyy päivityksen yli, Chrome/Edge voi
-          tallentaa suoraan tiedostoon, ja <a href="#supabase">Supabase-lokero</a> toimii, jos CORS
-          sallii tämän osoitteen. Tilari-palvelinta ei ole: ei “Palvelimella”-käsittelyä eikä
-          palvelimen kirjalokeroa.
+          tallentaa suoraan tiedostoon, ja valinnainen <strong>BYO</strong>-säilytys toimii, kun
+          yhdistät <a href="#supabase">oman Supabase-projektisi</a> tai Tilari-lokeron
+          <strong>omalla</strong> VPS:llä (CORS-sallittava tästä osoitteesta). Tilarin sivusto ei
+          säilytä kirjoja: tiedostoa ei lähetetä mihinkään palvelimeen, jota et itse anna.
+          Samassa osoitteessa ei ole Nodea, joten “Palvelimella”-käsittelyä ei ole.
         </p>
         <h3>Tiedosto koneella (USB, sähköposti)</h3>
         <ol>
@@ -447,7 +449,7 @@
             <tr>
               <td>Kirjat Tilari-lokerossa tällä koneella</td>
               <td>Ei</td>
-              <td>Kyllä (<strong>Avaa palvelimelta…</strong>)</td>
+              <td>Kyllä (<strong>Avaa omasta säilytyksestä…</strong>)</td>
             </tr>
             <tr>
               <td>Raskas kirja: käsittely palvelimella</td>
@@ -471,7 +473,7 @@
           <li>Käynnistä Tilari. Selain aukeaa itsestään.</li>
           <li>
             Avaa kirja levyltä (<strong>Valitse uusi tiedosto…</strong>) tai lokerosta
-            (<strong>Avaa palvelimelta…</strong>).
+            (<strong>Avaa omasta säilytyksestä…</strong>).
           </li>
           <li>
             Chrome- tai Edge-työpöydällä <strong>Tallenna</strong> kirjoittaa samaan
@@ -505,12 +507,12 @@
           </li>
           <li>
             Avaa osoite muilla laitteilla. Kirjat ovat tuon koneen lokerossa; tallenna
-            <strong>Tallenna palvelimelle</strong>.
+            <strong>Tallenna säilytykseen</strong>.
           </li>
         </ol>
         <p>
           Jos kaksi ihmistä muokkaa samaa kirjaa yhtä aikaa, toinen tallennus voi estyä (“tiedosto
-          on muuttunut”). Tallenna silloin <strong>Tallenna palvelimelle nimellä…</strong> äläkä
+          on muuttunut”). Tallenna silloin <strong>Tallenna säilytykseen nimellä…</strong> äläkä
           ylikirjoita toisen työtä.
         </p>
         <p>
@@ -625,13 +627,13 @@ create policy "tilari_locker_delete"
   using (bucket_id = 'tilari' and name like 'tilari/%');</code></pre>
         <h3>Yhdistä Tilarissa</h3>
         <ol>
-          <li><strong>Avaa palvelimelta…</strong> → <strong>Oma Supabase</strong>.</li>
+          <li><strong>Avaa omasta säilytyksestä…</strong> → <strong>Oma Supabase</strong> (BYO).</li>
           <li>
             Liitä Project URL, anon-avain, bucket (oletus <code>tilari</code>) ja
             <strong>salaava avain</strong> (vähintään 8 merkkiä). Voit luoda avaimen
             <strong>Luo</strong>-painikkeella – tallenna se muualle heti.
           </li>
-          <li><strong>Yhdistä</strong>. Kirjat näkyvät listassa; tallenna palvelimelle kuten muutenkin.</li>
+          <li><strong>Yhdistä</strong>. Kirjat näkyvät listassa; tallenna säilytykseen kuten muutenkin.</li>
         </ol>
         <p>
           Tiedostot salataan selaimessa ennen lähetystä. URL ja anon-avain avaavat bucketin;

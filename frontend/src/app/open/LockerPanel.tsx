@@ -1,10 +1,15 @@
 import { useState, type FormEvent } from 'react'
 import type { LockerBook } from '../../api'
 import {
+  connectHttpLocker,
   connectSupabaseLocker,
+  disconnectHttpLocker,
   disconnectSupabaseLocker,
   generateLockerSecret,
+  getActiveLocker,
   getLockerKind,
+  httpLockerUsesSameOrigin,
+  loadHttpLockerSettings,
   loadSupabaseSettings,
   setLockerKind,
   type LockerKind,
@@ -25,16 +30,23 @@ export function LockerPanel({
 }) {
   const { t } = useI18n()
   const [kind, setKind] = useState<LockerKind>(() => getLockerKind())
-  const saved = loadSupabaseSettings()
-  const [url, setUrl] = useState(saved?.url ?? '')
-  const [anonKey, setAnonKey] = useState(saved?.anonKey ?? '')
-  const [bucket, setBucket] = useState(saved?.bucket ?? 'tilari')
-  const [secret, setSecret] = useState(saved?.secret ?? '')
+  const savedSupabase = loadSupabaseSettings()
+  const savedHttp = loadHttpLockerSettings()
+  const [httpUrl, setHttpUrl] = useState(savedHttp?.url ?? '')
+  const [url, setUrl] = useState(savedSupabase?.url ?? '')
+  const [anonKey, setAnonKey] = useState(savedSupabase?.anonKey ?? '')
+  const [bucket, setBucket] = useState(savedSupabase?.bucket ?? 'tilari')
+  const [secret, setSecret] = useState(savedSupabase?.secret ?? '')
   const [revealSecret, setRevealSecret] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function applyKind(next: LockerKind) {
+  const httpReady = kind === 'http' && getActiveLocker().id === 'http' && getActiveLocker().isReady()
+  const sameOriginHttp = httpReady && httpLockerUsesSameOrigin()
+  const supabaseReady = kind === 'supabase' && Boolean(loadSupabaseSettings())
+  const showList = (kind === 'http' && httpReady) || supabaseReady
+
+  function applyKind(next: LockerKind) {
     setError(null)
     setKind(next)
     if (next === 'http') {
@@ -46,6 +58,32 @@ export function LockerPanel({
       setLockerKind('supabase')
       onKindChange()
     }
+  }
+
+  async function onConnectHttp(e: FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    try {
+      await connectHttpLocker({ url: httpUrl })
+      setKind('http')
+      onKindChange()
+    } catch (err) {
+      const code = err instanceof Error ? err.message : String(err)
+      if (code === 'locker_http_url') setError(t('file.lockerHttpNeedConnect'))
+      else if (code === 'locker_http_unreachable') setError(t('file.lockerHttpUnreachable'))
+      else setError(code)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function onDisconnectHttp() {
+    disconnectHttpLocker()
+    setKind('http')
+    setHttpUrl('')
+    setError(null)
+    onKindChange()
   }
 
   async function onConnect(e: FormEvent) {
@@ -76,11 +114,10 @@ export function LockerPanel({
     onKindChange()
   }
 
-  const supabaseReady = kind === 'supabase' && Boolean(loadSupabaseSettings())
-
   return (
     <section className="file-prompt locker-panel">
-      <h2>{t('file.fromServer')}</h2>
+      <h2>{t('file.lockerTitle')}</h2>
+      <p className="locker-byo">{t('file.lockerByoIntro')}</p>
       <fieldset className="engine-pick locker-kind-pick">
         <legend>{t('file.lockerKindLabel')}</legend>
         <label>
@@ -88,7 +125,7 @@ export function LockerPanel({
             type="radio"
             name="tilari-locker-kind"
             checked={kind === 'http'}
-            onChange={() => void applyKind('http')}
+            onChange={() => applyKind('http')}
           />
           {t('file.lockerKindHttp')}
         </label>
@@ -97,11 +134,43 @@ export function LockerPanel({
             type="radio"
             name="tilari-locker-kind"
             checked={kind === 'supabase'}
-            onChange={() => void applyKind('supabase')}
+            onChange={() => applyKind('supabase')}
           />
           {t('file.lockerKindSupabase')}
         </label>
       </fieldset>
+
+      {kind === 'http' ? (
+        sameOriginHttp ? (
+          <p className="muted">{t('file.lockerHttpSameOrigin')}</p>
+        ) : (
+          <form className="locker-connect" onSubmit={(e) => void onConnectHttp(e)}>
+            <p className="muted">{t('file.lockerHttpHint')}</p>
+            <label>
+              {t('file.lockerHttpUrl')}
+              <input
+                type="url"
+                required
+                autoComplete="off"
+                value={httpUrl}
+                onChange={(e) => setHttpUrl(e.target.value)}
+                placeholder="https://books.example.com"
+              />
+            </label>
+            {error ? <p className="error">{error}</p> : null}
+            <div className="file-prompt-actions">
+              <button type="submit" className="file-btn" disabled={busy}>
+                {t('file.lockerConnect')}
+              </button>
+              {httpReady && !sameOriginHttp ? (
+                <button type="button" className="file-btn-secondary" onClick={onDisconnectHttp}>
+                  {t('file.lockerDisconnect')}
+                </button>
+              ) : null}
+            </div>
+          </form>
+        )
+      ) : null}
 
       {kind === 'supabase' ? (
         <form className="locker-connect" onSubmit={(e) => void onConnect(e)}>
@@ -170,7 +239,7 @@ export function LockerPanel({
         </form>
       ) : null}
 
-      {kind === 'http' || supabaseReady ? (
+      {showList ? (
         books == null ? (
           <p className="muted">{t('app.loading')}</p>
         ) : books.length === 0 ? (
@@ -186,9 +255,7 @@ export function LockerPanel({
             ))}
           </ul>
         )
-      ) : (
-        <p className="muted">{t('file.lockerNeedConnect')}</p>
-      )}
+      ) : null}
 
       <button type="button" className="back-btn" onClick={onClose}>
         {t('common.close')}

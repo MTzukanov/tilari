@@ -99,8 +99,8 @@ test.describe('engine open (wasm)', () => {
     await page.goto('/')
     await expect(page.getByRole('heading', { name: 'Ei kirjaa auki' })).toBeVisible()
 
-    await page.getByRole('button', { name: 'Avaa palvelimelta…' }).click()
-    await expect(page.getByRole('heading', { name: 'Avaa palvelimelta…' })).toBeVisible()
+    await page.getByRole('button', { name: 'Avaa omasta säilytyksestä…' }).click()
+    await expect(page.getByRole('heading', { name: 'Oma säilytys (BYO)' })).toBeVisible()
     await page.getByRole('button', { name: uniqueName }).first().click()
     await confirmEngineOpen(page, 'wasm')
 

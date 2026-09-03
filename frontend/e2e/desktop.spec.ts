@@ -52,7 +52,7 @@ test('http engine saves book to locker with a non-empty body', async ({ page }) 
   page.once('dialog', async (dialog) => {
     await dialog.accept(`e2e-desktop-save-${Date.now()}.kitsas`)
   })
-  await page.getByLabel('Kirjanpitotiedosto').selectOption({ label: 'Tallenna palvelimelle nimellä…' })
+  await page.getByLabel('Kirjanpitotiedosto').selectOption({ label: 'Tallenna säilytykseen nimellä…' })
 
   const exportRes = await exportWait
   expect(exportRes.status()).toBe(200)
@@ -68,7 +68,7 @@ test('http engine saves book to locker with a non-empty body', async ({ page }) 
   expect(saved.size).toBeGreaterThan(1000)
   expect(saved.name).toMatch(/\.kitsas$/i)
 
-  await expect(page.getByText('Tallennettu palvelimelle.')).toBeVisible()
+  await expect(page.getByText('Tallennettu omaan säilytykseen.')).toBeVisible()
 
   // Round-trip: lean download from locker matches stored size
   const getRes = await page.request.get(`/api/books/${saved.id}`)
@@ -76,7 +76,7 @@ test('http engine saves book to locker with a non-empty body', async ({ page }) 
   const stored = await getRes.body()
   expect(stored.byteLength).toBe(saved.size)
 
-  await page.getByLabel('Kirjanpitotiedosto').selectOption({ label: 'Avaa palvelimelta…' })
-  await expect(page.getByRole('heading', { name: 'Avaa palvelimelta…' })).toBeVisible()
+  await page.getByLabel('Kirjanpitotiedosto').selectOption({ label: 'Avaa omasta säilytyksestä…' })
+  await expect(page.getByRole('heading', { name: 'Oma säilytys (BYO)' })).toBeVisible()
   await expect(page.getByRole('button', { name: saved.name })).toBeVisible()
 })

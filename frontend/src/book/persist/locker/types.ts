@@ -4,6 +4,11 @@ export type { TransferOpts }
 
 export type LockerKind = 'http' | 'supabase'
 
+export type HttpLockerSettings = {
+  /** Origin of a user-hosted Tilari Node (no trailing slash, no `/api` suffix). */
+  url: string
+}
+
 export type LockerBookInfo = {
   id: string
   name: string

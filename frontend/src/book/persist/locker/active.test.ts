@@ -1,27 +1,34 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   LOCKER_SUPABASE_KEY,
+  disconnectHttpLocker,
   disconnectSupabaseLocker,
   getActiveLocker,
   loadSupabaseSettings,
   lockerSupportsHttpEngine,
+  resetLockerProbeForTests,
   saveSupabaseSettings,
   setLockerForTests,
   setLockerKind,
 } from './active'
-import { httpLocker } from './httpLocker'
+import { httpLocker, setHttpLockerSameOrigin } from './httpLocker'
 import { MemoryObjectStore } from './objectStore'
 import { createSupabaseLocker } from './supabaseLocker'
 
 afterEach(() => {
   setLockerForTests(null)
   disconnectSupabaseLocker()
+  disconnectHttpLocker()
+  resetLockerProbeForTests()
   sessionStorage.removeItem(LOCKER_SUPABASE_KEY)
+  setLockerKind('http')
 })
 
 describe('active locker', () => {
-  it('defaults to the Node HTTP locker', () => {
+  it('defaults to the Node HTTP locker; engine support needs a probe or same-origin flag', () => {
     expect(getActiveLocker()).toBe(httpLocker)
+    expect(lockerSupportsHttpEngine()).toBe(false)
+    setHttpLockerSameOrigin(true)
     expect(lockerSupportsHttpEngine()).toBe(true)
   })
 

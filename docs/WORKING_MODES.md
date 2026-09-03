@@ -115,7 +115,8 @@ cd frontend && npm run build:singlefile
 
 - No OPFS persistence (`file://` is not a secure context for that)
 - Weaker crypto where `SubtleCrypto` is blocked
-- No locker API and no `http` engine
+- No same-origin locker API and no `http` engine until you connect **BYO** storage
+  (your VPS URL or Supabase). The file is never sent anywhere you did not configure.
 - Not a multi-tab “always-on” working copy across refresh
 
 Use this for a quick offline trial or emailing a self-contained demo. Details:
@@ -124,8 +125,10 @@ Use this for a quick offline trial or emailing a self-contained demo. Details:
 GitHub Pages publishes the **same build** as
 [tilari.html](https://mtzukanov.github.io/tilari/tilari.html) over **https**
 ([PAGES.md](PAGES.md)). That host is a secure context, so it behaves like
-[mode 2](#2-static-html-website) (OPFS, Chromium in-place save, Supabase
-locker) while remaining one file. Still no Node locker and no server-side processing.
+[mode 2](#2-static-html-website) (OPFS, Chromium in-place save) while remaining
+one file. There is no Tilari-hosted locker: connect **your** Supabase or a VPS
+you run if you want remote storage. No same-origin Node and no server-side
+processing unless you open the UI from a host that serves `/api`.
 
 ---
 
@@ -184,9 +187,13 @@ Node locker (server/src/locker/)
 - Desktop: `./scripts/run-desktop.sh`
 - VPS: [DEPLOY.md](DEPLOY.md) (Docker Compose; Cloudflare Access for who can reach the host)
 
-In the UI: **Avaa palvelimelta…** / **Tallenna palvelimelle**. Opening from the
+In the UI: **Avaa omasta säilytyksestä…** / **Tallenna säilytykseen**. Opening from the
 locker downloads the lean DB first; attachments sync in the background (progress
 in the top bar) unless every `Liite.sha` is already in `tilari/blobs/`.
+
+Without a same-origin Node process (single HTML / GitHub Pages), that menu opens a
+**BYO** connect panel: paste your own VPS Tilari locker URL or Supabase project.
+Tilari does not host books; the file is only sent to the address you provide.
 
 ### Concurrent users and “out of sync”
 
@@ -197,7 +204,7 @@ live shared session: each tab has its own in-memory + OPFS copy after open.
 |-----------|----------------|
 | User A and User B both open book `id` | Each gets a snapshot (lean + later attachments). Edits stay local until save. |
 | A saves first (valid `If-Match`) | Locker updates; A’s ETag advances. |
-| B still has the old ETag and saves | `409 etag_mismatch` — UI tells B the server copy changed and suggests **Tallenna palvelimelle nimellä…**; local work is not force-overwritten onto the server. |
+| B still has the old ETag and saves | `409 etag_mismatch` — UI tells B the storage copy changed and suggests **Tallenna säilytykseen nimellä…**; local work is not force-overwritten onto the locker. |
 | A saves ledger; B only has stale attachment ETag | Same idea for the attachments PUT (separate ETag / kind). |
 | Tab refresh mid-edit | OPFS restores that tab’s working copy; it may still be behind the locker until the user reopens or saves successfully. |
 | Attachment sync still running | Reports/browse of lean data work; missing blobs catch up as the pack sync finishes. |

@@ -73,7 +73,7 @@ test.describe('wasm locker open attachment progress', () => {
     const chipTexts = await recordedSyncChips(page)
     const detail = `chips=${JSON.stringify(chipTexts)}`
     expect(
-      chipTexts.some((c) => /ladataan(?: liitteitä)? palvelimelta/i.test(c)),
+      chipTexts.some((c) => /ladataan(?: liitteitä)? (?:palvelimelta|omasta säilytyksestä|säilytyksestä)/i.test(c)),
       `expected download title; ${detail}`,
     ).toBe(true)
     expect(
@@ -126,7 +126,7 @@ test.describe('wasm locker open attachment progress', () => {
 
     const chipTexts = await recordedSyncChips(page)
     expect(
-      chipTexts.some((c) => /ladataan(?: liitteitä)? palvelimelta/i.test(c)),
+      chipTexts.some((c) => /ladataan(?: liitteitä)? (?:palvelimelta|omasta säilytyksestä|säilytyksestä)/i.test(c)),
       `second open must not download attachments; chips=${JSON.stringify(chipTexts)}`,
     ).toBe(false)
   })

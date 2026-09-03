@@ -400,9 +400,11 @@
         <h3>On this URL (https)</h3>
         <p>
           The browser treats the page as a secure context: the working copy survives a refresh,
-          Chrome/Edge can save in place, and the <a href="#supabase">Supabase locker</a> works if
-          CORS allows this origin. There is no Tilari server:
-          no <abbr title="Palvelimella"><strong>On the server</strong></abbr> and no Node book locker.
+          Chrome/Edge can save in place, and optional <strong>BYO</strong> storage works if you
+          connect <a href="#supabase">your Supabase</a> or a Tilari locker on <strong>your</strong>
+          VPS (CORS must allow this origin). Tilari’s site does not host books: the file is never
+          sent to any server you did not provide. There is no same-origin Node process, so
+          no <abbr title="Palvelimella"><strong>On the server</strong></abbr> processing.
         </p>
         <h3>A file on disk (USB, email)</h3>
         <ol>
@@ -446,7 +448,7 @@
             <tr>
               <td>Books in a Tilari locker on this machine</td>
               <td>No</td>
-              <td>Yes (<strong>Avaa palvelimelta…</strong>)</td>
+              <td>Yes (<strong>Avaa omasta säilytyksestä…</strong>)</td>
             </tr>
             <tr>
               <td>Heavy book: process on the server</td>
@@ -470,7 +472,7 @@
           <li>Start Tilari. A browser tab opens on its own.</li>
           <li>
             Open a book from disk (<strong>Valitse uusi tiedosto…</strong>) or from the locker
-            (<strong>Avaa palvelimelta…</strong>).
+            (<strong>Avaa omasta säilytyksestä…</strong>).
           </li>
           <li>
             On Chrome or Edge desktop, <strong>Tallenna</strong> writes the same
@@ -504,12 +506,12 @@
           </li>
           <li>
             Open that URL on the other devices. Books live in that machine’s locker; save with
-            <strong>Tallenna palvelimelle</strong>.
+            <strong>Tallenna säilytykseen</strong>.
           </li>
         </ol>
         <p>
           If two people edit the same book at once, the second save can be rejected (“the file
-          changed”). Then use <strong>Tallenna palvelimelle nimellä…</strong> instead of
+          changed”). Then use <strong>Tallenna säilytykseen nimellä…</strong> instead of
           overwriting the other person’s work.
         </p>
         <p>
@@ -623,7 +625,7 @@ create policy "tilari_locker_delete"
   using (bucket_id = 'tilari' and name like 'tilari/%');</code></pre>
         <h3>Connect in Tilari</h3>
         <ol>
-          <li><strong>Avaa palvelimelta…</strong> → <strong>Oma Supabase</strong>.</li>
+          <li><strong>Avaa omasta säilytyksestä…</strong> → <strong>Oma Supabase</strong> (BYO).</li>
           <li>
             Paste Project URL, anon key, bucket (default <code>tilari</code>), and the
             <strong>salaava avain</strong> (encryption secret, at least 8 characters). You can

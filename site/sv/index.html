@@ -397,9 +397,11 @@
         <h3>På den här URL:en (https)</h3>
         <p>
           Webbläsaren behandlar sidan som en säker kontext: arbetskopian överlever en omladdning,
-          Chrome/Edge kan spara på plats, och <a href="#supabase">Supabase-skåpet</a> fungerar om
-          CORS tillåter den här origin. Det finns ingen Tilari-server: inget
-          <strong>På servern</strong> och inget Node-bokskåp.
+          Chrome/Edge kan spara på plats, och valfri <strong>BYO</strong>-lagring fungerar om du
+          ansluter <a href="#supabase">din Supabase</a> eller ett Tilari-skåp på
+          <strong>din</strong> VPS (CORS måste tillåta den här origin). Tilaris sajt lagrar inte
+          böcker: filen skickas aldrig till en server som du inte själv anger. Det finns ingen
+          Node på samma origin, så inget <strong>På servern</strong>-behandlande.
         </p>
         <h3>En fil på disken (USB, e-post)</h3>
         <ol>
@@ -443,7 +445,7 @@
             <tr>
               <td>Böcker i ett Tilariskåp på den här maskinen</td>
               <td>Nej</td>
-              <td>Ja (<strong>Öppna från servern…</strong>)</td>
+              <td>Ja (<strong>Öppna från din lagring…</strong>)</td>
             </tr>
             <tr>
               <td>Tung bok: behandla på servern</td>
@@ -467,7 +469,7 @@
           <li>Starta Tilari. En webbläsarflik öppnas av sig själv.</li>
           <li>
             Öppna en bok från disken (<strong>Välj en ny fil…</strong>) eller från skåpet
-            (<strong>Öppna från servern…</strong>).
+            (<strong>Öppna från din lagring…</strong>).
           </li>
           <li>
             På Chrome eller Edge på skrivbordet skriver <strong>Spara</strong> samma
@@ -621,7 +623,7 @@ create policy "tilari_locker_delete"
   using (bucket_id = 'tilari' and name like 'tilari/%');</code></pre>
         <h3>Anslut i Tilari</h3>
         <ol>
-          <li><strong>Öppna från servern…</strong> → <strong>Egen Supabase</strong>.</li>
+          <li><strong>Öppna från din lagring…</strong> → <strong>Egen Supabase</strong> (BYO).</li>
           <li>
             Klistra in Project URL, anon-nyckel, bucket (standard <code>tilari</code>) och
             <strong>krypteringsnyckel</strong> (minst 8 tecken). Du kan

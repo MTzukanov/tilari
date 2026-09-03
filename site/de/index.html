@@ -406,10 +406,12 @@
         <h3>Unter dieser URL (https)</h3>
         <p>
           Der Browser behandelt die Seite als sicheren Kontext: die Arbeitskopie überlebt ein
-          Neuladen, Chrome/Edge kann an Ort und Stelle speichern, und das
-          <a href="#supabase">Supabase-Schließfach</a> funktioniert, wenn CORS diesen Origin
-          erlaubt. Es gibt keinen Tilari-Server: kein <strong>Auf dem Server</strong> und kein
-          Node-Buchschließfach.
+          Neuladen, Chrome/Edge kann an Ort und Stelle speichern, und optionaler
+          <strong>BYO</strong>-Speicher funktioniert, wenn Sie <a href="#supabase">Ihr Supabase</a>
+          oder ein Tilari-Schließfach auf <strong>Ihrem</strong> VPS verbinden (CORS muss diesen
+          Origin erlauben). Die Tilari-Website hostet keine Bücher: die Datei wird an keinen Server
+          gesendet, den Sie nicht selbst angeben. Es gibt keinen Node auf demselben Origin, daher
+          kein <strong>Auf dem Server</strong>-Rechnen.
         </p>
         <h3>Eine Datei auf dem Datenträger (USB, E-Mail)</h3>
         <ol>
@@ -454,7 +456,7 @@
             <tr>
               <td>Bücher in einem Tilari-Schließfach auf dieser Maschine</td>
               <td>Nein</td>
-              <td>Ja (<strong>Vom Server öffnen…</strong>)</td>
+              <td>Ja (<strong>Aus eigenem Speicher öffnen…</strong>)</td>
             </tr>
             <tr>
               <td>Schweres Buch: auf dem Server verarbeiten</td>
@@ -478,7 +480,7 @@
           <li>Starten Sie Tilari. Ein Browser-Tab öffnet sich von selbst.</li>
           <li>
             Öffnen Sie ein Buch von der Platte (<strong>Neue Datei wählen…</strong>) oder aus dem
-            Schließfach (<strong>Vom Server öffnen…</strong>).
+            Schließfach (<strong>Aus eigenem Speicher öffnen…</strong>).
           </li>
           <li>
             Auf Chrome oder Edge am Desktop schreibt <strong>Speichern</strong> dieselbe
@@ -634,7 +636,7 @@ create policy "tilari_locker_delete"
   using (bucket_id = 'tilari' and name like 'tilari/%');</code></pre>
         <h3>In Tilari verbinden</h3>
         <ol>
-          <li><strong>Vom Server öffnen…</strong> → <strong>Eigenes Supabase</strong>.</li>
+          <li><strong>Aus eigenem Speicher öffnen…</strong> → <strong>Eigenes Supabase</strong> (BYO).</li>
           <li>
             Fügen Sie Project URL, Anon-Schlüssel, Bucket (Standard <code>tilari</code>) und das
             <strong>Verschlüsselungsgeheimnis</strong> ein (mindestens 8 Zeichen). Sie können mit

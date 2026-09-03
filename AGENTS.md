@@ -71,7 +71,7 @@ Node server/                           // stdlib node:http
 Option 1 (chosen). See [docs/ENGINE_OPTIONS.md](docs/ENGINE_OPTIONS.md).
 
 The ledger is **tab-local**. Opening a file never uploads it unless the user
-picks “From the server” / save-to-locker. OPFS keeps the working copy across
+connects their own BYO storage (VPS or Supabase) and saves there. OPFS keeps the working copy across
 refresh. First mutate snapshots the original bytes in OPFS. Desktop Kitsas
 WAL: close the desktop app before sharing the same file (COMPATIBILITY.md).
 Locker open fetches the lean DB first; attachments sync in the background

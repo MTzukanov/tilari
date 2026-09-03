@@ -3,7 +3,7 @@ import { expect, type Page } from '@playwright/test'
 export const SETTINGS_CHANGE = 'Muokattiin yrityksen asetuksia'
 export const ALLOCATION_CHANGE = 'Muokattiin kohdennus'
 export const VOUCHER_CREATE = 'Luotiin tosite'
-export const BOOK_SAVED_LOCKER = 'Tallennettu palvelimelle'
+export const BOOK_SAVED_LOCKER = 'Tallennettu omaan säilytykseen'
 export const BOOK_SAVED_DISK = 'Tallennettu tiedostoon'
 
 export async function openSessionChangesPanel(page: Page) {
@@ -122,6 +122,6 @@ export async function saveBookToLocker(page: Page, name = `e2e-session-${Date.no
     expect(dialog.type()).toBe('prompt')
     await dialog.accept(name)
   })
-  await page.getByLabel('Kirjanpitotiedosto').selectOption({ label: 'Tallenna palvelimelle nimellä…' })
-  await expect(page.getByText('Tallennettu palvelimelle.')).toBeVisible({ timeout: 60_000 })
+  await page.getByLabel('Kirjanpitotiedosto').selectOption({ label: 'Tallenna säilytykseen nimellä…' })
+  await expect(page.getByText('Tallennettu omaan säilytykseen.')).toBeVisible({ timeout: 60_000 })
 }
