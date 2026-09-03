@@ -16,6 +16,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: clip;
 }
 
 body {
@@ -26,6 +27,7 @@ body {
   font-family: system-ui, sans-serif;
   line-height: 1.5;
   text-rendering: optimizeLegibility;
+  overflow-x: clip;
 }
 
 a {
@@ -86,6 +88,7 @@ a:hover {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
+  max-width: 100%;
 }
 
 .lang {
@@ -214,7 +217,7 @@ main h1 {
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr));
   gap: 0.75rem;
   margin: 0 0 2rem;
 }
@@ -263,9 +266,14 @@ h3 {
   font-size: 1.05rem;
 }
 
+main {
+  min-width: 0;
+}
+
 p,
 li {
   max-width: 42rem;
+  overflow-wrap: break-word;
 }
 
 ul, ol {
@@ -350,6 +358,46 @@ pre code {
 
   .toc ol {
     columns: 2;
+    column-gap: 1.5rem;
+  }
+}
+
+@media (max-width: 40rem) {
+  .wrap {
+    padding: 0.85rem 1rem 3rem;
+  }
+
+  .mast {
+    align-items: flex-start;
+  }
+
+  .mast-actions {
+    width: 100%;
+  }
+
+  .brand span {
+    max-width: 16rem;
+  }
+
+  .toc ol {
+    columns: 1;
+  }
+
+  main h1 {
+    font-size: 1.5rem;
+  }
+
+  main {
+    overflow-x: auto;
+  }
+
+  table {
+    font-size: 0.85rem;
+  }
+
+  th,
+  td {
+    padding: 0.4rem 0.5rem;
   }
 }
 
