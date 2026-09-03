@@ -61,6 +61,14 @@ export function recordedSyncChips(page: Page) {
   )
 }
 
+/** Drop titles captured so far (same page, no navigation). */
+export async function resetRecordedSyncChips(page: Page) {
+  await page.evaluate(() => {
+    const w = window as Window & { __tilariSyncChips?: string[] }
+    if (w.__tilariSyncChips) w.__tilariSyncChips.length = 0
+  })
+}
+
 /** Match fi-FI currency grouping (space / NBSP / NNBSP) and ASCII or Unicode minus. */
 export function eur(amount: string): RegExp {
   const signed = /^[-−]/.test(amount)

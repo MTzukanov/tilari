@@ -1,6 +1,14 @@
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
-import { clearTilariStorage, confirmEngineOpen, installSyncChipRecorder, openServerBookList, recordedSyncChips, skipWebkitOpfs } from './helpers'
+import {
+  clearTilariStorage,
+  confirmEngineOpen,
+  installSyncChipRecorder,
+  openServerBookList,
+  recordedSyncChips,
+  resetRecordedSyncChips,
+  skipWebkitOpfs,
+} from './helpers'
 import { writeFatTestBook } from './fatBook'
 
 async function clearOpfs(page: import('@playwright/test').Page) {
@@ -85,6 +93,7 @@ test.describe('wasm locker open attachment progress', () => {
     const bookName = `fat-reopen-e2e-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.kitsas`
 
     await clearTilariStorage(page)
+    await installSyncChipRecorder(page)
     const put = await page.request.post(`${baseURL}/api/books`, {
       headers: {
         'Content-Type': 'application/octet-stream',
@@ -105,21 +114,7 @@ test.describe('wasm locker open attachment progress', () => {
       timeout: 180_000,
     })
     await expect(page.locator('.status-chip.status-sync')).toHaveCount(0, { timeout: 180_000 })
-
-    const chipTexts: string[] = []
-    const poll = setInterval(() => {
-      void page
-        .evaluate(() =>
-          [...document.querySelectorAll('.status-chip.status-sync')].map((el) =>
-            (el.textContent || '').trim(),
-          ),
-        )
-        .then((chips) => {
-          for (const c of chips) {
-            if (c && !chipTexts.includes(c)) chipTexts.push(c)
-          }
-        })
-    }, 40)
+    await resetRecordedSyncChips(page)
 
     await openServerBookList(page)
     await page.getByRole('button', { name: bookName }).click()
@@ -128,10 +123,10 @@ test.describe('wasm locker open attachment progress', () => {
       timeout: 180_000,
     })
     await expect(page.locator('.status-chip.status-sync')).toHaveCount(0, { timeout: 180_000 })
-    clearInterval(poll)
 
+    const chipTexts = await recordedSyncChips(page)
     expect(
-      chipTexts.some((c) => /ladataan palvelimelta/i.test(c)),
+      chipTexts.some((c) => /ladataan(?: liitteitä)? palvelimelta/i.test(c)),
       `second open must not download attachments; chips=${JSON.stringify(chipTexts)}`,
     ).toBe(false)
   })
