@@ -1,0 +1,88 @@
+name: Build and Deploy to VPS
+
+on:
+  push:
+    # branches:
+    #  - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build production frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Add VPS to known hosts
+        run: |
+          ssh-keyscan -p ${{ secrets.VPS_SSH_PORT || 22 }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to VPS
+        env:
+          PROJECT_DIR: ${{ vars.VPS_PROJECT_PATH || '${HOME}/tilari' }}
+          SSH_PORT: ${{ secrets.VPS_SSH_PORT || 22 }}
+          SSH_USER: ${{ secrets.VPS_USER }}
+          SSH_HOST: ${{ secrets.VPS_HOST }}
+          TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          ssh -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" "echo 'SSH connection verified'"
+
+          PROJECT_DIR=$(ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "echo $PROJECT_DIR")
+
+          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p '$PROJECT_DIR/server' '$PROJECT_DIR/frontend/src' '$PROJECT_DIR/frontend/dist' '$PROJECT_DIR/docker' '$PROJECT_DIR/data/tmp'"
+
+          scp -P "$SSH_PORT" docker-compose.yml "$SSH_USER@$SSH_HOST:$PROJECT_DIR/"
+          scp -P "$SSH_PORT" docker/entrypoint.sh "$SSH_USER@$SSH_HOST:$PROJECT_DIR/docker/entrypoint.sh"
+          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "chmod 755 '$PROJECT_DIR/docker/entrypoint.sh'"
+
+          rsync -avz --delete -e "ssh -p $SSH_PORT" \
+            --exclude 'node_modules/' \
+            server/ \
+            "$SSH_USER@$SSH_HOST:$PROJECT_DIR/server/"
+
+          rsync -avz --delete -e "ssh -p $SSH_PORT" \
+            frontend/src/ \
+            "$SSH_USER@$SSH_HOST:$PROJECT_DIR/frontend/src/"
+
+          rsync -avz --delete -e "ssh -p $SSH_PORT" \
+            frontend/dist/ \
+            "$SSH_USER@$SSH_HOST:$PROJECT_DIR/frontend/dist/"
+
+          if [ -n "${TUNNEL_TOKEN:-}" ]; then
+            echo "$TUNNEL_TOKEN" | ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
+              "umask 077; cd '$PROJECT_DIR'; tok=\$(cat); if [ -f .env ]; then grep -v '^TUNNEL_TOKEN=' .env > .env.new || true; else : > .env.new; fi; printf 'TUNNEL_TOKEN=%s\n' \"\$tok\" >> .env.new; mv .env.new .env; chmod 600 .env"
+          fi
+
+          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
+            "cd '$PROJECT_DIR' && docker compose up -d tilari && if [ -f .env ] && grep -qE '^TUNNEL_TOKEN=.+' .env; then docker compose --profile tunnel up -d; fi"

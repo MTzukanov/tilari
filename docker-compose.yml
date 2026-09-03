@@ -1,0 +1,58 @@
+# Tilari on the VPS.
+# Official images only. No host ports: Cloudflare Tunnel reaches this network.
+#
+#   docker compose up -d tilari
+#   # after TUNNEL_TOKEN is in .env:
+#   docker compose --profile tunnel up -d
+#
+# Tunnel public hostname tilari.fi must target http://tilari:8000
+# (Compose DNS), not 127.0.0.1.
+
+services:
+  tilari:
+    image: node:24-bookworm-slim
+    restart: unless-stopped
+    working_dir: /app/server
+    environment:
+      TILARI_STATIC: /app/frontend/dist
+      KITSAS_STATIC_DIR: /app/frontend/dist
+      TMPDIR: /data/tmp
+      KITSAS_BOOKS_DIR: /data/books
+      TILARI_HOST: 0.0.0.0
+      TILARI_PORT: "8000"
+    volumes:
+      - ./server:/app/server:ro
+      - ./frontend/src:/app/frontend/src:ro
+      - ./frontend/dist:/app/frontend/dist:ro
+      - ./docker/entrypoint.sh:/entrypoint.sh:ro
+      - ${TILARI_DATA_DIR:-./data}:/data
+      - tilari-node-modules:/app/server/node_modules
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on:
+      tilari:
+        condition: service_healthy
+
+volumes:
+  tilari-node-modules:
