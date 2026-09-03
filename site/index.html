@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="fi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tilari – käyttötavat</title>
+    <meta
+      name="description"
+      content="Tilari-kirjanpidon käyttötavat: yksi HTML-tiedosto, paikallinen palvelin, VPN, tallennus selaimessa, Supabase-lokero sekä Dropbox ja Google Drive."
+    />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="alternate" hreflang="fi" href="./" />
+    <link rel="alternate" hreflang="en" href="en/" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="mast">
+        <a class="brand" href="./">
+          <img src="favicon.svg" alt="" width="32" height="32" />
+          <div>
+            <strong>Tilari</strong>
+            <span>Käyttöohje · kirjanpidon tavat</span>
+          </div>
+        </a>
+        <div class="mast-actions">
+          <a class="open-app" href="tilari.html">Avaa Tilari</a>
+          <nav class="lang" aria-label="Kieli">
+            <a href="./" aria-current="page">Suomi</a>
+            <a href="en/">English</a>
+          </nav>
+        </div>
+      </header>
+
+      <nav class="toc" aria-label="Sisällys">
+        <h2>Sisällys</h2>
+        <ol>
+          <li><a href="#valitse">Valitse tapa</a></li>
+          <li><a href="#kasittely">Kaksi käsittelytapaa</a></li>
+          <li><a href="#html">Yksi HTML-tiedosto</a></li>
+          <li><a href="#paikallinen">Palvelin omalla koneella</a></li>
+          <li><a href="#vpn">Palvelin VPN-verkossa</a></li>
+          <li><a href="#selaimet">Selaimet ja tallennus</a></li>
+          <li><a href="#supabase">Supabase-lokero</a></li>
+          <li><a href="#pilvi">Dropbox ja Google Drive</a></li>
+          <li><a href="#lisaa">Mitä Tilari lisää</a></li>
+          <li><a href="#kenelle">Kenelle</a></li>
+          <li><a href="#tila">Mitä on ja mitä ei</a></li>
+          <li><a href="#pyyda">Pyydä ominaisuuksia</a></li>
+          <li><a href="#muista">Muista</a></li>
+        </ol>
+      </nav>
+
+      <main>
+        <h1>Tilarin käyttötavat</h1>
+        <p class="lead">
+          Tilari on paikallinen kirjanpito-ohjelma, joka avaa ja tallentaa saman
+          <code>.kitsas</code>-tiedoston kuin työpöytä-Kitsas. Tässä versiossa tiedoston voi
+          avata vuorotellen kummassa tahansa; myöhempi Tilari voi tästä poiketa.
+          Se ei ole Kitsas Oy:n tuote, eikä Kitsas Oy tue sitä.
+        </p>
+        <div class="note">
+          <p>
+            Kirjanpito elää tiedostossa tai lokerossa, ei “pilvitilillä”. Valitse alta tapa, joka
+            sopii siihen, kuka käyttää kirjaa ja missä tiedosto asuu.
+          </p>
+        </div>
+
+        <div class="cards">
+          <a href="tilari.html">
+            <strong>Yksi HTML</strong>
+            <span>Avaa tässä selaimessa, tai lataa USB:lle. Ei asennusta.</span>
+          </a>
+          <a href="#paikallinen">
+            <strong>Omalla koneella</strong>
+            <span>Päivittäinen työ. Työkopio säilyy, lokero valinnainen.</span>
+          </a>
+          <a href="#vpn">
+            <strong>VPN</strong>
+            <span>Muutama laite, ei julkista osoitetta.</span>
+          </a>
+          <a href="#selaimet">
+            <strong>Selaimet</strong>
+            <span>Mitkä kirjoittavat suoraan samaan tiedostoon.</span>
+          </a>
+          <a href="#supabase">
+            <strong>Supabase</strong>
+            <span>Oma pilvilokero ilman Tilari-palvelinta.</span>
+          </a>
+          <a href="#pilvi">
+            <strong>Dropbox / Drive</strong>
+            <span>Synkronoitu kansio tai Androidin avaa/tallenna.</span>
+          </a>
+        </div>
+
+        <h2 id="valitse">Valitse tapa</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Tarkoitus</th>
+              <th>Käytä</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Kokeilu, USB-tikku, ei asennusta</td>
+              <td><a href="#html">Yksi HTML-tiedosto</a></td>
+            </tr>
+            <tr>
+              <td>Päivittäinen kirjanpito yhdellä koneella</td>
+              <td><a href="#paikallinen">Paikallinen palvelin ja selain</a></td>
+            </tr>
+            <tr>
+              <td>Sama lokero kotona, toimistossa tai puhelimessa, ei julkista sivua</td>
+              <td><a href="#vpn">Palvelin VPN-verkossa</a></td>
+            </tr>
+            <tr>
+              <td>Kirja omassa Supabase-projektissa, Tilari vaikkapa staattiselta sivulta</td>
+              <td><a href="#supabase">Supabase-lokero</a></td>
+            </tr>
+            <tr>
+              <td><code>.kitsas</code> Dropbox- tai Drive-kansiossa</td>
+              <td><a href="#pilvi">Synkronoitu kansio</a> (työpöytä: Chrome/Edge)</td>
+            </tr>
+            <tr>
+              <td>Julkinen osoite (esim. tilari.fi) ja kirjautuminen portilla</td>
+              <td>Ylläpitäjän VPS-asennus; tämä ohje ei korvaa sitä</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Kaikissa tavoissa kirja avataan selaimessa. Oletus on <strong>Tässä selaimessa</strong>:
+          laskenta tapahtuu omalla laitteella. <strong>Palvelimella</strong> on tarjolla vain, kun
+          Tilari-palvelin on käynnissä (ei Supabase-lokerossa).
+        </p>
+
+        <h2 id="kasittely">Kaksi käsittelytapaa</h2>
+        <p>
+          Käyttöliittymä on aina selaimessa. <strong>Missä kirjanpito lasketaan</strong> on eri
+          valinta. Kun Tilari-<strong>palvelin</strong> (Node) on yhteydessä, kirjaa avatessa
+          kysytään:
+        </p>
+        <ul>
+          <li>
+            <strong>Tässä selaimessa</strong> (oletus) — asiakaspuoli: sqlite pyörii tässä
+            välilehdessä. Palvelin voi silti säilyttää tiedostoa lokerossa, mutta se ei avaa
+            tositteita.
+          </li>
+          <li>
+            <strong>Palvelimella</strong> — palvelinpuoli: sama laskenta ajetaan Node-prosessissa.
+            Joka klikkaus menee rajapintaan.
+          </li>
+        </ul>
+        <p>
+          Ilman Node-palvelinta (yksi HTML, tämä sivusto, Supabase-lokero) on vain
+          <strong>Tässä selaimessa</strong>. Lokero (missä tiedosto asuu) ei ole sama asia kuin
+          käsittelytapa: voit pitää kirjaa palvelimen lokerossa ja silti laskea sen selaimessa.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Tässä selaimessa</th>
+              <th>Palvelimella</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Hyvä puoli</td>
+              <td>
+                Kirja tulkitaan vain tässä välilehdessä. Useampi välilehti tai henkilö voi avata
+                kirjoja (lokeron tallennus käyttää ETag-ristiriitoja). Toimii, kun tiedosto on jo
+                välilehdessä, vaikka verkko katkeaisi. Palvelimen uudelleenkäynnistys ei pyyhi
+                työkopiota.
+              </td>
+              <td>
+                Raskas kirja ja heikko puhelin: sqlite siirtyy palvelimelle. Sama laskentasäännöstö
+                kuin selaimessa. Uudelleenavaaminen voi olla nopeampaa, kun prosessilla on jo istunto.
+              </td>
+            </tr>
+            <tr>
+              <td>Huono puoli</td>
+              <td>
+                Iso kirja heikossa laitteessa voi olla hidas. Koko kirja ladataan selaimeen.
+                Tallentamattomat muutokset ovat tässä välilehdessä, kunnes tallennat.
+              </td>
+              <td>
+                <strong>Yksi avoin kirja per palvelin.</strong> Toinen avaus korvaa ensimmäisen —
+                ei yhteiskäyttöä. Jokainen toimenpide tarvitsee verkon. Palvelimen restart tyhjää
+                istunnon. Palvelin <em>näkee</em> kirjanpidon. Ei toimi Supabase-lokerossa.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Arjen kirjanpitoon ja jaettuun lokeroon: pidä <strong>Tässä selaimessa</strong>.
+          <strong>Palvelimella</strong> on yhdelle käyttäjälle, yksityiselle koneelle, kun kirja
+          on liian raskas laitteelle.
+        </p>
+
+        <h2 id="html">Yksi HTML-tiedosto</h2>
+        <p>
+          Sama ohjelma yhtenä tiedostona (noin 1,4&nbsp;Mt). Tällä sivustolla se on
+          <a href="tilari.html"><code>tilari.html</code></a> —
+          <a href="tilari.html">avaa se tästä</a>. Voit myös tallentaa tiedoston ja avata sen ilman
+          verkkoa.
+        </p>
+        <h3>Tässä osoitteessa (https)</h3>
+        <p>
+          Selain pitää sivua luotettavana: työkopio säilyy päivityksen yli, Chrome/Edge voi
+          tallentaa suoraan tiedostoon, ja <a href="#supabase">Supabase-lokero</a> toimii, jos CORS
+          sallii tämän osoitteen. Tilari-palvelinta ei ole: ei “Palvelimella”-käsittelyä eikä
+          palvelimen kirjalokeroa.
+        </p>
+        <h3>Tiedosto koneella (USB, sähköposti)</h3>
+        <ol>
+          <li>Tallenna <a href="tilari.html"><code>tilari.html</code></a> ja avaa kaksoisklikkaamalla.</li>
+          <li>Valitse <strong>Valitse uusi tiedosto…</strong> ja etsi <code>.kitsas</code>.</li>
+          <li>Tallenna <strong>Tallenna nimellä…</strong> – selain lataa uuden tiedoston.</li>
+        </ol>
+        <p>
+          <code>file://</code>-osoitteessa työkopio ei yleensä säily sivun päivityksen yli, suora
+          ylikirjoitus epäonnistuu, eikä salausta (Supabase) voi luottaa. Sopii esittelyyn.
+          Varsinaiseen kirjanpitoon valitse <a href="#paikallinen">paikallinen asennus</a> tai avaa
+          <a href="tilari.html">https-versio</a>.
+        </p>
+
+        <h2 id="paikallinen">Palvelin ja selain omalla koneella</h2>
+        <p>
+          Tämä on suositeltu tapa yhdelle koneelle: Tilari-ohjelma (AppImage, <code>Tilari.exe</code>,
+          <code>Tilari.app</code> tai ylläpitäjän käynnistämä paikallinen palvelin) avaa selaimen
+          osoitteeseen <code>http://127.0.0.1:8000</code>.
+        </p>
+        <h3>Mitä etua on verrattuna pelkkään HTML-tiedostoon?</h3>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Yksi HTML</th>
+              <th>Palvelin omalla koneella</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Muutokset säilyvät sivun päivityksen yli</td>
+              <td>Ei</td>
+              <td>Kyllä (selaimen työkopio)</td>
+            </tr>
+            <tr>
+              <td>Tallenna suoraan avattuun tiedostoon</td>
+              <td>Harvoin</td>
+              <td>Kyllä Chrome/Edge-työpöydällä</td>
+            </tr>
+            <tr>
+              <td>Kirjat Tilari-lokerossa tällä koneella</td>
+              <td>Ei</td>
+              <td>Kyllä (<strong>Avaa palvelimelta…</strong>)</td>
+            </tr>
+            <tr>
+              <td>Raskas kirja: käsittely palvelimella</td>
+              <td>Ei</td>
+              <td>Kyllä, jos valitset <strong>Palvelimella</strong></td>
+            </tr>
+            <tr>
+              <td>Sama kirja puhelimesta samassa Wi-Fi-verkossa</td>
+              <td>Ei</td>
+              <td>Kyllä, jos palvelin kuuntelee lähiverkkoa</td>
+            </tr>
+            <tr>
+              <td>Asennus</td>
+              <td>Yksi tiedosto</td>
+              <td>Ohjelmapaketti</td>
+            </tr>
+          </tbody>
+        </table>
+        <h3>Näin käytät</h3>
+        <ol>
+          <li>Käynnistä Tilari. Selain aukeaa itsestään.</li>
+          <li>
+            Avaa kirja levyltä (<strong>Valitse uusi tiedosto…</strong>) tai lokerosta
+            (<strong>Avaa palvelimelta…</strong>).
+          </li>
+          <li>
+            Chrome- tai Edge-työpöydällä <strong>Tallenna</strong> kirjoittaa samaan
+            <code>.kitsas</code>-tiedostoon, jos tiedosto on yhdistetty. Muissa selaimissa käytä
+            <strong>Tallenna nimellä…</strong>.
+          </li>
+        </ol>
+        <p>
+          Sulje työpöytä-Kitsas ennen kuin avaat saman tiedoston Tilarissa. Kitsas pitää tiedostoa
+          lukittuna.
+        </p>
+
+        <h2 id="vpn">Palvelin ja selain VPN-verkossa</h2>
+        <p>
+          Sama ohjelma kuin omalla koneella, mutta se pyörii koneella, joka on VPN-verkossa
+          (Tailscale, WireGuard, yrityksen VPN). Muut VPN-laitteet avaavat selaimessa sen osoitteen,
+          esimerkiksi <code>http://100.x.x.x:8000</code>. Julkista verkkosivua ei tarvita.
+        </p>
+        <p>
+          Tilarissa ei ole käyttäjätunnuksia. <strong>Jokainen, joka pääsee osoitteeseen, näkee
+          lokeron kirjat ja voi tallentaa niihin.</strong> VPN-jäsenyys on käyttöoikeus. Älä jaa
+          osoitetta avoimeen Wi-Fi-verkkoon.
+        </p>
+        <h3>Ylläpitäjälle</h3>
+        <ol>
+          <li>Asenna Tilari aina päällä olevalle koneelle (NAS, kotipalvelin, työasema).</li>
+          <li>Liitä kone samaan VPN-verkkoon kuin käyttäjien laitteet.</li>
+          <li>
+            Käynnistä palvelin niin, että se kuuntelee VPN-osoitetta (lähiverkkoon sitominen, esim.
+            <code>--lan</code>, tulostaa <code>TILARI_LAN_URL=</code>).
+          </li>
+          <li>
+            Avaa osoite muilla laitteilla. Kirjat ovat tuon koneen lokerossa; tallenna
+            <strong>Tallenna palvelimelle</strong>.
+          </li>
+        </ol>
+        <p>
+          Jos kaksi ihmistä muokkaa samaa kirjaa yhtä aikaa, toinen tallennus voi estyä (“tiedosto
+          on muuttunut”). Tallenna silloin <strong>Tallenna palvelimelle nimellä…</strong> äläkä
+          ylikirjoita toisen työtä.
+        </p>
+        <p>
+          “Palvelimella”-käsittely pitää kirjan auki vain yhdelle käyttäjälle kerrallaan. Toimistossa
+          pidä oletus <strong>Tässä selaimessa</strong> ja jaa kirja lokeron kautta.
+        </p>
+
+        <h2 id="selaimet">Mitkä selaimet tallentavat suoraan tiedostoon</h2>
+        <p>
+          <strong>Tallenna</strong> yläpalkissa yrittää kirjoittaa samaan tiedostoon, jonka avasit.
+          Se onnistuu vain osassa selaimia, ja vain kun sivu on <code>https://</code> tai
+          <code>localhost</code> (ei pelkkä HTML-tiedosto).
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Selain</th>
+              <th>Suoraan samaan tiedostoon</th>
+              <th>Käytännössä</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Chrome, Edge, Opera, Brave (Windows, macOS, Linux)</td>
+              <td>Kyllä</td>
+              <td>
+                <strong>Valitse uusi tiedosto…</strong> yhdistää tiedoston.
+                <strong>Tallenna</strong> päivittää sen. Dropbox-kansio toimii, jos se on oikea
+                kansio levyllä.
+              </td>
+            </tr>
+            <tr>
+              <td>Firefox</td>
+              <td>Ei</td>
+              <td>Työkopio selaimessa säilyy. Levyllä käytä <strong>Tallenna nimellä…</strong>.</td>
+            </tr>
+            <tr>
+              <td>Safari (Mac, iPhone, iPad)</td>
+              <td>Ei</td>
+              <td>Sama kuin Firefox: lataa kopio.</td>
+            </tr>
+            <tr>
+              <td>Chrome Androidissa</td>
+              <td>Ei luotettavasti</td>
+              <td>
+                Avaa Dropboxista tai Drivesta Androidin tiedostovalitsimella. Tallennus on kopio
+                (Lataukset tai “Tallenna sijaintiin”).
+              </td>
+            </tr>
+            <tr>
+              <td>iPhone / iPad, muut selaimet</td>
+              <td>Ei</td>
+              <td>Jaa tai Tallenna nimellä. Lokero (VPN tai Supabase) on usein helpompi.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Jos selain ei tue suoraa tallennusta, valikossa lukee ohje käyttää
+          <strong>Tallenna nimellä…</strong>. Voit myös valita
+          <strong>Yhdistä alkuperäistiedostoon…</strong>, kun tuki on olemassa mutta tiedosto avattiin
+          ilman kirjoitusoikeutta.
+        </p>
+
+        <h2 id="supabase">Supabase lokerona</h2>
+        <p>
+          Voit pitää kirjat omassa Supabase-projektissa. Tilari-palvelinta ei tarvita: avaat Tilarin
+          staattiselta sivulta (tai paikallisesta asennuksesta) ja yhdistät lokeron selaimessa.
+          Laskenta pysyy <strong>Tässä selaimessa</strong>. Valintaa <strong>Palvelimella</strong> ei
+          ole.
+        </p>
+        <h3>Kertaluonteinen valmistelu (Supabase-konsoli)</h3>
+        <ol>
+          <li>Luo projekti osoitteessa supabase.com ja avaa <strong>Project Settings → API</strong>.</li>
+          <li>
+            Kopioi <strong>Project URL</strong> ja <strong>anon public</strong> -avain. Älä koskaan
+            liitä <code>service_role</code>-avainta Tilarin – se kuuluu vain palvelimelle.
+          </li>
+          <li>
+            Luo Storageyn <strong>yksityinen</strong> bucket nimeltä <code>tilari</code> (ei public
+            CDN).
+          </li>
+          <li>
+            Storage-käytännöt (RLS) bucketille, polku <code>tilari/</code> (anon-rooli, select /
+            insert / update / delete).
+          </li>
+          <li>
+            Storage CORS: Tilarin https-osoite, menetelmät GET, POST, PUT, DELETE, otsikot
+            <code>authorization</code>, <code>apikey</code>, <code>content-type</code>,
+            <code>x-upsert</code>. Pelkkä <code>file://</code>-HTML ei toimi luotettavasti.
+          </li>
+        </ol>
+        <p>Esimerkki RLS-käytännöistä:</p>
+        <pre><code>create policy "tilari_locker_select"
+  on storage.objects for select to anon
+  using (bucket_id = 'tilari' and name like 'tilari/%');
+create policy "tilari_locker_insert"
+  on storage.objects for insert to anon
+  with check (bucket_id = 'tilari' and name like 'tilari/%');
+create policy "tilari_locker_update"
+  on storage.objects for update to anon
+  using (bucket_id = 'tilari' and name like 'tilari/%');
+create policy "tilari_locker_delete"
+  on storage.objects for delete to anon
+  using (bucket_id = 'tilari' and name like 'tilari/%');</code></pre>
+        <h3>Yhdistä Tilarissa</h3>
+        <ol>
+          <li><strong>Avaa palvelimelta…</strong> → <strong>Oma Supabase</strong>.</li>
+          <li>
+            Liitä Project URL, anon-avain, bucket (oletus <code>tilari</code>) ja
+            <strong>salaava avain</strong> (vähintään 8 merkkiä). Voit luoda avaimen
+            <strong>Luo</strong>-painikkeella – tallenna se muualle heti.
+          </li>
+          <li><strong>Yhdistä</strong>. Kirjat näkyvät listassa; tallenna palvelimelle kuten muutenkin.</li>
+        </ol>
+        <p>
+          Tiedostot salataan selaimessa ennen lähetystä. URL ja anon-avain avaavat bucketin;
+          salaava avain avaa tiedostot. Jos avain katoaa, kirjoja ei voi palauttaa. Tiedot ovat vain
+          tässä selainvälilehdessä; sulje välilehti, niin yhteys katkeaa.
+        </p>
+
+        <h2 id="pilvi">Dropbox-kansio ja Android (Drive / Dropbox)</h2>
+        <h3>Työpöytä: asennettu Dropbox tai Google Drive</h3>
+        <p>
+          Tilarilla ei ole Dropbox- tai Drive-kirjautumista. Käytä kansiota, jonka työpöytäsovellus
+          synkronoi levylle.
+        </p>
+        <ol>
+          <li>Asenna Dropbox tai Google Drive niin, että kirjanpito on oikea kansio koneella.</li>
+          <li>
+            Avaa kirja <strong>Chromella tai Edgellä</strong> tuosta kansiosta, jotta
+            <strong>Tallenna</strong> kirjoittaa samaan tiedostoon.
+          </li>
+          <li>Synkronointi vie uuden version muihin laitteisiin.</li>
+        </ol>
+        <p>
+          Firefox ja Safari lataavat kopion: siirrä se itse synkronoituun kansioon, muuten syntyy
+          rinnakkaisia tiedostoja. Älä pidä työpöytä-Kitsasta auki samaan tiedostoon. Jos kaksi
+          ihmistä tallentaa yhtä aikaa, pilvipalvelin pitää viimeisen version – Tilarin lokeron
+          ristiriitavaroitusta ei ole.
+        </p>
+        <h3>Android: avaa ja tallenna Dropboxista tai Drivesta</h3>
+        <p>
+          Puhelimessa ei ole samaa “kirjoita suoraan tiedostoon” -yhteyttä kuin Chrome-työpöydällä.
+        </p>
+        <ul>
+          <li>
+            <strong>Avaa:</strong> <strong>Valitse uusi tiedosto…</strong> → Androidin
+            tiedostovalitsin → Dropbox, Google Drive tai Tiedostot. Tilari lukee tiedoston.
+          </li>
+          <li>
+            <strong>Tallenna:</strong> <strong>Tallenna nimellä…</strong> vie kopion Lataukset-kansioon
+            tai selaimen sijaintivalintaan. Lataa se sieltä Driveen tai Dropboxiin, tai valitse
+            järjestelmän “Tallenna sijaintiin”, jos selain sen näyttää.
+          </li>
+        </ul>
+        <p>
+          Jos sama kirja kiertää puhelimen ja tietokoneen välillä jatkuvasti, VPN-lokero tai
+          Supabase on vähemmän virhealtis kuin Lataukset-kansio.
+        </p>
+
+        <h2 id="lisaa">Mitä Tilari lisää</h2>
+        <p>
+          Työpöytä-Kitsas on edelleen paikka, jossa perustat uuden yrityksen ja
+          jossa ovat toiminnot, joita Tilarissa ei vielä ole. Tilari tuo sen päälle:
+        </p>
+        <ul>
+          <li>Selain: yksi HTML-tiedosto, paikallinen palvelin tai oma lokero</li>
+          <li>Aikanavigointi: <strong>Kuukausi</strong> / <strong>Tilikausi</strong> / <strong>Kaikki</strong> ja edellinen/seuraava raporteissa ja pääkirjassa</li>
+          <li>Raportit, joista pääsee klikkaamalla taseesta tilille ja tositteeseen, sekä kuukausikaaviot (liikevaihto, tulos, verot)</li>
+          <li>Juokseva saldo pääkirjassa</li>
+          <li>Harjoitustila ja istunnon muutosloki</li>
+          <li>Työkopio selaimessa; Chromium voi tallentaa suoraan alkuperäiseen tiedostoon</li>
+          <li>Valinnainen lokero (Node tai oma Supabase, salaus selaimessa)</li>
+          <li>Linux-, Windows- ja macOS-paketit ilman Qt-työkaluketjua</li>
+        </ul>
+
+        <h2 id="kenelle">Kenelle</h2>
+        <p>
+          Tekijä on tehnyt Tilarin <strong>omaan käyttöön</strong>: suomalainen
+          <strong>osakeyhtiö</strong> ja suhteellisen vähän tositteita (tyypillinen
+          kevytyrittäjä / freelancer). Suuria kirjoja, yhdistystä, asunto-osakeyhtiötä,
+          toiminimeä ja muita ALV-asetuksia ei ole testattu arjessa. Tiedosto
+          todennäköisesti aukeaa; toimintaa niissä ei ole taattu.
+        </p>
+
+        <h2 id="tila">Mitä on ja mitä ei</h2>
+        <p>
+          Tässä versiossa. Seuraavaa ei ole aikataulutettu — kerro tarpeesta
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussionsissa</a>.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Alue</th>
+              <th>Tila</th>
+              <th>Huomio</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Avaa olemassa oleva <code>.kitsas</code></td>
+              <td>Mukana</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Luo <strong>uusi</strong> tyhjä kirja</td>
+              <td>Mukana</td>
+              <td>Yritystilikartta: nimi, Y-tunnus, ensimmäinen tilikausi, ALV, harjoitus. Yhdistys ja taloyhtiö edelleen työpöytä-Kitsaksessa</td>
+            </tr>
+            <tr>
+              <td>Meno / tulo / siirto / muu</td>
+              <td>Mukana</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Tiliote</td>
+              <td>Osittain</td>
+              <td>Muokkaus ja rivin irrotus omaksi tositteeksi. Ei pankkiaineiston tuontia</td>
+            </tr>
+            <tr>
+              <td>Liitteet</td>
+              <td>Osittain</td>
+              <td>Lataus ja esikatselu. Ei OCR/tulkintaa, ei automaattista kutistusta</td>
+            </tr>
+            <tr>
+              <td>Tililuettelo</td>
+              <td>Ei vielä</td>
+              <td>Tilikartta luetaan tiedostosta; ei muokkainta</td>
+            </tr>
+            <tr>
+              <td>Arkisto</td>
+              <td>Ei vielä</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>ALV</td>
+              <td>Osittain</td>
+              <td>HTML-ilmoitus; ei lähetystä OmaVeroon</td>
+            </tr>
+            <tr>
+              <td>Tilinpäätös</td>
+              <td>Mukana</td>
+              <td>Ei toimintakertomusta eikä konsernia</td>
+            </tr>
+            <tr>
+              <td>Laskutus / kierto / palkat</td>
+              <td>Ei vielä</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="pyyda">Pyydä ominaisuuksia</h2>
+        <p>
+          Jos kaipaat Kitsaksen vanhaa toimintoa tai uutta Tilarin ideaa, avaa keskustelu
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussionsissa</a>.
+          Tekijä priorisoi sen mukaan, mitä oikeasti käytetään.
+        </p>
+
+        <h2 id="muista">Muista</h2>
+        <ul>
+          <li>
+            Tallennettu <code>.kitsas</code>-tiedosto on tässä versiossa vaihdettavissa
+            työpöytä-Kitsaksen kanssa. Sulje työpöytä-Kitsas ennen kuin Tilarilla
+            kirjoitetaan samaan polkuun.
+          </li>
+          <li>
+            Vie Kitsas-työpöydälle kelpaava tiedosto Tilarin tallennuksella (liitteet kootaan
+            tiedostoon). Lokeron sisäinen työkopio voi olla “laiha” eikä aukea Kitsaksessa sellaisenaan.
+          </li>
+          <li>Tilarissa ei ole laskutusta eikä kiertoa tässä versiossa.</li>
+        </ul>
+      </main>
+
+      <footer class="foot">
+        <p>
+          © 2026 Tilari. Yhteensopiva Kitsas <code>.kitsas</code>-tiedostojen kanssa. Ei Kitsas Oy:n
+          tuote. Lisenssi: <a href="LICENSE">GPL-3</a>. Kirjastot:
+          <a href="THIRD_PARTY.md">THIRD_PARTY.md</a>. Kehittäjäohjeet (englanti): kansion
+          <code>docs/</code> Markdown-tiedostot.
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

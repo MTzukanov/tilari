@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tilari – ways to work</title>
+    <meta
+      name="description"
+      content="Tilari working modes: single HTML file, local server, VPN, in-place browser save, Supabase locker, and Dropbox or Google Drive."
+    />
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="alternate" hreflang="en" href="./" />
+    <link rel="alternate" hreflang="fi" href="../" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="mast">
+        <a class="brand" href="./">
+          <img src="../favicon.svg" alt="" width="32" height="32" />
+          <div>
+            <strong>Tilari</strong>
+            <span>User guide · ways to keep the books</span>
+          </div>
+        </a>
+        <div class="mast-actions">
+          <a class="open-app" href="../tilari.html">Open Tilari</a>
+          <nav class="lang" aria-label="Language">
+            <a href="../">Suomi</a>
+            <a href="./" aria-current="page">English</a>
+          </nav>
+        </div>
+      </header>
+
+      <nav class="toc" aria-label="Contents">
+        <h2>Contents</h2>
+        <ol>
+          <li><a href="#choose">Choose a setup</a></li>
+          <li><a href="#engines">Two processing modes</a></li>
+          <li><a href="#html">One HTML file</a></li>
+          <li><a href="#local">Server on this computer</a></li>
+          <li><a href="#vpn">Server on a VPN</a></li>
+          <li><a href="#browsers">Browsers and saving</a></li>
+          <li><a href="#supabase">Supabase locker</a></li>
+          <li><a href="#cloud">Dropbox and Google Drive</a></li>
+          <li><a href="#adds">What Tilari adds</a></li>
+          <li><a href="#audience">Who this is for</a></li>
+          <li><a href="#status">What is in and what is not</a></li>
+          <li><a href="#request">Request features</a></li>
+          <li><a href="#remember">Things to remember</a></li>
+        </ol>
+      </nav>
+
+      <main>
+        <h1>How to run Tilari</h1>
+        <p class="lead">
+          Tilari is a local-first ledger that opens and writes the same
+          <code>.kitsas</code> files as desktop Kitsas. In this version you can
+          switch a saved file between the two; that may change in a later Tilari.
+          It is not a Kitsas Oy product, and Kitsas Oy does not support it.
+        </p>
+        <div class="note">
+          <p>
+            The books live in a file or a locker, not in a Tilari cloud account. Pick the setup
+            that matches who uses the book and where the file should sit.
+          </p>
+        </div>
+
+        <div class="cards">
+          <a href="../tilari.html">
+            <strong>One HTML file</strong>
+            <span>Open in this browser, or download for USB. No install.</span>
+          </a>
+          <a href="#local">
+            <strong>This computer</strong>
+            <span>Day-to-day work. Working copy plus optional locker.</span>
+          </a>
+          <a href="#vpn">
+            <strong>VPN</strong>
+            <span>A few devices, no public website.</span>
+          </a>
+          <a href="#browsers">
+            <strong>Browsers</strong>
+            <span>Which ones overwrite the file in place.</span>
+          </a>
+          <a href="#supabase">
+            <strong>Supabase</strong>
+            <span>Your own cloud locker without a Tilari server.</span>
+          </a>
+          <a href="#cloud">
+            <strong>Dropbox / Drive</strong>
+            <span>Mounted folder, or Android open/save.</span>
+          </a>
+        </div>
+
+        <h2 id="choose">Choose a setup</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>You want</th>
+              <th>Use</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>A trial, a USB stick, no install</td>
+              <td><a href="#html">One HTML file</a></td>
+            </tr>
+            <tr>
+              <td>Daily bookkeeping on one machine</td>
+              <td><a href="#local">Local server and browser</a></td>
+            </tr>
+            <tr>
+              <td>The same locker at home, in the office, or on a phone, with no public URL</td>
+              <td><a href="#vpn">Server on a VPN</a></td>
+            </tr>
+            <tr>
+              <td>The book in your own Supabase project, Tilari from a static page</td>
+              <td><a href="#supabase">Supabase locker</a></td>
+            </tr>
+            <tr>
+              <td>A <code>.kitsas</code> file inside Dropbox or Drive</td>
+              <td><a href="#cloud">Synced folder</a> (desktop: Chrome/Edge)</td>
+            </tr>
+            <tr>
+              <td>A public hostname and a login gate</td>
+              <td>Your admin’s VPS deploy; this page does not replace that</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          In every setup the book opens in the browser. The UI is Finnish. The default engine is
+          <abbr title="Tässä selaimessa"><strong>In this browser</strong></abbr>: posting runs on your device.
+          <abbr title="Palvelimella"><strong>On the server</strong></abbr> appears only when a Tilari server is
+          running (not with a Supabase locker).
+        </p>
+
+        <h2 id="engines">Two processing modes</h2>
+        <p>
+          The UI always runs in the browser. <strong>Where the ledger is computed</strong> is a
+          separate choice. When a Tilari <strong>Node</strong> backend is connected, opening a
+          book asks:
+        </p>
+        <ul>
+          <li>
+            <abbr title="Tässä selaimessa"><strong>In this browser</strong></abbr> (default) — client-side: SQLite runs in this tab.
+            The server can still store the file in a locker, but it does not interpret vouchers.
+          </li>
+          <li>
+            <abbr title="Palvelimella"><strong>On the server</strong></abbr> — server-side: the same math runs in the Node process.
+            Every click goes through the API.
+          </li>
+        </ul>
+        <p>
+          Without a Node backend (one HTML file, this site, a Supabase locker) only
+          <abbr title="Tässä selaimessa"><strong>In this browser</strong></abbr> exists. The locker (where the file sits) is not the
+          same as the engine: you can keep a book on the server locker and still process it in
+          the tab.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>In this browser (client)</th>
+              <th>On the server</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Advantages</td>
+              <td>
+                The book is interpreted only in this tab. Several tabs or people can open books
+                (locker save uses ETag conflicts). Once the file is in the tab, work can continue
+                if the network drops. A Node restart does not wipe the working copy.
+              </td>
+              <td>
+                A heavy book on a weak phone: SQLite moves to the host. Same posting rules as the
+                browser. Reopening can be faster while the process still has a session.
+              </td>
+            </tr>
+            <tr>
+              <td>Disadvantages</td>
+              <td>
+                A large book on a weak device can be slow. The whole book is loaded into the
+                browser. Unsaved edits live in this tab until you save.
+              </td>
+              <td>
+                <strong>One open book per server process.</strong> A second open replaces the
+                first — not multi-user. Every action needs the network. A restart clears the
+                session. The server <em>sees</em> the ledger. Not available with a Supabase locker.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          For daily work and a shared locker, keep <abbr title="Tässä selaimessa"><strong>In this browser</strong></abbr>.
+          <abbr title="Palvelimella"><strong>On the server</strong></abbr> is for one operator on a private host when the book is
+          too heavy for the device.
+        </p>
+
+        <h2 id="html">One HTML file</h2>
+        <p>
+          The same program as a single file (about 1.4&nbsp;MB). On this site it is
+          <a href="../tilari.html"><code>tilari.html</code></a> —
+          <a href="../tilari.html">open it here</a>. You can also save the file and open it offline.
+        </p>
+        <h3>On this URL (https)</h3>
+        <p>
+          The browser treats the page as a secure context: the working copy survives a refresh,
+          Chrome/Edge can save in place, and the <a href="#supabase">Supabase locker</a> works if
+          CORS allows this origin. There is no Tilari server:
+          no <abbr title="Palvelimella"><strong>On the server</strong></abbr> and no Node book locker.
+        </p>
+        <h3>A file on disk (USB, email)</h3>
+        <ol>
+          <li>Save <a href="../tilari.html"><code>tilari.html</code></a> and double-click it.</li>
+          <li>Choose <strong>Valitse uusi tiedosto…</strong> and pick a <code>.kitsas</code>.</li>
+          <li>Save with <strong>Tallenna nimellä…</strong> — the browser downloads a new file.</li>
+        </ol>
+        <p>
+          On <code>file://</code> the working copy usually dies on refresh, in-place overwrite
+          fails, and you should not trust encryption (Supabase). Fine for a demo. For real books
+          use the <a href="#local">local install</a> or the
+          <a href="../tilari.html">https copy</a>.
+        </p>
+
+        <h2 id="local">Server and client on this computer</h2>
+        <p>
+          This is the usual setup for one machine: the Tilari program (AppImage,
+          <code>Tilari.exe</code>, <code>Tilari.app</code>, or a local server your admin starts)
+          opens a browser at <code>http://127.0.0.1:8000</code>.
+        </p>
+        <h3>What is the advantage over a single HTML file?</h3>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>One HTML file</th>
+              <th>Server on this computer</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Edits survive a page refresh</td>
+              <td>No</td>
+              <td>Yes (browser working copy)</td>
+            </tr>
+            <tr>
+              <td>Save into the file you opened</td>
+              <td>Rarely</td>
+              <td>Yes, on Chrome/Edge desktop</td>
+            </tr>
+            <tr>
+              <td>Books in a Tilari locker on this machine</td>
+              <td>No</td>
+              <td>Yes (<strong>Avaa palvelimelta…</strong>)</td>
+            </tr>
+            <tr>
+              <td>Heavy book: process on the server</td>
+              <td>No</td>
+              <td>Yes, if you pick <abbr title="Palvelimella"><strong>On the server</strong></abbr></td>
+            </tr>
+            <tr>
+              <td>Same book from a phone on the same Wi-Fi</td>
+              <td>No</td>
+              <td>Yes, if the server listens on the LAN</td>
+            </tr>
+            <tr>
+              <td>Install</td>
+              <td>One file</td>
+              <td>An application pack</td>
+            </tr>
+          </tbody>
+        </table>
+        <h3>How to use it</h3>
+        <ol>
+          <li>Start Tilari. A browser tab opens on its own.</li>
+          <li>
+            Open a book from disk (<strong>Valitse uusi tiedosto…</strong>) or from the locker
+            (<strong>Avaa palvelimelta…</strong>).
+          </li>
+          <li>
+            On Chrome or Edge desktop, <strong>Tallenna</strong> writes the same
+            <code>.kitsas</code> if the file is linked. In other browsers use
+            <strong>Tallenna nimellä…</strong>.
+          </li>
+        </ol>
+        <p>
+          Quit desktop Kitsas before opening the same file in Tilari. Kitsas keeps an exclusive
+          lock.
+        </p>
+
+        <h2 id="vpn">Server and client on a VPN</h2>
+        <p>
+          The same program as on your own computer, running on a machine that is on a VPN
+          (Tailscale, WireGuard, a company VPN). Other VPN devices open that address in a browser,
+          for example <code>http://100.x.x.x:8000</code>. You do not need a public website.
+        </p>
+        <p>
+          Tilari has no user accounts. <strong>Anyone who can reach the address can see the locker
+          books and save to them.</strong> VPN membership is the access control. Do not share the
+          address on open Wi-Fi.
+        </p>
+        <h3>For the person who installs it</h3>
+        <ol>
+          <li>Install Tilari on a machine that stays on (NAS, home server, office PC).</li>
+          <li>Join that machine to the same VPN as the people who will use it.</li>
+          <li>
+            Start the server so it listens on the VPN address (LAN bind, e.g. <code>--lan</code>,
+            prints <code>TILARI_LAN_URL=</code>).
+          </li>
+          <li>
+            Open that URL on the other devices. Books live in that machine’s locker; save with
+            <strong>Tallenna palvelimelle</strong>.
+          </li>
+        </ol>
+        <p>
+          If two people edit the same book at once, the second save can be rejected (“the file
+          changed”). Then use <strong>Tallenna palvelimelle nimellä…</strong> instead of
+          overwriting the other person’s work.
+        </p>
+        <p>
+          <abbr title="Palvelimella"><strong>On the server</strong></abbr> processing keeps one book open for one operator. In an
+          office keep the default <abbr title="Tässä selaimessa"><strong>In this browser</strong></abbr> and share through the locker.
+        </p>
+
+        <h2 id="browsers">Which browsers save the file in place</h2>
+        <p>
+          Header <strong>Tallenna</strong> tries to write the same path you opened. That works only
+          in some browsers, and only when the page is <code>https://</code> or
+          <code>localhost</code> (not a lone HTML file).
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Browser</th>
+              <th>Overwrite the opened file</th>
+              <th>In practice</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Chrome, Edge, Opera, Brave (Windows, macOS, Linux)</td>
+              <td>Yes</td>
+              <td>
+                <strong>Valitse uusi tiedosto…</strong> links the file.
+                <strong>Tallenna</strong> updates it. A Dropbox folder works if it is a real
+                directory on disk.
+              </td>
+            </tr>
+            <tr>
+              <td>Firefox</td>
+              <td>No</td>
+              <td>The working copy in the browser still survives. On disk, use <strong>Tallenna nimellä…</strong>.</td>
+            </tr>
+            <tr>
+              <td>Safari (Mac, iPhone, iPad)</td>
+              <td>No</td>
+              <td>Same as Firefox: download a copy.</td>
+            </tr>
+            <tr>
+              <td>Chrome on Android</td>
+              <td>Not reliably</td>
+              <td>
+                Open from Dropbox or Drive with the Android document picker. Save is a copy
+                (Downloads or “Save to”).
+              </td>
+            </tr>
+            <tr>
+              <td>iPhone / iPad, other browsers</td>
+              <td>No</td>
+              <td>Share or <strong>Tallenna nimellä…</strong>. A locker (VPN or Supabase) is often easier.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          If the browser cannot write in place, the menu tells you to use
+          <strong>Tallenna nimellä…</strong>. You can also
+          <strong>Yhdistä alkuperäistiedostoon…</strong> (link to the original file) when the API
+          exists but the book was opened without write permission.
+        </p>
+
+        <h2 id="supabase">Supabase as a locker</h2>
+        <p>
+          You can keep books in your own Supabase project. You do not need a Tilari server: open
+          Tilari from a static host (or a local install) and connect the locker in the browser.
+          Posting stays <abbr title="Tässä selaimessa"><strong>In this browser</strong></abbr>. <abbr title="Palvelimella"><strong>On the server</strong></abbr> is not
+          offered.
+        </p>
+        <h3>One-time setup (Supabase dashboard)</h3>
+        <ol>
+          <li>Create a project at supabase.com and open <strong>Project Settings → API</strong>.</li>
+          <li>
+            Copy the <strong>Project URL</strong> and the <strong>anon public</strong> key. Never
+            paste the <code>service_role</code> key into Tilari — that key is for a backend only.
+          </li>
+          <li>
+            In Storage, create a <strong>private</strong> bucket named <code>tilari</code> (not a
+            public CDN).
+          </li>
+          <li>
+            Storage policies (RLS) on that bucket for the prefix <code>tilari/</code> (anon role,
+            select / insert / update / delete).
+          </li>
+          <li>
+            Storage CORS: the Tilari https origin, methods GET, POST, PUT, DELETE, headers
+            <code>authorization</code>, <code>apikey</code>, <code>content-type</code>,
+            <code>x-upsert</code>. A <code>file://</code> HTML file will not work reliably.
+          </li>
+        </ol>
+        <p>Example RLS policies:</p>
+        <pre><code>create policy "tilari_locker_select"
+  on storage.objects for select to anon
+  using (bucket_id = 'tilari' and name like 'tilari/%');
+create policy "tilari_locker_insert"
+  on storage.objects for insert to anon
+  with check (bucket_id = 'tilari' and name like 'tilari/%');
+create policy "tilari_locker_update"
+  on storage.objects for update to anon
+  using (bucket_id = 'tilari' and name like 'tilari/%');
+create policy "tilari_locker_delete"
+  on storage.objects for delete to anon
+  using (bucket_id = 'tilari' and name like 'tilari/%');</code></pre>
+        <h3>Connect in Tilari</h3>
+        <ol>
+          <li><strong>Avaa palvelimelta…</strong> → <strong>Oma Supabase</strong>.</li>
+          <li>
+            Paste Project URL, anon key, bucket (default <code>tilari</code>), and the
+            <strong>salaava avain</strong> (encryption secret, at least 8 characters). You can
+            <strong>Luo</strong> a secret — copy it somewhere else immediately.
+          </li>
+          <li><strong>Yhdistä</strong>. Books appear in the list; save to the locker as usual.</li>
+        </ol>
+        <p>
+          Files are encrypted in the browser before upload. The URL and anon key open the bucket;
+          the secret opens the files. A lost secret means lost books. Settings stay in this tab
+          only; closing the tab drops the connection.
+        </p>
+
+        <h2 id="cloud">Dropbox folder and Android (Drive / Dropbox)</h2>
+        <h3>Desktop: mounted Dropbox or Google Drive</h3>
+        <p>
+          Tilari has no Dropbox or Drive login. Use the folder the desktop client syncs to disk.
+        </p>
+        <ol>
+          <li>Install Dropbox or Google Drive so the book is a real folder on the machine.</li>
+          <li>
+            Open the book with <strong>Chrome or Edge</strong> from that folder so
+            <strong>Tallenna</strong> writes the same file.
+          </li>
+          <li>The vendor client uploads the new bytes to other devices.</li>
+        </ol>
+        <p>
+          Firefox and Safari download a copy: put it back in the synced folder yourself, or you
+          will fork files. Do not leave desktop Kitsas open on the same path. If two people save
+          at once, the cloud keeps the last write — Tilari’s locker conflict warning does not
+          apply.
+        </p>
+        <h3>Android: open and save from Dropbox or Drive</h3>
+        <p>
+          The phone does not get the same “write this path” link as Chrome on the desktop.
+        </p>
+        <ul>
+          <li>
+            <strong>Open:</strong> <strong>Valitse uusi tiedosto…</strong> → Android document
+            picker → Dropbox, Google Drive, or Files. Tilari reads the bytes.
+          </li>
+          <li>
+            <strong>Save:</strong> <strong>Tallenna nimellä…</strong> puts a copy in Downloads or
+            in the browser’s location sheet. Upload it to Drive or Dropbox from there, or use the
+            system “Save to” target if the browser shows one.
+          </li>
+        </ul>
+        <p>
+          If the same book moves between a phone and a PC all the time, a VPN locker or Supabase
+          is less error-prone than the Downloads folder.
+        </p>
+
+        <h2 id="adds">What Tilari adds</h2>
+        <p>
+          Desktop Kitsas is still where you create a new company and where features
+          Tilari has not copied yet live. On top of that, Tilari adds:
+        </p>
+        <ul>
+          <li>Browser: one HTML file, a local server, or your own locker</li>
+          <li>Time navigation: <abbr title="Kuukausi">Month</abbr> / <abbr title="Tilikausi">financial year</abbr> / <abbr title="Kaikki">all</abbr> and prev/next on reports and ledgers</li>
+          <li>Click-through reports (balance sheet → account → voucher) and monthly charts (turnover, profit, tax)</li>
+          <li>Running balance on the account ledger</li>
+          <li>Practice mode and an in-session change log</li>
+          <li>A working copy in the tab; Chromium can save over the original file</li>
+          <li>Optional locker (Node, or your own Supabase bucket, encrypted in the browser)</li>
+          <li>Linux, Windows, and macOS packs without a Qt toolchain</li>
+        </ul>
+
+        <h2 id="audience">Who this is for</h2>
+        <p>
+          The author built Tilari for <strong>his own books</strong>: a Finnish
+          <strong>osakeyhtiö</strong> (limited company) with relatively few vouchers
+          (typical for freelancers). Large ledgers, associations, housing companies,
+          sole traders, and other VAT setups have not been a daily test bed. Files
+          should still open; behaviour there is not guaranteed.
+        </p>
+
+        <h2 id="status">What is in and what is not</h2>
+        <p>
+          This version. There is no published schedule — ask in
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th>Status</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Open an existing <code>.kitsas</code></td>
+              <td>In</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Create a <strong>new</strong> empty book</td>
+              <td>In</td>
+              <td>Business chart: name, business id, first financial year, VAT, practice. Associations and housing companies still start in desktop Kitsas</td>
+            </tr>
+            <tr>
+              <td>Expense / income / transfer / other</td>
+              <td>In</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Bank statement (tiliote)</td>
+              <td>Partial</td>
+              <td>Edit and split a line to its own voucher. No bank-file import</td>
+            </tr>
+            <tr>
+              <td>Attachments</td>
+              <td>Partial</td>
+              <td>Upload and preview. No OCR / parse, no auto-shrink</td>
+            </tr>
+            <tr>
+              <td>Chart of accounts (tililuettelo)</td>
+              <td>Not yet</td>
+              <td>Accounts are read from the file; no editor</td>
+            </tr>
+            <tr>
+              <td>Archive (arkisto)</td>
+              <td>Not yet</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>VAT (ALV)</td>
+              <td>Partial</td>
+              <td>HTML declaration; no OmaVero submit</td>
+            </tr>
+            <tr>
+              <td>Year-end closing</td>
+              <td>In</td>
+              <td>No annual report / group accounts</td>
+            </tr>
+            <tr>
+              <td>Invoicing / workflow / payroll</td>
+              <td>Not yet</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="request">Request features</h2>
+        <p>
+          If you miss an old Kitsas feature or have a new Tilari idea, open a thread in
+          <a href="https://github.com/MTzukanov/tilari/discussions">GitHub Discussions</a>.
+          Work is prioritized by what people actually use.
+        </p>
+
+        <h2 id="remember">Things to remember</h2>
+        <ul>
+          <li>
+            A saved <code>.kitsas</code> file is interchangeable with desktop Kitsas in this
+            version. Quit desktop Kitsas before Tilari writes the same path.
+          </li>
+          <li>
+            A save meant for desktop Kitsas reassembles attachments into the file. The locker’s
+            internal working copy can be “lean” and will not open in Kitsas as-is.
+          </li>
+          <li>Billing and workflow are not in this version.</li>
+        </ul>
+      </main>
+
+      <footer class="foot">
+        <p>
+          © 2026 Tilari. Compatible with Kitsas <code>.kitsas</code> files. Not a Kitsas Oy
+          product. License: <a href="../LICENSE">GPL-3</a>. Libraries:
+          <a href="../THIRD_PARTY.md">THIRD_PARTY.md</a>. Developer docs (English Markdown) live in
+          the <code>docs/</code> folder.
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>
