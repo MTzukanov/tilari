@@ -10,44 +10,117 @@ export type VatChoice = {
   label: string
 }
 
-const VAT_DEFS: { key: string; code: number; percent: number }[] = [
-  { key: '0:0', code: 0, percent: 0 },
-  { key: '21:25.5', code: 21, percent: 25.5 },
-  { key: '21:24', code: 21, percent: 24 },
-  { key: '11:25.5', code: 11, percent: 25.5 },
-  { key: '11:24', code: 11, percent: 24 },
-  { key: '28:25.5', code: 28, percent: 25.5 },
-  { key: '18:25.5', code: 18, percent: 25.5 },
-  { key: '29:25.5', code: 29, percent: 25.5 },
-  { key: '12:25.5', code: 12, percent: 25.5 },
-  { key: '19:0', code: 19, percent: 0 },
-  { key: '25:25.5', code: 25, percent: 25.5 },
+export type VatTypeChoice = {
+  code: number
+  label: string
+  /** Kitsas VerotyyppiModel nollalaji — percent box is hidden. */
+  zeroRate: boolean
+}
+
+/** Kitsas tulomenoapuri / tiliotekirjaaja / muumuokkausdlg alvProssa list. */
+export const VAT_RATES = [25.5, 24, 14, 13.5, 10] as const
+
+/** Kitsas paivitaVeroFiltterit: expense ≈ 2x, income ≈ 1x (+ veroton). */
+export type VatTypeKind = 'expense' | 'income' | 'all'
+
+const VAT_TYPE_DEFS: { code: number; zeroRate?: boolean; kind: 'both' | 'expense' | 'income' }[] = [
+  { code: 0, zeroRate: true, kind: 'both' },
+  { code: 21, kind: 'expense' },
+  { code: 11, kind: 'income' },
+  { code: 28, kind: 'expense' },
+  { code: 18, kind: 'income' },
+  { code: 29, kind: 'expense' },
+  { code: 12, kind: 'income' },
+  { code: 19, zeroRate: true, kind: 'income' },
+  { code: 25, kind: 'expense' },
 ]
 
-export function vatChoices(): VatChoice[] {
-  return VAT_DEFS.map((c) => ({ ...c, label: t(`vat.choices.${c.key}`) }))
+function typeLabel(code: number): string {
+  return t(`vat.types.${code}`)
+}
+
+export function vatTypeKindForVoucher(voucherType: number): VatTypeKind {
+  if (voucherType === 100) return 'expense'
+  if (voucherType === 200) return 'income'
+  return 'all'
+}
+
+export function vatTypeChoices(kind: VatTypeKind = 'all'): VatTypeChoice[] {
+  return VAT_TYPE_DEFS.filter((d) => kind === 'all' || d.kind === 'both' || d.kind === kind).map(
+    (d) => ({
+      code: d.code,
+      label: typeLabel(d.code),
+      zeroRate: Boolean(d.zeroRate),
+    }),
+  )
+}
+
+export function isZeroVatType(code: number): boolean {
+  const found = VAT_TYPE_DEFS.find((d) => d.code === code)
+  return found ? Boolean(found.zeroRate) : code === 0
+}
+
+export function defaultVatPercent(code: number): number {
+  return isZeroVatType(code) ? 0 : 25.5
 }
 
 export function vatKey(code: number, percent: number | null | undefined): string {
-  const pct = percent || 0
-  const exact = VAT_DEFS.find((c) => c.code === code && c.percent === pct)
-  if (exact) return exact.key
-  const byCode = VAT_DEFS.find((c) => c.code === code)
-  return byCode?.key ?? '0:0'
+  const pct = isZeroVatType(code) ? 0 : percent || 0
+  return `${code}:${pct}`
 }
 
 export function vatFromKey(key: string): VatChoice {
-  const found = vatChoices().find((c) => c.key === key)
-  return found ?? vatChoices()[0]
+  const [codePart, pctPart] = key.split(':')
+  const code = Number(codePart)
+  const percent = isZeroVatType(code) ? 0 : Number(pctPart || 0)
+  const known = VAT_TYPE_DEFS.some((d) => d.code === code)
+  const resolved = known ? code : 0
+  const pct = known ? percent : 0
+  return {
+    key: vatKey(resolved, pct),
+    code: resolved,
+    percent: pct,
+    label: vatChoiceLabel(resolved, pct),
+  }
+}
+
+function vatChoiceLabel(code: number, percent: number): string {
+  const base = typeLabel(code)
+  if (!percent || isZeroVatType(code)) return base
+  return `${base} ${vatPercentLabel(percent)}`
+}
+
+/** Flat list kept for callers that still iterate combined choices. */
+export function vatChoices(): VatChoice[] {
+  const out: VatChoice[] = []
+  for (const d of VAT_TYPE_DEFS) {
+    if (d.zeroRate) {
+      out.push({
+        key: vatKey(d.code, 0),
+        code: d.code,
+        percent: 0,
+        label: typeLabel(d.code),
+      })
+      continue
+    }
+    for (const percent of VAT_RATES) {
+      out.push({
+        key: vatKey(d.code, percent),
+        code: d.code,
+        percent,
+        label: vatChoiceLabel(d.code, percent),
+      })
+    }
+  }
+  return out
 }
 
 export function vatName(code: number, percent?: number | null): string {
-  const found = vatChoices().find(
-    (c) => c.code === code && (percent == null || c.percent === percent),
-  )
-  if (found) return found.label
+  if (VAT_TYPE_DEFS.some((d) => d.code === code)) {
+    return vatChoiceLabel(code, percent ?? 0)
+  }
   const title = vatCodeTitle(code)
-  if (percent) return `${title} ${percent} %`
+  if (percent) return `${title} ${vatPercentLabel(percent)}`
   return title
 }
 
@@ -113,7 +186,8 @@ export function vatIconKind(code: number): VatIconKind {
   }
 }
 
+/** Kitsas alvProssa formatting: always two decimals, Finnish comma. */
 export function vatPercentLabel(percent: number): string {
   if (!percent) return ''
-  return `${String(percent).replace('.', ',')} %`
+  return `${percent.toFixed(2).replace('.', ',')} %`
 }

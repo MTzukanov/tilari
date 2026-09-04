@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { vatIconKind, vatPercentLabel } from './vatCodes'
+import {
+  isZeroVatType,
+  VAT_RATES,
+  vatFromKey,
+  vatIconKind,
+  vatKey,
+  vatPercentLabel,
+  vatTypeChoices,
+} from './vatCodes'
 
 describe('vatIconKind', () => {
   it('matches Kitsas netto / brutto letters', () => {
@@ -27,8 +35,38 @@ describe('vatIconKind', () => {
 })
 
 describe('vatPercentLabel', () => {
-  it('formats Finnish percent text', () => {
-    expect(vatPercentLabel(25.5)).toBe('25,5 %')
+  it('formats Finnish percent text like Kitsas alvProssa', () => {
+    expect(vatPercentLabel(25.5)).toBe('25,50 %')
+    expect(vatPercentLabel(14)).toBe('14,00 %')
     expect(vatPercentLabel(0)).toBe('')
+  })
+})
+
+describe('VAT type / rate split', () => {
+  it('lists Kitsas rates in the separate percent box', () => {
+    expect([...VAT_RATES]).toEqual([25.5, 24, 14, 13.5, 10])
+  })
+
+  it('filters types by expense vs income like Kitsas', () => {
+    const expense = vatTypeChoices('expense').map((c) => c.code)
+    const income = vatTypeChoices('income').map((c) => c.code)
+    expect(expense).toEqual([0, 21, 28, 29, 25])
+    expect(income).toEqual([0, 11, 18, 12, 19])
+    expect(expense).not.toContain(11)
+    expect(income).not.toContain(21)
+  })
+
+  it('hides the rate for nollalaji types', () => {
+    expect(isZeroVatType(0)).toBe(true)
+    expect(isZeroVatType(19)).toBe(true)
+    expect(isZeroVatType(21)).toBe(false)
+  })
+
+  it('keeps type and rate independent in keys', () => {
+    expect(vatKey(21, 13.5)).toBe('21:13.5')
+    expect(vatFromKey('21:10').percent).toBe(10)
+    expect(vatFromKey('21:10').code).toBe(21)
+    expect(vatFromKey('19:25.5').percent).toBe(0)
+    expect(vatTypeChoices().some((c) => c.code === 21)).toBe(true)
   })
 })

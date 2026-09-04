@@ -462,7 +462,7 @@
     "previous": "Abgegebene USt-Voranmeldungen",
     "emptyPrevious": "Keine früheren Voranmeldungen.",
     "types": {
-      "0": "Keine USt-Behandlung",
+      "0": "Steuerfrei",
       "21": "Steuerpflichtiger Einkauf (Netto)",
       "11": "Steuerpflichtiger Verkauf (Netto)",
       "28": "Ist-Versteuerung Einkauf",
@@ -498,6 +498,7 @@
       "Nimi": "Name",
       "Ytunnus": "Handelsregisternummer (FI)",
       "Kaupunki": "Ort",
+      "AlvVelvollinen": "Umsatzsteuerpflichtig",
       "Harjoitus": "Übungsbuchhaltung",
       "HarjoitusHelp": "In einem Übungsbuch können Sie das Datum vorstellen. Auf allen Ausdrucken steht, dass die Buchhaltung im Übungsmodus erstellt wurde.",
       "AlvKausi": "Länge des USt-Zeitraums",

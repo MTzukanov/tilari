@@ -27,6 +27,6 @@ describe('finnish date and VAT labels', () => {
   it('names vat choices', async () => {
     const { vatName, vatFromKey } = await import('../modules/vat/ui/vatCodes')
     expect(vatFromKey('21:25.5').label).toContain('osto')
-    expect(vatName(0)).toBe('Ei ALV-käsittelyä')
+    expect(vatName(0)).toBe('Veroton')
   })
 })

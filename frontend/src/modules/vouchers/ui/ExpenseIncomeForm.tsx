@@ -58,6 +58,7 @@ export function ExpenseIncomeForm({
   onUpdateRow,
   onAddRow,
   onRemoveRow,
+  showVat = true,
 }: {
   type: number
   methods: PaymentMethod[]
@@ -76,17 +77,19 @@ export function ExpenseIncomeForm({
   onUpdateRow: (index: number, patch: Partial<AssistantRow>) => void
   onAddRow: () => void
   onRemoveRow: () => void
+  /** When false (AlvVelvollinen EI), hide ALV type/percent and net/VAT amount boxes. */
+  showVat?: boolean
 }) {
   const { t } = useI18n()
   const row = rows[selected] ?? rows[0] ?? EMPTY_ASSISTANT_ROW
-  const vat = vatFromKey(row.vatChoice)
+  const vat = vatFromKey(showVat ? row.vatChoice : '0:0')
   const grossCents = parseEurInput(row.amount)
   const vatCents =
-    vat.code && vat.percent && grossCents
+    showVat && vat.code && vat.percent && grossCents
       ? Math.round((grossCents * vat.percent) / (100 + vat.percent))
       : 0
   const netCents = grossCents - vatCents
-  const showNet = Boolean(vat.percent)
+  const showNet = showVat && Boolean(vat.percent)
 
   return (
     <section
@@ -133,7 +136,7 @@ export function ExpenseIncomeForm({
             placeholder={t('editor.accountPlaceholder')}
           />
         </label>
-        <div className="assistant-money-row">
+        <div className={`assistant-money-row${showNet ? '' : ' is-amount-only'}`}>
           <label>
             {t('editor.amount')}
             <EuroInput
@@ -167,14 +170,17 @@ export function ExpenseIncomeForm({
             </label>
           ) : null}
         </div>
-        <label className="assistant-vat">
-          {t('editor.vat')}
-          <VatSelect
-            value={row.vatChoice}
-            aria-label={t('editor.vat')}
-            onChange={(vatChoice) => onUpdateRow(selected, { vatChoice })}
-          />
-        </label>
+        {showVat ? (
+          <label className="assistant-vat">
+            {t('editor.vat')}
+            <VatSelect
+              value={row.vatChoice}
+              voucherType={type}
+              aria-label={t('editor.vat')}
+              onChange={(vatChoice) => onUpdateRow(selected, { vatChoice })}
+            />
+          </label>
+        ) : null}
         <label>
           {t('editor.allocation')}
           <SearchSelect
@@ -227,7 +233,7 @@ export function ExpenseIncomeForm({
             <thead>
               <tr>
                 <th>{t('table.account')}</th>
-                <th>{t('table.vat')}</th>
+                {showVat ? <th>{t('table.vat')}</th> : null}
                 <th className="amount">€</th>
               </tr>
             </thead>
@@ -248,12 +254,14 @@ export function ExpenseIncomeForm({
                     }}
                   >
                     <td>{accountLabel(accountItems, item.account) || '—'}</td>
-                    <td>
-                      <span className="vat-mark">
-                        <VatIcon code={vat.code} />
-                        {vatPercentLabel(vat.percent)}
-                      </span>
-                    </td>
+                    {showVat ? (
+                      <td>
+                        <span className="vat-mark">
+                          <VatIcon code={vat.code} />
+                          {vatPercentLabel(vat.percent)}
+                        </span>
+                      </td>
+                    ) : null}
                     <td className="amount">
                       {formatCents(parseEurInput(item.amount), { emptyZero: true })}
                     </td>

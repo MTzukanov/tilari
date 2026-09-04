@@ -12,6 +12,7 @@ import { formatCents } from '../../../shared/money'
 import { PeriodNav } from '../../../shared/PeriodNav'
 import { formatVoucherId } from '../../../shared/formatVoucherId'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
+import { isVatLiableSetting } from '../../../book/settings'
 import { browseFilterTypes } from '../catalog'
 import { AttachmentClip } from './AttachmentClip'
 import { BrowseEntriesTable } from './BrowseEntriesTable'
@@ -96,7 +97,7 @@ export function VoucherListView({
 
   useEffect(() => {
     void fetchSettings().then((s) => {
-      setVatLiable((s.company.AlvVelvollinen || '').toUpperCase() !== 'EI')
+      setVatLiable(isVatLiableSetting(s.company.AlvVelvollinen))
     })
   }, [])
 

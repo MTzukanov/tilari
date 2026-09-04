@@ -462,7 +462,7 @@
     "previous": "Annetut ALV-ilmoitukset",
     "emptyPrevious": "Ei aiempia ilmoituksia.",
     "types": {
-      "0": "Ei ALV-käsittelyä",
+      "0": "Veroton",
       "21": "Verollinen osto (netto)",
       "11": "Verollinen myynti (netto)",
       "28": "Maksuperusteinen osto",
@@ -498,6 +498,7 @@
       "Nimi": "Nimi",
       "Ytunnus": "Y-tunnus",
       "Kaupunki": "Kaupunki",
+      "AlvVelvollinen": "ALV-velvollinen",
       "Harjoitus": "Harjoituskirjanpito",
       "HarjoitusHelp": "Harjoituskirjassa voi siirtää päivämäärää eteenpäin. Kaikissa tulosteissa näkyy, että kirjanpito on laadittu harjoittelutilassa.",
       "AlvKausi": "ALV-verokauden pituus",

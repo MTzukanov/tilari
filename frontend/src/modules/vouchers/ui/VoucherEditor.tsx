@@ -17,6 +17,7 @@ import {
   type VoucherDetail,
 } from '../../../api'
 import { isPurchaseVatCode, isVatBookingLine, vatAccount, vatCompanionCode } from '../../../book/modules/vat/domain/vatPosting'
+import { isVatLiableSetting } from '../../../book/settings'
 import { ALL_COUNTER_ACCOUNTS } from '../../../book/paymentMethods'
 import { vatFromKey, vatKey } from '../../vat/ui/vatCodes'
 import { parseEurInput, formatEurInput } from '../../../shared/money'
@@ -178,6 +179,9 @@ export function VoucherEditor({
     prev: null,
     next: null,
   })
+  const [vatLiable, setVatLiable] = useState(true)
+  const vatLiableRef = useRef(true)
+  vatLiableRef.current = vatLiable
   const actionsRef = useRef({
     requestCancel: () => undefined as void,
     savePosted: (_opts?: { close?: boolean }) => undefined as void,
@@ -240,9 +244,24 @@ export function VoucherEditor({
       .then((d) => {
         setMethodsExpense(d.payment_methods?.expense ?? [])
         setMethodsIncome(d.payment_methods?.income ?? [])
+        setVatLiable(isVatLiableSetting(d.company.AlvVelvollinen))
       })
       .catch(() => undefined)
   }, [])
+
+  useEffect(() => {
+    if (vatLiable) return
+    setAssistantRows((prev) =>
+      prev.map((row) => (row.vatChoice === '0:0' ? row : { ...row, vatChoice: '0:0' })),
+    )
+    setLines((prev) =>
+      prev.map((line) =>
+        line.vat_code === '0' && !line.vat_percent
+          ? line
+          : { ...line, vat_code: '0', vat_percent: '' },
+      ),
+    )
+  }, [vatLiable])
 
   useEffect(() => {
     const sourceId = voucherId ?? copyFromId ?? null
@@ -255,14 +274,15 @@ export function VoucherEditor({
     const asCopy = voucherId == null && copyFromId != null
     setBaseline(null)
     fetchVoucher(sourceId).then((data) => {
+      const liable = vatLiableRef.current
       const mapped: LineDraft[] = data.entries.length
         ? data.entries.map((v) => ({
             account: String(v.account),
             description: v.description,
             debit: formatEurInput(v.debit_cents ?? 0, { emptyZero: true }),
             credit: formatEurInput(v.credit_cents ?? 0, { emptyZero: true }),
-            vat_code: String(v.vat_code ?? 0),
-            vat_percent: v.vat_percent != null ? String(v.vat_percent) : '',
+            vat_code: liable ? String(v.vat_code ?? 0) : '0',
+            vat_percent: liable && v.vat_percent != null ? String(v.vat_percent) : '',
             allocation: String(v.allocation ?? 0),
             archive_id: v.archive_id || '',
             accrual_starts: v.accrual_starts || '',
@@ -274,22 +294,29 @@ export function VoucherEditor({
         return acc ? isBankAccount(acc) : l.account.startsWith('19')
       })
       const netLines = mapped.filter((l) => !isVatBookingLine(l) && l !== bankLine)
+      const fallbackVat = liable
+        ? data.type === 200
+          ? '11:25.5'
+          : '21:25.5'
+        : '0:0'
       const nextRows: AssistantRow[] = netLines.length
         ? netLines.map((line) => {
             const net = parseEurInput(line.debit || line.credit)
-            const pct = Number(line.vat_percent || 0)
+            const pct = liable ? Number(line.vat_percent || 0) : 0
             const gross = pct ? Math.round((net * (100 + pct)) / 100) : net
             return {
               account: line.account,
               amount: formatEurInput(gross, { emptyZero: true }),
-              vatChoice: vatKey(Number(line.vat_code || 0), Number(line.vat_percent || 0)),
+              vatChoice: liable
+                ? vatKey(Number(line.vat_code || 0), Number(line.vat_percent || 0))
+                : '0:0',
               allocation: line.allocation || '0',
               accrual_starts: line.accrual_starts,
               accrual_ends: line.accrual_ends,
               description: descriptionIfDifferent(line.description, data.title),
             }
           })
-        : [{ ...EMPTY_ASSISTANT_ROW, vatChoice: data.type === 200 ? '11:25.5' : '21:25.5' }]
+        : [{ ...EMPTY_ASSISTANT_ROW, vatChoice: fallbackVat }]
       const first = netLines[0]
       const nextPayment = bankLine?.account || '1910'
       const nextAmount = bankLine ? bankLine.debit || bankLine.credit : ''
@@ -414,13 +441,16 @@ export function VoucherEditor({
     }
   }, [voucherId, date])
 
+  function defaultVatChoice(voucherType: number): string {
+    if (!vatLiable) return '0:0'
+    return voucherType === 200 ? '11:25.5' : '21:25.5'
+  }
+
   function changeType(next: number) {
     setType(next)
     setTab(defaultEditorTab(next))
-    if (next === 100) {
-      setAssistantRows((prev) => prev.map((row) => ({ ...row, vatChoice: '21:25.5' })))
-    } else if (next === 200) {
-      setAssistantRows((prev) => prev.map((row) => ({ ...row, vatChoice: '11:25.5' })))
+    if (next === 100 || next === 200) {
+      setAssistantRows((prev) => prev.map((row) => ({ ...row, vatChoice: defaultVatChoice(next) })))
     }
   }
 
@@ -520,7 +550,7 @@ export function VoucherEditor({
     const out: LineDraft[] = []
     let grossTotal = 0
     for (const row of assistantRows) {
-      const vat = vatFromKey(row.vatChoice)
+      const vat = vatFromKey(vatLiable ? row.vatChoice : '0:0')
       const gross = parseEurInput(row.amount)
       if (!row.account || !gross) continue
       grossTotal += gross
@@ -541,7 +571,7 @@ export function VoucherEditor({
         accrual_ends: row.accrual_ends,
       })
       const vatAcc = vatAccount(vat.code)
-      if (vatAcc && vatCents) {
+      if (vatLiable && vatAcc && vatCents) {
         const purchase = isPurchaseVatCode(vat.code)
         out.push({
           ...EMPTY_LINE,
@@ -579,7 +609,7 @@ export function VoucherEditor({
   }
 
   function expandVat(base: LineDraft[]): LineDraft[] {
-    if (!assistant) return base
+    if (!assistant || !vatLiable) return base
     const out: LineDraft[] = []
     for (const line of base) {
       out.push(line)
@@ -605,10 +635,17 @@ export function VoucherEditor({
     return out
   }
 
+  function stripVatIfNeeded(base: LineDraft[]): LineDraft[] {
+    if (vatLiable) return base
+    return base
+      .filter((l) => !isVatBookingLine(l))
+      .map((l) => ({ ...l, vat_code: '0', vat_percent: '' }))
+  }
+
   function builtLines(): LineDraft[] {
-    if (assistant && tab !== 'entries') return linesFromAssistant()
+    if (assistant && tab !== 'entries') return stripVatIfNeeded(linesFromAssistant())
     if (layout === 'transfer' && tab !== 'entries') return linesFromTransfer()
-    return lines.filter((l) => l.account)
+    return stripVatIfNeeded(lines.filter((l) => l.account))
   }
 
   function canPost(): boolean {
@@ -754,7 +791,7 @@ export function VoucherEditor({
                 <th>{t('table.description')}</th>
                 <th className="amount">{t('table.debit')}</th>
                 <th className="amount">{t('table.credit')}</th>
-                <th>{t('table.vat')}</th>
+                {vatLiable ? <th>{t('table.vat')}</th> : null}
                 <th>{t('table.allocation')}</th>
                 {type === 400 ? <th /> : null}
               </tr>
@@ -788,19 +825,22 @@ export function VoucherEditor({
                       onChange={(credit) => updateLine(i, { credit, debit: '' })}
                     />
                   </td>
-                  <td>
-                    <VatSelect
-                      value={vatKey(Number(line.vat_code || 0), Number(line.vat_percent || 0))}
-                      aria-label={t('table.vat')}
-                      onChange={(key) => {
-                        const c = vatFromKey(key)
-                        updateLine(i, {
-                          vat_code: String(c.code),
-                          vat_percent: c.percent ? String(c.percent) : '',
-                        })
-                      }}
-                    />
-                  </td>
+                  {vatLiable ? (
+                    <td>
+                      <VatSelect
+                        value={vatKey(Number(line.vat_code || 0), Number(line.vat_percent || 0))}
+                        voucherType={type}
+                        aria-label={t('table.vat')}
+                        onChange={(key) => {
+                          const c = vatFromKey(key)
+                          updateLine(i, {
+                            vat_code: String(c.code),
+                            vat_percent: c.percent ? String(c.percent) : '',
+                          })
+                        }}
+                      />
+                    </td>
+                  ) : null}
                   <td>
                     <SearchSelect
                       items={allocationItems}
@@ -1004,6 +1044,7 @@ export function VoucherEditor({
           rows={assistantRows}
           selected={selectedRow}
           onSelect={setSelectedRow}
+          showVat={vatLiable}
           onUpdateRow={(i, patch) =>
             setAssistantRows((prev) => prev.map((row, idx) => (idx === i ? { ...row, ...patch } : row)))
           }
@@ -1016,7 +1057,7 @@ export function VoucherEditor({
                   ...EMPTY_ASSISTANT_ROW,
                   account: current?.account ?? '',
                   vatChoice:
-                    current?.vatChoice || (type === 200 ? '11:25.5' : '21:25.5'),
+                    current?.vatChoice || defaultVatChoice(type),
                   allocation: current?.allocation || '0',
                 },
               ]
