@@ -94,7 +94,9 @@ jobs:
           retention-days: 7
 
   # -------------------------------------------------------------------------
-  # Server unit/smoke — parallel with frontend (no Playwright, tiny tree).
+  # Server unit/smoke — parallel with frontend (no Playwright).
+  # Needs frontend/node_modules: server imports ../../frontend/src/book/* and
+  # TypeScript/Node resolve sql.js from the importing file's tree.
   # -------------------------------------------------------------------------
   server:
     runs-on: ubuntu-latest
@@ -108,7 +110,13 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: server/package-lock.json
+          cache-dependency-path: |
+            frontend/package-lock.json
+            server/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
 
       - name: Install server dependencies
         working-directory: server
