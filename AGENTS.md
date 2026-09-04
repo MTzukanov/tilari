@@ -122,6 +122,7 @@ Rules already encoded:
 - i18n **keys** and TypeScript identifiers are English. Finnish UI strings stay in `fi.json` values. Kitsas schema names (`Tosite`, `Vienti`, `Asetus.tilinpaatos`, …) stay as stored; comment the English meaning on first use.
 - **Always write source files as UTF-8.** Never introduce Windows-1252 bytes (especially `0x97` en-dash). Prefer ASCII `-`.
 - No react-router in v1; hashes: `#/browse`, `#/journal`, `#/vat`, `#/settings`, `#/voucher/new/100`, `#/account/{n}`, `#/allocation/{id}`.
+  `#/settings` (and `#/settings/storage`) work without an open book for app prefs; book/company fields appear once a book is open.
 - Billing nav item (`#/billing`) is a planned stub that explains `docs/SCOPE.md`.
   Approval workflow is deferred (API 501 + `#/workflow` only; no SideNav entry).
 - Finnish-first UI with a JSON i18n engine (`frontend/src/i18n/`). Catalogs

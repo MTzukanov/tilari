@@ -461,18 +461,16 @@
     "emptySummary": "Ei ALV-yhteenvetoa tälle jaksolle.",
     "previous": "Annetut ALV-ilmoitukset",
     "emptyPrevious": "Ei aiempia ilmoituksia.",
-    "choices": {
-      "0:0": "Ei ALV-käsittelyä",
-      "21:25.5": "Verollinen osto (netto) 25,50 %",
-      "21:24": "Verollinen osto (netto) 24,00 %",
-      "11:25.5": "Verollinen myynti 25,50 %",
-      "11:24": "Verollinen myynti 24,00 %",
-      "28:25.5": "Maksuperusteinen osto 25,50 %",
-      "18:25.5": "Maksuperusteinen myynti 25,50 %",
-      "29:25.5": "Palveluosto EU:n ulkopuolelta 25,50 %",
-      "12:25.5": "Myynti brutto 25,50 %",
-      "19:0": "Nollaverokannan alainen myynti",
-      "25:25.5": "Palveluiden yhteisöhankinta 25,50 %"
+    "types": {
+      "0": "Veroton",
+      "21": "Verollinen osto (netto)",
+      "11": "Verollinen myynti (netto)",
+      "28": "Maksuperusteinen osto",
+      "18": "Maksuperusteinen myynti",
+      "29": "Palveluosto EU:n ulkopuolelta",
+      "12": "Verollinen myynti (brutto)",
+      "19": "Nollaverokannan alainen myynti",
+      "25": "Palveluiden yhteisöhankinta"
     },
     "none": "Ei ALV",
     "code": "ALV {code} {pct}"
@@ -496,6 +494,7 @@
       "Nimi": "Nimi",
       "Ytunnus": "Y-tunnus",
       "Kaupunki": "Kaupunki",
+      "AlvVelvollinen": "ALV-velvollinen",
       "Harjoitus": "Harjoituskirjanpito",
       "HarjoitusHelp": "Harjoituskirjassa voi siirtää päivämäärää eteenpäin. Kaikissa tulosteissa näkyy, että kirjanpito on laadittu harjoittelutilassa.",
       "AlvKausi": "ALV-verokauden pituus",

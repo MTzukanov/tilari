@@ -1,5 +1,6 @@
 import { getSettings } from '../../../access'
 import { parseJson } from '../../../json'
+import { isVatLiableSetting } from '../../../settings'
 import type { SqliteDb } from '../../../sqlite'
 import { TYPE_VAT_RETURN } from '../../../vouchers'
 
@@ -146,7 +147,7 @@ export function shiftVatPeriod(
 /** Next open tax period from `AlvKausi` after last filing (or `AlvAlkaa` / first fiscal year). */
 export function nextVatPeriod(db: SqliteDb): VatPeriod | null {
   const settings = getSettings(db, ['AlvAlkaa', 'AlvKausi', 'AlvVelvollinen'])
-  if ((settings.AlvVelvollinen || '').toUpperCase() === 'EI') return null
+  if (!isVatLiableSetting(settings.AlvVelvollinen)) return null
 
   const months = vatPeriodMonths(db)
   const lastEnd = lastFiledPeriodEnd(db)

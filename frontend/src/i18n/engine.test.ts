@@ -50,7 +50,7 @@ describe('i18n engine', () => {
     expect(t('browse.groupVouchers')).toBe('Tositteet')
     expect(t('voucherType.200')).toBe('Tulo')
     expect(t('app.asOf', { date: '2026-12-31' })).toBe('Tilanne 2026-12-31')
-    expect(t('vat.choices.21:25.5')).toContain('osto')
+    expect(t('vat.types.21')).toContain('osto')
   })
 
   it('returns translated strings for English, Swedish, and German', () => {

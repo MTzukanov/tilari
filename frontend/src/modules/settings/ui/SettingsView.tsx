@@ -12,6 +12,7 @@ import { FontSelect } from '../../../shared/FontSelect'
 import { useI18n } from '../../../i18n'
 import { allocationTypeName } from '../../../shared/voucherTypes'
 import { isPracticeValue } from '../../../book/clock'
+import { isVatLiableSetting } from '../../../book/settings'
 
 const TEXT_FIELDS = ['Nimi', 'Ytunnus', 'Kaupunki'] as const
 const DATE_FIELDS = ['AlvAlkaa', 'MaksuAlvAlkaa', 'MaksuAlvLoppuu'] as const
@@ -24,6 +25,7 @@ export function SettingsView() {
   const [error, setError] = useState<string | null>(null)
   const [ok, setOk] = useState<string | null>(null)
   const [newKp, setNewKp] = useState('')
+  const vatLiable = isVatLiableSetting(company.AlvVelvollinen)
 
   function reload() {
     fetchSettings()
@@ -74,27 +76,47 @@ export function SettingsView() {
               />
             </label>
           ))}
-          {DATE_FIELDS.map((key) => (
-            <label key={key}>
-              {t(`settings.fields.${key}`)}
+          <label className="span2 settings-practice">
+            <span>{t('settings.fields.AlvVelvollinen')}</span>
+            <span className="settings-practice-row">
               <input
-                type="date"
-                value={company[key] || ''}
-                onChange={(e) => setCompany({ ...company, [key]: e.target.value })}
+                type="checkbox"
+                aria-label={t('settings.fields.AlvVelvollinen')}
+                checked={vatLiable}
+                onChange={(e) =>
+                  setCompany({
+                    ...company,
+                    AlvVelvollinen: e.target.checked ? 'ON' : 'EI',
+                  })
+                }
               />
-            </label>
-          ))}
-          <label>
-            {t('settings.fields.AlvKausi')}
-            <select
-              value={company.AlvKausi || '1'}
-              onChange={(e) => setCompany({ ...company, AlvKausi: e.target.value })}
-            >
-              <option value="1">{t('settings.vatPeriod.month')}</option>
-              <option value="3">{t('settings.vatPeriod.quarter')}</option>
-              <option value="12">{t('settings.vatPeriod.year')}</option>
-            </select>
+            </span>
           </label>
+          {vatLiable ? (
+            <>
+              {DATE_FIELDS.map((key) => (
+                <label key={key}>
+                  {t(`settings.fields.${key}`)}
+                  <input
+                    type="date"
+                    value={company[key] || ''}
+                    onChange={(e) => setCompany({ ...company, [key]: e.target.value })}
+                  />
+                </label>
+              ))}
+              <label>
+                {t('settings.fields.AlvKausi')}
+                <select
+                  value={company.AlvKausi || '1'}
+                  onChange={(e) => setCompany({ ...company, AlvKausi: e.target.value })}
+                >
+                  <option value="1">{t('settings.vatPeriod.month')}</option>
+                  <option value="3">{t('settings.vatPeriod.quarter')}</option>
+                  <option value="12">{t('settings.vatPeriod.year')}</option>
+                </select>
+              </label>
+            </>
+          ) : null}
           <label className="span2 settings-practice">
             <span>{t('settings.fields.Harjoitus')}</span>
             <span className="settings-practice-row">

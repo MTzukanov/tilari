@@ -132,7 +132,13 @@ export function AppLayout({
 
   return (
     <div className="app-shell">
-      <SideNav route={route} open={navOpen} onClose={onCloseNav} onNavigate={onNavigate} />
+      <SideNav
+        route={route}
+        open={navOpen}
+        onClose={onCloseNav}
+        onNavigate={onNavigate}
+        bookOpen={Boolean(meta)}
+      />
       <div className="app-main">
         <header className="topbar">
           <button type="button" className="nav-toggle" aria-label={t('nav.openMenu')} onClick={onOpenNav}>

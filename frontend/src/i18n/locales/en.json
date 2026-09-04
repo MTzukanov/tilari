@@ -461,18 +461,16 @@
     "emptySummary": "No VAT summary for this period.",
     "previous": "Filed VAT returns",
     "emptyPrevious": "No previous returns.",
-    "choices": {
-      "0:0": "No VAT treatment",
-      "21:25.5": "Taxable purchase (net) 25.50 %",
-      "21:24": "Taxable purchase (net) 24.00 %",
-      "11:25.5": "Taxable sale 25.50 %",
-      "11:24": "Taxable sale 24.00 %",
-      "28:25.5": "Cash-basis purchase 25.50 %",
-      "18:25.5": "Cash-basis sale 25.50 %",
-      "29:25.5": "Service purchase outside the EU 25.50 %",
-      "12:25.5": "Gross sales 25.50 %",
-      "19:0": "Zero-rated sale",
-      "25:25.5": "Intra-Community acquisition of services 25.50 %"
+    "types": {
+      "0": "No VAT",
+      "21": "Taxable purchase (net)",
+      "11": "Taxable sale (net)",
+      "28": "Cash-basis purchase",
+      "18": "Cash-basis sale",
+      "29": "Service purchase outside the EU",
+      "12": "Taxable sale (gross)",
+      "19": "Zero-rated sale",
+      "25": "Intra-Community acquisition of services"
     },
     "none": "No VAT",
     "code": "VAT {code} {pct}"
@@ -496,6 +494,7 @@
       "Nimi": "Name",
       "Ytunnus": "Business ID",
       "Kaupunki": "City",
+      "AlvVelvollinen": "VAT registered",
       "Harjoitus": "Practice accounting",
       "HarjoitusHelp": "In a practice book you can move the date forward. All printouts show that the books were prepared in practice mode.",
       "AlvKausi": "VAT period length",
