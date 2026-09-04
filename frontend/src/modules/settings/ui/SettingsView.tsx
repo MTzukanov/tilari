@@ -5,6 +5,7 @@ import {
   saveSettings,
   saveAllocation,
   type Allocation,
+  type Meta,
 } from '../../../api'
 import { formatDate } from '../../../shared/dates'
 import { FormatSelect, LanguageSelect } from '../../../shared/LanguageSelect'
@@ -16,7 +17,7 @@ import { isPracticeValue } from '../../../book/clock'
 const TEXT_FIELDS = ['Nimi', 'Ytunnus', 'Kaupunki'] as const
 const DATE_FIELDS = ['AlvAlkaa', 'MaksuAlvAlkaa', 'MaksuAlvLoppuu'] as const
 
-export function SettingsView() {
+export function SettingsView({ meta }: { meta: Meta | null }) {
   const { t } = useI18n()
   const [company, setCompany] = useState<Record<string, string>>({})
   const [periods, setPeriods] = useState<{ starts: string; ends: string }[]>([])
@@ -25,7 +26,7 @@ export function SettingsView() {
   const [ok, setOk] = useState<string | null>(null)
   const [newKp, setNewKp] = useState('')
 
-  function reload() {
+  function reloadBook() {
     fetchSettings()
       .then((d) => {
         setCompany(d.company)
@@ -38,8 +39,14 @@ export function SettingsView() {
   }
 
   useEffect(() => {
-    reload()
-  }, [])
+    if (!meta) {
+      setCompany({})
+      setPeriods([])
+      setKps([])
+      return
+    }
+    reloadBook()
+  }, [meta])
 
   async function saveCompany(e: React.FormEvent) {
     e.preventDefault()
@@ -57,131 +64,140 @@ export function SettingsView() {
   return (
     <div className="ledger">
       <h2>{t('settings.title')}</h2>
+
+      <h3>{t('settings.appSection')}</h3>
+      <p className="muted">{t('settings.appIntro')}</p>
       <LanguageSelect id="settings-locale" />
       <FormatSelect id="settings-formats" />
       <FontSelect id="settings-font" />
-      {error ? <p className="error">{error}</p> : null}
-      {ok ? <p className="muted">{ok}</p> : null}
-      <form className="editor editor-card" onSubmit={saveCompany}>
-        <div className="form-grid">
-          {TEXT_FIELDS.map((key) => (
-            <label key={key}>
-              {t(`settings.fields.${key}`)}
-              <input
-                type="text"
-                value={company[key] || ''}
-                onChange={(e) => setCompany({ ...company, [key]: e.target.value })}
-              />
-            </label>
-          ))}
-          {DATE_FIELDS.map((key) => (
-            <label key={key}>
-              {t(`settings.fields.${key}`)}
-              <input
-                type="date"
-                value={company[key] || ''}
-                onChange={(e) => setCompany({ ...company, [key]: e.target.value })}
-              />
-            </label>
-          ))}
-          <label>
-            {t('settings.fields.AlvKausi')}
-            <select
-              value={company.AlvKausi || '1'}
-              onChange={(e) => setCompany({ ...company, AlvKausi: e.target.value })}
-            >
-              <option value="1">{t('settings.vatPeriod.month')}</option>
-              <option value="3">{t('settings.vatPeriod.quarter')}</option>
-              <option value="12">{t('settings.vatPeriod.year')}</option>
-            </select>
-          </label>
-          <label className="span2 settings-practice">
-            <span>{t('settings.fields.Harjoitus')}</span>
-            <span className="settings-practice-row">
-              <input
-                type="checkbox"
-                aria-label={t('settings.fields.Harjoitus')}
-                checked={isPracticeValue(company.Harjoitus)}
-                onChange={(e) => {
-                  if (!e.target.checked && !window.confirm(t('settings.practiceOffWarning'))) {
-                    return
-                  }
-                  setCompany({ ...company, Harjoitus: e.target.checked ? 'ON' : 'EI' })
-                }}
-              />
-              <span className="muted field-hint">{t('settings.fields.HarjoitusHelp')}</span>
-            </span>
-          </label>
-        </div>
-        <button type="submit" className="btn-primary">
-          {t('settings.save')}
-        </button>
-      </form>
-
-      <h3 id="fiscalPeriods">{t('settings.financialYears')}</h3>
-      <table className="ledger-table zebra">
-        <thead>
-          <tr>
-            <th>{t('settings.year')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {periods.map((p) => (
-            <tr key={p.starts}>
-              <td>
-                {formatDate(p.starts)} – {formatDate(p.ends)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p className="muted">
-        <a href="#/fiscal-periods">{t('settings.manageFiscalPeriods')}</a>
-      </p>
-
-      <h3>{t('settings.allocations')}</h3>
-      <table className="ledger-table zebra">
-        <thead>
-          <tr>
-            <th>{t('table.name')}</th>
-            <th>{t('settings.kind')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {kps.map((k) => (
-            <tr key={k.id}>
-              <td>{k.id === 0 ? t('common.general') : k.name}</td>
-              <td>{allocationTypeName(k.type)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <form
-        className="filters"
-        onSubmit={async (e) => {
-          e.preventDefault()
-          try {
-            await saveAllocation({ name: newKp, type: 1 })
-            setNewKp('')
-            reload()
-          } catch (err) {
-            setError(err instanceof Error ? err.message : String(err))
-          }
-        }}
-      >
-        <label>
-          {t('settings.newCostCentre')}
-          <input value={newKp} onChange={(e) => setNewKp(e.target.value)} required />
-        </label>
-        <button type="submit" className="btn-secondary">
-          {t('settings.add')}
-        </button>
-      </form>
-
-      <h3>{t('settings.storage.title')}</h3>
-      <p className="muted">
+      <p>
         <a href="#/settings/storage">{t('settings.storage.link')}</a>
       </p>
+
+      <h3>{t('settings.bookSection')}</h3>
+      {!meta ? (
+        <p className="muted">{t('settings.bookNeedOpen')}</p>
+      ) : (
+        <>
+          {error ? <p className="error">{error}</p> : null}
+          {ok ? <p className="muted">{ok}</p> : null}
+          <form className="editor editor-card" onSubmit={saveCompany}>
+            <div className="form-grid">
+              {TEXT_FIELDS.map((key) => (
+                <label key={key}>
+                  {t(`settings.fields.${key}`)}
+                  <input
+                    type="text"
+                    value={company[key] || ''}
+                    onChange={(e) => setCompany({ ...company, [key]: e.target.value })}
+                  />
+                </label>
+              ))}
+              {DATE_FIELDS.map((key) => (
+                <label key={key}>
+                  {t(`settings.fields.${key}`)}
+                  <input
+                    type="date"
+                    value={company[key] || ''}
+                    onChange={(e) => setCompany({ ...company, [key]: e.target.value })}
+                  />
+                </label>
+              ))}
+              <label>
+                {t('settings.fields.AlvKausi')}
+                <select
+                  value={company.AlvKausi || '1'}
+                  onChange={(e) => setCompany({ ...company, AlvKausi: e.target.value })}
+                >
+                  <option value="1">{t('settings.vatPeriod.month')}</option>
+                  <option value="3">{t('settings.vatPeriod.quarter')}</option>
+                  <option value="12">{t('settings.vatPeriod.year')}</option>
+                </select>
+              </label>
+              <label className="span2 settings-practice">
+                <span>{t('settings.fields.Harjoitus')}</span>
+                <span className="settings-practice-row">
+                  <input
+                    type="checkbox"
+                    aria-label={t('settings.fields.Harjoitus')}
+                    checked={isPracticeValue(company.Harjoitus)}
+                    onChange={(e) => {
+                      if (!e.target.checked && !window.confirm(t('settings.practiceOffWarning'))) {
+                        return
+                      }
+                      setCompany({ ...company, Harjoitus: e.target.checked ? 'ON' : 'EI' })
+                    }}
+                  />
+                  <span className="muted field-hint">{t('settings.fields.HarjoitusHelp')}</span>
+                </span>
+              </label>
+            </div>
+            <button type="submit" className="btn-primary">
+              {t('settings.save')}
+            </button>
+          </form>
+
+          <h3 id="fiscalPeriods">{t('settings.financialYears')}</h3>
+          <table className="ledger-table zebra">
+            <thead>
+              <tr>
+                <th>{t('settings.year')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {periods.map((p) => (
+                <tr key={p.starts}>
+                  <td>
+                    {formatDate(p.starts)} – {formatDate(p.ends)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="muted">
+            <a href="#/fiscal-periods">{t('settings.manageFiscalPeriods')}</a>
+          </p>
+
+          <h3>{t('settings.allocations')}</h3>
+          <table className="ledger-table zebra">
+            <thead>
+              <tr>
+                <th>{t('table.name')}</th>
+                <th>{t('settings.kind')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {kps.map((k) => (
+                <tr key={k.id}>
+                  <td>{k.id === 0 ? t('common.general') : k.name}</td>
+                  <td>{allocationTypeName(k.type)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <form
+            className="filters"
+            onSubmit={async (e) => {
+              e.preventDefault()
+              try {
+                await saveAllocation({ name: newKp, type: 1 })
+                setNewKp('')
+                reloadBook()
+              } catch (err) {
+                setError(err instanceof Error ? err.message : String(err))
+              }
+            }}
+          >
+            <label>
+              {t('settings.newCostCentre')}
+              <input value={newKp} onChange={(e) => setNewKp(e.target.value)} required />
+            </label>
+            <button type="submit" className="btn-secondary">
+              {t('settings.add')}
+            </button>
+          </form>
+        </>
+      )}
     </div>
   )
 }

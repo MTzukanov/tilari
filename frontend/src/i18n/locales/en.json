@@ -461,24 +461,26 @@
     "emptySummary": "No VAT summary for this period.",
     "previous": "Filed VAT returns",
     "emptyPrevious": "No previous returns.",
-    "choices": {
-      "0:0": "No VAT treatment",
-      "21:25.5": "Taxable purchase (net) 25.50 %",
-      "21:24": "Taxable purchase (net) 24.00 %",
-      "11:25.5": "Taxable sale 25.50 %",
-      "11:24": "Taxable sale 24.00 %",
-      "28:25.5": "Cash-basis purchase 25.50 %",
-      "18:25.5": "Cash-basis sale 25.50 %",
-      "29:25.5": "Service purchase outside the EU 25.50 %",
-      "12:25.5": "Gross sales 25.50 %",
-      "19:0": "Zero-rated sale",
-      "25:25.5": "Intra-Community acquisition of services 25.50 %"
+    "types": {
+      "0": "No VAT treatment",
+      "21": "Taxable purchase (net)",
+      "11": "Taxable sale (net)",
+      "28": "Cash-basis purchase",
+      "18": "Cash-basis sale",
+      "29": "Service purchase outside the EU",
+      "12": "Taxable sale (gross)",
+      "19": "Zero-rated sale",
+      "25": "Intra-Community acquisition of services"
     },
     "none": "No VAT",
     "code": "VAT {code} {pct}"
   },
   "settings": {
     "title": "Settings",
+    "appSection": "Application",
+    "appIntro": "Language, formatting, and data in this browser. These do not require an open book.",
+    "bookSection": "Book",
+    "bookNeedOpen": "Open a book to edit company settings, financial years, and allocations.",
     "saved": "Settings saved",
     "practiceOffWarning": "You are responsible for the accuracy and legality of your bookkeeping and for paying all taxes correctly.\n\nThe software comes with no warranty. Tilari also does not give legal advice on bookkeeping or taxation.\n\nConsult a bookkeeping professional if needed.",
     "save": "Save",
@@ -505,7 +507,7 @@
     },
     "storage": {
       "title": "Browser data",
-      "link": "Show browser data",
+      "link": "Browser data…",
       "back": "Back to settings",
       "intro": "Tilari data in this browser: settings, recently opened books, and the local working copy (OPFS).",
       "measured": "Measured total {size}",

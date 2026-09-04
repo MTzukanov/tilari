@@ -461,24 +461,26 @@
     "emptySummary": "Keine USt-Zusammenfassung für diese Periode.",
     "previous": "Abgegebene USt-Voranmeldungen",
     "emptyPrevious": "Keine früheren Voranmeldungen.",
-    "choices": {
-      "0:0": "Keine USt-Behandlung",
-      "21:25.5": "Steuerpflichtiger Einkauf (Netto) 25,50 %",
-      "21:24": "Steuerpflichtiger Einkauf (Netto) 24,00 %",
-      "11:25.5": "Steuerpflichtiger Verkauf 25,50 %",
-      "11:24": "Steuerpflichtiger Verkauf 24,00 %",
-      "28:25.5": "Ist-Versteuerung Einkauf 25,50 %",
-      "18:25.5": "Ist-Versteuerung Verkauf 25,50 %",
-      "29:25.5": "Dienstleistungskauf außerhalb der EU 25,50 %",
-      "12:25.5": "Bruttoverkauf 25,50 %",
-      "19:0": "Umsatz mit Steuersatz 0 %",
-      "25:25.5": "Innergemeinschaftlicher Erwerb von Dienstleistungen 25,50 %"
+    "types": {
+      "0": "Keine USt-Behandlung",
+      "21": "Steuerpflichtiger Einkauf (Netto)",
+      "11": "Steuerpflichtiger Verkauf (Netto)",
+      "28": "Ist-Versteuerung Einkauf",
+      "18": "Ist-Versteuerung Verkauf",
+      "29": "Dienstleistungskauf außerhalb der EU",
+      "12": "Steuerpflichtiger Verkauf (Brutto)",
+      "19": "Umsatz mit Steuersatz 0 %",
+      "25": "Innergemeinschaftlicher Erwerb von Dienstleistungen"
     },
     "none": "Keine USt",
     "code": "USt {code} {pct}"
   },
   "settings": {
     "title": "Einstellungen",
+    "appSection": "Programm",
+    "appIntro": "Sprache, Formatierung und Daten in diesem Browser. Dafür muss kein Buch geöffnet sein.",
+    "bookSection": "Buchhaltung",
+    "bookNeedOpen": "Öffnen Sie ein Buch, um Firmeneinstellungen, Geschäftsjahre und Zuordnungen zu bearbeiten.",
     "saved": "Einstellungen gespeichert",
     "practiceOffWarning": "Sie sind selbst für die Richtigkeit und Rechtmäßigkeit Ihrer Buchhaltung sowie dafür verantwortlich, dass alle Steuern ordnungsgemäß gezahlt werden.\n\nDie Software hat keine Gewährleistung. Tilari gibt auch keine Rechtsberatung zu Buchhaltung oder Steuern.\n\nWenden Sie sich bei Bedarf an eine Buchhaltungsfachkraft.",
     "save": "Speichern",
@@ -505,7 +507,7 @@
     },
     "storage": {
       "title": "Browserdaten",
-      "link": "Browserdaten anzeigen",
+      "link": "Browserdaten…",
       "back": "Zurück zu den Einstellungen",
       "intro": "Tilari-Daten in diesem Browser: Einstellungen, zuletzt geöffnete Bücher und die lokale Arbeitskopie (OPFS).",
       "measured": "Gemessen insgesamt {size}",

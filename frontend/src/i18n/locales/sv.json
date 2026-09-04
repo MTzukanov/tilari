@@ -461,24 +461,26 @@
     "emptySummary": "Ingen momssammanställning för den här perioden.",
     "previous": "Lämnade momsdeklarationer",
     "emptyPrevious": "Inga tidigare deklarationer.",
-    "choices": {
-      "0:0": "Ingen momshantering",
-      "21:25.5": "Beskattat inköp (netto) 25,50 %",
-      "21:24": "Beskattat inköp (netto) 24,00 %",
-      "11:25.5": "Beskattad försäljning 25,50 %",
-      "11:24": "Beskattad försäljning 24,00 %",
-      "28:25.5": "Kassa-moms inköp 25,50 %",
-      "18:25.5": "Kassa-moms försäljning 25,50 %",
-      "29:25.5": "Tjänsteinköp utanför EU 25,50 %",
-      "12:25.5": "Försäljning brutto 25,50 %",
-      "19:0": "Försäljning med nollskattesats",
-      "25:25.5": "Gemenskapsförvärv av tjänster 25,50 %"
+    "types": {
+      "0": "Ingen momshantering",
+      "21": "Beskattat inköp (netto)",
+      "11": "Beskattad försäljning (netto)",
+      "28": "Kassa-moms inköp",
+      "18": "Kassa-moms försäljning",
+      "29": "Tjänsteinköp utanför EU",
+      "12": "Beskattad försäljning (brutto)",
+      "19": "Försäljning med nollskattesats",
+      "25": "Gemenskapsförvärv av tjänster"
     },
     "none": "Ingen moms",
     "code": "Moms {code} {pct}"
   },
   "settings": {
     "title": "Inställningar",
+    "appSection": "Program",
+    "appIntro": "Språk, format och data i den här webbläsaren. Dessa kräver ingen öppen bok.",
+    "bookSection": "Bokföring",
+    "bookNeedOpen": "Öppna en bok för att redigera företagsinställningar, räkenskapsår och fördelningar.",
     "saved": "Inställningar sparade",
     "practiceOffWarning": "Du ansvarar själv för att bokföringen är korrekt och laglig och för att alla skatter betalas på rätt sätt.\n\nProgrammet har ingen garanti. Tilari ger inte heller juridisk rådgivning om bokföring eller beskattning.\n\nVänd dig vid behov till en bokföringsproffs.",
     "save": "Spara",
@@ -505,7 +507,7 @@
     },
     "storage": {
       "title": "Webbläsardata",
-      "link": "Visa webbläsardata",
+      "link": "Webbläsardata…",
       "back": "Tillbaka till inställningar",
       "intro": "Tilaris data i den här webbläsaren: inställningar, senast öppnade böcker och den lokala arbetskopian (OPFS).",
       "measured": "Uppmätt totalt {size}",

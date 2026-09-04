@@ -10,7 +10,7 @@ test.describe('browser storage settings', () => {
     test.setTimeout(90_000)
     await openBook(page)
     await page.goto('/#/settings')
-    await page.getByRole('link', { name: 'Näytä selaimen tiedot' }).click()
+    await page.getByRole('link', { name: 'Selaimen tiedot…' }).click()
     await expect(page.getByRole('heading', { name: 'Selaimen tiedot' })).toBeVisible()
     const filesToggle = page
       .locator('.storage-book-files')
@@ -35,9 +35,11 @@ test.describe('browser storage settings', () => {
 
   test('storage page is available without a book', async ({ page }) => {
     await clearTilariStorage(page)
-    await page.goto('/#/settings/storage')
-    await expect(page.getByRole('heading', { name: 'Selaimen tiedot' })).toBeVisible()
+    await page.goto('/#/settings')
+    await expect(page.getByRole('heading', { name: 'Asetukset' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Ei kirjaa auki' })).toHaveCount(0)
+    await page.getByRole('link', { name: 'Selaimen tiedot…' }).click()
+    await expect(page.getByRole('heading', { name: 'Selaimen tiedot' })).toBeVisible()
     await expect(page.getByText('Ei paikallista työkopiota.')).toBeVisible()
   })
 })

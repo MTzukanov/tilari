@@ -165,10 +165,10 @@ describe('voucherHash', () => {
 })
 
 describe('routeAllowsNoBook', () => {
-  it('allows help and settings storage without a book', () => {
+  it('allows help and all settings without a book', () => {
     expect(routeAllowsNoBook({ view: 'help' })).toBe(true)
     expect(routeAllowsNoBook({ view: 'settings', page: 'storage' })).toBe(true)
-    expect(routeAllowsNoBook({ view: 'settings' })).toBe(false)
+    expect(routeAllowsNoBook({ view: 'settings' })).toBe(true)
     expect(routeAllowsNoBook({ view: 'reports' })).toBe(false)
   })
 })
