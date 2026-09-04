@@ -809,6 +809,31 @@ html {
   align-items: start;
 }
 
+/* Kitsas-style: ALV type + separate percent box */
+.vat-select {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.45rem;
+  align-items: start;
+  width: 100%;
+}
+
+.vat-select:not(:has(.vat-select-rate)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.vat-select-rate {
+  width: 6.75rem;
+}
+
+.vat-select-rate .icon-select-btn {
+  justify-content: space-between;
+}
+
+.editor-table .vat-select {
+  min-width: 12rem;
+}
+
 .voucher-work {
   container-type: inline-size;
   container-name: voucher-editor;

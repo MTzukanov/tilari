@@ -99,7 +99,7 @@ From Kitsas `AlvKoodi` as used in a typical Finnish cash-basis book:
 | 29 / 129 / 229 | Service purchase outside the EU |
 | 901 | VAT settlement (declaration lines) |
 
-Rates seen: 24% and 25.5%. Other EU special cases are out until asked.
+Rates in the editor percent box (Kitsas `alvProssa`): 25.5%, 24%, 14%, 13.5%, 10%. Other EU special cases are out until asked.
 Behaviour (periods, boxes, cash-basis, HTML attachment): [VAT.md](VAT.md).
 
 ## Invariants (enforced on write)

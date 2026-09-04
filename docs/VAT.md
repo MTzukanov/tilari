@@ -35,7 +35,8 @@ document). This page uses English.
 | 901 | VAT settlement / clear |
 
 - Official-style boxes in the summary and HTML (non-zero only): at least **301, 306, 307, 308, 309, 314**. Other 301–320 labels exist in the HTML builder when amounts appear.
-- Rate mapping for 301: 24 % and 25,5 % (Kitsas post-2024 reform).
+- Rate mapping for 301: 24 % and 25,5 %; 302: 13,5 % / 14 %; 303: 10 % (Kitsas post-2024 / 2026 reform).
+- Editor: ALV **type** and **percent** are separate controls (Kitsas `alvCombo` + `alvProssa`). Percent list is always 25,50 / 24,00 / 14,00 / 13,50 / 10,00 %.
 
 ### Declaration voucher
 
