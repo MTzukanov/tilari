@@ -20,5 +20,8 @@
     "@types/sql.js": "^1.4.11",
     "tsx": "^4.20.5",
     "typescript": "~6.0.2"
+  },
+  "allowScripts": {
+    "esbuild": true
   }
 }
