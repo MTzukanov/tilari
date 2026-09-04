@@ -47,6 +47,15 @@ describe('VAT type / rate split', () => {
     expect([...VAT_RATES]).toEqual([25.5, 24, 14, 13.5, 10])
   })
 
+  it('filters types by expense vs income like Kitsas', () => {
+    const expense = vatTypeChoices('expense').map((c) => c.code)
+    const income = vatTypeChoices('income').map((c) => c.code)
+    expect(expense).toEqual([0, 21, 28, 29, 25])
+    expect(income).toEqual([0, 11, 18, 12, 19])
+    expect(expense).not.toContain(11)
+    expect(income).not.toContain(21)
+  })
+
   it('hides the rate for nollalaji types', () => {
     expect(isZeroVatType(0)).toBe(true)
     expect(isZeroVatType(19)).toBe(true)

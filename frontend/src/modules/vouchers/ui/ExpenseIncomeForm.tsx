@@ -175,6 +175,7 @@ export function ExpenseIncomeForm({
             {t('editor.vat')}
             <VatSelect
               value={row.vatChoice}
+              voucherType={type}
               aria-label={t('editor.vat')}
               onChange={(vatChoice) => onUpdateRow(selected, { vatChoice })}
             />

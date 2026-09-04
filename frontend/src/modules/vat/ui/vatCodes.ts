@@ -20,28 +20,39 @@ export type VatTypeChoice = {
 /** Kitsas tulomenoapuri / tiliotekirjaaja / muumuokkausdlg alvProssa list. */
 export const VAT_RATES = [25.5, 24, 14, 13.5, 10] as const
 
-const VAT_TYPE_DEFS: { code: number; zeroRate?: boolean }[] = [
-  { code: 0, zeroRate: true },
-  { code: 21 },
-  { code: 11 },
-  { code: 28 },
-  { code: 18 },
-  { code: 29 },
-  { code: 12 },
-  { code: 19, zeroRate: true },
-  { code: 25 },
+/** Kitsas paivitaVeroFiltterit: expense ≈ 2x, income ≈ 1x (+ veroton). */
+export type VatTypeKind = 'expense' | 'income' | 'all'
+
+const VAT_TYPE_DEFS: { code: number; zeroRate?: boolean; kind: 'both' | 'expense' | 'income' }[] = [
+  { code: 0, zeroRate: true, kind: 'both' },
+  { code: 21, kind: 'expense' },
+  { code: 11, kind: 'income' },
+  { code: 28, kind: 'expense' },
+  { code: 18, kind: 'income' },
+  { code: 29, kind: 'expense' },
+  { code: 12, kind: 'income' },
+  { code: 19, zeroRate: true, kind: 'income' },
+  { code: 25, kind: 'expense' },
 ]
 
 function typeLabel(code: number): string {
   return t(`vat.types.${code}`)
 }
 
-export function vatTypeChoices(): VatTypeChoice[] {
-  return VAT_TYPE_DEFS.map((d) => ({
-    code: d.code,
-    label: typeLabel(d.code),
-    zeroRate: Boolean(d.zeroRate),
-  }))
+export function vatTypeKindForVoucher(voucherType: number): VatTypeKind {
+  if (voucherType === 100) return 'expense'
+  if (voucherType === 200) return 'income'
+  return 'all'
+}
+
+export function vatTypeChoices(kind: VatTypeKind = 'all'): VatTypeChoice[] {
+  return VAT_TYPE_DEFS.filter((d) => kind === 'all' || d.kind === 'both' || d.kind === kind).map(
+    (d) => ({
+      code: d.code,
+      label: typeLabel(d.code),
+      zeroRate: Boolean(d.zeroRate),
+    }),
+  )
 }
 
 export function isZeroVatType(code: number): boolean {

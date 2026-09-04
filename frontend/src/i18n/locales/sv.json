@@ -461,18 +461,16 @@
     "emptySummary": "Ingen momssammanställning för den här perioden.",
     "previous": "Lämnade momsdeklarationer",
     "emptyPrevious": "Inga tidigare deklarationer.",
-    "choices": {
-      "0:0": "Ingen momshantering",
-      "21:25.5": "Beskattat inköp (netto) 25,50 %",
-      "21:24": "Beskattat inköp (netto) 24,00 %",
-      "11:25.5": "Beskattad försäljning 25,50 %",
-      "11:24": "Beskattad försäljning 24,00 %",
-      "28:25.5": "Kassa-moms inköp 25,50 %",
-      "18:25.5": "Kassa-moms försäljning 25,50 %",
-      "29:25.5": "Tjänsteinköp utanför EU 25,50 %",
-      "12:25.5": "Försäljning brutto 25,50 %",
-      "19:0": "Försäljning med nollskattesats",
-      "25:25.5": "Gemenskapsförvärv av tjänster 25,50 %"
+    "types": {
+      "0": "Momsfri",
+      "21": "Beskattat inköp (netto)",
+      "11": "Beskattad försäljning (netto)",
+      "28": "Kassa-moms inköp",
+      "18": "Kassa-moms försäljning",
+      "29": "Tjänsteinköp utanför EU",
+      "12": "Beskattad försäljning (brutto)",
+      "19": "Försäljning med nollskattesats",
+      "25": "Gemenskapsförvärv av tjänster"
     },
     "none": "Ingen moms",
     "code": "Moms {code} {pct}"

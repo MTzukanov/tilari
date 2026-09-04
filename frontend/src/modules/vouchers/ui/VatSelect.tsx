@@ -6,6 +6,8 @@ import {
   vatKey,
   vatPercentLabel,
   vatTypeChoices,
+  vatTypeKindForVoucher,
+  type VatTypeKind,
 } from '../../vat/ui/vatCodes'
 import { VatIcon } from '../../vat/ui/VatIcon'
 import { IconSelect } from './IconSelect'
@@ -14,14 +16,32 @@ export function VatSelect({
   value,
   onChange,
   disabled = false,
+  kind = 'all',
+  voucherType,
   'aria-label': ariaLabel,
 }: {
   value: string
   onChange: (key: string) => void
   disabled?: boolean
+  /** Kitsas expense vs income filter; overrides voucherType when set. */
+  kind?: VatTypeKind
+  voucherType?: number
   'aria-label'?: string
 }) {
+  const filter = voucherType != null ? vatTypeKindForVoucher(voucherType) : kind
+  const types = vatTypeChoices(filter)
   const choice = vatFromKey(value)
+  const typeInList = types.some((c) => c.code === choice.code)
+  const typeOptions = typeInList
+    ? types
+    : [
+        ...types,
+        {
+          code: choice.code,
+          label: choice.label.replace(/\s+\d+,\d{2} %$/, ''),
+          zeroRate: isZeroVatType(choice.code),
+        },
+      ]
   const showRate = !isZeroVatType(choice.code)
   const rateValue = showRate
     ? VAT_RATES.includes(choice.percent as (typeof VAT_RATES)[number])
@@ -33,7 +53,9 @@ export function VatSelect({
       value: percent,
       label: vatPercentLabel(percent),
     })),
-    ...(showRate && !VAT_RATES.includes(choice.percent as (typeof VAT_RATES)[number]) && choice.percent
+    ...(showRate &&
+    !VAT_RATES.includes(choice.percent as (typeof VAT_RATES)[number]) &&
+    choice.percent
       ? [{ value: choice.percent, label: vatPercentLabel(choice.percent) }]
       : []),
   ]
@@ -50,7 +72,7 @@ export function VatSelect({
           if (isZeroVatType(next)) onChange(vatKey(next, 0))
           else onChange(vatKey(next, choice.percent || defaultVatPercent(next)))
         }}
-        options={vatTypeChoices().map((c) => ({
+        options={typeOptions.map((c) => ({
           value: c.code,
           label: c.label,
           icon: <VatIcon code={c.code} />,

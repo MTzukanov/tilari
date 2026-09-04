@@ -829,6 +829,7 @@ export function VoucherEditor({
                     <td>
                       <VatSelect
                         value={vatKey(Number(line.vat_code || 0), Number(line.vat_percent || 0))}
+                        voucherType={type}
                         aria-label={t('table.vat')}
                         onChange={(key) => {
                           const c = vatFromKey(key)
