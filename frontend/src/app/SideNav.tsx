@@ -2,6 +2,9 @@ import type { Route } from './routing'
 import { useI18n } from '../i18n'
 import { TilariMark } from '../shared/TilariMark'
 import { NAV_ITEMS, activeNav as activeNavFromModules } from '../modules/registry'
+import { useEffect, useState } from 'react'
+import { fetchSettings } from '../api'
+import { isVatLiableSetting } from '../book/settings'
 
 export type NavId = string
 
@@ -108,21 +111,37 @@ export function SideNav({
   open,
   onNavigate,
   onClose,
+  bookOpen = false,
 }: {
   route: Route
   open: boolean
   onNavigate: (href: string) => void
   onClose: () => void
+  bookOpen?: boolean
 }) {
   const current = activeNav(route)
   const { t } = useI18n()
+  const [vatLiable, setVatLiable] = useState(true)
+
+  useEffect(() => {
+    if (!bookOpen) {
+      setVatLiable(true)
+      return
+    }
+    void fetchSettings()
+      .then((s) => setVatLiable(isVatLiableSetting(s.company.AlvVelvollinen)))
+      .catch(() => setVatLiable(true))
+  }, [bookOpen, route.view])
+
+  const items = NAV_ITEMS.filter((item) => item.id !== 'vat' || vatLiable)
+
   return (
     <>
       {open ? (
         <button type="button" className="sidenav-backdrop" aria-label={t('nav.closeMenu')} onClick={onClose} />
       ) : null}
       <nav className={`sidenav ${open ? 'is-open' : ''}`} aria-label={t('nav.main')}>
-        {NAV_ITEMS.map((item) => (
+        {items.map((item) => (
           <a
             key={item.id}
             href={item.href}

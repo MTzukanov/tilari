@@ -496,6 +496,7 @@
       "Nimi": "Name",
       "Ytunnus": "Handelsregisternummer (FI)",
       "Kaupunki": "Ort",
+      "AlvVelvollinen": "Umsatzsteuerpflichtig",
       "Harjoitus": "Übungsbuchhaltung",
       "HarjoitusHelp": "In einem Übungsbuch können Sie das Datum vorstellen. Auf allen Ausdrucken steht, dass die Buchhaltung im Übungsmodus erstellt wurde.",
       "AlvKausi": "Länge des USt-Zeitraums",

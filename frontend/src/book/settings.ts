@@ -23,6 +23,12 @@ export const COMPANY_KEYS = [
   'Harjoitus',
 ] as const
 
+/** Kitsas AsetusModel::onko("AlvVelvollinen") — empty / 0 / EI → not liable. */
+export function isVatLiableSetting(value: string | null | undefined): boolean {
+  const v = (value || '').trim().toUpperCase()
+  return Boolean(v) && v !== '0' && v !== 'EI'
+}
+
 export function getCompany(db: SqliteDb): Record<string, string> {
   const placeholders = COMPANY_KEYS.map(() => '?').join(',')
   const rows = db.all<{ avain: string; arvo: string | null }>(

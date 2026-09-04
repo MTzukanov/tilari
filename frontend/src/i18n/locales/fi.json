@@ -496,6 +496,7 @@
       "Nimi": "Nimi",
       "Ytunnus": "Y-tunnus",
       "Kaupunki": "Kaupunki",
+      "AlvVelvollinen": "ALV-velvollinen",
       "Harjoitus": "Harjoituskirjanpito",
       "HarjoitusHelp": "Harjoituskirjassa voi siirtää päivämäärää eteenpäin. Kaikissa tulosteissa näkyy, että kirjanpito on laadittu harjoittelutilassa.",
       "AlvKausi": "ALV-verokauden pituus",

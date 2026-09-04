@@ -496,6 +496,7 @@
       "Nimi": "Name",
       "Ytunnus": "Business ID",
       "Kaupunki": "City",
+      "AlvVelvollinen": "VAT registered",
       "Harjoitus": "Practice accounting",
       "HarjoitusHelp": "In a practice book you can move the date forward. All printouts show that the books were prepared in practice mode.",
       "AlvKausi": "VAT period length",

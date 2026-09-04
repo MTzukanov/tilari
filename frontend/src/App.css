@@ -809,6 +809,10 @@ html {
   align-items: start;
 }
 
+.assistant-money-row.is-amount-only {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 /* Kitsas-style: ALV type + separate percent box */
 .vat-select {
   display: grid;

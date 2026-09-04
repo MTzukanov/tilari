@@ -496,6 +496,7 @@
       "Nimi": "Namn",
       "Ytunnus": "FO-nummer",
       "Kaupunki": "Stad",
+      "AlvVelvollinen": "Momspliktig",
       "Harjoitus": "Övningsbokföring",
       "HarjoitusHelp": "I en övningsbok kan du flytta datumet framåt. I alla utskrifter syns att bokföringen är gjord i övningsläge.",
       "AlvKausi": "Momsperiodens längd",
