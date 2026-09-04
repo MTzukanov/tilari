@@ -477,6 +477,10 @@
   },
   "settings": {
     "title": "Settings",
+    "appSection": "Application",
+    "appIntro": "Language, formatting, and data in this browser. These do not require an open book.",
+    "bookSection": "Book",
+    "bookNeedOpen": "Open a book to edit company settings, financial years, and allocations.",
     "saved": "Settings saved",
     "practiceOffWarning": "You are responsible for the accuracy and legality of your bookkeeping and for paying all taxes correctly.\n\nThe software comes with no warranty. Tilari also does not give legal advice on bookkeeping or taxation.\n\nConsult a bookkeeping professional if needed.",
     "save": "Save",
@@ -504,7 +508,7 @@
     },
     "storage": {
       "title": "Browser data",
-      "link": "Show browser data",
+      "link": "Browser data…",
       "back": "Back to settings",
       "intro": "Tilari data in this browser: settings, recently opened books, and the local working copy (OPFS).",
       "measured": "Measured total {size}",

@@ -8,8 +8,7 @@ function SettingsScreen({ route, meta, onWipeBrowserStorage }: BookViewCtx) {
   if (route.page === 'storage') {
     return <BrowserStorageView meta={meta} onWipeBrowserStorage={onWipeBrowserStorage} />
   }
-  if (!meta) return null
-  return <SettingsView />
+  return <SettingsView meta={meta} />
 }
 
 export const navItems: ModuleNavItem[] = [

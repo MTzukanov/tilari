@@ -477,6 +477,10 @@
   },
   "settings": {
     "title": "Einstellungen",
+    "appSection": "Programm",
+    "appIntro": "Sprache, Formatierung und Daten in diesem Browser. Dafür muss kein Buch geöffnet sein.",
+    "bookSection": "Buchhaltung",
+    "bookNeedOpen": "Öffnen Sie ein Buch, um Firmeneinstellungen, Geschäftsjahre und Zuordnungen zu bearbeiten.",
     "saved": "Einstellungen gespeichert",
     "practiceOffWarning": "Sie sind selbst für die Richtigkeit und Rechtmäßigkeit Ihrer Buchhaltung sowie dafür verantwortlich, dass alle Steuern ordnungsgemäß gezahlt werden.\n\nDie Software hat keine Gewährleistung. Tilari gibt auch keine Rechtsberatung zu Buchhaltung oder Steuern.\n\nWenden Sie sich bei Bedarf an eine Buchhaltungsfachkraft.",
     "save": "Speichern",
@@ -504,7 +508,7 @@
     },
     "storage": {
       "title": "Browserdaten",
-      "link": "Browserdaten anzeigen",
+      "link": "Browserdaten…",
       "back": "Zurück zu den Einstellungen",
       "intro": "Tilari-Daten in diesem Browser: Einstellungen, zuletzt geöffnete Bücher und die lokale Arbeitskopie (OPFS).",
       "measured": "Gemessen insgesamt {size}",

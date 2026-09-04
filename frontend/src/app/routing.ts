@@ -138,7 +138,7 @@ function voucherRoute(via: VoucherVia, ref: VoucherRef): Route {
 
 /** Screens that render without an open book (file prompt stays hidden). */
 export function routeAllowsNoBook(route: Route): boolean {
-  return route.view === 'help' || (route.view === 'settings' && route.page === 'storage')
+  return route.view === 'help' || route.view === 'settings'
 }
 
 export function parseRoute(hash: string = window.location.hash): Route {

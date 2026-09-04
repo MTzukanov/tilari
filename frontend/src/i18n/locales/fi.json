@@ -477,6 +477,10 @@
   },
   "settings": {
     "title": "Asetukset",
+    "appSection": "Ohjelma",
+    "appIntro": "Kieli, muotoilu ja tämän selaimen tiedot. Nämä eivät vaadi avointa kirjaa.",
+    "bookSection": "Kirjanpito",
+    "bookNeedOpen": "Avaa kirja muokataksesi yrityksen asetuksia, tilikausia ja kohdennuksia.",
     "saved": "Asetukset tallennettu",
     "practiceOffWarning": "Olet itse vastuussa kirjanpitosi oikeellisuudesta ja laillisuudesta sekä siitä, että kaikki verot maksetaan asianmukaisesti.\n\nOhjelmalla ei ole mitään takuuta. Tilari ei myöskään anna oikeudellista neuvontaa kirjanpidosta tai verotuksesta.\n\nKäänny tarvittaessa kirjanpidon ammattilaisen puoleen.",
     "save": "Tallenna",
@@ -504,7 +508,7 @@
     },
     "storage": {
       "title": "Selaimen tiedot",
-      "link": "Näytä selaimen tiedot",
+      "link": "Selaimen tiedot…",
       "back": "Takaisin asetuksiin",
       "intro": "Tämän selaimen Tilari-tiedot: asetukset, viimeksi avatut kirjat ja paikallinen työkopio (OPFS).",
       "measured": "Mitattu yhteensä {size}",

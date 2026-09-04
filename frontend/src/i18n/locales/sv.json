@@ -477,6 +477,10 @@
   },
   "settings": {
     "title": "Inställningar",
+    "appSection": "Program",
+    "appIntro": "Språk, format och data i den här webbläsaren. Dessa kräver ingen öppen bok.",
+    "bookSection": "Bokföring",
+    "bookNeedOpen": "Öppna en bok för att redigera företagsinställningar, räkenskapsår och fördelningar.",
     "saved": "Inställningar sparade",
     "practiceOffWarning": "Du ansvarar själv för att bokföringen är korrekt och laglig och för att alla skatter betalas på rätt sätt.\n\nProgrammet har ingen garanti. Tilari ger inte heller juridisk rådgivning om bokföring eller beskattning.\n\nVänd dig vid behov till en bokföringsproffs.",
     "save": "Spara",
@@ -504,7 +508,7 @@
     },
     "storage": {
       "title": "Webbläsardata",
-      "link": "Visa webbläsardata",
+      "link": "Webbläsardata…",
       "back": "Tillbaka till inställningar",
       "intro": "Tilaris data i den här webbläsaren: inställningar, senast öppnade böcker och den lokala arbetskopian (OPFS).",
       "measured": "Uppmätt totalt {size}",
