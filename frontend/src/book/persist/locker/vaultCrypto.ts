@@ -130,8 +130,12 @@ export class EncryptedObjectStore implements LockerObjectStore {
     this.key = key
   }
 
-  list(prefix: string) {
-    return this.inner.list(prefix)
+  list(prefix: string, opts?: Parameters<LockerObjectStore['list']>[1]) {
+    return this.inner.list(prefix, opts)
+  }
+
+  exists(path: string) {
+    return this.inner.exists(path)
   }
 
   async download(path: string, opts?: TransferOpts): Promise<Uint8Array> {

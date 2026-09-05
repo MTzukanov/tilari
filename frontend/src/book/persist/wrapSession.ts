@@ -60,6 +60,7 @@ export const WASM_SESSION_METHODS = new Set([
   'linkWritableFile',
   'saveLocal',
   'downloadCopy',
+  'downloadLeanCopy',
   'saveToLocker',
   'reloadFromSource',
 ])

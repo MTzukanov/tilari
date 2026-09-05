@@ -666,6 +666,12 @@ export class WasmBookService extends Ledger implements BookService {
     await this.flushPersistNow()
   }
 
+  async downloadLeanCopy(promptForName: (suggested: string) => string | null) {
+    const bytes = this.requireDb().export()
+    const name = this.sourceName || 'book.kitsas'
+    await saveKitsasAs(bytes, name, promptForName)
+  }
+
   async listLockerBooks() {
     return getActiveLocker().list()
   }
@@ -733,7 +739,9 @@ export class WasmBookService extends Ledger implements BookService {
       )
       this.lockerId = saved.id
       this.etag = saved.sha256
-      if (saved.attachments_sha256) {
+      if (asNew) {
+        this.attachmentsEtag = saved.attachments_sha256
+      } else if (saved.attachments_sha256) {
         this.attachmentsEtag = this.attachmentsEtag || saved.attachments_sha256
       }
       this.dbPath = `locker:${saved.id}`
@@ -744,23 +752,24 @@ export class WasmBookService extends Ledger implements BookService {
     if (plan.needAttachments || asNew) {
       if (!this.lockerId) throw new Error('book_not_found')
       const attEtag = this.attachmentsEtag
+      const shas = this.liiteShas()
       const blobs: Record<string, Uint8Array> = {}
-      for (const sha of this.store.keys()) {
+      for (const sha of shas) {
         const data = this.store.get(sha)
         if (data) blobs[sha] = data
       }
-      if (!attEtag && Object.keys(blobs).length > 0) throw new Error('etag_mismatch')
-      if (Object.keys(blobs).length > 0) {
-        if (locker.putAttachmentBlobs) {
-          const attSaved = await locker.putAttachmentBlobs(this.lockerId, blobs, attEtag!, opts)
-          this.attachmentsEtag = attSaved.attachments_sha256
-        } else if (locker.putAttachments) {
-          const pack = this.store.toPack()
-          const attSaved = await locker.putAttachments(this.lockerId, pack, attEtag!, opts)
-          this.attachmentsEtag = attSaved.attachments_sha256
-        } else {
-          throw new Error('locker_not_configured')
-        }
+      if (!attEtag) throw new Error('etag_mismatch')
+      opts.onStage?.('attachments')
+      if (locker.putAttachmentBlobs) {
+        const attSaved = await locker.putAttachmentBlobs(this.lockerId, shas, blobs, attEtag, opts)
+        this.attachmentsEtag = attSaved.attachments_sha256
+      } else if (locker.putAttachments) {
+        if (Object.keys(blobs).length !== shas.length) throw new Error('attachment_missing')
+        const pack = this.store.toPack()
+        const attSaved = await locker.putAttachments(this.lockerId, pack, attEtag, opts)
+        this.attachmentsEtag = attSaved.attachments_sha256
+      } else {
+        throw new Error('locker_not_configured')
       }
       this.setAttachmentsDirty(false)
     }

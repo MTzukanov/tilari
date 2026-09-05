@@ -95,10 +95,17 @@ Opaque files in the user’s Storage bucket (default name `tilari`), prefix
 
 ```
 tilari/vault.json                    # PBKDF2 salt + verifier (plaintext JSON)
-tilari/{id}/meta.json                # AES-GCM envelope
+tilari/blobs/{sha256}                # shared AES-GCM envelopes (all books)
+tilari/{id}/meta.json                # AES-GCM envelope (includes attachment_shas[])
 tilari/{id}/book.kitsas              # AES-GCM envelope
-tilari/{id}/attachments/{sha256}     # AES-GCM envelope
 ```
+
+Attachment bytes are a **vault-wide content-addressed pool** (same idea as browser
+OPFS `tilari/blobs/{sha}`). Saving a new book only uploads SHAs that are not
+already in the pool. Each book’s `meta.json` stores `attachment_shas` (sorted)
+and `attachments_sha256` (hash of that list). Deleting a book removes
+`tilari/{id}/` then GCs unreferenced shared blobs. A “Clean unused attachments”
+action in the storage panel runs the same GC without deleting books.
 
 The SPA uses the **anon** key only. Create a **private** bucket (not public
 CDN). Example RLS (Storage policies on `storage.objects`):
@@ -120,7 +127,7 @@ create policy "tilari_locker_delete"
 ```
 
 Storage CORS: allow the Tilari HTTPS origin (`GET`, `POST`, `PUT`, `DELETE`,
-headers `authorization`, `apikey`, `content-type`, `x-upsert`). `file://`
+`HEAD`, headers `authorization`, `apikey`, `content-type`, `x-upsert`). `file://`
 single-HTML will not work reliably.
 
 URL + anon key opens the bucket (possession = access to ciphertext). Project

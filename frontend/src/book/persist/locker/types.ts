@@ -62,9 +62,12 @@ export interface LockerBackend {
   ): Promise<{ id: string; attachments_sha256: string }>
   putAttachmentBlobs?(
     id: string,
+    attachmentShas: string[],
     blobs: Record<string, Uint8Array>,
     etag: string,
     opts?: TransferOpts,
   ): Promise<{ attachments_sha256: string }>
   remove?(id: string): Promise<void>
+  /** Delete shared blobs not listed in any book's meta.attachment_shas. */
+  gcUnusedBlobs?(): Promise<number>
 }

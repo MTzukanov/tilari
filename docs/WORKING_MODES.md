@@ -235,7 +235,7 @@ Browser tab (WasmBookService / Ledger)
   ├─ OPFS session + tilari/blobs/{sha}  (plaintext working copy)
   ├─ Storage tilari/vault.json          (KDF salt + verifier, not secret)
   ├─ Storage tilari/{id}/book.kitsas + meta.json   (AES-GCM envelopes)
-  └─ Storage tilari/{id}/attachments/{sha}         (AES-GCM envelopes)
+  └─ Storage tilari/blobs/{sha}                    (shared AES-GCM envelopes)
 User Supabase project (private bucket)
 ```
 

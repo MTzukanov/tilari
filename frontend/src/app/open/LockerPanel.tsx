@@ -114,6 +114,23 @@ export function LockerPanel({
     onKindChange()
   }
 
+  async function onGcBlobs() {
+    setBusy(true)
+    setError(null)
+    try {
+      const locker = getActiveLocker()
+      if (!locker.gcUnusedBlobs) throw new Error('locker_gc_unsupported')
+      const removed = await locker.gcUnusedBlobs()
+      setError(null)
+      window.alert(t('file.lockerGcBlobsDone', { count: removed }))
+    } catch (err) {
+      const code = err instanceof Error ? err.message : String(err)
+      setError(code)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <section className="file-prompt locker-panel">
       <h2>{t('file.lockerTitle')}</h2>
@@ -233,6 +250,16 @@ export function LockerPanel({
             {supabaseReady ? (
               <button type="button" className="file-btn-secondary" onClick={onDisconnect}>
                 {t('file.lockerDisconnect')}
+              </button>
+            ) : null}
+            {supabaseReady ? (
+              <button
+                type="button"
+                className="file-btn-secondary"
+                disabled={busy}
+                onClick={() => void onGcBlobs()}
+              >
+                {t('file.lockerGcBlobs')}
               </button>
             ) : null}
           </div>

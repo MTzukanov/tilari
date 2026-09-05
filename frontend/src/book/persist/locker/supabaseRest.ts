@@ -1,5 +1,5 @@
 import { xhrTransfer, type TransferOpts } from '../../http'
-import type { LockerObjectStore } from './objectStore'
+import type { ListOpts, LockerObjectStore } from './objectStore'
 
 function joinUrl(base: string, path: string): string {
   return `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`
@@ -35,17 +35,29 @@ export function createSupabaseObjectStore(
   }
 
   return {
-    async list(prefix: string) {
+    async list(prefix: string, opts?: ListOpts) {
+      const limit = opts?.limit ?? 1000
+      const offset = opts?.offset ?? 0
       const res = await fetch(joinUrl(projectUrl, `storage/v1/object/list/${bucket}`), {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prefix, limit: 1000, offset: 0 }),
+        body: JSON.stringify({ prefix, limit, offset }),
       })
       if (!res.ok) throw storageError(res.status, await res.text(), 'locker_list_failed')
       const rows = (await res.json()) as { name?: string }[]
       return rows
         .map((row) => ({ name: String(row.name || '') }))
         .filter((row) => row.name)
+    },
+
+    async exists(path: string) {
+      const res = await fetch(joinUrl(root, `${bucket}/${path}`), {
+        method: 'HEAD',
+        headers,
+      })
+      if (res.status === 404) return false
+      if (res.ok) return true
+      throw storageError(res.status, await res.text(), 'exists_failed')
     },
 
     async download(path: string, opts?: TransferOpts) {
