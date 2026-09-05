@@ -417,7 +417,8 @@
     "balanceSheetItems": "To balance-sheet items",
     "closing": "To year-end close",
     "reports": "To balance sheet / P&L",
-    "reportsHub": "To reports"
+    "reportsHub": "To reports",
+    "bankStatement": "To bank statement"
   },
   "ledger": {
     "empty": "No postings on this account in the period."

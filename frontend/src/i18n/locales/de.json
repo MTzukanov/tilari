@@ -417,7 +417,8 @@
     "balanceSheetItems": "Zur Bilanzgliederung",
     "closing": "Zum Jahresabschluss",
     "reports": "Zu Bilanz / GuV",
-    "reportsHub": "Zu den Berichten"
+    "reportsHub": "Zu den Berichten",
+    "bankStatement": "Zum Kontoauszug"
   },
   "ledger": {
     "empty": "Keine Buchungen auf diesem Konto in der Periode."

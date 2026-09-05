@@ -34,14 +34,37 @@ function VouchersScreen({ route, meta, goTo, t }: BookViewCtx) {
         defaultDate={meta.book_date}
         copyFromId={route.copyFromId}
         onCancel={() => {
+          if (route.via.kind === 'bankStatement') {
+            goTo(voucherParentHash(route.via))
+            return
+          }
           if (route.voucherId != null) {
             goTo(voucherHash(route.via, route.voucherId, route.entryId))
             return
           }
           goTo('#/browse')
         }}
-        onSaved={(id, opts) => goTo(voucherHash(route.via, id, null, Boolean(opts?.stay)))}
-        onOpenVoucher={(id) => goTo(voucherHash(route.via, id, null, true))}
+        onSaved={(id, opts) => {
+          if (route.via.kind === 'bankStatement' && !opts?.stay) {
+            goTo(voucherParentHash(route.via))
+            return
+          }
+          goTo(voucherHash(route.via, id, null, Boolean(opts?.stay)))
+        }}
+        onOpenVoucher={(id, opts) => {
+          if (opts?.fromStatementId != null) {
+            goTo(
+              voucherHash(
+                { kind: 'bankStatement', voucherId: opts.fromStatementId },
+                id,
+                null,
+                true,
+              ),
+            )
+            return
+          }
+          goTo(voucherHash(route.via, id, null, true))
+        }}
         onCopyAsNew={(type, fromId) => goTo(`#/voucher/new/${type}/from/${fromId}`)}
       />
     )
@@ -71,7 +94,7 @@ export const vouchersUi: UiModule = {
   activeNav: (route) => {
     if (route.view === 'browse') return 'browse'
     if (route.view === 'edit' && route.voucherId == null) return 'newVoucher'
-    if (viaKind(route) === 'browse') return 'browse'
+    if (viaKind(route) === 'browse' || viaKind(route) === 'bankStatement') return 'browse'
     return null
   },
 }

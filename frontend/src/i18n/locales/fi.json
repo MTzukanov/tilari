@@ -417,7 +417,8 @@
     "balanceSheetItems": "Tase-eriin",
     "closing": "Tilinpäätökseen",
     "reports": "Taseeseen / tulokseen",
-    "reportsHub": "Raportteihin"
+    "reportsHub": "Raportteihin",
+    "bankStatement": "Tiliotteelle"
   },
   "ledger": {
     "empty": "Ei vientejä tällä tilillä jaksolla."

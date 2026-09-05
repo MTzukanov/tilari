@@ -6,6 +6,8 @@ export type VoucherVia =
   | { kind: 'journal' }
   | { kind: 'vat' }
   | { kind: 'fiscalPeriods'; ends: string }
+  /** Opened from a bank statement (tiliote) green row — cancel returns to that statement. */
+  | { kind: 'bankStatement'; voucherId: number }
 
 export type Route =
   | { view: 'reports' }
@@ -77,6 +79,8 @@ export function voucherHash(
       return `#/vat${tail}`
     case 'fiscalPeriods':
       return `#/fiscal-periods/${via.ends}/closing${tail}`
+    case 'bankStatement':
+      return `#/statement/${via.voucherId}${tail}`
   }
 }
 
@@ -96,6 +100,9 @@ export function voucherParentHash(via: VoucherVia): string {
       return '#/vat'
     case 'fiscalPeriods':
       return `#/fiscal-periods/${via.ends}/closing`
+    case 'bankStatement':
+      // Re-open the statement editor (same as double-click / Tosite return).
+      return voucherHash({ kind: 'browse' }, via.voucherId, null, true)
   }
 }
 
@@ -120,6 +127,8 @@ export function voucherUpI18n(via: VoucherVia): { key: string; vars?: Record<str
       return { key: 'up.vat' }
     case 'fiscalPeriods':
       return { key: 'up.closing' }
+    case 'bankStatement':
+      return { key: 'up.bankStatement' }
   }
 }
 
@@ -142,6 +151,22 @@ export function routeAllowsNoBook(route: Route): boolean {
 }
 
 export function parseRoute(hash: string = window.location.hash): Route {
+  const statement = hash.match(/^#\/statement\/(\d+)(?:\/(.+))?$/)
+  if (statement) {
+    const statementId = Number(statement[1])
+    if (!statement[2]) {
+      return {
+        view: 'edit',
+        voucherId: statementId,
+        type: null,
+        via: { kind: 'browse' },
+        entryId: null,
+      }
+    }
+    const ref = parseVoucherSegment(statement[2])
+    if (ref) return voucherRoute({ kind: 'bankStatement', voucherId: statementId }, ref)
+  }
+
   const fiscal = hash.match(/^#\/fiscal-periods\/(\d{4}-\d{2}-\d{2})\/closing(?:\/(.+))?$/)
   if (fiscal) {
     if (!fiscal[2]) return { view: 'fiscalPeriods', wizardEnds: fiscal[1] }

@@ -162,6 +162,25 @@ describe('voucherHash', () => {
       key: 'up.closing',
     })
   })
+
+  it('returns to the statement editor from a green-row voucher', () => {
+    expect(voucherHash({ kind: 'bankStatement', voucherId: 50 }, 123, null, true)).toBe(
+      '#/statement/50/voucher/123/edit',
+    )
+    expect(parseRoute('#/statement/50/voucher/123/edit')).toEqual({
+      view: 'edit',
+      voucherId: 123,
+      type: null,
+      via: { kind: 'bankStatement', voucherId: 50 },
+      entryId: null,
+    })
+    expect(voucherParentHash({ kind: 'bankStatement', voucherId: 50 })).toBe(
+      '#/browse/voucher/50/edit',
+    )
+    expect(voucherUpI18n({ kind: 'bankStatement', voucherId: 50 })).toEqual({
+      key: 'up.bankStatement',
+    })
+  })
 })
 
 describe('routeAllowsNoBook', () => {

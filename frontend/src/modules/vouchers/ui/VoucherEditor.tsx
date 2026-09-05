@@ -150,7 +150,7 @@ export function VoucherEditor({
   copyFromId?: number
   onSaved: (id: number, opts?: { stay?: boolean }) => void
   onCancel: () => void
-  onOpenVoucher: (id: number) => void
+  onOpenVoucher: (id: number, opts?: { fromStatementId?: number }) => void
   onCopyAsNew: (type: number, fromId: number) => void
 }) {
   const { t, locale } = useI18n()
@@ -1294,6 +1294,11 @@ export function VoucherEditor({
           vatLiable={vatLiable}
           onOpenVoucher={(id) => {
             if (!confirmLeave()) return
+            const statementId = existing?.id ?? voucherId
+            if (statementId != null) {
+              onOpenVoucher(id, { fromStatementId: statementId })
+              return
+            }
             onOpenVoucher(id)
           }}
           onSplitRow={(row) => {

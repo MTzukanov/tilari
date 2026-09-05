@@ -417,7 +417,8 @@
     "balanceSheetItems": "Till balansposter",
     "closing": "Till bokslut",
     "reports": "Till balans / resultat",
-    "reportsHub": "Till rapporter"
+    "reportsHub": "Till rapporter",
+    "bankStatement": "Till kontoutdraget"
   },
   "ledger": {
     "empty": "Inga transaktioner på det här kontot under perioden."
