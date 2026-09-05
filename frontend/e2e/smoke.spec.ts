@@ -119,8 +119,10 @@ test.describe('balance-sheet-items', () => {
     await expect(page.locator('.item-movement').first()).toBeVisible()
 
     await page.locator('.balance-sheet-items table tbody tr.clickable').first().click()
-    await expect(page).toHaveURL(/#\/balance-sheet-items\/voucher\/\d+/)
-    await expect(page.locator('.voucher-head h2')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Tase-eriin' })).toBeVisible()
+    await expect(page).toHaveURL(/#\/balance-sheet-items\/voucher\/\d+(\/v\/\d+)?\/edit/)
+    await expect(page.locator('form.editor.voucher-work')).toBeVisible()
+    await page.getByRole('button', { name: 'Peru' }).click()
+    await expect(page).toHaveURL(/#\/balance-sheet-items\/?$/)
+    await expect(page.getByRole('heading', { name: 'Tase-erät' })).toBeVisible()
   })
 })

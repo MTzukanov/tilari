@@ -4,18 +4,31 @@ import { activeNav } from './SideNav'
 describe('activeNav', () => {
   it('highlights browse for a session-log voucher', () => {
     expect(
-      activeNav({ view: 'voucher', voucherId: 7, via: { kind: 'browse' }, entryId: null }),
+      activeNav({
+        view: 'edit',
+        voucherId: 7,
+        type: null,
+        via: { kind: 'browse' },
+        entryId: null,
+      }),
     ).toBe('browse')
   })
 
   it('highlights vat and fiscal periods from nested voucher hashes', () => {
     expect(
-      activeNav({ view: 'voucher', voucherId: 9, via: { kind: 'vat' }, entryId: null }),
+      activeNav({
+        view: 'edit',
+        voucherId: 9,
+        type: null,
+        via: { kind: 'vat' },
+        entryId: null,
+      }),
     ).toBe('vat')
     expect(
       activeNav({
-        view: 'voucher',
+        view: 'edit',
         voucherId: 9,
+        type: null,
         via: { kind: 'fiscalPeriods', ends: '2024-12-31' },
         entryId: null,
       }),
@@ -25,14 +38,21 @@ describe('activeNav', () => {
   it('keeps report drill-downs on Reports', () => {
     expect(
       activeNav({
-        view: 'voucher',
+        view: 'edit',
         voucherId: 2,
+        type: null,
         via: { kind: 'account', account: 1910 },
         entryId: 7,
       }),
     ).toBe('reportsHub')
     expect(
-      activeNav({ view: 'voucher', voucherId: 2, via: { kind: 'journal' }, entryId: 7 }),
+      activeNav({
+        view: 'edit',
+        voucherId: 2,
+        type: null,
+        via: { kind: 'journal' },
+        entryId: 7,
+      }),
     ).toBe('reportsHub')
   })
 

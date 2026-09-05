@@ -13,11 +13,12 @@ describe('parseRoute', () => {
     expect(parseRoute('#/unknown')).toEqual({ view: 'reports' })
   })
 
-  it('parses ledger and nested voucher', () => {
+  it('parses ledger and nested voucher as edit', () => {
     expect(parseRoute('#/account/1910')).toEqual({ view: 'ledger', account: 1910 })
     expect(parseRoute('#/account/1910/voucher/2/v/7')).toEqual({
-      view: 'voucher',
+      view: 'edit',
       voucherId: 2,
+      type: null,
       via: { kind: 'account', account: 1910 },
       entryId: 7,
     })
@@ -34,8 +35,9 @@ describe('parseRoute', () => {
     expect(parseRoute('#/allocations')).toEqual({ view: 'allocations' })
     expect(parseRoute('#/allocation/4')).toEqual({ view: 'allocation', id: 4 })
     expect(parseRoute('#/allocation/4/voucher/8/v/1')).toEqual({
-      view: 'voucher',
+      view: 'edit',
       voucherId: 8,
+      type: null,
       via: { kind: 'allocation', id: 4 },
       entryId: 1,
     })
@@ -51,31 +53,35 @@ describe('parseRoute', () => {
     })
   })
 
-  it('treats a bare voucher hash as browse', () => {
+  it('treats a bare voucher hash as browse edit', () => {
     expect(parseRoute('#/voucher/7')).toEqual({
-      view: 'voucher',
+      view: 'edit',
       voucherId: 7,
+      type: null,
       via: { kind: 'browse' },
       entryId: null,
     })
   })
 
-  it('parses nested browse, journal, and vat vouchers', () => {
+  it('parses nested browse, journal, and vat vouchers as edit', () => {
     expect(parseRoute('#/browse/voucher/7')).toEqual({
-      view: 'voucher',
+      view: 'edit',
       voucherId: 7,
+      type: null,
       via: { kind: 'browse' },
       entryId: null,
     })
     expect(parseRoute('#/journal/voucher/2/v/7')).toEqual({
-      view: 'voucher',
+      view: 'edit',
       voucherId: 2,
+      type: null,
       via: { kind: 'journal' },
       entryId: 7,
     })
     expect(parseRoute('#/vat/voucher/9')).toEqual({
-      view: 'voucher',
+      view: 'edit',
       voucherId: 9,
+      type: null,
       via: { kind: 'vat' },
       entryId: null,
     })
@@ -90,8 +96,9 @@ describe('parseRoute', () => {
 
   it('parses fiscal closing voucher route with return context', () => {
     expect(parseRoute('#/fiscal-periods/2024-12-31/closing/voucher/9')).toEqual({
-      view: 'voucher',
+      view: 'edit',
       voucherId: 9,
+      type: null,
       via: { kind: 'fiscalPeriods', ends: '2024-12-31' },
       entryId: null,
     })
@@ -99,8 +106,9 @@ describe('parseRoute', () => {
 
   it('parses balance-sheet-items voucher route', () => {
     expect(parseRoute('#/balance-sheet-items/voucher/2/v/3')).toEqual({
-      view: 'voucher',
+      view: 'edit',
       voucherId: 2,
+      type: null,
       via: { kind: 'balanceSheetItems' },
       entryId: 3,
     })
@@ -140,10 +148,10 @@ describe('parseRoute', () => {
 
 describe('voucherHash', () => {
   it('round-trips nested hashes and parent hashes', () => {
-    expect(voucherHash({ kind: 'journal' }, 2, 7)).toBe('#/journal/voucher/2/v/7')
+    expect(voucherHash({ kind: 'journal' }, 2, 7)).toBe('#/journal/voucher/2/v/7/edit')
     expect(voucherParentHash({ kind: 'journal' })).toBe('#/journal')
-    expect(voucherHash({ kind: 'vat' }, 3, null, true)).toBe('#/vat/voucher/3/edit')
-    expect(parseRoute(voucherHash({ kind: 'account', account: 1910 }, 2, 7, true))).toEqual({
+    expect(voucherHash({ kind: 'vat' }, 3, null)).toBe('#/vat/voucher/3/edit')
+    expect(parseRoute(voucherHash({ kind: 'account', account: 1910 }, 2, 7))).toEqual({
       view: 'edit',
       voucherId: 2,
       type: null,
@@ -164,7 +172,7 @@ describe('voucherHash', () => {
   })
 
   it('returns to the statement editor from a green-row voucher', () => {
-    expect(voucherHash({ kind: 'bankStatement', voucherId: 50 }, 123, null, true)).toBe(
+    expect(voucherHash({ kind: 'bankStatement', voucherId: 50 }, 123, null)).toBe(
       '#/statement/50/voucher/123/edit',
     )
     expect(parseRoute('#/statement/50/voucher/123/edit')).toEqual({
@@ -188,6 +196,6 @@ describe('routeAllowsNoBook', () => {
     expect(routeAllowsNoBook({ view: 'help' })).toBe(true)
     expect(routeAllowsNoBook({ view: 'settings', page: 'storage' })).toBe(true)
     expect(routeAllowsNoBook({ view: 'settings' })).toBe(true)
-    expect(routeAllowsNoBook({ view: 'reports' })).toBe(false)
+    expect(routeAllowsNoBook({ view: 'browse' })).toBe(false)
   })
 })

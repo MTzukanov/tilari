@@ -32,38 +32,31 @@ export type Route =
       entryId: number | null
       copyFromId?: number
     }
-  | {
-      view: 'voucher'
-      voucherId: number
-      via: VoucherVia
-      entryId: number | null
-    }
 
-type VoucherRef = { voucherId: number; entryId: number | null; edit: boolean }
+type VoucherRef = { voucherId: number; entryId: number | null }
 
-/** `voucher/2`, `voucher/2/v/7`, `voucher/2/edit`, `voucher/2/v/7/edit` */
+/** `voucher/2`, `voucher/2/v/7`, optional trailing `/edit` (legacy view URLs). */
 function parseVoucherSegment(seg: string): VoucherRef | null {
   const m = seg.match(/^voucher\/(\d+)(?:\/v\/(\d+))?(?:\/edit)?$/)
   if (!m) return null
   return {
     voucherId: Number(m[1]),
     entryId: m[2] ? Number(m[2]) : null,
-    edit: /\/edit$/.test(seg),
   }
 }
 
-function voucherTail(id: number, entryId: number | null, edit = false): string {
+function voucherTail(id: number, entryId: number | null): string {
   const entry = entryId != null ? `/v/${entryId}` : ''
-  return `/voucher/${id}${entry}${edit ? '/edit' : ''}`
+  return `/voucher/${id}${entry}/edit`
 }
 
+/** Hash for opening a voucher in the editor (there is no separate view page). */
 export function voucherHash(
   via: VoucherVia,
   voucherId: number,
   entryId: number | null = null,
-  edit = false,
 ): string {
-  const tail = voucherTail(voucherId, entryId, edit)
+  const tail = voucherTail(voucherId, entryId)
   switch (via.kind) {
     case 'account':
       return `#/account/${via.account}${tail}`
@@ -102,12 +95,8 @@ export function voucherParentHash(via: VoucherVia): string {
       return `#/fiscal-periods/${via.ends}/closing`
     case 'bankStatement':
       // Re-open the statement editor (same as double-click / Tosite return).
-      return voucherHash({ kind: 'browse' }, via.voucherId, null, true)
+      return voucherHash({ kind: 'browse' }, via.voucherId, null)
   }
-}
-
-export function viaHighlightAccount(via: VoucherVia): number | undefined {
-  return via.kind === 'account' ? via.account : undefined
 }
 
 /** Destination label for the up-control (not browser-back). */
@@ -133,16 +122,13 @@ export function voucherUpI18n(via: VoucherVia): { key: string; vars?: Record<str
 }
 
 function voucherRoute(via: VoucherVia, ref: VoucherRef): Route {
-  if (ref.edit) {
-    return {
-      view: 'edit',
-      voucherId: ref.voucherId,
-      type: null,
-      via,
-      entryId: ref.entryId,
-    }
+  return {
+    view: 'edit',
+    voucherId: ref.voucherId,
+    type: null,
+    via,
+    entryId: ref.entryId,
   }
-  return { view: 'voucher', voucherId: ref.voucherId, via, entryId: ref.entryId }
 }
 
 /** Screens that render without an open book (file prompt stays hidden). */
@@ -230,12 +216,13 @@ export function parseRoute(hash: string = window.location.hash): Route {
 
   const bare = hash.match(/^#\/voucher\/(\d+)(?:\/v\/(\d+))?(?:\/edit)?$/)
   if (bare) {
-    const ref: VoucherRef = {
-      voucherId: Number(bare[1]),
-      entryId: bare[2] ? Number(bare[2]) : null,
-      edit: /\/edit$/.test(hash),
-    }
-    return voucherRoute({ kind: 'browse' }, ref)
+    return voucherRoute(
+      { kind: 'browse' },
+      {
+        voucherId: Number(bare[1]),
+        entryId: bare[2] ? Number(bare[2]) : null,
+      },
+    )
   }
 
   if (hash === '#/reports') return { view: 'reportsHub' }

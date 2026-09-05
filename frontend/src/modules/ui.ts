@@ -27,6 +27,6 @@ export type UiModule = {
 }
 
 export function viaKind(route: Route): VoucherVia['kind'] | null {
-  if (route.view === 'voucher' || route.view === 'edit') return route.via.kind
+  if (route.view === 'edit') return route.via.kind
   return null
 }

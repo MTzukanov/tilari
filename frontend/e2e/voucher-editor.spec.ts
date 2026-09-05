@@ -285,8 +285,9 @@ test.describe('voucher editor', () => {
     await expect(page.getByText('Sähköinen tosite')).toBeVisible()
     await page.getByRole('textbox', { name: 'Otsikko' }).fill('Valmis sulkee muokattu')
     await page.keyboard.press('Control+S')
-    await expect(page).not.toHaveURL(/\/edit/)
-    await expect(page.getByRole('heading', { name: 'Valmis sulkee muokattu' })).toBeVisible()
+    await expect(page).toHaveURL(/voucher\/\d+(\/v\/\d+)?\/edit/)
+    await expect(page.locator('form.editor.voucher-work')).toBeVisible()
+    await expect(page.getByRole('textbox', { name: 'Otsikko' })).toHaveValue('Valmis sulkee muokattu')
   })
 
   test('saved attachments stay visible in the dropzone', async ({ page }) => {

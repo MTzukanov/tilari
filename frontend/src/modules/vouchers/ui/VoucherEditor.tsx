@@ -810,7 +810,7 @@ export function VoucherEditor({
     )
   }
 
-  async function persist(nextTila: number, opts?: { close?: boolean }) {
+  async function persist(nextTila: number, _opts?: { close?: boolean }) {
     setSaving(true)
     setError(null)
     try {
@@ -871,10 +871,7 @@ export function VoucherEditor({
       )
       for (const file of files) await uploadAttachment(saved.id, file)
       setFiles([])
-      if (opts?.close) {
-        onSaved(saved.id)
-        return
-      }
+      // No separate view page: always stay in the editor. Esc / Peru leave to the parent.
       if (voucherId == null || voucherId !== saved.id) {
         onSaved(saved.id, { stay: true })
         return
