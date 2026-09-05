@@ -43,7 +43,7 @@ document). This page uses English.
 
 - Type **9100** with simple settlement to `AlvMaksettava` / `AlvPalautettava` / `AlvVelkatili` (no tax-liability radio trio).
 - HTML attachment **`alv.html`** (role `alv`): box table + line itemization with human-readable VAT code titles. Not PDF.
-- Soft-delete of type-`9100` (and other writable) vouchers from the voucher view so a VAT filing can be undone and recreated.
+- Soft-delete of type-`9100` (and other writable) vouchers from the voucher editor so a VAT filing can be undone and recreated.
 - **Create VAT return** opens a Kitsas-style preview dialog (calculation HTML) with **Print / Cancel / OK**; booking happens only on OK.
 
 ### Cash-basis lifecycle

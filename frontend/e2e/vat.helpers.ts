@@ -1,13 +1,13 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { clearTilariStorage, confirmEngineOpen, eur } from './helpers'
-
-async function acceptNextDialog(page: Page) {
-  page.once('dialog', (dialog) => {
-    void dialog.accept()
-  })
-}
+import {
+  clearTilariStorage,
+  confirmEngineOpen,
+  deleteOpenVoucherFromEditor,
+  eur,
+  expectVoucherEditorOpen,
+} from './helpers'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 export const vatBook = path.join(repoRoot, 'testdb', 'tilari-vat.kitsas')
@@ -67,10 +67,14 @@ export async function confirmDeclare(page: Page) {
   await expect(dialog).toHaveCount(0, { timeout: 30_000 })
 }
 
+export async function expectVatVoucherOpen(page: Page) {
+  await expectVoucherEditorOpen(page, /Arvonlisäveroilmoitus/)
+  await expect(page.getByRole('link', { name: 'alv.html' })).toBeVisible()
+}
+
 export async function deleteCurrentVatVoucher(page: Page) {
-  await expect(page.getByRole('button', { name: 'Poista' })).toBeVisible()
-  await acceptNextDialog(page)
-  await page.getByRole('button', { name: 'Poista' }).click()
+  await expectVatVoucherOpen(page)
+  await deleteOpenVoucherFromEditor(page)
   await expect(page.getByRole('heading', { name: 'ALV', exact: true })).toBeVisible({
     timeout: 15_000,
   })

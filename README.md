@@ -111,7 +111,7 @@ There is no published schedule. Ask for a missing Kitsas feature or a new Tilari
 | Open an existing `.kitsas` | In | |
 | Create a **new** empty book | In | On start. Business chart only; associations / housing companies still start in desktop Kitsas |
 | Expense / income / transfer / other | In | |
-| Bank statement | Partial | Edit and split a line; no bank-file import |
+| Bank statement | Partial | Bank-centric table + split; no file import / Kirjaa dialog |
 | Attachments | Partial | Upload and preview. No OCR / parse, no auto-shrink |
 | Chart of accounts | Not yet | Chart of accounts is read-only |
 | VAT | Partial | HTML declaration; no OmaVero submit |

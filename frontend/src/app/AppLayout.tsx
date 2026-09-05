@@ -16,6 +16,7 @@ import { useI18n } from '../i18n'
 import type { Route } from './routing'
 import { canLinkWritableFile } from '../api'
 import { PracticeBanner } from './PracticeBanner'
+import { DisplayMenu } from '../shared/DisplayMenu'
 
 export type BusyState = {
   title: string
@@ -180,6 +181,7 @@ export function AppLayout({
               />
             ) : null}
             <div className="topbar-tools-row">
+              <DisplayMenu />
               {meta ? (
                 <SessionChangesPanel
                   changes={sessionChanges}

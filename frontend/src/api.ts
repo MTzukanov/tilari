@@ -89,8 +89,22 @@ export function deleteVoucher(id: number) {
   return getBookService().deleteVoucher(id)
 }
 
-export function splitBankStatement(voucherId: number, entryId: number, type?: number) {
-  return getBookService().splitBankStatement(voucherId, entryId, type)
+export function splitBankStatement(
+  voucherId: number,
+  entryId: number,
+  type?: number,
+  entryIds?: number[],
+) {
+  return getBookService().splitBankStatement(voucherId, entryId, type, entryIds)
+}
+
+export function fetchBankStatementOverlay(opts: {
+  account: number
+  startDate: string
+  endDate: string
+  excludeVoucherId?: number | null
+}) {
+  return getBookService().fetchBankStatementOverlay(opts)
 }
 
 export function uploadAttachment(voucherId: number, file: File) {

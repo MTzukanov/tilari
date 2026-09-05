@@ -24,6 +24,17 @@
     "license": "GPL-3",
     "thirdParty": "Kolmannet osapuolet"
   },
+  "display": {
+    "title": "Näyttö",
+    "textSize": "Tekstikoko",
+    "textSmaller": "Pienennä tekstiä",
+    "textLarger": "Suurenna tekstiä",
+    "width": "Leveys",
+    "widthNormal": "Normaali",
+    "widthWide": "Leveä",
+    "widthFull": "Koko näyttö",
+    "hint": "Tallentuu tähän selaimeen. Helpottaa leveitä taulukoita."
+  },
   "practice": {
     "bannerTitle": "Harjoittelutila käytössä.",
     "bannerHint": "Voit nopeuttaa ajan kulumista.",
@@ -328,6 +339,20 @@
     "statementStart": "Tiliote alkaa",
     "statementEnd": "Tiliote päättyy",
     "bankAccount": "Pankkitili",
+    "payee": "Saaja/Maksaja",
+    "openingBalance": "Alkusaldo",
+    "deposits": "Panot",
+    "withdrawals": "Otot",
+    "closingBalance": "Loppusaldo",
+    "addEmptyRow": "Lisää tyhjä rivi",
+    "removeRow": "Poista rivi",
+    "openVoucher": "Tosite…",
+    "statementSelectRow": "Valitse ensin rivi taulukosta.",
+    "statementOpenLinked": "Avaa vihreän rivin tosite.",
+    "statementSplitHint": "Irrota valittu rivi omaksi tositteeksi.",
+    "statementEmpty": "Ei tilioterivejä.",
+    "statementSign": "Merkki",
+    "statementSaveBeforeSplit": "Tallenna tiliote ennen rivin irrottamista.",
     "addLine": "Lisää rivi",
     "removeLine": "Poista rivi",
     "splitOff": "Irrota",
@@ -340,11 +365,17 @@
     "newVoucherYear": "Uusi tosite {year}",
     "saveDraft": "Tallenna luonnos",
     "saveDraftHint": "Tallenna luonnos ja jää muokkaamaan",
-    "done": "Valmis",
-    "doneHint": "Tallenna valmiina ja sulje Ctrl+S. Jää muokkaamaan: Ctrl+Shift+S",
+    "done": "Tallenna",
+    "doneHint": "Tallenna valmiina Ctrl+S. Jää muokkaamaan: Ctrl+Shift+S",
     "saving": "Tallennetaan…",
-    "cancel": "Peru",
-    "cancelHint": "Hylkää muutokset Esc",
+    "cancel": "Sulje",
+    "cancelHint": "Sulje tallentamatta Esc",
+    "needChanges": "Ei tallennettavia muutoksia.",
+    "needDate": "Päivämäärä puuttuu.",
+    "needLines": "Lisää vähintään yksi vienti (tili ja summa).",
+    "needAccounts": "Jokaisella viennillä pitää olla tili.",
+    "needBalance": "Debet ja kredit eivät täsmää (nyt {debit} / {credit}).",
+    "needStatementRows": "Lisää vähintään yksi valmis tilioterivi (summa ja tili).",
     "discardChanges": "Tositteen tallentamattomat muutokset hylätään. Jatketaanko?",
     "leaveUnsaved": "Nykyistä kirjausta on muokattu. Siirrytkö toiseen tositteeseen tallentamatta tekemiäsi muutoksia?",
     "attention": "Huomiomerkki",
@@ -378,7 +409,9 @@
     "reference": "Viite {value}",
     "attachments": "Liitteitä:",
     "noLines": "Ei vientejä tällä tositteella.",
-    "openVoucher": "Avaa tosite"
+    "openVoucher": "Avaa tosite",
+    "statementPeriod": "Tiliote {start} – {end}",
+    "statementAccount": "Tili {account}"
   },
   "up": {
     "account": "Tiliin {number}",
@@ -390,7 +423,8 @@
     "balanceSheetItems": "Tase-eriin",
     "closing": "Tilinpäätökseen",
     "reports": "Taseeseen / tulokseen",
-    "reportsHub": "Raportteihin"
+    "reportsHub": "Raportteihin",
+    "bankStatement": "Tiliotteelle"
   },
   "ledger": {
     "empty": "Ei vientejä tällä tilillä jaksolla."

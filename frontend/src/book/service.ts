@@ -76,7 +76,13 @@ export interface BookService {
   fetchPartners(): Promise<{ partners: { id: number; name: string; vat_id: string }[] }>
   saveVoucher(payload: SaveVoucherInput, id?: number): Promise<VoucherDetail>
   deleteVoucher(id: number): Promise<void>
-  splitBankStatement(voucherId: number, entryId: number, type?: number): Promise<VoucherDetail>
+  splitBankStatement(voucherId: number, entryId: number, type?: number, entryIds?: number[]): Promise<VoucherDetail>
+  fetchBankStatementOverlay(opts: {
+    account: number
+    startDate: string
+    endDate: string
+    excludeVoucherId?: number | null
+  }): Promise<{ other: import('./bankStatement').StatementOtherRow[]; opening_cents: number }>
   uploadAttachment(voucherId: number, file: File): Promise<{ id: number }>
   attachmentHref(id: number): Promise<string>
   fetchAllocations(): Promise<{ allocations: Allocation[] }>

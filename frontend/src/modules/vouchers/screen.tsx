@@ -1,31 +1,11 @@
-import {
-  viaHighlightAccount,
-  voucherHash,
-  voucherParentHash,
-  voucherUpI18n,
-} from '../../app/routing'
+import { voucherHash, voucherParentHash } from '../../app/routing'
 import type { ModuleNavItem } from '../nav'
 import type { BookViewCtx, UiModule } from '../ui'
 import { viaKind } from '../ui'
 import { VoucherEditor } from './ui/VoucherEditor'
 import { VoucherListView } from './ui/VoucherListView'
-import { VoucherView } from './ui/VoucherView'
 
-function VouchersScreen({ route, meta, goTo, t }: BookViewCtx) {
-  if (route.view === 'voucher' && meta) {
-    const up = voucherUpI18n(route.via)
-    return (
-      <VoucherView
-        voucherId={route.voucherId}
-        highlightAccount={viaHighlightAccount(route.via)}
-        highlightEntryId={route.entryId}
-        upLabel={t(up.key, up.vars)}
-        editHref={voucherHash(route.via, route.voucherId, route.entryId, true)}
-        onBack={() => goTo(voucherParentHash(route.via))}
-        onOpenAccount={(account) => goTo(`#/account/${account}`)}
-      />
-    )
-  }
+function VouchersScreen({ route, meta, goTo }: BookViewCtx) {
   if (route.view === 'edit' && meta) {
     return (
       <VoucherEditor
@@ -33,15 +13,15 @@ function VouchersScreen({ route, meta, goTo, t }: BookViewCtx) {
         defaultType={route.type}
         defaultDate={meta.book_date}
         copyFromId={route.copyFromId}
-        onCancel={() => {
-          if (route.voucherId != null) {
-            goTo(voucherHash(route.via, route.voucherId, route.entryId))
+        onCancel={() => goTo(voucherParentHash(route.via))}
+        onSaved={(id) => goTo(voucherHash(route.via, id, null))}
+        onOpenVoucher={(id, opts) => {
+          if (opts?.fromStatementId != null) {
+            goTo(voucherHash({ kind: 'bankStatement', voucherId: opts.fromStatementId }, id, null))
             return
           }
-          goTo('#/browse')
+          goTo(voucherHash(route.via, id, null))
         }}
-        onSaved={(id, opts) => goTo(voucherHash(route.via, id, null, Boolean(opts?.stay)))}
-        onOpenVoucher={(id) => goTo(voucherHash(route.via, id, null, true))}
         onCopyAsNew={(type, fromId) => goTo(`#/voucher/new/${type}/from/${fromId}`)}
       />
     )
@@ -65,13 +45,12 @@ export const navItems: ModuleNavItem[] = [
 export const vouchersUi: UiModule = {
   id: 'vouchers',
   navItems,
-  match: (route) =>
-    route.view === 'browse' || route.view === 'voucher' || route.view === 'edit',
+  match: (route) => route.view === 'browse' || route.view === 'edit',
   Screen: VouchersScreen,
   activeNav: (route) => {
     if (route.view === 'browse') return 'browse'
     if (route.view === 'edit' && route.voucherId == null) return 'newVoucher'
-    if (viaKind(route) === 'browse') return 'browse'
+    if (viaKind(route) === 'browse' || viaKind(route) === 'bankStatement') return 'browse'
     return null
   },
 }

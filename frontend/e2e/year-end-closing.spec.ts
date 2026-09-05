@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { openBook, skipWebkitOpfs } from './helpers'
+import { deleteOpenVoucher, expectTaxVoucherEditor } from './periodEnd.helpers'
 import { expectDirtyStatus, saveBookInBrowser } from './sessionChanges.helpers'
 
 async function openClosingWizard2024(page: Page) {
@@ -32,10 +33,9 @@ test.describe('year-end closing', () => {
     await expectDirtyStatus(page, true)
 
     await tax.getByRole('button', { name: 'Avaa tosite' }).click()
-    await expect(page.getByRole('heading', { name: /Tuloveron jaksotus/ })).toBeVisible()
+    await expectTaxVoucherEditor(page)
 
-    page.once('dialog', (dialog) => dialog.accept())
-    await page.getByRole('button', { name: 'Poista' }).click()
+    await deleteOpenVoucher(page)
     const afterDelete = page.getByRole('dialog', { name: /Tilinpäätöksen laatiminen/ })
     await expect(afterDelete).toBeVisible()
     await expectDirtyStatus(page, true)

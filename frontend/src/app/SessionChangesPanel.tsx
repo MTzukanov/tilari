@@ -9,15 +9,15 @@ function sessionChangeHref(change: SessionChange): string | null {
     case 'voucher_create':
     case 'voucher_update':
     case 'voucher_delete':
-      return typeof p.id === 'number' && p.id > 0 ? `#/voucher/${p.id}` : null
+      return typeof p.id === 'number' && p.id > 0 ? `#/voucher/${p.id}/edit` : null
     case 'attachment_add':
-      return typeof p.voucherId === 'number' ? `#/voucher/${p.voucherId}` : null
+      return typeof p.voucherId === 'number' ? `#/voucher/${p.voucherId}/edit` : null
     case 'bank_split':
-      return typeof p.newId === 'number' ? `#/voucher/${p.newId}` : null
+      return typeof p.newId === 'number' ? `#/voucher/${p.newId}/edit` : null
     case 'vat_create':
     case 'depreciation':
     case 'income_tax':
-      return typeof p.id === 'number' ? `#/voucher/${p.id}` : null
+      return typeof p.id === 'number' ? `#/voucher/${p.id}/edit` : null
     case 'fiscal_period':
     case 'accrual':
     case 'tax_save':
