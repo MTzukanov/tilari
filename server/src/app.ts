@@ -195,7 +195,7 @@ async function handleLedger(
     return true
   }
   if ((p = match(method, path, 'POST', '/api/vouchers/:id/split'))) {
-    const body = await readJson<{ entry_id: number; type?: number }>(req)
+    const body = await readJson<{ entry_id: number; type?: number; entry_ids?: number[] }>(req)
     sendJson(res, 200, await ledger.splitBankStatement(Number(p.id), body.entry_id, body.type, body.entry_ids))
     return true
   }

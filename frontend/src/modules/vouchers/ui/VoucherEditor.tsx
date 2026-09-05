@@ -27,6 +27,7 @@ import {
 import { isPurchaseVatCode, isVatBookingLine, vatAccount, vatCompanionCode } from '../../../book/modules/vat/domain/vatPosting'
 import { isVatLiableSetting } from '../../../book/settings'
 import { ALL_COUNTER_ACCOUNTS } from '../../../book/paymentMethods'
+import { DELETABLE_TYPES, ENTRY_COUNTER_POSTING, ENTRY_POSTING, STATUS_TEMPLATE } from '../../../book/vouchers'
 import { vatFromKey, vatKey } from '../../vat/ui/vatCodes'
 import { parseEurInput, formatEurInput } from '../../../shared/money'
 import { SearchSelect, type SearchItem } from '../../../shared/SearchSelect'
@@ -42,7 +43,6 @@ import {
   type EditorTab,
 } from '../catalog'
 import { wallToday } from '../../../book/clock'
-import { DELETABLE_TYPES, STATUS_TEMPLATE } from '../../../book/vouchers'
 import { AttachmentDropzone } from './AttachmentDropzone'
 import { AttachmentGallery } from './AttachmentGallery'
 import { EditorMenu, ToolGlyph } from './EditorMenu'
@@ -635,6 +635,71 @@ export function VoucherEditor({
     ]
   }
 
+  /** Expand statement book rows into the Viennit table draft. */
+  function linesFromStatement(rows: StatementOwnRow[] = statementRows): LineDraft[] {
+    const bank = Number(bankAccount)
+    const entries = expandOwnRowsToEntries(
+      rows.filter((r) => r.amountCents && (r.counterAccount || r.rawEntries?.length)),
+      bank,
+    )
+    if (!entries.length) return [{ ...EMPTY_LINE }]
+    return entries.map((v) => ({
+      account: String(v.account),
+      description: v.description || '',
+      debit: formatEurInput(v.debit_cents ?? 0, { emptyZero: true }),
+      credit: formatEurInput(v.credit_cents ?? 0, { emptyZero: true }),
+      vat_code: vatLiable ? String(v.vat_code ?? 0) : '0',
+      vat_percent: vatLiable && v.vat_percent != null ? String(v.vat_percent) : '',
+      allocation: String(v.allocation ?? 0),
+      archive_id: v.archive_id || '',
+      accrual_starts: v.accrual_starts || '',
+      accrual_ends: v.accrual_ends || '',
+    }))
+  }
+
+  /** Regroup Viennit drafts into statement book rows (best-effort payee restore). */
+  function statementRowsFromLines(drafts: LineDraft[]): StatementOwnRow[] {
+    const bank = Number(bankAccount)
+    const rowDate = end_date || date
+    const entries = drafts
+      .filter((l) => l.account)
+      .map((l, i) => {
+        const account = Number(l.account)
+        return {
+          line_no: i + 1,
+          entry_type: account === bank ? ENTRY_COUNTER_POSTING : ENTRY_POSTING,
+          date: rowDate,
+          account,
+          description: l.description,
+          debit_cents: l.debit ? parseEurInput(l.debit) : null,
+          credit_cents: l.credit ? parseEurInput(l.credit) : null,
+          vat_code: Number(l.vat_code || 0),
+          vat_percent: l.vat_percent ? Number(l.vat_percent) : null,
+          allocation: Number(l.allocation || 0),
+          archive_id: l.archive_id || undefined,
+        }
+      })
+    const grouped = groupOwnRows(entries, bank)
+    if (!grouped.length) return [emptyOwnRow(rowDate)]
+    return grouped.map((row) => {
+      const archive = (row.archive_id || '').trim()
+      const prev =
+        (archive
+          ? statementRows.find((r) => (r.archive_id || '').trim() === archive)
+          : undefined) ||
+        statementRows.find((r) => r.amountCents === row.amountCents && r.date === row.date) ||
+        statementRows.find((r) => r.amountCents === row.amountCents)
+      if (!prev) return row
+      return {
+        ...row,
+        payee: row.payee || prev.payee,
+        date: prev.date || row.date,
+        bankEntryId: prev.bankEntryId ?? row.bankEntryId,
+        entryIds: prev.entryIds ?? row.entryIds,
+      }
+    })
+  }
+
   function expandVat(base: LineDraft[]): LineDraft[] {
     if (!assistant || !vatLiable) return base
     const out: LineDraft[] = []
@@ -675,9 +740,9 @@ export function VoucherEditor({
     return stripVatIfNeeded(lines.filter((l) => l.account))
   }
 
-  async function statementSaveEntries() {
+  async function statementSaveEntries(rowsIn?: StatementOwnRow[]) {
     const bank = Number(bankAccount)
-    let rows = statementRows
+    let rows = rowsIn ?? statementRows
     if (bank && start_date && end_date) {
       try {
         const overlay = await fetchBankStatementOverlay({
@@ -686,7 +751,7 @@ export function VoucherEditor({
           endDate: end_date,
           excludeVoucherId: existing?.id ?? voucherId,
         })
-        rows = matchAndHideDuplicates(statementRows, overlay.other)
+        rows = matchAndHideDuplicates(rows, overlay.other)
       } catch {
         /* save without peitto if overlay fails */
       }
@@ -701,10 +766,11 @@ export function VoucherEditor({
     if (voucherId != null && (baseline == null || editorPack === baseline)) return false
     if (!date) return false
     if (layout === 'attachment') return true
-    if (layout === 'statement' && tab !== 'entries') {
+    if (layout === 'statement') {
+      const rows = tab === 'entries' ? statementRowsFromLines(lines) : statementRows
       const bank = Number(bankAccount)
       const entries = expandOwnRowsToEntries(
-        statementRows.filter((r) => r.amountCents && (r.counterAccount || r.rawEntries?.length)),
+        rows.filter((r) => r.amountCents && (r.counterAccount || r.rawEntries?.length)),
         bank,
       )
       if (!entries.length) return false
@@ -751,8 +817,10 @@ export function VoucherEditor({
       let entries: SaveVoucherInput['entries']
       if (type === 800) {
         entries = []
-      } else if (layout === 'statement' && tab !== 'entries') {
-        entries = await statementSaveEntries()
+      } else if (layout === 'statement') {
+        const rows = tab === 'entries' ? statementRowsFromLines(lines) : statementRows
+        if (tab === 'entries') setStatementRows(rows)
+        entries = await statementSaveEntries(rows)
       } else {
         const source = builtLines()
         const expanded = assistant ? source : expandVat(source)
@@ -817,10 +885,12 @@ export function VoucherEditor({
       setDocNumber(fresh.doc_number)
       setHuomio(Boolean(fresh.json?.huomio))
       const freshBank = String(fresh.bank_statement?.account || bankAccount)
+      const groupedFresh =
+        fresh.type === 400 ? groupOwnRows(fresh.entries, Number(freshBank)) : []
       const freshStatement =
         fresh.type === 400
-          ? groupOwnRows(fresh.entries, Number(freshBank)).length
-            ? groupOwnRows(fresh.entries, Number(freshBank))
+          ? groupedFresh.length
+            ? groupedFresh
             : [emptyOwnRow(fresh.bank_statement?.end_date || fresh.date)]
           : statementRows
       setStatementRows(freshStatement)
@@ -1131,6 +1201,12 @@ export function VoucherEditor({
               if (item.id === 'entries' && layout === 'transfer') {
                 const built = linesFromTransfer()
                 if (built.length) setLines(built)
+              }
+              if (item.id === 'entries' && layout === 'statement') {
+                setLines(linesFromStatement())
+              }
+              if (item.id === 'book' && layout === 'statement' && tab === 'entries') {
+                setStatementRows(statementRowsFromLines(lines))
               }
               setTab(item.id)
             }}

@@ -362,15 +362,43 @@ export function listOtherBankRows(
     [account, startDate, endDate],
   )
 
+  const voucherIds = [
+    ...new Set(
+      rows
+        .map((row) => Number(row.tosite_id))
+        .filter((id) => excludeVoucherId == null || id !== excludeVoucherId),
+    ),
+  ]
+  const siblingsByVoucher = new Map<
+    number,
+    { tili: number; alvkoodi: number | null; alvprosentti: number | null }[]
+  >()
+  if (voucherIds.length) {
+    const placeholders = voucherIds.map(() => '?').join(',')
+    const siblingRows = db.all<{
+      tosite: number
+      tili: number
+      alvkoodi: number | null
+      alvprosentti: number | null
+    }>(
+      `SELECT tosite, tili, alvkoodi, alvprosentti FROM Vienti
+       WHERE tosite IN (${placeholders}) AND tili <> ?`,
+      [...voucherIds, account],
+    )
+    for (const s of siblingRows) {
+      const vid = Number(s.tosite)
+      const list = siblingsByVoucher.get(vid) || []
+      list.push(s)
+      siblingsByVoucher.set(vid, list)
+    }
+  }
+
   const out: StatementOtherRow[] = []
   for (const row of rows) {
     const voucherId = Number(row.tosite_id)
     if (excludeVoucherId != null && voucherId === excludeVoucherId) continue
 
-    const siblings = db.all<{ tili: number; alvkoodi: number | null; alvprosentti: number | null }>(
-      `SELECT tili, alvkoodi, alvprosentti FROM Vienti WHERE tosite = ? AND tili <> ?`,
-      [voucherId, account],
-    )
+    const siblings = siblingsByVoucher.get(voucherId) || []
     const counterAccounts: number[] = []
     let vat_code: number | null = null
     let vat_percent: number | null = null
