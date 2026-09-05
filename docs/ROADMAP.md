@@ -30,6 +30,9 @@ deleting text.
 
 - [x] Type 400 editor compatible with importer drafts
 - [x] Split line to own voucher (`json.tilioterivi`)
+- [x] Bank-centric table (white + green rows, balance strip)
+- [ ] Kirjaa/Muokkaa dialog (invoice matching, multi-line splits)
+- [ ] Bank-file import (PDF/CSV/TITO) — separate work
 
 ## Phase 4 — VAT
 

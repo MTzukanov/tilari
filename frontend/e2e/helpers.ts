@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -7,6 +7,26 @@ const testBook = path.join(repoRoot, 'testdb', 'tilari-test.kitsas')
 const periodEndBook = path.join(repoRoot, 'testdb', 'tilari-period-end.kitsas')
 
 export { testBook, periodEndBook }
+
+/** Editor primary save — scoped so the topbar book "Tallenna" is not matched. */
+export function editorSaveButton(page: Page): Locator {
+  return page.locator('.editor-footer').getByRole('button', { name: 'Tallenna', exact: true })
+}
+
+export async function expectVoucherEditorOpen(page: Page, title?: string | RegExp) {
+  await expect(page.locator('form.editor.voucher-work')).toBeVisible()
+  if (title != null) {
+    await expect(page.getByRole('textbox', { name: 'Otsikko' })).toHaveValue(title)
+  }
+}
+
+export async function deleteOpenVoucherFromEditor(page: Page) {
+  page.once('dialog', (dialog) => {
+    void dialog.accept()
+  })
+  await page.getByRole('button', { name: 'Lisää toimintoja' }).click()
+  await page.getByRole('menuitem', { name: /Poista tosite/ }).click()
+}
 
 /** Playwright WebKit on Linux does not persist OPFS / File System Access. */
 export function skipWebkitOpfs(browserName: string) {

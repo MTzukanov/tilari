@@ -24,6 +24,17 @@
     "license": "GPL-3",
     "thirdParty": "Drittanbieterhinweise"
   },
+  "display": {
+    "title": "Anzeige",
+    "textSize": "Textgröße",
+    "textSmaller": "Text verkleinern",
+    "textLarger": "Text vergrößern",
+    "width": "Breite",
+    "widthNormal": "Normal",
+    "widthWide": "Breit",
+    "widthFull": "Volle Breite",
+    "hint": "Wird in diesem Browser gespeichert. Hilft bei breiten Tabellen."
+  },
   "practice": {
     "bannerTitle": "Übungsmodus ist aktiv.",
     "bannerHint": "Sie können das Datum vorstellen.",
@@ -328,6 +339,20 @@
     "statementStart": "Kontoauszug beginnt",
     "statementEnd": "Kontoauszug endet",
     "bankAccount": "Bankkonto",
+    "payee": "Empfänger/Zahler",
+    "openingBalance": "Anfangssaldo",
+    "deposits": "Eingänge",
+    "withdrawals": "Ausgänge",
+    "closingBalance": "Endsaldo",
+    "addEmptyRow": "Leere Zeile hinzufügen",
+    "removeRow": "Zeile entfernen",
+    "openVoucher": "Beleg…",
+    "statementSelectRow": "Wählen Sie zuerst eine Zeile in der Tabelle.",
+    "statementOpenLinked": "Beleg der grünen Zeile öffnen.",
+    "statementSplitHint": "Ausgewählte Zeile als eigenen Beleg abtrennen.",
+    "statementEmpty": "Keine Kontoauszugszeilen.",
+    "statementSign": "Zeichen",
+    "statementSaveBeforeSplit": "Kontoauszug speichern, bevor eine Zeile abgetrennt wird.",
     "addLine": "Zeile hinzufügen",
     "removeLine": "Zeile entfernen",
     "splitOff": "Abtrennen",
@@ -340,11 +365,17 @@
     "newVoucherYear": "Neuer Beleg {year}",
     "saveDraft": "Entwurf speichern",
     "saveDraftHint": "Als Entwurf speichern und weiter bearbeiten",
-    "done": "Fertig",
-    "doneHint": "Als gebucht speichern und schließen Strg+S. Weiter bearbeiten: Strg+Umschalt+S",
+    "done": "Speichern",
+    "doneHint": "Als gebucht speichern Strg+S. Weiter bearbeiten: Strg+Umschalt+S",
     "saving": "Wird gespeichert…",
-    "cancel": "Abbrechen",
-    "cancelHint": "Änderungen verwerfen Esc",
+    "cancel": "Schließen",
+    "cancelHint": "Ohne Speichern schließen Esc",
+    "needChanges": "Keine Änderungen zum Speichern.",
+    "needDate": "Datum fehlt.",
+    "needLines": "Mindestens eine Buchungszeile mit Konto und Betrag hinzufügen.",
+    "needAccounts": "Jede Buchungszeile braucht ein Konto.",
+    "needBalance": "Soll und Haben müssen übereinstimmen (jetzt {debit} / {credit}).",
+    "needStatementRows": "Mindestens eine vollständige Kontoauszugszeile (Betrag und Konto) hinzufügen.",
     "discardChanges": "Nicht gespeicherte Belegänderungen werden verworfen. Fortfahren?",
     "leaveUnsaved": "Die aktuelle Buchung wurde geändert. Zu einem anderen Beleg wechseln, ohne die Änderungen zu speichern?",
     "attention": "Hinweiszeichen",
@@ -378,7 +409,9 @@
     "reference": "Ref {value}",
     "attachments": "Anlagen:",
     "noLines": "Keine Buchungen auf diesem Beleg.",
-    "openVoucher": "Beleg öffnen"
+    "openVoucher": "Beleg öffnen",
+    "statementPeriod": "Kontoauszug {start} – {end}",
+    "statementAccount": "Konto {account}"
   },
   "up": {
     "account": "Zu Konto {number}",
@@ -390,7 +423,8 @@
     "balanceSheetItems": "Zur Bilanzgliederung",
     "closing": "Zum Jahresabschluss",
     "reports": "Zu Bilanz / GuV",
-    "reportsHub": "Zu den Berichten"
+    "reportsHub": "Zu den Berichten",
+    "bankStatement": "Zum Kontoauszug"
   },
   "ledger": {
     "empty": "Keine Buchungen auf diesem Konto in der Periode."

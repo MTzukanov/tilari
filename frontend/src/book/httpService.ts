@@ -168,11 +168,29 @@ export class HttpBookService implements BookService {
     if (!res.ok) throw new Error(await res.text())
     this.afterServerMutate()
   }
-  splitBankStatement(voucherId: number, entryId: number, type?: number) {
+  splitBankStatement(voucherId: number, entryId: number, type?: number, entryIds?: number[]) {
     return this.writeJson<VoucherDetail>(`/api/vouchers/${voucherId}/split`, 'POST', {
       entry_id: entryId,
       type,
+      entry_ids: entryIds,
     })
+  }
+  fetchBankStatementOverlay(opts: {
+    account: number
+    startDate: string
+    endDate: string
+    excludeVoucherId?: number | null
+  }) {
+    const q = new URLSearchParams({
+      account: String(opts.account),
+      start_date: opts.startDate,
+      end_date: opts.endDate,
+    })
+    if (opts.excludeVoucherId != null) q.set('exclude_voucher', String(opts.excludeVoucherId))
+    return getJson<{
+      other: import('./bankStatement').StatementOtherRow[]
+      opening_cents: number
+    }>(`/api/bank-statement/overlay?${q}`)
   }
   async uploadAttachment(voucherId: number, file: File) {
     const body = new FormData()

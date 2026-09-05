@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../../i18n'
+import { markNativePickerAncestors } from '../../../shared/nativePicker'
 import { AttachmentGallery } from './AttachmentGallery'
 import { filesFromClipboardApi, filesFromClipboardData } from './clipboardFiles'
 
@@ -78,7 +79,16 @@ export function AttachmentDropzone({
           {hint ? <span className="muted">{hint}</span> : null}
         </div>
         <div className="dropzone-actions">
-          <label className="btn-secondary file-btn-label">
+          <label
+            className="btn-secondary file-btn-label"
+            onPointerDown={(e) => markNativePickerAncestors(e.currentTarget, true)}
+            onFocusCapture={(e) => markNativePickerAncestors(e.currentTarget, true)}
+            onBlurCapture={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                markNativePickerAncestors(e.currentTarget, false)
+              }
+            }}
+          >
             {t('editor.chooseFile')}
             <input
               type="file"
@@ -88,6 +98,7 @@ export function AttachmentDropzone({
               onChange={(e) => {
                 onAdd(filesFromList(e.target.files))
                 e.target.value = ''
+                markNativePickerAncestors(e.currentTarget, false)
               }}
             />
           </label>

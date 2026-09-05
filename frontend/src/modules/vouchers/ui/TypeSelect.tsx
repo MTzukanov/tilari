@@ -7,10 +7,12 @@ export function TypeSelect({
   value,
   onChange,
   disabled = false,
+  fixedMenu = false,
 }: {
   value: number
   onChange: (type: number) => void
   disabled?: boolean
+  fixedMenu?: boolean
 }) {
   const options = creatableVoucherTypes().map((d) => d.type)
   if (!options.includes(value)) options.unshift(value)
@@ -18,6 +20,7 @@ export function TypeSelect({
     <IconSelect
       value={value}
       disabled={disabled}
+      fixedMenu={fixedMenu}
       aria-label={voucherTypeName(value)}
       onChange={onChange}
       options={options.map((type) => ({

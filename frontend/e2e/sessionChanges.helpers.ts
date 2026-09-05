@@ -52,7 +52,7 @@ export async function changeCompanyName(page: Page, name: string) {
   await nameInput.clear()
   await nameInput.fill(name)
   await expect(nameInput).toHaveValue(name)
-  await page.locator('form.editor-card').getByRole('button', { name: 'Tallenna' }).click()
+  await page.locator('form.editor-card').getByRole('button', { name: 'Tallenna', exact: true }).click()
   await expect(page.getByText('Asetukset tallennettu')).toBeVisible()
 }
 
@@ -77,7 +77,7 @@ export async function createExpenseVoucher(
   await expense.click()
   await page.getByRole('option', { name: new RegExp(`^${expenseAccount} `) }).click()
   await page.getByLabel('Määrä', { exact: true }).fill(opts.amount)
-  await page.getByRole('button', { name: 'Valmis' }).click()
+  await page.getByRole('button', { name: 'Tallenna', exact: true }).click()
   await expect(page.getByRole('heading', { name: opts.title })).toBeVisible()
 }
 

@@ -44,7 +44,7 @@ npx playwright install --with-deps chromium firefox webkit   # first time only
 | `src/app/BookShell.tsx` | Company header, period picker, hash routing |
 | `src/modules/reports/ui/AccountLedger.tsx` | Per-account ledger (month/year, running balance) |
 | `src/modules/allocations/` | Cost-centre list and P&L |
-| `src/modules/vouchers/ui/VoucherView.tsx` | Voucher detail from ledger click |
+| `src/modules/vouchers/ui/VoucherEditor.tsx` | Voucher editor (opened from browse, ledger, …) |
 | `src/shared/voucherTypes.ts` | Voucher type / status labels |
 | `src/api.ts` | `fetch` helpers for `/api/*` |
 | `src/shared/accountTypes.ts` | Account type codes |

@@ -24,6 +24,17 @@
     "license": "GPL-3",
     "thirdParty": "Tredjepartsmeddelanden"
   },
+  "display": {
+    "title": "Visning",
+    "textSize": "Textstorlek",
+    "textSmaller": "Minska textstorlek",
+    "textLarger": "Öka textstorlek",
+    "width": "Bredd",
+    "widthNormal": "Normal",
+    "widthWide": "Bred",
+    "widthFull": "Full bredd",
+    "hint": "Sparas i den här webbläsaren. Underlättar breda tabeller."
+  },
   "practice": {
     "bannerTitle": "Övningsläge är på.",
     "bannerHint": "Du kan flytta datumet framåt.",
@@ -328,6 +339,20 @@
     "statementStart": "Kontoutdrag börjar",
     "statementEnd": "Kontoutdrag slutar",
     "bankAccount": "Bankkonto",
+    "payee": "Mottagare/Betalare",
+    "openingBalance": "Ingående saldo",
+    "deposits": "Insättningar",
+    "withdrawals": "Uttag",
+    "closingBalance": "Utgående saldo",
+    "addEmptyRow": "Lägg till tom rad",
+    "removeRow": "Ta bort rad",
+    "openVoucher": "Verifikat…",
+    "statementSelectRow": "Välj först en rad i tabellen.",
+    "statementOpenLinked": "Öppna verifikatet kopplat till den gröna raden.",
+    "statementSplitHint": "Separera den valda raden till ett eget verifikat.",
+    "statementEmpty": "Inga kontoutdragsrader.",
+    "statementSign": "Tecken",
+    "statementSaveBeforeSplit": "Spara kontoutdraget innan du separerar en rad.",
     "addLine": "Lägg till rad",
     "removeLine": "Ta bort rad",
     "splitOff": "Separera",
@@ -340,11 +365,17 @@
     "newVoucherYear": "Nytt verifikat {year}",
     "saveDraft": "Spara utkast",
     "saveDraftHint": "Spara som utkast och fortsätt redigera",
-    "done": "Klar",
-    "doneHint": "Spara som bokförd och stäng Ctrl+S. Fortsätt redigera: Ctrl+Shift+S",
+    "done": "Spara",
+    "doneHint": "Spara som bokförd Ctrl+S. Fortsätt redigera: Ctrl+Shift+S",
     "saving": "Sparar…",
-    "cancel": "Avbryt",
-    "cancelHint": "Förkasta ändringar Esc",
+    "cancel": "Stäng",
+    "cancelHint": "Stäng utan att spara Esc",
+    "needChanges": "Inga ändringar att spara.",
+    "needDate": "Datum saknas.",
+    "needLines": "Lägg till minst en rad med konto och belopp.",
+    "needAccounts": "Varje rad måste ha ett konto.",
+    "needBalance": "Debet och kredit måste stämma (nu {debit} / {credit}).",
+    "needStatementRows": "Lägg till minst en komplett kontoutdragsrad (belopp och konto).",
     "discardChanges": "Osparade ändringar i verifikatet förkastas. Fortsätta?",
     "leaveUnsaved": "Den aktuella bokföringen har ändrats. Gå till ett annat verifikat utan att spara dina ändringar?",
     "attention": "Observera-markering",
@@ -378,7 +409,9 @@
     "reference": "Ref {value}",
     "attachments": "Bilagor:",
     "noLines": "Inga transaktioner på det här verifikatet.",
-    "openVoucher": "Öppna verifikat"
+    "openVoucher": "Öppna verifikat",
+    "statementPeriod": "Kontoutdrag {start} – {end}",
+    "statementAccount": "Konto {account}"
   },
   "up": {
     "account": "Till konto {number}",
@@ -390,7 +423,8 @@
     "balanceSheetItems": "Till balansposter",
     "closing": "Till bokslut",
     "reports": "Till balans / resultat",
-    "reportsHub": "Till rapporter"
+    "reportsHub": "Till rapporter",
+    "bankStatement": "Till kontoutdraget"
   },
   "ledger": {
     "empty": "Inga transaktioner på det här kontot under perioden."
