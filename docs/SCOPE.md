@@ -36,7 +36,7 @@ On start, Tilari can create a new Finnish business-chart book in the browser. De
 | Create a **new** empty book | In | On start. Business chart (`yritys`) only: name, Y-tunnus, first fiscal year, VAT, practice. Unsaved OPFS copy until Save. Associations / housing companies still start in desktop Kitsas |
 | Expense / income / transfer / other | In | Types 100, 200, 300, 0 |
 | Notes voucher (type 800) | In | Header + files, no lines |
-| Bank statement (type 400) | Partial | View/edit and split a line onto its own voucher. No bank-file import; not the full Kitsas bank-statement workflow |
+| Bank statement (type 400) | Partial | Kitsas-style bank-centric table (white own rows + green other-voucher rows), balance strip, split to own voucher. No bank-file import; Kirjaa dialog later |
 | Attachments | Partial | Upload and preview (PDF, JPEG, text). No OCR / parse, no auto-shrink |
 | Browse / journal | In | Filters, entries table |
 | Balance sheet / P&L / general ledger | In | Period navigation, click-through |

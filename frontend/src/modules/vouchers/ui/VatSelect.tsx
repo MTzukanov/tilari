@@ -18,7 +18,11 @@ export function VatSelect({
   disabled = false,
   kind = 'all',
   voucherType,
+  fixedMenu = false,
+  onVerticalNav,
   'aria-label': ariaLabel,
+  'data-row-key': dataRowKey,
+  'data-col': dataCol,
 }: {
   value: string
   onChange: (key: string) => void
@@ -26,7 +30,11 @@ export function VatSelect({
   /** Kitsas expense vs income filter; overrides voucherType when set. */
   kind?: VatTypeKind
   voucherType?: number
+  fixedMenu?: boolean
+  onVerticalNav?: (dir: 1 | -1) => void
   'aria-label'?: string
+  'data-row-key'?: string
+  'data-col'?: string
 }) {
   const filter = voucherType != null ? vatTypeKindForVoucher(voucherType) : kind
   const types = vatTypeChoices(filter)
@@ -67,6 +75,11 @@ export function VatSelect({
         disabled={disabled}
         aria-label={ariaLabel}
         className="vat-select-type"
+        menuMinWidthPx={280}
+        fixedMenu={fixedMenu}
+        onVerticalNav={onVerticalNav}
+        data-row-key={dataRowKey}
+        data-col={dataCol}
         onChange={(code) => {
           const next = Number(code)
           if (isZeroVatType(next)) onChange(vatKey(next, 0))
@@ -75,6 +88,7 @@ export function VatSelect({
         options={typeOptions.map((c) => ({
           value: c.code,
           label: c.label,
+          closedLabel: '',
           icon: <VatIcon code={c.code} />,
         }))}
       />
@@ -84,6 +98,8 @@ export function VatSelect({
           disabled={disabled}
           aria-label={vatPercentLabel(rateValue)}
           className="vat-select-rate"
+          fixedMenu={fixedMenu}
+          onVerticalNav={onVerticalNav}
           onChange={(percent) => onChange(vatKey(choice.code, Number(percent)))}
           options={rateOptions}
         />

@@ -12,7 +12,13 @@ import {
   listAllocations,
 } from './allocations'
 import { computeBalanceSheetItems } from './balanceSheetItems'
-import { bankStatementMeta, splitBankStatementLine } from './bankStatement'
+import {
+  bankStatementMeta,
+  listOtherBankRows,
+  statementOpening,
+  splitBankStatementLine,
+  type StatementOtherRow,
+} from './bankStatement'
 import { listBrowseEntries, listJournal, listPartners, listVouchers } from './browse'
 import { attachModules } from './compose'
 import { BookError } from './errors'
@@ -347,12 +353,30 @@ class LedgerKernel implements KernelContext {
     }, { kind: 'voucher_delete', params: { id } })
   }
 
-  async splitBankStatement(voucherId: number, entryId: number, type?: number): Promise<VoucherDetail> {
+  async splitBankStatement(
+    voucherId: number,
+    entryId: number,
+    type?: number,
+    entryIds?: number[],
+  ): Promise<VoucherDetail> {
     const newId = await this.mutate(
-      (db) => splitBankStatementLine(db, voucherId, entryId, type),
+      (db) => splitBankStatementLine(db, voucherId, entryId, type, entryIds),
       (createdId) => ({ kind: 'bank_split', params: { voucherId, entryId, newId: createdId } }),
     )
     return this.wrapVoucher(getVoucher(this.requireDb(), newId))
+  }
+
+  async fetchBankStatementOverlay(opts: {
+    account: number
+    startDate: string
+    endDate: string
+    excludeVoucherId?: number | null
+  }): Promise<{ other: StatementOtherRow[]; opening_cents: number }> {
+    const db = this.requireDb()
+    return {
+      other: listOtherBankRows(db, opts),
+      opening_cents: statementOpening(db, opts.account, opts.startDate),
+    }
   }
 
   async uploadAttachmentBytes(

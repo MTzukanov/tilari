@@ -11,6 +11,8 @@
   --sidebar: #d5dce4;
   --sidebar-text: #2a3440;
   --sidebar-active: #c3d0db;
+  --tilari-content-max: 1200px;
+  --tilari-text-scale: 1;
   /* User-selectable; see fontPrefs.ts. No webfont downloads. */
   font-family: var(--tilari-font, system-ui, sans-serif);
   line-height: 1.45;
@@ -24,13 +26,14 @@
   box-sizing: border-box;
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
+html {
+  font-size: 100%;
   overflow-y: auto;
 }
 
-html {
+body {
+  margin: 0;
+  min-height: 100vh;
   overflow-y: auto;
 }
 
@@ -59,11 +62,13 @@ html {
 .workspace {
   flex: 1;
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--tilari-content-max, 1200px);
   min-height: 0;
   overflow: auto;
   padding: 0 1.4rem 1rem;
   margin-top: 0.7rem;
+  /* Scale content only — topbar / sidenav stay at browser default size. */
+  zoom: var(--tilari-text-scale, 1);
 }
 
 .workspace:has(.voucher-work) {
@@ -71,6 +76,11 @@ html {
   flex-direction: column;
   overflow: hidden;
   padding: 0.7rem 1.4rem 0;
+}
+
+/* While a native date/file picker is open, allow it to paint outside scroll clips. */
+.is-native-picker-open {
+  overflow: visible !important;
 }
 
 .workspace:has(.voucher-work) > .foot,
@@ -176,7 +186,7 @@ html {
   align-items: center;
   width: 100%;
   flex-shrink: 0;
-  padding: 0.65rem max(1.2rem, calc((100% - 1200px) / 2 + 1.2rem));
+  padding: 0.65rem max(1.2rem, calc((100% - var(--tilari-content-max, 1200px)) / 2 + 1.2rem));
   background: var(--surface);
   border-bottom: 1px solid var(--line);
 }
@@ -268,7 +278,7 @@ html {
   align-items: center;
   justify-content: space-between;
   gap: 0.55rem 1.25rem;
-  padding: 0.4rem max(1.2rem, calc((100% - 1200px) / 2 + 1.2rem));
+  padding: 0.4rem max(1.2rem, calc((100% - var(--tilari-content-max, 1200px)) / 2 + 1.2rem));
   background: var(--accent);
   color: #fff;
 }
@@ -834,8 +844,49 @@ html {
   justify-content: space-between;
 }
 
+.vat-select-type .icon-select-label:empty {
+  display: none;
+}
+
+.vat-select-type .icon-select-btn {
+  gap: 0;
+}
+
 .editor-table .vat-select {
   min-width: 12rem;
+}
+
+.statement-table .vat-select {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.statement-table .vat-select-type {
+  width: auto;
+}
+
+.statement-table .vat-select-type .icon-select-btn {
+  width: auto;
+  min-width: 1.85rem;
+  padding-left: 0.2rem;
+  padding-right: 0.2rem;
+}
+
+.statement-table .vat-select-type .icon-select-label:empty {
+  display: none;
+}
+
+.statement-table .vat-select-rate {
+  width: auto;
+  min-width: 0;
+}
+
+.statement-table .statement-vat-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
 }
 
 .voucher-work {
@@ -849,7 +900,8 @@ html {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  /* visible so native date/file popups and absolute menus are not clipped */
+  overflow: visible;
 }
 
 .editor-scroll {
@@ -857,6 +909,25 @@ html {
   min-height: 0;
   overflow-y: auto;
   padding-bottom: 0.75rem;
+}
+
+.editor-scroll.is-statement-book {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  padding-bottom: 0;
+}
+
+.editor-scroll.is-statement-book > .error,
+.editor-scroll.is-statement-book > .dropzone,
+.editor-scroll.is-statement-book > .voucher-meta-row,
+.editor-scroll.is-statement-book > .editor-tabs {
+  flex-shrink: 0;
+}
+
+.editor-scroll.is-statement-book > .statement-editor {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 @container voucher-editor (min-width: 56rem) {
@@ -1072,6 +1143,8 @@ html {
   align-items: center;
   cursor: pointer;
   margin: 0;
+  position: relative;
+  z-index: 2;
 }
 
 .hub-grid {
@@ -2305,7 +2378,7 @@ tr.clickable:focus-visible {
 
 .app-alert {
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--tilari-content-max, 1200px);
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
@@ -2858,11 +2931,14 @@ tr.is-ended td {
   position: absolute;
   z-index: 40;
   left: 0;
-  right: 0;
+  right: auto;
   top: calc(100% + 2px);
   margin: 0;
   padding: 0.2rem 0;
   list-style: none;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(28rem, 90vw);
   max-height: 16rem;
   overflow: auto;
   background: #fffef9;
@@ -2932,8 +3008,480 @@ tr.is-ended td {
   width: 100%;
 }
 
+/* Borderless cells in statement + viennit (+ assistant row grids): table lines carry structure. */
+.entries-edit input:not([type='checkbox']):not([type='radio']),
+.entries-edit select,
+.entries-edit .search-select input,
+.entries-edit .amount-input,
+.entries-edit .icon-select-btn,
+.assistant-rows input:not([type='checkbox']):not([type='radio']),
+.assistant-rows select,
+.assistant-rows .search-select input,
+.assistant-rows .amount-input,
+.assistant-rows .icon-select-btn,
+.statement-table input:not([type='checkbox']):not([type='radio']),
+.statement-table select,
+.statement-table .search-select input,
+.statement-table .amount-input,
+.statement-table .icon-select-btn {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  /* Match .statement-cell-text (other/green rows) — inputs don't inherit by default. */
+  font-family: inherit;
+  font-size: 0.92rem;
+  min-height: 1.85rem;
+  height: 1.85rem;
+  line-height: 1.85rem;
+  padding: 0 0.25rem;
+}
+
+.entries-edit input:not([type='checkbox']):not([type='radio']):focus,
+.entries-edit select:focus,
+.entries-edit .search-select input:focus,
+.entries-edit .amount-input:focus,
+.entries-edit .icon-select-btn:focus-visible,
+.assistant-rows input:not([type='checkbox']):not([type='radio']):focus,
+.assistant-rows select:focus,
+.assistant-rows .search-select input:focus,
+.assistant-rows .amount-input:focus,
+.assistant-rows .icon-select-btn:focus-visible,
+.statement-table input:not([type='checkbox']):not([type='radio']):focus,
+.statement-table select:focus,
+.statement-table .search-select input:focus,
+.statement-table .amount-input:focus,
+.statement-table .icon-select-btn:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--accent-soft) 55%, transparent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
 .entries-edit .assistant-row-actions {
   justify-content: flex-start;
+}
+
+.display-menu {
+  position: relative;
+}
+
+.display-menu-toggle {
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.15rem;
+}
+
+.display-menu-toggle:hover,
+.display-menu-toggle[aria-expanded='true'] {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent-soft) 40%, var(--surface));
+}
+
+.display-menu-glyph {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.display-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 45;
+  width: min(16.5rem, calc(100vw - 2rem));
+  padding: 0.75rem 0.85rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 12%, transparent);
+}
+
+.display-menu-heading {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.display-menu-heading + .display-menu-heading,
+.display-menu-scale + .display-menu-heading {
+  margin-top: 0.85rem;
+}
+
+.display-menu-scale {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.display-menu-step {
+  font: inherit;
+  font-weight: 650;
+  min-width: 2.4rem;
+  min-height: 2rem;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.display-menu-step:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.display-menu-step:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.display-menu-scale-value {
+  flex: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+}
+
+.display-menu-widths {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.display-menu-width {
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.display-menu-width:hover {
+  background: var(--paper);
+}
+
+.display-menu-width.is-active {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+
+.display-menu-hint {
+  margin: 0.7rem 0 0;
+  font-size: 0.72rem;
+}
+
+.display-prefs-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.display-prefs-settings .display-menu-scale,
+.display-prefs-settings .display-menu-widths {
+  max-width: 18rem;
+}
+
+.statement-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+  flex: 1;
+}
+
+.statement-editor-meta {
+  flex-shrink: 0;
+  margin-bottom: 0.55rem;
+}
+
+.statement-editor-error {
+  flex-shrink: 0;
+}
+
+.statement-table-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  margin: 0;
+  /* Keep the last-column resize handle clear of the vertical scrollbar. */
+  scrollbar-gutter: stable;
+  padding-right: 0.35rem;
+}
+
+.statement-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 100%;
+}
+
+.statement-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--surface, #fffef9);
+  box-shadow: inset 0 -1px 0 var(--line);
+}
+
+.statement-table thead th:last-child,
+.statement-table tbody td:last-child {
+  padding-right: 0.85rem;
+}
+
+.statement-table thead th:last-child .col-resize {
+  right: 2px;
+  width: 14px;
+  z-index: 5;
+}
+
+.statement-editor-bar {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem 1rem;
+  margin: 0 -1.1rem 0;
+  padding: 0.55rem 1.1rem;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.statement-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+/* Own rows only — never paint over green (other) rows. */
+.statement-table tbody tr:nth-child(even):not(.statement-other-row) td {
+  background: color-mix(in srgb, var(--paper-deep) 28%, var(--surface, #fffef9));
+}
+
+.statement-table tbody tr.is-selected:not(.statement-other-row) td {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface, #fffef9));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.statement-table tbody tr.is-selected:not(.statement-other-row) td:first-child {
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+/* Green must beat zebra / interline (same or higher specificity, later in file). */
+.statement-table tbody tr.statement-other-row td,
+.statement-table.zebra tbody tr.statement-other-row:nth-child(even) td,
+.zebra.statement-table tbody tr.statement-other-row:nth-child(even) td {
+  background: color-mix(in srgb, #b7dfb2 22%, var(--surface, #fffef9));
+  color: var(--ink);
+  vertical-align: middle;
+}
+
+.statement-table tbody tr.statement-other-row .statement-cell-text,
+.statement-table tbody tr.statement-other-row .amount-plain,
+.statement-table tbody tr.statement-other-row .statement-vat-cell,
+.statement-table tbody tr.statement-other-row .btn-link.statement-cell-text {
+  display: flex;
+  align-items: center;
+  height: 1.85rem;
+  line-height: 1.2;
+}
+
+.statement-table tbody tr.statement-other-row .amount-plain {
+  justify-content: flex-end;
+}
+
+.statement-table input[type='date'] {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 400;
+  color: var(--ink);
+  min-width: 0;
+  width: 100%;
+}
+
+.statement-table tbody tr:focus {
+  outline: none;
+}
+
+.statement-table tbody tr:focus-visible td {
+  outline: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  outline-offset: -1px;
+}
+
+.statement-table tbody tr.statement-other-row.is-selected td,
+.statement-table.zebra tbody tr.statement-other-row.is-selected:nth-child(even) td {
+  background: color-mix(in srgb, #7cb87a 28%, #e8f5e9);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #2e7d32 35%, transparent);
+}
+
+.statement-table tbody tr.statement-other-row.is-selected td:first-child {
+  box-shadow:
+    inset 3px 0 0 #2e7d32,
+    inset 0 0 0 1px color-mix(in srgb, #2e7d32 35%, transparent);
+}
+
+.statement-table tbody tr.statement-other-row:focus {
+  outline: none;
+}
+
+.statement-table tbody tr.statement-other-row:focus-visible td {
+  outline: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  outline-offset: -1px;
+}
+
+/* Focused cell on the selected row — clear without native blue text-select look. */
+.statement-table tbody tr.is-selected td:focus-within {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface, #fffef9));
+}
+
+.statement-table tbody tr.statement-other-row.is-selected td:focus-within {
+  background: color-mix(in srgb, #7cb87a 40%, #fff);
+}
+
+.statement-table tbody tr.is-selected input:not([type='checkbox']):not([type='radio']):focus,
+.statement-table tbody tr.is-selected select:focus,
+.statement-table tbody tr.is-selected .search-select input:focus,
+.statement-table tbody tr.is-selected .amount-input:focus,
+.statement-table tbody tr.is-selected .icon-select-btn:focus-visible {
+  background: color-mix(in srgb, var(--accent-soft) 70%, #fff);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* Editable statement cells: keep resize layout but don't clip focus underline. */
+.statement-table.resizable td {
+  overflow: visible;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.statement-status-th {
+  position: relative;
+}
+
+.statement-status {
+  width: 2rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.statement-flow-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.statement-flow-icon.is-empty {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.statement-flow-icon .voucher-type-glyph {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.statement-cell-text,
+.statement-table .is-readonly-cell,
+.statement-table .amount-plain {
+  display: block;
+  width: 100%;
+  min-height: 1.85rem;
+  height: 1.85rem;
+  line-height: 1.85rem;
+  padding: 0 0.25rem;
+  box-sizing: border-box;
+  /* Same metrics as own-row inputs / SearchSelect in the statement table. */
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 400;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statement-table .is-readonly-cell {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  pointer-events: none;
+}
+
+.statement-table .amount-plain {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.statement-table .btn-link.statement-cell-text {
+  text-align: left;
+  text-decoration: underline;
+  color: var(--accent);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0 0.25rem;
+}
+
+.statement-balance-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.statement-balance-strip strong {
+  color: var(--text, var(--ink));
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.search-select-list.is-fixed-menu,
+.icon-select-list.is-fixed-menu {
+  right: auto;
+  overflow: auto;
+  /* Portaled to body — sit above scrollbars and table chrome */
+  z-index: 4000;
+}
+
+.icon-select-list.is-fixed-menu .icon-select-option-label,
+.search-select-list.is-fixed-menu li {
+  white-space: nowrap;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
 }
 
 .amount-input {
@@ -3192,6 +3740,12 @@ tr.is-ended td {
 
 .zebra tbody tr:nth-child(even) td {
   background: color-mix(in srgb, var(--paper-deep) 45%, transparent);
+}
+
+/* Statement green rows: always win over .zebra even-row wash. */
+.zebra.statement-table tbody tr.statement-other-row td,
+.statement-table.zebra tbody tr.statement-other-row td {
+  background: color-mix(in srgb, #b7dfb2 22%, var(--surface, #fffef9));
 }
 
 .zebra-voucher tbody tr.is-alt td {
@@ -3638,6 +4192,8 @@ tr.is-ended td {
   flex-wrap: wrap;
   gap: 0.45rem;
   align-items: center;
+  position: relative;
+  z-index: 2;
 }
 
 .pending-files {

@@ -196,7 +196,22 @@ async function handleLedger(
   }
   if ((p = match(method, path, 'POST', '/api/vouchers/:id/split'))) {
     const body = await readJson<{ entry_id: number; type?: number }>(req)
-    sendJson(res, 200, await ledger.splitBankStatement(Number(p.id), body.entry_id, body.type))
+    sendJson(res, 200, await ledger.splitBankStatement(Number(p.id), body.entry_id, body.type, body.entry_ids))
+    return true
+  }
+  if (match(method, path, 'GET', '/api/bank-statement/overlay')) {
+    const account = Number(q.get('account'))
+    if (!account) throw new BookError('account required', 400)
+    sendJson(
+      res,
+      200,
+      await ledger.fetchBankStatementOverlay({
+        account,
+        startDate: need(q.get('start_date'), 'start_date'),
+        endDate: need(q.get('end_date'), 'end_date'),
+        excludeVoucherId: q.get('exclude_voucher') ? Number(q.get('exclude_voucher')) : null,
+      }),
+    )
     return true
   }
   if ((p = match(method, path, 'POST', '/api/vouchers/:id/attachments'))) {

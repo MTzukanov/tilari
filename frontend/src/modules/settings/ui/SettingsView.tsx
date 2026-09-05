@@ -10,6 +10,7 @@ import {
 import { formatDate } from '../../../shared/dates'
 import { FormatSelect, LanguageSelect } from '../../../shared/LanguageSelect'
 import { FontSelect } from '../../../shared/FontSelect'
+import { DisplayPrefsFields } from '../../../shared/DisplayPrefsFields'
 import { useI18n } from '../../../i18n'
 import { allocationTypeName } from '../../../shared/voucherTypes'
 import { isPracticeValue } from '../../../book/clock'
@@ -72,6 +73,8 @@ export function SettingsView({ meta }: { meta: Meta | null }) {
       <LanguageSelect id="settings-locale" />
       <FormatSelect id="settings-formats" />
       <FontSelect id="settings-font" />
+      <h4>{t('display.title')}</h4>
+      <DisplayPrefsFields />
       <p>
         <a href="#/settings/storage">{t('settings.storage.link')}</a>
       </p>

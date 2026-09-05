@@ -40,6 +40,7 @@ export const WASM_SESSION_METHODS = new Set([
   'saveVoucher',
   'deleteVoucher',
   'splitBankStatement',
+  'fetchBankStatementOverlay',
   'uploadAttachment',
   'attachmentHref',
   'fetchAllocations',

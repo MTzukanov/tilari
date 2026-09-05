@@ -119,6 +119,17 @@ export function VoucherView({
                 </>
               ) : null}
             </p>
+            {data.type === 400 && data.bank_statement ? (
+              <p className="lede voucher-extra">
+                {t('voucher.statementPeriod', {
+                  start: data.bank_statement.start_date || data.date,
+                  end: data.bank_statement.end_date || data.date,
+                })}
+                {data.bank_statement.account != null
+                  ? ` · ${t('voucher.statementAccount', { account: data.bank_statement.account })}`
+                  : ''}
+              </p>
+            ) : null}
             {(data.invoice_date || data.due_date || data.reference) && (
               <p className="lede voucher-extra">
                 {data.invoice_date ? t('voucher.invoiceDate', { date: data.invoice_date }) : ''}

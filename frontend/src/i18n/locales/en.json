@@ -24,6 +24,17 @@
     "license": "GPL-3",
     "thirdParty": "Third-party notices"
   },
+  "display": {
+    "title": "Display",
+    "textSize": "Text size",
+    "textSmaller": "Decrease text size",
+    "textLarger": "Increase text size",
+    "width": "Width",
+    "widthNormal": "Normal",
+    "widthWide": "Wide",
+    "widthFull": "Full width",
+    "hint": "Saved in this browser. Helps with wide tables."
+  },
   "practice": {
     "bannerTitle": "Practice mode is on.",
     "bannerHint": "You can move the date forward.",
@@ -328,6 +339,20 @@
     "statementStart": "Statement starts",
     "statementEnd": "Statement ends",
     "bankAccount": "Bank account",
+    "payee": "Payee/Payer",
+    "openingBalance": "Opening balance",
+    "deposits": "Deposits",
+    "withdrawals": "Withdrawals",
+    "closingBalance": "Closing balance",
+    "addEmptyRow": "Add empty row",
+    "removeRow": "Remove row",
+    "openVoucher": "Voucher…",
+    "statementSelectRow": "Select a row in the table first.",
+    "statementOpenLinked": "Open the voucher linked to the green row.",
+    "statementSplitHint": "Split the selected row onto its own voucher.",
+    "statementEmpty": "No statement rows.",
+    "statementSign": "Sign",
+    "statementSaveBeforeSplit": "Save the statement before splitting a row.",
     "addLine": "Add line",
     "removeLine": "Remove line",
     "splitOff": "Split off",
@@ -378,7 +403,9 @@
     "reference": "Ref {value}",
     "attachments": "Attachments:",
     "noLines": "No postings on this voucher.",
-    "openVoucher": "Open voucher"
+    "openVoucher": "Open voucher",
+    "statementPeriod": "Statement {start} – {end}",
+    "statementAccount": "Account {account}"
   },
   "up": {
     "account": "To account {number}",
