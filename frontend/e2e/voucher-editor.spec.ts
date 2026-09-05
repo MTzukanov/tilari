@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { openBook } from './helpers'
+import { editorSaveButton, openBook } from './helpers'
 
 function maaraInput(page: Page) {
   return page.getByRole('textbox', { name: 'Määrä', exact: true })
@@ -28,7 +28,7 @@ test.describe('voucher editor', () => {
     await expect(page.getByRole('tab', { name: 'Muistiinpanot' })).toBeVisible()
     await expect(page.getByRole('tab', { name: 'Liitteet' })).toBeVisible()
     await expect(page.getByRole('tab', { name: 'Loki' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Tallenna', exact: true })).toBeDisabled()
+    await expect(editorSaveButton(page)).toBeDisabled()
     await expect(page.getByTestId('assistant-rows')).toHaveCount(0)
     await expect(page.locator('.assistant-vat [data-vat-icon="purchase-netto"]')).toBeVisible()
     await page.locator('.assistant-vat .vat-select-type .icon-select-btn').click()
@@ -191,8 +191,8 @@ test.describe('voucher editor', () => {
     await page.goto('/#/browse')
     await expect(page.locator('.ledger-table tbody tr').first()).toBeVisible({ timeout: 15_000 })
     await page.locator('.ledger-table tbody tr').first().click()
-    await page.getByRole('link', { name: 'Muokkaa' }).click()
-    await expect(page.getByRole('button', { name: 'Tallenna', exact: true })).toBeDisabled()
+    await expect(page.locator('form.editor.voucher-work')).toBeVisible()
+    await expect(editorSaveButton(page)).toBeDisabled()
     const otsikko = page.getByRole('textbox', { name: 'Otsikko' })
     const riviselite = page.locator('label').filter({ hasText: 'Riviselite' }).locator('input, textarea')
     if ((await riviselite.count()) > 0) {
@@ -201,7 +201,7 @@ test.describe('voucher editor', () => {
       expect(row).not.toBe(title)
     }
     await otsikko.fill('Muokattu otsikko')
-    await expect(page.getByRole('button', { name: 'Tallenna', exact: true })).toBeEnabled()
+    await expect(editorSaveButton(page)).toBeEnabled()
   })
 
   test('footer has Kitsas buttons, shortcuts, and no duplicate title', async ({ page }) => {
@@ -211,14 +211,15 @@ test.describe('voucher editor', () => {
     await expect(page.locator('.editor-footer')).toContainText('Uusi tosite')
     await expect(page.locator('.editor-footer')).not.toContainText('Sähköinen tosite')
     await expect(page.getByRole('button', { name: 'Tallenna luonnos' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Tallenna', exact: true })).toHaveAttribute(
-      'title',
-      /Ctrl\+S/,
-    )
-    await expect(page.getByRole('button', { name: 'Tallenna', exact: true })).toHaveAttribute(
-      'title',
-      /Ctrl\+Shift\+S/,
-    )
+    await expect(editorSaveButton(page)).toBeDisabled()
+    await expect(editorSaveButton(page)).toHaveAttribute('title', /Lisää vähintään yksi vienti/)
+    const menotili = page.locator('label').filter({ hasText: 'Menotili' }).locator('input')
+    await menotili.fill('4000')
+    await menotili.press('Tab')
+    await maaraInput(page).fill('1,00')
+    await expect(editorSaveButton(page)).toBeEnabled()
+    await expect(editorSaveButton(page)).toHaveAttribute('title', /Ctrl\+S/)
+    await expect(editorSaveButton(page)).toHaveAttribute('title', /Ctrl\+Shift\+S/)
     await expect(page.getByRole('button', { name: 'Sulje' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Lisää toimintoja' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Huomiomerkki' })).toBeVisible()
@@ -279,7 +280,7 @@ test.describe('voucher editor', () => {
     await menotili.fill('4000')
     await menotili.press('Tab')
     await maaraInput(page).fill('12,50')
-    await expect(page.getByRole('button', { name: 'Tallenna', exact: true })).toBeEnabled()
+    await expect(editorSaveButton(page)).toBeEnabled()
     await page.keyboard.press('Control+Shift+S')
     await expect(page).toHaveURL(/voucher\/\d+(\/v\/\d+)?\/edit/)
     await expect(page.getByText('Sähköinen tosite')).toBeVisible()
@@ -315,8 +316,8 @@ test.describe('voucher editor', () => {
     await page.goto('/#/browse')
     await expect(page.locator('.ledger-table tbody tr').first()).toBeVisible({ timeout: 15_000 })
     await page.locator('.ledger-table tbody tr').first().click()
-    await page.getByRole('link', { name: 'Muokkaa' }).click()
-    await expect(page.getByRole('button', { name: 'Tallenna', exact: true })).toBeDisabled()
+    await expect(page.locator('form.editor.voucher-work')).toBeVisible()
+    await expect(editorSaveButton(page)).toBeDisabled()
     await expect(page.getByRole('button', { name: 'Tallenna luonnos' })).toHaveCount(0)
     await expect(page.locator('.editor-doc-number')).toBeVisible()
     await expect(page.locator('.editor-doc-year')).toBeVisible()
@@ -351,7 +352,7 @@ test.describe('voucher editor', () => {
     await page.goto('/#/browse')
     await expect(page.locator('.ledger-table tbody tr').first()).toBeVisible({ timeout: 15_000 })
     await page.locator('.ledger-table tbody tr').first().click()
-    await page.getByRole('link', { name: 'Muokkaa' }).click()
+    await expect(page.locator('form.editor.voucher-work')).toBeVisible()
     const typeBtn = page.locator('label').filter({ hasText: 'Tositelaji' }).locator('button')
     await expect(typeBtn).toBeEnabled()
     await typeBtn.click()

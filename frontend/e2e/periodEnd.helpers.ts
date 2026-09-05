@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test'
+import { deleteOpenVoucherFromEditor, expectVoucherEditorOpen } from './helpers'
 
 export const PERIOD_ENDS = '2024-12-31'
 
@@ -29,6 +30,12 @@ export async function expectStepDone(wizard: Locator, title: string) {
 
 export async function acceptNextDialog(page: Page) {
   page.once('dialog', (dialog) => dialog.accept())
+}
+
+export const deleteOpenVoucher = deleteOpenVoucherFromEditor
+
+export async function expectTaxVoucherEditor(page: Page) {
+  await expectVoucherEditorOpen(page, /Tuloveron jaksotus/)
 }
 
 export async function dismissDialog(page: Page, name: RegExp | string) {

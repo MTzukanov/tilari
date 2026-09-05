@@ -5,6 +5,7 @@ import {
   deleteCurrentVatVoucher,
   eur,
   expectVatPeriod,
+  expectVatVoucherOpen,
   formatFiDate,
   gotoVat,
   openDeclareDialog,
@@ -41,9 +42,8 @@ test.describe('VAT returns', () => {
     await confirmDeclare(page)
 
     // Opens the type-9100 voucher with HTML attachment.
-    await expect(page.getByRole('heading', { name: /Arvonlisäveroilmoitus/ })).toBeVisible()
-    await expect(page.getByText('alv.html')).toBeVisible()
-    await expect(page.getByText('ALV myynnit').first()).toBeVisible()
+    await expectVatVoucherOpen(page)
+    await expect(page.getByRole('row', { name: /ALV myynnit/ }).first()).toBeVisible()
     await expectDirtyStatus(page, true)
 
     await deleteCurrentVatVoucher(page)
@@ -53,9 +53,9 @@ test.describe('VAT returns', () => {
 
     await openDeclareDialog(page)
     await confirmDeclare(page)
-    await expect(page.getByText('alv.html')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'alv.html' })).toBeVisible()
 
-    await page.locator('button.back-btn').click()
+    await page.getByRole('button', { name: 'Sulje' }).click()
     await expectVatPeriod(page, '2024-02-01', '2024-02-29')
     await expect(page.getByRole('heading', { name: 'Annetut ALV-ilmoitukset' })).toBeVisible()
     await expect(page.getByRole('row', { name: new RegExp(formatFiDate('2024-01-01')) })).toBeVisible()
@@ -90,8 +90,9 @@ test.describe('VAT returns', () => {
 
     await openDeclareDialog(page)
     await confirmDeclare(page)
-    await expect(page.getByText('ALV myynnit').first()).toBeVisible()
-    await expect(page.getByText(eur('51,00')).first()).toBeVisible()
+    await expectVatVoucherOpen(page)
+    await expect(page.getByRole('row', { name: /ALV myynnit/ }).first()).toBeVisible()
+    await expect(page.getByRole('row', { name: eur('51,00') }).first()).toBeVisible()
   })
 
   test('12-month force-realize on declare', async ({ page }) => {
@@ -105,9 +106,9 @@ test.describe('VAT returns', () => {
     await openDeclareDialog(page)
     await confirmDeclare(page)
 
-    await expect(page.getByText(/Vanhentunut maksuperusteinen/).first()).toBeVisible()
-    await expect(page.getByText(eur('12,75')).first()).toBeVisible()
-    await expect(page.getByText('alv.html')).toBeVisible()
+    await expectVatVoucherOpen(page)
+    await expect(page.getByRole('row', { name: /Vanhentunut maksuperusteinen/ }).first()).toBeVisible()
+    await expect(page.getByRole('row', { name: eur('12,75') }).first()).toBeVisible()
 
     await gotoVat(page)
     await expect(page.getByRole('row', { name: new RegExp(formatFiDate('2025-03-01')) })).toBeVisible()
@@ -125,8 +126,8 @@ test.describe('VAT returns', () => {
 
     await openDeclareDialog(page)
     await confirmDeclare(page)
-    await expect(page.getByText('alv.html')).toBeVisible()
-    await expect(page.getByText(/Vanhentunut/)).toHaveCount(0)
+    await expectVatVoucherOpen(page)
+    await expect(page.getByRole('row', { name: /Vanhentunut/ })).toHaveCount(0)
 
     await deleteCurrentVatVoucher(page)
     await expect(page.getByRole('button', { name: 'Tee ALV-ilmoitus' })).toBeEnabled()

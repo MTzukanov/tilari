@@ -46,16 +46,18 @@ test.describe('ledger', () => {
     await expect(page.getByText(/2 rivi/)).toBeVisible()
 
     await page.getByRole('row', { name: /Myynti Toimisto/ }).click()
-    await expect(page.getByRole('heading', { name: 'Myynti Toimisto' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Tiliin 1910' })).toBeVisible()
-    await expect(page.locator('.voucher-meta')).toContainText('Asiakas Oy')
+    await expect(page).toHaveURL(/#\/account\/1910\/voucher\/\d+(\/v\/\d+)?\/edit/)
+    await expect(page.getByRole('textbox', { name: 'Otsikko' })).toHaveValue('Myynti Toimisto')
+    await expect(page.getByRole('textbox', { name: 'Asiakas' })).toHaveValue('Asiakas Oy')
+    await page.getByRole('button', { name: 'Sulje' }).click()
+    await expect(page.locator('.ledger-num')).toHaveText('1910')
   })
 
   test('voucher attachment is served as a blob url', async ({ page }) => {
     await openReports2024(page)
     await page.getByRole('row', { name: /1910/ }).click()
     await page.getByRole('row', { name: /Toimistotarvike/ }).click()
-    await expect(page.getByRole('heading', { name: /Yleinen kulu/ })).toBeVisible()
+    await expect(page.getByRole('textbox', { name: 'Otsikko' })).toHaveValue(/Yleinen kulu/)
     const link = page.getByRole('link', { name: 'kuitti.txt' })
     await expect(link).toHaveAttribute('href', /^blob:/)
     const href = await link.getAttribute('href')

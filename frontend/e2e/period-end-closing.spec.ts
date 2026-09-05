@@ -2,10 +2,11 @@ import { expect, test, type Page } from '@playwright/test'
 import { openBook, openPeriodEndBook, skipWebkitOpfs } from './helpers'
 import { expectDirtyStatus, saveBookInBrowser } from './sessionChanges.helpers'
 import {
-  acceptNextDialog,
+  deleteOpenVoucher,
   dismissDialog,
   expectStepDone,
   expectStepOpen,
+  expectTaxVoucherEditor,
   openClosingWizard,
   stepRow,
 } from './periodEnd.helpers'
@@ -61,9 +62,8 @@ test.describe('period-end closing', () => {
     await expect(tax.getByRole('button', { name: 'Avaa tosite' })).toBeVisible({ timeout: 15_000 })
 
     await tax.getByRole('button', { name: 'Avaa tosite' }).click()
-    await expect(page.getByRole('heading', { name: /Tuloveron jaksotus/ })).toBeVisible()
-    await acceptNextDialog(page)
-    await page.getByRole('button', { name: 'Poista' }).click()
+    await expectTaxVoucherEditor(page)
+    await deleteOpenVoucher(page)
     await expect(wizard).toBeVisible()
     await expectStepOpen(wizard, 'Laske ja kirjaa tulovero')
     await expect(wizard.getByRole('button', { name: 'Laske tulovero…' })).toBeVisible()
@@ -187,10 +187,9 @@ test.describe('period-end closing', () => {
     await expectDirtyStatus(page, true)
 
     await tax.getByRole('button', { name: 'Avaa tosite' }).click()
-    await expect(page.getByRole('heading', { name: /Tuloveron jaksotus/ })).toBeVisible()
+    await expectTaxVoucherEditor(page)
 
-    await acceptNextDialog(page)
-    await page.getByRole('button', { name: 'Poista' }).click()
+    await deleteOpenVoucher(page)
     const afterDelete = page.getByRole('dialog', { name: /Tilinpäätöksen laatiminen/ })
     await expect(afterDelete).toBeVisible()
     await expectDirtyStatus(page, true)
