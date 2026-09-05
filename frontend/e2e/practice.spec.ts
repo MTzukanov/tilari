@@ -32,7 +32,7 @@ test.describe('practice mode', () => {
     await expect(box).toBeChecked()
     page.once('dialog', (dialog) => dialog.accept())
     await box.uncheck()
-    await page.getByRole('main').getByRole('button', { name: 'Tallenna' }).click()
+    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(page.locator('.practice-banner')).toHaveCount(0)
     await expect(page.locator('.topbar-company .lede')).not.toContainText('harjoitus')
     await expect(page.getByRole('checkbox', { name: 'Harjoituskirjanpito' })).not.toBeChecked()

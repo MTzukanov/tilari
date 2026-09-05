@@ -121,7 +121,7 @@ test.describe('balance-sheet-items', () => {
     await page.locator('.balance-sheet-items table tbody tr.clickable').first().click()
     await expect(page).toHaveURL(/#\/balance-sheet-items\/voucher\/\d+(\/v\/\d+)?\/edit/)
     await expect(page.locator('form.editor.voucher-work')).toBeVisible()
-    await page.getByRole('button', { name: 'Peru' }).click()
+    await page.getByRole('button', { name: 'Sulje' }).click()
     await expect(page).toHaveURL(/#\/balance-sheet-items\/?$/)
     await expect(page.getByRole('heading', { name: 'Tase-erät' })).toBeVisible()
   })

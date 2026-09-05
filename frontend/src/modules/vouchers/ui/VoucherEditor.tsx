@@ -201,6 +201,7 @@ export function VoucherEditor({
     requestCancel: () => undefined as void,
     savePosted: (_opts?: { close?: boolean }) => undefined as void,
     saveDraft: (_opts?: { close?: boolean }) => undefined as void,
+    explainCannotSave: () => undefined as void,
     goToVoucher: () => undefined as void,
     printVoucher: () => undefined as void,
     copyAsNew: () => undefined as void,
@@ -762,10 +763,12 @@ export function VoucherEditor({
     )
   }
 
-  function canPost(): boolean {
-    if (voucherId != null && (baseline == null || editorPack === baseline)) return false
-    if (!date) return false
-    if (layout === 'attachment') return true
+  function postBlockedReason(): string | null {
+    if (voucherId != null && (baseline == null || editorPack === baseline)) {
+      return t('editor.needChanges')
+    }
+    if (!date) return t('editor.needDate')
+    if (layout === 'attachment') return null
     if (layout === 'statement') {
       const rows = tab === 'entries' ? statementRowsFromLines(lines) : statementRows
       const bank = Number(bankAccount)
@@ -773,41 +776,47 @@ export function VoucherEditor({
         rows.filter((r) => r.amountCents && (r.counterAccount || r.rawEntries?.length)),
         bank,
       )
-      if (!entries.length) return false
+      if (!entries.length) return t('editor.needStatementRows')
       let debit = 0
       let credit = 0
       for (const line of entries) {
-        if (!line.account) return false
+        if (!line.account) return t('editor.needAccounts')
         debit += Number(line.debit_cents || 0)
         credit += Number(line.credit_cents || 0)
       }
-      return debit > 0 && debit === credit
+      if (!(debit > 0 && debit === credit)) {
+        return t('editor.needBalance', {
+          debit: formatEurInput(debit, { emptyZero: true }),
+          credit: formatEurInput(credit, { emptyZero: true }),
+        })
+      }
+      return null
     }
     const source = builtLines()
     const expanded = assistant ? source : expandVat(source)
-    if (!expanded.length) return false
+    if (!expanded.length) return t('editor.needLines')
     let debit = 0
     let credit = 0
     for (const line of expanded) {
-      if (!line.account) return false
+      if (!line.account) return t('editor.needAccounts')
       debit += parseEurInput(line.debit)
       credit += parseEurInput(line.credit)
     }
-    return debit > 0 && debit === credit
+    if (!(debit > 0 && debit === credit)) {
+      return t('editor.needBalance', {
+        debit: formatEurInput(debit, { emptyZero: true }),
+        credit: formatEurInput(credit, { emptyZero: true }),
+      })
+    }
+    return null
+  }
+
+  function canPost(): boolean {
+    return postBlockedReason() === null
   }
 
   function canSaveDraft(): boolean {
-    return Boolean(
-      date &&
-        (title ||
-          partner ||
-          notes ||
-          files.length ||
-          amount ||
-          assistantRows.some((r) => r.account || r.amount) ||
-          lines.some((l) => l.account) ||
-          statementRows.some((r) => r.amountCents || r.counterAccount || r.payee)),
-    )
+    return Boolean(date && dirty)
   }
 
   async function persist(nextTila: number, _opts?: { close?: boolean }) {
@@ -1071,7 +1080,8 @@ export function VoucherEditor({
 
   const canDelete =
     existing != null && DELETABLE_TYPES.has(existing.type) && existing.status >= 50
-  const readyToPost = canPost()
+  const blockedReason = postBlockedReason()
+  const readyToPost = blockedReason == null
   const readyToDraft = canSaveDraft()
 
   actionsRef.current = {
@@ -1083,6 +1093,9 @@ export function VoucherEditor({
     saveDraft: (opts?: { close?: boolean }) => {
       if (!showDraft || !readyToDraft || saving) return
       void persist(50, opts)
+    },
+    explainCannotSave: () => {
+      if (blockedReason) window.alert(blockedReason)
     },
     goToVoucher,
     printVoucher,
@@ -1119,9 +1132,14 @@ export function VoucherEditor({
       const key = e.key.toLowerCase()
       if (key === 's') {
         e.preventDefault()
-        if (e.shiftKey) a.savePosted()
-        else if (a.canPost) a.savePosted({ close: true })
-        else a.saveDraft({ close: true })
+        if (e.shiftKey) {
+          if (a.canPost) a.savePosted()
+          else a.explainCannotSave()
+        } else if (a.canPost) {
+          a.savePosted({ close: true })
+        } else {
+          a.explainCannotSave()
+        }
       } else if (key === 'g') {
         e.preventDefault()
         a.goToVoucher()
@@ -1436,7 +1454,13 @@ export function VoucherEditor({
               type="button"
               className="btn-secondary"
               disabled={saving || !readyToDraft}
-              title={t('editor.saveDraftHint')}
+              title={
+                readyToDraft
+                  ? t('editor.saveDraftHint')
+                  : dirty
+                    ? t('editor.needDate')
+                    : t('editor.needChanges')
+              }
               onClick={() => void persist(50)}
             >
               {t('editor.saveDraft')}
@@ -1448,7 +1472,7 @@ export function VoucherEditor({
             type="submit"
             className="btn-primary"
             disabled={saving || !readyToPost}
-            title={t('editor.doneHint')}
+            title={readyToPost ? t('editor.doneHint') : blockedReason || t('editor.doneHint')}
           >
             {saving ? t('editor.saving') : t('editor.done')}
           </button>

@@ -134,7 +134,7 @@ test.describe('period-end closing', () => {
     const notesEdit = page.getByRole('dialog', { name: 'Liitetiedot' })
     await expect(notesEdit).toBeVisible({ timeout: 30_000 })
     await expect(notesEdit.locator('.tp-editor')).not.toBeEmpty()
-    await notesEdit.getByRole('button', { name: 'Tallenna' }).click()
+    await notesEdit.getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(notesEdit).toHaveCount(0, { timeout: 15_000 })
     await expectStepDone(again, 'Laadi liitetiedot')
     await expect(again.getByRole('button', { name: 'Muokkaa liitetietoja…' })).toBeVisible()
