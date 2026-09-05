@@ -3093,11 +3093,8 @@ tr.is-ended td {
 }
 
 .display-menu-panel {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 0.35rem);
-  z-index: 45;
-  width: min(16.5rem, calc(100vw - 2rem));
+  /* Position via inline fixed style (portaled to body) so topbar overflow cannot clip it. */
+  box-sizing: border-box;
   padding: 0.75rem 0.85rem 0.85rem;
   border: 1px solid var(--line);
   border-radius: 8px;
