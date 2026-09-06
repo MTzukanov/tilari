@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  LOCKER_SUPABASE_KEY,
   disconnectHttpLocker,
   disconnectSupabaseLocker,
   getActiveLocker,
@@ -20,7 +19,6 @@ afterEach(() => {
   disconnectSupabaseLocker()
   disconnectHttpLocker()
   resetLockerProbeForTests()
-  sessionStorage.removeItem(LOCKER_SUPABASE_KEY)
   setLockerKind('http')
 })
 
@@ -55,10 +53,11 @@ describe('active locker', () => {
       url: 'https://example.supabase.co',
       anonKey: 'eyJhbGciOiJub25lIn0.eyJyb2xlIjoiYW5vbiJ9.sig',
       bucket: 'firma',
+      path: 'firma',
+      encrypt: true,
       secret: 'test-secret-please',
     }
     saveSupabaseSettings(settings)
-    expect(JSON.parse(sessionStorage.getItem(LOCKER_SUPABASE_KEY) ?? '{}')).toEqual(settings)
     expect(loadSupabaseSettings()).toEqual(settings)
   })
 })

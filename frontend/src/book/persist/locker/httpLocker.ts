@@ -10,6 +10,8 @@ import {
   type TransferOpts,
 } from '../../http'
 import type { HttpLockerSettings, LockerBackend, LockerBookInfo, LockerPutResult } from './types'
+import { DEFAULT_STORAGE_PATH } from './storagePath'
+import { requireSecret } from './vaultCrypto'
 
 let customOrigin: string | null = null
 let sameOriginAvailable = false
@@ -37,7 +39,8 @@ export function resetHttpLockerState(): void {
 
 export function parseHttpLockerSettings(raw: unknown): HttpLockerSettings {
   if (!raw || typeof raw !== 'object') throw new Error('locker_http_url')
-  let url = String((raw as { url?: unknown }).url || '')
+  const o = raw as Record<string, unknown>
+  let url = String(o.url || '')
     .trim()
     .replace(/\/+$/, '')
   if (/\/api$/i.test(url)) url = url.slice(0, -4).replace(/\/+$/, '')
@@ -50,7 +53,11 @@ export function parseHttpLockerSettings(raw: unknown): HttpLockerSettings {
     if (err instanceof Error && err.message === 'locker_http_url') throw err
     throw new Error('locker_http_url')
   }
-  return { url }
+  const path = String(o.path || o.bucket || DEFAULT_STORAGE_PATH).trim() || DEFAULT_STORAGE_PATH
+  const encrypt = o.encrypt === true || o.encrypt === 'true'
+  let secret: string | undefined
+  if (encrypt) secret = requireSecret(String(o.secret || ''))
+  return { url, path, encrypt, secret }
 }
 
 function pageOrigin(): string | null {

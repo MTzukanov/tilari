@@ -127,6 +127,12 @@ export function downloadCopy(promptForName: (suggested: string) => string | null
   return getBookService().downloadCopy(promptForName)
 }
 
+export function downloadLeanCopy(promptForName: (suggested: string) => string | null) {
+  const svc = getBookService()
+  if (!svc.downloadLeanCopy) throw new Error('lean_download_unsupported')
+  return svc.downloadLeanCopy(promptForName)
+}
+
 export function listLockerBooks() {
   return getBookService().listLockerBooks()
 }

@@ -16,6 +16,7 @@ import {
   closeBook,
   reloadFromSource,
   downloadCopy,
+  downloadLeanCopy,
   isDirty,
   onDirtyChange,
   onLocalLinkChange,
@@ -195,6 +196,10 @@ export function BookShell() {
     if (stage === 'transfer') {
       setBusy((cur) =>
         cur ? { ...cur, title: t('file.busySave'), loaded: 0, total: null } : cur,
+      )
+    } else if (stage === 'attachments') {
+      setBusy((cur) =>
+        cur ? { ...cur, title: t('file.busySaveAttachments'), loaded: 0, total: null } : cur,
       )
     } else if (stage === 'server') {
       setBusy((cur) =>
@@ -683,6 +688,20 @@ export function BookShell() {
     }
   }
 
+  async function onDownloadLean() {
+    setSaving(true)
+    setError(null)
+    try {
+      await downloadLeanCopy((suggested) => window.prompt(t('file.downloadLeanPrompt'), suggested))
+      setFileNote(t('file.downloadedLean'))
+    } catch (err) {
+      const msg = mapFileError(err)
+      if (msg) setError(msg)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function onSaveServerAs() {
     const defaultName = meta?.source_name ?? 'book.kitsas'
     const picked = window.prompt(t('file.saveServerAsPrompt'), defaultName)
@@ -846,6 +865,7 @@ export function BookShell() {
       onOpenServerList={() => void onOpenServerList()}
       onLinkWritableFile={() => void onLinkWritableFile()}
       onSaveAsName={() => void onSaveAsName()}
+      onDownloadLean={() => void onDownloadLean()}
       onSaveServerAs={() => void onSaveServerAs()}
       onForgetDevice={() => void onForgetDevice()}
       error={error}

@@ -1875,6 +1875,25 @@ body {
   min-width: 0;
 }
 
+.locker-connect label.locker-encrypt {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: help;
+}
+
+.locker-connect label.locker-encrypt input[type='checkbox'] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  accent-color: var(--accent);
+}
+
 .file-btn:hover:not(:disabled) {
   filter: brightness(1.06);
 }

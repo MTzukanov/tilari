@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { AttachmentStore, blobsToWrite, collectBlobKeepSet, unreferencedBlobNames } from './blobStore'
+import {
+  AttachmentStore,
+  attachmentSetEtag,
+  attachmentSetPayload,
+  blobsToWrite,
+  collectBlobKeepSet,
+  unreferencedBlobNames,
+} from './blobStore'
 
 const shaA = 'a'.repeat(64)
 const shaB = 'b'.repeat(64)
@@ -18,6 +25,16 @@ describe('blob keep-set and persist skip', () => {
   it('writes only SHAs that are not already on disk', () => {
     expect(blobsToWrite([shaA, shaB], [shaA, shaC])).toEqual([shaC])
     expect(blobsToWrite([shaA], [shaA])).toEqual([])
+  })
+})
+
+describe('attachmentSetEtag', () => {
+  it('hashes sorted SHAs with a trailing newline', async () => {
+    expect(attachmentSetPayload([shaB, shaA])).toBe(`${shaA}\n${shaB}\n`)
+    expect(attachmentSetPayload([])).toBe('\n')
+    const etag = await attachmentSetEtag([shaB, shaA, shaA])
+    expect(etag).toMatch(/^[0-9a-f]{64}$/)
+    expect(etag).toBe(await attachmentSetEtag([shaA, shaB]))
   })
 })
 

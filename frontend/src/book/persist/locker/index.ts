@@ -39,12 +39,21 @@ export {
   setHttpLockerOrigin,
   setHttpLockerSameOrigin,
 } from './httpLocker'
-export { MemoryObjectStore } from './objectStore'
+export { MemoryObjectStore, listAllObjects } from './objectStore'
+export { ObjectStoreLockerBackend } from './objectStoreLocker'
+export { createHttpObjectStore } from './httpObjectStore'
+export { buildHttpObjectLocker, createHttpObjectLocker } from './httpObjectLocker'
+export {
+  DEFAULT_STORAGE_PATH,
+  objectKeyPrefix,
+  parseStoragePath,
+} from './storagePath'
 export {
   DEFAULT_BUCKET,
+  buildSupabaseLocker,
   createSupabaseLocker,
   createUnconfiguredSupabaseLocker,
   parseSupabaseSettings,
-  SupabaseLockerBackend,
 } from './supabaseLocker'
-export { generateLockerSecret } from './vaultCrypto'
+export type { SupabaseLockerBackend } from './supabaseLocker'
+export { generateLockerSecret, openEncryptedStore, vaultPathForPrefix } from './vaultCrypto'

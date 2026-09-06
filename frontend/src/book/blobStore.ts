@@ -2,8 +2,19 @@
 
 import { encodeAttachmentPack } from './attPack'
 import { OPFS_BLOBS_DIR, OPFS_ROOT_DIR, opfsListSessionMetas } from './opfs'
+import { sha256hex } from './sha256'
 
 export const SHA_RE = /^[0-9a-f]{64}$/
+
+/** Canonical payload for a book's attachment set ETag (sorted SHAs + trailing newline). */
+export function attachmentSetPayload(shas: Iterable<string>): string {
+  const sorted = [...new Set([...shas].filter((sha) => SHA_RE.test(sha)))].sort()
+  return `${sorted.join('\n')}\n`
+}
+
+export async function attachmentSetEtag(shas: Iterable<string>): Promise<string> {
+  return sha256hex(new TextEncoder().encode(attachmentSetPayload(shas)))
+}
 
 export function collectBlobKeepSet(
   live: Iterable<string>,

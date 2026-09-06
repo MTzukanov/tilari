@@ -2,7 +2,8 @@ import type { TransferOpts } from '../../http'
 import type { LockerObjectStore } from './objectStore'
 
 /** AES-256-GCM envelope: magic + version + 12-byte IV + ciphertext (tag included). */
-export const VAULT_PATH = 'tilari/vault.json'
+/** Default vault path when no storage prefix is configured. */
+export const VAULT_PATH = 'vault.json'
 export const MAGIC = new TextEncoder().encode('TILARIE1')
 export const KDF_ITERATIONS = 210_000
 const IV_LEN = 12
@@ -16,6 +17,10 @@ export type VaultFile = {
   iterations: number
   salt: string
   check: string
+}
+
+export function vaultPathForPrefix(keyPrefix: string): string {
+  return `${keyPrefix}${VAULT_PATH}`
 }
 
 function subtle(): SubtleCrypto {
@@ -117,26 +122,32 @@ function parseVault(bytes: Uint8Array): VaultFile {
   return raw as VaultFile
 }
 
-export function isVaultPath(path: string): boolean {
-  return path === VAULT_PATH
+export function isVaultPath(path: string, vaultPath = VAULT_PATH): boolean {
+  return path === vaultPath
 }
 
 export class EncryptedObjectStore implements LockerObjectStore {
   private inner: LockerObjectStore
   private key: CryptoKey
+  private vaultPath: string
 
-  constructor(inner: LockerObjectStore, key: CryptoKey) {
+  constructor(inner: LockerObjectStore, key: CryptoKey, vaultPath = VAULT_PATH) {
     this.inner = inner
     this.key = key
+    this.vaultPath = vaultPath
   }
 
-  list(prefix: string) {
-    return this.inner.list(prefix)
+  list(prefix: string, opts?: Parameters<LockerObjectStore['list']>[1]) {
+    return this.inner.list(prefix, opts)
+  }
+
+  exists(path: string) {
+    return this.inner.exists(path)
   }
 
   async download(path: string, opts?: TransferOpts): Promise<Uint8Array> {
     const bytes = await this.inner.download(path, opts)
-    if (isVaultPath(path)) return bytes
+    if (isVaultPath(path, this.vaultPath)) return bytes
     return decryptBytes(bytes, this.key)
   }
 
@@ -145,7 +156,7 @@ export class EncryptedObjectStore implements LockerObjectStore {
     data: Uint8Array,
     opts?: TransferOpts & { upsert?: boolean; contentType?: string },
   ): Promise<void> {
-    if (isVaultPath(path)) {
+    if (isVaultPath(path, this.vaultPath)) {
       await this.inner.upload(path, data, opts)
       return
     }
@@ -164,9 +175,10 @@ export class EncryptedObjectStore implements LockerObjectStore {
 async function loadOrCreateVault(
   store: LockerObjectStore,
   secret: string,
+  vaultPath: string,
 ): Promise<{ vault: VaultFile; key: CryptoKey; created: boolean }> {
   try {
-    const vault = parseVault(await store.download(VAULT_PATH))
+    const vault = parseVault(await store.download(vaultPath))
     const key = await deriveKey(secret, b64decode(vault.salt), vault.iterations)
     const check = await decryptBytes(b64decode(vault.check), key)
     if (new TextDecoder().decode(check) !== 'tilari-vault') throw new Error('locker_bad_secret')
@@ -185,15 +197,17 @@ async function loadOrCreateVault(
     check: b64encode(await encryptBytes(CHECK_PLAIN, key)),
   }
   const bytes = new TextEncoder().encode(JSON.stringify(vault))
-  await store.upload(VAULT_PATH, bytes, { upsert: true, contentType: 'application/json' })
+  await store.upload(vaultPath, bytes, { upsert: true, contentType: 'application/json' })
   return { vault, key, created: true }
 }
 
-/** Unlock (or create) locker-wide vault.json and wrap the object store. */
+/** Unlock (or create) vault.json under keyPrefix and wrap the object store. */
 export async function openEncryptedStore(
   store: LockerObjectStore,
   secret: string,
+  keyPrefix = '',
 ): Promise<EncryptedObjectStore> {
-  const { key } = await loadOrCreateVault(store, requireSecret(secret))
-  return new EncryptedObjectStore(store, key)
+  const vaultPath = vaultPathForPrefix(keyPrefix)
+  const { key } = await loadOrCreateVault(store, requireSecret(secret), vaultPath)
+  return new EncryptedObjectStore(store, key, vaultPath)
 }

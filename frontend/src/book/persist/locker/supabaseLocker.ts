@@ -1,49 +1,11 @@
-import { encodeAttachmentPack, emptyAttachmentPack } from '../../attPack'
-import { newLedgerId } from '../../ledger'
-import { sha256hex } from '../../sha256'
-import type { TransferOpts } from '../../http'
 import { createSupabaseObjectStore } from './supabaseRest'
+import { ObjectStoreLockerBackend } from './objectStoreLocker'
 import type { LockerObjectStore } from './objectStore'
-import type {
-  LockerBackend,
-  LockerBookInfo,
-  LockerPutResult,
-  SupabaseLockerSettings,
-} from './types'
+import type { LockerBackend, SupabaseLockerSettings } from './types'
+import { DEFAULT_STORAGE_PATH, objectKeyPrefix, parseStoragePath } from './storagePath'
 import { openEncryptedStore, requireSecret } from './vaultCrypto'
 
-const SHA_RE = /^[0-9a-f]{64}$/
-const PREFIX = 'tilari/'
-export const DEFAULT_BUCKET = 'tilari'
-
-type MetaFile = {
-  id: string
-  name: string
-  size: number
-  sha256: string
-  attachments_sha256: string
-  attachments_size: number
-  split_attachments: boolean
-  updated_at: string
-}
-
-function bookDir(id: string): string {
-  return `${PREFIX}${id}/`
-}
-function kitsasPath(id: string): string {
-  return `${bookDir(id)}book.kitsas`
-}
-function metaPath(id: string): string {
-  return `${bookDir(id)}meta.json`
-}
-function blobPath(id: string, sha: string): string {
-  return `${bookDir(id)}attachments/${sha}`
-}
-
-function normalizeName(name: string): string {
-  const base = name.replace(/[^A-Za-z0-9._\-]+/g, '_') || 'book.kitsas'
-  return base.toLowerCase().endsWith('.kitsas') ? base : `${base}.kitsas`
-}
+export const DEFAULT_BUCKET = DEFAULT_STORAGE_PATH
 
 function jwtRole(token: string): string | undefined {
   try {
@@ -62,208 +24,124 @@ export function parseSupabaseSettings(raw: unknown): SupabaseLockerSettings {
   const o = raw as Record<string, unknown>
   const url = String(o.url || '').trim().replace(/\/$/, '')
   const anonKey = String(o.anonKey || o.anon_key || '').trim()
-  const bucket = String(o.bucket || DEFAULT_BUCKET).trim() || DEFAULT_BUCKET
+  const pathRaw = String(o.path || o.bucket || DEFAULT_STORAGE_PATH).trim() || DEFAULT_STORAGE_PATH
   if (!url || !anonKey) throw new Error('locker_settings')
   if (!/^https:\/\//i.test(url)) throw new Error('locker_url')
   if (jwtRole(anonKey) === 'service_role') throw new Error('locker_service_role')
-  const secret = requireSecret(String(o.secret || ''))
-  return { url, anonKey, bucket, secret }
+  const encrypt = o.encrypt !== false && o.encrypt !== 'false'
+  let secret: string | undefined
+  if (encrypt) secret = requireSecret(String(o.secret || ''))
+  return {
+    url,
+    anonKey,
+    bucket: pathRaw,
+    path: pathRaw,
+    encrypt,
+    secret,
+  }
 }
 
-function notFound(err: unknown, code: string): boolean {
-  return err instanceof Error && (err.message === 'not_found' || err.message === code)
-}
-
-export class SupabaseLockerBackend implements LockerBackend {
+class UnconfiguredSupabaseLocker implements LockerBackend {
   readonly id = 'supabase' as const
   readonly supportsHttpEngine = false
-  private rawStore: LockerObjectStore | null
-  private encStore: LockerObjectStore | null
-  private settings: SupabaseLockerSettings | null
-
-  constructor(store?: LockerObjectStore, settings?: SupabaseLockerSettings) {
-    this.settings = settings ?? null
-    this.encStore = null
-    if (store) {
-      this.rawStore = store
-    } else if (settings?.url && settings.anonKey && settings.secret && settings.url.startsWith('https://')) {
-      this.rawStore = createSupabaseObjectStore(
-        settings.url,
-        settings.anonKey,
-        settings.bucket || DEFAULT_BUCKET,
-      )
-    } else {
-      this.rawStore = null
-    }
+  async connect(): Promise<void> {
+    throw new Error('locker_not_configured')
   }
-
-  async connect(settings?: unknown): Promise<void> {
-    const parsed = parseSupabaseSettings(settings ?? this.settings)
-    this.settings = parsed
-    this.encStore = null
-    if (!this.rawStore) {
-      this.rawStore = createSupabaseObjectStore(parsed.url, parsed.anonKey, parsed.bucket || DEFAULT_BUCKET)
-    }
-    await this.readyStore()
-  }
-
-  disconnect(): void {
-    this.rawStore = null
-    this.encStore = null
-    this.settings = null
-  }
-
+  disconnect(): void {}
   isReady(): boolean {
-    return Boolean(this.rawStore && this.settings?.secret)
+    return false
   }
-
-  private async readyStore(): Promise<LockerObjectStore> {
-    if (this.encStore) return this.encStore
-    if (!this.rawStore || !this.settings?.secret) throw new Error('locker_not_configured')
-    this.encStore = await openEncryptedStore(this.rawStore, this.settings.secret)
-    return this.encStore
+  list(): Promise<never> {
+    return Promise.reject(new Error('locker_not_configured'))
   }
-
-  private async readMeta(id: string): Promise<MetaFile | null> {
-    try {
-      const bytes = await (await this.readyStore()).download(metaPath(id))
-      return JSON.parse(new TextDecoder().decode(bytes)) as MetaFile
-    } catch (err) {
-      if (notFound(err, 'book_not_found')) return null
-      throw err
-    }
+  get(): Promise<never> {
+    return Promise.reject(new Error('locker_not_configured'))
   }
-
-  private async writeMeta(meta: MetaFile, opts?: TransferOpts): Promise<void> {
-    const bytes = new TextEncoder().encode(JSON.stringify(meta))
-    await (await this.readyStore()).upload(metaPath(meta.id), bytes, {
-      ...opts,
-      upsert: true,
-      contentType: 'application/json',
-    })
+  put(): Promise<never> {
+    return Promise.reject(new Error('locker_not_configured'))
   }
-
-  async list(): Promise<LockerBookInfo[]> {
-    const store = await this.readyStore()
-    const rows = await store.list(PREFIX)
-    const seen = new Set<string>()
-    const metas: LockerBookInfo[] = []
-    for (const row of rows) {
-      const name = row.name.replace(/^\//, '').replace(/\/$/, '')
-      const nested = name.match(/^([^/]+)\/meta\.json$/)
-      const id = nested?.[1] ?? (name.includes('/') ? null : name)
-      if (!id || id === 'vault.json' || seen.has(id)) continue
-      seen.add(id)
-      const meta = await this.readMeta(id)
-      if (meta?.id) metas.push(meta)
-    }
-    metas.sort((a, b) => (a.updated_at < b.updated_at ? 1 : a.updated_at > b.updated_at ? -1 : 0))
-    return metas
-  }
-
-  async get(id: string, opts?: TransferOpts) {
-    const meta = await this.readMeta(id)
-    if (!meta) throw new Error('book_not_found')
-    const bytes = await (await this.readyStore()).download(kitsasPath(id), opts)
-    return {
-      bytes,
-      etag: meta.sha256,
-      attachmentsEtag: meta.attachments_sha256,
-      name: meta.name,
-    }
-  }
-
-  async put(
-    id: string | null,
-    bytes: Uint8Array,
-    name: string,
-    etag?: string,
-    opts?: TransferOpts,
-  ): Promise<LockerPutResult> {
-    const store = await this.readyStore()
-    const bookId = id ?? newLedgerId()
-    const existing = await this.readMeta(bookId)
-    if (existing) {
-      if (!etag || existing.sha256 !== etag) throw new Error('etag_mismatch')
-    }
-    const sha = await sha256hex(bytes)
-    const emptyPack = emptyAttachmentPack()
-    const emptySha = existing?.attachments_sha256 || (await sha256hex(emptyPack))
-    await store.upload(kitsasPath(bookId), bytes, { ...opts, upsert: Boolean(existing) })
-    const meta: MetaFile = {
-      id: bookId,
-      name: normalizeName(name),
-      size: bytes.byteLength,
-      sha256: sha,
-      attachments_sha256: emptySha,
-      attachments_size: existing?.attachments_size ?? emptyPack.byteLength,
-      split_attachments: true,
-      updated_at: new Date().toISOString(),
-    }
-    if (existing) {
-      meta.attachments_sha256 = existing.attachments_sha256
-      meta.attachments_size = existing.attachments_size
-    }
-    await this.writeMeta(meta, opts)
-    return { id: bookId, sha256: sha, attachments_sha256: meta.attachments_sha256 }
-  }
-
-  async getAttachmentBlob(id: string, sha: string, opts?: TransferOpts): Promise<Uint8Array> {
-    const s = sha.toLowerCase()
-    if (!SHA_RE.test(s)) throw new Error('attachment_not_found')
-    try {
-      return await (await this.readyStore()).download(blobPath(id, s), opts)
-    } catch (err) {
-      if (notFound(err, 'attachment_not_found')) throw new Error('attachment_not_found')
-      throw err
-    }
-  }
-
-  async putAttachmentBlobs(
-    id: string,
-    blobs: Record<string, Uint8Array>,
-    etag: string,
-    opts?: TransferOpts,
-  ): Promise<{ attachments_sha256: string }> {
-    if (!etag) throw new Error('etag_mismatch')
-    const existing = await this.readMeta(id)
-    if (!existing) throw new Error('book_not_found')
-    if (existing.attachments_sha256 !== etag) throw new Error('etag_mismatch')
-    const store = await this.readyStore()
-    const entries = Object.entries(blobs)
-    for (const [sha, data] of entries) {
-      if (!SHA_RE.test(sha)) throw new Error('invalid_sha')
-      await store.upload(blobPath(id, sha), data, { ...opts, upsert: true })
-    }
-    const pack = encodeAttachmentPack(blobs)
-    const attSha = await sha256hex(pack)
-    const meta: MetaFile = {
-      ...existing,
-      attachments_sha256: attSha,
-      attachments_size: pack.byteLength,
-      split_attachments: true,
-      updated_at: new Date().toISOString(),
-    }
-    await this.writeMeta(meta, opts)
-    return { attachments_sha256: attSha }
-  }
-
-  async remove(id: string): Promise<void> {
-    const store = await this.readyStore()
-    const listed = await store.list(bookDir(id))
-    const paths = listed.map((row) => `${bookDir(id)}${row.name.replace(/^\//, '')}`)
-    await store.remove(paths)
+  getAttachmentBlob(): Promise<never> {
+    return Promise.reject(new Error('locker_not_configured'))
   }
 }
 
-export function createUnconfiguredSupabaseLocker(): SupabaseLockerBackend {
-  return new SupabaseLockerBackend()
+/** @deprecated alias — prefer ObjectStoreLockerBackend */
+export type SupabaseLockerBackend = ObjectStoreLockerBackend
+
+export function createUnconfiguredSupabaseLocker(): LockerBackend {
+  return new UnconfiguredSupabaseLocker()
 }
 
+export async function buildSupabaseLocker(
+  settings: SupabaseLockerSettings,
+  store?: LockerObjectStore,
+): Promise<ObjectStoreLockerBackend> {
+  const parsed = parseStoragePath(settings.path || settings.bucket || DEFAULT_STORAGE_PATH)
+  const keyPrefix = objectKeyPrefix(parsed, 'supabase')
+  const raw =
+    store ??
+    createSupabaseObjectStore(settings.url, settings.anonKey, parsed.bucket || DEFAULT_BUCKET)
+  const encrypt = settings.encrypt !== false
+  const ready = encrypt
+    ? await openEncryptedStore(raw, requireSecret(String(settings.secret || '')), keyPrefix)
+    : raw
+  return new ObjectStoreLockerBackend(ready, keyPrefix, {
+    id: 'supabase',
+    supportsHttpEngine: false,
+  })
+}
+
+/** Lazy-connecting wrapper so callers can use sync construction. */
 export function createSupabaseLocker(
   settings: SupabaseLockerSettings,
   store?: LockerObjectStore,
-): SupabaseLockerBackend {
-  const locker = new SupabaseLockerBackend(store, settings)
-  return locker
+): LockerBackend {
+  if (!store && !(settings.url && settings.anonKey)) return createUnconfiguredSupabaseLocker()
+
+  let backend: ObjectStoreLockerBackend | null = null
+  let boot: Promise<ObjectStoreLockerBackend> | null = null
+
+  async function ready(next?: unknown): Promise<ObjectStoreLockerBackend> {
+    const s = next ? parseSupabaseSettings(next) : settings
+    if (backend && !next) return backend
+    boot = buildSupabaseLocker(s, store)
+    backend = await boot
+    boot = null
+    return backend
+  }
+
+  return {
+    id: 'supabase',
+    supportsHttpEngine: false,
+    async connect(next?: unknown) {
+      await ready(next)
+    },
+    disconnect() {
+      backend = null
+    },
+    isReady() {
+      return Boolean(backend)
+    },
+    async list() {
+      return (await ready()).list()
+    },
+    async get(id, opts) {
+      return (await ready()).get(id, opts)
+    },
+    async put(id, bytes, name, etag, opts) {
+      return (await ready()).put(id, bytes, name, etag, opts)
+    },
+    async getAttachmentBlob(id, sha, opts) {
+      return (await ready()).getAttachmentBlob(id, sha, opts)
+    },
+    async putAttachmentBlobs(id, shas, blobs, etag, opts) {
+      return (await ready()).putAttachmentBlobs!(id, shas, blobs, etag, opts)
+    },
+    async remove(id) {
+      return (await ready()).remove!(id)
+    },
+    async gcUnusedBlobs() {
+      return (await ready()).gcUnusedBlobs!()
+    },
+  }
 }

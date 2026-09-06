@@ -1,7 +1,11 @@
 import type { TransferOpts } from '../../http'
 
+export type ListOpts = { limit?: number; offset?: number }
+
 export type LockerObjectStore = {
-  list(prefix: string): Promise<{ name: string }[]>
+  list(prefix: string, opts?: ListOpts): Promise<{ name: string }[]>
+  /** True if the object exists (ciphertext presence; no download). */
+  exists(path: string): Promise<boolean>
   download(path: string, opts?: TransferOpts): Promise<Uint8Array>
   upload(
     path: string,
@@ -11,16 +15,41 @@ export type LockerObjectStore = {
   remove(paths: string[]): Promise<void>
 }
 
+/** Page through list until a short page is returned. */
+export async function listAllObjects(
+  store: LockerObjectStore,
+  prefix: string,
+  pageSize = 1000,
+): Promise<{ name: string }[]> {
+  const out: { name: string }[] = []
+  let offset = 0
+  for (;;) {
+    const page = await store.list(prefix, { limit: pageSize, offset })
+    out.push(...page)
+    if (page.length < pageSize) break
+    offset += page.length
+  }
+  return out
+}
+
 /** In-memory Storage stand-in for tests (no Node, no network). */
 export class MemoryObjectStore implements LockerObjectStore {
   readonly files = new Map<string, Uint8Array>()
 
-  async list(prefix: string): Promise<{ name: string }[]> {
+  async list(prefix: string, opts?: ListOpts): Promise<{ name: string }[]> {
     const out: { name: string }[] = []
     for (const key of this.files.keys()) {
       if (key.startsWith(prefix)) out.push({ name: key.slice(prefix.length) })
     }
-    return out
+    out.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+    const offset = opts?.offset ?? 0
+    const limit = opts?.limit
+    if (limit == null) return out.slice(offset)
+    return out.slice(offset, offset + limit)
+  }
+
+  async exists(path: string): Promise<boolean> {
+    return this.files.has(path)
   }
 
   async download(path: string): Promise<Uint8Array> {

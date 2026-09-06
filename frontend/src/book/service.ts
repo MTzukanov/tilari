@@ -130,6 +130,7 @@ export interface BookService {
   onLocalLinkChange?(listener: () => void): () => void
   saveLocal(): Promise<void>
   downloadCopy(promptForName: (suggested: string) => string | null): Promise<void>
+  downloadLeanCopy?(promptForName: (suggested: string) => string | null): Promise<void>
   listLockerBooks(): Promise<LockerBook[]>
   openLockerBook(id: string, opts?: TransferOpts): Promise<Meta>
   saveToLocker(opts?: TransferOpts): Promise<void>

@@ -22,50 +22,43 @@ function storageError(status: number, text: string, fallback: string): Error {
   return new Error(text || fallback || `HTTP ${status}`)
 }
 
-/** Supabase Storage REST (no @supabase/supabase-js — smaller, XHR progress). */
-export function createSupabaseObjectStore(
-  projectUrl: string,
-  anonKey: string,
-  bucket: string,
-): LockerObjectStore {
-  const root = joinUrl(projectUrl, `storage/v1/object`)
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${anonKey}`,
-    apikey: anonKey,
-  }
+/**
+ * Tilari Node thin object store (`/api/objects`).
+ * @param origin null = same-origin relative `/api`
+ */
+export function createHttpObjectStore(origin: string | null): LockerObjectStore {
+  const api = (path: string) => (origin ? joinUrl(origin, path) : path)
 
   return {
     async list(prefix: string, opts?: ListOpts) {
-      const limit = opts?.limit ?? 1000
-      const offset = opts?.offset ?? 0
-      const res = await fetch(joinUrl(projectUrl, `storage/v1/object/list/${bucket}`), {
+      const res = await fetch(api('/api/objects/list'), {
         method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prefix, limit, offset }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prefix,
+          limit: opts?.limit ?? 1000,
+          offset: opts?.offset ?? 0,
+        }),
       })
       if (!res.ok) throw storageError(res.status, await res.text(), 'locker_list_failed')
-      const rows = (await res.json()) as { name?: string }[]
-      return rows
+      const body = (await res.json()) as { objects?: { name?: string }[] }
+      return (body.objects || [])
         .map((row) => ({ name: String(row.name || '') }))
         .filter((row) => row.name)
     },
 
     async exists(path: string) {
-      const res = await fetch(joinUrl(root, `${bucket}/${path}`), {
-        method: 'HEAD',
-        headers,
-      })
+      const res = await fetch(api(`/api/objects/${path}`), { method: 'HEAD' })
       if (res.status === 404) return false
       if (res.ok) return true
       throw storageError(res.status, await res.text(), 'exists_failed')
     },
 
     async download(path: string, opts?: TransferOpts) {
-      const xhr = await xhrTransfer('GET', joinUrl(root, `${bucket}/${path}`), {
+      const xhr = await xhrTransfer('GET', api(`/api/objects/${path}`), {
         responseType: 'arraybuffer',
         signal: opts?.signal,
         onProgress: opts?.onProgress,
-        headers,
       })
       if (xhr.status === 404) throw new Error('not_found')
       if (xhr.status < 200 || xhr.status >= 300) {
@@ -74,9 +67,13 @@ export function createSupabaseObjectStore(
       return new Uint8Array(xhr.response as ArrayBuffer)
     },
 
-    async upload(path: string, data: Uint8Array, opts?: TransferOpts & { upsert?: boolean; contentType?: string }) {
+    async upload(
+      path: string,
+      data: Uint8Array,
+      opts?: TransferOpts & { upsert?: boolean; contentType?: string },
+    ) {
       const method = opts?.upsert ? 'PUT' : 'POST'
-      const xhr = await xhrTransfer(method, joinUrl(root, `${bucket}/${path}`), {
+      const xhr = await xhrTransfer(method, api(`/api/objects/${path}`), {
         body: data,
         responseType: 'text',
         signal: opts?.signal,
@@ -84,7 +81,6 @@ export function createSupabaseObjectStore(
         onStage: opts?.onStage,
         progressOnUpload: true,
         headers: {
-          ...headers,
           'Content-Type': opts?.contentType || 'application/octet-stream',
           'x-upsert': opts?.upsert ? 'true' : 'false',
         },
@@ -96,9 +92,9 @@ export function createSupabaseObjectStore(
 
     async remove(paths: string[]) {
       if (!paths.length) return
-      const res = await fetch(joinUrl(projectUrl, `storage/v1/object/${bucket}`), {
+      const res = await fetch(api('/api/objects'), {
         method: 'DELETE',
-        headers: { ...headers, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prefixes: paths }),
       })
       if (!res.ok && res.status !== 404) {

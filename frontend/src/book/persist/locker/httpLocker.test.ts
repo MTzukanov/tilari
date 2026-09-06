@@ -28,6 +28,9 @@ describe('parseHttpLockerSettings', () => {
   it('normalizes origin and strips a trailing /api', () => {
     expect(parseHttpLockerSettings({ url: 'https://books.example.com/api/' })).toEqual({
       url: 'https://books.example.com',
+      path: 'tilari',
+      encrypt: false,
+      secret: undefined,
     })
   })
 
@@ -61,7 +64,7 @@ describe('http locker readiness', () => {
     expect(httpLocker.supportsHttpEngine).toBe(true)
   })
 
-  it('connectHttpLocker stores BYO origin and does not enable server processing', async () => {
+  it('connectHttpLocker stores BYO origin and uses the object-store locker', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
@@ -69,14 +72,24 @@ describe('http locker readiness', () => {
         if (url.includes('/api/health')) {
           return Response.json({ ok: true }, { status: 200 })
         }
+        if (url.includes('/api/objects/list')) {
+          return Response.json({ objects: [] }, { status: 200 })
+        }
         return new Response('not found', { status: 404 })
       }),
     )
     const locker = await connectHttpLocker({ url: 'https://books.example.com' })
-    expect(locker).toBe(httpLocker)
-    expect(loadHttpLockerSettings()).toEqual({ url: 'https://books.example.com' })
+    expect(locker.id).toBe('http')
+    expect(locker.isReady()).toBe(true)
+    expect(loadHttpLockerSettings()).toEqual({
+      url: 'https://books.example.com',
+      path: 'tilari',
+      encrypt: false,
+      secret: undefined,
+    })
     expect(getActiveLocker().isReady()).toBe(true)
     expect(httpLocker.supportsHttpEngine).toBe(false)
+    expect(await locker.list()).toEqual([])
   })
 
   it('resolveHttpLockerOrigin treats this page as same-origin', () => {

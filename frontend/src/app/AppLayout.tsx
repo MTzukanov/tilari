@@ -54,6 +54,7 @@ export function AppLayout({
   onOpenServerList,
   onLinkWritableFile,
   onSaveAsName,
+  onDownloadLean,
   onSaveServerAs,
   onForgetDevice,
   error,
@@ -105,6 +106,7 @@ export function AppLayout({
   onOpenServerList: () => void
   onLinkWritableFile: () => void
   onSaveAsName: () => void
+  onDownloadLean?: () => void
   onSaveServerAs: () => void
   onForgetDevice: () => void
   error: string | null
@@ -218,6 +220,7 @@ export function AppLayout({
                 onLinkFile={openEngine !== 'http' ? onLinkWritableFile : undefined}
                 onSaveCopy={openEngine !== 'http' ? onSaveAsName : undefined}
                 onDownload={openEngine === 'http' ? onSaveAsName : undefined}
+                onDownloadLean={openEngine !== 'http' ? onDownloadLean : undefined}
                 onSaveServerAs={meta ? onSaveServerAs : undefined}
                 onReload={meta ? onReloadDiscard : undefined}
                 reloadEnabled={dirty}

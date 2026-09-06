@@ -6,6 +6,7 @@ import { useI18n } from '../i18n'
 export const ACTION_LINK_FILE = '__link_file__'
 export const ACTION_SAVE_COPY = '__save_copy__'
 export const ACTION_DOWNLOAD = '__download__'
+export const ACTION_DOWNLOAD_LEAN = '__download_lean__'
 export const ACTION_SAVE_SERVER_AS = '__save_server_as__'
 export const ACTION_RELOAD = '__reload__'
 export const ACTION_CLOSE = '__close__'
@@ -26,6 +27,7 @@ export function FilePick({
   onLinkFile,
   onSaveCopy,
   onDownload,
+  onDownloadLean,
   onSaveServerAs,
   onReload,
   reloadEnabled = false,
@@ -46,6 +48,7 @@ export function FilePick({
   onLinkFile?: () => void
   onSaveCopy?: () => void
   onDownload?: () => void
+  onDownloadLean?: () => void
   onSaveServerAs?: () => void
   onReload?: () => void
   reloadEnabled?: boolean
@@ -64,7 +67,7 @@ export function FilePick({
 
   const hasActions =
     showActions &&
-    (onLinkFile || onSaveCopy || onDownload || onSaveServerAs || onReload || onClose)
+    (onLinkFile || onSaveCopy || onDownload || onDownloadLean || onSaveServerAs || onReload || onClose)
 
   return (
     <div className="file-pick-wrap">
@@ -107,6 +110,11 @@ export function FilePick({
               onDownload?.()
               return
             }
+            if (next === ACTION_DOWNLOAD_LEAN) {
+              resetSelect()
+              onDownloadLean?.()
+              return
+            }
             if (next === ACTION_SAVE_SERVER_AS) {
               resetSelect()
               onSaveServerAs?.()
@@ -143,6 +151,11 @@ export function FilePick({
               {browser && onSaveCopy ? (
                 <option value={ACTION_SAVE_COPY} disabled={busy}>
                   {t('file.saveAs')}
+                </option>
+              ) : null}
+              {browser && onDownloadLean ? (
+                <option value={ACTION_DOWNLOAD_LEAN} disabled={busy}>
+                  {t('file.downloadLean')}
                 </option>
               ) : null}
               {!browser && onDownload ? (

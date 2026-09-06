@@ -8,6 +8,7 @@ import {
   setHttpLockerOrigin,
   setHttpLockerSameOrigin,
 } from './httpLocker'
+import { buildHttpObjectLocker, createHttpObjectLocker } from './httpObjectLocker'
 import { createSupabaseLocker, createUnconfiguredSupabaseLocker, parseSupabaseSettings } from './supabaseLocker'
 import type { HttpLockerSettings, LockerBackend, LockerKind, SupabaseLockerSettings } from './types'
 
@@ -17,6 +18,7 @@ export const LOCKER_HTTP_KEY = 'tilari.locker.http'
 
 let testOverride: LockerBackend | null = null
 let supabaseInstance: LockerBackend | null = null
+let httpObjectInstance: LockerBackend | null = null
 let sameOriginResult: boolean | null = null
 let sameOriginProbe: Promise<boolean> | null = null
 
@@ -88,6 +90,7 @@ export function clearHttpLockerSettings(): void {
     /* private mode */
   }
   setHttpLockerOrigin(null)
+  httpObjectInstance = null
 }
 
 function supabaseLocker(): LockerBackend {
@@ -106,6 +109,9 @@ function hydrateHttpLocker(): void {
   if (!settings) return
   const origin = resolveHttpLockerOrigin(settings.url)
   if (getHttpLockerOrigin() !== origin) setHttpLockerOrigin(origin)
+  if (!httpObjectInstance) {
+    httpObjectInstance = createHttpObjectLocker(settings, origin)
+  }
 }
 
 export function getLockerKind(): LockerKind {
@@ -125,6 +131,13 @@ export function getActiveLocker(): LockerBackend {
   if (testOverride) return testOverride
   if (readKind() === 'supabase') return supabaseLocker()
   hydrateHttpLocker()
+  // Wasm BYO uses object-store locker when configured; pack /api/books remains for HTTP engine via httpLocker.
+  if (httpObjectInstance) return httpObjectInstance
+  return httpLocker
+}
+
+/** Pack-based /api/books client (HTTP engine + legacy). */
+export function getHttpBooksLocker(): LockerBackend {
   return httpLocker
 }
 
@@ -162,7 +175,8 @@ export async function connectHttpLocker(settings: unknown): Promise<LockerBacken
     setHttpLockerSameOrigin(true)
     sameOriginResult = true
   }
-  return httpLocker
+  httpObjectInstance = await buildHttpObjectLocker(parsed, origin)
+  return httpObjectInstance
 }
 
 export function disconnectHttpLocker(): void {
@@ -193,6 +207,7 @@ export function setLockerForTests(backend: LockerBackend | null): void {
 export function resetLockerProbeForTests(): void {
   sameOriginResult = null
   sameOriginProbe = null
+  httpObjectInstance = null
   resetHttpLockerState()
   try {
     sessionStorage.removeItem(LOCKER_HTTP_KEY)
