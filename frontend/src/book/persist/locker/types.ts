@@ -7,6 +7,12 @@ export type LockerKind = 'http' | 'supabase'
 export type HttpLockerSettings = {
   /** Origin of a user-hosted Tilari Node (no trailing slash, no `/api` suffix). */
   url: string
+  /** Bucket/path namespace, e.g. tilari or tilari/book1. */
+  path?: string
+  /** Client-side AES when true. */
+  encrypt?: boolean
+  /** Required when encrypt is true. */
+  secret?: string
 }
 
 export type LockerBookInfo = {
@@ -29,9 +35,13 @@ export type LockerPutResult = {
 export type SupabaseLockerSettings = {
   url: string
   anonKey: string
+  /** Bucket or bucket/path (e.g. tilari/book1). */
   bucket?: string
-  /** Locker-wide AES key material (passphrase or generated hex). Session only. */
-  secret: string
+  /** Alias for bucket when saving unified path field. */
+  path?: string
+  encrypt?: boolean
+  /** Required when encrypt is true (default true for Supabase). */
+  secret?: string
 }
 
 export interface LockerBackend {

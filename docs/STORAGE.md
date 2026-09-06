@@ -85,62 +85,74 @@ CLI sketch: `node scripts/extract-attachments.mjs copy.kitsas ./liitteet --apply
 
 Route handlers must not embed these snippets; use `SqlDialect`.
 
-## BYO Supabase locker (ADR-018)
+## BYO object-store lockers (Supabase + Node wasm)
 
 Operator steps (Finnish / English HTML): [`../site/index.html#supabase`](../site/index.html#supabase),
 [`../site/en/#supabase`](../site/en/#supabase). Architecture: [WORKING_MODES.md](WORKING_MODES.md) mode 3b.
 
-Opaque files in the user’s Storage bucket (default name `tilari`), prefix
-`tilari/`:
+Supabase Storage and Tilari Node (`/api/objects`) share one browser
+implementation: `ObjectStoreLockerBackend` over a thin object store
+(`list` / `exists` / `get` / `put` / `delete`). Optional client-side AES-GCM
+(encryption checkbox) wraps the store; Node HTTP-engine book APIs
+(`/api/books`, open-locker) stay available for server-side processing.
+
+**Bucket / path** (default `tilari`): first segment is the Supabase bucket
+name (or top folder under Node `booksDir`); further segments are an object
+key prefix so `tilari/book1` and `tilari/book2` do not share attachments.
 
 ```
-tilari/vault.json                    # PBKDF2 salt + verifier (plaintext JSON)
-tilari/blobs/{sha256}                # shared AES-GCM envelopes (all books)
-tilari/{id}/meta.json                # AES-GCM envelope (includes attachment_shas[])
-tilari/{id}/book.kitsas              # AES-GCM envelope
+# path = tilari  →  bucket tilari, key prefix ""
+vault.json                       # only when encryption is on
+blobs/{sha256}
+{id}/meta.json                   # includes attachment_shas[]
+{id}/book.kitsas
+
+# path = tilari/book1  →  bucket tilari, key prefix book1/
+book1/vault.json
+book1/blobs/{sha256}
+book1/{id}/meta.json
+book1/{id}/book.kitsas
 ```
 
-Attachment bytes are a **vault-wide content-addressed pool** (same idea as browser
-OPFS `tilari/blobs/{sha}`). Saving a new book only uploads SHAs that are not
-already in the pool. Each book’s `meta.json` stores `attachment_shas` (sorted)
-and `attachments_sha256` (hash of that list). Deleting a book removes
-`tilari/{id}/` then GCs unreferenced shared blobs. A “Clean unused attachments”
-action in the storage panel runs the same GC without deleting books.
+On Node disk the same keys live under `{booksDir}/` with the full storage
+path as prefix (`tilari/…` or `tilari/book1/…`).
 
-The SPA uses the **anon** key only. Create a **private** bucket (not public
-CDN). Example RLS (Storage policies on `storage.objects`):
+Attachment bytes are a **prefix-scoped content-addressed pool**. Saving a new
+book only uploads SHAs that are not already present. Each `meta.json` stores
+`attachment_shas` and `attachments_sha256` (list hash). Delete runs GC for
+that prefix. “Clean unused attachments” in the storage panel does the same.
+
+The SPA uses the **anon** key only for Supabase. Create a **private** bucket.
+Example RLS (adjust the `name like` clause if you use a path prefix):
 
 ```sql
--- allow the anon role to manage objects under tilari/
 create policy "tilari_locker_select"
   on storage.objects for select to anon
-  using (bucket_id = 'tilari' and name like 'tilari/%');
+  using (bucket_id = 'tilari');
 create policy "tilari_locker_insert"
   on storage.objects for insert to anon
-  with check (bucket_id = 'tilari' and name like 'tilari/%');
+  with check (bucket_id = 'tilari');
 create policy "tilari_locker_update"
   on storage.objects for update to anon
-  using (bucket_id = 'tilari' and name like 'tilari/%');
+  using (bucket_id = 'tilari');
 create policy "tilari_locker_delete"
   on storage.objects for delete to anon
-  using (bucket_id = 'tilari' and name like 'tilari/%');
+  using (bucket_id = 'tilari');
 ```
 
 Storage CORS: allow the Tilari HTTPS origin (`GET`, `POST`, `PUT`, `DELETE`,
 `HEAD`, headers `authorization`, `apikey`, `content-type`, `x-upsert`). `file://`
 single-HTML will not work reliably.
 
-URL + anon key opens the bucket (possession = access to ciphertext). Project
-URL, bucket name, anon JWT, and the encryption secret are stored together in
-`sessionStorage` (`tilari.locker.supabase`) for this tab only. Never paste
-`service_role`. This path is **wasm-only**; On the server is unsupported.
+Settings stay in `sessionStorage` for this tab only. Never paste `service_role`.
+Supabase storage is **wasm-only**; Node can also open books **On the server**.
 
-Client-side encryption (ADR-019): AES-256-GCM, key from PBKDF2-SHA-256
-(210k iterations) and `tilari/vault.json` salt. Envelope is `TILARIE1` + IV +
-ciphertext. Changing the secret requires a new vault (re-encrypt everything);
-there is no passphrase-change without rewrite. Lost secret = lost books. XSS
-in the tab still sees the secret in `sessionStorage`. Encryption is for the
-host, backups, and a leaked anon JWT — not for a compromised browser.
+Client-side encryption (ADR-019) when enabled: AES-256-GCM, key from
+PBKDF2-SHA-256 (210k iterations) and `{prefix}vault.json` salt. Envelope is
+`TILARIE1` + IV + ciphertext. Changing the secret requires a new vault.
+Lost secret = lost books. XSS in the tab still sees the secret in
+`sessionStorage`. Encryption is for the host, backups, and a leaked anon JWT —
+not for a compromised browser.
 
 ## What not to do now
 

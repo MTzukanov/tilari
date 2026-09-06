@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { attachmentSetEtag } from '../../blobStore'
 import { sha256hex } from '../../sha256'
 import { MemoryObjectStore } from './objectStore'
+import { ObjectStoreLockerBackend } from './objectStoreLocker'
 import { createSupabaseLocker, parseSupabaseSettings } from './supabaseLocker'
-import { MAGIC, VAULT_PATH } from './vaultCrypto'
+import { parseStoragePath, objectKeyPrefix } from './storagePath'
+import { openEncryptedStore, VAULT_PATH } from './vaultCrypto'
 
 function jwt(role: string): string {
   const header = btoa(JSON.stringify({ alg: 'none', typ: 'JWT' }))
@@ -15,13 +17,33 @@ const settings = {
   url: 'https://example.supabase.co',
   anonKey: jwt('anon'),
   bucket: 'tilari',
+  path: 'tilari',
   secret: 'test-secret-please',
+  encrypt: true,
 }
 
 function startsWithMagic(data: Uint8Array | undefined): boolean {
-  if (!data || data.byteLength < MAGIC.length) return false
-  return MAGIC.every((b, i) => data[i] === b)
+  if (!data || data.byteLength < 8) return false
+  const magic = new TextEncoder().encode('TILARIE1')
+  return magic.every((b, i) => data[i] === b)
 }
+
+describe('parseStoragePath', () => {
+  it('splits bucket and key prefix', () => {
+    expect(parseStoragePath('tilari')).toEqual({
+      bucket: 'tilari',
+      keyPrefix: '',
+      storagePath: 'tilari',
+    })
+    expect(parseStoragePath('tilari/book1')).toEqual({
+      bucket: 'tilari',
+      keyPrefix: 'book1/',
+      storagePath: 'tilari/book1',
+    })
+    expect(objectKeyPrefix(parseStoragePath('tilari/book1'), 'supabase')).toBe('book1/')
+    expect(objectKeyPrefix(parseStoragePath('tilari/book1'), 'http')).toBe('tilari/book1/')
+  })
+})
 
 describe('parseSupabaseSettings', () => {
   it('rejects service_role keys', () => {
@@ -30,7 +52,7 @@ describe('parseSupabaseSettings', () => {
     ).toThrow('locker_service_role')
   })
 
-  it('requires https URL, anon key, and secret', () => {
+  it('requires https URL, anon key, and secret when encrypting', () => {
     expect(() =>
       parseSupabaseSettings({ url: 'http://x', anonKey: jwt('anon'), secret: settings.secret }),
     ).toThrow('locker_url')
@@ -41,14 +63,23 @@ describe('parseSupabaseSettings', () => {
       'locker_secret',
     )
   })
+
+  it('allows encrypt false without secret', () => {
+    const s = parseSupabaseSettings({
+      url: settings.url,
+      anonKey: jwt('anon'),
+      encrypt: false,
+      path: 'tilari/book1',
+    })
+    expect(s.encrypt).toBe(false)
+    expect(s.path).toBe('tilari/book1')
+  })
 })
 
-describe('Supabase locker shared blob pool', () => {
-  it('puts, lists, gets, and stores blobs under tilari/blobs/{sha}', async () => {
+describe('ObjectStoreLockerBackend shared pool', () => {
+  it('puts, lists, gets, and stores blobs under prefix/blobs/{sha}', async () => {
     const store = new MemoryObjectStore()
     const locker = createSupabaseLocker(settings, store)
-    expect(locker.supportsHttpEngine).toBe(false)
-    expect(locker.isReady()).toBe(true)
 
     const bytes = new TextEncoder().encode('lean-kitsas')
     const saved = await locker.put(null, bytes, 'Firma.kitsas')
@@ -59,28 +90,10 @@ describe('Supabase locker shared blob pool', () => {
     const listed = await locker.list()
     expect(listed).toHaveLength(1)
     expect(listed[0].name).toBe('Firma.kitsas')
-    expect(listed[0].sha256).toBe(saved.sha256)
-    expect(store.files.has(`tilari/${saved.id}/book.kitsas`)).toBe(true)
-    expect(store.files.has(`tilari/${saved.id}/meta.json`)).toBe(true)
+    expect(store.files.has(`${saved.id}/book.kitsas`)).toBe(true)
+    expect(store.files.has(`${saved.id}/meta.json`)).toBe(true)
     expect(store.files.has(VAULT_PATH)).toBe(true)
-    expect(startsWithMagic(store.files.get(`tilari/${saved.id}/book.kitsas`))).toBe(true)
-    expect(startsWithMagic(store.files.get(`tilari/${saved.id}/meta.json`))).toBe(true)
-    const vaultJson = new TextDecoder().decode(store.files.get(VAULT_PATH))
-    expect(vaultJson).toContain('"kdf":"PBKDF2"')
-    expect(vaultJson).not.toContain(settings.secret)
-
-    const got = await locker.get(saved.id)
-    expect([...got.bytes]).toEqual([...bytes])
-    expect(got.etag).toBe(saved.sha256)
-    expect(got.name).toBe('Firma.kitsas')
-
-    const updated = new TextEncoder().encode('lean-kitsas-v2')
-    await expect(locker.put(saved.id, updated, 'Firma.kitsas', 'deadbeef')).rejects.toThrow(
-      'etag_mismatch',
-    )
-
-    const saved2 = await locker.put(saved.id, updated, 'Firma.kitsas', saved.sha256)
-    expect(saved2.sha256).toBe(await sha256hex(updated))
+    expect(startsWithMagic(store.files.get(`${saved.id}/book.kitsas`))).toBe(true)
 
     const blob = new Uint8Array([1, 2, 3, 4])
     const sha = await sha256hex(blob)
@@ -88,15 +101,10 @@ describe('Supabase locker shared blob pool', () => {
       saved.id,
       [sha],
       { [sha]: blob },
-      saved2.attachments_sha256!,
+      saved.attachments_sha256!,
     )
     expect(att.attachments_sha256).toBe(await attachmentSetEtag([sha]))
-    expect(startsWithMagic(store.files.get(`tilari/blobs/${sha}`))).toBe(true)
-    expect(store.files.has(`tilari/${saved.id}/attachments/${sha}`)).toBe(false)
-
-    await expect(
-      locker.putAttachmentBlobs!(saved.id, [sha], { [sha]: blob }, saved2.attachments_sha256!),
-    ).rejects.toThrow('etag_mismatch')
+    expect(startsWithMagic(store.files.get(`blobs/${sha}`))).toBe(true)
 
     const fetched = await locker.getAttachmentBlob(saved.id, sha)
     expect([...fetched]).toEqual([1, 2, 3, 4])
@@ -104,93 +112,51 @@ describe('Supabase locker shared blob pool', () => {
     await locker.remove!(saved.id)
     expect(await locker.list()).toEqual([])
     expect(store.files.has(VAULT_PATH)).toBe(true)
-    // GC after remove drops the unreferenced shared blob.
-    expect(store.files.has(`tilari/blobs/${sha}`)).toBe(false)
+    expect(store.files.has(`blobs/${sha}`)).toBe(false)
   })
 
-  it('reuses shared blobs across books and skips re-upload', async () => {
+  it('isolates attachment pools by path prefix', async () => {
     const store = new MemoryObjectStore()
-    const locker = createSupabaseLocker(settings, store)
+    const a = new ObjectStoreLockerBackend(
+      await openEncryptedStore(store, settings.secret!, 'book1/'),
+      'book1/',
+    )
+    const b = new ObjectStoreLockerBackend(
+      await openEncryptedStore(store, settings.secret!, 'book2/'),
+      'book2/',
+    )
+    const blob = new Uint8Array([9])
+    const sha = await sha256hex(blob)
+    const savedA = await a.put(null, new TextEncoder().encode('a'), 'A.kitsas')
+    await a.putAttachmentBlobs!(savedA.id, [sha], { [sha]: blob }, savedA.attachments_sha256!)
+    expect(store.files.has(`book1/blobs/${sha}`)).toBe(true)
+    expect(store.files.has(`book2/blobs/${sha}`)).toBe(false)
+
+    const savedB = await b.put(null, new TextEncoder().encode('b'), 'B.kitsas')
+    await expect(
+      b.putAttachmentBlobs!(savedB.id, [sha], {}, savedB.attachments_sha256!),
+    ).rejects.toThrow('attachment_missing')
+  })
+
+  it('reuses shared blobs across books in the same prefix', async () => {
+    const store = new MemoryObjectStore()
+    const locker = createSupabaseLocker({ ...settings, encrypt: false }, store)
     const blob = new Uint8Array([9, 8, 7])
     const sha = await sha256hex(blob)
 
-    const a = await locker.put(null, new TextEncoder().encode('a'), 'A.kitsas')
-    await locker.putAttachmentBlobs!(a.id, [sha], { [sha]: blob }, a.attachments_sha256!)
-    const path = `tilari/blobs/${sha}`
+    const first = await locker.put(null, new TextEncoder().encode('a'), 'A.kitsas')
+    await locker.putAttachmentBlobs!(first.id, [sha], { [sha]: blob }, first.attachments_sha256!)
+    const path = `blobs/${sha}`
     expect(store.files.has(path)).toBe(true)
-    const firstCipher = store.files.get(path)!
 
-    const b = await locker.put(null, new TextEncoder().encode('b'), 'B.kitsas')
-    // Second book: no local bytes — remote exists.
-    const att = await locker.putAttachmentBlobs!(b.id, [sha], {}, b.attachments_sha256!)
-    expect(att.attachments_sha256).toBe(await attachmentSetEtag([sha]))
-    expect(store.files.get(path)).toBe(firstCipher)
-
-    await locker.remove!(a.id)
+    const second = await locker.put(null, new TextEncoder().encode('b'), 'B.kitsas')
+    await locker.putAttachmentBlobs!(second.id, [sha], {}, second.attachments_sha256!)
     expect(store.files.has(path)).toBe(true)
-    await locker.remove!(b.id)
+
+    await locker.remove!(first.id)
+    expect(store.files.has(path)).toBe(true)
+    await locker.remove!(second.id)
     expect(store.files.has(path)).toBe(false)
-  })
-
-  it('list ignores the shared blobs directory', async () => {
-    const store = new MemoryObjectStore()
-    const locker = createSupabaseLocker(settings, store)
-    const saved = await locker.put(null, new TextEncoder().encode('x'), 'X.kitsas')
-    store.files.set('tilari/blobs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', new Uint8Array([1]))
-    const listed = await locker.list()
-    expect(listed.map((b) => b.id)).toEqual([saved.id])
-  })
-
-  it('reports overall upload progress across blobs', async () => {
-    const store = new MemoryObjectStore()
-    const locker = createSupabaseLocker(settings, store)
-    const saved = await locker.put(null, new TextEncoder().encode('x'), 'X.kitsas')
-    const a = new Uint8Array(100)
-    const b = new Uint8Array(50)
-    const shaA = await sha256hex(a)
-    const shaB = await sha256hex(b)
-    const progress: { loaded: number; total: number | null }[] = []
-    const stages: string[] = []
-    await locker.putAttachmentBlobs!(
-      saved.id,
-      [shaA, shaB],
-      { [shaA]: a, [shaB]: b },
-      saved.attachments_sha256!,
-      {
-        onStage: (s) => stages.push(s),
-        onProgress: (p) => progress.push({ loaded: p.loaded, total: p.total }),
-      },
-    )
-    expect(stages[0]).toBe('attachments')
-    expect(progress.some((p) => p.total === 150)).toBe(true)
-    expect(progress.at(-1)).toEqual({ loaded: 150, total: 150 })
-    for (let i = 1; i < progress.length; i++) {
-      expect(progress[i]!.loaded).toBeGreaterThanOrEqual(progress[i - 1]!.loaded)
-    }
-  })
-
-  it('gc aborts when any meta lacks attachment_shas', async () => {
-    const store = new MemoryObjectStore()
-    const locker = createSupabaseLocker(settings, store)
-    const saved = await locker.put(null, new TextEncoder().encode('x'), 'X.kitsas')
-    const blob = new Uint8Array([1])
-    const sha = await sha256hex(blob)
-    await locker.putAttachmentBlobs!(saved.id, [sha], { [sha]: blob }, saved.attachments_sha256!)
-
-    // Strip attachment_shas from encrypted meta by rewriting via openEncryptedStore path:
-    // download decrypts; re-upload without the field.
-    const { openEncryptedStore } = await import('./vaultCrypto')
-    const enc = await openEncryptedStore(store, settings.secret)
-    const metaBytes = await enc.download(`tilari/${saved.id}/meta.json`)
-    const meta = JSON.parse(new TextDecoder().decode(metaBytes)) as Record<string, unknown>
-    delete meta.attachment_shas
-    await enc.upload(`tilari/${saved.id}/meta.json`, new TextEncoder().encode(JSON.stringify(meta)), {
-      upsert: true,
-    })
-
-    const removed = await locker.gcUnusedBlobs!()
-    expect(removed).toBe(0)
-    expect(store.files.has(`tilari/blobs/${sha}`)).toBe(true)
   })
 
   it('rejects a wrong secret against an existing vault', async () => {

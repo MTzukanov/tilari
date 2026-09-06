@@ -14,6 +14,7 @@ import {
   setLockerKind,
   type LockerKind,
 } from '../../book/persist/locker'
+import { DEFAULT_STORAGE_PATH } from '../../book/persist/locker/storagePath'
 import { useI18n } from '../../i18n'
 import { lockerBookLabel } from './lockerBooks'
 
@@ -35,25 +36,34 @@ export function LockerPanel({
   const [httpUrl, setHttpUrl] = useState(savedHttp?.url ?? '')
   const [url, setUrl] = useState(savedSupabase?.url ?? '')
   const [anonKey, setAnonKey] = useState(savedSupabase?.anonKey ?? '')
-  const [bucket, setBucket] = useState(savedSupabase?.bucket ?? 'tilari')
-  const [secret, setSecret] = useState(savedSupabase?.secret ?? '')
+  const [path, setPath] = useState(
+    savedSupabase?.path || savedSupabase?.bucket || savedHttp?.path || DEFAULT_STORAGE_PATH,
+  )
+  const [encrypt, setEncrypt] = useState(
+    kind === 'supabase' ? savedSupabase?.encrypt !== false : Boolean(savedHttp?.encrypt),
+  )
+  const [secret, setSecret] = useState(savedSupabase?.secret || savedHttp?.secret || '')
   const [revealSecret, setRevealSecret] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const httpReady = kind === 'http' && getActiveLocker().id === 'http' && getActiveLocker().isReady()
-  const sameOriginHttp = httpReady && httpLockerUsesSameOrigin()
+  const httpReady =
+    kind === 'http' && getActiveLocker().id === 'http' && (getActiveLocker().isReady() || Boolean(savedHttp))
+  const sameOriginHttp = kind === 'http' && httpLockerUsesSameOrigin() && !savedHttp
   const supabaseReady = kind === 'supabase' && Boolean(loadSupabaseSettings())
-  const showList = (kind === 'http' && httpReady) || supabaseReady
+  const showList = (kind === 'http' && (httpReady || sameOriginHttp)) || supabaseReady
+  const showGc = (kind === 'supabase' && supabaseReady) || (kind === 'http' && httpReady)
 
   function applyKind(next: LockerKind) {
     setError(null)
     setKind(next)
     if (next === 'http') {
+      setEncrypt(Boolean(loadHttpLockerSettings()?.encrypt))
       setLockerKind('http')
       onKindChange()
       return
     }
+    setEncrypt(loadSupabaseSettings()?.encrypt !== false)
     if (loadSupabaseSettings()) {
       setLockerKind('supabase')
       onKindChange()
@@ -65,13 +75,20 @@ export function LockerPanel({
     setBusy(true)
     setError(null)
     try {
-      await connectHttpLocker({ url: httpUrl })
+      await connectHttpLocker({
+        url: httpUrl,
+        path,
+        encrypt,
+        secret: encrypt ? secret : undefined,
+      })
       setKind('http')
       onKindChange()
     } catch (err) {
       const code = err instanceof Error ? err.message : String(err)
       if (code === 'locker_http_url') setError(t('file.lockerHttpNeedConnect'))
       else if (code === 'locker_http_unreachable') setError(t('file.lockerHttpUnreachable'))
+      else if (code === 'locker_secret') setError(t('file.lockerNeedSecret'))
+      else if (code === 'locker_bad_secret') setError(t('file.lockerBadSecret'))
       else setError(code)
     } finally {
       setBusy(false)
@@ -86,12 +103,19 @@ export function LockerPanel({
     onKindChange()
   }
 
-  async function onConnect(e: FormEvent) {
+  async function onConnectSupabase(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
     setError(null)
     try {
-      await connectSupabaseLocker({ url, anonKey, bucket, secret })
+      await connectSupabaseLocker({
+        url,
+        anonKey,
+        path,
+        bucket: path,
+        encrypt,
+        secret: encrypt ? secret : undefined,
+      })
       setKind('supabase')
       onKindChange()
     } catch (err) {
@@ -106,7 +130,7 @@ export function LockerPanel({
     }
   }
 
-  function onDisconnect() {
+  function onDisconnectSupabase() {
     disconnectSupabaseLocker()
     setKind('http')
     setAnonKey('')
@@ -121,14 +145,62 @@ export function LockerPanel({
       const locker = getActiveLocker()
       if (!locker.gcUnusedBlobs) throw new Error('locker_gc_unsupported')
       const removed = await locker.gcUnusedBlobs()
-      setError(null)
       window.alert(t('file.lockerGcBlobsDone', { count: removed }))
     } catch (err) {
-      const code = err instanceof Error ? err.message : String(err)
-      setError(code)
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
     }
+  }
+
+  function storageOptions() {
+    return (
+      <>
+        <label>
+          {t('file.lockerStoragePath')}
+          <input
+            type="text"
+            value={path}
+            onChange={(e) => setPath(e.target.value)}
+            placeholder={DEFAULT_STORAGE_PATH}
+            autoComplete="off"
+          />
+        </label>
+        <p className="muted">{t('file.lockerStoragePathHint')}</p>
+        <label className="locker-encrypt" title={t('file.lockerEncryptHint')}>
+          <input type="checkbox" checked={encrypt} onChange={(e) => setEncrypt(e.target.checked)} />
+          <span>{t('file.lockerEncrypt')}</span>
+        </label>
+        {encrypt ? (
+          <>
+            <label>
+              {t('file.lockerSecret')}
+              <span className="locker-connect-row">
+                <input
+                  type={revealSecret ? 'text' : 'password'}
+                  required
+                  minLength={8}
+                  autoComplete="off"
+                  value={secret}
+                  onChange={(e) => setSecret(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="file-btn-secondary"
+                  onClick={() => {
+                    setSecret(generateLockerSecret())
+                    setRevealSecret(true)
+                  }}
+                >
+                  {t('file.lockerSecretGenerate')}
+                </button>
+              </span>
+            </label>
+            <p className="muted">{t('file.lockerSecretHint')}</p>
+          </>
+        ) : null}
+      </>
+    )
   }
 
   return (
@@ -159,7 +231,47 @@ export function LockerPanel({
 
       {kind === 'http' ? (
         sameOriginHttp ? (
-          <p className="muted">{t('file.lockerHttpSameOrigin')}</p>
+          <form
+            className="locker-connect"
+            onSubmit={(e) => {
+              e.preventDefault()
+              void (async () => {
+                setBusy(true)
+                setError(null)
+                try {
+                  await connectHttpLocker({
+                    url: typeof location !== 'undefined' ? location.origin : 'http://127.0.0.1',
+                    path,
+                    encrypt,
+                    secret: encrypt ? secret : undefined,
+                  })
+                  setKind('http')
+                  onKindChange()
+                } catch (err) {
+                  const code = err instanceof Error ? err.message : String(err)
+                  if (code === 'locker_secret') setError(t('file.lockerNeedSecret'))
+                  else if (code === 'locker_bad_secret') setError(t('file.lockerBadSecret'))
+                  else setError(code)
+                } finally {
+                  setBusy(false)
+                }
+              })()
+            }}
+          >
+            <p className="muted">{t('file.lockerHttpSameOrigin')}</p>
+            {storageOptions()}
+            {error ? <p className="error">{error}</p> : null}
+            <div className="file-prompt-actions">
+              <button type="submit" className="file-btn" disabled={busy}>
+                {t('file.lockerConnect')}
+              </button>
+              {showGc ? (
+                <button type="button" className="file-btn-secondary" disabled={busy} onClick={() => void onGcBlobs()}>
+                  {t('file.lockerGcBlobs')}
+                </button>
+              ) : null}
+            </div>
+          </form>
         ) : (
           <form className="locker-connect" onSubmit={(e) => void onConnectHttp(e)}>
             <p className="muted">{t('file.lockerHttpHint')}</p>
@@ -174,14 +286,20 @@ export function LockerPanel({
                 placeholder="https://books.example.com"
               />
             </label>
+            {storageOptions()}
             {error ? <p className="error">{error}</p> : null}
             <div className="file-prompt-actions">
               <button type="submit" className="file-btn" disabled={busy}>
                 {t('file.lockerConnect')}
               </button>
-              {httpReady && !sameOriginHttp ? (
+              {httpReady ? (
                 <button type="button" className="file-btn-secondary" onClick={onDisconnectHttp}>
                   {t('file.lockerDisconnect')}
+                </button>
+              ) : null}
+              {showGc ? (
+                <button type="button" className="file-btn-secondary" disabled={busy} onClick={() => void onGcBlobs()}>
+                  {t('file.lockerGcBlobs')}
                 </button>
               ) : null}
             </div>
@@ -190,7 +308,7 @@ export function LockerPanel({
       ) : null}
 
       {kind === 'supabase' ? (
-        <form className="locker-connect" onSubmit={(e) => void onConnect(e)}>
+        <form className="locker-connect" onSubmit={(e) => void onConnectSupabase(e)}>
           <p className="muted">{t('file.lockerWasmOnly')}</p>
           <p className="muted">{t('file.lockerSetupHint')}</p>
           <label>
@@ -214,51 +332,19 @@ export function LockerPanel({
               onChange={(e) => setAnonKey(e.target.value)}
             />
           </label>
-          <label>
-            {t('file.lockerSupabaseBucket')}
-            <input type="text" value={bucket} onChange={(e) => setBucket(e.target.value)} />
-          </label>
-          <label>
-            {t('file.lockerSecret')}
-            <span className="locker-connect-row">
-              <input
-                type={revealSecret ? 'text' : 'password'}
-                required
-                minLength={8}
-                autoComplete="off"
-                value={secret}
-                onChange={(e) => setSecret(e.target.value)}
-              />
-              <button
-                type="button"
-                className="file-btn-secondary"
-                onClick={() => {
-                  setSecret(generateLockerSecret())
-                  setRevealSecret(true)
-                }}
-              >
-                {t('file.lockerSecretGenerate')}
-              </button>
-            </span>
-          </label>
-          <p className="muted">{t('file.lockerSecretHint')}</p>
+          {storageOptions()}
           {error ? <p className="error">{error}</p> : null}
           <div className="file-prompt-actions">
             <button type="submit" className="file-btn" disabled={busy}>
               {t('file.lockerConnect')}
             </button>
             {supabaseReady ? (
-              <button type="button" className="file-btn-secondary" onClick={onDisconnect}>
+              <button type="button" className="file-btn-secondary" onClick={onDisconnectSupabase}>
                 {t('file.lockerDisconnect')}
               </button>
             ) : null}
-            {supabaseReady ? (
-              <button
-                type="button"
-                className="file-btn-secondary"
-                disabled={busy}
-                onClick={() => void onGcBlobs()}
-              >
+            {showGc ? (
+              <button type="button" className="file-btn-secondary" disabled={busy} onClick={() => void onGcBlobs()}>
                 {t('file.lockerGcBlobs')}
               </button>
             ) : null}

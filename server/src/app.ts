@@ -17,6 +17,7 @@ import {
   sendJson,
 } from './httpUtil.ts'
 import { handleLocker } from './locker/routes.ts'
+import { handleObjects } from './locker/objectRoutes.ts'
 import { getAttachmentBlob, getBook } from './locker/store.ts'
 import { ledger } from './session.ts'
 import { getReloadSource, setReloadSource } from './reloadSource.ts'
@@ -451,6 +452,7 @@ export async function handleRequest(req: IncomingMessage, res: ServerResponse): 
     return
   }
 
+  if (await handleObjects(req, res, method, path)) return
   if (await handleLocker(req, res, method, path, null, match)) return
   if (await handleLedger(req, res, method, path, q)) return
   if (handleStatic(req, res, path)) return

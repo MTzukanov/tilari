@@ -233,11 +233,12 @@ Do not mix `tilari.engine=http` with this backend (ADR-018).
 ```
 Browser tab (WasmBookService / Ledger)
   ├─ OPFS session + tilari/blobs/{sha}  (plaintext working copy)
-  ├─ Storage tilari/vault.json          (KDF salt + verifier, not secret)
-  ├─ Storage tilari/{id}/book.kitsas + meta.json   (AES-GCM envelopes)
-  └─ Storage tilari/blobs/{sha}                    (shared AES-GCM envelopes)
-User Supabase project (private bucket)
+  ├─ Storage vault.json (optional) + blobs/{sha} + {id}/*   (ObjectStoreLockerBackend)
+  └─ or Node /api/objects under booksDir/{path}/…
+User Supabase project or Tilari Node (thin object CRUD)
 ```
+
+Node **On the server** still uses `/api/books` + open-locker for Ledger processing.
 
 Layout, RLS, CORS, and encryption: [STORAGE.md](STORAGE.md). URL+anon opens
 the bucket; the secret opens the files. Never paste `service_role`. Concurrent
