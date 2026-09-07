@@ -462,6 +462,9 @@ export function LockerPanel({
             name="tilari-locker-kind"
             checked={kind === 'http'}
             onChange={() => applyKind('http')}
+            onClick={() => {
+              if (kind === 'http') onClose()
+            }}
           />
           {t('file.lockerKindHttp')}
         </label>
@@ -471,6 +474,9 @@ export function LockerPanel({
             name="tilari-locker-kind"
             checked={kind === 'supabase'}
             onChange={() => applyKind('supabase')}
+            onClick={() => {
+              if (kind === 'supabase') onClose()
+            }}
           />
           {t('file.lockerKindSupabase')}
         </label>

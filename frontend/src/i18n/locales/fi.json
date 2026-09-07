@@ -146,7 +146,7 @@
     "lockerTitle": "Oma säilytys (BYO)",
     "lockerByoIntro": "Tilarilla ei ole pilvitiliä eikä se ota vastaan kirjojasi. Alla oleva säilytys on bring-your-own: oma Supabase-projekti tai Tilari-palvelin, jonka ajat itse. Ei liity Tilarin sivustoon. Tiedostoa ei lähetetä mihinkään palvelimeen, jota et itse anna.",
     "lockerKindLabel": "Säilytys, jota hallitset",
-    "lockerKindHttp": "Tilari-palvelin",
+    "lockerKindHttp": "Oma Tilari-palvelin",
     "lockerKindSupabase": "Oma Supabase",
     "lockerHttpUrl": "Palvelimen URL",
     "lockerHttpHint": "Itse ajamasi Tilari-palvelimen osoite — tämä kone, LAN, VPS, NAS tai kotikone. Esim. http://127.0.0.1:8787 tai https://kirjat.example.com. Sinun palvelimesi — ei Tilarin pilvi.",
@@ -208,7 +208,7 @@
     "lockerStatusOffHint": "Ei yhteyttä omaan säilytykseen (Tilari-palvelin tai Supabase). Napsauta yhdistääksesi.",
     "lockerStatusSupabase": "Supabase",
     "lockerStatusSupabaseHint": "Yhdistetty omaan Supabase-projektiin ({host}).",
-    "lockerStatusHttp": "Tilari-palvelin",
+    "lockerStatusHttp": "Oma Tilari-palvelin",
     "lockerStatusHttpHint": "Yhdistetty Tilari-palvelimeen ({host}).",
     "lockerStatusPath": "Polku: {path}.",
     "lockerStatusEncrypted": "Tiedostot salataan selaimessa.",
@@ -265,7 +265,7 @@
     "choosePrompt": "Valitse kirja yläpalkin Kirjanpitotiedosto-valikosta tai avaa alla olevista viimeisimmistä.",
     "noRecents": "Ei viimeksi avattuja tiedostoja.",
     "lastGone": "Tiedostoa ei löytynyt. Valitse toinen.",
-    "lockerUseThisPage": "Tämä sivu"
+    "lockerUseThisPage": "Tämä kone"
   },
   "period": {
     "label": "Tilikausi",

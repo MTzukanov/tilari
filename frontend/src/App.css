@@ -2048,12 +2048,22 @@ button.status-chip:focus-visible {
   align-items: center;
   gap: 0.35rem;
   flex-wrap: nowrap;
+  border-radius: 4px;
+  padding: 0.1rem 0.15rem 0.1rem 0;
+}
+
+.locker-book-row:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .locker-book-row .file-picker-row {
   flex: 1 1 auto;
   min-width: 0;
   width: auto;
+}
+
+.locker-book-row .file-picker-row.nav-link:hover {
+  background: transparent;
 }
 
 .locker-book-delete {
@@ -2075,7 +2085,7 @@ button.status-chip:focus-visible {
 
 .locker-book-delete:hover {
   color: var(--danger, #a33);
-  background: color-mix(in srgb, var(--danger, #a33) 10%, var(--surface));
+  background: color-mix(in srgb, var(--danger, #a33) 12%, transparent);
   border-color: color-mix(in srgb, var(--danger, #a33) 25%, var(--line));
 }
 

@@ -146,7 +146,7 @@
     "lockerTitle": "Your own storage (BYO)",
     "lockerByoIntro": "Tilari has no cloud account and does not receive your books. Optional storage below is bring-your-own: your Supabase project or a Tilari server you run. Nothing to do with Tilari’s site. The file is never sent to any server you did not provide.",
     "lockerKindLabel": "Storage you control",
-    "lockerKindHttp": "Tilari server",
+    "lockerKindHttp": "Your Tilari server",
     "lockerKindSupabase": "Your own Supabase",
     "lockerHttpUrl": "Server URL",
     "lockerHttpHint": "URL of a Tilari server you run — this computer, LAN, VPS, NAS, or home server. Example: http://127.0.0.1:8787 or https://books.example.com. Yours — not a Tilari cloud.",
@@ -208,7 +208,7 @@
     "lockerStatusOffHint": "Not connected to your own storage (Tilari server or Supabase). Click to connect.",
     "lockerStatusSupabase": "Supabase",
     "lockerStatusSupabaseHint": "Connected to your Supabase project ({host}).",
-    "lockerStatusHttp": "Tilari server",
+    "lockerStatusHttp": "Your Tilari server",
     "lockerStatusHttpHint": "Connected to your Tilari server ({host}).",
     "lockerStatusPath": "Path: {path}.",
     "lockerStatusEncrypted": "Files encrypted in the browser.",
@@ -265,7 +265,7 @@
     "choosePrompt": "Choose a book from the Bookkeeping file menu in the top bar, or open one of the recent files below.",
     "noRecents": "No recently opened files.",
     "lastGone": "The file was not found. Choose another.",
-    "lockerUseThisPage": "This page"
+    "lockerUseThisPage": "This computer"
   },
   "period": {
     "label": "Financial year",

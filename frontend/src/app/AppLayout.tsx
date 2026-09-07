@@ -52,6 +52,7 @@ export function AppLayout({
   onCreateBook,
   onOpenRecent,
   onOpenServerList,
+  onToggleLocker,
   onLinkWritableFile,
   onSaveAsName,
   onDownloadLean,
@@ -109,6 +110,7 @@ export function AppLayout({
   onCreateBook: () => void
   onOpenRecent: (path: string) => void
   onOpenServerList: () => void
+  onToggleLocker: () => void
   onLinkWritableFile: () => void
   onSaveAsName: () => void
   onDownloadLean?: () => void
@@ -191,7 +193,7 @@ export function AppLayout({
               dirty={dirty}
               attSync={blocked ? { status: 'idle', loaded: 0, total: null } : attSync}
               sessionPersist={blocked ? null : sessionPersist}
-              onOpenLocker={onOpenServerList}
+              onOpenLocker={onToggleLocker}
             />
             <div className="topbar-tools-row">
               <DisplayMenu />

@@ -146,7 +146,7 @@
     "lockerTitle": "Din egen lagring (BYO)",
     "lockerByoIntro": "Tilari har inget molnkonto och tar inte emot dina böcker. Lagringen nedan är bring-your-own: ditt Supabase-projekt eller en Tilari-server som du kör själv. Hör inte till Tilaris webbplats. Filen skickas aldrig till någon server som du inte själv anger.",
     "lockerKindLabel": "Lagring som du styr",
-    "lockerKindHttp": "Tilari-server",
+    "lockerKindHttp": "Din Tilari-server",
     "lockerKindSupabase": "Egen Supabase",
     "lockerHttpUrl": "Server-URL",
     "lockerHttpHint": "URL till en Tilari-server som du kör — den här datorn, LAN, VPS, NAS eller hemmaserver. Exempel: http://127.0.0.1:8787 eller https://bocker.example.com. Din server — inte Tilaris moln.",
@@ -208,7 +208,7 @@
     "lockerStatusOffHint": "Inte ansluten till din egen lagring (Tilari-server eller Supabase). Klicka för att ansluta.",
     "lockerStatusSupabase": "Supabase",
     "lockerStatusSupabaseHint": "Ansluten till ditt Supabase-projekt ({host}).",
-    "lockerStatusHttp": "Tilari-server",
+    "lockerStatusHttp": "Din Tilari-server",
     "lockerStatusHttpHint": "Ansluten till din Tilari-server ({host}).",
     "lockerStatusPath": "Sökväg: {path}.",
     "lockerStatusEncrypted": "Filer krypteras i webbläsaren.",
@@ -265,7 +265,7 @@
     "choosePrompt": "Välj en bok i menyn Bokföringsfil i övre listen, eller öppna en av de senaste filerna nedan.",
     "noRecents": "Inga nyligen öppnade filer.",
     "lastGone": "Filen hittades inte. Välj en annan.",
-    "lockerUseThisPage": "Denna sida"
+    "lockerUseThisPage": "Den här datorn"
   },
   "period": {
     "label": "Räkenskapsår",

@@ -647,6 +647,14 @@ export function BookShell() {
     await refreshLockerList()
   }
 
+  function onToggleServerList() {
+    if (lockerOpen) {
+      setLockerOpen(false)
+      return
+    }
+    void onOpenServerList()
+  }
+
   async function refreshLockerList() {
     await probeSameOriginNode({ force: true })
     // Do not reset the engine mid-open — prepareEngine clears meta before openKitsasFile
@@ -1005,6 +1013,7 @@ export function BookShell() {
       onCreateBook={onCreateBook}
       onOpenRecent={onOpenRecent}
       onOpenServerList={() => void onOpenServerList()}
+      onToggleLocker={onToggleServerList}
       onLinkWritableFile={() => void onLinkWritableFile()}
       onSaveAsName={() => void onSaveAsName()}
       onDownloadLean={() => void onDownloadLean()}

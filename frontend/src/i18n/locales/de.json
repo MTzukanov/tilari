@@ -146,7 +146,7 @@
     "lockerTitle": "Eigener Speicher (BYO)",
     "lockerByoIntro": "Tilari hat kein Cloud-Konto und nimmt keine Bücher entgegen. Der optionale Speicher unten ist Bring-your-own: Ihr Supabase-Projekt oder ein Tilari-Server, den Sie selbst betreiben. Unabhängig von der Tilari-Website. Die Datei wird an keinen Server gesendet, den Sie nicht selbst angeben.",
     "lockerKindLabel": "Speicher, den Sie kontrollieren",
-    "lockerKindHttp": "Tilari-Server",
+    "lockerKindHttp": "Eigener Tilari-Server",
     "lockerKindSupabase": "Eigenes Supabase",
     "lockerHttpUrl": "Server-URL",
     "lockerHttpHint": "URL eines Tilari-Servers, den Sie betreiben — dieser Rechner, LAN, VPS, NAS oder Heimserver. Beispiel: http://127.0.0.1:8787 oder https://buecher.example.com. Ihr Server — keine Tilari-Cloud.",
@@ -208,7 +208,7 @@
     "lockerStatusOffHint": "Nicht mit eigenem Speicher verbunden (Tilari-Server oder Supabase). Klicken zum Verbinden.",
     "lockerStatusSupabase": "Supabase",
     "lockerStatusSupabaseHint": "Verbunden mit Ihrem Supabase-Projekt ({host}).",
-    "lockerStatusHttp": "Tilari-Server",
+    "lockerStatusHttp": "Eigener Tilari-Server",
     "lockerStatusHttpHint": "Verbunden mit Ihrem Tilari-Server ({host}).",
     "lockerStatusPath": "Pfad: {path}.",
     "lockerStatusEncrypted": "Dateien werden im Browser verschlüsselt.",
@@ -265,7 +265,7 @@
     "choosePrompt": "Wählen Sie ein Buch im Menü Buchhaltungsdatei in der oberen Leiste oder öffnen Sie eine der letzten Dateien unten.",
     "noRecents": "Keine kürzlich geöffneten Dateien.",
     "lastGone": "Die Datei wurde nicht gefunden. Wählen Sie eine andere.",
-    "lockerUseThisPage": "Diese Seite"
+    "lockerUseThisPage": "Dieser Rechner"
   },
   "period": {
     "label": "Geschäftsjahr",
