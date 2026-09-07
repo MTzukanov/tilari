@@ -42,6 +42,7 @@ export const WASM_SESSION_METHODS = new Set([
   'splitBankStatement',
   'fetchBankStatementOverlay',
   'uploadAttachment',
+  'deleteAttachment',
   'attachmentHref',
   'fetchAllocations',
   'fetchAllocation',

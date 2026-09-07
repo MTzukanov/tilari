@@ -84,6 +84,7 @@ export interface BookService {
     excludeVoucherId?: number | null
   }): Promise<{ other: import('./bankStatement').StatementOtherRow[]; opening_cents: number }>
   uploadAttachment(voucherId: number, file: File): Promise<{ id: number }>
+  deleteAttachment(id: number): Promise<void>
   attachmentHref(id: number): Promise<string>
   fetchAllocations(): Promise<{ allocations: Allocation[] }>
   fetchAllocation(id: number): Promise<Allocation>
@@ -132,6 +133,7 @@ export interface BookService {
   downloadCopy(promptForName: (suggested: string) => string | null): Promise<void>
   downloadLeanCopy?(promptForName: (suggested: string) => string | null): Promise<void>
   listLockerBooks(): Promise<LockerBook[]>
+  deleteLockerBook(id: string): Promise<void>
   openLockerBook(id: string, opts?: TransferOpts): Promise<Meta>
   saveToLocker(opts?: TransferOpts): Promise<void>
   closeBook(opts?: { discard?: boolean }): Promise<void>

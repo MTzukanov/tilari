@@ -24,7 +24,7 @@ import {
   opfsSaveWorking,
   type OpfsMeta,
 } from './opfs'
-import { deleteVoucher as deleteVoucherRow } from './posting'
+import { deleteAttachment as deleteAttachmentRow, deleteVoucher as deleteVoucherRow } from './posting'
 import { readFileBytes } from './readFileBytes'
 import type { AttachmentSyncState, BookService, SessionPersistState } from './service'
 import type { Meta } from './types'
@@ -599,6 +599,20 @@ export class WasmBookService extends Ledger implements BookService {
     }, { kind: 'voucher_delete', params: { id } })
   }
 
+  override async deleteAttachment(id: number) {
+    await this.mutate((db) => {
+      deleteAttachmentRow(db, id)
+      this.pruneAttachments(db)
+    }, { kind: 'attachment_delete', params: { id } })
+    const url = this.blobUrls.get(id)
+    if (url) {
+      URL.revokeObjectURL(url)
+      this.blobUrls.delete(id)
+    }
+    this.setAttachmentsDirty(true)
+    await this.flushPersistNow()
+  }
+
   async uploadAttachment(voucherId: number, file: File) {
     const data = new Uint8Array(await file.arrayBuffer())
     const result = await this.uploadAttachmentBytes(
@@ -674,6 +688,12 @@ export class WasmBookService extends Ledger implements BookService {
 
   async listLockerBooks() {
     return getActiveLocker().list()
+  }
+
+  async deleteLockerBook(id: string) {
+    const locker = getActiveLocker()
+    if (!locker.remove) throw new Error('locker_remove_unsupported')
+    await locker.remove(id)
   }
 
   async openLockerBook(id: string, opts: TransferOpts = {}) {

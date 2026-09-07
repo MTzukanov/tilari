@@ -63,6 +63,7 @@ export function AppLayout({
   lockerOpen,
   lockerBooks,
   onPickLocker,
+  onDeleteLocker,
   onCloseLocker,
   onLockerKindChange,
   children,
@@ -115,6 +116,7 @@ export function AppLayout({
   lockerOpen: boolean
   lockerBooks: LockerBook[] | null
   onPickLocker: (id: string, name: string) => void
+  onDeleteLocker: (id: string, name: string) => void
   onCloseLocker: () => void
   onLockerKindChange: () => void
   children: ReactNode
@@ -265,6 +267,7 @@ export function AppLayout({
             <LockerPanel
               books={lockerBooks}
               onPick={onPickLocker}
+              onDelete={onDeleteLocker}
               onClose={onCloseLocker}
               onKindChange={onLockerKindChange}
             />

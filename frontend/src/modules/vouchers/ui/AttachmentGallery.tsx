@@ -36,7 +36,18 @@ function FileThumb({ file, href }: { file?: File; href?: string }) {
   return <span className="att-thumb-file" aria-hidden />
 }
 
-function ExistingThumb({ id, name, type }: { id: number; name: string; type: string }) {
+function ExistingThumb({
+  id,
+  name,
+  type,
+  onDelete,
+}: {
+  id: number
+  name: string
+  type: string
+  onDelete?: () => void
+}) {
+  const { t } = useI18n()
   const [href, setHref] = useState('')
   useEffect(() => {
     let cancelled = false
@@ -49,12 +60,19 @@ function ExistingThumb({ id, name, type }: { id: number; name: string; type: str
   }, [id])
   if (!href) return <span className="muted">{name}</span>
   return (
-    <a className="att-card" href={href} target="_blank" rel="noopener noreferrer">
-      <span className="att-thumb">
-        <FileThumb href={href} file={new File([], name, { type })} />
-      </span>
-      <span className="att-name">{name}</span>
-    </a>
+    <div className="att-card att-card-existing">
+      <a className="att-thumb-link" href={href} target="_blank" rel="noopener noreferrer">
+        <span className="att-thumb">
+          <FileThumb href={href} file={new File([], name, { type })} />
+        </span>
+        <span className="att-name">{name}</span>
+      </a>
+      {onDelete ? (
+        <button type="button" className="linkish" onClick={onDelete}>
+          {t('editor.removeFile')}
+        </button>
+      ) : null}
+    </div>
   )
 }
 
@@ -62,10 +80,12 @@ export function AttachmentGallery({
   pending,
   existing,
   onRemovePending,
+  onDeleteExisting,
 }: {
   pending: File[]
   existing?: { id: number; name: string; type: string }[]
   onRemovePending?: (index: number) => void
+  onDeleteExisting?: (id: number) => void
 }) {
   const { t } = useI18n()
   const hasExisting = Boolean(existing?.length)
@@ -77,7 +97,12 @@ export function AttachmentGallery({
     <ul className="att-gallery">
       {existing?.map((item) => (
         <li key={`e-${item.id}`}>
-          <ExistingThumb id={item.id} name={item.name} type={item.type} />
+          <ExistingThumb
+            id={item.id}
+            name={item.name}
+            type={item.type}
+            onDelete={onDeleteExisting ? () => onDeleteExisting(item.id) : undefined}
+          />
         </li>
       ))}
       {pending.map((file, i) => (

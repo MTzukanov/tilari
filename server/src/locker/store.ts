@@ -344,6 +344,30 @@ export function getAttachmentBlob(bookId: string, shaHex: string): Buffer | null
   return readFileSync(path)
 }
 
+/** Remove a book directory and GC shared blobs no longer referenced. */
+export function deleteBook(bookId: string): void {
+  if (!peekBook(bookId)) throw new LockerNotFound()
+  const dir = bookDir(bookId)
+  if (existsSync(dir)) rmSync(dir, { recursive: true, force: true })
+  gcUnusedBlobs()
+}
+
+function gcUnusedBlobs(): number {
+  const keep = new Set<string>()
+  for (const book of listBooks()) {
+    for (const s of normalizeShas(book.attachment_shas)) keep.add(s)
+  }
+  const root = blobsDir()
+  if (!existsSync(root)) return 0
+  let removed = 0
+  for (const name of readdirSync(root)) {
+    if (!SHA_RE.test(name) || keep.has(name)) continue
+    rmSync(join(root, name), { force: true })
+    removed += 1
+  }
+  return removed
+}
+
 export function putBook(
   data: Uint8Array,
   opts: { name: string; bookId?: string; ifMatch?: string | null },

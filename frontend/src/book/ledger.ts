@@ -25,7 +25,7 @@ import { BookError } from './errors'
 import { listFiscalPeriods, type FiscalPeriodSummary } from './fiscalPeriods'
 import { updateFiscalPeriodJson } from './fiscalPeriod'
 import type { BookModules, KernelContext, KernelSettings } from './modules/types'
-import { attachAttachment, deleteVoucher, lockDate, saveVoucher } from './posting'
+import { attachAttachment, deleteAttachment, deleteVoucher, lockDate, saveVoucher } from './posting'
 import { computeOverview } from './overview'
 import { balancesWithLines, entriesWithRunning } from './reports'
 import { getCompany, getPaymentMethods, putCompany, saveAccount, saveAllocation, saveFiscalPeriod } from './settings'
@@ -398,6 +398,15 @@ class LedgerKernel implements KernelContext {
         kind: 'attachment_add',
         params: { voucherId, name: file.name || 'attachment', attachmentId: attached.id },
       }),
+    )
+  }
+
+  async deleteAttachment(id: number): Promise<void> {
+    await this.mutate(
+      (db) => {
+        deleteAttachment(db, id)
+      },
+      { kind: 'attachment_delete', params: { id } },
     )
   }
 

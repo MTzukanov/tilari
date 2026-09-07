@@ -137,6 +137,8 @@
     "reloadDiscardConfirm": "Nicht gespeicherte Änderungen in dieser Sitzung werden verworfen und das Buch aus der Originaldatei neu geladen. Die Browsersitzungskopie wird ersetzt. Fortfahren?",
     "reloadUnavailable": "Neu laden ist nicht möglich (keine verknüpfte Datei und keine Sicherung).",
     "lockerEmpty": "In diesem Speicher gibt es keine Bücher.",
+    "deleteLockerConfirm": "{name} aus dem Speicher löschen? Dies kann nicht rückgängig gemacht werden.",
+    "deletedFromServer": "Aus dem Speicher gelöscht.",
     "lockerError": "Der Speicher war nicht erreichbar.",
     "lockerTitle": "Eigener Speicher (BYO)",
     "lockerByoIntro": "Tilari hat kein Cloud-Konto und nimmt keine Bücher entgegen. Der optionale Speicher unten ist Bring-your-own: Ihr Supabase-Projekt oder ein Tilari-Schließfach auf Ihrem VPS. Unabhängig von der Tilari-Website. Die Datei wird an keinen Server gesendet, den Sie nicht selbst angeben.",
@@ -318,6 +320,7 @@
     "pasteHint": "Drücken Sie Strg+V, oder erlauben Sie den Zwischenablagezugriff für diese Seite.",
     "pasteEmpty": "Die Zwischenablage enthält kein Bild und keine pdf-Datei.",
     "removeFile": "Entfernen",
+    "deleteAttachmentConfirm": "Anhang {name} löschen? Ein gelöschter Anhang kann nicht wiederhergestellt werden.",
     "voucherType": "Belegart",
     "voucherDate": "Belegdatum",
     "title": "Titel",
@@ -614,7 +617,8 @@
     "save": "Speichern",
     "saving": "Wird gespeichert…",
     "cancel": "Abbrechen",
-    "close": "Schließen"
+    "close": "Schließen",
+    "delete": "Löschen"
   },
   "fiscal": {
     "title": "Geschäftsjahre",

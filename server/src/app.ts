@@ -244,6 +244,11 @@ async function handleLedger(
     })
     return true
   }
+  if ((p = match(method, path, 'DELETE', '/api/attachments/:id'))) {
+    await ledger.deleteAttachment(Number(p.id))
+    sendEmpty(res, 204)
+    return true
+  }
   if (match(method, path, 'GET', '/api/journal')) {
     sendJson(
       res,
