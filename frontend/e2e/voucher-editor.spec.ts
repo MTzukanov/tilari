@@ -31,6 +31,9 @@ test.describe('voucher editor', () => {
     await expect(editorSaveButton(page)).toBeDisabled()
     await expect(page.getByTestId('assistant-rows')).toHaveCount(0)
     await expect(page.locator('.assistant-vat [data-vat-icon="purchase-netto"]')).toBeVisible()
+    await expect(page.locator('.assistant-vat .vat-select-type .icon-select-btn')).toContainText(
+      'Verollinen osto (netto)',
+    )
     await page.locator('.assistant-vat .vat-select-type .icon-select-btn').click()
     await expect(page.locator('.icon-select-list [data-vat-icon="purchase-netto"]').first()).toBeVisible()
     await expect(page.locator('.icon-select-list [data-vat-icon="cash"]').first()).toBeVisible()

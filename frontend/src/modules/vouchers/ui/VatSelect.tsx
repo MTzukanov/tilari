@@ -88,7 +88,6 @@ export function VatSelect({
         options={typeOptions.map((c) => ({
           value: c.code,
           label: c.label,
-          closedLabel: '',
           icon: <VatIcon code={c.code} />,
         }))}
       />
