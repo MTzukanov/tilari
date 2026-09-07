@@ -1,6 +1,7 @@
 /** Persist the working .kitsas copy in OPFS. No-ops when OPFS is unavailable. */
 
 import type { SessionChange } from './sessionLog'
+import type { LockerBinding } from './persist/locker/lockerBinding'
 
 export const OPFS_ROOT_DIR = 'tilari'
 export const OPFS_BLOBS_DIR = 'blobs'
@@ -14,12 +15,16 @@ export type OpfsMeta = {
   attachmentsDirty: boolean
   backupDone: boolean
   lockerId?: string
+  /** Shelf fingerprint when dbPath is locker: — no secrets. */
+  lockerBinding?: LockerBinding
   etag?: string
   attachmentsEtag?: string
   largeFile?: boolean
   attachmentSync?: 'idle' | 'syncing' | 'ready' | 'error'
   attachmentShas?: string[]
   sessionChanges?: SessionChange[]
+  /** ISO — last known external source save time. */
+  sourceModifiedAt?: string | null
 }
 
 export type OpfsEntry = {

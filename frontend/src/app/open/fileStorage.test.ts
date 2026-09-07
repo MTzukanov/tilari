@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canPrimarySave, fileStorageKind } from './fileStorage'
+import { canPrimarySave, fileStorageKind, needsLockerDisconnectGuard } from './fileStorage'
 
 describe('fileStorageKind', () => {
   it('detects locker, disk, browser, and session copies', () => {
@@ -20,5 +20,15 @@ describe('canPrimarySave', () => {
   it('requires dirty for http locker save', () => {
     expect(canPrimarySave('locker', 'http', false)).toBe(false)
     expect(canPrimarySave('locker', 'http', true)).toBe(true)
+  })
+})
+
+describe('needsLockerDisconnectGuard', () => {
+  it('only when a dirty locker book is open', () => {
+    expect(needsLockerDisconnectGuard('locker', true)).toBe(true)
+    expect(needsLockerDisconnectGuard('locker', false)).toBe(false)
+    expect(needsLockerDisconnectGuard('browser', true)).toBe(false)
+    expect(needsLockerDisconnectGuard('disk', true)).toBe(false)
+    expect(needsLockerDisconnectGuard(null, true)).toBe(false)
   })
 })

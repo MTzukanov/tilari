@@ -121,7 +121,11 @@ export interface BookService {
     payload: { name?: string; type?: string; iban?: string | null },
   ): Promise<Account>
   listSessionChanges(): Promise<SessionChange[]>
-  recordBookSaved(params: { target: 'locker' | 'disk'; name?: string }): Promise<void>
+  recordBookSaved(params: {
+    target: 'locker' | 'disk'
+    name?: string
+    sourceModifiedAt?: string | null
+  }): Promise<void>
   onSessionChange?(listener: () => void): () => void
   isDirty(): boolean
   onDirtyChange?(listener: () => void): () => void
@@ -135,7 +139,7 @@ export interface BookService {
   listLockerBooks(): Promise<LockerBook[]>
   deleteLockerBook(id: string): Promise<void>
   openLockerBook(id: string, opts?: TransferOpts): Promise<Meta>
-  saveToLocker(opts?: TransferOpts): Promise<void>
+  saveToLocker(opts?: TransferOpts): Promise<'saved' | 'reverted'>
   closeBook(opts?: { discard?: boolean }): Promise<void>
   reloadFromSource?(): Promise<Meta>
   onAttachmentSync?(listener: (state: AttachmentSyncState) => void): () => void

@@ -3,7 +3,7 @@
  * Locker stays in `./locker/` — no Ledger imports there.
  */
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
-import { readFile } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import type { SaveVoucherInput, SaveAllocationInput } from '../../frontend/src/book/types.ts'
 import { BookError } from '../../frontend/src/book/errors.ts'
 import {
@@ -83,11 +83,18 @@ async function handleLedger(
     return true
   }
   if (match(method, path, 'POST', '/api/session/saved')) {
-    const body = await readJson<{ target?: string; name?: string }>(req)
+    const body = await readJson<{
+      target?: string
+      name?: string
+      source_modified_at?: string | null
+    }>(req)
     const target = body.target === 'disk' ? 'disk' : 'locker'
     await ledger.recordBookSaved({
       target,
       ...(body.name ? { name: body.name } : {}),
+      ...(body.source_modified_at !== undefined
+        ? { sourceModifiedAt: body.source_modified_at }
+        : {}),
     })
     sendJson(res, 200, { ok: true })
     return true
@@ -121,7 +128,16 @@ async function handleLedger(
     if (!body.path) throw new BookError('path required', 400)
     const bytes = new Uint8Array(await readFile(body.path))
     const name = body.path.split(/[/\\]/).pop() || 'book.kitsas'
-    sendJson(res, 200, await ledger.openBytes(bytes, { sourceName: name, dbPath: `server:${name}` }))
+    const mtime = (await stat(body.path)).mtimeMs
+    sendJson(
+      res,
+      200,
+      await ledger.openBytes(bytes, {
+        sourceName: name,
+        dbPath: `server:${name}`,
+        sourceModifiedAt: new Date(mtime).toISOString(),
+      }),
+    )
     setReloadSource({ type: 'path', path: body.path, name })
     return true
   }
@@ -131,6 +147,7 @@ async function handleLedger(
     const meta = await ledger.openBytes(new Uint8Array(found.data), {
       sourceName: found.meta.name,
       dbPath: `locker:${p.id}`,
+      sourceModifiedAt: found.meta.updated_at,
     })
     setReloadSource({ type: 'locker', id: p.id, name: found.meta.name })
     sendJson(res, 200, {
@@ -402,10 +419,12 @@ async function handleLedger(
     let meta
     if (source.type === 'path') {
       const bytes = new Uint8Array(await readFile(source.path))
+      const mtime = (await stat(source.path)).mtimeMs
       meta = await ledger.openBytes(bytes, {
         sourceName: source.name,
         dbPath: prev.db_path,
         sessionId: prev.session_id,
+        sourceModifiedAt: new Date(mtime).toISOString(),
       })
     } else if (source.type === 'locker') {
       const found = getBook(source.id)
@@ -414,12 +433,14 @@ async function handleLedger(
         sourceName: found.meta.name,
         dbPath: `locker:${source.id}`,
         sessionId: prev.session_id,
+        sourceModifiedAt: found.meta.updated_at,
       })
     } else {
       meta = await ledger.openBytes(source.data, {
         sourceName: source.name,
         dbPath: prev.db_path,
         sessionId: prev.session_id,
+        sourceModifiedAt: null,
       })
     }
     sendJson(res, 200, meta)

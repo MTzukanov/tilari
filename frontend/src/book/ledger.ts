@@ -32,6 +32,7 @@ import { getCompany, getPaymentMethods, putCompany, saveAccount, saveAllocation,
 import { SqliteDb } from './sqlite'
 import { getAttachmentMeta, getVoucher, TYPE_BANK_STATEMENT } from './vouchers'
 import { SessionJournal, type MutateMeta, type SessionChange } from './sessionLog'
+import { normalizeTimestamp } from './timestamps'
 import type { OverviewResponse } from './overview'
 import type {
   Account,
@@ -58,6 +59,17 @@ type OpenBytesOpts = {
   sourceName: string
   dbPath: string
   sessionId?: string
+  /** ISO timestamp of external source last save, when known. */
+  sourceModifiedAt?: string | null
+}
+
+function lastTositelokiActivity(db: SqliteDb): string | null {
+  try {
+    const row = db.get<{ max: string | null }>('SELECT MAX(aika) AS max FROM Tositeloki WHERE aika IS NOT NULL')
+    return normalizeTimestamp(row?.max)
+  } catch {
+    return null
+  }
 }
 
 export function newLedgerId(): string {
@@ -79,6 +91,8 @@ class LedgerKernel implements KernelContext {
   protected dirty = false
   /** Simulated date while practice is on; ignored otherwise. Not stored in SQLite. */
   protected practiceDate: string | null = null
+  /** External file/locker last-save time (ISO), not stored in SQLite. */
+  protected sourceModifiedAt: string | null = null
   private dirtyListeners = new Set<() => void>()
   private sessionJournal = new SessionJournal()
 
@@ -108,6 +122,8 @@ class LedgerKernel implements KernelContext {
     this.dbPath = opts.dbPath
     this.sessionId = opts.sessionId ?? newLedgerId()
     this.practiceDate = null
+    this.sourceModifiedAt =
+      opts.sourceModifiedAt === undefined ? null : normalizeTimestamp(opts.sourceModifiedAt)
     this.setDirty(false)
     this.sessionJournal.clear()
     return this.buildMeta()
@@ -120,8 +136,13 @@ class LedgerKernel implements KernelContext {
     this.dbPath = ''
     this.sessionId = newLedgerId()
     this.practiceDate = null
+    this.sourceModifiedAt = null
     this.setDirty(false)
     this.sessionJournal.clear()
+  }
+
+  protected setSourceModifiedAt(iso: string | null | undefined): void {
+    this.sourceModifiedAt = normalizeTimestamp(iso)
   }
 
   isPractice(): boolean {
@@ -192,7 +213,15 @@ class LedgerKernel implements KernelContext {
   }
 
   /** Record that pending edits were written to external storage; clears dirty. */
-  async recordBookSaved(params: { target: 'locker' | 'disk'; name?: string }): Promise<void> {
+  async recordBookSaved(params: {
+    target: 'locker' | 'disk'
+    name?: string
+    /** ISO — external save time when known (HTTP engine passes locker put `updated_at`). */
+    sourceModifiedAt?: string | null
+  }): Promise<void> {
+    if (params.sourceModifiedAt !== undefined) {
+      this.setSourceModifiedAt(params.sourceModifiedAt)
+    }
     this.sessionJournal.record({
       kind: 'book_saved',
       params: params.name
@@ -226,6 +255,8 @@ class LedgerKernel implements KernelContext {
       source_name: this.sourceName,
       session_id: this.sessionId,
       periods: periods.map((p) => ({ starts: p.starts, ends: p.ends })),
+      source_modified_at: this.sourceModifiedAt,
+      last_activity_at: lastTositelokiActivity(db),
     }
   }
 

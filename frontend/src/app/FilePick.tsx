@@ -2,12 +2,14 @@ import { useRef } from 'react'
 import { CHOOSE_CREATE, CHOOSE_NEW, CHOOSE_SERVER, type LastBook } from './open/lastBook'
 import type { EngineKind } from '../book/service'
 import { useI18n } from '../i18n'
+import { formatBookDateShort } from './open/bookDates'
 
 export const ACTION_LINK_FILE = '__link_file__'
 export const ACTION_SAVE_COPY = '__save_copy__'
 export const ACTION_DOWNLOAD = '__download__'
 export const ACTION_DOWNLOAD_LEAN = '__download_lean__'
 export const ACTION_SAVE_SERVER_AS = '__save_server_as__'
+export const ACTION_SAVE_SERVER_KEEP_COPY = '__save_server_keep_copy__'
 export const ACTION_RELOAD = '__reload__'
 export const ACTION_CLOSE = '__close__'
 
@@ -29,6 +31,7 @@ export function FilePick({
   onDownload,
   onDownloadLean,
   onSaveServerAs,
+  onSaveServerKeepCopy,
   onReload,
   reloadEnabled = false,
   onClose,
@@ -50,11 +53,12 @@ export function FilePick({
   onDownload?: () => void
   onDownloadLean?: () => void
   onSaveServerAs?: () => void
+  onSaveServerKeepCopy?: () => void
   onReload?: () => void
   reloadEnabled?: boolean
   onClose?: () => void
 }) {
-  const { t } = useI18n()
+  const { t, formatLocale } = useI18n()
   const selectRef = useRef<HTMLSelectElement>(null)
   const browser = engine === 'wasm'
   const busy = opening || disabled
@@ -67,7 +71,14 @@ export function FilePick({
 
   const hasActions =
     showActions &&
-    (onLinkFile || onSaveCopy || onDownload || onDownloadLean || onSaveServerAs || onReload || onClose)
+    (onLinkFile ||
+      onSaveCopy ||
+      onDownload ||
+      onDownloadLean ||
+      onSaveServerAs ||
+      onSaveServerKeepCopy ||
+      onReload ||
+      onClose)
 
   return (
     <div className="file-pick-wrap">
@@ -120,6 +131,11 @@ export function FilePick({
               onSaveServerAs?.()
               return
             }
+            if (next === ACTION_SAVE_SERVER_KEEP_COPY) {
+              resetSelect()
+              onSaveServerKeepCopy?.()
+              return
+            }
             if (next === ACTION_RELOAD) {
               resetSelect()
               onReload?.()
@@ -164,8 +180,17 @@ export function FilePick({
                 </option>
               ) : null}
               {onSaveServerAs ? (
-                <option value={ACTION_SAVE_SERVER_AS} disabled={busy}>
+                <option value={ACTION_SAVE_SERVER_AS} disabled={busy} title={t('file.saveServerAsHint')}>
                   {t('file.saveServerAs')}
+                </option>
+              ) : null}
+              {onSaveServerKeepCopy ? (
+                <option
+                  value={ACTION_SAVE_SERVER_KEEP_COPY}
+                  disabled={busy}
+                  title={t('file.saveServerKeepCopyHint')}
+                >
+                  {t('file.saveServerKeepCopy')}
                 </option>
               ) : null}
               {onReload ? (
@@ -182,11 +207,14 @@ export function FilePick({
           ) : null}
           {recents.length > 0 ? (
             <optgroup label={t('file.recent')}>
-              {recents.map((book) => (
-                <option key={book.path} value={book.path}>
-                  {book.name}
-                </option>
-              ))}
+              {recents.map((book) => {
+                const date = formatBookDateShort(book.source_modified_at, formatLocale)
+                return (
+                  <option key={book.path} value={book.path}>
+                    {date ? `${book.name} (${date})` : book.name}
+                  </option>
+                )
+              })}
             </optgroup>
           ) : null}
         </select>

@@ -9,6 +9,7 @@ export type {
 export {
   LOCKER_HTTP_KEY,
   LOCKER_KIND_KEY,
+  LOCKER_REMEMBER_KEY,
   LOCKER_SUPABASE_KEY,
   clearHttpLockerSettings,
   clearSupabaseSettings,
@@ -17,17 +18,31 @@ export {
   disconnectHttpLocker,
   disconnectSupabaseLocker,
   getActiveLocker,
+  getLockerConnection,
   getLockerKind,
+  getLockerRemember,
   loadHttpLockerSettings,
   loadSupabaseSettings,
+  lockerHostOf,
   lockerSupportsHttpEngine,
+  notifyLockerConnection,
   probeSameOriginNode,
   resetLockerProbeForTests,
   saveHttpLockerSettings,
   saveSupabaseSettings,
   setLockerForTests,
   setLockerKind,
+  setLockerRemember,
+  subscribeLockerConnection,
 } from './active'
+export type { LockerConnection, LockerConnectionMode } from './active'
+export type { LockerBinding } from './lockerBinding'
+export {
+  assertLockerBindingForRead,
+  assertLockerBindingForSave,
+  lockerBindingFromConnection,
+  sameLockerBinding,
+} from './lockerBinding'
 export {
   getHttpLockerOrigin,
   httpLocker,

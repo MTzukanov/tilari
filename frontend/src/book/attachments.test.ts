@@ -4,7 +4,7 @@ import { sha256hexSync } from './sha256'
 import { extractAttachmentsFromDb, packAttachmentsIntoDb } from './attachments'
 import { AttachmentStore } from './blobStore'
 import { loadGoldenDb } from './golden'
-import { lockerUploadPlan } from './lockerSave'
+import { lockerUploadPlan, resolveLockerPutId } from './lockerSave'
 import { attachAttachment } from './posting'
 import { getAttachment, getAttachmentMeta } from './vouchers'
 
@@ -136,3 +136,23 @@ describe('lockerUploadPlan', () => {
     })
   })
 })
+
+describe('resolveLockerPutId', () => {
+  it('returns null only for explicit save-as', () => {
+    expect(resolveLockerPutId(true, 'abc', 'locker:abc')).toBe(null)
+  })
+
+  it('prefers in-memory id, then recovers from locker path', () => {
+    expect(resolveLockerPutId(false, 'mem-id', 'locker:path-id')).toBe('mem-id')
+    expect(resolveLockerPutId(false, null, 'locker:path-id')).toBe('path-id')
+    expect(resolveLockerPutId(false, undefined, 'locker:path-id')).toBe('path-id')
+  })
+
+  it('refuses to mint an id on primary save without a locker path', () => {
+    expect(() => resolveLockerPutId(false, null, 'server:book.kitsas')).toThrow('locker_id_missing')
+    expect(() => resolveLockerPutId(false, undefined, 'local:x/book.kitsas')).toThrow(
+      'locker_id_missing',
+    )
+  })
+})
+

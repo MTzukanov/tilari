@@ -62,14 +62,37 @@ export async function sendJson<T>(path: string, method: string, body?: unknown):
 
 export type TransferProgress = { loaded: number; total: number | null }
 
+/** After the user aborts a locker save: keep uploading, or undo the partial save. */
+export type LockerSaveAbortAction = 'continue' | 'revert'
+
+export type LockerSaveAbortChoice = {
+  action: LockerSaveAbortAction
+  /** Fresh signal when continuing (previous one is aborted). */
+  signal?: AbortSignal
+}
+
 export type TransferOpts = {
   signal?: AbortSignal
   onProgress?: (p: TransferProgress) => void
-  onStage?: (stage: 'transfer' | 'parse' | 'attachments' | 'attachments_check' | 'server' | 'persist') => void
+  onStage?: (
+    stage: 'transfer' | 'parse' | 'attachments' | 'attachments_check' | 'server' | 'persist',
+  ) => void
+  /**
+   * Called when `signal` aborts mid-save. Return `continue` to resume (skip uploaded
+   * blobs), or `revert` to delete/restore the incomplete shelf entry.
+   */
+  onAbortChoice?: () => Promise<LockerSaveAbortChoice>
   /** Locker display name (POST or PUT metadata). */
   name?: string
   /** POST a new locker book even when one is already linked. */
   asNew?: boolean
+}
+
+export function isAbortError(err: unknown): boolean {
+  return (
+    (err instanceof DOMException && err.name === 'AbortError') ||
+    (err instanceof Error && err.name === 'AbortError')
+  )
 }
 
 export function lockerErrorFromBody(status: number, text: string): Error {

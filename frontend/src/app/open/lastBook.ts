@@ -1,6 +1,8 @@
 export type LastBook = {
   path: string
   name: string
+  /** ISO — last known external source save time. */
+  source_modified_at?: string | null
 }
 
 import type { EngineKind } from '../../book/service'
@@ -23,7 +25,14 @@ export const CHOOSE_SERVER = '__server__'
 function isBook(value: unknown): value is LastBook {
   if (!value || typeof value !== 'object') return false
   const book = value as Partial<LastBook>
-  return Boolean(book.path && book.name)
+  if (!book.path || !book.name) return false
+  if (
+    book.source_modified_at != null &&
+    typeof book.source_modified_at !== 'string'
+  ) {
+    return false
+  }
+  return true
 }
 
 export function loadRecentBooks(): LastBook[] {
@@ -106,13 +115,20 @@ export function rememberOpenBook(
     db_path: string
     source_name: string
     session_id: string
+    source_modified_at?: string | null
   },
   engine: EngineKind,
   opts?: { recents?: boolean },
 ): LastBook[] {
   saveBookSession({ sessionId: meta.session_id, path: meta.db_path, engine })
   if (opts?.recents === false) return loadRecentBooks()
-  return rememberRecent({ path: meta.db_path, name: meta.source_name })
+  return rememberRecent({
+    path: meta.db_path,
+    name: meta.source_name,
+    ...(meta.source_modified_at
+      ? { source_modified_at: meta.source_modified_at }
+      : {}),
+  })
 }
 
 export function sessionMatches(

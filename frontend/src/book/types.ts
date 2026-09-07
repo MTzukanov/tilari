@@ -34,6 +34,10 @@ export type Meta = {
   source_name: string
   session_id: string
   periods: Period[]
+  /** ISO — external file/locker last save time when known. */
+  source_modified_at?: string | null
+  /** ISO — MAX(Tositeloki.aika); last voucher audit in the open book. */
+  last_activity_at?: string | null
 }
 
 export type Health = {

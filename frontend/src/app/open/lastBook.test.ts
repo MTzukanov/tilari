@@ -96,4 +96,25 @@ describe('lastBook', () => {
       { path: '/tmp/a-2.kitsas', name: 'firma.kitsas' },
     ])
   })
+
+  it('persists source_modified_at on recent books', () => {
+    localStorage.removeItem(LAST_BOOK_KEY)
+    localStorage.removeItem(RECENT_BOOKS_KEY)
+    localStorage.removeItem(BOOK_SESSION_KEY)
+    const recents = rememberOpenBook(
+      {
+        db_path: 'locker:abc',
+        source_name: 'firma.kitsas',
+        session_id: 's1',
+        source_modified_at: '2024-06-01T10:00:00.000Z',
+      },
+      'wasm',
+    )
+    expect(recents[0]).toEqual({
+      path: 'locker:abc',
+      name: 'firma.kitsas',
+      source_modified_at: '2024-06-01T10:00:00.000Z',
+    })
+    expect(loadRecentBooks()[0]?.source_modified_at).toBe('2024-06-01T10:00:00.000Z')
+  })
 })
