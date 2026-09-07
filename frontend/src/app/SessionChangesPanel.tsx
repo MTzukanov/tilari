@@ -70,7 +70,7 @@ function ChangeRow({
   label: string
   time: string
   href: string | null
-  onNavigate?: () => void
+  onNavigate?: (hash: string) => void
   onClose: () => void
 }) {
   const { t } = useI18n()
@@ -93,9 +93,8 @@ function ChangeRow({
         type="button"
         className="session-changes-item"
         onClick={() => {
-          window.location.hash = href
+          onNavigate?.(href)
           onClose()
-          onNavigate?.()
         }}
       >
         {body}
@@ -126,7 +125,7 @@ export function SessionChangesPanel({
   reloadEnabled?: boolean
   sourceModifiedAt?: string | null
   lastActivityAt?: string | null
-  onNavigate?: () => void
+  onNavigate?: (hash: string) => void
   onReloadDiscard?: () => void
 }) {
   const { t, formatLocale } = useI18n()

@@ -1,3 +1,4 @@
+import { withoutLeaveGuard } from '../../app/leaveGuard'
 import { voucherHash, voucherParentHash } from '../../app/routing'
 import type { ModuleNavItem } from '../nav'
 import type { BookViewCtx, UiModule } from '../ui'
@@ -13,16 +14,20 @@ function VouchersScreen({ route, meta, goTo }: BookViewCtx) {
         defaultType={route.type}
         defaultDate={meta.book_date}
         copyFromId={route.copyFromId}
-        onCancel={() => goTo(voucherParentHash(route.via))}
-        onSaved={(id) => goTo(voucherHash(route.via, id, null))}
+        onCancel={() => withoutLeaveGuard(() => goTo(voucherParentHash(route.via)))}
+        onSaved={(id) => withoutLeaveGuard(() => goTo(voucherHash(route.via, id, null)))}
         onOpenVoucher={(id, opts) => {
-          if (opts?.fromStatementId != null) {
-            goTo(voucherHash({ kind: 'bankStatement', voucherId: opts.fromStatementId }, id, null))
-            return
-          }
-          goTo(voucherHash(route.via, id, null))
+          withoutLeaveGuard(() => {
+            if (opts?.fromStatementId != null) {
+              goTo(voucherHash({ kind: 'bankStatement', voucherId: opts.fromStatementId }, id, null))
+              return
+            }
+            goTo(voucherHash(route.via, id, null))
+          })
         }}
-        onCopyAsNew={(type, fromId) => goTo(`#/voucher/new/${type}/from/${fromId}`)}
+        onCopyAsNew={(type, fromId) =>
+          withoutLeaveGuard(() => goTo(`#/voucher/new/${type}/from/${fromId}`))
+        }
       />
     )
   }

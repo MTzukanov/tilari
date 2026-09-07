@@ -53,6 +53,7 @@ import {
 } from './open/lastBook'
 import { formatBookDate } from './open/bookDates'
 import { forgetLocale, useI18n } from '../i18n'
+import { allowLeave, locationHash, restoreLocationHash } from './leaveGuard'
 import { parseRoute, routeAllowsNoBook, type Route } from './routing'
 import { periodContaining } from '../shared/periodNav'
 import { normalizeSessionChanges } from '../book/sessionLog'
@@ -150,8 +151,16 @@ export function BookShell() {
     })
   }
 
+  const allowedHashRef = useRef(locationHash())
+  const applyingHashRef = useRef(false)
+
   const goTo = useCallback((hash: string) => {
+    const current = locationHash()
+    if (hash !== current && !allowLeave()) return
+    allowedHashRef.current = hash
+    if (hash !== current) applyingHashRef.current = true
     window.location.hash = hash
+    if (locationHash() === current) applyingHashRef.current = false
     setRoute(parseRoute(hash))
     setNavOpen(false)
   }, [])
@@ -316,9 +325,50 @@ export function BookShell() {
   }
 
   useEffect(() => {
-    const onHash = () => setRoute(parseRoute())
+    let restoring = false
+    let restoreTimer = 0
+    function cancelRestore() {
+      restoring = false
+      if (restoreTimer) {
+        window.clearTimeout(restoreTimer)
+        restoreTimer = 0
+      }
+    }
+    const onHash = () => {
+      if (applyingHashRef.current) {
+        applyingHashRef.current = false
+        cancelRestore()
+        allowedHashRef.current = locationHash()
+        setRoute(parseRoute())
+        return
+      }
+      if (restoring) {
+        cancelRestore()
+        if (locationHash() !== allowedHashRef.current) {
+          restoreLocationHash(allowedHashRef.current)
+        }
+        return
+      }
+      if (!allowLeave()) {
+        restoring = true
+        history.go(1)
+        restoreTimer = window.setTimeout(() => {
+          restoreTimer = 0
+          restoring = false
+          if (locationHash() !== allowedHashRef.current) {
+            restoreLocationHash(allowedHashRef.current)
+          }
+        }, 0)
+        return
+      }
+      allowedHashRef.current = locationHash()
+      setRoute(parseRoute())
+    }
     window.addEventListener('hashchange', onHash)
-    return () => window.removeEventListener('hashchange', onHash)
+    return () => {
+      window.removeEventListener('hashchange', onHash)
+      cancelRestore()
+    }
   }, [])
 
   useEffect(() => {
@@ -1046,7 +1096,6 @@ export function BookShell() {
       onCancelBusy={() => abortRef.current?.abort()}
       defaultEngine={getEngine()}
       allowHttpEngine={lockerSupportsHttpEngine()}
-      onRefreshRoute={() => setRoute(parseRoute())}
       onPracticeDate={(iso) => {
         void (async () => {
           try {

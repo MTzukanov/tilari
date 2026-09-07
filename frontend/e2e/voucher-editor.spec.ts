@@ -350,6 +350,83 @@ test.describe('voucher editor', () => {
     await expectBrowse(page)
   })
 
+  test('side nav asks to discard unsaved new voucher changes', async ({ page }) => {
+    await openBook(page)
+    await page.goto('/#/voucher/new/100')
+    await expect(page.getByText('Sähköinen tosite')).toBeVisible()
+    const typeBtn = page.locator('label').filter({ hasText: 'Tositelaji' }).locator('button')
+    await typeBtn.click()
+    await page.getByRole('option', { name: 'Tulo' }).click()
+    await expect(page.getByText('Tulotili')).toBeVisible()
+
+    const nav = page.getByRole('navigation', { name: 'Päävalikko' })
+    page.once('dialog', (dialog) => dialog.dismiss())
+    await nav.getByRole('link', { name: 'Selaa' }).click()
+    await expect(page.getByText('Sähköinen tosite')).toBeVisible()
+    await expect(page.getByText('Tulotili')).toBeVisible()
+    await expect(page).toHaveURL(/voucher\/new\/100/)
+
+    page.once('dialog', (dialog) => dialog.accept())
+    await nav.getByRole('link', { name: 'Selaa' }).click()
+    await expectBrowse(page)
+  })
+
+  test('browser back asks to discard unsaved new voucher changes', async ({ page }) => {
+    await openBook(page)
+    await page.goto('/#/browse')
+    await expect(page.locator('.browse-toolbar')).toBeVisible()
+    await page.goto('/#/voucher/new/100')
+    await expect(page.getByText('Sähköinen tosite')).toBeVisible()
+    const typeBtn = page.locator('label').filter({ hasText: 'Tositelaji' }).locator('button')
+    await typeBtn.click()
+    await page.getByRole('option', { name: 'Tulo' }).click()
+    await expect(page.getByText('Tulotili')).toBeVisible()
+
+    page.once('dialog', (dialog) => dialog.dismiss())
+    await page.goBack()
+    await expect(page.getByText('Sähköinen tosite')).toBeVisible()
+    await expect(page.getByText('Tulotili')).toBeVisible()
+    await expect(page).toHaveURL(/voucher\/new\/100/)
+
+    page.once('dialog', (dialog) => dialog.accept())
+    await page.goBack()
+    await expectBrowse(page)
+  })
+
+  test(
+    'refresh asks to discard unsaved new voucher changes',
+    {
+      timeout: 90_000,
+    },
+    async ({ page }) => {
+      await openBook(page)
+      await page.goto('/#/voucher/new/100')
+      await expect(page.getByText('Sähköinen tosite')).toBeVisible()
+      const typeBtn = page.locator('label').filter({ hasText: 'Tositelaji' }).locator('button')
+      await typeBtn.click()
+      await page.getByRole('option', { name: 'Tulo' }).click()
+      await expect(page.getByText('Tulotili')).toBeVisible()
+
+      page.once('dialog', (dialog) => {
+        expect(dialog.type()).toBe('beforeunload')
+        void dialog.dismiss()
+      })
+      await page.reload({ timeout: 5_000 }).catch(() => undefined)
+      await expect(page.getByText('Tulotili')).toBeVisible()
+
+      page.once('dialog', (dialog) => {
+        expect(dialog.type()).toBe('beforeunload')
+        void dialog.accept()
+      })
+      await page.reload({ timeout: 60_000 })
+      await expect(page.getByRole('heading', { name: 'Testikirja Oy' })).toBeVisible({
+        timeout: 60_000,
+      })
+      await expect(page.locator('form.editor.voucher-work')).toBeVisible()
+      await expect(page.getByText('Tulotili')).toHaveCount(0)
+    },
+  )
+
   test('existing voucher allows changing voucher type', async ({ page }) => {
     await openBook(page)
     await page.goto('/#/browse')
