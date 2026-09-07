@@ -111,6 +111,10 @@ export function uploadAttachment(voucherId: number, file: File) {
   return getBookService().uploadAttachment(voucherId, file)
 }
 
+export function deleteAttachment(id: number) {
+  return getBookService().deleteAttachment(id)
+}
+
 export function attachmentHref(id: number) {
   return getBookService().attachmentHref(id)
 }
@@ -135,6 +139,10 @@ export function downloadLeanCopy(promptForName: (suggested: string) => string | 
 
 export function listLockerBooks() {
   return getBookService().listLockerBooks()
+}
+
+export function deleteLockerBook(id: string) {
+  return getBookService().deleteLockerBook(id)
 }
 
 export function openLockerBook(id: string, opts?: TransferOpts) {

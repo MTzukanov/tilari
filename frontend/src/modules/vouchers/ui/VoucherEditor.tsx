@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  deleteAttachment,
   deleteVoucher,
   fetchAccounts,
   fetchAllocations,
@@ -1080,6 +1081,22 @@ export function VoucherEditor({
 
   const canDelete =
     existing != null && DELETABLE_TYPES.has(existing.type) && existing.status >= 50
+  const canDeleteAttachment = existing != null && existing.status >= 50
+  function onDeleteExistingAttachment(id: number) {
+    if (!existing || !canDeleteAttachment) return
+    const att = existing.attachments.find((a) => a.id === id)
+    const name = att?.name || String(id)
+    if (!window.confirm(t('editor.deleteAttachmentConfirm', { name }))) return
+    void (async () => {
+      try {
+        await deleteAttachment(id)
+        const fresh = await fetchVoucher(existing.id)
+        setExisting(fresh)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err))
+      }
+    })()
+  }
   const blockedReason = postBlockedReason()
   const readyToPost = blockedReason == null
   const readyToDraft = canSaveDraft()
@@ -1177,6 +1194,7 @@ export function VoucherEditor({
         }))}
         onAdd={addFiles}
         onRemove={(i) => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
+        onDeleteExisting={canDeleteAttachment ? onDeleteExistingAttachment : undefined}
       />
 
       <div className="voucher-meta-row">
@@ -1359,6 +1377,7 @@ export function VoucherEditor({
             pending={files}
             existing={existing?.attachments}
             onRemovePending={(i) => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
+            onDeleteExisting={canDeleteAttachment ? onDeleteExistingAttachment : undefined}
           />
         </section>
       ) : null}

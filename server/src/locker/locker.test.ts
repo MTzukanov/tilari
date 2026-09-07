@@ -3,7 +3,7 @@
  */
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { after, before, describe, it } from 'node:test'
@@ -227,5 +227,28 @@ describe('locker', () => {
     const decoded = decodeAttachmentPack(pack)
     assert.equal(decoded.size, 1)
     assert.deepEqual(decoded.get(s), blob)
+  })
+
+  it('deletes a book and returns 404 afterwards', async () => {
+    const payload = readFileSync(GOLDEN)
+    const created = await fetch(`${base}/api/books`, {
+      method: 'POST',
+      headers: { 'X-Tilari-Name': 'delete-me.kitsas' },
+      body: payload,
+    })
+    assert.equal(created.status, 200)
+    const meta = (await created.json()) as { id: string }
+    const bookPath = join(booksRoot, 'tilari', meta.id)
+    assert.ok(statSync(bookPath).isDirectory())
+
+    const del = await fetch(`${base}/api/books/${meta.id}`, { method: 'DELETE' })
+    assert.equal(del.status, 204)
+
+    const got = await fetch(`${base}/api/books/${meta.id}`)
+    assert.equal(got.status, 404)
+    assert.equal(existsSync(bookPath), false)
+
+    const again = await fetch(`${base}/api/books/${meta.id}`, { method: 'DELETE' })
+    assert.equal(again.status, 404)
   })
 })

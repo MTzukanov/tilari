@@ -137,6 +137,8 @@
     "reloadDiscardConfirm": "Osparade ändringar i sessionen förkastas och boken laddas om från originalfilen. Webbläsarens sessionskopia ersätts. Fortsätta?",
     "reloadUnavailable": "Omladdning är inte möjlig (ingen kopplad fil och ingen säkerhetskopia).",
     "lockerEmpty": "Det finns inga böcker i den här lagringen.",
+    "deleteLockerConfirm": "Ta bort {name} från lagringen? Detta kan inte ångras.",
+    "deletedFromServer": "Borttagen från lagringen.",
     "lockerError": "Lagringen kunde inte nås.",
     "lockerTitle": "Din egen lagring (BYO)",
     "lockerByoIntro": "Tilari har inget molnkonto och tar inte emot dina böcker. Lagringen nedan är bring-your-own: ditt Supabase-projekt eller ett Tilari-skåp på din VPS. Hör inte till Tilaris webbplats. Filen skickas aldrig till någon server som du inte själv anger.",
@@ -318,6 +320,7 @@
     "pasteHint": "Tryck Ctrl+V, eller tillåt läsning från urklipp för den här sidan.",
     "pasteEmpty": "Urklippet har ingen bild eller pdf-fil.",
     "removeFile": "Ta bort",
+    "deleteAttachmentConfirm": "Ta bort bilagan {name}? En borttagen bilaga kan inte återställas.",
     "voucherType": "Verifikattyp",
     "voucherDate": "Verifikatdatum",
     "title": "Rubrik",
@@ -614,7 +617,8 @@
     "save": "Spara",
     "saving": "Sparar…",
     "cancel": "Avbryt",
-    "close": "Stäng"
+    "close": "Stäng",
+    "delete": "Ta bort"
   },
   "fiscal": {
     "title": "Räkenskapsår",

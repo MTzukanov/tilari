@@ -200,6 +200,11 @@ export class HttpBookService implements BookService {
     this.afterServerMutate()
     return res.json() as Promise<{ id: number }>
   }
+  async deleteAttachment(id: number) {
+    const res = await fetch(`/api/attachments/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error(await res.text())
+    this.afterServerMutate()
+  }
   async attachmentHref(id: number) {
     return `/api/attachments/${id}`
   }
@@ -331,6 +336,11 @@ export class HttpBookService implements BookService {
   }
   listLockerBooks() {
     return getActiveLocker().list()
+  }
+  async deleteLockerBook(id: string) {
+    const locker = getActiveLocker()
+    if (!locker.remove) throw new Error('locker_remove_unsupported')
+    await locker.remove(id)
   }
   async openLockerBook(id: string, opts?: TransferOpts) {
     if (!getActiveLocker().supportsHttpEngine) throw new Error('locker_http_unsupported')

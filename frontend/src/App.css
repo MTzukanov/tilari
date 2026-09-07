@@ -1894,6 +1894,13 @@ body {
   accent-color: var(--accent);
 }
 
+.locker-book-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .file-btn:hover:not(:disabled) {
   filter: brightness(1.06);
 }
@@ -4115,7 +4122,8 @@ tr.is-ended td {
 }
 
 .att-card,
-.att-card-pending {
+.att-card-pending,
+.att-card-existing {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;

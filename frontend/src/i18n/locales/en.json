@@ -137,6 +137,8 @@
     "reloadDiscardConfirm": "Unsaved changes in this session will be discarded and the book reloaded from the original file. The browser session copy will be replaced. Continue?",
     "reloadUnavailable": "Reload is not possible (no linked file and no backup).",
     "lockerEmpty": "There are no books in this storage.",
+    "deleteLockerConfirm": "Delete {name} from your storage? This cannot be undone.",
+    "deletedFromServer": "Deleted from storage.",
     "lockerError": "The storage could not be reached.",
     "lockerTitle": "Your own storage (BYO)",
     "lockerByoIntro": "Tilari has no cloud account and does not receive your books. Optional storage below is bring-your-own: your Supabase project or a Tilari locker you run on a VPS. Nothing to do with Tilari’s site. The file is never sent to any server you did not provide.",
@@ -318,6 +320,7 @@
     "pasteHint": "Press Ctrl+V, or allow clipboard access for this page.",
     "pasteEmpty": "The clipboard has no image or pdf file.",
     "removeFile": "Remove",
+    "deleteAttachmentConfirm": "Delete attachment {name}? A deleted attachment cannot be restored.",
     "voucherType": "Voucher type",
     "voucherDate": "Voucher date",
     "title": "Title",
@@ -614,7 +617,8 @@
     "save": "Save",
     "saving": "Saving…",
     "cancel": "Cancel",
-    "close": "Close"
+    "close": "Close",
+    "delete": "Delete"
   },
   "fiscal": {
     "title": "Financial years",

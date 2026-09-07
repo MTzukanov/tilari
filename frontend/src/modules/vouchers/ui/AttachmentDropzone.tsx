@@ -17,11 +17,13 @@ export function AttachmentDropzone({
   existing,
   onAdd,
   onRemove,
+  onDeleteExisting,
 }: {
   files: File[]
   existing?: { id: number; name: string; type: string }[]
   onAdd: (files: File[]) => void
   onRemove: (index: number) => void
+  onDeleteExisting?: (id: number) => void
 }) {
   const { t } = useI18n()
   const onAddRef = useRef(onAdd)
@@ -70,7 +72,12 @@ export function AttachmentDropzone({
       }}
     >
       {hasPreviews ? (
-        <AttachmentGallery pending={files} existing={existing} onRemovePending={onRemove} />
+        <AttachmentGallery
+          pending={files}
+          existing={existing}
+          onRemovePending={onRemove}
+          onDeleteExisting={onDeleteExisting}
+        />
       ) : null}
       <div className="dropzone-toolbar">
         <div className="dropzone-copy">

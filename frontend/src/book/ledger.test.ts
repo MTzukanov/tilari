@@ -18,14 +18,14 @@ import { loadGoldenDb } from './golden'
 import { registerPostingHooks } from './kernel/postingHooks'
 import { computeVat } from './modules/vat/domain/vat'
 import { allPostingHooks } from './modules/registry'
-import { saveVoucher } from './posting'
+import { attachAttachment, deleteAttachment, saveVoucher } from './posting'
 import { balancesWithLines, entriesWithRunning } from './reports'
 import { getSettings } from './access'
 import { getCompany, putCompany } from './settings'
 import { Ledger } from './ledger'
 import { wallToday } from './clock'
 import type { SqliteDb } from './sqlite'
-import { getAttachment, getVoucher } from './vouchers'
+import { getAttachment, getAttachmentMeta, getVoucher } from './vouchers'
 
 registerPostingHooks(allPostingHooks())
 
@@ -129,6 +129,32 @@ describe('writes', () => {
     await withGolden((db) => {
       putCompany(db, { Kaupunki: 'Turku' })
       expect(getCompany(db).Kaupunki).toBe('Turku')
+    })
+  })
+
+  it('attaches and deletes a voucher attachment', async () => {
+    await withGolden(async (db) => {
+      const voucherId = saveVoucher(db, {
+        date: '2024-08-01',
+        type: 300,
+        status: 100,
+        title: 'With attachment',
+        entries: [
+          { account: 1910, debit_cents: 100, description: 'a' },
+          { account: 1910, credit_cents: 100, description: 'a' },
+        ],
+      })
+      const data = new TextEncoder().encode('delete-me')
+      const attached = await attachAttachment(db, voucherId, {
+        name: 'note.txt',
+        type: 'text/plain',
+        data,
+        lean: false,
+      })
+      expect(getAttachmentMeta(db, attached.id)?.name).toBe('note.txt')
+      deleteAttachment(db, attached.id)
+      expect(getAttachmentMeta(db, attached.id)).toBeNull()
+      expect(getVoucher(db, voucherId)?.attachments.some((a) => a.id === attached.id)).toBe(false)
     })
   })
 

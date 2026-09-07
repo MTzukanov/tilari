@@ -21,11 +21,13 @@ import { lockerBookLabel } from './lockerBooks'
 export function LockerPanel({
   books,
   onPick,
+  onDelete,
   onClose,
   onKindChange,
 }: {
   books: LockerBook[] | null
   onPick: (id: string, name: string) => void
+  onDelete?: (id: string, name: string) => void
   onClose: () => void
   onKindChange: () => void
 }) {
@@ -360,10 +362,19 @@ export function LockerPanel({
         ) : (
           <ul>
             {books.map((book) => (
-              <li key={book.id}>
+              <li key={book.id} className="locker-book-row">
                 <button type="button" className="nav-link" onClick={() => onPick(book.id, book.name)}>
                   {lockerBookLabel(book, books)}
                 </button>
+                {onDelete ? (
+                  <button
+                    type="button"
+                    className="linkish"
+                    onClick={() => onDelete(book.id, book.name)}
+                  >
+                    {t('common.delete')}
+                  </button>
+                ) : null}
               </li>
             ))}
           </ul>

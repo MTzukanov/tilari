@@ -10,6 +10,7 @@ import {
   openKitsasPath,
   createNewBook,
   listLockerBooks,
+  deleteLockerBook,
   openLockerBook,
   saveLocal,
   saveToLocker,
@@ -620,6 +621,24 @@ export function BookShell() {
     queueOpen({ type: 'locker', id, label: name })
   }
 
+  async function onDeleteLocker(id: string, name: string) {
+    if (!window.confirm(t('file.deleteLockerConfirm', { name }))) return
+    setError(null)
+    try {
+      if (meta?.db_path === `locker:${id}`) {
+        await closeBook({ discard: true })
+        dropBook()
+        goTo('#/')
+      }
+      await deleteLockerBook(id)
+      setFileNote(t('file.deletedFromServer'))
+      await refreshLockerList()
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err)
+      setError(detail ? `${t('file.lockerError')} (${detail})` : t('file.lockerError'))
+    }
+  }
+
   async function onSavePrimary() {
     if (!meta) return
     const kind = fileStorageKind(meta.db_path, writableLinked, openEngine)
@@ -876,6 +895,7 @@ export function BookShell() {
       lockerOpen={lockerOpen}
       lockerBooks={lockerBooks}
       onPickLocker={onPickLocker}
+      onDeleteLocker={onDeleteLocker}
       onCloseLocker={() => setLockerOpen(false)}
       onLockerKindChange={() => void refreshLockerList()}
       asOfDate={balances?.date ?? periodEnd}

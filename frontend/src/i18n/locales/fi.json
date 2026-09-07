@@ -137,6 +137,8 @@
     "reloadDiscardConfirm": "Hylätään istunnossa olevat tallentamattomat muutokset ja kirja ladataan uudelleen alkuperäisestä tiedostosta. Selaimen istuntokopio korvataan. Jatketaanko?",
     "reloadUnavailable": "Uudelleenlataus ei ole mahdollista (ei linkitettyä tiedostoa eikä varmuuskopiota).",
     "lockerEmpty": "Säilytyksessä ei ole kirjoja.",
+    "deleteLockerConfirm": "Poistetaanko {name} säilytyksestä? Tätä ei voi perua.",
+    "deletedFromServer": "Poistettu säilytyksestä.",
     "lockerError": "Säilytystä ei tavoitettu.",
     "lockerTitle": "Oma säilytys (BYO)",
     "lockerByoIntro": "Tilarilla ei ole pilvitiliä eikä se ota vastaan kirjojasi. Alla oleva säilytys on bring-your-own: oma Supabase-projekti tai Tilari-lokero omalla VPS:llä. Ei liity Tilarin sivustoon. Tiedostoa ei lähetetä mihinkään palvelimeen, jota et itse anna.",
@@ -318,6 +320,7 @@
     "pasteHint": "Paina Ctrl+V, tai salli leikepöydän luku tälle sivulle.",
     "pasteEmpty": "Leikepöydällä ei ole kuvaa tai pdf-tiedostoa.",
     "removeFile": "Poista",
+    "deleteAttachmentConfirm": "Poistetaanko liite {name}? Poistettua liitettä ei voi palauttaa.",
     "voucherType": "Tositelaji",
     "voucherDate": "Tositteen pvm",
     "title": "Otsikko",
@@ -614,7 +617,8 @@
     "save": "Tallenna",
     "saving": "Tallennetaan…",
     "cancel": "Peru",
-    "close": "Sulje"
+    "close": "Sulje",
+    "delete": "Poista"
   },
   "fiscal": {
     "title": "Tilikaudet",

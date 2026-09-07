@@ -2,11 +2,12 @@
  * HTTP routes for the opaque locker. Separate from Ledger session routes.
  */
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { readBody, sendBytes, sendJson } from '../httpUtil.ts'
+import { readBody, sendBytes, sendEmpty, sendJson } from '../httpUtil.ts'
 import {
   LockerBadPack,
   LockerConflict,
   LockerNotFound,
+  deleteBook,
   getAttachmentBlob,
   getAttachments,
   getBook,
@@ -42,6 +43,20 @@ export async function handleLocker(
 
   if (match(method, path, 'GET', '/api/books')) {
     sendJson(res, 200, { books: listBooks() })
+    return true
+  }
+
+  if ((p = match(method, path, 'DELETE', '/api/books/:id'))) {
+    try {
+      deleteBook(p.id)
+      sendEmpty(res, 204)
+    } catch (err) {
+      if (err instanceof LockerNotFound) {
+        sendJson(res, 404, { detail: 'book_not_found' })
+        return true
+      }
+      throw err
+    }
     return true
   }
 
