@@ -242,7 +242,7 @@ export class ObjectStoreLockerBackend implements LockerBackend {
     blobs: Record<string, Uint8Array>,
     etag: string,
     opts?: TransferOpts,
-  ): Promise<{ attachments_sha256: string }> {
+  ): Promise<{ attachments_sha256: string; updated_at?: string }> {
     if (!etag) throw new Error('etag_mismatch')
     throwIfAborted(opts?.signal)
     const existing = await this.readMeta(id)
