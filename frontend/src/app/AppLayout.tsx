@@ -56,6 +56,7 @@ export function AppLayout({
   onSaveAsName,
   onDownloadLean,
   onSaveServerAs,
+  onSaveServerKeepCopy,
   onForgetDevice,
   error,
   onDismissError,
@@ -65,6 +66,9 @@ export function AppLayout({
   onPickLocker,
   onCloseLocker,
   onLockerKindChange,
+  needsLockerDisconnectGuard = false,
+  closesServerSessionOnDisconnect = false,
+  onSaveBeforeDisconnect,
   children,
   asOfDate,
   pendingOpenLabel,
@@ -108,6 +112,7 @@ export function AppLayout({
   onSaveAsName: () => void
   onDownloadLean?: () => void
   onSaveServerAs: () => void
+  onSaveServerKeepCopy?: () => void
   onForgetDevice: () => void
   error: string | null
   onDismissError: () => void
@@ -117,6 +122,9 @@ export function AppLayout({
   onPickLocker: (id: string, name: string) => void
   onCloseLocker: () => void
   onLockerKindChange: () => void
+  needsLockerDisconnectGuard?: boolean
+  closesServerSessionOnDisconnect?: boolean
+  onSaveBeforeDisconnect?: () => Promise<void>
   children: ReactNode
   asOfDate: string
   pendingOpenLabel: string
@@ -172,16 +180,17 @@ export function AppLayout({
           </div>
 
           <div className="topbar-controls">
-            {meta ? (
-              <BookStatusBar
-                engine={openEngine}
-                storageKind={fileStorageKind(meta.db_path, writableLinked, openEngine)}
-                sourceName={meta.source_name}
-                dirty={dirty}
-                attSync={blocked ? { status: 'idle', loaded: 0, total: null } : attSync}
-                sessionPersist={blocked ? null : sessionPersist}
-              />
-            ) : null}
+            <BookStatusBar
+              engine={meta ? openEngine : null}
+              storageKind={
+                meta ? fileStorageKind(meta.db_path, writableLinked, openEngine) : null
+              }
+              sourceName={meta?.source_name ?? null}
+              dirty={dirty}
+              attSync={blocked ? { status: 'idle', loaded: 0, total: null } : attSync}
+              sessionPersist={blocked ? null : sessionPersist}
+              onOpenLocker={onOpenServerList}
+            />
             <div className="topbar-tools-row">
               <DisplayMenu />
               {meta ? (
@@ -189,6 +198,8 @@ export function AppLayout({
                   changes={sessionChanges}
                   disabled={blocked}
                   reloadEnabled={dirty}
+                  sourceModifiedAt={meta.source_modified_at}
+                  lastActivityAt={meta.last_activity_at}
                   onReloadDiscard={onReloadDiscard}
                   onNavigate={onRefreshRoute}
                 />
@@ -222,6 +233,7 @@ export function AppLayout({
                 onDownload={openEngine === 'http' ? onSaveAsName : undefined}
                 onDownloadLean={openEngine !== 'http' ? onDownloadLean : undefined}
                 onSaveServerAs={meta ? onSaveServerAs : undefined}
+                onSaveServerKeepCopy={meta ? onSaveServerKeepCopy : undefined}
                 onReload={meta ? onReloadDiscard : undefined}
                 reloadEnabled={dirty}
                 onClose={meta ? onForgetDevice : undefined}
@@ -267,6 +279,9 @@ export function AppLayout({
               onPick={onPickLocker}
               onClose={onCloseLocker}
               onKindChange={onLockerKindChange}
+              needsDisconnectGuard={needsLockerDisconnectGuard}
+              closesServerSession={closesServerSessionOnDisconnect}
+              onSaveBeforeDisconnect={onSaveBeforeDisconnect}
             />
           ) : null}
 
