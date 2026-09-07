@@ -39,7 +39,7 @@ import {
 import { loadAllocationPrefs, saveAllocationPrefs, type AllocationPrefs } from '../modules/allocations/allocationPrefs'
 import { clearTilariWebStorage } from '../modules/settings/browserStorage'
 import { opfsClear } from '../book/opfs'
-import { fileStorageKind } from './open/fileStorage'
+import { fileStorageKind, needsLockerDisconnectGuard } from './open/fileStorage'
 import { pickWritableLocalKitsas } from './open/pickLocalKitsas'
 import {
   clearBookSession,
@@ -47,16 +47,18 @@ import {
   loadRecentBooks,
   rememberOpenBook,
   removeRecent,
+  saveRecentBooks,
   sessionMatches,
   type LastBook,
 } from './open/lastBook'
+import { formatBookDate } from './open/bookDates'
 import { forgetLocale, useI18n } from '../i18n'
 import { parseRoute, routeAllowsNoBook, type Route } from './routing'
 import { periodContaining } from '../shared/periodNav'
 import { normalizeSessionChanges } from '../book/sessionLog'
 import { resetBodyScrollLock } from '../shared/scrollLock'
 import { getBookServiceEpoch, getEngine, resetBookService, resolveEngine, setEngine, withEngine } from '../book/engine'
-import { getActiveLocker, lockerSupportsHttpEngine, probeSameOriginNode } from '../book/persist/locker'
+import { getLockerConnection, lockerSupportsHttpEngine, probeSameOriginNode, subscribeLockerConnection } from '../book/persist/locker'
 import { forcedEngineForPath } from '../book/openPath'
 import {
   clearStoredPracticeDate,
@@ -66,10 +68,28 @@ import {
 import type { EngineKind } from '../book/service'
 import type { NewBookInput } from '../book/newBook/createBook'
 import { CreateBookDialog } from './CreateBookDialog'
+import { SaveCancelDialog, type SaveCancelChoice } from './open/SaveCancelDialog'
+import { isLockerPath } from './open/lockerBooks'
+import { mapFileError } from './mapFileError'
 import '../App.css'
 
 function isAbortError(err: unknown): boolean {
   return (err instanceof DOMException || err instanceof Error) && err.name === 'AbortError'
+}
+
+function enrichRecentsFromLocker(books: LockerBook[]): LastBook[] {
+  const byId = new Map(books.map((b) => [b.id, b.updated_at]))
+  const current = loadRecentBooks()
+  let changed = false
+  const next = current.map((book) => {
+    if (!book.path.startsWith('locker:')) return book
+    const updated = byId.get(book.path.slice('locker:'.length))
+    if (!updated || updated === book.source_modified_at) return book
+    changed = true
+    return { ...book, source_modified_at: updated }
+  })
+  if (changed) saveRecentBooks(next)
+  return next
 }
 
 type PendingOpen =
@@ -107,15 +127,20 @@ export function BookShell() {
   const [openEngine, setOpenEngine] = useState<EngineKind | null>(null)
   const [pendingOpen, setPendingOpen] = useState<PendingOpen | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
+  const [saveCancelOpen, setSaveCancelOpen] = useState(false)
+  const [saveCancelCreatedNew, setSaveCancelCreatedNew] = useState(false)
+  const saveCancelResolver = useRef<((choice: SaveCancelChoice) => void) | null>(null)
   const [dirty, setDirty] = useState(false)
   const [sessionChanges, setSessionChanges] = useState<SessionChange[]>([])
   const [writableLinked, setWritableLinked] = useState(false)
   const [serviceEpoch, setServiceEpoch] = useState(() => getBookServiceEpoch())
   const openingRef = useRef(false)
-  const { t } = useI18n()
+  const { t, formatLocale } = useI18n()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const metaRef = useRef<Meta | null>(null)
   metaRef.current = meta
+  const openEngineRef = useRef<EngineKind | null>(null)
+  openEngineRef.current = openEngine
 
   function updateAllocationPrefs(patch: Partial<AllocationPrefs>) {
     setAllocationPrefs((prev) => {
@@ -158,28 +183,6 @@ export function BookShell() {
     setDbKey((k) => k + 1)
   }, [])
 
-  function mapFileError(err: unknown): string | null {
-    if (isAbortError(err)) return null
-    if (err instanceof Error && err.message === 'etag_mismatch') return t('file.lockerConflict')
-    if (err instanceof Error && err.message === 'no_writable_link') return t('file.noWritableLink')
-    if (err instanceof Error && err.message === 'permission_denied') return t('file.linkPermissionDenied')
-    if (err instanceof Error && err.message === 'kitsas_required') return t('file.kitsasRequired')
-    if (err instanceof Error && err.message === 'file_picker_unsupported') return t('file.linkUnsupported')
-    if (err instanceof Error && err.message === 'reload_unavailable') return t('file.reloadUnavailable')
-    if (err instanceof Error && err.message === 'locker_http_unsupported') return t('file.lockerHttpUnsupported')
-    if (err instanceof Error && err.message === 'locker_not_configured') return t('file.lockerNotConfigured')
-    if (err instanceof Error && err.message === 'locker_http_url') return t('file.lockerHttpNeedConnect')
-    if (err instanceof Error && err.message === 'locker_http_unreachable') return t('file.lockerHttpUnreachable')
-    if (err instanceof Error && err.message === 'locker_service_role') return t('file.lockerServiceRole')
-    if (err instanceof Error && err.message === 'locker_bad_secret') return t('file.lockerBadSecret')
-    if (err instanceof Error && err.message === 'locker_secret') return t('file.lockerNeedSecret')
-    if (err instanceof Error && err.message === 'create_wasm_only') return t('file.createWasmOnly')
-    if (err instanceof Error && err.message === 'name_required') return t('file.createNameRequired')
-    if (err instanceof Error && err.message === 'ytunnus_invalid') return t('file.createYtunnusInvalid')
-    if (err instanceof Error && err.message === 'fiscal_year_invalid') return t('file.createYearInvalid')
-    return err instanceof Error ? err.message : String(err)
-  }
-
   function startBusy(title: string, cancellable: boolean): AbortSignal | undefined {
     openingRef.current = true
     abortRef.current?.abort()
@@ -200,7 +203,11 @@ export function BookShell() {
       setBusy((cur) =>
         cur ? { ...cur, title: t('file.busySave'), loaded: 0, total: null } : cur,
       )
-    } else if (stage === 'attachments_check' || stage === 'attachments') {
+    } else if (stage === 'attachments_check') {
+      setBusy((cur) =>
+        cur ? { ...cur, title: t('file.busySaveAttachmentsCheck'), loaded: 0, total: null } : cur,
+      )
+    } else if (stage === 'attachments') {
       setBusy((cur) =>
         cur ? { ...cur, title: t('file.busySaveAttachments'), loaded: 0, total: null } : cur,
       )
@@ -237,6 +244,46 @@ export function BookShell() {
     setError(null)
     setDbKey((k) => k + 1)
   }, [])
+
+  // HTTP-engine locker books live only on Node — disconnect must end the server session.
+  // Wasm locker books keep the browser OPFS copy; Save is blocked until reconnect.
+  useEffect(() => {
+    let prevMode = getLockerConnection().mode
+    return subscribeLockerConnection(() => {
+      const mode = getLockerConnection().mode
+      const dropped = prevMode !== 'off' && mode === 'off'
+      prevMode = mode
+      if (!dropped) return
+      const eng = openEngineRef.current ?? getEngine()
+      const m = metaRef.current
+      if (eng !== 'http' || !m || !isLockerPath(m.db_path)) return
+      const pathToClose = m.db_path
+      void (async () => {
+        // Skip if a different open already replaced this session (avoids closing the
+        // new book and surfacing no_book after opening e.g. tilari-test.kitsas).
+        if (metaRef.current?.db_path !== pathToClose) return
+        if ((openEngineRef.current ?? getEngine()) !== 'http') return
+        if (!openingRef.current) {
+          abortRef.current?.abort()
+          stopBusy()
+        }
+        try {
+          const live = await fetchMeta()
+          if (live.db_path !== pathToClose) return
+          await closeBook({ discard: true })
+        } catch {
+          /* session already gone or replaced */
+        }
+        if (metaRef.current?.db_path !== pathToClose) return
+        dropBook()
+        setSessionPersist(null)
+        setAttSync({ status: 'idle', loaded: 0, total: null })
+        setDirty(false)
+        setFileNote(t('file.lockerDisconnectClosedSession'))
+        goTo('#/')
+      })()
+    })
+  }, [dropBook, goTo, t])
 
   const refreshSessionChanges = useCallback(async () => {
     if (!metaRef.current) {
@@ -292,6 +339,7 @@ export function BookShell() {
     void refreshSessionChanges()
   }, [meta, dbKey, dirty, refreshSessionChanges, serviceEpoch])
 
+  // Subscribe once per service epoch — do not depend on `meta` (setMeta would re-subscribe).
   useEffect(() => {
     return onSessionChange(() => {
       void refreshSessionChanges()
@@ -300,6 +348,17 @@ export function BookShell() {
         .then((m) => {
           const prev = metaRef.current
           if (!prev) return
+          if (
+            prev.db_path === m.db_path &&
+            prev.source_name === m.source_name &&
+            prev.practice === m.practice &&
+            prev.book_date === m.book_date &&
+            prev.session_id === m.session_id &&
+            prev.last_activity_at === m.last_activity_at &&
+            prev.source_modified_at === m.source_modified_at
+          ) {
+            return
+          }
           setMeta(m)
           if (prev.practice !== m.practice || prev.book_date !== m.book_date) {
             if (m.practice) saveStoredPracticeDate(m.db_path, m.book_date)
@@ -309,7 +368,7 @@ export function BookShell() {
         })
         .catch(() => undefined)
     })
-  }, [meta, dbKey, refreshSessionChanges, serviceEpoch])
+  }, [refreshSessionChanges, serviceEpoch])
 
   useEffect(() => {
     const sync = () => setWritableLinked(hasWritableLocalFile())
@@ -588,20 +647,36 @@ export function BookShell() {
     await refreshLockerList()
   }
 
+  function onToggleServerList() {
+    if (lockerOpen) {
+      setLockerOpen(false)
+      return
+    }
+    void onOpenServerList()
+  }
+
   async function refreshLockerList() {
     await probeSameOriginNode({ force: true })
-    if (!lockerSupportsHttpEngine() && getEngine() === 'http' && !meta) {
+    // Do not reset the engine mid-open — prepareEngine clears meta before openKitsasFile
+    // finishes; resetting here closed the new Node/wasm book and surfaced no_book.
+    if (!lockerSupportsHttpEngine() && getEngine() === 'http' && !meta && !openingRef.current) {
       setEngine('wasm')
       resetBookService()
       setServiceEpoch(getBookServiceEpoch())
     }
-    if (!getActiveLocker().isReady()) {
+    // Same-origin Node can make the pack locker "ready" before the user connects;
+    // only list after an explicit BYO connection (settings / connection mode).
+    // Do not gate on isReady(): hydrated http/supabase lockers are lazy and become
+    // ready on first list() — requiring isReady() left the panel empty until reconnect.
+    if (getLockerConnection().mode === 'off') {
       setLockerBooks([])
       setError(null)
       return
     }
     try {
-      setLockerBooks(await listLockerBooks())
+      const books = await listLockerBooks()
+      setLockerBooks(books)
+      setRecents(enrichRecentsFromLocker(books))
     } catch (err) {
       setLockerBooks([])
       const detail = err instanceof Error ? err.message : String(err)
@@ -609,12 +684,83 @@ export function BookShell() {
         setError(null)
         return
       }
-      if (detail === 'locker_bad_secret') {
-        setError(t('file.lockerBadSecret'))
-        return
-      }
-      setError(detail ? `${t('file.lockerError')} (${detail})` : t('file.lockerError'))
+      setError(mapFileError(err) || t('file.lockerError'))
     }
+  }
+
+  function askSaveCancel(createdNew: boolean): Promise<SaveCancelChoice> {
+    setSaveCancelCreatedNew(createdNew)
+    setSaveCancelOpen(true)
+    setBusy((cur) => (cur ? { ...cur, cancellable: false } : cur))
+    return new Promise((resolve) => {
+      saveCancelResolver.current = resolve
+    })
+  }
+
+  function onSaveCancelChoose(choice: SaveCancelChoice) {
+    setSaveCancelOpen(false)
+    const resolve = saveCancelResolver.current
+    saveCancelResolver.current = null
+    resolve?.(choice)
+  }
+
+  async function runLockerSave(opts: {
+    asNew: boolean
+    name?: string
+    note: string
+    /** When true, rethrow after mapping (disconnect guard). */
+    rethrow?: boolean
+  }): Promise<'saved' | 'reverted'> {
+    const signal = startBusy(t('file.busySave'), true)
+    setSaving(true)
+    setError(null)
+    try {
+      const result = await saveToLocker({
+        signal,
+        name: opts.name,
+        asNew: opts.asNew,
+        onProgress: (p) => reportBusy(p.loaded, p.total),
+        onStage: onSaveStage,
+        onAbortChoice: async () => {
+          const action = await askSaveCancel(opts.asNew)
+          if (action === 'continue') {
+            return { action: 'continue', signal: startBusy(t('file.busySave'), true) }
+          }
+          return { action: 'revert' }
+        },
+      })
+      if (result === 'saved') {
+        setFileNote(opts.note)
+        setDirty(false)
+        const m = await fetchMeta()
+        await applyMeta(m, openEngine ?? resolveEngine())
+      } else {
+        setFileNote(t('file.saveReverted'))
+        setDirty(isDirty())
+        const m = await fetchMeta()
+        await applyMeta(m, openEngine ?? resolveEngine())
+      }
+      return result
+    } catch (err) {
+      const msg = mapFileError(err)
+      if (msg) setError(msg)
+      if (opts.rethrow) throw err
+      return 'reverted'
+    } finally {
+      stopBusy()
+      setSaving(false)
+      setSaveCancelOpen(false)
+      saveCancelResolver.current = null
+    }
+  }
+
+  async function onSaveBeforeDisconnect() {
+    if (!meta) return
+    await runLockerSave({
+      asNew: false,
+      note: t('file.savedServer'),
+      rethrow: true,
+    })
   }
 
   function onPickLocker(id: string, name: string) {
@@ -646,32 +792,26 @@ export function BookShell() {
     setError(null)
     try {
       if (kind === 'locker') {
-        const signal = startBusy(t('file.busySave'), true)
-        try {
-          await saveToLocker({
-            signal,
-            onProgress: (p) => reportBusy(p.loaded, p.total),
-            onStage: onSaveStage,
-            asNew: false,
-          })
-          setFileNote(t('file.savedServer'))
-          const m = await fetchMeta()
-          await applyMeta(m, openEngine ?? resolveEngine())
-        } finally {
-          stopBusy()
-        }
+        await runLockerSave({ asNew: false, note: t('file.savedServer') })
+        return
       } else if (kind === 'disk') {
         if (!isDirty()) return
         await saveLocal()
         setFileNote(t('file.savedOriginal'))
+        const m = await fetchMeta()
+        await applyMeta(m, openEngine ?? resolveEngine())
       } else if (kind === 'browser') {
         if (!isDirty()) return
         if (canLinkWritableFile()) {
           await linkWritableFile()
           await saveLocal()
           setFileNote(t('file.savedOriginal'))
+          const m = await fetchMeta()
+          await applyMeta(m, openEngine ?? resolveEngine())
         } else {
           await downloadCopy((suggested) => window.prompt(t('file.saveAsPrompt'), suggested))
+          const m = await fetchMeta()
+          await applyMeta(m, openEngine ?? resolveEngine())
         }
       }
     } catch (err) {
@@ -688,6 +828,8 @@ export function BookShell() {
     try {
       await linkWritableFile()
       setFileNote(t('file.linkedOriginal'))
+      const m = await fetchMeta()
+      await applyMeta(m, openEngine ?? resolveEngine())
     } catch (err) {
       const msg = mapFileError(err)
       if (msg) setError(msg)
@@ -735,27 +877,14 @@ export function BookShell() {
     } catch {
       /* locker list optional */
     }
-    setSaving(true)
-    setError(null)
-    const signal = startBusy(t('file.busySave'), true)
-    try {
-      await saveToLocker({
-        signal,
-        onProgress: (p) => reportBusy(p.loaded, p.total),
-        onStage: onSaveStage,
-        name,
-        asNew: true,
-      })
-      setFileNote(t('file.savedServer'))
-      const m = await fetchMeta()
-      await applyMeta(m, openEngine ?? resolveEngine())
-    } catch (err) {
-      const msg = mapFileError(err)
-      if (msg) setError(msg)
-    } finally {
-      stopBusy()
-      setSaving(false)
-    }
+    await runLockerSave({ asNew: true, name, note: t('file.savedServer') })
+  }
+
+  /** Always mint a new locker id (same display name); leaves the previous shelf entry intact. */
+  async function onSaveServerKeepCopy() {
+    if (!meta) return
+    const name = meta.source_name ?? 'book.kitsas'
+    await runLockerSave({ asNew: true, name, note: t('file.savedServerKeepCopy') })
   }
 
   async function onWipeBrowserStorage() {
@@ -780,7 +909,7 @@ export function BookShell() {
       setRecents([])
       goTo('#/')
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(mapFileError(err) || String(err))
     }
   }
 
@@ -803,7 +932,7 @@ export function BookShell() {
       setLockerOpen(false)
       goTo('#/')
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(mapFileError(err) || String(err))
     }
   }
 
@@ -884,10 +1013,12 @@ export function BookShell() {
       onCreateBook={onCreateBook}
       onOpenRecent={onOpenRecent}
       onOpenServerList={() => void onOpenServerList()}
+      onToggleLocker={onToggleServerList}
       onLinkWritableFile={() => void onLinkWritableFile()}
       onSaveAsName={() => void onSaveAsName()}
       onDownloadLean={() => void onDownloadLean()}
       onSaveServerAs={() => void onSaveServerAs()}
+      onSaveServerKeepCopy={() => void onSaveServerKeepCopy()}
       onForgetDevice={() => void onForgetDevice()}
       error={error}
       onDismissError={() => setError(null)}
@@ -898,6 +1029,14 @@ export function BookShell() {
       onDeleteLocker={onDeleteLocker}
       onCloseLocker={() => setLockerOpen(false)}
       onLockerKindChange={() => void refreshLockerList()}
+      needsLockerDisconnectGuard={needsLockerDisconnectGuard(
+        meta ? fileStorageKind(meta.db_path, writableLinked, openEngine) : null,
+        dirty,
+      )}
+      closesServerSessionOnDisconnect={
+        openEngine === 'http' && Boolean(meta && isLockerPath(meta.db_path))
+      }
+      onSaveBeforeDisconnect={onSaveBeforeDisconnect}
       asOfDate={balances?.date ?? periodEnd}
       pendingOpen={pendingOpen != null}
       pendingOpenLabel={pendingOpen?.label ?? ''}
@@ -930,18 +1069,26 @@ export function BookShell() {
             <>
               <h3 className="file-prompt-recent">{t('file.recent')}</h3>
               <ul className="file-recent-list">
-                {recents.map((book) => (
-                  <li key={book.path}>
-                    <button
-                      type="button"
-                      className="file-recent-btn"
-                      disabled={opening || Boolean(busy)}
-                      onClick={() => onOpenRecent(book.path)}
-                    >
-                      {book.name}
-                    </button>
-                  </li>
-                ))}
+                {recents.map((book) => {
+                  const saved = formatBookDate(book.source_modified_at, formatLocale)
+                  return (
+                    <li key={book.path}>
+                      <button
+                        type="button"
+                        className="file-recent-btn"
+                        disabled={opening || Boolean(busy)}
+                        onClick={() => onOpenRecent(book.path)}
+                      >
+                        <span className="file-picker-name">{book.name}</span>
+                        {saved ? (
+                          <span className="muted file-picker-date">
+                            {t('file.savedAt', { date: saved })}
+                          </span>
+                        ) : null}
+                      </button>
+                    </li>
+                  )
+                })}
               </ul>
             </>
           ) : (
@@ -986,6 +1133,12 @@ export function BookShell() {
           onCreate={(input) => void executeCreate(input)}
         />
       ) : null}
+
+      <SaveCancelDialog
+        open={saveCancelOpen}
+        createdNew={saveCancelCreatedNew}
+        onChoose={onSaveCancelChoose}
+      />
 
       <BookViews
         key={dbKey}

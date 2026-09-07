@@ -1,14 +1,23 @@
 import { saveKitsasAs } from '../app/open/saveKitsasAs'
+import { lockerIdFromPath } from '../app/open/lockerBooks'
 import {
   getJson,
+  isAbortError,
   parseHttpError,
   sendJson,
   type TransferOpts,
 } from './http'
 import type { NewBookInput } from './newBook/createBook'
 import { getActiveLocker } from './persist/locker'
+import {
+  assertLockerBindingForSave,
+  lockerBindingFromConnection,
+  type LockerBinding,
+} from './persist/locker/lockerBinding'
 import { createHttpModules } from './httpModules'
 import type { FiscalPeriodSummary } from './fiscalPeriods'
+import { newLedgerId } from './ledger'
+import { resolveLockerPutId } from './lockerSave'
 import type { BookModules } from './modules/types'
 import type { BookService } from './service'
 import { normalizeSessionChanges } from './sessionLog'
@@ -37,6 +46,7 @@ import type {
 export class HttpBookService implements BookService {
   readonly modules: BookModules
   private lockerId: string | null = null
+  private lockerBinding: LockerBinding | null = null
   private lockerEtag: string | undefined
   private cachedDirty = false
   private sessionListeners = new Set<() => void>()
@@ -66,20 +76,45 @@ export class HttpBookService implements BookService {
     })
   }
 
+  /** Re-bind locker id after session restore when only db_path survived. */
+  private bindLockerIdFromMeta(meta: Meta): void {
+    const id = lockerIdFromPath(meta.db_path)
+    if (!id) return
+    if (this.lockerId !== id) {
+      this.lockerId = id
+      this.lockerEtag = undefined
+    }
+    // Restamp shelf fingerprint so reconnect to another locker cannot silently overwrite.
+    if (!this.lockerBinding) {
+      this.lockerBinding = lockerBindingFromConnection()
+    }
+  }
+
+  private async ensureLockerEtag(id: string): Promise<void> {
+    if (this.lockerEtag) return
+    const books = await getActiveLocker().list()
+    const found = books.find((b) => b.id === id)
+    if (!found) throw new Error('book_not_found')
+    this.lockerEtag = found.sha256
+  }
+
   fetchHealth() {
     return getJson<Health>('/api/health').then((health) => {
       if (health.dirty != null) this.cachedDirty = health.dirty
       return health
     })
   }
-  fetchMeta() {
-    return getJson<Meta>('/api/meta')
+  async fetchMeta() {
+    const meta = await getJson<Meta>('/api/meta')
+    this.bindLockerIdFromMeta(meta)
+    return meta
   }
   setPracticeDate(iso: string) {
     return sendJson<Meta>('/api/practice-date', 'PUT', { date: iso })
   }
   async openKitsasFile(file: File, _handle?: FileSystemFileHandle | null, _opts?: TransferOpts) {
     this.lockerId = null
+    this.lockerBinding = null
     this.lockerEtag = undefined
     this.cachedDirty = false
     const body = new FormData()
@@ -288,8 +323,18 @@ export class HttpBookService implements BookService {
       normalizeSessionChanges(r.changes),
     )
   }
-  recordBookSaved(params: { target: 'locker' | 'disk'; name?: string }) {
-    return sendJson<{ ok: boolean }>('/api/session/saved', 'POST', params).then(() => {
+  recordBookSaved(params: {
+    target: 'locker' | 'disk'
+    name?: string
+    sourceModifiedAt?: string | null
+  }) {
+    return sendJson<{ ok: boolean }>('/api/session/saved', 'POST', {
+      target: params.target,
+      ...(params.name ? { name: params.name } : {}),
+      ...(params.sourceModifiedAt !== undefined
+        ? { source_modified_at: params.sourceModifiedAt }
+        : {}),
+    }).then(() => {
       this.cachedDirty = false
       this.notifySessionChange()
       for (const listener of this.dirtyListeners) listener()
@@ -297,7 +342,6 @@ export class HttpBookService implements BookService {
   }
   onSessionChange(listener: () => void) {
     this.sessionListeners.add(listener)
-    listener()
     return () => this.sessionListeners.delete(listener)
   }
   isDirty() {
@@ -332,7 +376,11 @@ export class HttpBookService implements BookService {
     if (!bytes.byteLength) throw new Error('empty_book')
     const name = meta.source_name || 'book.kitsas'
     await saveKitsasAs(bytes, name, promptForName)
-    await this.recordBookSaved({ target: 'disk', name })
+    await this.recordBookSaved({
+      target: 'disk',
+      name,
+      sourceModifiedAt: new Date().toISOString(),
+    })
   }
   listLockerBooks() {
     return getActiveLocker().list()
@@ -352,12 +400,15 @@ export class HttpBookService implements BookService {
     )
     this.lockerId = id
     this.lockerEtag = res.locker_etag
+    this.lockerBinding = lockerBindingFromConnection()
     this.cachedDirty = false
     const { locker_etag: _e, locker_attachments_etag: _a, ...meta } = res
     return meta as Meta
   }
-  async saveToLocker(opts: TransferOpts = {}) {
+  async saveToLocker(opts: TransferOpts = {}): Promise<'saved' | 'reverted'> {
     const meta = await this.fetchMeta()
+    let asNew = opts.asNew ?? false
+    assertLockerBindingForSave(this.lockerBinding, asNew)
     const res = await fetch('/api/export', {
       cache: 'no-store',
       signal: opts.signal,
@@ -365,19 +416,53 @@ export class HttpBookService implements BookService {
     if (!res.ok) throw new Error(await parseHttpError(res))
     const bytes = new Uint8Array(await res.arrayBuffer())
     if (!bytes.byteLength) throw new Error('empty_book')
-    const asNew = opts.asNew ?? false
-    const id = asNew ? null : this.lockerId
+    // Mint id before put so abort can continue/revert against a known shelf key.
+    const prevId = this.lockerId
+    const provisionalId = asNew ? newLedgerId() : null
+    const id = asNew ? provisionalId : resolveLockerPutId(false, this.lockerId, meta.db_path)
+    if (id && this.lockerId !== id) {
+      this.lockerId = id
+      this.lockerEtag = undefined
+    }
+    if (id && !asNew) await this.ensureLockerEtag(id)
     const name = opts.name ?? (meta.source_name || 'book.kitsas')
     const locker = getActiveLocker()
     if (!locker.supportsHttpEngine) throw new Error('locker_http_unsupported')
-    const saved = await locker.put(id, bytes, name, asNew ? undefined : this.lockerEtag, opts)
-    this.lockerId = saved.id
-    this.lockerEtag = saved.sha256
-    await this.recordBookSaved({ target: 'locker', name })
+    try {
+      const saved = await locker.put(id, bytes, name, asNew ? undefined : this.lockerEtag, opts)
+      this.lockerId = saved.id
+      this.lockerEtag = saved.sha256
+      this.lockerBinding = lockerBindingFromConnection()
+      await this.recordBookSaved({
+        target: 'locker',
+        name,
+        sourceModifiedAt: saved.updated_at ?? new Date().toISOString(),
+      })
+      return 'saved'
+    } catch (err) {
+      if (!isAbortError(err) || !opts.onAbortChoice) throw err
+      const choice = await opts.onAbortChoice()
+      if (choice.action === 'continue') {
+        // Shelf id is already known; retry as an update to that id.
+        this.lockerId = id
+        return this.saveToLocker({ ...opts, asNew: false, signal: choice.signal })
+      }
+      if (asNew && provisionalId && locker.remove) {
+        try {
+          await locker.remove(provisionalId)
+        } catch {
+          /* best-effort */
+        }
+      }
+      this.lockerId = prevId
+      if (asNew) this.lockerEtag = undefined
+      return 'reverted'
+    }
   }
   async closeBook(_opts?: { discard?: boolean }) {
     await fetch('/api/close', { method: 'POST' }).catch(() => undefined)
     this.lockerId = null
+    this.lockerBinding = null
     this.lockerEtag = undefined
     this.cachedDirty = false
   }

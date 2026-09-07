@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { SessionChange } from '../api'
 import { normalizeSessionChanges, computeSavedFlags, countUnsavedChanges } from '../book/sessionLog'
 import { useI18n } from '../i18n'
+import { formatBookDate } from './open/bookDates'
 
 function sessionChangeHref(change: SessionChange): string | null {
   const p = change.params
@@ -115,12 +116,16 @@ export function SessionChangesPanel({
   changes,
   disabled,
   reloadEnabled = false,
+  sourceModifiedAt = null,
+  lastActivityAt = null,
   onNavigate,
   onReloadDiscard,
 }: {
   changes: SessionChange[]
   disabled?: boolean
   reloadEnabled?: boolean
+  sourceModifiedAt?: string | null
+  lastActivityAt?: string | null
   onNavigate?: () => void
   onReloadDiscard?: () => void
 }) {
@@ -132,6 +137,8 @@ export function SessionChangesPanel({
   const items = normalizeSessionChanges(changes)
   const savedFlags = computeSavedFlags(items)
   const unsavedCount = countUnsavedChanges(items)
+  const sourceDate = formatBookDate(sourceModifiedAt, formatLocale)
+  const activityDate = formatBookDate(lastActivityAt, formatLocale)
 
   useEffect(() => {
     if (!open) return
@@ -211,6 +218,10 @@ export function SessionChangesPanel({
           aria-label={t('session.title')}
         >
           <h2 className="session-changes-heading">{t('session.title')}</h2>
+          <div className="session-changes-meta muted">
+            {sourceDate ? <p>{t('session.sourceModified', { date: sourceDate })}</p> : null}
+            {activityDate ? <p>{t('session.lastActivity', { date: activityDate })}</p> : null}
+          </div>
           {onReloadDiscard ? (
             <div className="session-changes-actions">
               <button

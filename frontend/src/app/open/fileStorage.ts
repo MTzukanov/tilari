@@ -22,3 +22,8 @@ export function canPrimarySave(
 ): boolean {
   return dirty
 }
+
+/** Dirty locker book — disconnect would block Save to the bound shelf. */
+export function needsLockerDisconnectGuard(kind: FileStorageKind | null | undefined, dirty: boolean): boolean {
+  return kind === 'locker' && dirty
+}

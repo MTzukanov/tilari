@@ -7,13 +7,20 @@ import { attachmentPackSha, decodeAttachmentPack } from './attPack'
 import { AttachmentStore, SHA_RE, sweepUnreferencedBlobs } from './blobStore'
 import { BookError } from './errors'
 import type { TransferOpts } from './http'
+import { isAbortError } from './http'
 import { buildNewBook, kitsasFileName, type NewBookInput } from './newBook/createBook'
 import { Ledger, newLedgerId } from './ledger'
 import type { BookModules } from './modules/types'
 import { OpfsPersistScheduler } from './persist/OpfsPersistScheduler'
-import { getActiveLocker } from './persist/locker'
+import { getActiveLocker, subscribeLockerConnection, getLockerConnection } from './persist/locker'
+import {
+  assertLockerBindingForRead,
+  assertLockerBindingForSave,
+  lockerBindingFromConnection,
+  type LockerBinding,
+} from './persist/locker/lockerBinding'
 import { wrapSession } from './persist/wrapSession'
-import { lockerUploadPlan } from './lockerSave'
+import { lockerUploadPlan, resolveLockerPutId } from './lockerSave'
 import { loadBookSession } from '../app/open/lastBook'
 import {
   opfsLoadForSession,
@@ -26,6 +33,7 @@ import {
 } from './opfs'
 import { deleteAttachment as deleteAttachmentRow, deleteVoucher as deleteVoucherRow } from './posting'
 import { readFileBytes } from './readFileBytes'
+import { isoFromFileLastModified } from './timestamps'
 import type { AttachmentSyncState, BookService, SessionPersistState } from './service'
 import type { Meta } from './types'
 import type { SqliteDb } from './sqlite'
@@ -41,6 +49,7 @@ export class WasmBookService extends Ledger implements BookService {
   private attachmentsDirty = false
   private backupDone = false
   private lockerId: string | undefined
+  private lockerBinding: LockerBinding | undefined
   private etag: string | undefined
   private attachmentsEtag: string | undefined
   private largeFile = false
@@ -66,6 +75,12 @@ export class WasmBookService extends Ledger implements BookService {
     if (typeof window !== 'undefined') {
       window.addEventListener('pagehide', () => {
         void this.flushPersistNow()
+      })
+      subscribeLockerConnection(() => {
+        if (getLockerConnection().mode === 'off') {
+          this.syncAbort?.abort()
+          this.syncAbort = null
+        }
       })
     }
   }
@@ -210,6 +225,7 @@ export class WasmBookService extends Ledger implements BookService {
     if (perm !== 'granted') throw new Error('permission_denied')
     this.fileHandle = handle
     if (file.name !== this.sourceName) this.sourceName = file.name
+    this.setSourceModifiedAt(isoFromFileLastModified(file.lastModified))
     this.emitLocalLinkChange()
     await this.flushPersistNow()
   }
@@ -323,6 +339,7 @@ export class WasmBookService extends Ledger implements BookService {
       sourceName: meta.sourceName,
       dbPath: meta.dbPath,
       sessionId: meta.sessionId,
+      sourceModifiedAt: meta.sourceModifiedAt ?? null,
     })
     this.bookId = meta.bookId
     this.dirty = meta.dirty
@@ -330,6 +347,7 @@ export class WasmBookService extends Ledger implements BookService {
     this.emitDirtyChange()
     this.backupDone = meta.backupDone
     this.lockerId = meta.lockerId
+    this.lockerBinding = meta.lockerBinding
     this.etag = meta.etag
     this.attachmentsEtag = meta.attachmentsEtag
     this.largeFile = Boolean(meta.largeFile)
@@ -350,12 +368,14 @@ export class WasmBookService extends Ledger implements BookService {
       attachmentsDirty: this.attachmentsDirty,
       backupDone: this.backupDone,
       lockerId: this.lockerId,
+      lockerBinding: this.lockerBinding,
       etag: this.etag,
       attachmentsEtag: this.attachmentsEtag,
       largeFile: this.largeFile,
       attachmentSync: this.syncState.status,
       attachmentShas: this.store.keys(),
       sessionChanges: this.snapshotSessionChanges(),
+      sourceModifiedAt: this.sourceModifiedAt,
     }
   }
 
@@ -432,6 +452,7 @@ export class WasmBookService extends Ledger implements BookService {
     this.syncAbort = ac
     this.setSyncState({ status: 'syncing', loaded: 0, total: null, phase: 'download' })
     try {
+      assertLockerBindingForRead(this.lockerBinding)
       const locker = getActiveLocker()
       if (locker.getAttachments) {
         const { pack, etag } = await locker.getAttachments(lockerId, {
@@ -529,6 +550,7 @@ export class WasmBookService extends Ledger implements BookService {
         attachmentsDirty: false,
         backupDone: false,
         largeFile: (file.size || bytes.byteLength) > LARGE,
+        sourceModifiedAt: isoFromFileLastModified(file.lastModified),
       },
       handle,
     )
@@ -637,6 +659,7 @@ export class WasmBookService extends Ledger implements BookService {
       data = this.store.get(meta.sha) ?? null
     }
     if (!data && meta.sha && this.lockerId) {
+      assertLockerBindingForRead(this.lockerBinding)
       data = await getActiveLocker().getAttachmentBlob(this.lockerId, meta.sha)
       this.store.put(meta.sha, data)
       this.schedulePersist()
@@ -666,6 +689,12 @@ export class WasmBookService extends Ledger implements BookService {
     const w = await this.fileHandle.createWritable()
     await w.write(bytes as BufferSource)
     await w.close()
+    try {
+      const file = await this.fileHandle.getFile()
+      this.setSourceModifiedAt(isoFromFileLastModified(file.lastModified))
+    } catch {
+      this.setSourceModifiedAt(new Date().toISOString())
+    }
     await this.recordBookSaved({ target: 'disk', name: this.sourceName })
     this.attachmentsDirty = false
     await this.flushPersistNow()
@@ -676,6 +705,7 @@ export class WasmBookService extends Ledger implements BookService {
     const name = this.sourceName || 'book.kitsas'
     await saveKitsasAs(bytes, name, promptForName)
     this.clearAllDirty()
+    this.setSourceModifiedAt(new Date().toISOString())
     await this.recordBookSaved({ target: 'disk', name })
     await this.flushPersistNow()
   }
@@ -701,9 +731,11 @@ export class WasmBookService extends Ledger implements BookService {
     this.abortSessionWork()
     this.setSyncState({ status: 'idle', loaded: 0, total: null })
     this.emitSessionPersist(null)
-    const { bytes, etag, attachmentsEtag, name } = await getActiveLocker().get(id, opts)
+    const { bytes, etag, attachmentsEtag, name, updated_at } = await getActiveLocker().get(id, opts)
     opts.onStage?.('parse')
     if (opts.signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+    const binding = lockerBindingFromConnection()
+    if (!binding) throw new Error('locker_not_configured')
     const bookId = newLedgerId()
     const sessionId = newLedgerId()
     await this.adopt(bytes, {
@@ -715,9 +747,11 @@ export class WasmBookService extends Ledger implements BookService {
       attachmentsDirty: false,
       backupDone: false,
       lockerId: id,
+      lockerBinding: binding,
       etag,
       attachmentsEtag: attachmentsEtag || undefined,
       largeFile: bytes.byteLength > LARGE,
+      sourceModifiedAt: updated_at ?? null,
     })
     await this.hydrateBlobs()
     const lean = await this.leanify(false)
@@ -740,36 +774,137 @@ export class WasmBookService extends Ledger implements BookService {
     return this.buildMeta()
   }
 
-  async saveToLocker(opts: TransferOpts = {}) {
+  async saveToLocker(opts: TransferOpts = {}): Promise<'saved' | 'reverted'> {
+    const initialAsNew = opts.asNew ?? false
+    const checkpoint = this.captureLockerCheckpoint(initialAsNew)
+    let asNew = initialAsNew
+    let signal = opts.signal
+    for (;;) {
+      try {
+        await this.saveToLockerOnce({ ...opts, asNew, signal }, checkpoint)
+        return 'saved'
+      } catch (err) {
+        if (!isAbortError(err) || !opts.onAbortChoice) throw err
+        const choice = await opts.onAbortChoice()
+        if (choice.action === 'continue') {
+          // If a shelf id was minted (or put already returned), retry as update.
+          asNew = checkpoint.asNew && !checkpoint.createdId
+          if (checkpoint.createdId) this.lockerId = checkpoint.createdId
+          signal = choice.signal
+          continue
+        }
+        await this.revertLockerCheckpoint(checkpoint)
+        return 'reverted'
+      }
+    }
+  }
+
+  private captureLockerCheckpoint(asNew: boolean) {
+    return {
+      asNew,
+      prevLockerId: this.lockerId,
+      prevDbPath: this.dbPath,
+      prevSourceName: this.sourceName,
+      prevEtag: this.etag,
+      prevAttachmentsEtag: this.attachmentsEtag,
+      prevDirty: this.dirty,
+      prevAttachmentsDirty: this.attachmentsDirty,
+      prevRemoteBytes: null as Uint8Array | null,
+      createdId: null as string | null,
+      wroteLedger: false,
+    }
+  }
+
+  private async revertLockerCheckpoint(
+    cp: ReturnType<WasmBookService['captureLockerCheckpoint']>,
+  ): Promise<void> {
+    const locker = getActiveLocker()
+    if (cp.asNew && cp.createdId && locker.remove) {
+      try {
+        await locker.remove(cp.createdId)
+      } catch {
+        /* best-effort cleanup */
+      }
+    } else if (!cp.asNew && cp.wroteLedger && cp.prevRemoteBytes && this.lockerId && this.etag) {
+      try {
+        await locker.put(this.lockerId, cp.prevRemoteBytes, cp.prevSourceName, this.etag)
+      } catch {
+        /* best-effort restore */
+      }
+    }
+
+    this.lockerId = cp.prevLockerId
+    this.dbPath = cp.prevDbPath
+    this.sourceName = cp.prevSourceName
+    this.etag = cp.prevEtag
+    this.attachmentsEtag = cp.prevAttachmentsEtag
+    this.setDirty(cp.prevDirty)
+    this.setAttachmentsDirty(cp.prevAttachmentsDirty)
+  }
+
+  private async saveToLockerOnce(
+    opts: TransferOpts,
+    checkpoint: ReturnType<WasmBookService['captureLockerCheckpoint']>,
+  ) {
     const asNew = opts.asNew ?? false
-    const targetLockerId = asNew ? undefined : this.lockerId
+    assertLockerBindingForSave(this.lockerBinding, asNew)
+    // Mint id before any upload so abort continue/revert has a stable shelf key.
+    if (asNew && !checkpoint.createdId) {
+      checkpoint.createdId = newLedgerId()
+    }
+    const putId = asNew
+      ? checkpoint.createdId
+      : resolveLockerPutId(false, this.lockerId, this.dbPath)
+    if (putId && this.lockerId !== putId) {
+      this.lockerId = putId
+    }
+    const targetLockerId = asNew ? undefined : (this.lockerId ?? undefined)
     const displayName = opts.name ?? this.sourceName
     const plan = lockerUploadPlan(this.dirty, this.attachmentsDirty, targetLockerId)
     if (plan.skip && !asNew) return
     const leanBytes = this.requireDb().export()
 
     const locker = getActiveLocker()
-    if (plan.needLedger || asNew) {
+    if (!asNew && putId && !this.etag) {
+      const books = await locker.list()
+      const found = books.find((b) => b.id === putId)
+      if (!found) throw new Error('book_not_found')
+      this.etag = found.sha256
+      if (found.attachments_sha256) this.attachmentsEtag = this.attachmentsEtag || found.attachments_sha256
+    }
+    if ((plan.needLedger || asNew) && !checkpoint.wroteLedger) {
+      if (!asNew && putId && !checkpoint.prevRemoteBytes) {
+        try {
+          const prev = await locker.get(putId, { signal: opts.signal })
+          checkpoint.prevRemoteBytes = prev.bytes
+        } catch (err) {
+          if (isAbortError(err)) throw err
+          /* rollback snapshot is best-effort */
+        }
+      }
       const saved = await locker.put(
-        asNew ? null : (this.lockerId ?? null),
+        putId,
         leanBytes,
         displayName,
         asNew ? undefined : this.etag,
         opts,
       )
+      checkpoint.wroteLedger = true
       this.lockerId = saved.id
       this.etag = saved.sha256
-      if (asNew) {
+      if (checkpoint.asNew) {
+        checkpoint.createdId = saved.id
         this.attachmentsEtag = saved.attachments_sha256
       } else if (saved.attachments_sha256) {
         this.attachmentsEtag = this.attachmentsEtag || saved.attachments_sha256
       }
       this.dbPath = `locker:${saved.id}`
       this.sourceName = displayName
+      this.setSourceModifiedAt(saved.updated_at ?? new Date().toISOString())
       this.setDirty(false)
     }
 
-    if (plan.needAttachments || asNew) {
+    if (plan.needAttachments || asNew || checkpoint.asNew) {
       if (!this.lockerId) throw new Error('book_not_found')
       const attEtag = this.attachmentsEtag
       const shas = this.liiteShas()
@@ -779,20 +914,25 @@ export class WasmBookService extends Ledger implements BookService {
         if (data) blobs[sha] = data
       }
       if (!attEtag) throw new Error('etag_mismatch')
-      opts.onStage?.('attachments')
       if (locker.putAttachmentBlobs) {
         const attSaved = await locker.putAttachmentBlobs(this.lockerId, shas, blobs, attEtag, opts)
         this.attachmentsEtag = attSaved.attachments_sha256
+        this.setSourceModifiedAt(attSaved.updated_at ?? new Date().toISOString())
       } else if (locker.putAttachments) {
+        opts.onStage?.('attachments')
         if (Object.keys(blobs).length !== shas.length) throw new Error('attachment_missing')
         const pack = this.store.toPack()
         const attSaved = await locker.putAttachments(this.lockerId, pack, attEtag, opts)
         this.attachmentsEtag = attSaved.attachments_sha256
+        this.setSourceModifiedAt(new Date().toISOString())
       } else {
         throw new Error('locker_not_configured')
       }
       this.setAttachmentsDirty(false)
     }
+
+    const binding = lockerBindingFromConnection()
+    if (binding) this.lockerBinding = binding
 
     opts.onStage?.('persist')
     await this.recordBookSaved({ target: 'locker', name: displayName })
@@ -819,6 +959,7 @@ export class WasmBookService extends Ledger implements BookService {
     this.fileHandle = null
     this.emitLocalLinkChange()
     this.lockerId = undefined
+    this.lockerBinding = undefined
     this.etag = undefined
     this.attachmentsEtag = undefined
     this.setAttachmentsDirty(false)
@@ -841,10 +982,16 @@ export class WasmBookService extends Ledger implements BookService {
     const savedLargeFile = this.largeFile
 
     let bytes: Uint8Array
+    let sourceModifiedAt: string | null = savedMeta.sourceModifiedAt ?? null
     if (savedHandle) {
-      bytes = await readFileBytes(await savedHandle.getFile())
+      const file = await savedHandle.getFile()
+      bytes = await readFileBytes(file)
+      sourceModifiedAt = isoFromFileLastModified(file.lastModified)
     } else if (savedLockerId) {
-      ;({ bytes } = await getActiveLocker().get(savedLockerId))
+      assertLockerBindingForRead(this.lockerBinding)
+      const got = await getActiveLocker().get(savedLockerId)
+      bytes = got.bytes
+      sourceModifiedAt = got.updated_at ?? sourceModifiedAt
     } else {
       const original = await opfsLoadOriginal(savedBookId)
       if (!original) throw new Error('reload_unavailable')
@@ -858,6 +1005,7 @@ export class WasmBookService extends Ledger implements BookService {
       sourceName: savedMeta.sourceName,
       dbPath: savedMeta.dbPath,
       sessionId: savedMeta.sessionId,
+      sourceModifiedAt,
     })
     this.bookId = savedBookId
     this.fileHandle = savedHandle
