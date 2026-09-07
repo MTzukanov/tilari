@@ -30,6 +30,7 @@ export type LockerPutResult = {
   id: string
   sha256: string
   attachments_sha256?: string
+  updated_at?: string
 }
 
 export type SupabaseLockerSettings = {
@@ -54,7 +55,13 @@ export interface LockerBackend {
   get(
     id: string,
     opts?: TransferOpts,
-  ): Promise<{ bytes: Uint8Array; etag: string; attachmentsEtag: string; name: string }>
+  ): Promise<{
+    bytes: Uint8Array
+    etag: string
+    attachmentsEtag: string
+    name: string
+    updated_at?: string
+  }>
   put(
     id: string | null,
     bytes: Uint8Array,
@@ -76,7 +83,7 @@ export interface LockerBackend {
     blobs: Record<string, Uint8Array>,
     etag: string,
     opts?: TransferOpts,
-  ): Promise<{ attachments_sha256: string }>
+  ): Promise<{ attachments_sha256: string; updated_at?: string }>
   remove?(id: string): Promise<void>
   /** Delete shared blobs not listed in any book's meta.attachment_shas. */
   gcUnusedBlobs?(): Promise<number>

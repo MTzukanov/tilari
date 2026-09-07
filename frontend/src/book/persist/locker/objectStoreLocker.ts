@@ -31,6 +31,20 @@ function notFound(err: unknown, code: string): boolean {
   return err instanceof Error && (err.message === 'not_found' || err.message === code)
 }
 
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+}
+
+function blobLeafName(name: string): string {
+  const clean = name.replace(/^\//, '')
+  const slash = clean.lastIndexOf('/')
+  return (slash >= 0 ? clean.slice(slash + 1) : clean).toLowerCase()
+}
+
+/** Prefer one list over N HEADs once many blobs may already be in the shared pool. */
+const LIST_POOL_THRESHOLD = 12
+const EXISTS_CONCURRENCY = 4
+
 /**
  * Shared-pool locker over any LockerObjectStore.
  * keyPrefix is '' or 'book1/' (Supabase) or 'tilari/' / 'tilari/book1/' (Node disk).
@@ -129,6 +143,7 @@ export class ObjectStoreLockerBackend implements LockerBackend {
       etag: meta.sha256,
       attachmentsEtag: meta.attachments_sha256,
       name: meta.name,
+      updated_at: meta.updated_at,
     }
   }
 
@@ -164,7 +179,12 @@ export class ObjectStoreLockerBackend implements LockerBackend {
       meta.attachment_shas = existing.attachment_shas ?? []
     }
     await this.writeMeta(meta, opts)
-    return { id: bookId, sha256: sha, attachments_sha256: meta.attachments_sha256 }
+    return {
+      id: bookId,
+      sha256: sha,
+      attachments_sha256: meta.attachments_sha256,
+      updated_at: meta.updated_at,
+    }
   }
 
   async getAttachmentBlob(_id: string, sha: string, opts?: TransferOpts): Promise<Uint8Array> {
@@ -178,6 +198,44 @@ export class ObjectStoreLockerBackend implements LockerBackend {
     }
   }
 
+  private async remoteBlobSet(
+    shas: string[],
+    knownInMeta: Iterable<string>,
+    opts?: TransferOpts,
+  ): Promise<Set<string>> {
+    const present = new Set(normalizeShas(knownInMeta))
+    const missing = shas.filter((sha) => !present.has(sha))
+    if (!missing.length) return present
+
+    throwIfAborted(opts?.signal)
+    opts?.onStage?.('attachments_check')
+
+    if (missing.length >= LIST_POOL_THRESHOLD) {
+      const listed = await listAllObjects(this.store, `${this.root}blobs/`)
+      throwIfAborted(opts?.signal)
+      for (const row of listed) {
+        const leaf = blobLeafName(row.name)
+        if (SHA_RE.test(leaf)) present.add(leaf)
+      }
+      return present
+    }
+
+    let next = 0
+    const workers = Array.from({ length: Math.min(EXISTS_CONCURRENCY, missing.length) }, async () => {
+      for (;;) {
+        throwIfAborted(opts?.signal)
+        const i = next++
+        if (i >= missing.length) return
+        const sha = missing[i]!
+        if (await this.store.exists(this.blobPath(sha), { signal: opts?.signal })) {
+          present.add(sha)
+        }
+      }
+    })
+    await Promise.all(workers)
+    return present
+  }
+
   async putAttachmentBlobs(
     id: string,
     attachmentShas: string[],
@@ -186,14 +244,17 @@ export class ObjectStoreLockerBackend implements LockerBackend {
     opts?: TransferOpts,
   ): Promise<{ attachments_sha256: string }> {
     if (!etag) throw new Error('etag_mismatch')
+    throwIfAborted(opts?.signal)
     const existing = await this.readMeta(id)
     if (!existing) throw new Error('book_not_found')
     if (existing.attachments_sha256 !== etag) throw new Error('etag_mismatch')
     const shas = normalizeShas(attachmentShas)
+    const remote = await this.remoteBlobSet(shas, existing.attachment_shas, opts)
+    throwIfAborted(opts?.signal)
+
     const toUpload: [string, Uint8Array][] = []
     for (const sha of shas) {
-      const path = this.blobPath(sha)
-      if (await this.store.exists(path)) continue
+      if (remote.has(sha)) continue
       const data = blobs[sha]
       if (!data) throw new Error('attachment_missing')
       toUpload.push([sha, data])
@@ -202,26 +263,32 @@ export class ObjectStoreLockerBackend implements LockerBackend {
     opts?.onStage?.('attachments')
     const totalBytes = toUpload.reduce((sum, [, data]) => sum + data.byteLength, 0)
     let bytesCompleted = 0
-    if (totalBytes > 0) opts?.onProgress?.({ loaded: 0, total: totalBytes })
+    let lastProgressAt = 0
+    const reportProgress = (loaded: number, force = false) => {
+      if (totalBytes <= 0) return
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
+      if (!force && loaded < totalBytes && now - lastProgressAt < 80) return
+      lastProgressAt = now
+      opts?.onProgress?.({ loaded, total: totalBytes })
+    }
+    if (totalBytes > 0) reportProgress(0, true)
 
     for (const [sha, data] of toUpload) {
+      throwIfAborted(opts?.signal)
       const size = data.byteLength
       try {
         await this.store.upload(this.blobPath(sha), data, {
           signal: opts?.signal,
           upsert: false,
           onProgress: (p) => {
-            opts?.onProgress?.({
-              loaded: bytesCompleted + p.loaded,
-              total: totalBytes,
-            })
+            reportProgress(bytesCompleted + p.loaded)
           },
         })
       } catch (err) {
         if (!(err instanceof Error) || err.message !== 'duplicate') throw err
       }
       bytesCompleted += size
-      opts?.onProgress?.({ loaded: bytesCompleted, total: totalBytes })
+      reportProgress(bytesCompleted, true)
     }
 
     let attachmentsSize = 0
@@ -233,6 +300,7 @@ export class ObjectStoreLockerBackend implements LockerBackend {
       attachmentsSize = existing.attachments_size
     }
 
+    throwIfAborted(opts?.signal)
     const attSha = await attachmentSetEtag(shas)
     const meta: MetaFile = {
       ...existing,
@@ -243,7 +311,7 @@ export class ObjectStoreLockerBackend implements LockerBackend {
       updated_at: new Date().toISOString(),
     }
     await this.writeMeta(meta, { signal: opts?.signal })
-    return { attachments_sha256: attSha }
+    return { attachments_sha256: attSha, updated_at: meta.updated_at }
   }
 
   async remove(id: string): Promise<void> {
@@ -272,7 +340,7 @@ export class ObjectStoreLockerBackend implements LockerBackend {
         if (notFound(err, 'book_not_found')) continue
         throw err
       }
-      if (!Array.isArray(raw.attachment_shas)) return 0
+      if (!Array.isArray(raw.attachment_shas)) continue
       for (const sha of raw.attachment_shas) {
         if (typeof sha === 'string' && SHA_RE.test(sha)) keep.add(sha)
       }

@@ -1,6 +1,11 @@
 /**
- * Opaque .kitsas locker — lean ledger + TILARIAT attachment packs.
- * Separate from Ledger (no posting/SQL domain). Port of backend/app/locker.py.
+ * Node shelf — one on-disk layout shared with wasm BYO /api/objects:
+ *   {booksDir}/tilari/{id}/book.kitsas
+ *   {booksDir}/tilari/{id}/meta.json
+ *   {booksDir}/tilari/blobs/{sha}
+ *
+ * /api/books* is a façade over this layout (TILARIAT packs on the wire).
+ * Separate from Ledger (no posting/SQL domain).
  */
 import { createHash, randomUUID } from 'node:crypto'
 import {
@@ -24,6 +29,9 @@ import { sha256hexSync } from '../../../frontend/src/book/sha256.ts'
 const SHA_RE = /^[0-9a-f]{64}$/
 const SAFE = /[^A-Za-z0-9._\-]+/g
 
+/** Default object-store path prefix (same as frontend DEFAULT_STORAGE_PATH). */
+export const SHELF_PREFIX = 'tilari'
+
 export type LockerMeta = {
   id: string
   name: string
@@ -31,6 +39,7 @@ export type LockerMeta = {
   sha256: string
   attachments_sha256: string
   attachments_size: number
+  attachment_shas?: string[]
   split_attachments: boolean
   updated_at: string
 }
@@ -86,58 +95,96 @@ export function booksDir(): string {
   return path
 }
 
-function metaPath(bookId: string): string {
-  return join(booksDir(), `${bookId}.meta.json`)
-}
-function filePath(bookId: string): string {
-  return join(booksDir(), `${bookId}.kitsas`)
-}
-function attachmentsDir(bookId: string): string {
-  return join(booksDir(), `${bookId}.attachments`)
+function shelfRoot(): string {
+  const root = join(booksDir(), SHELF_PREFIX)
+  mkdirSync(root, { recursive: true })
+  return root
 }
 
-function readAttachmentBlobs(bookId: string): Record<string, Uint8Array> {
-  const root = attachmentsDir(bookId)
-  if (!existsSync(root)) return {}
+function bookDir(bookId: string): string {
+  return join(shelfRoot(), bookId)
+}
+
+function metaPath(bookId: string): string {
+  return join(bookDir(bookId), 'meta.json')
+}
+
+function filePath(bookId: string): string {
+  return join(bookDir(bookId), 'book.kitsas')
+}
+
+function blobsDir(): string {
+  const dir = join(shelfRoot(), 'blobs')
+  mkdirSync(dir, { recursive: true })
+  return dir
+}
+
+function blobPath(shaHex: string): string {
+  return join(blobsDir(), shaHex)
+}
+
+function normalizeShas(shas: Iterable<string> | undefined): string[] {
+  if (!shas) return []
+  return [...new Set([...shas].map((s) => s.toLowerCase()).filter((s) => SHA_RE.test(s)))].sort()
+}
+
+function readAttachmentBlobs(bookId: string, shas?: string[]): Record<string, Uint8Array> {
+  const list = shas ?? normalizeShas(readMetaJson(bookId)?.attachment_shas)
   const out: Record<string, Uint8Array> = {}
-  for (const name of readdirSync(root)) {
-    if (SHA_RE.test(name)) out[name] = new Uint8Array(readFileSync(join(root, name)))
+  for (const s of list) {
+    const path = blobPath(s)
+    if (existsSync(path)) out[s] = new Uint8Array(readFileSync(path))
   }
   return out
 }
 
-function writeAttachmentBlobs(bookId: string, blobs: Record<string, Uint8Array>): void {
-  const root = attachmentsDir(bookId)
-  if (existsSync(root)) rmSync(root, { recursive: true, force: true })
-  mkdirSync(root, { recursive: true })
+function writeAttachmentBlobs(blobs: Record<string, Uint8Array>): void {
   for (const [s, data] of Object.entries(blobs)) {
-    writeFileSync(join(root, s), data)
+    const path = blobPath(s)
+    if (!existsSync(path)) writeFileSync(path, data)
   }
 }
 
 function writeMeta(meta: LockerMeta): void {
-  writeFileSync(metaPath(meta.id), JSON.stringify(meta), 'utf8')
+  mkdirSync(bookDir(meta.id), { recursive: true })
+  const normalized: LockerMeta = {
+    ...meta,
+    attachment_shas: normalizeShas(meta.attachment_shas),
+  }
+  writeFileSync(metaPath(meta.id), JSON.stringify(normalized), 'utf8')
 }
 
-function attachmentsShaFromDisk(bookId: string): string {
-  return sha(encodeAttachmentPack(readAttachmentBlobs(bookId)))
+function attachmentsShaFromDisk(bookId: string, shas: string[]): string {
+  return sha(encodeAttachmentPack(readAttachmentBlobs(bookId, shas)))
 }
 
 function normalizeMeta(meta: LockerMeta, bookId: string): LockerMeta {
   let changed = false
-  const m = { ...meta }
+  const m = { ...meta, id: bookId }
   if (m.split_attachments === undefined) {
     m.split_attachments = true
     changed = true
   }
+  if (!Array.isArray(m.attachment_shas)) {
+    m.attachment_shas = []
+    changed = true
+  } else {
+    const norm = normalizeShas(m.attachment_shas)
+    if (norm.join(',') !== m.attachment_shas.join(',')) {
+      m.attachment_shas = norm
+      changed = true
+    }
+  }
   if (!m.attachments_sha256) {
-    m.attachments_sha256 = existsSync(attachmentsDir(bookId))
-      ? attachmentsShaFromDisk(bookId)
+    m.attachments_sha256 = m.attachment_shas.length
+      ? attachmentsShaFromDisk(bookId, m.attachment_shas)
       : EMPTY_PACK_SHA
     changed = true
   }
   if (m.attachments_size === undefined) {
-    m.attachments_size = encodeAttachmentPack(readAttachmentBlobs(bookId)).byteLength
+    m.attachments_size = encodeAttachmentPack(
+      readAttachmentBlobs(bookId, m.attachment_shas),
+    ).byteLength
     changed = true
   }
   if (changed) writeMeta(m)
@@ -168,10 +215,11 @@ function readMetaJson(bookId: string): LockerMeta | null {
 function refreshMetaFromDisk(
   bookId: string,
   name?: string,
-  opts?: { rehashAttachments?: boolean },
+  opts?: { rehashAttachments?: boolean; attachmentShas?: string[] },
 ): LockerMeta {
   const data = readFileSync(filePath(bookId))
   const prev = readMetaJson(bookId)
+  const shas = normalizeShas(opts?.attachmentShas ?? prev?.attachment_shas)
   const rehash = opts?.rehashAttachments !== false
   let attachments_sha256: string
   let attachments_size: number
@@ -179,7 +227,7 @@ function refreshMetaFromDisk(
     attachments_sha256 = prev.attachments_sha256
     attachments_size = prev.attachments_size ?? 0
   } else {
-    const pack = encodeAttachmentPack(readAttachmentBlobs(bookId))
+    const pack = encodeAttachmentPack(readAttachmentBlobs(bookId, shas))
     attachments_sha256 = sha(pack)
     attachments_size = pack.byteLength
   }
@@ -190,6 +238,7 @@ function refreshMetaFromDisk(
     sha256: sha(data),
     attachments_sha256,
     attachments_size,
+    attachment_shas: shas,
     split_attachments: true,
     updated_at: new Date().toISOString(),
   }
@@ -197,20 +246,26 @@ function refreshMetaFromDisk(
   return meta
 }
 
-type SplitResult = { extracted: boolean; vacuumed: boolean }
+type SplitResult = { extracted: boolean; vacuumed: boolean; shas: string[] }
 
 function syncMetaAfterSplit(bookId: string, split: SplitResult, name?: string): void {
   if (!split.extracted && !split.vacuumed) return
-  refreshMetaFromDisk(bookId, name, { rehashAttachments: split.extracted })
+  const prev = normalizeShas(readMetaJson(bookId)?.attachment_shas)
+  const shas = normalizeShas([...prev, ...split.shas])
+  refreshMetaFromDisk(bookId, name, {
+    rehashAttachments: split.extracted,
+    attachmentShas: shas,
+  })
 }
 
-/** Move Liite.data into attachments/, NULL blobs, VACUUM. */
+/** Move Liite.data into tilari/blobs/, NULL blobs, VACUUM. */
 function ensureLeanSplit(bookId: string): SplitResult {
-  const none = { extracted: false, vacuumed: false }
+  const none = { extracted: false, vacuumed: false, shas: [] as string[] }
   const path = filePath(bookId)
   if (!existsSync(path)) return none
   let extracted = false
   let vacuumed = false
+  const extractedShas: string[] = []
   const db = new DatabaseSync(path)
   try {
     let rows: { id: number; sha: string | null; data: Buffer | null }[]
@@ -224,17 +279,18 @@ function ensureLeanSplit(bookId: string): SplitResult {
     const flRow = db.prepare('PRAGMA freelist_count').get() as { freelist_count?: number } | undefined
     const freelistCount = Number(flRow?.freelist_count ?? 0)
     if (rows.length) {
-      const blobs = readAttachmentBlobs(bookId)
+      const blobs: Record<string, Uint8Array> = {}
       const upd = db.prepare('UPDATE Liite SET sha = ?, data = NULL WHERE id = ?')
       for (const row of rows) {
         if (!row.data) continue
         const blob = new Uint8Array(row.data)
         const s = row.sha && SHA_RE.test(String(row.sha)) ? String(row.sha) : sha(blob)
         blobs[s] = blob
+        extractedShas.push(s)
         upd.run(s, row.id)
         extracted = true
       }
-      if (extracted) writeAttachmentBlobs(bookId, blobs)
+      if (extracted) writeAttachmentBlobs(blobs)
     }
     if (extracted || freelistCount > 0) {
       db.exec('VACUUM')
@@ -243,16 +299,18 @@ function ensureLeanSplit(bookId: string): SplitResult {
   } finally {
     db.close()
   }
-  return { extracted, vacuumed }
+  return { extracted, vacuumed, shas: extractedShas }
 }
 
 export function listBooks(): LockerMeta[] {
-  const dir = booksDir()
+  const root = shelfRoot()
   const out: LockerMeta[] = []
-  for (const name of readdirSync(dir)) {
-    if (!name.endsWith('.meta.json')) continue
+  for (const name of readdirSync(root)) {
+    if (name === 'blobs' || name === 'vault.json') continue
+    const mf = join(root, name, 'meta.json')
+    if (!existsSync(mf)) continue
     try {
-      const data = JSON.parse(readFileSync(join(dir, name), 'utf8')) as LockerMeta
+      const data = JSON.parse(readFileSync(mf, 'utf8')) as LockerMeta
       if (typeof data.id === 'string') out.push(normalizeMeta(data, data.id))
     } catch {
       /* skip */
@@ -271,15 +329,17 @@ export function getBook(bookId: string): { meta: LockerMeta; data: Buffer } | nu
 export function getAttachments(bookId: string): { meta: LockerMeta; pack: Uint8Array } | null {
   const found = getBook(bookId)
   if (!found) return null
-  return { meta: found.meta, pack: encodeAttachmentPack(readAttachmentBlobs(bookId)) }
+  const shas = normalizeShas(found.meta.attachment_shas)
+  return { meta: found.meta, pack: encodeAttachmentPack(readAttachmentBlobs(bookId, shas)) }
 }
 
 export function getAttachmentBlob(bookId: string, shaHex: string): Buffer | null {
   const s = shaHex.toLowerCase()
   if (!SHA_RE.test(s)) return null
-  if (!peekBook(bookId)) return null
+  const found = peekBook(bookId)
+  if (!found) return null
   syncMetaAfterSplit(bookId, ensureLeanSplit(bookId))
-  const path = join(attachmentsDir(bookId), s)
+  const path = blobPath(s)
   if (!existsSync(path)) return null
   return readFileSync(path)
 }
@@ -300,10 +360,14 @@ export function putBook(
     const current = existing.meta.sha256
     if (!expected || current !== expected) throw new LockerConflict(current)
   }
+  mkdirSync(bookDir(bookId), { recursive: true })
   writeFileSync(filePath(bookId), data)
   const split = ensureLeanSplit(bookId)
+  const prevShas = normalizeShas(existing?.meta.attachment_shas)
+  const shas = normalizeShas([...prevShas, ...split.shas])
   return refreshMetaFromDisk(bookId, name, {
     rehashAttachments: split.extracted || !existing?.meta.attachments_sha256,
+    attachmentShas: shas,
   })
 }
 
@@ -325,12 +389,14 @@ export function putAttachments(
   } catch (err) {
     throw new LockerBadPack(err instanceof Error ? err.message : String(err))
   }
-  writeAttachmentBlobs(opts.bookId, Object.fromEntries(blobs))
+  writeAttachmentBlobs(Object.fromEntries(blobs))
+  const shas = normalizeShas(blobs.keys())
   const attSha = sha(pack)
   const meta: LockerMeta = {
     ...existing.meta,
     attachments_sha256: attSha,
     attachments_size: pack.byteLength,
+    attachment_shas: shas,
     split_attachments: true,
     updated_at: new Date().toISOString(),
   }

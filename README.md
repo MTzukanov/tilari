@@ -82,7 +82,7 @@ On start, Tilari can create a new Finnish business-chart book in the browser. De
 - Running balance on the account ledger
 - In-session **change log**
 - Fully working in the browser (OPFS working copy; Chromium can save in place)
-- Optional locker: **your Supabase** bucket (encrypted in the tab), or a **self-hosted VPS** (Node HTTP store)
+- Optional locker: **your Supabase** bucket (encrypted in the tab), or a **Tilari server** you run (this machine, LAN, VPS, … — Node HTTP store)
 - Use it as a normal web app (each action is a request), or work locally in the tab and save when you choose
 - Linux / Windows / macOS packs without Qt
 
@@ -143,7 +143,7 @@ Full table: [docs/SCOPE.md](docs/SCOPE.md). Working modes: [docs/WORKING_MODES.m
 | [docs/TESTING.md](docs/TESTING.md) | Test pyramid |
 | [docs/WORKING_MODES.md](docs/WORKING_MODES.md) | Single HTML, static site, locker, VPN, Node processing, in-place save |
 | [docs/PACKAGING.md](docs/PACKAGING.md) | Local launcher, AppImage, Windows/macOS zips |
-| [docs/DEPLOY.md](docs/DEPLOY.md) | VPS: Actions + official Node/cloudflared images |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | Tilari server deploy (often a VPS): Actions + official Node/cloudflared images |
 | [AGENTS.md](AGENTS.md) | Commands and invariants for agents |
 | [docs/VERSIONS.md](docs/VERSIONS.md) | Toolchain snapshot |
 | [LICENSE](LICENSE) | GPL-3 + Kitsas extra conditions (full text) |
@@ -289,7 +289,7 @@ Reference C++ routes (in kitupiikki):
 
 ## Security notes (not implemented)
 
-Intended later for VPS: Tailscale and/or Caddy + Authelia, localhost-bound API, short-lived encrypted uploads. **Not** wired in this repo yet.
+Intended later for self-hosted Tilari server: Tailscale and/or Caddy + Authelia, localhost-bound API, short-lived encrypted uploads. **Not** wired in this repo yet.
 
 Current defaults: API on `127.0.0.1:8000`, CORS for Vite only. Uploads land in temp -- fine for local use only.
 

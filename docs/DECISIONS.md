@@ -305,7 +305,7 @@ PBKDF2 salt, iteration count, and a verifier blob — not the secret.
 - Secret is asked on the same connect form as URL / anon / bucket and stored
   in `sessionStorage` with them
 - Generate-once fills a 32-byte hex secret (user must copy it elsewhere)
-- Node HTTP locker and OPFS working copies stay plaintext
+- OPFS working copies stay plaintext; encrypted shelf disables **On the server**
 - No plaintext fallback, no secret rotation without rewriting all objects
 
 This does **not** protect a compromised tab (XSS still reads `sessionStorage`).
@@ -344,5 +344,24 @@ empty book.
 Forbidden without a new ADR: yhdistys/asoy charts, `.kitsaskartta` import,
 prior-year 9010 opening voucher, HTTP-engine create, or a second posting
 language to build the file.
+
+## ADR-022 One Node shelf layout (object-store) (2026-09-07)
+
+**Status:** accepted
+
+Tilari-server / desktop Node uses a **single** on-disk shelf under
+`{booksDir}/tilari/` (same keys as Supabase BYO):
+
+- `{id}/book.kitsas`, `{id}/meta.json`, `blobs/{sha}`, optional `vault.json`
+
+`/api/objects` is the thin CRUD API for wasm BYO. `/api/books*` is a façade
+over the same keys (TILARIAT packs on the wire). `POST /api/open-locker`
+loads `tilari/{id}/book.kitsas` for **On the server**.
+
+Client encryption (ADR-019) wraps the same paths; it does not change the
+layout. Encrypted shelves are wasm-only. No migration of the retired pack
+layout (`{id}.kitsas` at booksDir root).
+
+Desktop and remote Tilari-server are the same Node binary; only the URL differs.
 
 

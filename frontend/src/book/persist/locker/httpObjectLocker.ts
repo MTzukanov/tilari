@@ -3,7 +3,7 @@ import { ObjectStoreLockerBackend } from './objectStoreLocker'
 import type { HttpLockerSettings, LockerBackend } from './types'
 import { objectKeyPrefix, parseStoragePath } from './storagePath'
 import { openEncryptedStore, requireSecret } from './vaultCrypto'
-import { getHttpLockerOrigin, httpLockerUsesSameOrigin, parseHttpLockerSettings } from './httpLocker'
+import { getHttpLockerOrigin, httpLockerNodeReachable, httpLockerUsesSameOrigin, parseHttpLockerSettings } from './httpLocker'
 
 export async function buildHttpObjectLocker(
   settings: HttpLockerSettings,
@@ -16,35 +16,50 @@ export async function buildHttpObjectLocker(
   const ready = encrypt
     ? await openEncryptedStore(raw, requireSecret(String(settings.secret || '')), keyPrefix)
     : raw
+  // Ledger /api is page-relative (or Vite-proxied). Allow On the server when Node is
+  // reachable here and the shelf is plaintext — locker URL may differ (e.g. :8000).
+  const supportsHttpEngine = !encrypt && (origin === null || httpLockerNodeReachable())
   return new ObjectStoreLockerBackend(ready, keyPrefix, {
     id: 'http',
-    supportsHttpEngine: httpLockerUsesSameOrigin(),
+    supportsHttpEngine,
   })
 }
 
 /** Lazy wrapper matching createSupabaseLocker. */
 export function createHttpObjectLocker(settings: HttpLockerSettings, origin?: string | null): LockerBackend {
   let backend: ObjectStoreLockerBackend | null = null
+  const encrypt = Boolean(settings.encrypt)
+  let disposed = false
 
   async function ready(next?: unknown): Promise<ObjectStoreLockerBackend> {
+    if (disposed) throw new Error('locker_not_configured')
     const s = next ? parseHttpLockerSettings(next) : settings
     backend = await buildHttpObjectLocker(s, origin === undefined ? getHttpLockerOrigin() : origin)
+    if (disposed) {
+      backend = null
+      throw new Error('locker_not_configured')
+    }
     return backend
   }
 
   return {
     id: 'http',
     get supportsHttpEngine() {
-      return httpLockerUsesSameOrigin()
+      if (disposed || encrypt) return false
+      if (backend) return backend.supportsHttpEngine
+      const o = origin === undefined ? getHttpLockerOrigin() : origin
+      return o === null || httpLockerNodeReachable() || httpLockerUsesSameOrigin()
     },
     async connect(next?: unknown) {
+      if (disposed) throw new Error('locker_not_configured')
       await ready(next)
     },
     disconnect() {
+      disposed = true
       backend = null
     },
     isReady() {
-      return Boolean(backend)
+      return Boolean(backend) && !disposed
     },
     async list() {
       return (await ready()).list()

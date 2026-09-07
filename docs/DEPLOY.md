@@ -1,7 +1,8 @@
-# VPS deploy (Tilari)
+# Tilari server deploy
 
-Deployment shape is usually **browser wasm + locker** (mode 3 in
-[WORKING_MODES.md](WORKING_MODES.md)). Desktop AppImage remains
+How to run a **Tilari server** (Node + locker) on a host you control: this machine,
+LAN/NAS, VPN, or a public **VPS**. Deployment shape is usually **browser wasm + locker**
+(mode 3 in [WORKING_MODES.md](WORKING_MODES.md)). Desktop AppImage remains
 [PACKAGING.md](PACKAGING.md). User-facing HTML (fi/en/sv/de): [`../site/`](../site/).
 
 **Private network instead of a public hostname:** install the same stack on a
@@ -15,7 +16,7 @@ this tunnel.
 
 **Stack:** GitHub Actions runs the shared [Test](TESTING.md#ci) workflow
 (including Playwright), then builds `frontend/dist` and rsyncs it with the Node
-`server/` (plus `frontend/src` for shared `Ledger` imports). The VPS runs official
+`server/` (plus `frontend/src` for shared `Ledger` imports). The host runs official
 `node:24-bookworm-slim` (npm into a Docker volume) and, when configured, official
 `cloudflare/cloudflared`. No host Node install required beyond Docker. The app
 listens only on the Compose network (`:8000`, no published ports).
@@ -24,16 +25,16 @@ listens only on the Compose network (`:8000`, no published ports).
 
 Secrets:
 
-- `VPS_SSH_KEY`, `VPS_HOST`, `VPS_USER`, optional `VPS_SSH_PORT`
+- `VPS_SSH_KEY`, `VPS_HOST`, `VPS_USER`, optional `VPS_SSH_PORT` (names kept for existing Actions)
 - `TUNNEL_TOKEN` — Cloudflare Tunnel token (Zero Trust → Networks → Tunnels)
 
 Optional variable: `VPS_PROJECT_PATH` (default `~/tilari`).
 
-Each deploy writes `TUNNEL_TOKEN` into `~/tilari/.env` on the VPS (`chmod 600`) and starts the `tunnel` Compose profile. Leave `.env` off git. If the secret is empty, only the `tilari` container starts.
+Each deploy writes `TUNNEL_TOKEN` into `~/tilari/.env` on the host (`chmod 600`) and starts the `tunnel` Compose profile. Leave `.env` off git. If the secret is empty, only the `tilari` container starts.
 
 Push to `main` or run the workflow manually.
 
-## VPS, first time
+## Host, first time
 
 Books and uploads: `~/tilari/data` (container `/data`, locker files in `/data/books`). With the browser wasm engine the API only stores opaque `.kitsas` blobs; with the http engine the same process also runs Ledger.
 

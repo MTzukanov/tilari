@@ -52,7 +52,7 @@
           <li><a href="#html">En HTML-fil</a></li>
           <li><a href="#local">Server på den här datorn</a></li>
           <li><a href="#vpn">Server i ett VPN</a></li>
-          <li><a href="#vps">Egen VPS</a></li>
+          <li><a href="#server">Tilari-server</a></li>
           <li><a href="#browsers">Webbläsare och sparande</a></li>
           <li><a href="#supabase">Supabase-skåp</a></li>
           <li><a href="#cloud">Dropbox och Google Drive</a></li>
@@ -95,7 +95,7 @@
             <li><strong>Fungerar helt i webbläsaren</strong> — eller som en vanlig webbapp.</li>
             <li>Rapporter du kan klicka dig fram till ett verifikat i; <strong>ändringslogg</strong> i sessionen.</li>
             <li><strong>Bokslut</strong> går att göra. Arkiv finns inte ännu.</li>
-            <li>Boken i din fil eller ditt eget skåp (<strong>Supabase</strong> / <strong>VPS</strong>).</li>
+            <li>Boken i din fil eller ditt eget skåp (<strong>Supabase</strong> / <strong>Tilari-server</strong>).</li>
           </ul>
         </div>
 
@@ -127,7 +127,7 @@
           </li>
           <li>
             Valfritt skåp: <strong>din Supabase</strong> (krypterat i webbläsaren) eller
-            <strong>egen VPS</strong> — inte Tilaris moln.
+            <strong>Tilari-server</strong> — inte Tilaris moln.
           </li>
           <li>Linux-, Windows- och macOS-paket om du vill ha programmet på den här datorn.</li>
         </ul>
@@ -273,8 +273,8 @@
             <strong>Supabase</strong>
             <span>Eget molnskåp utan Tilari-server.</span>
           </a>
-          <a class="featured" href="#vps">
-            <strong>VPS</strong>
+          <a class="featured" href="#server">
+            <strong>Tilari-server</strong>
             <span>Offentlig adress, böcker på din server.</span>
           </a>
           <a href="#browsers">
@@ -316,7 +316,7 @@
             </tr>
             <tr>
               <td>Ett offentligt värdnamn och inloggningsport</td>
-              <td><a href="#vps">Egen VPS</a>; den här sidan ersätter inte administratörens installation</td>
+              <td><a href="#server">Tilari-server</a>; den här sidan ersätter inte administratörens installation</td>
             </tr>
           </tbody>
         </table>
@@ -401,7 +401,7 @@
           Webbläsaren behandlar sidan som en säker kontext: arbetskopian överlever en omladdning,
           Chrome/Edge kan spara på plats, och valfri <strong>BYO</strong>-lagring fungerar om du
           ansluter <a href="#supabase">din Supabase</a> eller ett Tilari-skåp på
-          <strong>din</strong> VPS (CORS måste tillåta den här origin). Tilaris sajt lagrar inte
+          <strong>din</strong> Tilari-server (CORS måste tillåta den här origin). Tilaris sajt lagrar inte
           böcker: filen skickas aldrig till en server som du inte själv anger. Det finns ingen
           Node på samma origin, så inget <strong>På servern</strong>-behandlande.
         </p>
@@ -518,12 +518,14 @@
           kontor behåll standarden <strong>I den här webbläsaren</strong> och dela via skåpet.
         </p>
 
-        <h2 id="vps">Egen VPS</h2>
+        <h2 id="server">Tilari-server</h2>
         <p>
-          Ett offentligt värdnamn och en inloggningsport. Servern håller böcker i ett
-          <strong>skåp</strong>. Använd Tilari som en vanlig webbapp, eller behandla boken i
-          webbläsaren och spara till skåpet. Installationen är administratörens uppgift; den här
-          sidan ersätter inte den.
+          En Tilari-server är Node-processen som serverar gränssnittet och ett valfritt
+          <strong>skåp</strong> för böcker. Samma program körs på den här datorn
+          (<code>127.0.0.1</code>), på LAN/NAS, VPN eller en publik VPS — du ansluter med URL:en.
+          Använd Tilari som en vanlig webbapp, eller behandla boken i webbläsaren och spara till
+          skåpet. Offentligt värdnamn och inloggningsport är valfria adminval; den här sidan
+          ersätter inte installationen.
         </p>
 
         <h2 id="browsers">Vilka webbläsare sparar filen på plats</h2>
@@ -601,8 +603,9 @@
             offentlig CDN).
           </li>
           <li>
-            Storage-policyer (RLS) på den bucketen för prefixet <code>tilari/</code> (anon-roll,
-            select / insert / update / delete).
+            Storage-policyer (RLS) på den bucketen (anon-roll, select / insert / update / delete).
+            Sökväg <code>tilari/book1</code> begränsar nycklar till <code>book1/</code> — lägg då
+            till <code>name like 'book1/%'</code>.
           </li>
           <li>
             Storage CORS: Tilaris https-origin, metoderna GET, POST, PUT, DELETE, rubrikerna
@@ -613,16 +616,16 @@
         <p>Exempel på RLS-policyer:</p>
         <pre><code>create policy "tilari_locker_select"
   on storage.objects for select to anon
-  using (bucket_id = 'tilari' and name like 'tilari/%');
+  using (bucket_id = 'tilari');
 create policy "tilari_locker_insert"
   on storage.objects for insert to anon
-  with check (bucket_id = 'tilari' and name like 'tilari/%');
+  with check (bucket_id = 'tilari');
 create policy "tilari_locker_update"
   on storage.objects for update to anon
-  using (bucket_id = 'tilari' and name like 'tilari/%');
+  using (bucket_id = 'tilari');
 create policy "tilari_locker_delete"
   on storage.objects for delete to anon
-  using (bucket_id = 'tilari' and name like 'tilari/%');</code></pre>
+  using (bucket_id = 'tilari');</code></pre>
         <h3>Anslut i Tilari</h3>
         <ol>
           <li><strong>Öppna från din lagring…</strong> → <strong>Egen Supabase</strong> (BYO).</li>

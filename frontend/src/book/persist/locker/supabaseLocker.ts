@@ -100,13 +100,19 @@ export function createSupabaseLocker(
 
   let backend: ObjectStoreLockerBackend | null = null
   let boot: Promise<ObjectStoreLockerBackend> | null = null
+  let disposed = false
 
   async function ready(next?: unknown): Promise<ObjectStoreLockerBackend> {
+    if (disposed) throw new Error('locker_not_configured')
     const s = next ? parseSupabaseSettings(next) : settings
     if (backend && !next) return backend
     boot = buildSupabaseLocker(s, store)
     backend = await boot
     boot = null
+    if (disposed) {
+      backend = null
+      throw new Error('locker_not_configured')
+    }
     return backend
   }
 
@@ -114,13 +120,16 @@ export function createSupabaseLocker(
     id: 'supabase',
     supportsHttpEngine: false,
     async connect(next?: unknown) {
+      if (disposed) throw new Error('locker_not_configured')
       await ready(next)
     },
     disconnect() {
+      disposed = true
       backend = null
+      boot = null
     },
     isReady() {
-      return Boolean(backend)
+      return Boolean(backend) && !disposed
     },
     async list() {
       return (await ready()).list()
