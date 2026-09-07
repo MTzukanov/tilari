@@ -81,7 +81,6 @@ export function AppLayout({
   onConfirmPendingOpen,
   onCancelPendingOpen,
   onCancelBusy,
-  onRefreshRoute,
   onPracticeDate,
 }: {
   route: Route
@@ -139,7 +138,6 @@ export function AppLayout({
   onConfirmPendingOpen: (kind: EngineKind) => void
   onCancelPendingOpen: () => void
   onCancelBusy: () => void
-  onRefreshRoute: () => void
   onPracticeDate: (iso: string) => void
 }) {
   const { t } = useI18n()
@@ -205,7 +203,7 @@ export function AppLayout({
                   sourceModifiedAt={meta.source_modified_at}
                   lastActivityAt={meta.last_activity_at}
                   onReloadDiscard={onReloadDiscard}
-                  onNavigate={onRefreshRoute}
+                  onNavigate={onNavigate}
                 />
               ) : null}
               {meta ? (

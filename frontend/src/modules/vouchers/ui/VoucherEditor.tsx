@@ -33,6 +33,7 @@ import { vatFromKey, vatKey } from '../../vat/ui/vatCodes'
 import { parseEurInput, formatEurInput } from '../../../shared/money'
 import { SearchSelect, type SearchItem } from '../../../shared/SearchSelect'
 import { EuroInput } from '../../../shared/EuroInput'
+import { useLeaveGuard } from '../../../app/leaveGuard'
 import { getBcp47, useI18n } from '../../../i18n'
 import { nativePickerFocusProps } from '../../../shared/nativePicker'
 import { voucherStatusName } from '../../../shared/voucherTypes'
@@ -443,6 +444,7 @@ export function VoucherEditor({
   const dirty = baseline != null && editorPack !== baseline
   const postedExisting = existing != null && status >= 100
   const showDraft = !postedExisting
+  useLeaveGuard(dirty, t('editor.discardChanges'))
 
   useEffect(() => {
     if (!voucherId || !date) {
