@@ -2049,7 +2049,7 @@ button.status-chip:focus-visible {
   gap: 0.35rem;
   flex-wrap: nowrap;
   border-radius: 4px;
-  padding: 0.1rem 0.15rem 0.1rem 0;
+  padding: 0.2rem 0.35rem;
 }
 
 .locker-book-row:hover {
@@ -2060,6 +2060,8 @@ button.status-chip:focus-visible {
   flex: 1 1 auto;
   min-width: 0;
   width: auto;
+  padding: 0.15rem 0;
+  align-self: center;
 }
 
 .locker-book-row .file-picker-row.nav-link:hover {
@@ -2072,8 +2074,8 @@ button.status-chip:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 1.75rem;
+  height: 1.75rem;
   margin: 0;
   padding: 0;
   border: 1px solid transparent;
