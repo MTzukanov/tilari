@@ -897,6 +897,7 @@
       "voucher_update": "Muokattiin tosite {id}: {title}",
       "voucher_delete": "Poistettiin tosite {id}",
       "attachment_add": "Liite {name} tositteelle {voucherId}",
+      "attachment_delete": "Poistettiin liite {name} tositteelta {voucherId}",
       "bank_split": "Jaettiin tilioterivi (tosite {voucherId} → {newId})",
       "settings": "Muokattiin yrityksen asetuksia",
       "account": "Muokattiin tili {number}: {name}",

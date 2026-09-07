@@ -897,6 +897,7 @@
       "voucher_update": "Beleg {id} bearbeitet: {title}",
       "voucher_delete": "Beleg {id} gelöscht",
       "attachment_add": "Anlage {name} zu Beleg {voucherId}",
+      "attachment_delete": "Anlage {name} von Beleg {voucherId} gelöscht",
       "bank_split": "Kontoauszugszeile aufgeteilt (Beleg {voucherId} → {newId})",
       "settings": "Unternehmenseinstellungen bearbeitet",
       "account": "Konto {number} bearbeitet: {name}",

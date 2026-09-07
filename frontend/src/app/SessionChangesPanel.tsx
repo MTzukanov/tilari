@@ -12,6 +12,7 @@ function sessionChangeHref(change: SessionChange): string | null {
     case 'voucher_delete':
       return typeof p.id === 'number' && p.id > 0 ? `#/voucher/${p.id}/edit` : null
     case 'attachment_add':
+    case 'attachment_delete':
       return typeof p.voucherId === 'number' ? `#/voucher/${p.voucherId}/edit` : null
     case 'bank_split':
       return typeof p.newId === 'number' ? `#/voucher/${p.newId}/edit` : null
