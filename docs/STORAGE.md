@@ -14,10 +14,11 @@ Node locker stores both as opaque bytes (`KITSAS_BOOKS_DIR`), not as a live
 SQL engine.
 
 ```
-# locker (server)
-{books_dir}/{id}.kitsas              # lean ledger
-{books_dir}/{id}.attachments/{sha}   # individual blobs
-{books_dir}/{id}.meta.json           # ledger + attachments hashes
+# Node shelf (one layout for /api/books* and /api/objects — ADR-022)
+{books_dir}/tilari/{id}/book.kitsas   # lean ledger
+{books_dir}/tilari/{id}/meta.json     # ledger + attachments hashes + attachment_shas[]
+{books_dir}/tilari/blobs/{sha}        # shared content-addressed pool
+{books_dir}/tilari/vault.json         # only when client encryption is on
 
 # browser OPFS
 tilari/blobs/{sha}                   # shared attachment cache
@@ -25,11 +26,12 @@ tilari/{bookId}/working.kitsas       # session lean ledger
 tilari/{bookId}/meta.json            # includes attachmentShas
 ```
 
-Wire format for bulk attachment transfer: `TILARIAT` pack (see
-`frontend/src/book/attPack.ts` and `server/src/locker/store.ts`).
+Wire format for bulk attachment transfer on `/api/books/{id}/attachments`:
+`TILARIAT` pack (see `frontend/src/book/attPack.ts` and `server/src/locker/store.ts`).
+Wasm BYO uses `/api/objects` (or Supabase) with the same on-disk keys.
 
 On `GET`/`PUT` of a classic fat `.kitsas`, the locker extracts `Liite.data`
-into `{id}.attachments/`, NULLs the column, and `VACUUM`s so the served ledger
+into `tilari/blobs/`, NULLs the column, and `VACUUM`s so the served ledger
 file is actually small. Without `VACUUM`, SQLite keeps freelist pages and the
 “lean” download stays hundreds of megabytes.
 
@@ -85,16 +87,18 @@ CLI sketch: `node scripts/extract-attachments.mjs copy.kitsas ./liitteet --apply
 
 Route handlers must not embed these snippets; use `SqlDialect`.
 
-## BYO object-store lockers (Supabase + Node wasm)
+## BYO object-store lockers (Supabase + Tilari-server)
 
 Operator steps (Finnish / English HTML): [`../site/index.html#supabase`](../site/index.html#supabase),
 [`../site/en/#supabase`](../site/en/#supabase). Architecture: [WORKING_MODES.md](WORKING_MODES.md) mode 3b.
 
-Supabase Storage and Tilari Node (`/api/objects`) share one browser
-implementation: `ObjectStoreLockerBackend` over a thin object store
-(`list` / `exists` / `get` / `put` / `delete`). Optional client-side AES-GCM
-(encryption checkbox) wraps the store; Node HTTP-engine book APIs
-(`/api/books`, open-locker) stay available for server-side processing.
+Supabase Storage and Tilari Node share one browser implementation:
+`ObjectStoreLockerBackend` over a thin object store (`list` / `exists` / `get` /
+`put` / `delete`). On Node the store is `/api/objects` under `booksDir`; the
+same keys are what `/api/books*` and `POST /api/open-locker` read (ADR-022).
+Optional client-side AES-GCM (encryption checkbox) wraps the store — same paths
+whether encryption is on or off. Encrypted shelves are **wasm-only** (no
+On the server); plaintext same-origin Node can still use the HTTP engine.
 
 **Bucket / path** (default `tilari`): first segment is the Supabase bucket
 name (or top folder under Node `booksDir`); further segments are an object
@@ -144,7 +148,8 @@ Storage CORS: allow the Tilari HTTPS origin (`GET`, `POST`, `PUT`, `DELETE`,
 `HEAD`, headers `authorization`, `apikey`, `content-type`, `x-upsert`). `file://`
 single-HTML will not work reliably.
 
-Settings stay in `sessionStorage` for this tab only. Never paste `service_role`.
+Settings stay in `sessionStorage` for this tab by default, or in `localStorage`
+when “Remember on this computer” is checked. Never paste `service_role`.
 Supabase storage is **wasm-only**; Node can also open books **On the server**.
 
 Client-side encryption (ADR-019) when enabled: AES-256-GCM, key from

@@ -159,6 +159,84 @@ describe('ObjectStoreLockerBackend shared pool', () => {
     expect(store.files.has(path)).toBe(false)
   })
 
+  it('lists the blob pool instead of failing when many shared blobs are reused', async () => {
+    const store = new MemoryObjectStore()
+    const locker = createSupabaseLocker({ ...settings, encrypt: false }, store)
+    const blobs: Record<string, Uint8Array> = {}
+    const shas: string[] = []
+    for (let i = 0; i < 20; i++) {
+      const blob = new Uint8Array([i, i + 1, i + 2])
+      const sha = await sha256hex(blob)
+      blobs[sha] = blob
+      shas.push(sha)
+    }
+    const first = await locker.put(null, new TextEncoder().encode('a'), 'A.kitsas')
+    const stages: string[] = []
+    await locker.putAttachmentBlobs!(first.id, shas, blobs, first.attachments_sha256!, {
+      onStage: (stage) => stages.push(stage),
+    })
+    expect(stages).toContain('attachments_check')
+    expect(stages).toContain('attachments')
+
+    const second = await locker.put(null, new TextEncoder().encode('b'), 'B.kitsas')
+    await locker.putAttachmentBlobs!(second.id, shas, {}, second.attachments_sha256!)
+    for (const sha of shas) {
+      expect(store.files.has(`blobs/${sha}`)).toBe(true)
+    }
+  })
+
+  it('aborts putAttachmentBlobs when the signal is aborted', async () => {
+    const store = new MemoryObjectStore()
+    const locker = createSupabaseLocker({ ...settings, encrypt: false }, store)
+    const first = await locker.put(null, new TextEncoder().encode('a'), 'A.kitsas')
+    const blob = new Uint8Array([1, 2, 3])
+    const sha = await sha256hex(blob)
+    const ac = new AbortController()
+    ac.abort()
+    await expect(
+      locker.putAttachmentBlobs!(first.id, [sha], { [sha]: blob }, first.attachments_sha256!, {
+        signal: ac.signal,
+      }),
+    ).rejects.toMatchObject({ name: 'AbortError' })
+  })
+
+  it('skips books with malformed attachment_shas during GC', async () => {
+    const store = new MemoryObjectStore()
+    const locker = createSupabaseLocker({ ...settings, encrypt: false }, store)
+    const keepBlob = new Uint8Array([9, 9, 9])
+    const keepSha = await sha256hex(keepBlob)
+    const staleBlob = new Uint8Array([8, 8, 8])
+    const staleSha = await sha256hex(staleBlob)
+    store.files.set(`blobs/${staleSha}`, staleBlob)
+
+    const good = await locker.put(null, new TextEncoder().encode('good'), 'Good.kitsas')
+    await locker.putAttachmentBlobs!(good.id, [keepSha], { [keepSha]: keepBlob }, good.attachments_sha256!)
+
+    const bad = await locker.put(null, new TextEncoder().encode('bad'), 'Bad.kitsas')
+    const badMeta = JSON.parse(new TextDecoder().decode(store.files.get(`${bad.id}/meta.json`)!)) as Record<
+      string,
+      unknown
+    >
+    badMeta.attachment_shas = 'not-an-array'
+    store.files.set(`${bad.id}/meta.json`, new TextEncoder().encode(JSON.stringify(badMeta)))
+
+    const removed = await locker.gcUnusedBlobs!()
+    expect(removed).toBe(1)
+    expect(store.files.has(`blobs/${staleSha}`)).toBe(false)
+    expect(store.files.has(`blobs/${keepSha}`)).toBe(true)
+  })
+
+  it('removes a book created for as-new after cancel revert', async () => {
+    const store = new MemoryObjectStore()
+    const locker = createSupabaseLocker({ ...settings, encrypt: false }, store)
+    const saved = await locker.put(null, new TextEncoder().encode('lean'), 'Temp.kitsas')
+    expect(await locker.list()).toHaveLength(1)
+    await locker.remove!(saved.id)
+    expect(await locker.list()).toEqual([])
+    expect(store.files.has(`${saved.id}/book.kitsas`)).toBe(false)
+    expect(store.files.has(`${saved.id}/meta.json`)).toBe(false)
+  })
+
   it('rejects a wrong secret against an existing vault', async () => {
     const store = new MemoryObjectStore()
     const locker = createSupabaseLocker(settings, store)

@@ -24,7 +24,7 @@ On start, Tilari can create a new Finnish business-chart book in the browser. De
 - Running **balance** on the account ledger
 - In-session **change log**
 - Fully working in the browser (OPFS working copy; Chromium can save in place)
-- Optional locker: **your Supabase** bucket (encrypted in the tab), or a **self-hosted VPS** (Node HTTP store)
+- Optional locker: **your Supabase** bucket (encrypted in the tab), or a **Tilari server (local, LAN, or VPS)** (Node HTTP store)
 - Use it as a normal web app (each action is a request), or work locally in the tab and save when you choose
 - Linux / Windows / macOS packs without a Qt toolchain
 

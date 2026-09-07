@@ -52,7 +52,7 @@
           <li><a href="#html">Eine HTML-Datei</a></li>
           <li><a href="#local">Server auf diesem Rechner</a></li>
           <li><a href="#vpn">Server im VPN</a></li>
-          <li><a href="#vps">Eigener VPS</a></li>
+          <li><a href="#server">Tilari-Server</a></li>
           <li><a href="#browsers">Browser und Speichern</a></li>
           <li><a href="#supabase">Supabase-Schließfach</a></li>
           <li><a href="#cloud">Dropbox und Google Drive</a></li>
@@ -97,7 +97,7 @@
             <li><strong>Vollständig im Browser</strong> — oder als normale Web-App.</li>
             <li>Berichte, in denen Sie zum Beleg durchklicken; <strong>Änderungsprotokoll</strong> in der Sitzung.</li>
             <li><strong>Jahresabschluss</strong> ist möglich. Archiv gibt es noch nicht.</li>
-            <li>Das Buch in Ihrer Datei oder Ihrem eigenen Schließfach (<strong>Supabase</strong> / <strong>VPS</strong>).</li>
+            <li>Das Buch in Ihrer Datei oder Ihrem eigenen Schließfach (<strong>Supabase</strong> / <strong>Tilari-Server</strong>).</li>
           </ul>
         </div>
 
@@ -129,7 +129,7 @@
           </li>
           <li>
             Optionales Schließfach: <strong>Ihr Supabase</strong> (im Browser verschlüsselt) oder
-            <strong>eigener VPS</strong> — keine Tilari-Cloud.
+            <strong>Tilari-Server</strong> — keine Tilari-Cloud.
           </li>
           <li>Linux-, Windows- und macOS-Pakete, wenn Sie das Programm auf diesem Rechner wollen.</li>
         </ul>
@@ -277,8 +277,8 @@
             <strong>Supabase</strong>
             <span>Eigenes Cloud-Schließfach ohne Tilari-Server.</span>
           </a>
-          <a class="featured" href="#vps">
-            <strong>VPS</strong>
+          <a class="featured" href="#server">
+            <strong>Tilari-Server</strong>
             <span>Öffentlicher Hostname, Bücher auf Ihrem Server.</span>
           </a>
           <a href="#browsers">
@@ -320,7 +320,7 @@
             </tr>
             <tr>
               <td>Einen öffentlichen Hostnamen und ein Anmeldetor</td>
-              <td><a href="#vps">Eigener VPS</a>; diese Seite ersetzt nicht die Admin-Installation</td>
+              <td><a href="#server">Tilari-Server</a>; diese Seite ersetzt nicht die Admin-Installation</td>
             </tr>
           </tbody>
         </table>
@@ -410,7 +410,7 @@
           Der Browser behandelt die Seite als sicheren Kontext: die Arbeitskopie überlebt ein
           Neuladen, Chrome/Edge kann an Ort und Stelle speichern, und optionaler
           <strong>BYO</strong>-Speicher funktioniert, wenn Sie <a href="#supabase">Ihr Supabase</a>
-          oder ein Tilari-Schließfach auf <strong>Ihrem</strong> VPS verbinden (CORS muss diesen
+          oder ein Tilari-Schließfach auf <strong>Ihrem</strong> Tilari-Server verbinden (CORS muss diesen
           Origin erlauben). Die Tilari-Website hostet keine Bücher: die Datei wird an keinen Server
           gesendet, den Sie nicht selbst angeben. Es gibt keinen Node auf demselben Origin, daher
           kein <strong>Auf dem Server</strong>-Rechnen.
@@ -530,12 +530,15 @@
           Schließfach.
         </p>
 
-        <h2 id="vps">Eigener VPS</h2>
+        <h2 id="server">Tilari-Server</h2>
         <p>
-          Ein öffentlicher Hostname und ein Anmeldetor. Der Server hält Bücher in einem
-          <strong>Schließfach</strong>. Nutzen Sie Tilari als normale Web-App, oder verarbeiten Sie
-          das Buch im Browser und speichern Sie ins Schließfach. Die Installation ist Sache der
-          Administration; diese Seite ersetzt das nicht.
+          Ein Tilari-Server ist der Node-Prozess, der die Oberfläche und ein optionales
+          <strong>Schließfach</strong> für Bücher bereitstellt. Dieselbe Software läuft auf diesem
+          Rechner (<code>127.0.0.1</code>), im LAN/NAS, per VPN oder auf einem öffentlichen VPS —
+          Sie verbinden sich mit der URL. Nutzen Sie Tilari als normale Web-App, oder verarbeiten
+          Sie das Buch im Browser und speichern Sie ins Schließfach. Öffentlicher Hostname und
+          Anmeldetor sind optionale Admin-Entscheidungen; diese Seite ersetzt die Installation
+          nicht.
         </p>
 
         <h2 id="browsers">Welche Browser die Datei an Ort und Stelle speichern</h2>
@@ -614,8 +617,9 @@
             (kein öffentliches CDN).
           </li>
           <li>
-            Storage-Richtlinien (RLS) auf diesem Bucket für das Präfix <code>tilari/</code>
-            (anon-Rolle, select / insert / update / delete).
+            Storage-Richtlinien (RLS) auf diesem Bucket (anon-Rolle, select / insert / update /
+            delete). Pfad <code>tilari/book1</code> begrenzt Schlüssel auf <code>book1/</code> —
+            dann <code>name like 'book1/%'</code> ergänzen.
           </li>
           <li>
             Storage CORS: der Tilari-https-Origin, Methoden GET, POST, PUT, DELETE, Header
@@ -626,16 +630,16 @@
         <p>Beispiel-RLS-Richtlinien:</p>
         <pre><code>create policy "tilari_locker_select"
   on storage.objects for select to anon
-  using (bucket_id = 'tilari' and name like 'tilari/%');
+  using (bucket_id = 'tilari');
 create policy "tilari_locker_insert"
   on storage.objects for insert to anon
-  with check (bucket_id = 'tilari' and name like 'tilari/%');
+  with check (bucket_id = 'tilari');
 create policy "tilari_locker_update"
   on storage.objects for update to anon
-  using (bucket_id = 'tilari' and name like 'tilari/%');
+  using (bucket_id = 'tilari');
 create policy "tilari_locker_delete"
   on storage.objects for delete to anon
-  using (bucket_id = 'tilari' and name like 'tilari/%');</code></pre>
+  using (bucket_id = 'tilari');</code></pre>
         <h3>In Tilari verbinden</h3>
         <ol>
           <li><strong>Aus eigenem Speicher öffnen…</strong> → <strong>Eigenes Supabase</strong> (BYO).</li>

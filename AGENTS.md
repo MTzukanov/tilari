@@ -6,7 +6,7 @@ Context for AI coding agents working in this repository. Prefer this file over r
 
 Local-first **Node** + React (Vite) **read-write** ledger for Kitsas `.kitsas` SQLite books (schema 24). As of this version the saved file is fully interchangeable with desktop Kitsas; that can change later ([COMPATIBILITY.md](docs/COMPATIBILITY.md)). Built and tested on a Finnish limited company with a modest voucher count; other entity types are untested. **Not a Kitsas Oy product**; do not use the Kitsas Oy name as if this were theirs. License: GPL-3 with extra conditions in [LICENSE](LICENSE). Bundled libraries: [THIRD_PARTY.md](THIRD_PARTY.md).
 
-Human docs: [README.md](README.md). User HTML (fi/en/sv/de, GitHub Pages): [site/](site/). How Pages is published: [docs/PAGES.md](docs/PAGES.md). Decisions: [docs/DECISIONS.md](docs/DECISIONS.md). Scope: [docs/SCOPE.md](docs/SCOPE.md). Testing: [docs/TESTING.md](docs/TESTING.md). Working modes: [docs/WORKING_MODES.md](docs/WORKING_MODES.md). Packaging: [docs/PACKAGING.md](docs/PACKAGING.md). VPS: [docs/DEPLOY.md](docs/DEPLOY.md).
+Human docs: [README.md](README.md). User HTML (fi/en/sv/de, GitHub Pages): [site/](site/). How Pages is published: [docs/PAGES.md](docs/PAGES.md). Decisions: [docs/DECISIONS.md](docs/DECISIONS.md). Scope: [docs/SCOPE.md](docs/SCOPE.md). Testing: [docs/TESTING.md](docs/TESTING.md). Working modes: [docs/WORKING_MODES.md](docs/WORKING_MODES.md). Packaging: [docs/PACKAGING.md](docs/PACKAGING.md). Tilari server: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Toolchain (verified)
 
@@ -71,7 +71,7 @@ Node server/                           // stdlib node:http
 Option 1 (chosen). See [docs/ENGINE_OPTIONS.md](docs/ENGINE_OPTIONS.md).
 
 The ledger is **tab-local**. Opening a file never uploads it unless the user
-connects their own BYO storage (VPS or Supabase) and saves there. OPFS keeps the working copy across
+connects their own BYO storage (Tilari server or Supabase) and saves there. OPFS keeps the working copy across
 refresh. First mutate snapshots the original bytes in OPFS. Desktop Kitsas
 WAL: close the desktop app before sharing the same file (COMPATIBILITY.md).
 Locker open fetches the lean DB first; attachments sync in the background

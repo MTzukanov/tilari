@@ -2,7 +2,7 @@
 
 Stdlib `node:http` hosting:
 
-- **Locker** (`src/locker/`) — opaque lean `.kitsas` + TILARIAT packs (`/api/books*`)
+- **Locker** (`src/locker/`) — object-store shelf under `tilari/` (`/api/objects` + `/api/books*` façade)
 - **Ledger** (`session.ts` + shared `frontend/src/book/ledger.ts`) — posting/reports for `http` engine
 - **Static UI** + billing/workflow 501 stubs
 

@@ -52,7 +52,7 @@
           <li><a href="#html">Yksi HTML-tiedosto</a></li>
           <li><a href="#paikallinen">Palvelin omalla koneella</a></li>
           <li><a href="#vpn">Palvelin VPN-verkossa</a></li>
-          <li><a href="#vps">Oma VPS</a></li>
+          <li><a href="#server">Tilari-palvelin</a></li>
           <li><a href="#selaimet">Selaimet ja tallennus</a></li>
           <li><a href="#supabase">Supabase-lokero</a></li>
           <li><a href="#pilvi">Dropbox ja Google Drive</a></li>
@@ -95,7 +95,7 @@
             <li><strong>Toimii kokonaan selaimessa</strong> — tai tavallisena verkkosovelluksena.</li>
             <li>Raportit, joista pääsee klikkaamalla tositteeseen; <strong>muutosloki</strong> istunnossa.</li>
             <li><strong>Tilinpäätös</strong> onnistuu. Arkistoa ei vielä ole.</li>
-            <li>Kirja sinun tiedostossasi tai omassa lokerossa (<strong>Supabase</strong> / <strong>VPS</strong>).</li>
+            <li>Kirja sinun tiedostossasi tai omassa lokerossa (<strong>Supabase</strong> / <strong>Tilari-palvelin</strong>).</li>
           </ul>
         </div>
 
@@ -127,7 +127,7 @@
           </li>
           <li>
             Valinnainen lokero: <strong>oma Supabase</strong> (salaus selaimessa) tai
-            <strong>oma VPS</strong> — ei Tilarin pilveä.
+            <strong>Tilari-palvelin</strong> — ei Tilarin pilveä.
           </li>
           <li>Linux-, Windows- ja macOS-paketit, jos haluat ohjelman omalle koneelle.</li>
         </ul>
@@ -275,8 +275,8 @@
             <strong>Supabase</strong>
             <span>Oma pilvilokero ilman Tilari-palvelinta.</span>
           </a>
-          <a class="featured" href="#vps">
-            <strong>VPS</strong>
+          <a class="featured" href="#server">
+            <strong>Tilari-palvelin</strong>
             <span>Julkinen osoite, kirjat omalla palvelimella.</span>
           </a>
           <a href="#selaimet">
@@ -318,7 +318,7 @@
             </tr>
             <tr>
               <td>Julkinen osoite ja kirjautuminen portilla</td>
-              <td><a href="#vps">Oma VPS</a>; tämä ohje ei korvaa ylläpitäjän asennusta</td>
+              <td><a href="#server">Tilari-palvelin</a>; tämä ohje ei korvaa ylläpitäjän asennusta</td>
             </tr>
           </tbody>
         </table>
@@ -405,7 +405,7 @@
           Selain pitää sivua luotettavana: työkopio säilyy päivityksen yli, Chrome/Edge voi
           tallentaa suoraan tiedostoon, ja valinnainen <strong>BYO</strong>-säilytys toimii, kun
           yhdistät <a href="#supabase">oman Supabase-projektisi</a> tai Tilari-lokeron
-          <strong>omalla</strong> VPS:llä (CORS-sallittava tästä osoitteesta). Tilarin sivusto ei
+          <strong>omalla</strong> Tilari-palvelimella (CORS-sallittava tästä osoitteesta). Tilarin sivusto ei
           säilytä kirjoja: tiedostoa ei lähetetä mihinkään palvelimeen, jota et itse anna.
           Samassa osoitteessa ei ole Nodea, joten “Palvelimella”-käsittelyä ei ole.
         </p>
@@ -522,12 +522,14 @@
           pidä oletus <strong>Tässä selaimessa</strong> ja jaa kirja lokeron kautta.
         </p>
 
-        <h2 id="vps">Oma VPS</h2>
+        <h2 id="server">Tilari-palvelin</h2>
         <p>
-          Julkinen osoite ja kirjautuminen portilla. Palvelin pitää kirjat
-          <strong>lokerossa</strong>. Käytä Tilaria tavallisena verkkosovelluksena tai käsittele
-          kirjaa selaimessa ja tallenna lokeroon. Asennus on ylläpitäjän tehtävä; tämä ohje ei
-          korvaa sitä.
+          Tilari-palvelin on Node-prosessi, joka tarjoilee käyttöliittymän ja valinnaisen
+          <strong>lokeron</strong> kirjoille. Sama ohjelmisto toimii tällä koneella
+          (<code>127.0.0.1</code>), lähiverkossa/NAS:lla, VPN:llä tai julkisella VPS:llä — yhdistät
+          URL:lla. Käytä Tilaria tavallisena verkkosovelluksena tai käsittele kirjaa selaimessa ja
+          tallenna lokeroon. Julkinen osoite ja kirjautumisportti ovat valinnaisia ylläpidon
+          valintoja; tämä ohje ei korvaa asennusta.
         </p>
 
         <h2 id="selaimet">Mitkä selaimet tallentavat suoraan tiedostoon</h2>
@@ -605,8 +607,9 @@
             CDN).
           </li>
           <li>
-            Storage-käytännöt (RLS) bucketille, polku <code>tilari/</code> (anon-rooli, select /
-            insert / update / delete).
+            Storage-käytännöt (RLS) bucketille <code>tilari</code> (anon-rooli, select / insert /
+            update / delete). Polku <code>tilari/book1</code> rajaa avaimet etuliitteeseen
+            <code>book1/</code> — lisää silloin <code>name like 'book1/%'</code>.
           </li>
           <li>
             Storage CORS: Tilarin https-osoite, menetelmät GET, POST, PUT, DELETE, otsikot
@@ -617,16 +620,16 @@
         <p>Esimerkki RLS-käytännöistä:</p>
         <pre><code>create policy "tilari_locker_select"
   on storage.objects for select to anon
-  using (bucket_id = 'tilari' and name like 'tilari/%');
+  using (bucket_id = 'tilari');
 create policy "tilari_locker_insert"
   on storage.objects for insert to anon
-  with check (bucket_id = 'tilari' and name like 'tilari/%');
+  with check (bucket_id = 'tilari');
 create policy "tilari_locker_update"
   on storage.objects for update to anon
-  using (bucket_id = 'tilari' and name like 'tilari/%');
+  using (bucket_id = 'tilari');
 create policy "tilari_locker_delete"
   on storage.objects for delete to anon
-  using (bucket_id = 'tilari' and name like 'tilari/%');</code></pre>
+  using (bucket_id = 'tilari');</code></pre>
         <h3>Yhdistä Tilarissa</h3>
         <ol>
           <li><strong>Avaa omasta säilytyksestä…</strong> → <strong>Oma Supabase</strong> (BYO).</li>

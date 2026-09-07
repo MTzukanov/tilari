@@ -141,8 +141,8 @@ export class EncryptedObjectStore implements LockerObjectStore {
     return this.inner.list(prefix, opts)
   }
 
-  exists(path: string) {
-    return this.inner.exists(path)
+  exists(path: string, opts?: { signal?: AbortSignal }) {
+    return this.inner.exists(path, opts)
   }
 
   async download(path: string, opts?: TransferOpts): Promise<Uint8Array> {

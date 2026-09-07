@@ -109,7 +109,7 @@ describe('locker', () => {
     })
     assert.equal(missing.status, 409)
 
-    const attDir = join(booksRoot, `${meta.id}.attachments`)
+    const attDir = join(booksRoot, 'tilari', 'blobs')
     const extraSha = 'a'.repeat(64)
     writeFileSync(join(attDir, extraSha), Buffer.alloc(2048, 7))
     const beforeInodes = Object.fromEntries(

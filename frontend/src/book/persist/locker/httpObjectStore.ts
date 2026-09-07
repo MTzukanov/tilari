@@ -12,14 +12,19 @@ function xhrBodyText(xhr: XMLHttpRequest): string {
 }
 
 function storageError(status: number, text: string, fallback: string): Error {
-  const lower = text.toLowerCase()
+  const trimmed = text.trim()
+  const lower = trimmed.toLowerCase()
   if (status === 404 || lower.includes('not found') || lower.includes('not_found')) {
     return new Error('not_found')
   }
   if (status === 409 || lower.includes('duplicate') || lower.includes('already exists')) {
     return new Error('duplicate')
   }
-  return new Error(text || fallback || `HTTP ${status}`)
+  // Prefer stable codes for UI mapping when the body is empty or not a known token.
+  if (!trimmed || trimmed.length > 80 || /[\s{<]/.test(trimmed)) {
+    return new Error(fallback || `HTTP ${status}`)
+  }
+  return new Error(trimmed)
 }
 
 /**
@@ -47,8 +52,11 @@ export function createHttpObjectStore(origin: string | null): LockerObjectStore 
         .filter((row) => row.name)
     },
 
-    async exists(path: string) {
-      const res = await fetch(api(`/api/objects/${path}`), { method: 'HEAD' })
+    async exists(path: string, opts?: { signal?: AbortSignal }) {
+      const res = await fetch(api(`/api/objects/${path}`), {
+        method: 'HEAD',
+        signal: opts?.signal,
+      })
       if (res.status === 404) return false
       if (res.ok) return true
       throw storageError(res.status, await res.text(), 'exists_failed')

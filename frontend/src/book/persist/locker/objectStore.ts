@@ -5,7 +5,7 @@ export type ListOpts = { limit?: number; offset?: number }
 export type LockerObjectStore = {
   list(prefix: string, opts?: ListOpts): Promise<{ name: string }[]>
   /** True if the object exists (ciphertext presence; no download). */
-  exists(path: string): Promise<boolean>
+  exists(path: string, opts?: { signal?: AbortSignal }): Promise<boolean>
   download(path: string, opts?: TransferOpts): Promise<Uint8Array>
   upload(
     path: string,
@@ -48,7 +48,8 @@ export class MemoryObjectStore implements LockerObjectStore {
     return out.slice(offset, offset + limit)
   }
 
-  async exists(path: string): Promise<boolean> {
+  async exists(path: string, opts?: { signal?: AbortSignal }): Promise<boolean> {
+    if (opts?.signal?.aborted) throw new DOMException('Aborted', 'AbortError')
     return this.files.has(path)
   }
 

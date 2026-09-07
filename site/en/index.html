@@ -52,7 +52,7 @@
           <li><a href="#html">One HTML file</a></li>
           <li><a href="#local">Server on this computer</a></li>
           <li><a href="#vpn">Server on a VPN</a></li>
-          <li><a href="#vps">Your own VPS</a></li>
+          <li><a href="#server">Tilari server</a></li>
           <li><a href="#browsers">Browsers and saving</a></li>
           <li><a href="#supabase">Supabase locker</a></li>
           <li><a href="#cloud">Dropbox and Google Drive</a></li>
@@ -95,7 +95,7 @@
             <li><strong>Fully working in the browser</strong> — or as a normal web app.</li>
             <li>Reports you can click through to a voucher; in-session <strong>change log</strong>.</li>
             <li><strong>Fiscal statement (tilinpäätös)</strong> is in. No archive yet.</li>
-            <li>The book in your file or your own locker (<strong>Supabase</strong> / <strong>VPS</strong>).</li>
+            <li>The book in your file or your own locker (<strong>Supabase</strong> / <strong>Tilari server</strong>).</li>
           </ul>
         </div>
 
@@ -128,7 +128,7 @@
           </li>
           <li>
             Optional locker: <strong>your Supabase</strong> (encrypted in the browser) or
-            <strong>your own VPS</strong> — not a Tilari cloud.
+            <strong>a Tilari server</strong> — not a Tilari cloud.
           </li>
           <li>Linux, Windows, and macOS packs if you want a program on this computer.</li>
         </ul>
@@ -275,8 +275,8 @@
             <strong>Supabase</strong>
             <span>Your own cloud locker without a Tilari server.</span>
           </a>
-          <a class="featured" href="#vps">
-            <strong>VPS</strong>
+          <a class="featured" href="#server">
+            <strong>Tilari server</strong>
             <span>Public hostname, books on your server.</span>
           </a>
           <a href="#browsers">
@@ -318,7 +318,7 @@
             </tr>
             <tr>
               <td>A public hostname and a login gate</td>
-              <td><a href="#vps">Your own VPS</a>; this page does not replace the admin’s deploy</td>
+              <td><a href="#server">Tilari server</a>; this page does not replace the admin’s deploy</td>
             </tr>
           </tbody>
         </table>
@@ -404,8 +404,8 @@
           The browser treats the page as a secure context: the working copy survives a refresh,
           Chrome/Edge can save in place, and optional <strong>BYO</strong> storage works if you
           connect <a href="#supabase">your Supabase</a> or a Tilari locker on <strong>your</strong>
-          VPS (CORS must allow this origin). Tilari’s site does not host books: the file is never
-          sent to any server you did not provide. There is no same-origin Node process, so
+          your Tilari server (CORS must allow this origin). Tilari’s site does not host books: the file is never
+          sent to any server you did not provide. There is no Tilari server on this origin, so
           no <abbr title="Palvelimella"><strong>On the server</strong></abbr> processing.
         </p>
         <h3>A file on disk (USB, email)</h3>
@@ -521,11 +521,14 @@
           office keep the default <abbr title="Tässä selaimessa"><strong>In this browser</strong></abbr> and share through the locker.
         </p>
 
-        <h2 id="vps">Your own VPS</h2>
+        <h2 id="server">Tilari server</h2>
         <p>
-          A public hostname and a login gate. The server keeps books in a <strong>locker</strong>.
-          Use Tilari as a normal web app, or process the book in the browser and save to the
-          locker. Setup is for the admin; this page does not replace that.
+          A Tilari server is the Node process that hosts the UI and an optional
+          <strong>locker</strong> for your books. The same software runs on this computer
+          (<code>127.0.0.1</code>), on a LAN/NAS, on a VPN, or on a public VPS — you connect with
+          its URL. Use Tilari as a normal web app, or process the book in the browser and save
+          to the locker. Public hostname and login gate are optional admin choices; this page
+          does not replace that setup.
         </p>
 
         <h2 id="browsers">Which browsers save the file in place</h2>
@@ -603,8 +606,9 @@
             public CDN).
           </li>
           <li>
-            Storage policies (RLS) on that bucket for the prefix <code>tilari/</code> (anon role,
-            select / insert / update / delete).
+            Storage policies (RLS) on that bucket (anon role, select / insert / update / delete).
+            A path like <code>tilari/book1</code> scopes keys under <code>book1/</code> — then add
+            <code>name like 'book1/%'</code>.
           </li>
           <li>
             Storage CORS: the Tilari https origin, methods GET, POST, PUT, DELETE, headers
@@ -615,16 +619,16 @@
         <p>Example RLS policies:</p>
         <pre><code>create policy "tilari_locker_select"
   on storage.objects for select to anon
-  using (bucket_id = 'tilari' and name like 'tilari/%');
+  using (bucket_id = 'tilari');
 create policy "tilari_locker_insert"
   on storage.objects for insert to anon
-  with check (bucket_id = 'tilari' and name like 'tilari/%');
+  with check (bucket_id = 'tilari');
 create policy "tilari_locker_update"
   on storage.objects for update to anon
-  using (bucket_id = 'tilari' and name like 'tilari/%');
+  using (bucket_id = 'tilari');
 create policy "tilari_locker_delete"
   on storage.objects for delete to anon
-  using (bucket_id = 'tilari' and name like 'tilari/%');</code></pre>
+  using (bucket_id = 'tilari');</code></pre>
         <h3>Connect in Tilari</h3>
         <ol>
           <li><strong>Avaa omasta säilytyksestä…</strong> → <strong>Oma Supabase</strong> (BYO).</li>

@@ -11,7 +11,7 @@ Tilari can run in five practical shapes. They differ by **where the UI lives**,
 | [3b. Static UI + BYO Supabase locker](#3b-static-ui--byo-supabase-locker) | Static `frontend/dist` | Browser wasm **only** | User Supabase Storage | Same as mode 3 at GET/PUT boundaries; **no server-side processing** |
 | [4. Website + Node processing](#4-website--backend-full-processing) | Same + `tilari.engine=http` | Node `Ledger` | In-memory session; optional export→locker | **Not** multi-user ledger — one open book per process |
 
-Default product path for self-host / VPS is **mode 3** (browser processing +
+Default product path for self-host (Tilari server) is **mode 3** (browser processing +
 opaque locker). When Node is connected, the open dialog also chooses
 **client-side vs server-side math** — [two processing engines](#two-processing-engines-when-a-backend-is-connected).
 See [DEPLOY.md](DEPLOY.md), ADR-014 / ADR-015 / ADR-016 in
@@ -30,7 +30,7 @@ The table above is the architecture. Operators usually pick one of these
 | USB / email, zero install | Mode 1 | Double-click one HTML. Weakest persistence. |
 | Daily work on one PC | Mode 2 + local locker (desktop pack) | [Why this beats single HTML](#local-node-vs-single-html) |
 | Small office, no public URL | Mode 3 on a [VPN](#vpn) | Tailscale / WireGuard / company VPN is the gate (no app auth) |
-| Public hostname | Mode 3 on a VPS | [DEPLOY.md](DEPLOY.md) + Cloudflare Access |
+| Public hostname | Mode 3 on a Tilari server | [DEPLOY.md](DEPLOY.md) + Cloudflare Access |
 | Cloud shelf, no Tilari Node | Mode 3b | [BYO Supabase](#3b-static-ui--byo-supabase-locker) |
 | Sync `.kitsas` via Dropbox/Drive | Mode 1 or 2 + OS folder | [Synced folders](#synced-folders-dropbox-google-drive) |
 | Heavy book on a weak tablet | Mode 4 | On the server; **not** with Supabase |
@@ -116,7 +116,7 @@ cd frontend && npm run build:singlefile
 - No OPFS persistence (`file://` is not a secure context for that)
 - Weaker crypto where `SubtleCrypto` is blocked
 - No same-origin locker API and no `http` engine until you connect **BYO** storage
-  (your VPS URL or Supabase). The file is never sent anywhere you did not configure.
+  (your Tilari server URL or Supabase). The file is never sent anywhere you did not configure.
 - Not a multi-tab “always-on” working copy across refresh
 
 Use this for a quick offline trial or emailing a self-contained demo. Details:
@@ -126,7 +126,7 @@ GitHub Pages publishes the **same build** as
 [tilari.html](https://mtzukanov.github.io/tilari/tilari.html) over **https**
 ([PAGES.md](PAGES.md)). That host is a secure context, so it behaves like
 [mode 2](#2-static-html-website) (OPFS, Chromium in-place save) while remaining
-one file. There is no Tilari-hosted locker: connect **your** Supabase or a VPS
+one file. There is no Tilari-hosted locker: connect **your** Supabase or a Tilari server you run
 you run if you want remote storage. No same-origin Node and no server-side
 processing unless you open the UI from a host that serves `/api`.
 
@@ -168,31 +168,36 @@ Node plus full API on loopback — see [PACKAGING.md](PACKAGING.md).
 ## 3. Website + backend locker
 
 Static (or Node-served) UI with the default **`wasm`** engine, plus the Node
-locker at `/api/books*`. Ledger math still runs **in each browser tab**. The
-server stores opaque bytes only — it does not interpret vouchers.
+shelf. Ledger math still runs **in each browser tab**. The server stores opaque
+bytes only — it does not interpret vouchers (unless the user picks
+**On the server**).
+
+Desktop and remote Tilari-server are the **same Node process**; only the URL
+differs (`localhost` vs a pasted host). Connect with a server URL (plain or
+encrypted); both use the object-store layout under `tilari/`.
 
 ```
 Browser tab (WasmBookService / Ledger)
   ├─ OPFS session folder (lean working.kitsas)
   ├─ OPFS tilari/blobs/{sha}           # shared attachment cache
-  ├─ GET/PUT /api/books/{id}           # lean .kitsas (ETag = sha256)
-  └─ GET/PUT /api/books/{id}/attachments  # TILARIAT pack (separate ETag)
+  ├─ /api/objects …                    # BYO shelf CRUD (default)
+  └─ or /api/books*                    # façade: same disk keys; TILARIAT on the wire
 Node locker (server/src/locker/)
-  └─ {books_dir}/{id}.kitsas + .attachments/ + .meta.json
+  └─ {books_dir}/tilari/{id}/book.kitsas + meta.json + blobs/{sha}
 ```
 
 **How to run**
 
 - Dev: `npm run dev` from repo root (API `:8000` + Vite `:5173`, proxies `/api`)
 - Desktop: `./scripts/run-desktop.sh`
-- VPS: [DEPLOY.md](DEPLOY.md) (Docker Compose; Cloudflare Access for who can reach the host)
+- Tilari server: [DEPLOY.md](DEPLOY.md) (Docker Compose; Cloudflare Access for who can reach the host)
 
 In the UI: **Avaa omasta säilytyksestä…** / **Tallenna säilytykseen**. Opening from the
 locker downloads the lean DB first; attachments sync in the background (progress
 in the top bar) unless every `Liite.sha` is already in `tilari/blobs/`.
 
 Without a same-origin Node process (single HTML / GitHub Pages), that menu opens a
-**BYO** connect panel: paste your own VPS Tilari locker URL or Supabase project.
+**BYO** connect panel: paste your Tilari server URL or Supabase project.
 Tilari does not host books; the file is only sent to the address you provide.
 
 ### Concurrent users and “out of sync”
@@ -233,12 +238,12 @@ Do not mix `tilari.engine=http` with this backend (ADR-018).
 ```
 Browser tab (WasmBookService / Ledger)
   ├─ OPFS session + tilari/blobs/{sha}  (plaintext working copy)
-  ├─ Storage vault.json (optional) + blobs/{sha} + {id}/*   (ObjectStoreLockerBackend)
-  └─ or Node /api/objects under booksDir/{path}/…
-User Supabase project or Tilari Node (thin object CRUD)
+  └─ Storage vault.json (optional) + blobs/{sha} + {id}/*   (ObjectStoreLockerBackend)
+User Supabase project (or Tilari Node /api/objects — same layout)
 ```
 
-Node **On the server** still uses `/api/books` + open-locker for Ledger processing.
+Node **On the server** (`POST /api/open-locker`) reads the same `tilari/{id}/`
+keys for **plaintext** shelves. Encrypted BYO (Supabase or Node) stays wasm-only.
 
 Layout, RLS, CORS, and encryption: [STORAGE.md](STORAGE.md). URL+anon opens
 the bucket; the secret opens the files. Never paste `service_role`. Concurrent
@@ -351,7 +356,7 @@ the internal network). On a host that is reachable only via VPN, publish the
 port with an override, still without a public A record:
 
 ```yaml
-# docker-compose.override.yml  (not for a public VPS)
+# docker-compose.override.yml  (not for a public host)
 services:
   tilari:
     ports:

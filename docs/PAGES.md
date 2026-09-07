@@ -44,7 +44,7 @@ The user site is static HTML only (`.nojekyll` is present).
 Yes. GitHub Pages will serve this site on a hostname you own (apex or
 subdomain) and issue HTTPS once DNS is verified.
 
-1. Pick a hostname (for example `tilari.fi`). Pages and the VPS locker
+1. Pick a hostname (for example `tilari.fi`). Pages and the Tilari server locker
    tunnel ([DEPLOY.md](DEPLOY.md)) cannot share one name.
 2. **Settings → Pages → Custom domain** — type the hostname, save, wait for
    DNS check, enable **Enforce HTTPS**.

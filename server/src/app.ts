@@ -228,7 +228,7 @@ async function handleLedger(
   if ((p = match(method, path, 'GET', '/api/attachments/:id'))) {
     const meta = ledger.attachmentMeta(Number(p.id))
     if (!meta) throw new BookError('Liite not found', 404)
-    // Locker books are lean: Liite.data is NULL; blobs live under {id}.attachments/.
+    // Locker books are lean: Liite.data is NULL; blobs live under tilari/blobs/.
     let data = meta.data
     if (!data && meta.sha) {
       const dbPath = ledger.buildMeta().db_path

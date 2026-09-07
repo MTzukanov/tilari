@@ -86,6 +86,7 @@ export async function handleLocker(
       ETag: `"${found.meta.sha256}"`,
       'X-Tilari-Name': quoted,
       'X-Tilari-Attachments-Sha256': found.meta.attachments_sha256 || '',
+      'X-Tilari-Updated-At': found.meta.updated_at || '',
       'Content-Disposition': `attachment; filename="${asciiFilename(name)}"; filename*=UTF-8''${quoted}`,
     })
     return true

@@ -65,7 +65,7 @@ export type TransferProgress = { loaded: number; total: number | null }
 export type TransferOpts = {
   signal?: AbortSignal
   onProgress?: (p: TransferProgress) => void
-  onStage?: (stage: 'transfer' | 'parse' | 'attachments' | 'server' | 'persist') => void
+  onStage?: (stage: 'transfer' | 'parse' | 'attachments' | 'attachments_check' | 'server' | 'persist') => void
   /** Locker display name (POST or PUT metadata). */
   name?: string
   /** POST a new locker book even when one is already linked. */

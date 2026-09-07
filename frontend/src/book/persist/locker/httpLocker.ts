@@ -1,6 +1,8 @@
 /**
- * Node /api/books locker. Same-origin when this UI is served by Tilari Node;
- * otherwise a user-pasted VPS origin (BYO). Never a Tilari-hosted cloud.
+ * Node /api/books façade over the object-store shelf (tilari/{id}/…).
+ * Same-origin when this UI is served by Tilari Node; otherwise a user-pasted
+ * Tilari server origin. Prefer getActiveLocker() / ObjectStoreLockerBackend for
+ * BYO list/get/put; this client remains for pack-wire helpers and tests.
  */
 import {
   apiFetch,
@@ -30,6 +32,11 @@ export function getHttpLockerOrigin(): string | null {
 
 export function httpLockerUsesSameOrigin(): boolean {
   return sameOriginAvailable && !customOrigin
+}
+
+/** True when this page can reach Node `/api` (same host or Vite proxy). */
+export function httpLockerNodeReachable(): boolean {
+  return sameOriginAvailable
 }
 
 export function resetHttpLockerState(): void {
@@ -96,7 +103,13 @@ async function lockerList(): Promise<LockerBookInfo[]> {
 async function lockerGet(
   id: string,
   opts: TransferOpts = {},
-): Promise<{ bytes: Uint8Array; etag: string; attachmentsEtag: string; name: string }> {
+): Promise<{
+  bytes: Uint8Array
+  etag: string
+  attachmentsEtag: string
+  name: string
+  updated_at?: string
+}> {
   const xhr = await xhrTransfer('GET', apiUrl(`/api/books/${id}`), {
     responseType: 'arraybuffer',
     signal: opts.signal,
@@ -110,7 +123,14 @@ async function lockerGet(
     '',
   )
   const name = decodeURIComponent(xhr.getResponseHeader('x-tilari-name') || `${id}.kitsas`)
-  return { bytes: new Uint8Array(xhr.response as ArrayBuffer), etag, attachmentsEtag, name }
+  const updatedAt = xhr.getResponseHeader('x-tilari-updated-at') || undefined
+  return {
+    bytes: new Uint8Array(xhr.response as ArrayBuffer),
+    etag,
+    attachmentsEtag,
+    name,
+    updated_at: updatedAt || undefined,
+  }
 }
 
 async function lockerGetAttachments(

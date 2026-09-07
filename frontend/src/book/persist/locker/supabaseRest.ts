@@ -12,14 +12,74 @@ function xhrBodyText(xhr: XMLHttpRequest): string {
 }
 
 function storageError(status: number, text: string, fallback: string): Error {
-  const lower = text.toLowerCase()
+  const trimmed = text.trim()
+  const lower = trimmed.toLowerCase()
   if (status === 404 || lower.includes('not found') || lower.includes('not_found')) {
     return new Error('not_found')
   }
   if (status === 409 || lower.includes('duplicate') || lower.includes('already exists')) {
     return new Error('duplicate')
   }
-  return new Error(text || fallback || `HTTP ${status}`)
+  // Prefer stable codes for UI mapping when the body is empty or not a known token.
+  if (!trimmed || trimmed.length > 80 || /[\s{<]/.test(trimmed)) {
+    return new Error(fallback || `HTTP ${status}`)
+  }
+  return new Error(trimmed)
+}
+
+type SupabaseListRow = { name?: string; id?: string | null }
+
+/**
+ * Supabase Storage list is folder-scoped (one path segment): nested keys appear as
+ * folders with `id: null`. Flatten recursively so the contract matches Node /
+ * MemoryObjectStore (names relative to prefix, e.g. `{id}/meta.json`).
+ */
+async function listSupabaseFlat(
+  projectUrl: string,
+  bucket: string,
+  headers: Record<string, string>,
+  prefix: string,
+): Promise<{ name: string }[]> {
+  const listUrl = joinUrl(projectUrl, `storage/v1/object/list/${bucket}`)
+  const folder = prefix.replace(/^\/+/, '').replace(/\/+$/, '')
+  const out: { name: string }[] = []
+
+  async function listLevel(levelPrefix: string, limit: number, offset: number): Promise<SupabaseListRow[]> {
+    const res = await fetch(listUrl, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prefix: levelPrefix, limit, offset }),
+    })
+    if (!res.ok) throw storageError(res.status, await res.text(), 'locker_list_failed')
+    const rows = (await res.json()) as SupabaseListRow[]
+    return Array.isArray(rows) ? rows : []
+  }
+
+  async function walk(levelPrefix: string, relBase: string): Promise<void> {
+    let offset = 0
+    const pageSize = 1000
+    for (;;) {
+      const rows = await listLevel(levelPrefix, pageSize, offset)
+      for (const row of rows) {
+        const name = String(row.name || '').replace(/\/$/, '')
+        if (!name) continue
+        const childPrefix = levelPrefix ? `${levelPrefix}/${name}` : name
+        const childRel = relBase ? `${relBase}/${name}` : name
+        // Folders have null id; files have a non-null id.
+        if (row.id == null) {
+          await walk(childPrefix, childRel)
+        } else {
+          out.push({ name: childRel })
+        }
+      }
+      if (rows.length < pageSize) break
+      offset += rows.length
+    }
+  }
+
+  await walk(folder, '')
+  out.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+  return out
 }
 
 /** Supabase Storage REST (no @supabase/supabase-js — smaller, XHR progress). */
@@ -38,24 +98,19 @@ export function createSupabaseObjectStore(
     async list(prefix: string, opts?: ListOpts) {
       const limit = opts?.limit ?? 1000
       const offset = opts?.offset ?? 0
-      const res = await fetch(joinUrl(projectUrl, `storage/v1/object/list/${bucket}`), {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prefix, limit, offset }),
-      })
-      if (!res.ok) throw storageError(res.status, await res.text(), 'locker_list_failed')
-      const rows = (await res.json()) as { name?: string }[]
-      return rows
-        .map((row) => ({ name: String(row.name || '') }))
-        .filter((row) => row.name)
+      const flat = await listSupabaseFlat(projectUrl, bucket, headers, prefix)
+      return flat.slice(offset, offset + limit)
     },
 
-    async exists(path: string) {
+    async exists(path: string, opts?: { signal?: AbortSignal }) {
       const res = await fetch(joinUrl(root, `${bucket}/${path}`), {
         method: 'HEAD',
         headers,
+        signal: opts?.signal,
       })
-      if (res.status === 404) return false
+      // Supabase Storage returns 400 (legacy) or 404 for missing objects on HEAD;
+      // HEAD has no body, so we cannot rely on error text. Match supabase-js.
+      if (res.status === 400 || res.status === 404) return false
       if (res.ok) return true
       throw storageError(res.status, await res.text(), 'exists_failed')
     },
