@@ -192,12 +192,14 @@ export function BookShell() {
     setBusy((cur) => (cur ? { ...cur, loaded, total } : cur))
   }
 
-  function onSaveStage(stage: 'transfer' | 'parse' | 'attachments' | 'server' | 'persist') {
+  function onSaveStage(
+    stage: 'transfer' | 'parse' | 'attachments' | 'attachments_check' | 'server' | 'persist',
+  ) {
     if (stage === 'transfer') {
       setBusy((cur) =>
         cur ? { ...cur, title: t('file.busySave'), loaded: 0, total: null } : cur,
       )
-    } else if (stage === 'attachments') {
+    } else if (stage === 'attachments_check' || stage === 'attachments') {
       setBusy((cur) =>
         cur ? { ...cur, title: t('file.busySaveAttachments'), loaded: 0, total: null } : cur,
       )
