@@ -426,13 +426,23 @@ export function LockerPanel({
   }
 
   function formActions(submitLabel: string) {
+    const submitText = connected ? t('file.lockerUpdateConnection') : submitLabel
     return (
       <div className="file-prompt-actions">
-        <button type="submit" className="file-btn" disabled={!canSubmit}>
-          {connected && formDirty ? t('file.lockerUpdateConnection') : submitLabel}
+        <button
+          type="submit"
+          className={`file-btn${busy || guardBusy ? ' is-busy' : ''}`}
+          disabled={!canSubmit}
+        >
+          {submitText}
         </button>
         {connected && editing ? (
-          <button type="button" className="file-btn-secondary" onClick={cancelEdit} disabled={busy}>
+          <button
+            type="button"
+            className={`file-btn-secondary${busy ? ' is-busy' : ''}`}
+            onClick={cancelEdit}
+            disabled={busy}
+          >
             {t('common.cancel')}
           </button>
         ) : null}
@@ -556,10 +566,23 @@ export function LockerPanel({
                   {onDelete ? (
                     <button
                       type="button"
-                      className="linkish"
+                      className="locker-book-delete"
+                      title={t('common.delete')}
+                      aria-label={`${t('common.delete')}: ${book.name}`}
                       onClick={() => onDelete(book.id, book.name)}
                     >
-                      {t('common.delete')}
+                      <svg
+                        className="locker-book-delete-icon"
+                        viewBox="0 0 16 16"
+                        width="16"
+                        height="16"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fill="currentColor"
+                          d="M6 2h4l.5 1H14v1.5H2V3h3.5L6 2zm1 4.5V12h1.5V6.5H7zm2.5 0V12H11V6.5H9.5zM3.5 5h9l-.7 8.2A1.5 1.5 0 0 1 10.3 14.5H5.7a1.5 1.5 0 0 1-1.5-1.3L3.5 5z"
+                        />
+                      </svg>
                     </button>
                   ) : null}
                 </li>
