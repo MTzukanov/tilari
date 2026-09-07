@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { lockerBookLabel } from './lockerBooks'
+import { lockerBookLabel, lockerIdFromPath } from './lockerBooks'
 import type { LockerBook } from '../../api'
 
 const books: LockerBook[] = [
@@ -12,5 +12,14 @@ describe('lockerBookLabel', () => {
   it('shows short id when names collide', () => {
     expect(lockerBookLabel(books[0], books)).toBe('Firma.kitsas · aaaaaaaa')
     expect(lockerBookLabel(books[2], books)).toBe('Muu.kitsas')
+  })
+})
+
+describe('lockerIdFromPath', () => {
+  it('parses locker ids and rejects other paths', () => {
+    expect(lockerIdFromPath('locker:abc-123')).toBe('abc-123')
+    expect(lockerIdFromPath('locker:')).toBe(null)
+    expect(lockerIdFromPath('server:book.kitsas')).toBe(null)
+    expect(lockerIdFromPath(null)).toBe(null)
   })
 })

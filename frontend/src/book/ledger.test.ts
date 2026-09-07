@@ -180,3 +180,34 @@ describe('practice clock', () => {
     ledger.closeLedger()
   })
 })
+
+describe('source and activity dates', () => {
+  it('exposes last_activity_at from Tositeloki and source_modified_at from open opts', async () => {
+    const db = await loadGoldenDb()
+    const bytes = db.export()
+    db.close()
+    const ledger = new Ledger()
+    const meta = await ledger.openBytes(bytes, {
+      sourceName: 'tilari-test.kitsas',
+      dbPath: 'test:golden',
+      sourceModifiedAt: '2024-06-01T10:00:00.000Z',
+    })
+    expect(meta.source_modified_at).toBe('2024-06-01T10:00:00.000Z')
+    expect(meta.last_activity_at).toBeNull()
+
+    await ledger.saveVoucher({
+      date: '2024-06-02',
+      type: 300,
+      status: 100,
+      title: 'Activity stamp',
+      entries: [
+        { account: ACCOUNT_BANK, debit_cents: 100, credit_cents: null },
+        { account: ACCOUNT_BANK, debit_cents: null, credit_cents: 100 },
+      ],
+    })
+    const after = await ledger.fetchMeta()
+    expect(after.last_activity_at).toBeTruthy()
+    expect(Number.isNaN(Date.parse(after.last_activity_at!))).toBe(false)
+    ledger.closeLedger()
+  })
+})
