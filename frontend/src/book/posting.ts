@@ -345,18 +345,24 @@ export async function attachAttachment(
   return { id: ins.lastInsertRowid, sha }
 }
 
-export function deleteAttachment(db: SqliteDb, attachmentId: number): void {
-  const row = db.get<{ id: number; tosite: number }>('SELECT id, tosite FROM Liite WHERE id = ?', [
-    attachmentId,
-  ])
+export function deleteAttachment(
+  db: SqliteDb,
+  attachmentId: number,
+): { voucherId: number; name: string } {
+  const row = db.get<{ id: number; tosite: number; nimi: string | null; roolinimi: string | null }>(
+    'SELECT id, tosite, nimi, roolinimi FROM Liite WHERE id = ?',
+    [attachmentId],
+  )
   if (!row) throw new PostingError(`Liite ${attachmentId} not found`, 404)
   const voucherId = Number(row.tosite)
   const existing = getVoucher(db, voucherId)
   if (!existing) throw new PostingError(`Tosite ${voucherId} not found`, 404)
   assertUnlocked(db, existing.date)
+  const name = row.nimi || row.roolinimi || `attachment-${attachmentId}`
   db.run('DELETE FROM Liite WHERE id = ?', [attachmentId])
   appendLoki(db, voucherId, existing.status, {
     toiminto: 'attachment_delete',
     attachment: attachmentId,
   })
+  return { voucherId, name }
 }

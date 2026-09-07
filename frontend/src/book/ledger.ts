@@ -434,10 +434,11 @@ class LedgerKernel implements KernelContext {
 
   async deleteAttachment(id: number): Promise<void> {
     await this.mutate(
-      (db) => {
-        deleteAttachment(db, id)
-      },
-      { kind: 'attachment_delete', params: { id } },
+      (db) => deleteAttachment(db, id),
+      (info) => ({
+        kind: 'attachment_delete',
+        params: { id, voucherId: info.voucherId, name: info.name },
+      }),
     )
   }
 

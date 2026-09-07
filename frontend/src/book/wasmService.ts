@@ -622,10 +622,17 @@ export class WasmBookService extends Ledger implements BookService {
   }
 
   override async deleteAttachment(id: number) {
-    await this.mutate((db) => {
-      deleteAttachmentRow(db, id)
-      this.pruneAttachments(db)
-    }, { kind: 'attachment_delete', params: { id } })
+    await this.mutate(
+      (db) => {
+        const info = deleteAttachmentRow(db, id)
+        this.pruneAttachments(db)
+        return info
+      },
+      (info) => ({
+        kind: 'attachment_delete',
+        params: { id, voucherId: info.voucherId, name: info.name },
+      }),
+    )
     const url = this.blobUrls.get(id)
     if (url) {
       URL.revokeObjectURL(url)

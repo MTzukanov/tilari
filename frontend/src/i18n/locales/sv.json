@@ -897,6 +897,7 @@
       "voucher_update": "Redigerade verifikat {id}: {title}",
       "voucher_delete": "Tog bort verifikat {id}",
       "attachment_add": "Bilaga {name} till verifikat {voucherId}",
+      "attachment_delete": "Tog bort bilaga {name} från verifikat {voucherId}",
       "bank_split": "Delade kontoutdragsrad (verifikat {voucherId} → {newId})",
       "settings": "Redigerade företagsinställningar",
       "account": "Redigerade konto {number}: {name}",

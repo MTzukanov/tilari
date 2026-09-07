@@ -897,6 +897,7 @@
       "voucher_update": "Updated voucher {id}: {title}",
       "voucher_delete": "Deleted voucher {id}",
       "attachment_add": "Attachment {name} on voucher {voucherId}",
+      "attachment_delete": "Deleted attachment {name} from voucher {voucherId}",
       "bank_split": "Split bank-statement line (voucher {voucherId} → {newId})",
       "settings": "Updated company settings",
       "account": "Updated account {number}: {name}",
