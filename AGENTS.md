@@ -56,6 +56,7 @@ cd server && npm test
 ```
 
 Env: `KITSAS_BOOKS_DIR` / `TILARI_BOOKS_DIR` for locker storage; `TILARI_STATIC` for production UI; `TILARI_PORT` (default 8000).
+Browser access (`server/src/requestGuard.ts`): same origin always; cross-origin only from `TILARI_ALLOWED_ORIGINS` (default the Pages origin); `TILARI_ALLOWED_HOSTS`; `TILARI_MAX_BODY_MB`. Locker book ids are folder names (`^[A-Za-z0-9_-]+$`); server writes go through `writeFileAtomic`.
 
 ## Architecture
 

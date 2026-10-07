@@ -8,17 +8,12 @@
  * Separate from Ledger (no posting/SQL domain).
  */
 import { createHash, randomUUID } from 'node:crypto'
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, basename } from 'node:path'
+import { join, basename, resolve, sep } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import { BookError } from '../../../frontend/src/book/errors.ts'
+import { writeFileAtomic } from '../httpUtil.ts'
 import {
   decodeAttachmentPack,
   encodeAttachmentPack,
@@ -28,6 +23,12 @@ import { sha256hexSync } from '../../../frontend/src/book/sha256.ts'
 
 const SHA_RE = /^[0-9a-f]{64}$/
 const SAFE = /[^A-Za-z0-9._\-]+/g
+/** Book ids are folder names under the shelf: no dots or separators (minted as 32 hex). */
+const BOOK_ID_RE = /^[A-Za-z0-9_-]{1,128}$/
+
+export function isValidBookId(bookId: string): boolean {
+  return BOOK_ID_RE.test(bookId) && bookId !== 'blobs'
+}
 
 /** Default object-store path prefix (same as frontend DEFAULT_STORAGE_PATH). */
 export const SHELF_PREFIX = 'tilari'
@@ -102,7 +103,11 @@ function shelfRoot(): string {
 }
 
 function bookDir(bookId: string): string {
-  return join(shelfRoot(), bookId)
+  if (!isValidBookId(bookId)) throw new BookError('invalid_book_id', 400)
+  const root = resolve(shelfRoot())
+  const dir = resolve(root, bookId)
+  if (!dir.startsWith(root + sep)) throw new BookError('invalid_book_id', 400)
+  return dir
 }
 
 function metaPath(bookId: string): string {
@@ -141,7 +146,7 @@ function readAttachmentBlobs(bookId: string, shas?: string[]): Record<string, Ui
 function writeAttachmentBlobs(blobs: Record<string, Uint8Array>): void {
   for (const [s, data] of Object.entries(blobs)) {
     const path = blobPath(s)
-    if (!existsSync(path)) writeFileSync(path, data)
+    if (!existsSync(path)) writeFileAtomic(path, data)
   }
 }
 
@@ -151,7 +156,7 @@ function writeMeta(meta: LockerMeta): void {
     ...meta,
     attachment_shas: normalizeShas(meta.attachment_shas),
   }
-  writeFileSync(metaPath(meta.id), JSON.stringify(normalized), 'utf8')
+  writeFileAtomic(metaPath(meta.id), JSON.stringify(normalized))
 }
 
 function attachmentsShaFromDisk(bookId: string, shas: string[]): string {
@@ -307,11 +312,13 @@ export function listBooks(): LockerMeta[] {
   const out: LockerMeta[] = []
   for (const name of readdirSync(root)) {
     if (name === 'blobs' || name === 'vault.json') continue
+    if (!isValidBookId(name)) continue
     const mf = join(root, name, 'meta.json')
     if (!existsSync(mf)) continue
     try {
       const data = JSON.parse(readFileSync(mf, 'utf8')) as LockerMeta
-      if (typeof data.id === 'string') out.push(normalizeMeta(data, data.id))
+      // The folder name is the id (getBook/peekBook look the book up by folder).
+      if (data && typeof data === 'object') out.push(normalizeMeta(data, name))
     } catch {
       /* skip */
     }
@@ -385,7 +392,7 @@ export function putBook(
     if (!expected || current !== expected) throw new LockerConflict(current)
   }
   mkdirSync(bookDir(bookId), { recursive: true })
-  writeFileSync(filePath(bookId), data)
+  writeFileAtomic(filePath(bookId), data)
   const split = ensureLeanSplit(bookId)
   const prevShas = normalizeShas(existing?.meta.attachment_shas)
   const shas = normalizeShas([...prevShas, ...split.shas])

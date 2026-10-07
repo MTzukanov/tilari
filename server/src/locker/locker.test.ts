@@ -51,6 +51,15 @@ describe('locker', () => {
     const body = (await res.json()) as { ok: boolean; locker: boolean }
     assert.equal(body.ok, true)
     assert.equal(body.locker, true)
+    assert.equal(res.headers.get('access-control-allow-origin'), null)
+  })
+
+  it('allows the Pages origin cross-origin, incl. private network', async () => {
+    const res = await fetch(`${base}/api/health`, {
+      headers: { Origin: 'https://mtzukanov.github.io' },
+    })
+    assert.equal(res.status, 200)
+    assert.equal(res.headers.get('access-control-allow-origin'), 'https://mtzukanov.github.io')
     assert.equal(res.headers.get('access-control-allow-private-network'), 'true')
   })
 

@@ -1,13 +1,51 @@
 /**
  * Minimal HTTP helpers (stdlib only). Replaces Hono for the ledger server.
  */
+import { randomBytes } from 'node:crypto'
+import { renameSync, rmSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { BookError } from '../../frontend/src/book/errors.ts'
 
+const DEFAULT_MAX_BODY_MB = 1024
+
+let maxBodyOverride: number | null = null
+
+/** Tests only: request body limit in bytes (null = env / default). */
+export function setMaxBodyBytes(bytes: number | null): void {
+  maxBodyOverride = bytes
+}
+
+export function maxBodyBytes(): number {
+  if (maxBodyOverride != null) return maxBodyOverride
+  const mb = Number(process.env.TILARI_MAX_BODY_MB || DEFAULT_MAX_BODY_MB)
+  return (Number.isFinite(mb) && mb > 0 ? mb : DEFAULT_MAX_BODY_MB) * 1024 * 1024
+}
+
 export async function readBody(req: IncomingMessage): Promise<Buffer> {
+  const limit = maxBodyBytes()
+  const declared = Number(req.headers['content-length'] || 0)
+  if (declared > limit) throw new BookError('body_too_large', 413)
   const chunks: Buffer[] = []
-  for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+  let size = 0
+  for await (const chunk of req) {
+    const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    size += buf.byteLength
+    if (size > limit) throw new BookError('body_too_large', 413)
+    chunks.push(buf)
+  }
   return Buffer.concat(chunks)
+}
+
+/** Write via a temp file + rename so a crash or full disk never leaves a truncated file. */
+export function writeFileAtomic(path: string, data: Uint8Array | string): void {
+  const tmp = `${path}.tmp-${process.pid}-${randomBytes(6).toString('hex')}`
+  try {
+    writeFileSync(tmp, data)
+    renameSync(tmp, path)
+  } catch (err) {
+    rmSync(tmp, { force: true })
+    throw err
+  }
 }
 
 export async function readJson<T>(req: IncomingMessage): Promise<T> {
@@ -82,20 +120,26 @@ export function sendBytes(
   res.end(Buffer.from(data))
 }
 
+/**
+ * Static CORS headers. `Access-Control-Allow-Origin` is set per request by
+ * `handleRequest` (requestGuard.ts), only for allowed cross-origin callers.
+ */
 export function corsHeaders(): Record<string, string> {
   return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, If-Match, X-Tilari-Name',
+    'Access-Control-Allow-Methods': 'GET,HEAD,POST,PUT,DELETE,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, If-Match, X-Tilari-Name, X-Upsert',
     'Access-Control-Expose-Headers':
-      'ETag, X-Tilari-Name, X-Tilari-Attachments-Sha256, Content-Disposition',
-    'Access-Control-Allow-Private-Network': 'true',
+      'ETag, X-Tilari-Name, X-Tilari-Attachments-Sha256, X-Tilari-Updated-At, Content-Disposition',
   }
 }
 
 export function sendError(res: ServerResponse, err: unknown): void {
   if (err instanceof BookError) {
     sendJson(res, err.status, { detail: err.message })
+    return
+  }
+  if (err instanceof URIError) {
+    sendJson(res, 400, { detail: 'invalid_uri' })
     return
   }
   const msg = err instanceof Error ? err.message : String(err)

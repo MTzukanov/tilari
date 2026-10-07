@@ -22,6 +22,7 @@ import { getAttachmentBlob, getBook } from './locker/store.ts'
 import { ledger } from './session.ts'
 import { getReloadSource, setReloadSource } from './reloadSource.ts'
 import { handleStatic } from './staticUi.ts'
+import { checkRequest } from './requestGuard.ts'
 import { BOOK_MODULES } from '../../frontend/src/book/modules/registry.ts'
 
 const STUB_BODY = {
@@ -126,6 +127,9 @@ async function handleLedger(
   if (match(method, path, 'POST', '/api/open-path')) {
     const body = await readJson<{ path?: string }>(req)
     if (!body.path) throw new BookError('path required', 400)
+    if (!body.path.toLowerCase().endsWith('.kitsas')) {
+      throw new BookError('File must have a .kitsas extension', 400)
+    }
     const bytes = new Uint8Array(await readFile(body.path))
     const name = body.path.split(/[/\\]/).pop() || 'book.kitsas'
     const mtime = (await stat(body.path)).mtimeMs
@@ -456,17 +460,35 @@ async function handleLedger(
   return false
 }
 
-export async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  if (req.method === 'OPTIONS') {
+/** Address the server is bound to (loopback binds also check the Host header). */
+let boundHost = '127.0.0.1'
+
+export async function handleRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+  bindHost: string = boundHost,
+): Promise<void> {
+  const url = new URL(req.url || '/', 'http://localhost')
+  const path = url.pathname
+  const q = url.searchParams
+  const method = req.method || 'GET'
+
+  const guard = checkRequest(req, bindHost, path)
+  if (!guard.ok) {
+    sendJson(res, guard.status, { detail: guard.detail })
+    return
+  }
+  if (guard.corsOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', guard.corsOrigin)
+    res.setHeader('Access-Control-Allow-Private-Network', 'true')
+  }
+  res.setHeader('Vary', 'Origin')
+
+  if (method === 'OPTIONS') {
     res.writeHead(204, corsHeaders())
     res.end()
     return
   }
-
-  const url = new URL(req.url || '/', `http://${req.headers.host || '127.0.0.1'}`)
-  const path = url.pathname
-  const q = url.searchParams
-  const method = req.method || 'GET'
 
   if (match(method, path, 'GET', '/api/health')) {
     sendJson(res, 200, ledger.health({ engine: 'node', locker: true, dirty: ledger.isDirty() }))
@@ -492,8 +514,9 @@ export function startServer(opts: ListenOpts = {}): Server {
   const host = opts.host ?? process.env.TILARI_HOST ?? '127.0.0.1'
   const port = opts.port ?? Number(process.env.TILARI_PORT || process.env.TILARI_LEDGER_PORT || 8000)
 
+  boundHost = host
   const server = createServer((req, res) => {
-    void handleRequest(req, res).catch((err) => sendError(res, err))
+    void handleRequest(req, res, host).catch((err) => sendError(res, err))
   })
 
   server.listen(port, host, () => {

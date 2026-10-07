@@ -291,7 +291,9 @@ Reference C++ routes (in kitupiikki):
 
 Intended later for self-hosted Tilari server: Tailscale and/or Caddy + Authelia, localhost-bound API, short-lived encrypted uploads. **Not** wired in this repo yet.
 
-Current defaults: API on `127.0.0.1:8000`, CORS for Vite only. Uploads land in temp -- fine for local use only.
+Current defaults: API on `127.0.0.1:8000`; browsers only from the same origin or
+`TILARI_ALLOWED_ORIGINS` (default: the Pages site), loopback `Host` names only on a loopback bind.
+See [docs/DEPLOY.md](docs/DEPLOY.md#browser-access). Uploads land in temp -- fine for local use only.
 
 ---
 
