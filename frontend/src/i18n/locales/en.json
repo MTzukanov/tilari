@@ -437,6 +437,7 @@
     "needChanges": "No changes to save.",
     "assistantUnavailable": "This voucher cannot be shown in the entry assistant without changing its lines. Edit the lines here.",
     "needDate": "Date is required.",
+    "noFiscalYear": "There is no fiscal year for this date in the book.",
     "needLines": "Add at least one posting line with an account and amount.",
     "needAccounts": "Every posting line needs an account.",
     "needBalance": "Debit and credit must match (now {debit} / {credit}).",

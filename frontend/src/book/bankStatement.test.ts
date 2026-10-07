@@ -522,8 +522,6 @@ describe('statement save round trip (imported tiliote)', () => {
   it('saving loaded rows unchanged writes nothing', async () => {
     const { loadImportedFixture, voucherSnapshot } = await import('./importedFixture')
     const { db, ids } = await loadImportedFixture()
-    // Posted: a draft save still assigns a number until drafts keep tunniste 0.
-    db.run('UPDATE Tosite SET tila = 100, tunniste = 9 WHERE id = ?', [ids.B])
     const before = voucherSnapshot(db, ids.B)
     const rows = groupOwnRows(getVoucher(db, ids.B)!.entries, 1910)
     const entries = expandOwnRowsToEntries(rows, 1910)

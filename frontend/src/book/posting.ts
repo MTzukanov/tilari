@@ -32,15 +32,66 @@ export function assertUnlocked(db: SqliteDb, date: string): void {
   }
 }
 
-export function nextDocNumber(db: SqliteDb, date: string, series: string): number {
-  const year = date.slice(0, 4)
+/** Fiscal year (Tilikausi) containing `date`, or null. */
+export function fiscalYearOf(db: SqliteDb, date: string): { starts: string; ends: string } | null {
+  const row = db.get<{ alkaa: string; loppuu: string }>(
+    'SELECT alkaa, loppuu FROM Tilikausi WHERE alkaa <= ? AND loppuu >= ? ORDER BY alkaa DESC LIMIT 1',
+    [date, date],
+  )
+  return row ? { starts: String(row.alkaa), ends: String(row.loppuu) } : null
+}
+
+/** `''` (old tilari saves) is the same as NULL: no series. */
+export function normalizeSeries(series: unknown): string | null {
+  if (series == null) return null
+  const text = series instanceof Uint8Array ? new TextDecoder().decode(series) : String(series)
+  return text.trim() ? text : null
+}
+
+/**
+ * Next voucher number like Kitsas `TositeRoute::lisaaTaiPaivita`: MAX(tunniste)+1 over the
+ * fiscal year containing `date`, same series, posted vouchers only. No series = `sarja IS
+ * NULL`; legacy `''` rows count as no series too, so old tilari saves cannot get a duplicate.
+ */
+export function nextDocNumber(db: SqliteDb, date: string, series: string | null): number {
+  const fy = fiscalYearOf(db, date)
+  if (!fy) throw new PostingError(`Päivämäärälle ${date} ei ole tilikautta`, 400)
+  const seriesSql = series ? 'sarja = ?' : "(sarja IS NULL OR sarja = '')"
   const row = db.get<{ n: number }>(
     `SELECT COALESCE(MAX(tunniste), 0) AS n
      FROM Tosite
-     WHERE strftime('%Y', pvm) = ? AND COALESCE(sarja, '') = ?`,
-    [year, series || ''],
+     WHERE pvm BETWEEN ? AND ? AND ${seriesSql} AND tila >= ${STATUS_POSTED}`,
+    series ? [fy.starts, fy.ends, series] : [fy.starts, fy.ends],
   )
   return Number(row?.n || 0) + 1
+}
+
+/**
+ * Series of a new voucher like Kitsas `TositeTyyppiModel::sarja`: `KateisSarjaan` + cash first
+ * line -> `Tositesarjat.K` (default K); `EriSarjaan` off -> none; on -> `Tositesarjat[type]`,
+ * `*` for types >= 1000 (default JT), otherwise X.
+ */
+export function seriesForNewVoucher(db: SqliteDb, type: number, firstAccount?: number): string | null {
+  const rows = db.all<{ avain: string; arvo: string | null }>(
+    "SELECT avain, arvo FROM Asetus WHERE avain IN ('EriSarjaan', 'KateisSarjaan', 'Tositesarjat')",
+  )
+  const settings = new Map(rows.map((r) => [r.avain, r.arvo ?? '']))
+  const on = (key: string) => {
+    const value = String(settings.get(key) || '').trim().toUpperCase()
+    return value === 'ON' || value === '1' || value === 'TRUE'
+  }
+  const series = parseJson(settings.get('Tositesarjat'))
+  const pick = (key: string, fallback: string) => {
+    const value = series[key]
+    return typeof value === 'string' && value ? value : fallback
+  }
+  if (firstAccount && on('KateisSarjaan')) {
+    const acc = db.get<{ tyyppi: string | null }>('SELECT tyyppi FROM Tili WHERE numero = ?', [firstAccount])
+    if (acc?.tyyppi === 'ARK') return pick('K', 'K')
+  }
+  if (!on('EriSarjaan')) return null
+  if (type >= 1000) return pick('*', 'JT')
+  return pick(String(type), 'X')
 }
 
 export function resolvePartner(db: SqliteDb, value: SavePartnerInput | undefined): number | null {
@@ -281,10 +332,24 @@ export function saveVoucher(
 
   const status = Number(payload.status ?? existing?.status ?? STATUS_POSTED)
   const series =
-    payload.series !== undefined ? payload.series || null : raw ? (raw.sarja as string | null) : null
-  let docNumber: number | string | null | undefined = payload.doc_number
-  if (docNumber == null) docNumber = existing?.doc_number
-  if (!docNumber) docNumber = nextDocNumber(db, date, series || '')
+    payload.series !== undefined
+      ? normalizeSeries(payload.series)
+      : raw
+        ? normalizeSeries(raw.sarja)
+        : seriesForNewVoucher(db, type, lines[0] ? Number(lines[0].account) : undefined)
+  // Numbers like Kitsas: drafts have none; a posted voucher keeps its number unless its fiscal
+  // year or series changes; a voucher posted now gets MAX+1. `doc_number` sets one by hand.
+  let docNumber = 0
+  if (status >= STATUS_POSTED) {
+    const manual = Number(payload.doc_number || 0)
+    const wasPosted = Boolean(existing && existing.status >= STATUS_POSTED)
+    docNumber = manual || (wasPosted ? Number(raw?.tunniste || 0) : 0)
+    if (docNumber && !manual && raw) {
+      const movedYear = fiscalYearOf(db, String(raw.pvm))?.starts !== fiscalYearOf(db, date)?.starts
+      if (movedYear || normalizeSeries(raw.sarja) !== series) docNumber = 0
+    }
+    if (!docNumber) docNumber = nextDocNumber(db, date, series)
+  }
 
   const partnerId = resolvePartner(
     db,
@@ -389,6 +454,10 @@ export function saveVoucher(
   const keptIds = new Set(planned.filter((p) => p.stored).map((p) => Number(p.stored!.id)))
   const removedIds = storedRows.map((r) => Number(r.id)).filter((id) => !keptIds.has(id))
   const tositeChanges = raw ? changedColumns(raw, tositeValues) : Object.keys(tositeValues)
+  // Written rows get NULL for "no series"; Kitsas does not see '' (sarja IS NULL).
+  if (raw && raw.sarja === '' && tositeChanges.length && !tositeChanges.includes('sarja')) {
+    tositeChanges.push('sarja')
+  }
   const lineChanges = planned.map((p) => (p.stored ? changedColumns(p.stored, p.values) : null))
   const nothingChanged =
     raw != null &&
@@ -463,13 +532,18 @@ export function postVoucher(db: SqliteDb, voucherId: number): number {
     { allowEmpty: true },
   )
 
-  const raw = db.get<{ tunniste: number | null; sarja: string | null }>(
-    'SELECT tunniste, sarja FROM Tosite WHERE id = ?',
-    [voucherId],
-  )
-  const tunniste = Number(raw?.tunniste || 0) || nextDocNumber(db, existing.date, raw?.sarja || '')
+  const raw = db.get<{ sarja: unknown }>('SELECT sarja FROM Tosite WHERE id = ?', [voucherId])
+  const series = normalizeSeries(raw?.sarja)
+  // A draft has no number of its own (old tilari saves numbered drafts; those numbers are
+  // not trusted): MAX+1 of the fiscal year and series.
+  const tunniste = nextDocNumber(db, existing.date, series)
   const extras = expandPostedLines(db, [...lines], existing.date).slice(lines.length)
-  db.run('UPDATE Tosite SET tila = ?, tunniste = ? WHERE id = ?', [STATUS_POSTED, tunniste, voucherId])
+  db.run('UPDATE Tosite SET tila = ?, tunniste = ?, sarja = ? WHERE id = ?', [
+    STATUS_POSTED,
+    tunniste,
+    series,
+    voucherId,
+  ])
   let rivi = Math.max(0, ...existing.entries.map((e) => Number(e.line_no || 0)))
   for (const line of extras) {
     const [d, k] = lineAmounts(line)

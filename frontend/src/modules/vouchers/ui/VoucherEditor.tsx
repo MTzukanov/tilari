@@ -5,6 +5,7 @@ import {
   fetchAccounts,
   fetchAllocations,
   fetchBankStatementOverlay,
+  fetchMeta,
   fetchPartners,
   fetchSettings,
   fetchVoucher,
@@ -69,6 +70,14 @@ import { VatSelect } from './VatSelect'
 
 function isBankAccount(a: Account): boolean {
   return a.type.startsWith('A') && (a.type.includes('R') || String(a.number).startsWith('19'))
+}
+
+/** Fiscal year containing `date` (voucher numbers run per fiscal year); calendar year if none. */
+function fiscalRange(date: string, periods: { starts: string; ends: string }[]) {
+  const p = periods.find((x) => x.starts <= date && date <= x.ends)
+  if (p) return { start: p.starts, end: p.ends }
+  const year = date.slice(0, 4) || String(new Date().getFullYear())
+  return { start: `${year}-01-01`, end: `${year}-12-31` }
 }
 
 function packAssistant(rows: AssistantRow[], paymentAccount: string): string {
@@ -193,6 +202,7 @@ export function VoucherEditor({
   const [assistantBaseline, setAssistantBaseline] = useState<string | null>(null)
   const [transferBaseline, setTransferBaseline] = useState<string | null>(null)
   const [loadedHeader, setLoadedHeader] = useState<LoadedHeader | null>(null)
+  const [periods, setPeriods] = useState<{ starts: string; ends: string }[]>([])
   const [neighbors, setNeighbors] = useState<{ prev: number | null; next: number | null }>({
     prev: null,
     next: null,
@@ -250,6 +260,9 @@ export function VoucherEditor({
   }, [type, methodsExpense, methodsIncome, bankItems])
 
   useEffect(() => {
+    fetchMeta()
+      .then((m) => setPeriods(m.periods))
+      .catch(() => undefined)
     fetchAccounts().then((d) => setAccounts(d.accounts)).catch(() => undefined)
     fetchAllocations()
       .then((d) => setAllocations(d.allocations))
@@ -468,9 +481,9 @@ export function VoucherEditor({
       setNeighbors({ prev: null, next: null })
       return
     }
-    const year = date.slice(0, 4)
+    const range = fiscalRange(date, periods)
     let cancelled = false
-    fetchVouchers({ start_date: `${year}-01-01`, end_date: `${year}-12-31` })
+    fetchVouchers({ start_date: range.start, end_date: range.end })
       .then((res) => {
         if (cancelled) return
         const ids = res.vouchers.map((row) => row.id)
@@ -486,7 +499,7 @@ export function VoucherEditor({
     return () => {
       cancelled = true
     }
-  }, [voucherId, date])
+  }, [voucherId, date, periods])
 
   function defaultVatChoice(voucherType: number): string {
     if (!vatLiable) return '0:0'
@@ -522,8 +535,8 @@ export function VoucherEditor({
     const n = Number(raw.trim())
     if (!n) return
     if (!confirmLeave()) return
-    const year = date.slice(0, 4) || String(new Date().getFullYear())
-    void fetchVouchers({ start_date: `${year}-01-01`, end_date: `${year}-12-31` }).then((res) => {
+    const range = fiscalRange(date || wallToday(), periods)
+    void fetchVouchers({ start_date: range.start, end_date: range.end }).then((res) => {
       const match = res.vouchers.find((row) => row.doc_number === n)
       if (!match) {
         window.alert(t('editor.goToNotFound'))
@@ -854,7 +867,18 @@ export function VoucherEditor({
     existing.status >= 50 &&
     existing.status < 100
 
+  /** Why "Kirjaa" is off; line problems first, then the fiscal year (Kitsas order). */
   function postBlockedReason(): string | null {
+    const reason = entryBlockedReason()
+    if (reason) return reason
+    // Kitsas: "Päivämäärälle ei ole tilikautta" - posting needs a fiscal year (numbering too).
+    if (date && periods.length && !periods.some((p) => p.starts <= date && date <= p.ends)) {
+      return t('editor.noFiscalYear')
+    }
+    return null
+  }
+
+  function entryBlockedReason(): string | null {
     if (unchangedDraft && existing) {
       const balanced =
         existing.type === 800 ||
@@ -965,7 +989,8 @@ export function VoucherEditor({
           partner: partner ? { name: partner } : null,
           json,
           entries,
-          ...(docNumber != null ? { doc_number: docNumber } : {}),
+          // Only a number changed by hand; otherwise posting numbers like Kitsas.
+          ...(docNumber != null && docNumber !== existing?.doc_number ? { doc_number: docNumber } : {}),
         } satisfies SaveVoucherInput,
         voucherId ?? undefined,
       )

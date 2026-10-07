@@ -437,6 +437,7 @@
     "needChanges": "Ei tallennettavia muutoksia.",
     "assistantUnavailable": "Tätä tositetta ei voi näyttää kirjausapurissa ilman että sen viennit muuttuvat. Muokkaa vientejä tässä.",
     "needDate": "Päivämäärä puuttuu.",
+    "noFiscalYear": "Päivämäärälle ei ole tilikautta kirjanpidossa.",
     "needLines": "Lisää vähintään yksi vienti (tili ja summa).",
     "needAccounts": "Jokaisella viennillä pitää olla tili.",
     "needBalance": "Debet ja kredit eivät täsmää (nyt {debit} / {credit}).",

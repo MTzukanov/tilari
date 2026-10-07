@@ -437,6 +437,7 @@
     "needChanges": "Keine Änderungen zum Speichern.",
     "assistantUnavailable": "Dieser Beleg kann im Buchungsassistenten nicht ohne Änderung seiner Zeilen angezeigt werden. Bearbeiten Sie die Zeilen hier.",
     "needDate": "Datum fehlt.",
+    "noFiscalYear": "Für dieses Datum gibt es kein Geschäftsjahr in der Buchhaltung.",
     "needLines": "Mindestens eine Buchungszeile mit Konto und Betrag hinzufügen.",
     "needAccounts": "Jede Buchungszeile braucht ein Konto.",
     "needBalance": "Soll und Haben müssen übereinstimmen (jetzt {debit} / {credit}).",
