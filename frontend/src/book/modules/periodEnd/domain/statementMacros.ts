@@ -3,7 +3,7 @@
  * `{{e2251..226 e2371}}`, optional leading minus, and prior-period columns.
  */
 import { getAccounts } from '../../../access'
-import { computeBalances } from '../../../balances'
+import { computeBalances, computeOpeningBalances } from '../../../balances'
 import { wallToday } from '../../../clock'
 import { getFiscalPeriodByEnd } from '../../../fiscalPeriod'
 import type { SqliteDb } from '../../../sqlite'
@@ -140,18 +140,14 @@ export function buildMacroContext(db: SqliteDb, starts: string, ends: string): M
     'SELECT alkaa, loppuu FROM Tilikausi WHERE loppuu < ? ORDER BY loppuu DESC LIMIT 1',
     [starts],
   )
-  const previousPrevious = previous
-    ? db.get<{ loppuu: string }>(
-        'SELECT loppuu FROM Tilikausi WHERE loppuu < ? ORDER BY loppuu DESC LIMIT 1',
-        [previous.alkaa],
-      )
-    : undefined
 
+  // Kitsas TilinpaatosGeneraattori: s/S = opening balances (alkusaldot) at the start of this /
+  // the previous period - every earlier result in BE, no T row; e/E = balances at the ends.
   const maps: Record<MacroKind, Record<string, number>> = {
-    s: previous ? computeBalances(db, previous.loppuu).balances : {},
+    s: computeOpeningBalances(db, starts),
     e: computeBalances(db, ends).balances,
     d: {},
-    S: previousPrevious ? computeBalances(db, previousPrevious.loppuu).balances : {},
+    S: previous ? computeOpeningBalances(db, previous.alkaa) : {},
     E: previous ? computeBalances(db, previous.loppuu).balances : {},
     D: {},
   }

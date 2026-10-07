@@ -1,4 +1,4 @@
-import { getAccounts } from './access'
+import { getAccounts, periodForDate } from './access'
 import { computeAccountOpening, computeBalances, entryDelta } from './balances'
 import { listEntries } from './entries'
 import type { SqliteDb } from './sqlite'
@@ -44,23 +44,31 @@ export function entriesWithRunning(
   const acc = accs.find((a) => a.number === account)
   const type = acc?.type || ''
   const entries = listEntries(db, { account, startDate, endDate })
-  const openingCents = computeAccountOpening(db, account, startDate, { endDate, type })
-  const balancesRes = computeBalances(db, endDate)
+  const openingCents = computeAccountOpening(db, account, startDate, { type })
   const debitSum = entries.reduce((s, e) => s + (e.debit_cents || 0), 0)
   const creditSum = entries.reduce((s, e) => s + (e.credit_cents || 0), 0)
-  const closingCents = balancesRes.balances[String(account)] ?? 0
+  // P&L balances restart at each fiscal year (Kitsas saldot for TULOS accounts).
+  const isPnl = type.startsWith('C') || type.startsWith('D') || String(account) >= '3'
+  let yearEnds = periodForDate(db, startDate)?.ends ?? null
   let running = openingCents
   for (const entry of entries) {
+    if (isPnl && yearEnds && entry.date > yearEnds) {
+      running = 0
+      yearEnds = periodForDate(db, entry.date)?.ends ?? null
+    }
     running += entryDelta(account, entry.debit_cents, entry.credit_cents, type || null)
     ;    (entry as typeof entry & { balance_cents: number }).balance_cents = running
   }
+  const endPeriod = periodForDate(db, endDate)
+  const balancesRes = endPeriod ? computeBalances(db, endDate) : null
+  const closingCents = balancesRes ? (balancesRes.balances[String(account)] ?? 0) : running
   return {
     account,
     name: acc?.name ?? '',
     type,
     start_date: startDate,
     end_date: endDate,
-    period: balancesRes.period,
+    period: balancesRes?.period ?? { starts: startDate, ends: endDate },
     opening_cents: openingCents,
     entries: entries as (typeof entries[number] & { balance_cents: number })[],
     debit_sum_cents: debitSum,

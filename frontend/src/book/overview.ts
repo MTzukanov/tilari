@@ -158,10 +158,14 @@ export function computeOverview(db: SqliteDb, date: string): OverviewResponse {
   )
 
   const periods = getPeriods(db)
-  const years: OverviewPoint[] = periods.map((p) => {
+  // One point per fiscal year. The end year is the label unless two fiscal years end in the
+  // same calendar year (a short transition year); then month/year of the end tells them apart.
+  const endYears = periods.map((p) => p.ends.slice(0, 4))
+  const years: OverviewPoint[] = periods.map((p, i) => {
     const fold = foldPoints(['_'], pnlByBucket(db, p.starts, p.ends, `'_'`))
+    const shared = endYears.filter((y) => y === endYears[i]).length > 1
     return {
-      key: p.ends.slice(0, 4),
+      key: shared ? `${Number(p.ends.slice(5, 7))}/${endYears[i]}` : endYears[i],
       turnover_cents: fold.turnover_cents,
       profit_cents: fold.profit_cents,
       tax_paid_cents: taxPaidCents(db, p.starts, p.ends, taxAccounts),

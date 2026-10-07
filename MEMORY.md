@@ -7,6 +7,22 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-07 - Reports like Kitsas on `fix/reports-like-kitsas` (stacked on `fix/vat-like-kitsas`)
+
+- Chart reports (tase/tulos) follow `LaatijanTaseTulos::kirjoitaRaportti`: `S` = show even when
+  empty plus its own ranges (before: the running sum, so balance-sheet totals counted assets two
+  or three times), `=` cumulative and never reset, `+`/`-` anywhere in the formula, D/C types,
+  no two subtotals in a row, accounts with a zero balance left out.
+- `s`/`S` statement macros use opening balances like `/saldot?alkusaldot` (all earlier results
+  in BE, no T row).
+- Account ledger: P&L opening from the fiscal year of the start date and the running balance
+  restarts at a fiscal-year boundary; no throw when the range ends outside the fiscal years.
+- Overview: fiscal years ending in the same calendar year get distinct keys.
+- Not changed: kohdennus usage count includes drafts/deleted lines - Kitsas counts the same way
+  (and the FK blocks deleting a kohdennus any line uses).
+- Checked on a copy of a real book (FY2024/FY2025): assets = liabilities = class sums; result =
+  P&L sum = 2371.
+
 ## 2026-10-07 - VAT like Kitsas on `fix/vat-like-kitsas` (stacked on `fix/write-guards`)
 
 - `computeVat` follows Kitsas `AlvLaskelma`: all VAT-coded posted lines of the period except VAT
