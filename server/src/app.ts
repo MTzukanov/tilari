@@ -6,6 +6,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { readFile, stat } from 'node:fs/promises'
 import type { SaveVoucherInput, SaveAllocationInput } from '../../frontend/src/book/types.ts'
 import { BookError } from '../../frontend/src/book/errors.ts'
+import { SqliteDb } from '../../frontend/src/book/sqlite.ts'
 import {
   corsHeaders,
   readBody,
@@ -47,6 +48,21 @@ export function match(
     else if (pp[i] !== uu[i]) return null
   }
   return params
+}
+
+async function packLockerAttachments(bytes: Uint8Array, lockerId: string): Promise<Uint8Array> {
+  const db = await SqliteDb.fromBytes(bytes)
+  try {
+    const rows = db.all<{ id: number; sha: string | null }>('SELECT id, sha FROM Liite WHERE data IS NULL')
+    for (const row of rows) {
+      const blob = row.sha ? getAttachmentBlob(lockerId, String(row.sha)) : null
+      if (!blob) throw new BookError('attachments_missing', 422)
+      db.run('UPDATE Liite SET data = ? WHERE id = ?', [new Uint8Array(blob), row.id])
+    }
+    return db.export()
+  } finally {
+    db.close()
+  }
 }
 
 function need(v: string | null, name: string): string {
@@ -101,7 +117,13 @@ async function handleLedger(
     return true
   }
   if (match(method, path, 'GET', '/api/export')) {
-    const bytes = ledger.exportBytes()
+    let bytes = ledger.exportBytes()
+    // ?pack=1: a file for Kitsas desktop. Locker books are lean (Liite.data NULL); put the
+    // attachment bytes back from the shelf, or refuse rather than export empty attachments.
+    const dbPath = ledger.buildMeta().db_path || ''
+    if (q.get('pack') === '1' && dbPath.startsWith('locker:')) {
+      bytes = await packLockerAttachments(bytes, dbPath.slice('locker:'.length))
+    }
     const name = ledger.buildMeta().source_name || 'book.kitsas'
     const ascii = name.replace(/[^\x20-\x7E]/g, '?')
     sendBytes(res, 200, bytes, {

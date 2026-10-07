@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { expect, type Page } from '@playwright/test'
 
 export const SETTINGS_CHANGE = 'Muokattiin yrityksen asetuksia'
@@ -95,25 +98,32 @@ export async function expectUnsavedIcons(page: Page, unsavedCount: number) {
   await expect(page.locator('.session-changes-icon-unsaved')).toHaveCount(unsavedCount)
 }
 
-export async function stubBrowserSavePicker(page: Page) {
-  await page.evaluate(() => {
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+
+/**
+ * Pickers return a handle to the book's original file: the same company's book, last changed
+ * long ago (linking refuses a newer file or another company's book).
+ */
+export async function stubBrowserSavePicker(page: Page, book = 'tilari-test.kitsas') {
+  const bytes = [...readFileSync(path.join(repoRoot, 'testdb', book))]
+  await page.evaluate(({ bytes, name }) => {
     const mockWritable = {
       write: async () => undefined,
       close: async () => undefined,
     }
     const mockHandle = {
       createWritable: async () => mockWritable,
-      getFile: async () => new File([new Uint8Array([1])], 'tilari-test.kitsas'),
+      getFile: async () => new File([new Uint8Array(bytes)], name, { lastModified: 0 }),
       requestPermission: async () => 'granted' as PermissionState,
     }
     window.showSaveFilePicker = async () => mockHandle as FileSystemFileHandle
     window.showOpenFilePicker = async () => [mockHandle as FileSystemFileHandle]
-  })
+  }, { bytes, name: book })
 }
 
 /** Wasm/browser engine: primary save uses linked file or showSaveFilePicker. */
-export async function saveBookInBrowser(page: Page) {
-  await stubBrowserSavePicker(page)
+export async function saveBookInBrowser(page: Page, book = 'tilari-test.kitsas') {
+  await stubBrowserSavePicker(page, book)
   await page.locator('.save-btn').click()
   await expect(page.locator('.status-clean')).toBeVisible({ timeout: 15_000 })
 }

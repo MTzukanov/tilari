@@ -64,6 +64,8 @@ import type {
 } from './types'
 
 type OpenBytesOpts = {
+  /** Checked after parsing: false = this open was superseded, keep the current book. */
+  shouldAdopt?: () => boolean
   sourceName: string
   dbPath: string
   sessionId?: string
@@ -127,6 +129,10 @@ class LedgerKernel implements KernelContext {
 
   async openBytes(bytes: Uint8Array, opts: OpenBytesOpts): Promise<Meta> {
     const db = await SqliteDb.fromBytes(bytes)
+    if (opts.shouldAdopt && !opts.shouldAdopt()) {
+      db.close()
+      throw new DOMException('Superseded', 'AbortError')
+    }
     validateBook(db)
     this.db?.close()
     this.db = db

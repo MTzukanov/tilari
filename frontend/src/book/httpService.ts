@@ -90,11 +90,16 @@ export class HttpBookService implements BookService {
     }
   }
 
-  private async ensureLockerEtag(id: string): Promise<void> {
+  /**
+   * After a page refresh the ETag is gone. Adopt the server's only if the book has not been
+   * saved since this session loaded it; otherwise it is a conflict (no blind overwrite).
+   */
+  private async ensureLockerEtag(id: string, loadedAt?: string | null): Promise<void> {
     if (this.lockerEtag) return
     const books = await getActiveLocker().list()
     const found = books.find((b) => b.id === id)
     if (!found) throw new Error('book_not_found')
+    if (!loadedAt || (found.updated_at && found.updated_at > loadedAt)) throw new Error('etag_mismatch')
     this.lockerEtag = found.sha256
   }
 
@@ -373,12 +378,15 @@ export class HttpBookService implements BookService {
   }
   async downloadCopy(promptForName: (suggested: string) => string | null) {
     const meta = await this.fetchMeta()
-    const res = await fetch('/api/export', { cache: 'no-store' })
+    // pack=1: attachment bytes included (a locker book is lean on the server).
+    const res = await fetch('/api/export?pack=1', { cache: 'no-store' })
     if (!res.ok) throw new Error(await parseHttpError(res))
     const bytes = new Uint8Array(await res.arrayBuffer())
     if (!bytes.byteLength) throw new Error('empty_book')
     const name = meta.source_name || 'book.kitsas'
     await saveKitsasAs(bytes, name, promptForName)
+    // A locker book's home is the locker: a downloaded copy does not save it.
+    if (lockerIdFromPath(meta.db_path)) return
     await this.recordBookSaved({
       target: 'disk',
       name,
@@ -427,7 +435,7 @@ export class HttpBookService implements BookService {
       this.lockerId = id
       this.lockerEtag = undefined
     }
-    if (id && !asNew) await this.ensureLockerEtag(id)
+    if (id && !asNew) await this.ensureLockerEtag(id, meta.source_modified_at)
     const name = opts.name ?? (meta.source_name || 'book.kitsas')
     const locker = getActiveLocker()
     if (!locker.supportsHttpEngine) throw new Error('locker_http_unsupported')

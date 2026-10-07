@@ -22,9 +22,10 @@ const settings = {
   encrypt: true,
 }
 
+/** New objects use the path-bound v2 envelope. */
 function startsWithMagic(data: Uint8Array | undefined): boolean {
   if (!data || data.byteLength < 8) return false
-  const magic = new TextEncoder().encode('TILARIE1')
+  const magic = new TextEncoder().encode('TILARIE2')
   return magic.every((b, i) => data[i] === b)
 }
 

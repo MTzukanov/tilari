@@ -211,6 +211,9 @@ live shared session: each tab has its own in-memory + OPFS copy after open.
 | A saves first (valid `If-Match`) | Locker updates; A’s ETag advances. |
 | B still has the old ETag and saves | `409 etag_mismatch` — UI tells B the storage copy changed and suggests **Tallenna säilytykseen nimellä…**; local work is not force-overwritten onto the locker. |
 | A saves ledger; B only has stale attachment ETag | Same idea for the attachments PUT (separate ETag / kind). |
+| A and B save at the same moment | Tilari Node shelf: the ledger write is conditional (`If-Match` on the stored bytes, one synchronous check-and-write), so exactly one wins and the other gets `etag_mismatch`. Supabase has no conditional write: the meta check narrows but does not close that window. |
+| Same book in two tabs of one browser | The OPFS working copy has one writer: a Web Lock is held by the tab that has the book open; another tab does not restore it and says the book is open in another tab. |
+| Download a copy of a locker book | Only a copy: the book stays unsaved until **Tallenna säilytykseen**. A Kitsas-file export refuses while attachment bytes are still missing in the browser. |
 | Tab refresh mid-edit | OPFS restores that tab’s working copy; it may still be behind the locker until the user reopens or saves successfully. |
 | Attachment sync still running | Reports/browse of lean data work; missing blobs catch up as the pack sync finishes. |
 

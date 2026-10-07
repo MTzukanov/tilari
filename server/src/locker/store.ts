@@ -8,7 +8,7 @@
  * Separate from Ledger (no posting/SQL domain).
  */
 import { createHash, randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, basename, resolve, sep } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -353,22 +353,34 @@ export function getAttachmentBlob(bookId: string, shaHex: string): Buffer | null
 
 /** Remove a book directory and GC shared blobs no longer referenced. */
 export function deleteBook(bookId: string): void {
-  if (!peekBook(bookId)) throw new LockerNotFound()
+  const found = peekBook(bookId)
+  if (!found) throw new LockerNotFound()
+  const own = new Set(normalizeShas(found.meta.attachment_shas))
   const dir = bookDir(bookId)
   if (existsSync(dir)) rmSync(dir, { recursive: true, force: true })
-  gcUnusedBlobs()
+  // The deleted book's own blobs go now; other unreferenced blobs wait out the grace period.
+  gcUnusedBlobs(own)
 }
 
-function gcUnusedBlobs(): number {
+/** Blobs written within this window are never collected (a save writes blobs before meta). */
+const BLOB_GC_GRACE_MS = 15 * 60 * 1000
+
+function gcUnusedBlobs(alsoRemove: Set<string> = new Set()): number {
   const keep = new Set<string>()
   for (const book of listBooks()) {
     for (const s of normalizeShas(book.attachment_shas)) keep.add(s)
   }
   const root = blobsDir()
   if (!existsSync(root)) return 0
+  const graceStart = Date.now() - BLOB_GC_GRACE_MS
   let removed = 0
   for (const name of readdirSync(root)) {
     if (!SHA_RE.test(name) || keep.has(name)) continue
+    try {
+      if (!alsoRemove.has(name) && statSync(join(root, name)).mtimeMs >= graceStart) continue
+    } catch {
+      continue
+    }
     rmSync(join(root, name), { force: true })
     removed += 1
   }

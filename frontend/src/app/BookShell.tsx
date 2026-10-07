@@ -463,6 +463,9 @@ export function BookShell() {
             setDirty(health.dirty)
           }
           setError(null)
+        } else if (!metaRef.current && session && (health as { restore_blocked?: string }).restore_blocked) {
+          // The book is open in another tab (Web Lock): keep the shared session, say why.
+          setError(mapFileError(new Error(String((health as { restore_blocked?: string }).restore_blocked))))
         } else if (!metaRef.current && session) {
           // Stale localStorage session with nothing restored in the UI yet.
           dropBook()

@@ -9,6 +9,7 @@ import {
   rmSync,
   statSync,
 } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { dirname, join, resolve, sep } from 'node:path'
 import { writeFileAtomic } from '../httpUtil.ts'
 import { booksDir } from './store.ts'
@@ -61,15 +62,39 @@ export function objectDownload(rel: string): Buffer | null {
   }
 }
 
-export function objectUpload(rel: string, data: Uint8Array, opts?: { upsert?: boolean }): void {
+export class ObjectPreconditionFailed extends Error {
+  constructor() {
+    super('etag_mismatch')
+    this.name = 'ObjectPreconditionFailed'
+  }
+}
+
+export function objectSha256(data: Uint8Array): string {
+  return createHash('sha256').update(data).digest('hex')
+}
+
+/**
+ * Write an object. `ifMatch` (sha256 hex of the bytes the caller last saw) makes the write
+ * conditional; the check and the write run in one synchronous call, so two concurrent saves
+ * cannot both pass. Returns the sha256 of the stored bytes (the new ETag).
+ */
+export function objectUpload(
+  rel: string,
+  data: Uint8Array,
+  opts?: { upsert?: boolean; ifMatch?: string | null },
+): string {
   const path = resolveObjectPath(rel)
-  if (existsSync(path) && !opts?.upsert) {
+  const exists = existsSync(path)
+  if (opts?.ifMatch) {
+    if (!exists || objectSha256(readFileSync(path)) !== opts.ifMatch) throw new ObjectPreconditionFailed()
+  } else if (exists && !opts?.upsert) {
     const err = new Error('duplicate')
     err.name = 'ObjectDuplicate'
     throw err
   }
   mkdirSync(dirname(path), { recursive: true })
   writeFileAtomic(path, data)
+  return objectSha256(data)
 }
 
 export function objectRemove(rels: string[]): void {
@@ -91,7 +116,7 @@ export function objectRemove(rels: string[]): void {
 export function objectList(
   prefix: string,
   opts?: { limit?: number; offset?: number },
-): { name: string }[] {
+): { name: string; updated_at: string }[] {
   const cleaned = prefix.replace(/^\/+/, '').replace(/\\/g, '/')
   if (cleaned.includes('..')) throw new ObjectPathError()
 
@@ -102,14 +127,14 @@ export function objectList(
   if (!dir.startsWith(root + sep) && dir !== root) throw new ObjectPathError()
   if (!existsSync(dir) || !statSync(dir).isDirectory()) return []
 
-  const out: { name: string }[] = []
+  const out: { name: string; updated_at: string }[] = []
   function walk(current: string, rel: string) {
     for (const name of readdirSync(current)) {
       const full = join(current, name)
       const childRel = rel ? `${rel}/${name}` : name
       const st = statSync(full)
       if (st.isDirectory()) walk(full, childRel)
-      else out.push({ name: childRel })
+      else out.push({ name: childRel, updated_at: st.mtime.toISOString() })
     }
   }
   walk(dir, '')

@@ -27,18 +27,32 @@ export async function extractAttachmentsFromDb(
   return { extracted, vacuumed }
 }
 
+/**
+ * A copy of the book with every attachment's bytes back in Liite.data (a file Kitsas desktop
+ * can open). Refuses (`attachments_missing`) when bytes of some attachment are not in this
+ * browser yet - e.g. still syncing from the locker - instead of writing empty attachments.
+ */
 export async function packAttachmentsIntoDb(
   db: SqliteDb,
   store: AttachmentStore,
 ): Promise<SqliteDb> {
   const copy = await SqliteDb.fromBytes(db.export())
-  const rows = copy.all<{ id: number; sha: string | null }>('SELECT id, sha FROM Liite')
+  const rows = copy.all<{ id: number; sha: string | null }>(
+    'SELECT id, sha FROM Liite WHERE data IS NULL',
+  )
+  const missing: number[] = []
   for (const row of rows) {
     const sha = row.sha
-    if (!sha) continue
-    const data = store.get(sha)
-    if (!data) continue
+    const data = sha ? store.get(sha) : undefined
+    if (!data) {
+      missing.push(Number(row.id))
+      continue
+    }
     copy.run('UPDATE Liite SET data = ? WHERE id = ?', [data, row.id])
+  }
+  if (missing.length) {
+    copy.close()
+    throw new Error('attachments_missing')
   }
   return copy
 }

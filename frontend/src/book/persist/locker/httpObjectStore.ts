@@ -1,5 +1,5 @@
 import { xhrTransfer, type TransferOpts } from '../../http'
-import type { ListOpts, LockerObjectStore } from './objectStore'
+import type { ListOpts, LockerObjectStore, ObjectRow } from './objectStore'
 
 function joinUrl(base: string, path: string): string {
   return `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`
@@ -33,8 +33,18 @@ function storageError(status: number, text: string, fallback: string): Error {
  */
 export function createHttpObjectStore(origin: string | null): LockerObjectStore {
   const api = (path: string) => (origin ? joinUrl(origin, path) : path)
+  // ETags (sha256 of the stored bytes) seen in this tab, for If-Match uploads.
+  const etags = new Map<string, string>()
+  const remember = (path: string, xhr: XMLHttpRequest) => {
+    const tag = (xhr.getResponseHeader('ETag') || '').replaceAll('"', '').trim()
+    if (tag) etags.set(path, tag)
+  }
 
   return {
+    etagOf(path: string) {
+      return etags.get(path)
+    },
+
     async list(prefix: string, opts?: ListOpts) {
       const res = await fetch(api('/api/objects/list'), {
         method: 'POST',
@@ -46,9 +56,12 @@ export function createHttpObjectStore(origin: string | null): LockerObjectStore 
         }),
       })
       if (!res.ok) throw storageError(res.status, await res.text(), 'locker_list_failed')
-      const body = (await res.json()) as { objects?: { name?: string }[] }
+      const body = (await res.json()) as { objects?: { name?: string; updated_at?: string }[] }
       return (body.objects || [])
-        .map((row) => ({ name: String(row.name || '') }))
+        .map((row): ObjectRow => ({
+          name: String(row.name || ''),
+          ...(row.updated_at ? { updated_at: String(row.updated_at) } : {}),
+        }))
         .filter((row) => row.name)
     },
 
@@ -72,13 +85,14 @@ export function createHttpObjectStore(origin: string | null): LockerObjectStore 
       if (xhr.status < 200 || xhr.status >= 300) {
         throw storageError(xhr.status, xhrBodyText(xhr), 'download_failed')
       }
+      remember(path, xhr)
       return new Uint8Array(xhr.response as ArrayBuffer)
     },
 
     async upload(
       path: string,
       data: Uint8Array,
-      opts?: TransferOpts & { upsert?: boolean; contentType?: string },
+      opts?: TransferOpts & { upsert?: boolean; contentType?: string; ifMatch?: string },
     ) {
       const method = opts?.upsert ? 'PUT' : 'POST'
       const xhr = await xhrTransfer(method, api(`/api/objects/${path}`), {
@@ -91,11 +105,15 @@ export function createHttpObjectStore(origin: string | null): LockerObjectStore 
         headers: {
           'Content-Type': opts?.contentType || 'application/octet-stream',
           'x-upsert': opts?.upsert ? 'true' : 'false',
+          ...(opts?.ifMatch ? { 'If-Match': `"${opts.ifMatch}"` } : {}),
         },
       })
+      // 412: someone else wrote this object since we read it (atomic check on the server).
+      if (xhr.status === 412) throw new Error('etag_mismatch')
       if (xhr.status < 200 || xhr.status >= 300) {
         throw storageError(xhr.status, xhrBodyText(xhr), 'upload_failed')
       }
+      remember(path, xhr)
     },
 
     async remove(paths: string[]) {

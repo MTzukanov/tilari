@@ -27,7 +27,12 @@ function storageError(status: number, text: string, fallback: string): Error {
   return new Error(trimmed)
 }
 
-type SupabaseListRow = { name?: string; id?: string | null }
+type SupabaseListRow = {
+  name?: string
+  id?: string | null
+  updated_at?: string | null
+  created_at?: string | null
+}
 
 /**
  * Supabase Storage list is folder-scoped (one path segment): nested keys appear as
@@ -39,10 +44,10 @@ async function listSupabaseFlat(
   bucket: string,
   headers: Record<string, string>,
   prefix: string,
-): Promise<{ name: string }[]> {
+): Promise<{ name: string; updated_at?: string }[]> {
   const listUrl = joinUrl(projectUrl, `storage/v1/object/list/${bucket}`)
   const folder = prefix.replace(/^\/+/, '').replace(/\/+$/, '')
-  const out: { name: string }[] = []
+  const out: { name: string; updated_at?: string }[] = []
 
   async function listLevel(levelPrefix: string, limit: number, offset: number): Promise<SupabaseListRow[]> {
     const res = await fetch(listUrl, {
@@ -69,7 +74,8 @@ async function listSupabaseFlat(
         if (row.id == null) {
           await walk(childPrefix, childRel)
         } else {
-          out.push({ name: childRel })
+          const at = row.updated_at || row.created_at
+          out.push({ name: childRel, ...(at ? { updated_at: String(at) } : {}) })
         }
       }
       if (rows.length < pageSize) break

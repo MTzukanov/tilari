@@ -49,6 +49,9 @@ const EXISTS_CONCURRENCY = 4
  * Shared-pool locker over any LockerObjectStore.
  * keyPrefix is '' or 'book1/' (Supabase) or 'tilari/' / 'tilari/book1/' (Node disk).
  */
+/** Blobs uploaded within this window are never garbage-collected. */
+export const BLOB_GC_GRACE_MS = 15 * 60 * 1000
+
 export class ObjectStoreLockerBackend implements LockerBackend {
   readonly id: LockerKind
   readonly supportsHttpEngine: boolean
@@ -161,7 +164,14 @@ export class ObjectStoreLockerBackend implements LockerBackend {
     }
     const sha = await sha256hex(bytes)
     const emptyAttSha = existing?.attachments_sha256 || (await attachmentSetEtag([]))
-    await this.store.upload(this.kitsasPath(bookId), bytes, { ...opts, upsert: Boolean(existing) })
+    // Atomic on the Node object store: the ledger is written only if it is still the version
+    // this tab read (If-Match); two concurrent saves cannot both pass the meta check above.
+    const ifMatch = existing ? this.store.etagOf?.(this.kitsasPath(bookId)) : undefined
+    await this.store.upload(this.kitsasPath(bookId), bytes, {
+      ...opts,
+      upsert: Boolean(existing),
+      ...(ifMatch ? { ifMatch } : {}),
+    })
     const meta: MetaFile = {
       id: bookId,
       name: normalizeName(name),
@@ -315,13 +325,15 @@ export class ObjectStoreLockerBackend implements LockerBackend {
   }
 
   async remove(id: string): Promise<void> {
+    const own = new Set(normalizeShas((await this.readMeta(id))?.attachment_shas ?? []))
     const listed = await listAllObjects(this.store, this.bookDir(id))
     const paths = listed.map((row) => `${this.bookDir(id)}${row.name.replace(/^\//, '')}`)
     await this.store.remove(paths)
-    await this.gcUnusedBlobs()
+    // The deleted book's own blobs go now; other unreferenced blobs wait out the grace period.
+    await this.gcUnusedBlobs({ alsoRemove: own })
   }
 
-  async gcUnusedBlobs(): Promise<number> {
+  async gcUnusedBlobs(opts: { alsoRemove?: Set<string> } = {}): Promise<number> {
     const rows = await listAllObjects(this.store, this.root)
     const bookIds = new Set<string>()
     for (const row of rows) {
@@ -347,7 +359,14 @@ export class ObjectStoreLockerBackend implements LockerBackend {
     }
 
     const blobRows = await listAllObjects(this.store, `${this.root}blobs/`)
+    // A save uploads blobs before it writes meta.json: spare blobs younger than the grace
+    // period so a concurrent save does not lose its attachments.
+    const graceStart = Date.now() - BLOB_GC_GRACE_MS
     const stale = blobRows
+      .filter((row) => {
+        const name = row.name.replace(/^\//, '')
+        return opts.alsoRemove?.has(name) || !row.updated_at || Date.parse(row.updated_at) < graceStart
+      })
       .map((row) => row.name.replace(/^\//, ''))
       .filter((name) => SHA_RE.test(name) && !keep.has(name))
     if (!stale.length) return 0

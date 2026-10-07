@@ -26,6 +26,7 @@ import {
   opfsLoadForSession,
   opfsLoadLatest,
   opfsLoadOriginal,
+  opfsPruneCleanSessions,
   opfsRemove,
   opfsSaveOriginal,
   opfsSaveWorking,
@@ -36,7 +37,7 @@ import { readFileBytes } from './readFileBytes'
 import { isoFromFileLastModified } from './timestamps'
 import type { AttachmentSyncState, BookService, SessionPersistState } from './service'
 import type { Meta } from './types'
-import type { SqliteDb } from './sqlite'
+import { SqliteDb } from './sqlite'
 
 const LARGE = 50 * 1024 * 1024
 const PERSIST_DEBOUNCE_MS = 1500
@@ -221,6 +222,10 @@ export class WasmBookService extends Ledger implements BookService {
     })
     const file = await handle.getFile()
     if (!file.name.toLowerCase().endsWith('.kitsas')) throw new Error('kitsas_required')
+    // Never overwrite a file that changed after this copy was opened (e.g. edited in Kitsas
+    // desktop) or that holds another company's book.
+    if (this.isNewerThanSource(file.lastModified)) throw new Error('file_newer_than_copy')
+    await this.assertSameBook(file)
     const perm = await handle.requestPermission({ mode: 'readwrite' })
     if (perm !== 'granted') throw new Error('permission_denied')
     this.fileHandle = handle
@@ -267,6 +272,48 @@ export class WasmBookService extends Ledger implements BookService {
     this.syncAbort = null
   }
 
+  /** Why the OPFS restore did not happen (shown by the UI), e.g. book open in another tab. */
+  private restoreBlocked: string | null = null
+  private releaseSessionLock: (() => void) | null = null
+  private lockedBookId = ''
+
+  override async fetchHealth() {
+    await this.ensureRestored()
+    return this.health(this.restoreBlocked ? { restore_blocked: this.restoreBlocked } : {})
+  }
+
+  private webLocks(): LockManager | null {
+    const nav = globalThis.navigator as Navigator | undefined
+    return nav?.locks ?? null
+  }
+
+  private async sessionLockAvailable(bookId: string): Promise<boolean> {
+    const locks = this.webLocks()
+    if (!locks || !bookId || this.lockedBookId === bookId) return true
+    const state = await locks.query()
+    return !(state.held ?? []).some((l) => l.name === `tilari-book-${bookId}`)
+  }
+
+  /** Hold a Web Lock for the open book while this tab has it (released on close/replace). */
+  private async holdSessionLock(bookId: string): Promise<void> {
+    if (this.lockedBookId === bookId) return
+    this.releaseSessionLock?.()
+    this.releaseSessionLock = null
+    this.lockedBookId = ''
+    const locks = this.webLocks()
+    if (!locks || !bookId) return
+    await new Promise<void>((acquired) => {
+      void locks.request(`tilari-book-${bookId}`, { ifAvailable: true }, (lock) => {
+        acquired()
+        if (!lock) return undefined
+        this.lockedBookId = bookId
+        return new Promise<void>((release) => {
+          this.releaseSessionLock = release
+        })
+      })
+    })
+  }
+
   private async restore(): Promise<void> {
     if (this.skipRestore) return
     const session = loadBookSession()
@@ -278,19 +325,30 @@ export class WasmBookService extends Ledger implements BookService {
         }))) ||
       (await opfsLoadLatest())
     if (!saved || this.skipRestore) return
+    // One writer per working copy: another tab that has this book open owns it.
+    if (!(await this.sessionLockAvailable(saved.meta.bookId))) {
+      this.restoreBlocked = 'session_other_tab'
+      return
+    }
     const gen = this.persistGeneration
     try {
-      await this.adopt(saved.bytes, {
-        ...saved.meta,
-        attachmentsDirty: saved.meta.attachmentsDirty ?? false,
-        attachmentsEtag: saved.meta.attachmentsEtag,
-        attachmentSync: saved.meta.attachmentSync ?? 'idle',
-      })
+      await this.adopt(
+        saved.bytes,
+        {
+          ...saved.meta,
+          attachmentsDirty: saved.meta.attachmentsDirty ?? false,
+          attachmentsEtag: saved.meta.attachmentsEtag,
+          attachmentSync: saved.meta.attachmentSync ?? 'idle',
+        },
+        null,
+        () => !this.skipRestore && gen === this.persistGeneration,
+      )
       if (this.skipRestore || gen !== this.persistGeneration) return
       await this.hydrateBlobs()
       if (this.skipRestore || gen !== this.persistGeneration) return
       const lean = await this.leanify(false)
       if (this.skipRestore || gen !== this.persistGeneration) return
+      if (lean.extracted > 0 && this.lockerId) this.markExtractedForUpload()
       if (!saved.meta.backupDone) await this.snapshotOriginal()
       if (this.skipRestore || gen !== this.persistGeneration) return
       // Only rewrite OPFS when leanify actually changed the store; otherwise the
@@ -329,18 +387,27 @@ export class WasmBookService extends Ledger implements BookService {
     await sweepUnreferencedBlobs(this.liiteShas())
   }
 
-  private async adopt(bytes: Uint8Array, meta: OpfsMeta, handle?: FileSystemFileHandle | null) {
-    this.syncAbort?.abort()
-    this.syncAbort = null
-    this.closeBlobs()
-    this.store.clear()
-    this.store.bindBook(meta.bookId)
+  private async adopt(
+    bytes: Uint8Array,
+    meta: OpfsMeta,
+    handle?: FileSystemFileHandle | null,
+    shouldAdopt?: () => boolean,
+  ) {
+    // Parse first: a restore that finishes after the user opened another book must not
+    // replace it (shouldAdopt), and nothing of the current book is touched before that.
     await this.openBytes(bytes, {
       sourceName: meta.sourceName,
       dbPath: meta.dbPath,
       sessionId: meta.sessionId,
       sourceModifiedAt: meta.sourceModifiedAt ?? null,
+      shouldAdopt,
     })
+    this.syncAbort?.abort()
+    this.syncAbort = null
+    this.closeBlobs()
+    this.store.clear()
+    this.store.bindBook(meta.bookId)
+    await this.holdSessionLock(meta.bookId)
     this.bookId = meta.bookId
     this.dirty = meta.dirty
     this.attachmentsDirty = meta.attachmentsDirty ?? false
@@ -444,6 +511,18 @@ export class WasmBookService extends Ledger implements BookService {
       }
     }
     return result
+  }
+
+  private markExtractedForUpload(): void {
+    this.setDirty(true)
+    this.setAttachmentsDirty(true)
+  }
+
+  /** Attachment bytes written into Liite.data in this session (VAT/TP HTML) go to the store. */
+  private async extractInlineAttachments(): Promise<void> {
+    const db = this.requireDb()
+    if (!db.get('SELECT 1 AS x FROM Liite WHERE data IS NOT NULL LIMIT 1')) return
+    await this.leanify(true)
   }
 
   private async backgroundSyncAttachments(lockerId: string) {
@@ -568,6 +647,7 @@ export class WasmBookService extends Ledger implements BookService {
     })
     this.setAttReady()
     await this.sweepBlobs()
+    await opfsPruneCleanSessions(this.bookId)
     return this.buildMeta()
   }
 
@@ -597,6 +677,7 @@ export class WasmBookService extends Ledger implements BookService {
     await this.flushPersistNow()
     this.setAttReady()
     await this.sweepBlobs()
+    await opfsPruneCleanSessions(this.bookId)
     return this.buildMeta()
   }
 
@@ -690,8 +771,43 @@ export class WasmBookService extends Ledger implements BookService {
     }
   }
 
+  /** File time later than the source time this copy was opened/saved with (2 s FS slack). */
+  private isNewerThanSource(lastModified: number): boolean {
+    if (!this.sourceModifiedAt) return false
+    const known = Date.parse(this.sourceModifiedAt)
+    return Number.isFinite(known) && lastModified > known + 2000
+  }
+
+  private async assertSameBook(file: File): Promise<void> {
+    const bytes = await readFileBytes(file)
+    // A new, empty file (no book yet) is fine to write.
+    if (!bytes.byteLength) return
+    const other = await SqliteDb.fromBytes(bytes)
+    try {
+      const ids = (db: SqliteDb) => {
+        const rows = db.all<{ avain: string; arvo: string | null }>(
+          "SELECT avain, arvo FROM Asetus WHERE avain IN ('Ytunnus', 'Nimi')",
+        )
+        const map = new Map(rows.map((r) => [r.avain, (r.arvo || '').trim()]))
+        return map.get('Ytunnus') || map.get('Nimi') || ''
+      }
+      const mine = ids(this.requireDb())
+      let theirs: string
+      try {
+        theirs = ids(other)
+      } catch {
+        throw new Error('file_other_book') // not a Kitsas book
+      }
+      if (mine && theirs && mine !== theirs) throw new Error('file_other_book')
+    } finally {
+      other.close()
+    }
+  }
+
   async saveLocal() {
     if (!this.fileHandle) throw new Error('no_writable_link')
+    const current = await this.fileHandle.getFile()
+    if (this.isNewerThanSource(current.lastModified)) throw new Error('file_newer_than_copy')
     const bytes = await this.exportPackedKitsas()
     const w = await this.fileHandle.createWritable()
     await w.write(bytes as BufferSource)
@@ -711,6 +827,9 @@ export class WasmBookService extends Ledger implements BookService {
     const bytes = await this.exportPackedKitsas()
     const name = this.sourceName || 'book.kitsas'
     await saveKitsasAs(bytes, name, promptForName)
+    // The download is the book's home only for a book that has no locker and no linked file;
+    // otherwise it is just a copy and the changes are still unsaved at home.
+    if (this.lockerId || this.fileHandle) return
     this.clearAllDirty()
     this.setSourceModifiedAt(new Date().toISOString())
     await this.recordBookSaved({ target: 'disk', name })
@@ -769,6 +888,9 @@ export class WasmBookService extends Ledger implements BookService {
     }
     await this.snapshotOriginal()
     this.clearAllDirty()
+    // Attachments stored inside the shelf's ledger now live only in this browser: they must be
+    // uploaded with the next save (lean ledger + blobs), so the book is dirty.
+    if (lean.extracted > 0) this.markExtractedForUpload()
     await this.flushPersistNow((loaded, total) => {
       if (total > 0) opts.onProgress?.({ loaded, total })
     })
@@ -778,6 +900,7 @@ export class WasmBookService extends Ledger implements BookService {
       this.setAttReady()
       await this.sweepBlobs()
     }
+    await opfsPruneCleanSessions(this.bookId)
     return this.buildMeta()
   }
 
@@ -794,8 +917,8 @@ export class WasmBookService extends Ledger implements BookService {
         if (!isAbortError(err) || !opts.onAbortChoice) throw err
         const choice = await opts.onAbortChoice()
         if (choice.action === 'continue') {
-          // If a shelf id was minted (or put already returned), retry as update.
-          asNew = checkpoint.asNew && !checkpoint.createdId
+          // Retry as new until the ledger is on the shelf; then as an update of that id.
+          asNew = checkpoint.asNew && !checkpoint.wroteLedger
           if (checkpoint.createdId) this.lockerId = checkpoint.createdId
           signal = choice.signal
           continue
@@ -867,15 +990,21 @@ export class WasmBookService extends Ledger implements BookService {
     }
     const targetLockerId = asNew ? undefined : (this.lockerId ?? undefined)
     const displayName = opts.name ?? this.sourceName
+    await this.extractInlineAttachments()
     const plan = lockerUploadPlan(this.dirty, this.attachmentsDirty, targetLockerId)
-    if (plan.skip && !asNew) return
+    // A save-as-new that was interrupted after the ledger upload still owes its attachments.
+    if (plan.skip && !asNew && !checkpoint.asNew) return
     const leanBytes = this.requireDb().export()
 
     const locker = getActiveLocker()
     if (!asNew && putId && !this.etag) {
+      // No ETag (old session): only adopt the server's if it has not changed since we loaded.
       const books = await locker.list()
       const found = books.find((b) => b.id === putId)
       if (!found) throw new Error('book_not_found')
+      if (found.updated_at && this.sourceModifiedAt && found.updated_at > this.sourceModifiedAt) {
+        throw new Error('etag_mismatch')
+      }
       this.etag = found.sha256
       if (found.attachments_sha256) this.attachmentsEtag = this.attachmentsEtag || found.attachments_sha256
     }
@@ -962,6 +1091,9 @@ export class WasmBookService extends Ledger implements BookService {
     this.closeBlobs()
     this.store.clear()
     this.closeLedger()
+    this.releaseSessionLock?.()
+    this.releaseSessionLock = null
+    this.lockedBookId = ''
     this.bookId = ''
     this.fileHandle = null
     this.emitLocalLinkChange()
@@ -990,6 +1122,8 @@ export class WasmBookService extends Ledger implements BookService {
 
     let bytes: Uint8Array
     let sourceModifiedAt: string | null = savedMeta.sourceModifiedAt ?? null
+    let reloadedEtag: string | undefined
+    let reloadedAttachmentsEtag: string | undefined
     if (savedHandle) {
       const file = await savedHandle.getFile()
       bytes = await readFileBytes(file)
@@ -999,6 +1133,10 @@ export class WasmBookService extends Ledger implements BookService {
       const got = await getActiveLocker().get(savedLockerId)
       bytes = got.bytes
       sourceModifiedAt = got.updated_at ?? sourceModifiedAt
+      // The reloaded bytes are the server's current version: save against its ETags
+      // (keeping the old ones made the usual reload-and-redo fix fail with another 409).
+      reloadedEtag = got.etag
+      reloadedAttachmentsEtag = got.attachmentsEtag || undefined
     } else {
       const original = await opfsLoadOriginal(savedBookId)
       if (!original) throw new Error('reload_unavailable')
@@ -1017,19 +1155,20 @@ export class WasmBookService extends Ledger implements BookService {
     this.bookId = savedBookId
     this.fileHandle = savedHandle
     this.lockerId = savedLockerId
-    this.etag = savedEtag
-    this.attachmentsEtag = savedAttachmentsEtag
+    this.etag = reloadedEtag ?? savedEtag
+    this.attachmentsEtag = reloadedAttachmentsEtag ?? savedAttachmentsEtag
     this.largeFile = savedLargeFile
     this.backupDone = false
     this.attachmentsDirty = false
     this.emitLocalLinkChange()
 
     await this.hydrateBlobs()
-    await this.leanify(false)
+    const lean = await this.leanify(false)
     this.beginAttPersistProgress()
     try {
       await this.snapshotOriginal()
       this.clearAllDirty()
+      if (lean.extracted > 0 && savedLockerId) this.markExtractedForUpload()
       await this.flushPersistNow()
     } finally {
       this.endAttPersistProgress()

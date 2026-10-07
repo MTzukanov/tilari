@@ -20,6 +20,14 @@ export function mapFileError(err: unknown): string | null {
       return t('file.linkPermissionDenied')
     case 'kitsas_required':
       return t('file.kitsasRequired')
+    case 'file_newer_than_copy':
+      return t('file.newerThanCopy')
+    case 'file_other_book':
+      return t('file.otherBook')
+    case 'attachments_missing':
+      return t('file.attachmentsMissing')
+    case 'session_other_tab':
+      return t('file.sessionOtherTab')
     case 'file_picker_unsupported':
       return t('file.linkUnsupported')
     case 'reload_unavailable':
