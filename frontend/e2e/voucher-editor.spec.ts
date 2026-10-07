@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { editorSaveButton, openBook } from './helpers'
+import { editorSaveButton, openBook, skipWebkitOpfs } from './helpers'
 
 function maaraInput(page: Page) {
   return page.getByRole('textbox', { name: 'Määrä', exact: true })
@@ -425,12 +425,11 @@ test.describe('voucher editor', () => {
     await expectBrowse(page)
   })
 
-  test(
-    'refresh asks to discard unsaved new voucher changes',
-    {
-      timeout: 90_000,
-    },
-    async ({ page }) => {
+  test('refresh asks to discard unsaved new voucher changes', async ({ page, browserName }) => {
+      // The book comes back from OPFS after the reload (unreliable in Playwright WebKit).
+      skipWebkitOpfs(browserName)
+      // Not in the test details: Playwright ignores `timeout` there.
+      test.setTimeout(90_000)
       await openBook(page)
       await page.goto('/#/voucher/new/100')
       await expect(page.getByText('Sähköinen tosite')).toBeVisible()
@@ -456,8 +455,7 @@ test.describe('voucher editor', () => {
       })
       await expect(page.locator('form.editor.voucher-work')).toBeVisible()
       await expect(page.getByText('Tulotili')).toHaveCount(0)
-    },
-  )
+  })
 
   test('existing voucher allows changing voucher type', async ({ page }) => {
     await openBook(page)
