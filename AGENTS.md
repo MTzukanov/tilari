@@ -129,9 +129,16 @@ Rules already encoded:
     `''` as no series and writes NULL); on -> `Tositesarjat[tyyppi]` (`*` for >= 1000, default
     `JT`, else `X`); `KateisSarjaan` + cash first line (`ARK`) -> `K`. `doc_number` in a save
     payload sets a number by hand (the editor sends it only when changed).
-12. **VAT-filed lock**: a date is filed when a posted `tyyppi 9100` voucher covers it
-    (`json.alv.kausialkaa..kausipaattyy`, `kitsas/alv/alvilmoitustenmodel.cpp`). Kitsas blocks
-    VAT-coded lines dated there and deleting such vouchers, unless `Asetus.OhitaAlvLukko = ON`.
+12. **VAT-filed lock** (`kernel/vatLock.ts`, enforced in `posting.ts`): a date is filed when a
+    posted `tyyppi 9100` voucher covers it (`json.alv.kausialkaa..kausipaattyy`,
+    `kitsas/alv/alvilmoitustenmodel.cpp`). Posting or changing a VAT-coded line (date, account,
+    amount, VAT code/rate) dated there, or removing one, is refused unless
+    `Asetus.OhitaAlvLukko = ON`; drafts are free until posted; the VAT return itself is exempt.
+    Deleting a posted voucher is refused when any line is on/before `TilitPaatetty` or a VAT-coded
+    line is in a filed period - no override (`kirjauswg.cpp tositeLadattu`); a VAT return itself
+    can be deleted (`alvsivu.cpp poistaIlmoitus`). Attachments of such a
+    voucher can be added but not deleted without the override. Every line date (not only the
+    voucher date) is checked against `TilitPaatetty`; posted lines must be inside the fiscal years.
 13. **Save round-trip** (`posting.ts saveVoucher`, like Kitsas `lisaaTaiPaivita`): lines with an
     `id` of the voucher are updated in place (Vienti ids, `eraid` links and `Merkkaus` survive),
     lines without one are inserted, missing ones deleted. Fields a line omits keep their stored

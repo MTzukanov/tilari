@@ -178,6 +178,8 @@ describe('depreciation', () => {
 
     // Once booked the plan reports it as done rather than proposing again.
     expect(computeClosingPlan(db, '2024-12-31').depreciation.booked).toBe(true)
+    // A retry or double request does not book a second 9910.
+    expect(() => createDepreciation(db, '2024-12-31')).toThrow(/jo kirjattu/)
     db.close()
   })
 })

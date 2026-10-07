@@ -7,6 +7,23 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-07 - Write guards on `fix/write-guards` (stacked on `fix/numbering`)
+
+- VAT-filed lock implemented (AGENTS.md rule 12 claimed it before it existed). A VAT return can
+  still be deleted to redo it, as on Kitsas' ALV page (`AlvSivu::poistaIlmoitus`); only the
+  voucher editor blocks it in Kitsas. A VAT period that
+  overlaps a filed one counts as filed (was exact start/end only).
+- Line dates are checked against TilitPaatetty and the fiscal years, not only the voucher date.
+- A stored sales invoice (210) can no longer be saved as another type.
+- Statement row split moves the rows by id (eraid/Merkkaus intact), picks the voucher type like
+  Kitsas (open item/balance sheet -> Siirto), lock-checks the statement, logs it in Tositeloki,
+  and does not realize cash-basis VAT twice when the statement was already posted.
+- Year-end vouchers (9910/9920/9930) cannot be booked twice for the same period end; depreciation
+  lines no longer realize parked cash-basis VAT.
+- Kohdennus save keeps other languages and keys in its json.
+- Checked on a copy of a real book with OhitaAlvLukko off: note-only edits save on every posted
+  voucher of the open year; deletes are refused where VAT lines are filed.
+
 ## 2026-10-07 - C2 fixed on `fix/numbering` (stacked on `fix/save-round-trip`)
 
 - Drafts have number 0; posting numbers `MAX+1` per fiscal year + series over posted vouchers;

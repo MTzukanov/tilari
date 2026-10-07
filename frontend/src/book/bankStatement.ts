@@ -7,7 +7,13 @@ import {
   vatAccount,
   vatCompanionCode,
 } from './modules/vat/domain/vatPosting'
-import { saveVoucher } from './posting'
+import {
+  appendLoki,
+  assertUnlocked,
+  normalizeVoucherJson,
+  postVoucher,
+  saveVoucher,
+} from './posting'
 import { SQL_POSTED } from './kernel/sqlFragments'
 import type { SaveEntryInput } from './types'
 import type { SqliteDb } from './sqlite'
@@ -16,6 +22,9 @@ import {
   ENTRY_POSTING,
   ENTRY_VAT_POSTING,
   getVoucher,
+  STATUS_DRAFT,
+  STATUS_POSTED,
+  TYPE_TRANSFER,
   TYPE_BANK_STATEMENT,
   TYPE_EXPENSE,
   TYPE_INCOME,
@@ -766,6 +775,29 @@ function collectSplitLines(
   return []
 }
 
+/**
+ * Voucher type for a split statement row like Kitsas `TilioteApuri` (row class from the bank
+ * line type): open-item payment or balance sheet -> Siirto (300), income -> Tulo (200),
+ * expense -> Meno (100); unknown -> by the bank movement's sign.
+ */
+function splitVoucherType(lines: Line[], bankAccount: number): number {
+  const bank =
+    lines.find((l) => Number(l.entry_type || 0) % 100 === ENTRY_COUNTER_POSTING) ||
+    lines.find((l) => l.account === bankAccount)
+  const typed = Number(bank?.entry_type || 0)
+  const cls = typed - (typed % 100)
+  if (cls === 300 || cls === 400) return TYPE_TRANSFER
+  if (cls === 200) return TYPE_INCOME
+  if (cls === 100) return TYPE_EXPENSE
+  if (bank) return asCents(bank.debit_cents) > 0 ? TYPE_INCOME : TYPE_EXPENSE
+  return TYPE_EXPENSE
+}
+
+/**
+ * Move one statement row (bank line + counterpart + VAT) to its own posted voucher. The rows
+ * keep their Vienti ids, so eraid links and Merkkaus tags stay valid; the statement gets a
+ * Tositeloki row.
+ */
 export function splitBankStatementLine(
   db: SqliteDb,
   voucherId: number,
@@ -778,6 +810,7 @@ export function splitBankStatementLine(
   if (voucher.type !== TYPE_BANK_STATEMENT) {
     throw new PostingError('Vain tiliotteelta voi irrottaa riveja')
   }
+  assertUnlocked(db, voucher.date)
   const lines = collectSplitLines(voucher, entryId, entryIds)
   if (!lines.length) {
     throw new PostingError(
@@ -792,48 +825,35 @@ export function splitBankStatementLine(
     )
   }
 
-  let inferred = type ?? TYPE_EXPENSE
-  if (type == null) {
-    for (const line of lines) {
-      if (String(line.account) >= '3' && asCents(line.credit_cents)) {
-        inferred = TYPE_INCOME
-        break
-      }
-    }
-  }
-
+  const meta = bankStatementMeta(voucher)
+  const bankAccount = Number(meta.account || 0)
   const lineNo = Number(lines[0].line_no || 1)
   const date = lines[0].date
-  const partner = lines[0].partner
+  const partner = lines.find((l) => l.partner)?.partner ?? null
   const description = lines[0].description || voucher.title || 'Tilioterivi'
 
   const newId = saveVoucher(db, {
     date,
-    type: inferred,
-    status: 100,
+    type: type ?? splitVoucherType(lines, bankAccount),
+    status: STATUS_DRAFT,
     title: description,
     partner,
     json: { tilioterivi: lineNo },
-    entries: lines.map((line, i) => ({
-      line_no: i + 1,
-      date: line.date,
-      account: line.account,
-      allocation: line.allocation || 0,
-      description: line.description || description,
-      debit_cents: line.debit_cents,
-      credit_cents: line.credit_cents,
-      vat_code: line.vat_code || 0,
-      vat_percent: line.vat_percent,
-      partner: line.partner,
-      archive_id: line.archive_id,
-      entry_type: line.entry_type,
-    })),
+    entries: [],
   })
+  lines.forEach((line, i) => {
+    db.run('UPDATE Vienti SET tosite = ?, rivi = ? WHERE id = ?', [newId, i + 1, line.id])
+  })
+  postVoucher(db, newId, { expand: voucher.status < STATUS_POSTED })
 
-  const ids = lines.map((line) => line.id)
-  db.run(`DELETE FROM Vienti WHERE id IN (${ids.map(() => '?').join(',')})`, ids)
-  const extra = { ...(voucher.json || {}) }
-  extra.tiliote = extra.tiliote || extra.bank_statement || {}
-  db.run('UPDATE Tosite SET json = ? WHERE id = ?', [JSON.stringify(extra), voucherId])
+  const next = normalizeVoucherJson(voucher.json || {})
+  if (JSON.stringify(next) !== JSON.stringify(voucher.json || {})) {
+    db.run('UPDATE Tosite SET json = ? WHERE id = ?', [JSON.stringify(next), voucherId])
+  }
+  appendLoki(db, voucherId, voucher.status, {
+    toiminto: 'irrota',
+    tosite: newId,
+    viennit: lines.map((l) => l.id),
+  })
   return newId
 }

@@ -138,9 +138,22 @@ export function saveAllocation(
     ends?: string | null
   },
 ): number {
-  const data: Record<string, unknown> = { nimi: { fi: opts.name } }
+  // Merge into the stored json: Kitsas keeps other languages (nimi.sv/en) and its own keys.
+  const stored =
+    opts.allocationId != null
+      ? parseJson(
+          db.get<{ json: unknown }>('SELECT json FROM Kohdennus WHERE id = ?', [opts.allocationId])?.json,
+        )
+      : {}
+  const names =
+    stored.nimi && typeof stored.nimi === 'object' && !Array.isArray(stored.nimi)
+      ? (stored.nimi as Record<string, unknown>)
+      : {}
+  const data: Record<string, unknown> = { ...stored, nimi: { ...names, fi: opts.name } }
   if (opts.starts) data.alkaa = opts.starts
+  else delete data.alkaa
   if (opts.ends) data.paattyy = opts.ends
+  else delete data.paattyy
   const raw = JSON.stringify(data)
   if (opts.allocationId == null) {
     return db.run('INSERT INTO Kohdennus (tyyppi, kuuluu, json) VALUES (?, ?, ?)', [
