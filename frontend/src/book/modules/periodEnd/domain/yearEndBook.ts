@@ -202,9 +202,20 @@ function companyName(db: SqliteDb): string {
   return row?.arvo || ''
 }
 
+
+/** A posted voucher of `type` on `date` already exists (retry / double request guard). */
+function assertNotPosted(db: SqliteDb, type: number, date: string, what: string): void {
+  const row = db.get<{ id: number }>(
+    'SELECT id FROM Tosite WHERE tyyppi = ? AND pvm = ? AND tila >= 100 LIMIT 1',
+    [type, date],
+  )
+  if (row) throw new PostingError(`${what} on jo kirjattu (tosite ${row.id})`, 409)
+}
+
 /** Post the 9910 depreciation voucher for the period ending `ends`. */
 export function createDepreciation(db: SqliteDb, ends: string, lines?: DepreciationLine[]): number {
   const period = requireFiscalPeriodByEnd(db, ends)
+  assertNotPosted(db, TYPE_DEPRECIATION, ends, 'Poistot')
   const proposals = lines ?? computeDepreciation(db, ends)
   if (!proposals.length) throw new PostingError('Ei poistettavaa', 400)
 
@@ -273,6 +284,7 @@ export function createAccrual(
   lines?: AccrualLine[],
 ): { closing: number; opening: number | null } {
   const period = requireFiscalPeriodByEnd(db, ends)
+  assertNotPosted(db, TYPE_ACCRUAL, ends, 'Tilinpäätösjaksotukset')
   const proposals = lines ?? computeAccruals(db, period.starts, ends)
   const receivable = taxReceivableCents(db, ends)
   if (!proposals.length && !receivable) throw new PostingError('Ei jaksotettavaa', 400)
@@ -463,6 +475,7 @@ export function createIncomeTax(
 
   let voucherId: number | null = null
   if (tax.jaaveroa_cents) {
+    assertNotPosted(db, TYPE_INCOME_TAX, ends, 'Tuloveron jaksotus')
     const owed = tax.jaaveroa_cents
     voucherId = saveVoucher(db, {
       date: ends,

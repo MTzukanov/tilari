@@ -114,8 +114,11 @@ export function lastFiledPeriodEnd(db: SqliteDb): string | null {
   return max
 }
 
+/** True when a posted VAT return covers any day of the period (Kitsas onkoIlmoitettu). */
 export function periodAlreadyFiled(db: SqliteDb, startDate: string, endDate: string): boolean {
-  return existingVatFilings(db).some((f) => f.start_date === startDate && f.end_date === endDate)
+  return existingVatFilings(db).some(
+    (f) => f.start_date != null && f.end_date != null && f.start_date <= endDate && startDate <= f.end_date,
+  )
 }
 
 export type VatPeriod = {

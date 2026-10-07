@@ -10,10 +10,12 @@ import {
   STATUS_POSTED,
   TYPE_ATTACHMENT_NOTE,
   TYPE_OPENING,
+  TYPE_VAT_RETURN,
   WRITABLE_TYPES,
 } from './vouchers'
 import type { BindValue, SqliteDb } from './sqlite'
 import { expandPostedLines, runAfterDelete } from './kernel/postingHooks'
+import { bookRange, filedVatRanges, isFiled, vatLockOverridden } from './kernel/vatLock'
 
 export function lockDate(db: SqliteDb): string | null {
   const row = db.get<{ arvo: string | null }>("SELECT arvo FROM Asetus WHERE avain = 'TilitPaatetty'")
@@ -117,7 +119,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value) && !ArrayBuffer.isView(value)
 }
 
-function normalizeVoucherJson(extra: unknown): Record<string, unknown> {
+export function normalizeVoucherJson(extra: unknown): Record<string, unknown> {
   if (!isPlainObject(extra)) return {}
   const out = { ...extra }
   const bank = out.bank_statement
@@ -270,6 +272,75 @@ export function validatePayload(
   }
 }
 
+/** Columns whose change touches the VAT report (Kitsas locks the whole line). */
+const VAT_COLUMNS = ['pvm', 'tili', 'debetsnt', 'kreditsnt', 'alvkoodi', 'alvprosentti']
+
+type CheckedLine = { values: RawRow; stored: RawRow | null; changes: string[] | null }
+
+/**
+ * Kitsas `Tosite::tarkasta` for the lines a write touches: no line on or before
+ * TilitPaatetty (PVMLUKITTU), posted lines inside the book's fiscal years (EIAVOINTAKUTTA), and
+ * no VAT-coded line written, moved or removed in a VAT-filed period (PVMALV) unless
+ * `OhitaAlvLukko = ON`. The VAT return itself is exempt from PVMALV.
+ */
+function assertWritableLines(
+  db: SqliteDb,
+  opts: {
+    type: number
+    posted: boolean
+    wasPosted?: boolean
+    firstPost: boolean
+    lines: CheckedLine[]
+    removed: RawRow[]
+  },
+): void {
+  const lock = lockDate(db)
+  const locked = (d: unknown) => Boolean(lock && d && String(d) <= lock)
+  for (const l of opts.lines) {
+    const old = l.stored && l.changes?.length ? l.stored.pvm : null
+    for (const d of [l.values.pvm, old]) {
+      if (locked(d)) {
+        throw new PostingError(`Kausi lukittu (TilitPaatetty ${lock}); ei voi muuttaa vientiä ${d}`, 409)
+      }
+    }
+  }
+  for (const r of opts.removed) {
+    if (locked(r.pvm)) {
+      throw new PostingError(`Kausi lukittu (TilitPaatetty ${lock}); ei voi poistaa vientiä ${r.pvm}`, 409)
+    }
+  }
+  if (opts.posted) {
+    const range = bookRange(db)
+    for (const l of opts.lines) {
+      const d = String(l.values.pvm || '')
+      if (!range || d < range.start || d > range.end) {
+        throw new PostingError(`Päivämäärälle ${d} ei ole tilikautta`, 400)
+      }
+    }
+  }
+  // Drafts are not in the VAT report: Kitsas saves them freely and checks PVMALV on posting.
+  if (!opts.posted && !opts.wasPosted) return
+  if (opts.type === TYPE_VAT_RETURN || vatLockOverridden(db)) return
+  const ranges = filedVatRanges(db)
+  if (!ranges.length) return
+  const filedVat = (row: RawRow | null) =>
+    Boolean(row && Number(row.alvkoodi || 0) && isFiled(ranges, String(row.pvm || '')))
+  const fail = (row: RawRow) => {
+    throw new PostingError(
+      `ALV-kausi on ilmoitettu (${row.pvm}); ALV-koodillista vientiä ei voi muuttaa`,
+      409,
+    )
+  }
+  for (const l of opts.lines) {
+    const touched =
+      opts.firstPost || !l.stored || (l.changes ?? []).some((c) => VAT_COLUMNS.includes(c))
+    if (!touched) continue
+    if (filedVat(l.values)) fail(l.values)
+    if (filedVat(l.stored)) fail(l.stored!)
+  }
+  for (const r of opts.removed) if (filedVat(r)) fail(r)
+}
+
 const VIENTI_COLUMNS = [
   'rivi',
   'tyyppi',
@@ -314,6 +385,10 @@ export function saveVoucher(
 
   let type: number
   if (existing) {
+    // The stored type counts too: a sales invoice cannot be saved as another type.
+    if (READONLY_TYPES.has(existing.type)) {
+      throw new PostingError('Myyntilaskuja ei voi muokata tässä versiossa (ks. docs/SCOPE.md)', 501)
+    }
     assertUnlocked(db, existing.date)
     type = Number(payload.type ?? existing.type)
   } else {
@@ -465,6 +540,14 @@ export function saveVoucher(
     !removedIds.length &&
     planned.every((p, i) => p.stored && !lineChanges[i]!.length)
   if (nothingChanged) return Number(voucherId)
+  assertWritableLines(db, {
+    type,
+    posted: status >= STATUS_POSTED,
+    wasPosted,
+    firstPost: status >= STATUS_POSTED && !wasPosted,
+    lines: planned.map((p, i) => ({ values: p.values, stored: p.stored, changes: lineChanges[i] })),
+    removed: storedRows.filter((r) => removedIds.includes(Number(r.id))),
+  })
 
   let savedId: number
   if (voucherId) {
@@ -516,7 +599,11 @@ export function saveVoucher(
  * Post a draft without touching its lines (Kitsas `TositeRoute::patch`): sets `tila` and
  * assigns a number. Lines are expanded once (cash-basis VAT), as a posting save would.
  */
-export function postVoucher(db: SqliteDb, voucherId: number): number {
+export function postVoucher(
+  db: SqliteDb,
+  voucherId: number,
+  opts: { expand?: boolean } = {},
+): number {
   const existing = getVoucher(db, voucherId)
   if (!existing) throw new PostingError(`Tosite ${voucherId} not found`, 404)
   if (READONLY_TYPES.has(existing.type)) {
@@ -532,12 +619,22 @@ export function postVoucher(db: SqliteDb, voucherId: number): number {
     { allowEmpty: true },
   )
 
+  const storedLines = db.all<RawRow>('SELECT * FROM Vienti WHERE tosite = ?', [voucherId])
+  assertWritableLines(db, {
+    type: existing.type,
+    posted: true,
+    firstPost: true,
+    lines: storedLines.map((r) => ({ values: r, stored: r, changes: null })),
+    removed: [],
+  })
   const raw = db.get<{ sarja: unknown }>('SELECT sarja FROM Tosite WHERE id = ?', [voucherId])
   const series = normalizeSeries(raw?.sarja)
   // A draft has no number of its own (old tilari saves numbered drafts; those numbers are
   // not trusted): MAX+1 of the fiscal year and series.
   const tunniste = nextDocNumber(db, existing.date, series)
-  const extras = expandPostedLines(db, [...lines], existing.date).slice(lines.length)
+  // Lines moved from a posted voucher were expanded when that one was posted.
+  const extras =
+    opts.expand === false ? [] : expandPostedLines(db, [...lines], existing.date).slice(lines.length)
   db.run('UPDATE Tosite SET tila = ?, tunniste = ?, sarja = ? WHERE id = ?', [
     STATUS_POSTED,
     tunniste,
@@ -586,6 +683,22 @@ export function deleteVoucher(db: SqliteDb, voucherId: number): void {
     throw new PostingError('Myyntilaskuja ei voi poistaa tässä versiossa', 501)
   }
   assertUnlocked(db, existing.date)
+  if (existing.status >= STATUS_POSTED) {
+    // Kitsas KirjausWg::tositeLadattu: no delete when a line is locked or a VAT-coded line is
+    // in a filed period (no OhitaAlvLukko override for deletes).
+    const lock = lockDate(db)
+    const ranges = filedVatRanges(db)
+    for (const e of existing.entries) {
+      if (lock && e.date <= lock) {
+        throw new PostingError(`Kausi lukittu (TilitPaatetty ${lock}); tositetta ei voi poistaa`, 409)
+      }
+      // A VAT return itself can be deleted (Kitsas AlvSivu::poistaIlmoitus) while its period
+      // is after TilitPaatetty; its own 901 lines do not lock it.
+      if (existing.type !== TYPE_VAT_RETURN && Number(e.vat_code || 0) && isFiled(ranges, e.date)) {
+        throw new PostingError(`ALV-kausi on ilmoitettu (${e.date}); tositetta ei voi poistaa`, 409)
+      }
+    }
+  }
   const periodEnd = existing.date
   const type = existing.type
   db.run('UPDATE Tosite SET tila = 0 WHERE id = ?', [voucherId])
@@ -633,6 +746,14 @@ export function deleteAttachment(
   const existing = getVoucher(db, voucherId)
   if (!existing) throw new PostingError(`Tosite ${voucherId} not found`, 404)
   assertUnlocked(db, existing.date)
+  // Kitsas AlvLukittu: attachments of a posted voucher with VAT lines in a filed period cannot
+  // be removed unless OhitaAlvLukko is on (adding is allowed).
+  if (existing.status >= STATUS_POSTED && existing.type !== TYPE_VAT_RETURN && !vatLockOverridden(db)) {
+    const ranges = filedVatRanges(db)
+    if (existing.entries.some((e) => Number(e.vat_code || 0) && isFiled(ranges, e.date))) {
+      throw new PostingError('ALV-kausi on ilmoitettu; liitettä ei voi poistaa', 409)
+    }
+  }
   const name = row.nimi || row.roolinimi || `attachment-${attachmentId}`
   db.run('DELETE FROM Liite WHERE id = ?', [attachmentId])
   appendLoki(db, voucherId, existing.status, {

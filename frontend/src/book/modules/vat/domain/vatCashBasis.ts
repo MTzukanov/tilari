@@ -387,6 +387,9 @@ export function expandVatPostedLines(
 ): SaveEntryInput[] {
   const extra: SaveEntryInput[] = []
   for (const line of lines) {
+    // Only payments realize parked VAT; year-end lines (depreciation 991xx, accruals 992xx)
+    // also carry an eraid (the asset's era) but are not payments.
+    if (Number(line.entry_type || 0) >= 99000) continue
     const eraId = line.item_id == null || line.item_id === -1 ? null : Number(line.item_id)
     if (!eraId || eraId < 1) continue
     const code = Number(line.vat_code || 0)
