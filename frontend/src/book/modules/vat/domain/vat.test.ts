@@ -270,3 +270,110 @@ describe('addMonthsIso', () => {
 })
 
 void putCompany
+
+describe('VAT like Kitsas AlvLaskelma', () => {
+  async function liableDb() {
+    const db = await emptyVatDb()
+    // Accrual basis, Kitsas yritys-chart settings (AlvPalautettava/AlvMaksettava are not the
+    // VAT accounts; they matter only with AlvMaksutilinKautta).
+    db.run(`UPDATE Asetus SET arvo = '' WHERE avain = 'MaksuAlvAlkaa'`)
+    db.run(`UPDATE Asetus SET arvo = '1762' WHERE avain = 'AlvPalautettava'`)
+    db.run(`UPDATE Asetus SET arvo = '2922' WHERE avain = 'AlvMaksettava'`)
+    db.run(`INSERT INTO Tili (numero, tyyppi, json) VALUES (1762, 'AS', '{}'), (2922, 'BS', '{}')`)
+    return db
+  }
+
+  function post(db: SqliteDb, date: string, entries: Parameters<typeof saveVoucher>[1]['entries']) {
+    return saveVoucher(db, { date, type: 0, status: 100, title: 'x', entries })
+  }
+
+  it('reverse charge, EU and zero-rate codes reach their boxes', async () => {
+    const db = await liableDb()
+    post(db, '2024-05-02', [
+      { account: 4000, debit_cents: 10000, vat_code: 24, vat_percent: 25.5 },
+      { account: 1763, debit_cents: 2550, vat_code: 224, vat_percent: 25.5 },
+      { account: 2939, credit_cents: 2550, vat_code: 124, vat_percent: 25.5 },
+      { account: 1910, credit_cents: 10000 },
+    ])
+    post(db, '2024-05-03', [
+      { account: 1910, debit_cents: 7000 },
+      { account: 3000, credit_cents: 5000, vat_code: 15 },
+      { account: 3000, credit_cents: 2000, vat_code: 19 },
+    ])
+    const vat = computeVat(db, '2024-05-01', '2024-05-31')
+    expect(vat.boxes).toMatchObject({ '305': 2550, '313': 10000, '307': 2550, '312': 5000, '309': 2000 })
+    expect(vat.boxes['308']).toBeUndefined() // 124 and 224 cancel out
+  })
+
+  it('brutto sales: the return books the tax out of the gross (12 -> 112)', async () => {
+    const db = await liableDb()
+    post(db, '2024-05-02', [
+      { account: 1910, debit_cents: 12550 },
+      { account: 3000, credit_cents: 12550, vat_code: 12, vat_percent: 25.5 },
+    ])
+    expect(computeVat(db, '2024-05-01', '2024-05-31').boxes['301']).toBe(2550)
+    const id = createVatReturn(db, '2024-05-01', '2024-05-31')
+    const lines = getVoucher(db, id)!.entries.map((e) => [e.account, e.vat_code, e.debit_cents, e.credit_cents])
+    expect(lines).toEqual([
+      [3000, 12, 2550, null],
+      [2939, 112, null, 2550],
+      [2939, 901, 2550, null],
+      [2920, 901, null, 2550],
+    ])
+  })
+
+  it('settles on the VAT accounts by type, net to the tax debt (not AlvPalautettava)', async () => {
+    const db = await liableDb()
+    post(db, '2024-05-02', [
+      { account: 4000, debit_cents: 10000, vat_code: 21, vat_percent: 25.5 },
+      { account: 1763, debit_cents: 2550, vat_code: 221, vat_percent: 25.5 },
+      { account: 1910, credit_cents: 12550 },
+    ])
+    const id = createVatReturn(db, '2024-05-01', '2024-05-31')
+    const lines = getVoucher(db, id)!.entries.map((e) => [e.account, e.debit_cents, e.credit_cents])
+    expect(lines).toEqual([
+      [1763, null, 2550],
+      [2920, 2550, null],
+    ])
+    const alv = getVoucher(db, id)!.json.alv as Record<string, unknown>
+    expect(alv).toMatchObject({ kausialkaa: '2024-05-01', kausipaattyy: '2024-05-31', maksettava: -25.5 })
+    expect(alv.koodit).toEqual({ '307': 2550, '308': -2550 })
+  })
+
+  it('AlvMaksutilinKautta sends the net to AlvMaksettava / AlvPalautettava', async () => {
+    const db = await liableDb()
+    db.run(`INSERT INTO Asetus (avain, arvo) VALUES ('AlvMaksutilinKautta', 'ON')`)
+    post(db, '2024-05-02', [
+      { account: 1910, debit_cents: 12550 },
+      { account: 3000, credit_cents: 10000, vat_code: 11, vat_percent: 25.5 },
+      { account: 2939, credit_cents: 2550, vat_code: 111, vat_percent: 25.5 },
+    ])
+    const id = createVatReturn(db, '2024-05-01', '2024-05-31')
+    expect(getVoucher(db, id)!.entries.map((e) => [e.account, e.debit_cents, e.credit_cents])).toEqual([
+      [2939, 2550, null],
+      [2922, null, 2550],
+    ])
+  })
+
+  it('margin scheme (13/23): tax on the margin at 25.5 %', async () => {
+    const db = await liableDb()
+    db.run(`INSERT INTO Tilikausi (alkaa, loppuu, json) VALUES ('2025-01-01', '2025-12-31', '{}')`)
+    post(db, '2025-03-02', [
+      { account: 1910, debit_cents: 12550 },
+      { account: 3000, credit_cents: 12550, vat_code: 13, vat_percent: 25.5 },
+    ])
+    post(db, '2025-03-03', [
+      { account: 4000, debit_cents: 2550, vat_code: 23, vat_percent: 25.5 },
+      { account: 1910, credit_cents: 2550 },
+    ])
+    // Margin 100,00; tax 25.5/125.5 of it.
+    expect(computeVat(db, '2025-03-01', '2025-03-31').boxes['301']).toBe(Math.round((2550 / 12550) * 10000))
+  })
+
+  it('cash-basis VAT needs a VAT-liable book', async () => {
+    const db = await emptyVatDb()
+    expect(computeVat(db, '2024-05-01', '2024-05-31').cash_basis).toBe(true)
+    db.run(`UPDATE Asetus SET arvo = '' WHERE avain = 'AlvVelvollinen'`)
+    expect(computeVat(db, '2024-05-01', '2024-05-31').cash_basis).toBe(false)
+  })
+})

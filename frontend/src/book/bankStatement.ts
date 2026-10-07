@@ -1,12 +1,7 @@
 import { asCents } from './cents'
 import { computeAccountOpening } from './balances'
 import { PostingError } from './errors'
-import {
-  isPurchaseVatCode,
-  isVatBookingLine,
-  vatAccount,
-  vatCompanionCode,
-} from './modules/vat/domain/vatPosting'
+import { isVatBookingLine, vatBooking } from './modules/vat/domain/vatPosting'
 import {
   appendLoki,
   assertUnlocked,
@@ -335,12 +330,8 @@ export function expandOwnRowToEntries(
 
   const vatCode = Number(row.vat_code || 0)
   const vatPct = Number(row.vat_percent || 0)
-  const vatAcc = vatAccount(vatCode)
-  let vatCents = 0
-  if (vatAcc && vatCode && vatPct > 0) {
-    vatCents = Math.round((abs * vatPct) / (100 + vatPct))
-  }
-  const net = abs - vatCents
+  // Kitsas ApuriRivi: VAT lines by code; a deposit books the row on the credit side.
+  const booking = vatBooking(vatCode, vatPct, abs, deposit)
 
   const bank: SaveEntryInput = {
     ...(ids.bank != null ? { id: ids.bank } : {}),
@@ -360,7 +351,6 @@ export function expandOwnRowToEntries(
     return [bank]
   }
 
-  const purchase = isPurchaseVatCode(vatCode)
   // Deposit (income): credit counterpart; withdrawal (expense): debit counterpart.
   // Kitsas puts arkistotunnus on the bank line only.
   const counter: SaveEntryInput = {
@@ -370,8 +360,8 @@ export function expandOwnRowToEntries(
     date: row.date,
     account: counterAccount,
     description: desc,
-    debit_cents: deposit ? null : net,
-    credit_cents: deposit ? net : null,
+    debit_cents: deposit ? null : booking.mainCents,
+    credit_cents: deposit ? booking.mainCents : null,
     vat_code: vatCode,
     vat_percent: vatPct || null,
     allocation: row.allocation || 0,
@@ -379,21 +369,22 @@ export function expandOwnRowToEntries(
   }
 
   const out: SaveEntryInput[] = [bank, counter]
-  if (vatAcc && vatCents) {
+  booking.lines.forEach((line, i) => {
     out.push({
-      ...(ids.vat != null ? { id: ids.vat } : {}),
+      ...(i === 0 && ids.vat != null ? { id: ids.vat } : {}),
       entry_type: cls + ENTRY_VAT_POSTING,
       date: row.date,
-      account: vatAcc,
+      account: line.account,
       description: 'ALV',
-      debit_cents: purchase ? vatCents : null,
-      credit_cents: purchase ? null : vatCents,
-      vat_code: vatCompanionCode(vatCode),
+      debit_cents: line.debit_cents,
+      credit_cents: line.credit_cents,
+      vat_code: line.vat_code,
       vat_percent: vatPct,
       allocation: 0,
       partner,
+      ...(line.new_era ? { item_id: -1, new_era: true } : {}),
     })
-  }
+  })
   return out
 }
 

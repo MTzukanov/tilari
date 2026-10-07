@@ -8,8 +8,10 @@ import {
   draftsFromEntries,
   entriesFromDrafts,
   pairVatLines,
+  rowAmountCents,
   transferFits,
   withLineIdentity,
+  vatBooking,
   type LineDraft,
 } from './editorLines'
 
@@ -94,7 +96,8 @@ describe('assistantFit', () => {
     const a = getVoucher(db, ids.A)!
     const { pairs } = pairVatLines(a.entries, 0)
     expect(pairs).toHaveLength(1)
-    expect(pairs[0].vat?.debit_cents).toBe(2550)
+    expect(pairs[0].vats.map((v) => v.debit_cents)).toEqual([2550])
+    expect(rowAmountCents(pairs[0])).toBe(12550)
   })
 
   it('fits an open item on the payment line; not odd VAT rounding or extra payment lines', async () => {
@@ -121,6 +124,48 @@ describe('assistantFit', () => {
     expect(transferFits(a.entries, a.date)).toBe(false) // three lines with VAT
     const e = getVoucher(db, ids.E)!
     expect(transferFits(e.entries, e.date)).toBe(true)
+  })
+})
+
+describe('Kitsas VAT lines per code (vatBooking)', () => {
+  const entry = (over: Partial<VoucherEntry>): VoucherEntry => ({
+    id: 0, line_no: 0, entry_type: 0, date: '2025-05-02', account: 0, account_name: '', account_type: '',
+    description: '', debit_cents: null, credit_cents: null, vat_percent: null, vat_code: 0, partner: null, ...over,
+  })
+
+  it('reverse charge (29): tax and deduction on top of net; fits the assistant', () => {
+    const booked = vatBooking(29, 25.5, 10000, false)
+    expect(booked.mainCents).toBe(10000)
+    expect(booked.lines).toEqual([
+      { account: 1763, vat_code: 229, debit_cents: 2550, credit_cents: null },
+      { account: 2939, vat_code: 129, debit_cents: null, credit_cents: 2550 },
+    ])
+    const entries = [
+      entry({ id: 1, entry_type: 102, account: 1910, credit_cents: 10000 }),
+      entry({ id: 2, entry_type: 101, account: 4000, debit_cents: 10000, vat_code: 29, vat_percent: 25.5 }),
+      entry({ id: 3, entry_type: 103, account: 1763, debit_cents: 2550, vat_code: 229, vat_percent: 25.5 }),
+      entry({ id: 4, entry_type: 103, account: 2939, credit_cents: 2550, vat_code: 129, vat_percent: 25.5 }),
+    ]
+    expect(assistantFit(entries, { voucherType: 100, voucherDate: '2025-05-02', vatLiable: true, isBank })).toEqual({
+      fits: true,
+      paymentIndex: 0,
+    })
+    expect(rowAmountCents(pairVatLines(entries, 0).pairs[0])).toBe(10000)
+  })
+
+  it('brutto (12) and zero-rate (19) book the whole amount without a VAT line', () => {
+    expect(vatBooking(12, 25.5, 12550, true)).toEqual({ mainCents: 12550, lines: [] })
+    expect(vatBooking(19, 0, 5000, true)).toEqual({ mainCents: 5000, lines: [] })
+  })
+
+  it('a refund deposit with a purchase code books the VAT on the credit side', () => {
+    expect(vatBooking(21, 25.5, 12550, true).lines).toEqual([
+      { account: 1763, vat_code: 221, debit_cents: null, credit_cents: 2550 },
+    ])
+  })
+
+  it('cash basis (28) opens a parked era', () => {
+    expect(vatBooking(28, 25.5, 12550, false).lines[0]).toMatchObject({ vat_code: 428, new_era: true })
   })
 })
 
