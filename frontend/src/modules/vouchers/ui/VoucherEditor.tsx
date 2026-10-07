@@ -27,7 +27,7 @@ import {
   matchAndHideDuplicates,
   type StatementOwnRow,
 } from '../../../book/bankStatement'
-import { isPurchaseVatCode, isVatBookingLine, vatAccount, vatCompanionCode } from '../../../book/modules/vat/domain/vatPosting'
+import { isVatBookingLine, vatBooking } from '../../../book/modules/vat/domain/vatPosting'
 import { isVatLiableSetting } from '../../../book/settings'
 import { ALL_COUNTER_ACCOUNTS } from '../../../book/paymentMethods'
 import { DELETABLE_TYPES, ENTRY_COUNTER_POSTING, ENTRY_POSTING, STATUS_TEMPLATE } from '../../../book/vouchers'
@@ -37,6 +37,7 @@ import {
   EMPTY_LINE,
   entriesFromDrafts,
   pairVatLines,
+  rowAmountCents,
   transferFits,
   withLineIdentity,
   type LineDraft,
@@ -328,11 +329,10 @@ export function VoucherEditor({
       : '0:0'
     const pairs = fit.fits ? pairVatLines(data.entries, paymentIndex).pairs : []
     const nextRows: AssistantRow[] = pairs.length
-      ? pairs.map(({ net, vat }) => {
-          // Gross = net + the booked VAT line, so an unedited row rebuilds the same amounts.
-          const gross =
-            (Number(net.debit_cents || 0) || Number(net.credit_cents || 0)) +
-            (vat ? Number(vat.debit_cents || 0) || Number(vat.credit_cents || 0) : 0)
+      ? pairs.map((pair) => {
+          const { net } = pair
+          // The amount the payment line pays for the row, so an unedited row rebuilds the same.
+          const gross = rowAmountCents(pair)
           return {
             account: String(net.account),
             amount: formatEurInput(gross, { emptyZero: true }),
@@ -615,32 +615,31 @@ export function VoucherEditor({
       const gross = parseEurInput(row.amount)
       if (!row.account || !gross) continue
       grossTotal += gross
-      const vatCents =
-        vat.code && vat.percent ? Math.round((gross * vat.percent) / (100 + vat.percent)) : 0
-      const netCents = gross - vatCents
+      // Kitsas ApuriRivi: VAT lines by code (reverse charge on top of net, brutto none).
+      const booking = vatBooking(vat.code, vat.percent, gross, !isMeno)
       const desc = row.description || title
+      const main = formatEurInput(booking.mainCents, { emptyZero: true })
       out.push({
         ...EMPTY_LINE,
         account: row.account,
         description: desc,
-        debit: isMeno ? formatEurInput(netCents, { emptyZero: true }) : '',
-        credit: isMeno ? '' : formatEurInput(netCents, { emptyZero: true }),
+        debit: isMeno ? main : '',
+        credit: isMeno ? '' : main,
         vat_code: String(vat.code),
         vat_percent: vat.percent ? String(vat.percent) : '',
         allocation: row.allocation,
         accrual_starts: row.accrual_starts,
         accrual_ends: row.accrual_ends,
       })
-      const vatAcc = vatAccount(vat.code)
-      if (vatLiable && vatAcc && vatCents) {
-        const purchase = isPurchaseVatCode(vat.code)
+      if (!vatLiable) continue
+      for (const line of booking.lines) {
         out.push({
           ...EMPTY_LINE,
-          account: String(vatAcc),
+          account: String(line.account),
           description: 'ALV',
-          debit: purchase ? formatEurInput(vatCents, { emptyZero: true }) : '',
-          credit: purchase ? '' : formatEurInput(vatCents, { emptyZero: true }),
-          vat_code: String(vatCompanionCode(vat.code)),
+          debit: line.debit_cents ? formatEurInput(line.debit_cents, { emptyZero: true }) : '',
+          credit: line.credit_cents ? formatEurInput(line.credit_cents, { emptyZero: true }) : '',
+          vat_code: String(line.vat_code),
           vat_percent: String(vat.percent),
           allocation: '0',
         })
@@ -749,33 +748,6 @@ export function VoucherEditor({
         entryIds: prev.entryIds ?? row.entryIds,
       }
     })
-  }
-
-  function expandVat(base: LineDraft[]): LineDraft[] {
-    if (!assistant || !vatLiable) return base
-    const out: LineDraft[] = []
-    for (const line of base) {
-      out.push(line)
-      if (isVatBookingLine(line)) continue
-      const code = Number(line.vat_code || 0)
-      const pct = Number(line.vat_percent || 0)
-      const netCents = parseEurInput(line.debit || line.credit)
-      const vatAcc = vatAccount(code)
-      if (!vatAcc || pct <= 0 || netCents <= 0) continue
-      const vatCents = Math.round((netCents * pct) / 100)
-      const vatEur = formatEurInput(vatCents, { emptyZero: true })
-      const isPurchase = isPurchaseVatCode(code)
-      out.push({
-        ...EMPTY_LINE,
-        account: String(vatAcc),
-        description: 'ALV',
-        debit: isPurchase ? vatEur : '',
-        credit: isPurchase ? '' : vatEur,
-        vat_code: String(vatCompanionCode(code)),
-        vat_percent: String(pct),
-      })
-    }
-    return out
   }
 
   /** Not VAT-liable: new lines get no VAT; stored lines keep theirs. */
@@ -918,8 +890,7 @@ export function VoucherEditor({
       }
       return null
     }
-    const source = builtLines()
-    const expanded = assistant ? source : expandVat(source)
+    const expanded = builtLines()
     if (!expanded.length) return t('editor.needLines')
     let debit = 0
     let credit = 0
@@ -963,9 +934,7 @@ export function VoucherEditor({
         if (tab === 'entries') setStatementRows(rows)
         entries = await statementSaveEntries(rows)
       } else {
-        const source = builtLines()
-        const expanded = assistant ? source : expandVat(source)
-        entries = entriesFromDrafts(expanded, { date, title, partnerName: partner }, loadedHeader)
+        entries = entriesFromDrafts(builtLines(), { date, title, partnerName: partner }, loadedHeader)
       }
       const json: Record<string, unknown> = { ...(existing?.json || {}) }
       if (notes.trim()) json.info = notes.trim()

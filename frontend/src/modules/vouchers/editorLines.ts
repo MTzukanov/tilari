@@ -8,8 +8,10 @@
 import type { SaveEntryInput, VoucherEntry } from '../../book/types'
 import {
   isPurchaseVatCode,
+  isReverseCharge,
   isVatBookingLine,
   vatAccount,
+  vatBooking,
   vatCompanionCode,
 } from '../../book/modules/vat/domain/vatPosting'
 import { ENTRY_COUNTER_POSTING, ENTRY_POSTING, ENTRY_VAT_POSTING } from '../../book/vouchers'
@@ -160,26 +162,44 @@ function vatish(e: VoucherEntry): boolean {
   return isVatBookingLine({ vat_code: String(e.vat_code ?? 0), account: String(e.account) })
 }
 
-/** Gross cents of a net line incl. its VAT companion (the next VAT line after it). */
+/** VAT codes a row of `code` books besides its main line (Kitsas ApuriRivi). */
+function companionCodes(code: number): number[] {
+  if (isReverseCharge(code)) return [200 + code, 100 + code]
+  const c = vatCompanionCode(code)
+  return c !== code ? [c] : []
+}
+
+/** Net lines with the VAT lines that follow them (`vats` in Kitsas order). */
 export function pairVatLines(entries: VoucherEntry[], paymentIndex: number) {
-  const pairs: { net: VoucherEntry; vat: VoucherEntry | null }[] = []
+  const pairs: { net: VoucherEntry; vats: VoucherEntry[] }[] = []
   const unpaired: VoucherEntry[] = []
   entries.forEach((e, i) => {
     if (i === paymentIndex) return
     if (vatish(e)) {
       const last = pairs[pairs.length - 1]
-      const code = Number(last?.net.vat_code || 0)
-      if (last && !last.vat && code && vatCompanionCode(code) === Number(e.vat_code || 0)) last.vat = e
+      const expected = last ? companionCodes(Number(last.net.vat_code || 0)) : []
+      const next = expected[last?.vats.length ?? 0]
+      if (last && next != null && next === Number(e.vat_code || 0)) last.vats.push(e)
       else unpaired.push(e)
       return
     }
-    pairs.push({ net: e, vat: null })
+    pairs.push({ net: e, vats: [] })
   })
   return { pairs, unpaired }
 }
 
 function lineCents(e: VoucherEntry): number {
   return Number(e.debit_cents || 0) || Number(e.credit_cents || 0)
+}
+
+/**
+ * What the payment line pays for a row: net + VAT for domestic codes, net for reverse charge
+ * (its tax and deduction cancel out). This is the assistant's row amount.
+ */
+export function rowAmountCents(pair: { net: VoucherEntry; vats: VoucherEntry[] }): number {
+  const code = Number(pair.net.vat_code || 0)
+  if (isReverseCharge(code)) return lineCents(pair.net)
+  return lineCents(pair.net) + pair.vats.reduce((sum, v) => sum + lineCents(v), 0)
 }
 
 /** Payment line index by Kitsas line type; else the single bank-account line (old tilari saves). */
@@ -191,8 +211,8 @@ function paymentIndexOf(entries: VoucherEntry[], isBank: (account: number) => bo
 
 /**
  * Can the expense/income assistant show this voucher without changing it on save?
- * Kitsas `TuloMenoApuri::teeReset` reads the payment line by type (% 100 == 2); anything
- * the assistant cannot rebuild exactly stays on the "Viennit" tab.
+ * Kitsas `TuloMenoApuri::teeReset` reads the payment line by type (% 100 == 2); every row must
+ * rebuild to exactly its stored lines (`vatBooking`), otherwise it stays on "Viennit".
  */
 export function assistantFit(
   entries: VoucherEntry[],
@@ -210,18 +230,27 @@ export function assistantFit(
   const expense = opts.voucherType !== 200
   const { pairs, unpaired } = pairVatLines(entries, paymentIndex)
   if (unpaired.length || !pairs.length) return { fits: false, reason: 'vat' }
-  for (const { net, vat } of pairs) {
+  for (const pair of pairs) {
+    const { net, vats } = pair
     const onDebit = Number(net.debit_cents || 0) > 0
     if (onDebit !== expense) return { fits: false, reason: 'side' }
     const code = Number(net.vat_code || 0)
     const pct = Number(net.vat_percent || 0)
-    const vatCents = vat ? lineCents(vat) : 0
-    const expected = vatAccount(code) && code && pct > 0
-    if (Boolean(vat) !== Boolean(expected)) return { fits: false, reason: 'vat' }
-    if (vat) {
-      const gross = lineCents(net) + vatCents
-      if (Math.round((gross * pct) / (100 + pct)) !== vatCents) return { fits: false, reason: 'vat' }
-      if (Number(vat.account) !== vatAccount(code)) return { fits: false, reason: 'vat' }
+    const booked = vatBooking(code, pct, rowAmountCents(pair), !expense)
+    if (booked.mainCents !== lineCents(net) || booked.lines.length !== vats.length) {
+      return { fits: false, reason: 'vat' }
+    }
+    for (let i = 0; i < vats.length; i++) {
+      const want = booked.lines[i]
+      const got = vats[i]
+      if (
+        Number(got.account) !== want.account ||
+        Number(got.vat_code || 0) !== want.vat_code ||
+        Number(got.debit_cents || 0) !== Number(want.debit_cents || 0) ||
+        Number(got.credit_cents || 0) !== Number(want.credit_cents || 0)
+      ) {
+        return { fits: false, reason: 'vat' }
+      }
     }
   }
   const payment = entries[paymentIndex]
@@ -290,4 +319,4 @@ export function vatFromGross(grossCents: number, percent: number): number {
   return Math.round((grossCents * percent) / (100 + percent))
 }
 
-export { isPurchaseVatCode, vatAccount, vatCompanionCode }
+export { isPurchaseVatCode, vatAccount, vatBooking, vatCompanionCode }

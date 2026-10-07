@@ -7,6 +7,25 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-07 - VAT like Kitsas on `fix/vat-like-kitsas` (stacked on `fix/write-guards`)
+
+- `computeVat` follows Kitsas `AlvLaskelma`: all VAT-coded posted lines of the period except VAT
+  returns, sign per `debetistaKoodilla`, brutto correction (12/22), margin scheme (13/23, deficit
+  carried in `json.alv.marginaalialijaama`), every box from code ranges (301-314, 318-320).
+  Before, codes 13-16, 22, 24, 26, 27, 51 were ignored and brutto sales gave 301 = 0.
+- VAT return settles like `kirjaaVerot`: 1xx on the BL account, 2xx on the AL account, net to BV
+  (or `AlvMaksettava`/`AlvPalautettava` only with `AlvMaksutilinKautta`). Before, the net went to
+  `AlvPalautettava`/`AlvMaksettava` - in a Kitsas yritys chart those are 1762/2922, so 1763 was
+  never cleared. Json `alv.koodit`, `kausialkaa`, `kausipaattyy`, `erapvm`, `maksettava` written.
+- Editor/statement VAT lines follow Kitsas `ApuriRivi` (`vatBooking`): reverse charge 24-27/29
+  books tax + deduction on top of net (before: only a deduction, i.e. VAT deducted without the tax);
+  brutto 12 books the gross without a 112 line (Kitsas computes it at the return); a refund deposit
+  books VAT on the credit side (before: unbalanced).
+- Cash-basis VAT requires `AlvVelvollinen` (Kitsas `onkoMaksuperusteinenAlv`).
+- Checked on a copy of a real book against every Kitsas-made VAT return: boxes and settlement
+  identical from 2024 on (cash-basis nollaus lines are added at return creation, as before).
+  Not implemented: alarajahuojennus (boxes 315-317; abolished from 2025, only old annual returns).
+
 ## 2026-10-07 - Write guards on `fix/write-guards` (stacked on `fix/numbering`)
 
 - VAT-filed lock implemented (AGENTS.md rule 12 claimed it before it existed). A VAT return can

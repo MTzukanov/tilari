@@ -53,8 +53,10 @@ export function vatDueDate(endDate: string, periodMonths: number = 1): string {
   }
 }
 
+/** Kitsas `Kirjanpito::onkoMaksuperusteinenAlv`: needs a VAT-liable book too. */
 export function isCashBasisVat(db: SqliteDb, date: string): boolean {
-  const s = getSettings(db, ['MaksuAlvAlkaa', 'MaksuAlvLoppuu'])
+  const s = getSettings(db, ['MaksuAlvAlkaa', 'MaksuAlvLoppuu', 'AlvVelvollinen'])
+  if (!/^(on|1|true)$/i.test(String(s.AlvVelvollinen || '').trim())) return false
   const starts = (s.MaksuAlvAlkaa || '').trim()
   if (!starts || date < starts) return false
   const ends = (s.MaksuAlvLoppuu || '').trim()

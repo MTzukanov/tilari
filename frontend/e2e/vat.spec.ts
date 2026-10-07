@@ -43,7 +43,7 @@ test.describe('VAT returns', () => {
 
     // Opens the type-9100 voucher with HTML attachment.
     await expectVatVoucherOpen(page)
-    await expect(page.getByRole('row', { name: /ALV myynnit/ }).first()).toBeVisible()
+    await expect(page.getByRole('row', { name: /Arvonlisävero \d/ }).first()).toBeVisible()
     await expectDirtyStatus(page, true)
 
     await deleteCurrentVatVoucher(page)
@@ -91,7 +91,7 @@ test.describe('VAT returns', () => {
     await openDeclareDialog(page)
     await confirmDeclare(page)
     await expectVatVoucherOpen(page)
-    await expect(page.getByRole('row', { name: /ALV myynnit/ }).first()).toBeVisible()
+    await expect(page.getByRole('row', { name: /Arvonlisävero \d/ }).first()).toBeVisible()
     await expect(page.getByRole('row', { name: eur('51,00') }).first()).toBeVisible()
   })
 

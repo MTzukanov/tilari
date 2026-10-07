@@ -7,9 +7,13 @@ import { sha256hexSync } from '../../../sha256'
 import type { SqliteDb } from '../../../sqlite'
 import type { SaveEntryInput } from '../../../types'
 import {
+  accountByType,
   forceRealizeLines,
   listOpenParkedEras,
+  vatPayableAccount,
+  vatReceivableAccount,
 } from './vatCashBasis'
+import { parseJson } from '../../../json'
 import {
   addMonthsIso,
   isCashBasisVat,
@@ -37,19 +41,7 @@ export {
 } from './vatCashBasis'
 export { vatBoxTitle, vatCodeTitle, VAT_BOX_TITLES, VAT_CODE_TITLES } from './vatLabels'
 
-const IN_SCOPE_CODES = new Set([
-  0, 11, 111, 12, 112, 21, 221, 18, 118, 418, 28, 228, 428, 29, 129, 229, 19, 25, 125, 225, 901,
-])
-
-/** Realized tax that counts toward the return (not parked 418/428). */
-const OUTPUT_TAX_CODES = new Set([111, 112, 118, 129, 125])
-const INPUT_TAX_CODES = new Set([221, 228, 229, 225])
-const NET_SALES_CODES = new Set([11, 12, 18, 19])
-const NET_PURCHASE_CODES = new Set([21, 28, 29, 25])
-const PARKED_CODES = new Set([418, 428])
-
 const BOX_LABELS = VAT_BOX_TITLES
-
 
 export type VatRow = {
   vat_code: number
@@ -103,9 +95,243 @@ function pctKey(pct: number): number {
   return Math.round(pct * 100)
 }
 
-export function computeVat(db: SqliteDb, startDate: string, endDate: string): VatSummary {
+/**
+ * Kitsas `AlvLaskelma::debetistaKoodilla`: the side that is positive in a code's sum
+ * (purchases 2x/4x8, deductions 2xx and 932 from debit; sales and taxes from credit).
+ */
+export function debitPositive(code: number): boolean {
+  const hundreds = Math.floor(code / 100)
+  return (
+    ((hundreds === 0 || hundreds === 4) && Math.floor((code % 20) / 10) === 0) ||
+    hundreds === 2 ||
+    code === 932
+  )
+}
+
+/** One VAT-coded line in the period table (posted lines and the return's own corrections). */
+type TableLine = {
+  code: number
+  rate: number
+  account: number
+  debit: number
+  credit: number
+}
+
+function signedOf(l: TableLine): number {
+  return debitPositive(l.code) ? l.debit - l.credit : l.credit - l.debit
+}
+
+function sumCodes(table: TableLine[], codes: number[], rates?: number[]): number {
+  return table
+    .filter((l) => codes.includes(l.code) && (!rates || rates.includes(l.rate)))
+    .reduce((s, l) => s + signedOf(l), 0)
+}
+
+function sumRange(table: TableLine[], from: number, to: number): number {
+  return table.filter((l) => l.code >= from && l.code <= to).reduce((s, l) => s + signedOf(l), 0)
+}
+
+/** Kitsas `kotimaanmyyntivero`: domestic sales tax codes summed for a rate. */
+const DOMESTIC_SALES_TAX_CODES = [111, 112, 118, 113, 151, 129]
+
+/** Lines the VAT return books itself (brutto/margin corrections, cash-basis nollaus). */
+export type VatCorrectionLine = SaveEntryInput & { vat_code: number }
+
+type VatAccounts = { liability: number; receivable: number }
+
+function vatAccounts(db: SqliteDb): VatAccounts {
+  return { liability: vatPayableAccount(db), receivable: vatReceivableAccount(db) }
+}
+
+/** Kitsas `oikaiseBruttoKirjaukset`: tax out of brutto sales (12) and purchases (22). */
+function bruttoCorrections(table: TableLine[], acc: VatAccounts, endDate: string): VatCorrectionLine[] {
+  const out: VatCorrectionLine[] = []
+  for (const code of [12, 22]) {
+    const sales = code === 12
+    const groups = new Map<string, { rate: number; account: number; brutto: number }>()
+    for (const l of table) {
+      if (l.code !== code) continue
+      const key = `${l.rate}|${l.account}`
+      const g = groups.get(key) ?? { rate: l.rate, account: l.account, brutto: 0 }
+      g.brutto += sales ? l.credit - l.debit : l.debit - l.credit
+      groups.set(key, g)
+    }
+    for (const g of groups.values()) {
+      const netto = Math.round((g.brutto * 10000) / (10000 + g.rate))
+      const vero = g.brutto - netto
+      if (!vero) continue
+      const pct = g.rate / 100
+      const description = `${sales ? 'Bruttomyyntien' : 'Brutto-ostojen'} oikaisu ${g.account}`
+      const pos = vero > 0
+      const abs = Math.abs(vero)
+      // Off the booked account (sales: debit, purchases: credit) ...
+      out.push({
+        account: g.account,
+        debit_cents: sales === pos ? abs : null,
+        credit_cents: sales === pos ? null : abs,
+        vat_code: code,
+        vat_percent: pct,
+        entry_type: 91091,
+        date: endDate,
+        description,
+      })
+      // ... onto the VAT liability (112) or receivable (222).
+      out.push({
+        account: sales ? acc.liability : acc.receivable,
+        debit_cents: sales === pos ? null : abs,
+        credit_cents: sales === pos ? abs : null,
+        vat_code: sales ? 112 : 222,
+        vat_percent: pct,
+        entry_type: 91091,
+        date: endDate,
+        description,
+      })
+    }
+  }
+  return out
+}
+
+/** Margin-scheme deficits carried from the previous return (Kitsas json.alv.marginaalialijaama). */
+function previousMarginDeficits(db: SqliteDb, startDate: string): Record<string, number> {
+  const prevEnd = addDaysIsoLocal(startDate, -1)
+  const rows = db.all<{ json: unknown }>(
+    'SELECT json FROM Tosite WHERE tyyppi = ? AND tila >= 100',
+    [TYPE_VAT_RETURN],
+  )
+  for (const row of rows) {
+    const alv = parseJson(row.json).alv as Record<string, unknown> | undefined
+    if (!alv || String(alv.kausipaattyy ?? alv.end_date ?? '') !== prevEnd) continue
+    const map = alv.marginaalialijaama
+    if (map && typeof map === 'object') return map as Record<string, number>
+  }
+  return {}
+}
+
+function addDaysIsoLocal(iso: string, days: number): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d + days))
+  return dt.toISOString().slice(0, 10)
+}
+
+/** Kitsas `laskeMarginaaliVerotus` for 24 (+25.5), 14 (+13.5) and 10 %. */
+function marginCorrections(
+  db: SqliteDb,
+  table: TableLine[],
+  acc: VatAccounts,
+  startDate: string,
+  endDate: string,
+): { lines: VatCorrectionLine[]; deficits: Record<string, number> } {
+  const lines: VatCorrectionLine[] = []
+  const deficits: Record<string, number> = {}
+  const previous = previousMarginDeficits(db, startDate)
+  const travelAgency = /^(on|1|true)$/i.test(String(getSettings(db, ['AlvMatkatoimisto']).AlvMatkatoimisto || ''))
+  for (const kanta of [2400, 1400, 1000]) {
+    const salesRates = kanta === 2400 ? [2400, 2550] : [kanta]
+    const purchaseRates = kanta === 2400 ? [2400, 2550] : kanta === 1400 ? [1400, 1350] : [kanta]
+    const laskukanta = kanta === 2400 && endDate > '2024-09-01' ? 2550 : kanta
+    const salesLines = table.filter((l) => l.code === 13 && salesRates.includes(l.rate))
+    const myynti = salesLines.reduce((s, l) => s + l.credit - l.debit, 0)
+    const ostot = table
+      .filter((l) => l.code === 23 && purchaseRates.includes(l.rate))
+      .reduce((s, l) => s + l.debit - l.credit, 0)
+    const key = (kanta / 100).toFixed(2)
+    const alijaama = Math.round(Number(previous[key] || 0) * 100)
+    const marginaali = myynti - ostot - alijaama
+    const vero = Math.round((laskukanta / (10000 + laskukanta)) * marginaali)
+    if (vero > 0 || (vero < 0 && travelAgency)) {
+      const byAccount = new Map<number, number>()
+      for (const l of salesLines) byAccount.set(l.account, (byAccount.get(l.account) || 0) + l.credit - l.debit)
+      for (const [account, tilinmyynti] of byAccount) {
+        const eurot = myynti ? Math.round((tilinmyynti / myynti) * vero) : 0
+        if (!eurot) continue
+        const abs = Math.abs(eurot)
+        const description = `Voittomarginaalivero (verokanta ${(laskukanta / 100).toFixed(2)} %)`
+        lines.push({
+          account,
+          debit_cents: eurot > 0 ? abs : null,
+          credit_cents: eurot > 0 ? null : abs,
+          vat_code: 913,
+          vat_percent: laskukanta / 100,
+          entry_type: 91091,
+          date: endDate,
+          description,
+        })
+        lines.push({
+          account: acc.liability,
+          debit_cents: eurot > 0 ? null : abs,
+          credit_cents: eurot > 0 ? abs : null,
+          vat_code: 113,
+          vat_percent: laskukanta / 100,
+          date: endDate,
+          description,
+        })
+      }
+    } else if (marginaali < 0) {
+      deficits[key] = -marginaali / 100
+    }
+  }
+  return { lines, deficits }
+}
+
+function tableLine(l: { vat_code?: number | null; vat_percent?: number | null; account: number; debit_cents?: number | null; credit_cents?: number | null }): TableLine {
+  return {
+    code: Number(l.vat_code || 0),
+    rate: pctKey(Number(l.vat_percent || 0)),
+    account: Number(l.account),
+    debit: asCents(l.debit_cents),
+    credit: asCents(l.credit_cents),
+  }
+}
+
+/** Box values like Kitsas `kirjoitaYhteenveto` from the finished table. */
+function boxesOf(table: TableLine[]): Record<string, number> {
+  const verot = sumRange(table, 100, 199)
+  const vahennys = sumRange(table, 200, 299)
+  const raw: Record<number, number> = {
+    301: sumCodes(table, DOMESTIC_SALES_TAX_CODES, [2550, 2400]),
+    302: sumCodes(table, DOMESTIC_SALES_TAX_CODES, [1400, 1350]),
+    303: sumCodes(table, DOMESTIC_SALES_TAX_CODES, [1000]),
+    304: sumCodes(table, [127]),
+    305: sumCodes(table, [124]),
+    306: sumCodes(table, [125]),
+    307: vahennys,
+    308: verot - vahennys,
+    309: sumCodes(table, [19]),
+    310: sumCodes(table, [27]),
+    311: sumCodes(table, [14]),
+    312: sumCodes(table, [15]),
+    313: sumCodes(table, [24]),
+    314: sumCodes(table, [25]),
+    318: sumCodes(table, [126]),
+    319: sumCodes(table, [16]),
+    320: sumCodes(table, [26]),
+  }
+  const boxes: Record<string, number> = {}
+  for (const [box, value] of Object.entries(raw)) if (value) boxes[box] = value
+  return boxes
+}
+
+const SALES_BASE_CODES = new Set([11, 12, 13, 14, 15, 16, 18, 19, 51])
+
+export type VatComputation = {
+  summary: VatSummary
+  /** Brutto, margin and (for a return) cash-basis nollaus lines the return books. */
+  corrections: VatCorrectionLine[]
+  marginDeficits: Record<string, number>
+}
+
+/**
+ * VAT for a period like Kitsas `AlvLaskelma`: every posted VAT-coded line dated in the period
+ * except those of VAT returns, plus the corrections the return books (brutto 12/22, margin
+ * 13/23, and `extra` such as cash-basis nollaus). Boxes are sums of code ranges.
+ */
+export function computeVatDetailed(
+  db: SqliteDb,
+  startDate: string,
+  endDate: string,
+  extra: VatCorrectionLine[] = [],
+): VatComputation {
   const rows = db.all<{
-    id: number
     vat_code: number | null
     vat_percent: number | null
     debetsnt: number | null
@@ -121,7 +347,6 @@ export function computeVat(db: SqliteDb, startDate: string, endDate: string): Va
     description: string | null
   }>(
     `SELECT
-       Vienti.id AS id,
        Vienti.alvkoodi AS vat_code,
        Vienti.alvprosentti AS vat_percent,
        Vienti.debetsnt AS debetsnt,
@@ -139,155 +364,110 @@ export function computeVat(db: SqliteDb, startDate: string, endDate: string): Va
      JOIN Tosite ON Vienti.tosite = Tosite.id
      LEFT JOIN Tili ON Tili.numero = Vienti.tili
      LEFT JOIN Kumppani ON Kumppani.id = COALESCE(Vienti.kumppani, Tosite.kumppani)
-     WHERE Tosite.tila >= 100 AND Vienti.pvm >= ? AND Vienti.pvm <= ?`,
-    [startDate, endDate],
+     WHERE Tosite.tila >= 100 AND Tosite.tyyppi <> ? AND Vienti.alvkoodi <> 0
+       AND Vienti.pvm >= ? AND Vienti.pvm <= ?
+     ORDER BY Vienti.pvm, Tosite.tunniste, Vienti.rivi`,
+    [TYPE_VAT_RETURN, startDate, endDate],
   )
 
-  const buckets = new Map<
-    string,
-    { code: number; pct: number; net_cents: number; tax_cents: number; parked_tax_cents: number }
-  >()
-  const keyOf = (code: number, pct: number) => `${code}|${pct}`
-  const bucket = (code: number, pct: number) => {
-    const k = keyOf(code, pct)
-    let b = buckets.get(k)
-    if (!b) {
-      b = { code, pct, net_cents: 0, tax_cents: 0, parked_tax_cents: 0 }
-      buckets.set(k, b)
-    }
-    return b
-  }
-
-  let box301 = 0
-  let box302 = 0
-  let box303 = 0
-  let box306 = 0
-  let box307 = 0
-  let box309 = 0
-  let box314 = 0
-  let parkedSales = 0
-  let parkedPurchase = 0
+  const table: TableLine[] = []
   const detail: VatDetailLine[] = []
-
   for (const row of rows) {
-    if (Number(row.voucher_type || 0) === TYPE_VAT_RETURN) continue
-    const code = Number(row.vat_code || 0)
-    if (!IN_SCOPE_CODES.has(code) || code === 0 || code === 901) continue
-    const pct = Number(row.vat_percent || 0)
-    const d = asCents(row.debetsnt)
-    const k = asCents(row.kreditsnt)
-    const base = code >= 100 ? code % 100 : code
-
+    const line = tableLine({
+      vat_code: row.vat_code,
+      vat_percent: row.vat_percent,
+      account: row.account,
+      debit_cents: row.debetsnt,
+      credit_cents: row.kreditsnt,
+    })
+    table.push(line)
     detail.push({
       date: String(row.date),
       voucher_id: Number(row.voucher_id),
       doc_number: row.doc_number == null ? null : Number(row.doc_number),
       series: String(row.series || ''),
-      account: Number(row.account),
+      account: line.account,
       account_name: String(row.account_name || ''),
       partner_name: String(row.partner_name || ''),
       description: row.description || '',
-      vat_code: code,
-      vat_percent: pct,
-      debit_cents: d,
-      credit_cents: k,
+      vat_code: line.code,
+      vat_percent: Number(row.vat_percent || 0),
+      debit_cents: line.debit,
+      credit_cents: line.credit,
     })
+  }
 
-    if (PARKED_CODES.has(code)) {
-      const parked = code === 418 ? k - d : d - k
-      if (code === 418) parkedSales += parked
-      else parkedPurchase += parked
-      const b = bucket(code, pct)
-      b.parked_tax_cents += parked
-      continue
-    }
+  const acc = vatAccounts(db)
+  const brutto = bruttoCorrections(table, acc, endDate)
+  const margin = marginCorrections(db, table, acc, startDate, endDate)
+  const corrections = [...brutto, ...margin.lines, ...extra]
+  for (const c of corrections) {
+    table.push(tableLine(c))
+    detail.push({
+      date: endDate,
+      voucher_id: 0,
+      doc_number: null,
+      series: '',
+      account: Number(c.account),
+      account_name: '',
+      partner_name: '',
+      description: c.description || '',
+      vat_code: Number(c.vat_code),
+      vat_percent: Number(c.vat_percent || 0),
+      debit_cents: asCents(c.debit_cents),
+      credit_cents: asCents(c.credit_cents),
+    })
+  }
 
-    const b = bucket(base, pct)
-    if (NET_SALES_CODES.has(code)) {
-      b.net_cents += k - d
-      if (code === 19) box309 += k - d
-    } else if (NET_PURCHASE_CODES.has(code)) {
-      b.net_cents += d - k
-      if (code === 25) box314 += d - k
-    } else if (OUTPUT_TAX_CODES.has(code)) {
-      const tax = k - d
-      b.tax_cents += tax
-      if (code === 125) box306 += tax
-      else {
-        const pk = pctKey(pct)
-        if (pk === 2550 || pk === 2400) box301 += tax
-        else if (pk === 1400 || pk === 1350) box302 += tax
-        else if (pk === 1000) box303 += tax
-        else box301 += tax
+  // Rows for the UI: base code + rate, net amount and the tax (1xx sales / 2xx deduction).
+  const groups = new Map<string, VatRow>()
+  for (const l of table) {
+    if (l.code === 901 || l.code === 913 || l.code === 932) continue
+    const parked = l.code >= 400 && l.code < 500
+    const base = parked ? l.code : l.code % 100
+    const key = `${base}|${l.rate}`
+    let g = groups.get(key)
+    if (!g) {
+      g = {
+        vat_code: base,
+        vat_percent: l.rate / 100,
+        kind: parked ? 'parked' : SALES_BASE_CODES.has(base) ? 'sales' : 'purchase',
+        net_cents: 0,
+        tax_cents: 0,
+        parked_tax_cents: 0,
       }
-    } else if (INPUT_TAX_CODES.has(code)) {
-      const tax = d - k
-      b.tax_cents += tax
-      box307 += tax
+      groups.set(key, g)
     }
+    if (parked) g.parked_tax_cents += signedOf(l)
+    else if (l.code < 100) g.net_cents += signedOf(l)
+    else if (g.kind === 'sales' ? l.code < 200 : l.code >= 200) g.tax_cents += signedOf(l)
   }
+  const outRows = [...groups.values()]
+    .filter((r) => r.net_cents || r.tax_cents || r.parked_tax_cents)
+    .sort((a, b) => a.vat_code - b.vat_code || a.vat_percent - b.vat_percent)
 
-  const outRows: VatRow[] = []
-  let outputVat = 0
-  let inputVat = 0
-  const sorted = [...buckets.values()].sort((a, b) => a.code - b.code || a.pct - b.pct)
-  for (const amounts of sorted) {
-    if (amounts.net_cents === 0 && amounts.tax_cents === 0 && amounts.parked_tax_cents === 0) continue
-    let kind: VatRow['kind'] = 'purchase'
-    if (PARKED_CODES.has(amounts.code)) kind = 'parked'
-    else if ([11, 12, 18, 19].includes(amounts.code)) kind = 'sales'
-    if (kind === 'sales') outputVat += amounts.tax_cents
-    else if (kind === 'purchase') inputVat += amounts.tax_cents
-    // EU reverse charge 25/125: tax on 125 is in output; 225 deduction in input — already via OUTPUT/INPUT sets on base 25 bucket
-    if (amounts.code === 25) {
-      // base 25 bucket may hold net + tax from 125/225 via base% — wait, 125 % 100 = 25, so 125 tax went into bucket 25
-      // And 125 is OUTPUT so tax was added to b.tax_cents for base 25. Kind would be purchase because 25 not in sales list.
-      // Fix kind for 25:
-      kind = 'purchase'
-    }
-    outRows.push({
-      vat_code: amounts.code,
-      vat_percent: amounts.pct,
-      kind,
-      net_cents: amounts.net_cents,
-      tax_cents: amounts.tax_cents,
-      parked_tax_cents: amounts.parked_tax_cents,
-    })
-  }
-
-  // Recalculate output/input from codes correctly (125 is output, 225 input)
-  outputVat = box301 + box302 + box303 + box306
-  inputVat = box307
-  const payable = outputVat - inputVat
-
-  const boxes: Record<string, number> = {}
-  const put = (n: number, v: number) => {
-    if (v) boxes[String(n)] = v
-  }
-  put(301, box301)
-  put(302, box302)
-  put(303, box303)
-  put(306, box306)
-  put(307, box307)
-  put(308, payable)
-  put(309, box309)
-  put(314, box314)
-
+  const verot = sumRange(table, 100, 199)
+  const vahennys = sumRange(table, 200, 299)
   const kausi = Number(getSettings(db, ['AlvKausi']).AlvKausi || 1)
-  return {
+  const summary: VatSummary = {
     start_date: startDate,
     end_date: endDate,
     due_date: vatDueDate(endDate, kausi === 3 || kausi === 12 ? kausi : 1),
     cash_basis: isCashBasisVat(db, endDate),
     rows: outRows,
-    boxes,
+    boxes: boxesOf(table),
     detail,
-    output_vat_cents: outputVat,
-    input_vat_cents: inputVat,
-    vat_payable_cents: payable,
-    parked_sales_cents: parkedSales,
-    parked_purchase_cents: parkedPurchase,
+    output_vat_cents: verot,
+    input_vat_cents: vahennys,
+    vat_payable_cents: verot - vahennys,
+    parked_sales_cents: sumCodes(table, [418]),
+    parked_purchase_cents: sumCodes(table, [428]),
   }
+  return { summary, corrections, marginDeficits: margin.deficits }
+}
+
+export function computeVat(db: SqliteDb, startDate: string, endDate: string): VatSummary {
+  return computeVatDetailed(db, startDate, endDate).summary
 }
 
 function formatEur(cents: number): string {
@@ -497,111 +677,71 @@ function applyForceNollaus(db: SqliteDb, startDate: string, endDate: string) {
   )
 }
 
+/** Kitsas `kirjaaVerot`: settle 1xx on the VAT liability, 2xx on the receivable, net to tax. */
+function settlementLines(db: SqliteDb, verot: number, vahennys: number, label: string): SaveEntryInput[] {
+  const settings = getSettings(db, [
+    'AlvMaksutilinKautta',
+    'AlvMaksettava',
+    'AlvPalautettava',
+    'AlvPalautusSaatavaTilille',
+  ])
+  const on = (v: string | undefined) => /^(on|1|true)$/i.test(String(v || '').trim())
+  const acc = vatAccounts(db)
+  const lines: SaveEntryInput[] = []
+  const side = (cents: number, debitWhenPositive: boolean) =>
+    cents > 0 === debitWhenPositive
+      ? { debit_cents: Math.abs(cents), credit_cents: null }
+      : { debit_cents: null, credit_cents: Math.abs(cents) }
+  if (verot) lines.push({ account: acc.liability, ...side(verot, true), vat_code: 901, description: label })
+  if (vahennys) lines.push({ account: acc.receivable, ...side(vahennys, false), vat_code: 901, description: label })
+  if (verot !== vahennys) {
+    let account: number
+    if (verot > vahennys && on(settings.AlvMaksutilinKautta) && Number(settings.AlvMaksettava)) {
+      account = Number(settings.AlvMaksettava)
+    } else if (vahennys > verot && on(settings.AlvMaksutilinKautta) && Number(settings.AlvPalautettava)) {
+      account = Number(settings.AlvPalautettava)
+    } else if (vahennys > verot && on(settings.AlvPalautusSaatavaTilille)) {
+      account = accountByType(db, 'AV', accountByType(db, 'BV', 2920))
+    } else {
+      account = accountByType(db, 'BV', 2920)
+    }
+    lines.push({ account, ...side(verot - vahennys, false), vat_code: 901, description: label })
+  }
+  return lines
+}
+
 export function createVatReturn(db: SqliteDb, startDate: string, endDate: string): number {
   if (periodAlreadyFiled(db, startDate, endDate)) {
     throw new PostingError(`ALV-jakso ${startDate} – ${endDate} on jo ilmoitettu`, 409)
   }
 
-  const nollausLines = applyForceNollaus(db, startDate, endDate)
-  // Preview summary after hypothetically applying nollaus: compute includes only existing rows.
-  // So we must post nollaus first on a draft, then settle — or include nollaus tax in settlement.
-  // Approach: build all lines (nollaus + settlement from post-nollaus summary).
-  // Post nollaus lines into DB temporarily? Cleaner: compute payable from current + add nollaus 118/228 amounts.
-
-  let extraOutput = 0
-  let extraInput = 0
-  for (const line of nollausLines) {
-    if (line.vat_code === 118) extraOutput += asCents(line.credit_cents) - asCents(line.debit_cents)
-    if (line.vat_code === 228) extraInput += asCents(line.debit_cents) - asCents(line.credit_cents)
-  }
-
-  const base = computeVat(db, startDate, endDate)
-  const outputVat = base.output_vat_cents + extraOutput
-  const inputVat = base.input_vat_cents + extraInput
-  if (outputVat === 0 && inputVat === 0 && !nollausLines.length) {
+  // Cash-basis nollaus first (Kitsas laske -> tilaaNollausLista), then brutto/margin, then tax.
+  const nollaus: VatCorrectionLine[] = applyForceNollaus(db, startDate, endDate).map((n) => ({
+    account: n.account,
+    debit_cents: n.debit_cents,
+    credit_cents: n.credit_cents,
+    vat_code: n.vat_code,
+    vat_percent: n.vat_percent,
+    description: n.description,
+    item_id: n.item_id ?? null,
+    partner: n.partner ?? null,
+    date: endDate,
+  }))
+  const { summary, corrections, marginDeficits } = computeVatDetailed(db, startDate, endDate, nollaus)
+  if (!summary.output_vat_cents && !summary.input_vat_cents && !corrections.length) {
     throw new PostingError('Ei ALV-vientia talle jaksolle')
   }
 
-  const settings = getSettings(db, [
-    'AlvMaksettava',
-    'AlvPalautettava',
-    'AlvVelkatili',
-    'Nimi',
-    'Harjoitus',
-  ])
-  const payableAccount = Number(settings.AlvMaksettava || 2920)
-  const receivableAccount = Number(settings.AlvPalautettava || 1763)
-  const liabilityAccount = Number(settings.AlvVelkatili || 2939)
+  const settings = getSettings(db, ['Nimi', 'Harjoitus'])
+  const label = `Arvonlisävero ${formatKitsasDate(startDate)} - ${formatKitsasDate(endDate)}`
+  const lines: SaveEntryInput[] = [
+    ...corrections,
+    ...settlementLines(db, summary.output_vat_cents, summary.input_vat_cents, label),
+  ].map((l, i) => ({ ...l, line_no: i + 1, date: endDate }))
 
-  const lines: SaveEntryInput[] = []
-  let lineNo = 1
-  for (const n of nollausLines) {
-    lines.push({
-      line_no: lineNo++,
-      account: n.account,
-      debit_cents: n.debit_cents,
-      credit_cents: n.credit_cents,
-      vat_code: n.vat_code,
-      vat_percent: n.vat_percent,
-      description: n.description,
-      item_id: n.item_id ?? null,
-      partner: n.partner ?? null,
-    })
-  }
-
-  if (outputVat) {
-    lines.push({
-      line_no: lineNo++,
-      account: liabilityAccount,
-      debit_cents: outputVat,
-      credit_cents: null,
-      vat_code: 901,
-      description: 'ALV myynnit',
-    })
-    lines.push({
-      line_no: lineNo++,
-      account: payableAccount,
-      debit_cents: null,
-      credit_cents: outputVat,
-      vat_code: 901,
-      description: 'ALV myynnit',
-    })
-  }
-  if (inputVat) {
-    lines.push({
-      line_no: lineNo++,
-      account: receivableAccount,
-      debit_cents: null,
-      credit_cents: inputVat,
-      vat_code: 901,
-      description: 'ALV ostot',
-    })
-    lines.push({
-      line_no: lineNo++,
-      account: payableAccount,
-      debit_cents: inputVat,
-      credit_cents: null,
-      vat_code: 901,
-      description: 'ALV ostot',
-    })
-  }
-
-  // Recompute summary after nollaus will be stored: merge boxes for extra realized tax
-  const summary: VatSummary = {
-    ...base,
-    output_vat_cents: outputVat,
-    input_vat_cents: inputVat,
-    vat_payable_cents: outputVat - inputVat,
-    boxes: {
-      ...base.boxes,
-      '301': (base.boxes['301'] || 0) + extraOutput,
-      '307': (base.boxes['307'] || 0) + extraInput,
-      '308': outputVat - inputVat,
-    },
-  }
-  if (!summary.boxes['301']) delete summary.boxes['301']
-  if (!summary.boxes['307']) delete summary.boxes['307']
-
+  // Kitsas json.alv: koodit (box -> cents), period, due date, maksettava (euros), deficits.
+  const koodit: Record<string, number> = { ...summary.boxes }
+  if (summary.cash_basis && endDate < '2025-01-01') koodit['337'] = 1
   const voucherId = saveVoucher(db, {
     date: endDate,
     type: TYPE_VAT_RETURN,
@@ -609,47 +749,28 @@ export function createVatReturn(db: SqliteDb, startDate: string, endDate: string
     title: `Arvonlisäveroilmoitus ${formatKitsasDate(startDate)} - ${formatKitsasDate(endDate)}`,
     json: {
       alv: {
-        ...summary,
+        koodit,
         kausialkaa: startDate,
         kausipaattyy: endDate,
         erapvm: summary.due_date,
         maksettava: summary.vat_payable_cents / 100,
+        ...(Object.keys(marginDeficits).length ? { marginaalialijaama: marginDeficits } : {}),
+        // tilari keys (VAT page, filings list)
+        start_date: startDate,
+        end_date: endDate,
+        due_date: summary.due_date,
+        vat_payable_cents: summary.vat_payable_cents,
+        output_vat_cents: summary.output_vat_cents,
+        input_vat_cents: summary.input_vat_cents,
+        boxes: summary.boxes,
+        cash_basis: summary.cash_basis,
       },
     },
     entries: lines,
   })
 
-  // Attach HTML with post-nollaus detail: re-read after save so nollaus lines appear in erittely
-  const after = computeVat(db, startDate, endDate)
-  // Settlement lines are on TYPE_VAT_RETURN and excluded; nollaus 118/228 are on same tosite — excluded too.
-  // Include nollaus in HTML manually from summary + detail from base + synthetic note.
-  const htmlSummary: VatSummary = {
-    ...after,
-    output_vat_cents: outputVat,
-    input_vat_cents: inputVat,
-    vat_payable_cents: outputVat - inputVat,
-    boxes: summary.boxes,
-    due_date: summary.due_date,
-    cash_basis: summary.cash_basis,
-    detail: [
-      ...base.detail,
-      ...nollausLines.map((n) => ({
-        date: endDate,
-        voucher_id: voucherId,
-        doc_number: null,
-        series: '',
-        account: n.account,
-        account_name: '',
-        partner_name: '',
-        description: n.description,
-        vat_code: n.vat_code,
-        vat_percent: Number(n.vat_percent || 0),
-        debit_cents: asCents(n.debit_cents),
-        credit_cents: asCents(n.credit_cents),
-      })),
-    ],
-  }
-  const html = buildVatHtml(htmlSummary, settings.Nimi || '', {
+  const detail = summary.detail.map((d) => (d.voucher_id === 0 ? { ...d, voucher_id: voucherId } : d))
+  const html = buildVatHtml({ ...summary, detail }, settings.Nimi || '', {
     practice: isPracticeValue(settings.Harjoitus),
   })
   const bytes = new TextEncoder().encode(html)
