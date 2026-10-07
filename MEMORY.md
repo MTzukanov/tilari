@@ -7,6 +7,20 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-07 - Part C merged (PRs #16-#24)
+
+- The part C stack below is merged into `main` in order, plus `fix/firefox-leave-guard` (#24),
+  which fixes defects found by the release e2e run (all also on the old `main`):
+  - Leave guard: a blocked Back/Forward returns to its exact history entry (entries carry an
+    index in `history.state`). Before, Firefox's asynchronous `history.go` let a fallback
+    `replaceState` overwrite the previous entry, so the next Back stayed in the editor.
+  - Native picker: `is-native-picker-open` was never removed (removal re-tested the overflow the
+    class itself sets), so after the first date picker the attachment row could cover Tallenna.
+  - Desktop e2e: the HTTP engine is offered only with a connected same-origin locker, which saves
+    through `/api/objects`; tests connect "Tämä kone" first.
+- Using tilari on the owner's working book (posting/editing imported vouchers) is still the
+  owner's call.
+
 ## 2026-10-07 - Part C: review fixes as a PR stack (merge in this order)
 
 A review of main `45788e6` against Kitsas (kitupiikki devel `b081bfa3`) found C1/C2 plus defects
@@ -171,7 +185,7 @@ number when the date moves fiscal year (kitsas `5ae038d1`). Tests: draft = 0, po
 posted only, NULL vs `''`, `erisarjaan` ON, a fiscal year that is not a calendar year.
 
 ### Context for agents
-- Bank-file import is out of scope here; `holvi-kitsas-import` (sibling project) creates draft
-  vouchers that are reviewed and posted in tilari. C1 and C2 are fixed on the part C stack
-  (2026-10-07); until it is merged and the owner says so, do not post or edit imported vouchers
-  in tilari on a production book.
+- Bank-file import is out of scope here; `tilari-bank-import` (sibling project, formerly
+  `holvi-kitsas-import`) creates draft vouchers that are reviewed and posted in tilari. C1 and C2
+  are fixed on `main` (part C, merged 2026-10-07); until the owner says so, do not post or edit
+  imported vouchers in tilari on a production book.
