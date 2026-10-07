@@ -198,6 +198,9 @@ export class HttpBookService implements BookService {
     if (id) return this.writeJson<VoucherDetail>(`/api/vouchers/${id}`, 'PUT', payload)
     return this.writeJson<VoucherDetail>('/api/vouchers', 'POST', payload)
   }
+  postVoucher(id: number) {
+    return this.writeJson<VoucherDetail>(`/api/vouchers/${id}/post`, 'POST')
+  }
   async deleteVoucher(id: number) {
     const res = await fetch(`/api/vouchers/${id}`, { method: 'DELETE' })
     if (!res.ok) throw new Error(await res.text())

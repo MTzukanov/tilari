@@ -23,6 +23,8 @@ export const TYPE_INCOME_TAX = 9930
 /** Vienti.tyyppi codes Kitsas writes on year-end vouchers. */
 export const ENTRY_POSTING = 1
 export const ENTRY_COUNTER_POSTING = 2
+/** Kitsas ALVKIRJAUS: VAT line of a purchase/sale (class + 3). */
+export const ENTRY_VAT_POSTING = 3
 export const ENTRY_DEPRECIATION = 99100
 export const ENTRY_DEPRECIATION_COUNTER = 99102
 export const ENTRY_ACCRUAL_CLOSING = 99210

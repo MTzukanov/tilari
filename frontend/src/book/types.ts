@@ -255,6 +255,8 @@ export type SavePartnerInput =
 
 /** One Vienti row for {@link SaveVoucherInput}. Integer cents only. */
 export type SaveEntryInput = {
+  /** Vienti.id of a stored line of this voucher: update it in place. Omit for a new line. */
+  id?: number | null
   line_no?: number
   /** Vienti.tyyppi (e.g. 99100 poisto). */
   entry_type?: number

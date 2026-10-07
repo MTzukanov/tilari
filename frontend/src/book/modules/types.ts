@@ -10,8 +10,9 @@ export type KernelSettings = {
 /** Slim surface feature modules may call. Posting and session stay here. */
 export interface KernelContext {
   requireDb(): SqliteDb
+  /** Synchronous write in one savepoint; never await inside `fn`. */
   mutate<T>(
-    fn: (db: SqliteDb) => T | Promise<T>,
+    fn: (db: SqliteDb) => T,
     meta: MutateMeta | ((result: T) => MutateMeta),
   ): Promise<T>
   voucherDetail(id: number): VoucherDetail

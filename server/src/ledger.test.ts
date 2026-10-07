@@ -81,6 +81,24 @@ describe('ledger http', () => {
     assert.ok(balances.lines.some((line) => line.number === 1910))
   })
 
+  it('posts an unchanged draft over HTTP without touching its lines', async () => {
+    const openRes = await fetch(`${base}/api/open-path`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: GOLDEN }),
+    })
+    assert.equal(openRes.status, 200, await openRes.text())
+    type Detail = { status: number; doc_number: number | null; entries: { id: number; account: number }[] }
+    const before = (await fetch(`${base}/api/vouchers/6`).then((r) => r.json())) as Detail
+    assert.equal(before.status, 50)
+    const posted = await fetch(`${base}/api/vouchers/6/post`, { method: 'POST' })
+    assert.equal(posted.status, 200)
+    const after = (await posted.json()) as Detail
+    assert.equal(after.status, 100)
+    assert.ok(Number(after.doc_number) > 0)
+    assert.deepEqual(after.entries.map((e) => [e.id, e.account]), before.entries.map((e) => [e.id, e.account]))
+  })
+
   it('multipart open keeps session through follow-up requests', async () => {
     await fetch(`${base}/api/close`, { method: 'POST' })
 

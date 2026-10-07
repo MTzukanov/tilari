@@ -211,6 +211,10 @@ async function handleLedger(
     sendJson(res, 200, await ledger.saveVoucher((await readJson(req)) as SaveVoucherInput, Number(p.id)))
     return true
   }
+  if ((p = match(method, path, 'POST', '/api/vouchers/:id/post'))) {
+    sendJson(res, 200, await ledger.postVoucher(Number(p.id)))
+    return true
+  }
   if ((p = match(method, path, 'DELETE', '/api/vouchers/:id'))) {
     await ledger.deleteVoucher(Number(p.id))
     sendEmpty(res, 204)

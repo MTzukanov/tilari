@@ -9,6 +9,7 @@ import {
   fetchSettings,
   fetchVoucher,
   fetchVouchers,
+  postVoucher,
   saveVoucher,
   splitBankStatement,
   uploadAttachment,
@@ -29,6 +30,17 @@ import { isPurchaseVatCode, isVatBookingLine, vatAccount, vatCompanionCode } fro
 import { isVatLiableSetting } from '../../../book/settings'
 import { ALL_COUNTER_ACCOUNTS } from '../../../book/paymentMethods'
 import { DELETABLE_TYPES, ENTRY_COUNTER_POSTING, ENTRY_POSTING, STATUS_TEMPLATE } from '../../../book/vouchers'
+import {
+  assistantFit,
+  draftsFromEntries,
+  EMPTY_LINE,
+  entriesFromDrafts,
+  pairVatLines,
+  transferFits,
+  withLineIdentity,
+  type LineDraft,
+  type LoadedHeader,
+} from '../editorLines'
 import { vatFromKey, vatKey } from '../../vat/ui/vatCodes'
 import { parseEurInput, formatEurInput } from '../../../shared/money'
 import { SearchSelect, type SearchItem } from '../../../shared/SearchSelect'
@@ -55,34 +67,16 @@ import { TransferForm } from './TransferForm'
 import { TypeSelect } from './TypeSelect'
 import { VatSelect } from './VatSelect'
 
-type LineDraft = {
-  account: string
-  description: string
-  debit: string
-  credit: string
-  vat_code: string
-  vat_percent: string
-  allocation: string
-  archive_id: string
-  accrual_starts: string
-  accrual_ends: string
-}
-
-const EMPTY_LINE: LineDraft = {
-  account: '',
-  description: '',
-  debit: '',
-  credit: '',
-  vat_code: '0',
-  vat_percent: '',
-  allocation: '0',
-  archive_id: '',
-  accrual_starts: '',
-  accrual_ends: '',
-}
-
 function isBankAccount(a: Account): boolean {
   return a.type.startsWith('A') && (a.type.includes('R') || String(a.number).startsWith('19'))
+}
+
+function packAssistant(rows: AssistantRow[], paymentAccount: string): string {
+  return JSON.stringify({ rows, paymentAccount })
+}
+
+function packTransfer(from: string, to: string, amount: string, description: string): string {
+  return JSON.stringify({ from, to, amount, description })
 }
 
 function voucherNotes(json: Record<string, unknown> | undefined): string {
@@ -192,6 +186,13 @@ export function VoucherEditor({
   const [baseline, setBaseline] = useState<string | null>(null)
   const [huomio, setHuomio] = useState(false)
   const [docNumber, setDocNumber] = useState<number | null>(null)
+  /** Loaded voucher fits the expense/income assistant / transfer form (see editorLines). */
+  const [assistantFits, setAssistantFits] = useState(true)
+  const [transferFitsLoaded, setTransferFitsLoaded] = useState(true)
+  /** Assistant/transfer fields as last synced with `lines`; lines are rebuilt only after edits. */
+  const [assistantBaseline, setAssistantBaseline] = useState<string | null>(null)
+  const [transferBaseline, setTransferBaseline] = useState<string | null>(null)
+  const [loadedHeader, setLoadedHeader] = useState<LoadedHeader | null>(null)
   const [neighbors, setNeighbors] = useState<{ prev: number | null; next: number | null }>({
     prev: null,
     next: null,
@@ -269,17 +270,151 @@ export function VoucherEditor({
 
   useEffect(() => {
     if (vatLiable) return
+    // Defaults for new lines only: stored lines keep their VAT codes (Kitsas does too).
     setAssistantRows((prev) =>
       prev.map((row) => (row.vatChoice === '0:0' ? row : { ...row, vatChoice: '0:0' })),
     )
     setLines((prev) =>
       prev.map((line) =>
-        line.vat_code === '0' && !line.vat_percent
+        line.id != null || (line.vat_code === '0' && !line.vat_percent)
           ? line
           : { ...line, vat_code: '0', vat_percent: '' },
       ),
     )
   }, [vatLiable])
+
+  /** Apply a loaded voucher to the editor state (initial load, copy, and after a save). */
+  function applyLoaded(data: VoucherDetail, opts: { asCopy: boolean; keepTab?: boolean }) {
+    const { asCopy } = opts
+    const liable = vatLiableRef.current
+    const mapped: LineDraft[] = data.entries.length
+      ? draftsFromEntries(data.entries, { asCopy })
+      : [{ ...EMPTY_LINE }]
+    const isBank = (n: number) => {
+      const acc = accounts.find((a) => a.number === n)
+      return acc ? isBankAccount(acc) : String(n).startsWith('19')
+    }
+    const fit = assistantFit(data.entries, {
+      voucherType: data.type,
+      voucherDate: data.date,
+      vatLiable: liable,
+      isBank,
+    })
+    const layoutOf = voucherTypeDef(data.type).layout
+    const isAssistant = layoutOf === 'expense' || layoutOf === 'income'
+    // A voucher the assistant/transfer form cannot rebuild exactly is edited on "Viennit" only.
+    const fitsAssistant = !data.entries.length || fit.fits
+    const fitsTransfer = !data.entries.length || transferFits(data.entries, data.date)
+    const entriesOnly = (isAssistant && !fitsAssistant) || (layoutOf === 'transfer' && !fitsTransfer)
+    const paymentIndex = fit.fits ? fit.paymentIndex : -1
+    const bankLine = paymentIndex >= 0 ? mapped[paymentIndex] : undefined
+    const fallbackVat = liable
+      ? data.type === 200
+        ? '11:25.5'
+        : '21:25.5'
+      : '0:0'
+    const pairs = fit.fits ? pairVatLines(data.entries, paymentIndex).pairs : []
+    const nextRows: AssistantRow[] = pairs.length
+      ? pairs.map(({ net, vat }) => {
+          // Gross = net + the booked VAT line, so an unedited row rebuilds the same amounts.
+          const gross =
+            (Number(net.debit_cents || 0) || Number(net.credit_cents || 0)) +
+            (vat ? Number(vat.debit_cents || 0) || Number(vat.credit_cents || 0) : 0)
+          return {
+            account: String(net.account),
+            amount: formatEurInput(gross, { emptyZero: true }),
+            vatChoice: liable
+              ? vatKey(Number(net.vat_code || 0), Number(net.vat_percent || 0))
+              : '0:0',
+            allocation: String(net.allocation ?? 0),
+            accrual_starts: net.accrual_starts || '',
+            accrual_ends: net.accrual_ends || '',
+            description: descriptionIfDifferent(net.description, data.title),
+          }
+        })
+      : [{ ...EMPTY_ASSISTANT_ROW, vatChoice: fallbackVat }]
+    const first = mapped.find((l) => !isVatBookingLine(l) && l !== bankLine)
+    const nextPayment = bankLine?.account || '1910'
+    const nextAmount = bankLine ? bankLine.debit || bankLine.credit : ''
+    const nextFrom = first ? mapped.find((l) => l.credit)?.account || first.account : ''
+    const nextTo = first ? mapped.find((l) => l.debit)?.account || first.account : ''
+    const nextTransfer = descriptionIfDifferent(first?.description || '', data.title)
+    const nextStart = data.bank_statement?.start_date || ''
+    const nextEnd = data.bank_statement?.end_date || ''
+    const nextBank = String(data.bank_statement?.account || 1910)
+    const grouped =
+      data.type === 400 && !asCopy ? groupOwnRows(data.entries, Number(nextBank)) : []
+    const nextStatement =
+      data.type === 400
+        ? grouped.length
+          ? grouped
+          : [emptyOwnRow(nextEnd || data.date)]
+        : [emptyOwnRow(data.date)]
+    const nextNotes = data.notes || voucherNotes(data.json)
+    const nextPartner = data.partner?.name || ''
+    const nextHuomio = Boolean(data.json?.huomio)
+    const nextDoc = asCopy ? null : data.doc_number
+    if (asCopy) {
+      setExisting(null)
+      setStatus(100)
+    } else {
+      setExisting(data)
+      setStatus(data.status)
+    }
+    setType(data.type)
+    setDate(data.date)
+    setTitle(data.title)
+    setPartner(nextPartner)
+    setNotes(nextNotes)
+    setAssistantFits(fitsAssistant)
+    setTransferFitsLoaded(fitsTransfer)
+    if (!opts.keepTab || entriesOnly) setTab(entriesOnly ? 'entries' : defaultEditorTab(data.type))
+    setLines(mapped)
+    setStartDate(nextStart)
+    setEndDate(nextEnd)
+    setBankAccount(nextBank)
+    setStatementRows(nextStatement)
+    setPaymentAccount(nextPayment)
+    setAmount(nextAmount)
+    setAssistantRows(nextRows)
+    setSelectedRow(0)
+    setFromAccount(nextFrom)
+    setToAccount(nextTo)
+    setTransferDescription(nextTransfer)
+    setFiles([])
+    setMethodId(ALL_COUNTER_ACCOUNTS)
+    setHuomio(nextHuomio)
+    setDocNumber(nextDoc)
+    setLoadedHeader(asCopy ? null : { date: data.date, title: data.title, partnerName: nextPartner })
+    setAssistantBaseline(asCopy ? null : packAssistant(nextRows, nextPayment))
+    setTransferBaseline(
+      asCopy ? null : packTransfer(nextFrom, nextTo, nextAmount, nextTransfer),
+    )
+    setBaseline(
+      packEditor({
+        type: data.type,
+        date: data.date,
+        title: data.title,
+        partner: nextPartner,
+        notes: nextNotes,
+        paymentAccount: nextPayment,
+        methodId: ALL_COUNTER_ACCOUNTS,
+        fromAccount: nextFrom,
+        toAccount: nextTo,
+        transferDescription: nextTransfer,
+        amount: nextAmount,
+        start_date: nextStart,
+        end_date: nextEnd,
+        bankAccount: nextBank,
+        assistantRows: nextRows,
+        lines: mapped,
+        statementRows: nextStatement,
+        files: [],
+        huomio: nextHuomio,
+        docNumber: nextDoc,
+      }),
+    )
+  }
 
   useEffect(() => {
     const sourceId = voucherId ?? copyFromId ?? null
@@ -291,125 +426,7 @@ export function VoucherEditor({
     }
     const asCopy = voucherId == null && copyFromId != null
     setBaseline(null)
-    fetchVoucher(sourceId).then((data) => {
-      const liable = vatLiableRef.current
-      const mapped: LineDraft[] = data.entries.length
-        ? data.entries.map((v) => ({
-            account: String(v.account),
-            description: v.description,
-            debit: formatEurInput(v.debit_cents ?? 0, { emptyZero: true }),
-            credit: formatEurInput(v.credit_cents ?? 0, { emptyZero: true }),
-            vat_code: liable ? String(v.vat_code ?? 0) : '0',
-            vat_percent: liable && v.vat_percent != null ? String(v.vat_percent) : '',
-            allocation: String(v.allocation ?? 0),
-            archive_id: v.archive_id || '',
-            accrual_starts: v.accrual_starts || '',
-            accrual_ends: v.accrual_ends || '',
-          }))
-        : [{ ...EMPTY_LINE }]
-      const bankLine = mapped.find((l) => {
-        const acc = accounts.find((a) => String(a.number) === l.account)
-        return acc ? isBankAccount(acc) : l.account.startsWith('19')
-      })
-      const netLines = mapped.filter((l) => !isVatBookingLine(l) && l !== bankLine)
-      const fallbackVat = liable
-        ? data.type === 200
-          ? '11:25.5'
-          : '21:25.5'
-        : '0:0'
-      const nextRows: AssistantRow[] = netLines.length
-        ? netLines.map((line) => {
-            const net = parseEurInput(line.debit || line.credit)
-            const pct = liable ? Number(line.vat_percent || 0) : 0
-            const gross = pct ? Math.round((net * (100 + pct)) / 100) : net
-            return {
-              account: line.account,
-              amount: formatEurInput(gross, { emptyZero: true }),
-              vatChoice: liable
-                ? vatKey(Number(line.vat_code || 0), Number(line.vat_percent || 0))
-                : '0:0',
-              allocation: line.allocation || '0',
-              accrual_starts: line.accrual_starts,
-              accrual_ends: line.accrual_ends,
-              description: descriptionIfDifferent(line.description, data.title),
-            }
-          })
-        : [{ ...EMPTY_ASSISTANT_ROW, vatChoice: fallbackVat }]
-      const first = netLines[0]
-      const nextPayment = bankLine?.account || '1910'
-      const nextAmount = bankLine ? bankLine.debit || bankLine.credit : ''
-      const nextFrom = first ? mapped.find((l) => l.credit)?.account || first.account : ''
-      const nextTo = first ? mapped.find((l) => l.debit)?.account || first.account : ''
-      const nextTransfer = descriptionIfDifferent(first?.description || '', data.title)
-      const nextStart = data.bank_statement?.start_date || ''
-      const nextEnd = data.bank_statement?.end_date || ''
-      const nextBank = String(data.bank_statement?.account || 1910)
-      const grouped =
-        data.type === 400 ? groupOwnRows(data.entries, Number(nextBank)) : []
-      const nextStatement =
-        data.type === 400
-          ? grouped.length
-            ? grouped
-            : [emptyOwnRow(nextEnd || data.date)]
-          : [emptyOwnRow(data.date)]
-      const nextNotes = data.notes || voucherNotes(data.json)
-      const nextPartner = data.partner?.name || ''
-      const nextHuomio = Boolean(data.json?.huomio)
-      const nextDoc = asCopy ? null : data.doc_number
-      if (asCopy) {
-        setExisting(null)
-        setStatus(100)
-      } else {
-        setExisting(data)
-        setStatus(data.status)
-      }
-      setType(data.type)
-      setDate(data.date)
-      setTitle(data.title)
-      setPartner(nextPartner)
-      setNotes(nextNotes)
-      setTab(defaultEditorTab(data.type))
-      setLines(mapped)
-      setStartDate(nextStart)
-      setEndDate(nextEnd)
-      setBankAccount(nextBank)
-      setStatementRows(nextStatement)
-      setPaymentAccount(nextPayment)
-      setAmount(nextAmount)
-      setAssistantRows(nextRows)
-      setSelectedRow(0)
-      setFromAccount(nextFrom)
-      setToAccount(nextTo)
-      setTransferDescription(nextTransfer)
-      setFiles([])
-      setMethodId(ALL_COUNTER_ACCOUNTS)
-      setHuomio(nextHuomio)
-      setDocNumber(nextDoc)
-      setBaseline(
-        packEditor({
-          type: data.type,
-          date: data.date,
-          title: data.title,
-          partner: nextPartner,
-          notes: nextNotes,
-          paymentAccount: nextPayment,
-          methodId: ALL_COUNTER_ACCOUNTS,
-          fromAccount: nextFrom,
-          toAccount: nextTo,
-          transferDescription: nextTransfer,
-          amount: nextAmount,
-          start_date: nextStart,
-          end_date: nextEnd,
-          bankAccount: nextBank,
-          assistantRows: nextRows,
-          lines: mapped,
-          statementRows: nextStatement,
-          files: [],
-          huomio: nextHuomio,
-          docNumber: nextDoc,
-        }),
-      )
-    })
+    fetchVoucher(sourceId).then((data) => applyLoaded(data, { asCopy }))
   }, [voucherId, copyFromId, accounts])
 
   const editorPack = packEditor({
@@ -639,12 +656,15 @@ export function VoucherEditor({
     ]
   }
 
+  const accountType = (n: number) => accounts.find((a) => a.number === n)?.type
+
   /** Expand statement book rows into the Viennit table draft. */
   function linesFromStatement(rows: StatementOwnRow[] = statementRows): LineDraft[] {
     const bank = Number(bankAccount)
     const entries = expandOwnRowsToEntries(
       rows.filter((r) => r.amountCents && (r.counterAccount || r.rawEntries?.length)),
       bank,
+      { accountType },
     )
     if (!entries.length) return [{ ...EMPTY_LINE }]
     return entries.map((v) => ({
@@ -652,12 +672,20 @@ export function VoucherEditor({
       description: v.description || '',
       debit: formatEurInput(v.debit_cents ?? 0, { emptyZero: true }),
       credit: formatEurInput(v.credit_cents ?? 0, { emptyZero: true }),
-      vat_code: vatLiable ? String(v.vat_code ?? 0) : '0',
-      vat_percent: vatLiable && v.vat_percent != null ? String(v.vat_percent) : '',
+      vat_code: String(v.vat_code ?? 0),
+      vat_percent: v.vat_percent != null ? String(v.vat_percent) : '',
       allocation: String(v.allocation ?? 0),
       archive_id: v.archive_id || '',
       accrual_starts: v.accrual_starts || '',
       accrual_ends: v.accrual_ends || '',
+      ...(v.id != null ? { id: v.id } : {}),
+      ...(v.entry_type !== undefined ? { entry_type: v.entry_type } : {}),
+      ...(v.date ? { date: v.date } : {}),
+      ...(v.item_id !== undefined ? { item_id: v.item_id } : {}),
+      ...(v.json !== undefined ? { json: v.json } : {}),
+      ...(v.partner && typeof v.partner === 'object' && 'id' in v.partner && v.partner.id
+        ? { partner: { id: Number(v.partner.id), name: String(v.partner.name || '') } }
+        : {}),
     }))
   }
 
@@ -670,9 +698,10 @@ export function VoucherEditor({
       .map((l, i) => {
         const account = Number(l.account)
         return {
+          ...(l.id != null ? { id: l.id } : {}),
           line_no: i + 1,
-          entry_type: account === bank ? ENTRY_COUNTER_POSTING : ENTRY_POSTING,
-          date: rowDate,
+          entry_type: l.entry_type ?? (account === bank ? ENTRY_COUNTER_POSTING : ENTRY_POSTING),
+          date: l.date || rowDate,
           account,
           description: l.description,
           debit_cents: l.debit ? parseEurInput(l.debit) : null,
@@ -681,6 +710,11 @@ export function VoucherEditor({
           vat_percent: l.vat_percent ? Number(l.vat_percent) : null,
           allocation: Number(l.allocation || 0),
           archive_id: l.archive_id || undefined,
+          ...(l.item_id !== undefined ? { item_id: l.item_id } : {}),
+          ...(l.json !== undefined ? { json: l.json } : {}),
+          ...(l.partner !== undefined ? { partner: l.partner } : {}),
+          ...(l.accrual_starts ? { accrual_starts: l.accrual_starts } : {}),
+          ...(l.accrual_ends ? { accrual_ends: l.accrual_ends } : {}),
         }
       })
     const grouped = groupOwnRows(entries, bank)
@@ -731,16 +765,60 @@ export function VoucherEditor({
     return out
   }
 
+  /** Not VAT-liable: new lines get no VAT; stored lines keep theirs. */
   function stripVatIfNeeded(base: LineDraft[]): LineDraft[] {
     if (vatLiable) return base
     return base
-      .filter((l) => !isVatBookingLine(l))
-      .map((l) => ({ ...l, vat_code: '0', vat_percent: '' }))
+      .filter((l) => l.id != null || !isVatBookingLine(l))
+      .map((l) => (l.id != null ? l : { ...l, vat_code: '0', vat_percent: '' }))
   }
 
+  const assistantActive = assistant && assistantFits
+  const transferActive = layout === 'transfer' && transferFitsLoaded
+  const entriesOnly = (assistant && !assistantFits) || (layout === 'transfer' && !transferFitsLoaded)
+  const assistantEdited =
+    assistantBaseline == null || packAssistant(assistantRows, paymentAccount) !== assistantBaseline
+  const transferEdited =
+    transferBaseline == null ||
+    packTransfer(fromAccount, toAccount, amount, transferDescription) !== transferBaseline
+
+  /** Assistant lines with the stored lines' ids (Kitsas reuses the payment line id). */
+  function rebuiltFromAssistant(): LineDraft[] {
+    return withLineIdentity(linesFromAssistant(), lines, { voucherType: type, paymentFirst: true })
+  }
+
+  function rebuiltFromTransfer(): LineDraft[] {
+    const built = linesFromTransfer()
+    const prevCredit = lines.find((l) => l.credit && l.id != null)
+    const prevDebit = lines.find((l) => l.debit && l.id != null)
+    return built.map((line, i) => {
+      const prev = i === 0 ? prevCredit : prevDebit
+      return prev
+        ? {
+            ...line,
+            id: prev.id,
+            entry_type: prev.entry_type,
+            json: prev.json,
+            partner: prev.partner,
+            archive_id: line.archive_id || prev.archive_id,
+            // The open item (eraid) stays with the line while its account does.
+            item_id: prev.account === line.account ? (prev.item_id ?? null) : null,
+          }
+        : line
+    })
+  }
+
+  /**
+   * Lines to save. The assistant/transfer form rebuilds lines only after its own fields were
+   * edited; otherwise the stored lines are saved as they are (e.g. a note-only change).
+   */
   function builtLines(): LineDraft[] {
-    if (assistant && tab !== 'entries') return stripVatIfNeeded(linesFromAssistant())
-    if (layout === 'transfer' && tab !== 'entries') return linesFromTransfer()
+    if (assistantActive && tab !== 'entries' && assistantEdited) {
+      return stripVatIfNeeded(rebuiltFromAssistant())
+    }
+    if (transferActive && tab !== 'entries' && transferEdited) {
+      return rebuiltFromTransfer()
+    }
     return stripVatIfNeeded(lines.filter((l) => l.account))
   }
 
@@ -763,10 +841,30 @@ export function VoucherEditor({
     return expandOwnRowsToEntries(
       rows.filter((r) => r.amountCents && (r.counterAccount || r.rawEntries?.length)),
       bank,
+      { accountType },
     )
   }
 
+  /** Unchanged draft: "Kirjaa" posts it as it is (Kitsas allows posting an unchanged draft). */
+  const unchangedDraft =
+    existing != null &&
+    voucherId != null &&
+    baseline != null &&
+    editorPack === baseline &&
+    existing.status >= 50 &&
+    existing.status < 100
+
   function postBlockedReason(): string | null {
+    if (unchangedDraft && existing) {
+      const balanced =
+        existing.type === 800 ||
+        (existing.debit_sum_cents > 0 && existing.debit_sum_cents === existing.credit_sum_cents)
+      if (balanced) return null
+      return t('editor.needBalance', {
+        debit: formatEurInput(existing.debit_sum_cents, { emptyZero: true }),
+        credit: formatEurInput(existing.credit_sum_cents, { emptyZero: true }),
+      })
+    }
     if (voucherId != null && (baseline == null || editorPack === baseline)) {
       return t('editor.needChanges')
     }
@@ -778,6 +876,7 @@ export function VoucherEditor({
       const entries = expandOwnRowsToEntries(
         rows.filter((r) => r.amountCents && (r.counterAccount || r.rawEntries?.length)),
         bank,
+        { accountType },
       )
       if (!entries.length) return t('editor.needStatementRows')
       let debit = 0
@@ -826,6 +925,12 @@ export function VoucherEditor({
     setSaving(true)
     setError(null)
     try {
+      if (unchangedDraft && existing && nextTila >= 100) {
+        // Status + number only; lines are not rewritten (Kitsas PATCH).
+        await postVoucher(existing.id)
+        applyLoaded(await fetchVoucher(existing.id), { asCopy: false, keepTab: true })
+        return
+      }
       let entries: SaveVoucherInput['entries']
       if (type === 800) {
         entries = []
@@ -836,24 +941,7 @@ export function VoucherEditor({
       } else {
         const source = builtLines()
         const expanded = assistant ? source : expandVat(source)
-        entries = expanded.map((line, i) => {
-          const vatCode = Number(line.vat_code || 0)
-          const parked = vatCode === 418 || vatCode === 428
-          return {
-            line_no: i + 1,
-            account: Number(line.account),
-            description: line.description || title,
-            debit_cents: line.debit ? parseEurInput(line.debit) : null,
-            credit_cents: line.credit ? parseEurInput(line.credit) : null,
-            vat_code: vatCode,
-            vat_percent: line.vat_percent ? Number(line.vat_percent) : null,
-            allocation: Number(line.allocation || 0),
-            archive_id: line.archive_id || null,
-            accrual_starts: line.accrual_starts || null,
-            accrual_ends: line.accrual_ends || null,
-            ...(parked ? { item_id: -1, new_era: true } : {}),
-          }
-        })
+        entries = entriesFromDrafts(expanded, { date, title, partnerName: partner }, loadedHeader)
       }
       const json: Record<string, unknown> = { ...(existing?.json || {}) }
       if (notes.trim()) json.info = notes.trim()
@@ -861,7 +949,7 @@ export function VoucherEditor({
       if (huomio) json.huomio = true
       else delete json.huomio
       if (type === 400) {
-        delete json.tiliote
+        // Merged into json.tiliote on save (other tiliote keys are kept).
         json.bank_statement = {
           start_date: start_date || date,
           end_date: end_date || date,
@@ -888,65 +976,7 @@ export function VoucherEditor({
         onSaved(saved.id, { stay: true })
         return
       }
-      const fresh = await fetchVoucher(saved.id)
-      setExisting(fresh)
-      setStatus(fresh.status)
-      setDocNumber(fresh.doc_number)
-      setHuomio(Boolean(fresh.json?.huomio))
-      const freshBank = String(fresh.bank_statement?.account || bankAccount)
-      const groupedFresh =
-        fresh.type === 400 ? groupOwnRows(fresh.entries, Number(freshBank)) : []
-      const freshStatement =
-        fresh.type === 400
-          ? groupedFresh.length
-            ? groupedFresh
-            : [emptyOwnRow(fresh.bank_statement?.end_date || fresh.date)]
-          : statementRows
-      setStatementRows(freshStatement)
-      if (fresh.type === 400) {
-        setBankAccount(freshBank)
-        setStartDate(fresh.bank_statement?.start_date || start_date)
-        setEndDate(fresh.bank_statement?.end_date || end_date)
-      }
-      const mappedLines: LineDraft[] = fresh.entries.length
-        ? fresh.entries.map((v) => ({
-            account: String(v.account),
-            description: v.description,
-            debit: formatEurInput(v.debit_cents ?? 0, { emptyZero: true }),
-            credit: formatEurInput(v.credit_cents ?? 0, { emptyZero: true }),
-            vat_code: vatLiable ? String(v.vat_code ?? 0) : '0',
-            vat_percent: vatLiable && v.vat_percent != null ? String(v.vat_percent) : '',
-            allocation: String(v.allocation ?? 0),
-            archive_id: v.archive_id || '',
-            accrual_starts: v.accrual_starts || '',
-            accrual_ends: v.accrual_ends || '',
-          }))
-        : [{ ...EMPTY_LINE }]
-      setLines(mappedLines)
-      setBaseline(
-        packEditor({
-          type,
-          date,
-          title,
-          partner,
-          notes,
-          paymentAccount,
-          methodId,
-          fromAccount,
-          toAccount,
-          transferDescription,
-          amount,
-          start_date: fresh.bank_statement?.start_date || start_date,
-          end_date: fresh.bank_statement?.end_date || end_date,
-          bankAccount: freshBank,
-          assistantRows,
-          lines: mappedLines,
-          statementRows: freshStatement,
-          files: [],
-          huomio: Boolean(fresh.json?.huomio),
-          docNumber: fresh.doc_number,
-        }),
-      )
+      applyLoaded(await fetchVoucher(saved.id), { asCopy: false, keepTab: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -962,6 +992,7 @@ export function VoucherEditor({
 
   const linesTable = type !== 800 ? (
         <section className="entries-edit">
+          {entriesOnly && existing ? <p className="hint">{t('editor.assistantUnavailable')}</p> : null}
           <table className="ledger-table editor-table">
             <thead>
               <tr>
@@ -1032,16 +1063,22 @@ export function VoucherEditor({
                         type="button"
                         className="btn-small"
                         onClick={async () => {
-                          const v = existing.entries[i]
-                          if (!v) return
+                          // The table row's own stored line, not existing.entries[i]: rows can
+                          // be added, removed or reordered before saving.
+                          const lineId = line.id
+                          if (lineId == null) {
+                            window.alert(t('editor.statementSaveBeforeSplit'))
+                            return
+                          }
+                          if (!confirmLeave()) return
                           try {
                             const row = statementRows.find(
                               (r) =>
-                                r.bankEntryId === v.id || r.entryIds?.includes(v.id),
+                                r.bankEntryId === lineId || r.entryIds?.includes(lineId),
                             )
                             const own = await splitBankStatement(
                               existing.id,
-                              v.id,
+                              lineId,
                               undefined,
                               row?.entryIds,
                             )
@@ -1178,7 +1215,9 @@ export function VoucherEditor({
   }, [])
 
   const year = date.slice(0, 4)
-  const visibleTabs = EDITOR_TABS.filter((item) => item.id !== 'book' || hasBookTab(type))
+  const visibleTabs = EDITOR_TABS.filter(
+    (item) => item.id !== 'book' || (hasBookTab(type) && !entriesOnly),
+  )
   const activeTab = visibleTabs.some((item) => item.id === tab) ? tab : visibleTabs[0]?.id
   const statementBook = layout === 'statement' && activeTab === 'book'
 
@@ -1229,13 +1268,20 @@ export function VoucherEditor({
             className={activeTab === item.id ? 'is-active' : ''}
             aria-selected={activeTab === item.id}
             onClick={() => {
-              if (item.id === 'entries' && assistant) {
-                const built = linesFromAssistant()
-                if (built.length) setLines(built)
+              // Only fields edited in the form replace the lines (with the stored line ids).
+              if (item.id === 'entries' && assistantActive && assistantEdited) {
+                const built = rebuiltFromAssistant()
+                if (built.length) {
+                  setLines(built)
+                  setAssistantBaseline(packAssistant(assistantRows, paymentAccount))
+                }
               }
-              if (item.id === 'entries' && layout === 'transfer') {
-                const built = linesFromTransfer()
-                if (built.length) setLines(built)
+              if (item.id === 'entries' && transferActive && transferEdited) {
+                const built = rebuiltFromTransfer()
+                if (built.length) {
+                  setLines(built)
+                  setTransferBaseline(packTransfer(fromAccount, toAccount, amount, transferDescription))
+                }
               }
               if (item.id === 'entries' && layout === 'statement') {
                 setLines(linesFromStatement())
@@ -1251,7 +1297,7 @@ export function VoucherEditor({
         ))}
       </div>
 
-      {activeTab === 'book' && assistant ? (
+      {activeTab === 'book' && assistantActive ? (
         <ExpenseIncomeForm
           type={type}
           methods={paymentMethods}
@@ -1298,7 +1344,7 @@ export function VoucherEditor({
         />
       ) : null}
 
-      {activeTab === 'book' && layout === 'transfer' ? (
+      {activeTab === 'book' && transferActive ? (
         <TransferForm
           fromAccount={fromAccount}
           toAccount={toAccount}

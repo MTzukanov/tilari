@@ -68,7 +68,10 @@ describe('groupOwnRows / expandOwnRowToEntries', () => {
     expect(entries).toHaveLength(2)
     expect(entries[0].account).toBe(1910)
     expect(entries[0].credit_cents).toBe(4500)
-    expect(entries[0].entry_type).toBe(ENTRY_COUNTER_POSTING)
+    // Kitsas line types: expense class 100 + VASTAKIRJAUS / KIRJAUS.
+    expect(entries[0].entry_type).toBe(100 + ENTRY_COUNTER_POSTING)
+    expect(entries[1].entry_type).toBe(100 + ENTRY_POSTING)
+    expect(entries[1].archive_id).toBeNull()
     expect(entries[1].account).toBe(4000)
     expect(entries[1].debit_cents).toBe(4500)
 
@@ -188,7 +191,7 @@ describe('matchAndHideDuplicates', () => {
     expect(matched[0].hidden).toBe(true)
   })
 
-  it('hides unique date+amount twin', () => {
+  it('hides unique date+amount twin of a row imported in this session', () => {
     const own: StatementOwnRow[] = [
       {
         kind: 'own',
@@ -201,6 +204,7 @@ describe('matchAndHideDuplicates', () => {
         vat_percent: null,
         allocation: 0,
         amountCents: -5000,
+        imported: true,
       },
     ]
     const other: StatementOtherRow[] = [
@@ -221,6 +225,10 @@ describe('matchAndHideDuplicates', () => {
       },
     ]
     expect(matchAndHideDuplicates(own, other)[0].hidden).toBe(true)
+    // A row loaded from the book is matched by archive id only (Kitsas tuotu()); hiding it by
+    // date + amount would drop a real bank movement on save.
+    const loaded = own.map((r) => ({ ...r, imported: undefined }))
+    expect(matchAndHideDuplicates(loaded, other)[0].hidden).toBe(false)
   })
 })
 
@@ -507,5 +515,63 @@ describe('splitBankStatementLine', () => {
     const created = getVoucher(db, newId)!
     expect(created.entries).toHaveLength(2)
     db.close()
+  })
+})
+
+describe('statement save round trip (imported tiliote)', () => {
+  it('saving loaded rows unchanged writes nothing', async () => {
+    const { loadImportedFixture, voucherSnapshot } = await import('./importedFixture')
+    const { db, ids } = await loadImportedFixture()
+    // Posted: a draft save still assigns a number until drafts keep tunniste 0.
+    db.run('UPDATE Tosite SET tila = 100, tunniste = 9 WHERE id = ?', [ids.B])
+    const before = voucherSnapshot(db, ids.B)
+    const rows = groupOwnRows(getVoucher(db, ids.B)!.entries, 1910)
+    const entries = expandOwnRowsToEntries(rows, 1910)
+    saveVoucher(db, { entries }, ids.B)
+    expect(voucherSnapshot(db, ids.B)).toEqual(before)
+  })
+
+  it('an edited row keeps its line ids, archive id, json and Kitsas line types', async () => {
+    const { loadImportedFixture, voucherSnapshot } = await import('./importedFixture')
+    const { clearOwnRowRaw } = await import('./bankStatement')
+    const { db, ids } = await loadImportedFixture()
+    const before = voucherSnapshot(db, ids.B)
+    const rows = groupOwnRows(getVoucher(db, ids.B)!.entries, 1910)
+    rows[0] = clearOwnRowRaw({ ...rows[0], description: 'Customer payment, checked' })
+    const types = new Map([
+      [3000, 'C'],
+      [4000, 'D'],
+    ])
+    const entries = expandOwnRowsToEntries(rows, 1910, { accountType: (n) => types.get(n) })
+    saveVoucher(db, { entries }, ids.B)
+    const after = voucherSnapshot(db, ids.B)
+    expect(after.viennit.map((r) => r.id)).toEqual(before.viennit.map((r) => r.id))
+    const [bank, counter] = after.viennit
+    expect(bank.tyyppi).toBe(202)
+    expect(counter.tyyppi).toBe(201)
+    expect(bank.arkistotunnus).toBe('ARCHIVE-B-000001')
+    expect(counter.arkistotunnus).toBeNull()
+    expect(JSON.parse(String(bank.json))).toEqual({ viite: '1009' })
+    expect(bank.selite).toBe('Customer payment, checked')
+    // The untouched row is identical, line numbers (rivi 5/6) included.
+    expect(after.viennit.slice(2)).toEqual(before.viennit.slice(2))
+  })
+
+  it('an open-item payment row keeps its eraid while the account is unchanged', async () => {
+    const { clearOwnRowRaw } = await import('./bankStatement')
+    const row: StatementOwnRow = {
+      ...groupOwnRows(
+        [
+          { id: 11, entry_type: 302, date: '2025-04-20', account: 1910, debit_cents: null, credit_cents: 500 },
+          { id: 12, entry_type: 301, date: '2025-04-20', account: 2000, debit_cents: 500, credit_cents: null, item_id: 7 },
+        ],
+        1910,
+      )[0],
+    }
+    const kept = expandOwnRowToEntries(clearOwnRowRaw({ ...row, description: 'x' }), 1910)
+    expect(kept[1]).toMatchObject({ id: 12, entry_type: 301 })
+    expect(kept[1]).not.toHaveProperty('item_id')
+    const moved = expandOwnRowToEntries(clearOwnRowRaw({ ...row, counterAccount: 4000 }), 1910)
+    expect(moved[1]).toMatchObject({ id: 12, item_id: null, entry_type: 101 })
   })
 })
