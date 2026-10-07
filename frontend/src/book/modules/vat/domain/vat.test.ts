@@ -167,6 +167,8 @@ describe('computeVat', () => {
 describe('cash-basis VAT lifecycle', () => {
   it('force-realize after 12 months and hyvitys reverses 118 (not new 418)', async () => {
     const db = await emptyVatDb()
+    // Posting needs a fiscal year for the voucher date (numbering per fiscal year, like Kitsas).
+    db.run(`INSERT INTO Tilikausi (alkaa, loppuu, json) VALUES ('2023-01-01', '2023-12-31', '{}')`)
     const invoiceId = saveVoucher(db, {
       date: '2023-03-01',
       type: 200,

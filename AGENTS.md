@@ -118,13 +118,17 @@ Rules already encoded:
 8. Writable types: 0, 100, 200, 300, 400, 800, 9100, and edit 9910/9920/9930. Type 210 is read-only until Billing.
 9. JSON blobs stay opaque except documented fields (`tiliote`, `alv`, `tilioterivi`).
 10. Fiscal year can start mid-month. Period lookup for month ranges must use **overlap**.
-11. **Voucher numbers** (`tunniste`): Kitsas assigns them only when a voucher is saved with
-    `tila >= 100` and has none: `MAX(tunniste)+1` over the **fiscal year** (`Tilikausi`), same
-    series, `tila >= 100` (`kitsas/sqlite/routes/tositeroute.cpp` ~225). Drafts keep 0. Series:
-    `erisarjaan` off -> `sarja IS NULL` (write NULL, never `''`; Kitsas does not see `''` rows);
-    on -> `tositesarjat[tyyppi]` (`*` for >= 1000, default `X`); `kateissarjaan` + cash -> `K`
-    (`kitsas/db/tositetyyppimodel.cpp`). Since kitsas `5ae038d1` the number is kept when the date
-    moves to another fiscal year. Current tilari does **not** follow this yet (see MEMORY.md).
+11. **Voucher numbers** (`tunniste`, `posting.ts nextDocNumber`): like Kitsas
+    `kitsas/sqlite/routes/tositeroute.cpp` `lisaaTaiPaivita`: drafts (`tila < 100`) have 0 (a
+    save back to draft clears the number); a voucher posted now gets `MAX(tunniste)+1` over the
+    **fiscal year** (`Tilikausi`) containing its date, same series, `tila >= 100`; a posted
+    voucher keeps its number unless an update moves it to another fiscal year or series, which
+    renumbers (kitsas `5ae038d1` only removed a client-side reset; the server still renumbers).
+    Series of a new voucher (`seriesForNewVoucher`, `kitsas/db/tositetyyppimodel.cpp`):
+    `EriSarjaan` off -> NULL (never `''`; Kitsas does not see `''` rows, and tilari counts legacy
+    `''` as no series and writes NULL); on -> `Tositesarjat[tyyppi]` (`*` for >= 1000, default
+    `JT`, else `X`); `KateisSarjaan` + cash first line (`ARK`) -> `K`. `doc_number` in a save
+    payload sets a number by hand (the editor sends it only when changed).
 12. **VAT-filed lock**: a date is filed when a posted `tyyppi 9100` voucher covers it
     (`json.alv.kausialkaa..kausipaattyy`, `kitsas/alv/alvilmoitustenmodel.cpp`). Kitsas blocks
     VAT-coded lines dated there and deleting such vouchers, unless `Asetus.OhitaAlvLukko = ON`.

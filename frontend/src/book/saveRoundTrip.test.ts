@@ -49,13 +49,15 @@ function payloadFromLoaded(db: SqliteDb, id: number): SaveVoucherInput {
 }
 
 describe('saveVoucher round trip', () => {
-  it('an unchanged save of any posted voucher writes nothing (all test books)', async () => {
+  it('an unchanged save of any draft or posted voucher writes nothing (all test books)', async () => {
     const books = readdirSync(testdb).filter((f) => f.endsWith('.kitsas'))
     expect(books.length).toBeGreaterThan(0)
     for (const book of books) {
       const db = await SqliteDb.fromBytes(readFileSync(path.join(testdb, book)))
+      // Kitsas drafts have no number; an old numbered draft loses it on save (numbering.test).
+      db.run('UPDATE Tosite SET tunniste = 0 WHERE tila < 100')
       const ids = db
-        .all<{ id: number }>('SELECT id FROM Tosite WHERE tila >= 100 AND tyyppi NOT IN (210, 214, 216)')
+        .all<{ id: number }>('SELECT id FROM Tosite WHERE tila >= 50 AND tyyppi NOT IN (210, 214, 216)')
         .map((r) => Number(r.id))
       for (const id of ids) {
         const before = voucherSnapshot(db, id)
@@ -67,7 +69,7 @@ describe('saveVoucher round trip', () => {
 
   it('an unchanged save of imported vouchers writes nothing, also without entries', async () => {
     const { db, ids } = await loadImportedFixture()
-    for (const id of [ids.A, ids.C, ids.D, ids.E]) {
+    for (const id of [ids.A, ids.B, ids.C, ids.D, ids.E]) {
       const before = voucherSnapshot(db, id)
       saveVoucher(db, payloadFromLoaded(db, id), id)
       expect(voucherSnapshot(db, id)).toEqual(before)

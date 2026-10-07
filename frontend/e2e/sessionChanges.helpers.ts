@@ -72,6 +72,8 @@ export async function createExpenseVoucher(
   await page.goto('/#/voucher/new/100')
   await expect(page.getByLabel('Otsikko')).toBeVisible()
   await page.getByLabel('Otsikko').fill(opts.title)
+  // Posting needs a fiscal year for the date; the test books have 2024-2025.
+  await page.getByLabel('Tositteen pvm').fill('2025-06-15')
   const expense = page.getByLabel('Menotili')
   await expect(expense).toBeVisible({ timeout: 30_000 })
   await expense.click()

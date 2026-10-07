@@ -437,6 +437,7 @@
     "needChanges": "Inga ändringar att spara.",
     "assistantUnavailable": "Verifikatet kan inte visas i konteringshjälpen utan att dess rader ändras. Redigera raderna här.",
     "needDate": "Datum saknas.",
+    "noFiscalYear": "Det finns ingen räkenskapsperiod för datumet i bokföringen.",
     "needLines": "Lägg till minst en rad med konto och belopp.",
     "needAccounts": "Varje rad måste ha ett konto.",
     "needBalance": "Debet och kredit måste stämma (nu {debit} / {credit}).",

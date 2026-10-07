@@ -220,6 +220,21 @@ test.describe('voucher editor', () => {
     await expect(editorSaveButton(page)).toBeDisabled()
   })
 
+  test('posting is blocked for a date without a fiscal year', async ({ page }) => {
+    await openBook(page)
+    await page.goto('/#/voucher/new/100')
+    await page.getByLabel('Tositteen pvm').fill('2030-01-15')
+    await page.getByRole('textbox', { name: 'Otsikko' }).fill('Ei tilikautta')
+    const menotili = page.locator('label').filter({ hasText: 'Menotili' }).locator('input')
+    await menotili.fill('4000')
+    await menotili.press('Tab')
+    await maaraInput(page).fill('12,50')
+    await expect(editorSaveButton(page)).toBeDisabled()
+    await expect(editorSaveButton(page)).toHaveAttribute('title', /ei ole tilikautta/)
+    await page.getByLabel('Tositteen pvm').fill('2025-01-15')
+    await expect(editorSaveButton(page)).toBeEnabled()
+  })
+
   test('footer has Kitsas buttons, shortcuts, and no duplicate title', async ({ page }) => {
     await openBook(page)
     await page.goto('/#/voucher/new/100')
@@ -229,6 +244,8 @@ test.describe('voucher editor', () => {
     await expect(page.getByRole('button', { name: 'Tallenna luonnos' })).toBeVisible()
     await expect(editorSaveButton(page)).toBeDisabled()
     await expect(editorSaveButton(page)).toHaveAttribute('title', /Lisää vähintään yksi vienti/)
+    // Posting needs a fiscal year for the date; the test book has 2024-2025.
+    await page.getByLabel('Tositteen pvm').fill('2025-06-15')
     const menotili = page.locator('label').filter({ hasText: 'Menotili' }).locator('input')
     await menotili.fill('4000')
     await menotili.press('Tab')
@@ -291,6 +308,8 @@ test.describe('voucher editor', () => {
   test('Ctrl+S and Tallenna stay; Ctrl+Shift+S stays in the editor', async ({ page }) => {
     await openBook(page)
     await page.goto('/#/voucher/new/100')
+    // Posting needs a fiscal year for the date; the test book has 2024-2025.
+    await page.getByLabel('Tositteen pvm').fill('2025-06-15')
     await page.getByRole('textbox', { name: 'Otsikko' }).fill('Valmis sulkee')
     const menotili = page.locator('label').filter({ hasText: 'Menotili' }).locator('input')
     await menotili.fill('4000')

@@ -7,6 +7,18 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-07 - C2 fixed on `fix/numbering` (stacked on `fix/save-round-trip`)
+
+- Drafts have number 0; posting numbers `MAX+1` per fiscal year + series over posted vouchers;
+  NULL series written (legacy `''` counted as no series, so no duplicates with old saves);
+  series for new vouchers like Kitsas; renumbering when a posted voucher moves to another fiscal
+  year or series (our earlier note claimed the opposite; corrected here and in hki KITSAS_DB.md).
+- `postVoucher` gives a draft a fresh number (numbers on old tilari drafts are not trusted).
+- Posting needs a fiscal year for the date (Kitsas `EIAVOINTAKUTTA`).
+- Editor: neighbours and "go to number" use the fiscal year; `doc_number` is sent only when the
+  number was changed by hand.
+- Checked on a copy of a real book: a draft keeps 0, posting gives MAX+1 of the year, series NULL.
+
 ## 2026-10-07 - C1 fixed on `fix/save-round-trip`
 
 - `saveVoucher` upserts lines by Vienti id (Kitsas `lisaaTaiPaivita`); omitted fields keep the
@@ -26,9 +38,8 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 - Checked on a copy of a real book: every writable posted voucher and every tiliote round-trips
   unchanged through the API, editor and statement paths. About three quarters of its
   purchase/sales vouchers fit the assistant; the rest open on "Viennit".
-- Still open: C2 (numbering) - drafts get a number on save until `fix/numbering`.
 
-## 2026-10-06 - Save round-trip and numbering defects (C1 fixed 2026-10-07, C2 open)
+## 2026-10-06 - Save round-trip and numbering defects (both fixed 2026-10-07, see above)
 
 Found while reconciling a production book that had been edited in tilari (around 2026-09-01) after
 `holvi-kitsas-import` had imported bank rows. Re-checked on main `161baaf`: both still present.
