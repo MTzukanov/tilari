@@ -18,8 +18,9 @@ export function computeAccountOpening(
   startDate: string,
   opts: { endDate?: string; type?: string | null } = {},
 ): number {
-  const anchor = opts.endDate || startDate
-  const period = periodForDate(db, anchor) || periodForDate(db, startDate)
+  // A P&L balance runs within one fiscal year: the one that contains the start date
+  // (Kitsas saldot, TULOS accounts). `opts.endDate` no longer picks the year.
+  const period = periodForDate(db, startDate)
   let type = opts.type
   if (type === undefined) {
     const row = db.get<{ tyyppi: string | null }>('SELECT tyyppi FROM Tili WHERE numero = ?', [
@@ -55,6 +56,44 @@ export function computeAccountOpening(
   }
   if (!row) return 0
   return signedCents(account, asCents(row.d), asCents(row.k), type)
+}
+
+/**
+ * Opening balances at `start` like Kitsas `/saldot?alkusaldot`: balance-sheet lines dated
+ * before `start`, every earlier result added to the BE account (edelliset tilikaudet), and no
+ * current-result (T) row. Used for the `s`/`S` statement macros.
+ */
+export function computeOpeningBalances(db: SqliteDb, start: string): Record<string, number> {
+  const balances: Record<string, number> = {}
+  const rows = db.all<{ tili: number; d: number; k: number }>(
+    `SELECT tili, SUM(debetsnt) AS d, SUM(kreditsnt) AS k
+     FROM Vienti
+     JOIN Tosite ON Vienti.tosite = Tosite.id
+     WHERE Vienti.pvm < ?
+       AND ${bsAccount('tili')}
+       AND ${SQL_POSTED}
+     GROUP BY tili`,
+    [start],
+  )
+  for (const row of rows) {
+    const account = Number(row.tili)
+    balances[String(account)] = signedCents(account, asCents(row.d), asCents(row.k), isAsset(account) ? 'A' : '')
+  }
+  const prior = db.get<{ credit: number; debit: number }>(
+    `SELECT SUM(kreditsnt) AS credit, SUM(debetsnt) AS debit
+     FROM Vienti
+     JOIN Tosite ON Vienti.tosite = Tosite.id
+     WHERE ${pnlAccount('tili')}
+       AND Vienti.pvm < ?
+       AND ${SQL_POSTED}`,
+    [start],
+  )
+  const retained = accountByType(db, 'BE')
+  if (retained != null && prior) {
+    const key = String(retained)
+    balances[key] = (balances[key] ?? 0) + asCents(prior.credit) - asCents(prior.debit)
+  }
+  return balances
 }
 
 export function computeBalances(

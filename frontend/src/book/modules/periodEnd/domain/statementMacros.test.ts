@@ -23,9 +23,12 @@ describe('statementMacros', () => {
       expect(macros.evaluate('E2251..226')).toBe(
         (BALANCES_2024['2251'] || 0) + (BALANCES_2024['2261'] || 0),
       )
+      // s = opening balances on 1.1.2025 (Kitsas alkusaldot): the 2024 result is already in
+      // retained earnings (2251) and there is no current-result row (2371).
       expect(macros.evaluate('s2251..226')).toBe(
-        (BALANCES_2024['2251'] || 0) + (BALANCES_2024['2261'] || 0),
+        (BALANCES_2024['2251'] || 0) + (BALANCES_2024['2371'] || 0) + (BALANCES_2024['2261'] || 0),
       )
+      expect(macros.evaluate('s2371')).toBe(0)
     })
   })
 

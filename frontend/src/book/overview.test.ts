@@ -40,3 +40,15 @@ describe('computeOverview', () => {
     }
   })
 })
+
+describe('overview years', () => {
+  it('two fiscal years ending in the same calendar year get distinct keys', async () => {
+    const db = await loadGoldenDb()
+    db.run('DELETE FROM Tilikausi')
+    db.run(`INSERT INTO Tilikausi (alkaa, loppuu, json) VALUES ('2024-01-01', '2024-06-30', '{}')`)
+    db.run(`INSERT INTO Tilikausi (alkaa, loppuu, json) VALUES ('2024-07-01', '2024-12-31', '{}')`)
+    db.run(`INSERT INTO Tilikausi (alkaa, loppuu, json) VALUES ('2025-01-01', '2025-12-31', '{}')`)
+    const keys = computeOverview(db, '2025-06-30').years.map((y) => y.key)
+    expect(keys).toEqual(['6/2024', '12/2024', '2025'])
+  })
+})
