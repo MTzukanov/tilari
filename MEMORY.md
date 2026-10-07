@@ -7,6 +7,25 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-07 - Part C: review fixes as a PR stack (merge in this order)
+
+A review of main `45788e6` against Kitsas (kitupiikki devel `b081bfa3`) found C1/C2 plus defects
+in write guards, VAT, reports, persistence and the Node server. Fixed on stacked branches, each
+with tests and checked on a copy of a real book (entries below):
+
+1. `fix/locker-server-safety` - server book ids, origins, Host, body limit, atomic writes
+2. `fix/save-round-trip` - C1
+3. `fix/numbering` - C2
+4. `fix/write-guards` - VAT-filed lock, line dates, split, year end
+5. `fix/vat-like-kitsas` - VAT calculation, settlement and VAT lines
+6. `fix/reports-like-kitsas` - chart reports, opening macros, account ledger
+7. `fix/persistence` - saves, uploads, overwrites, two tabs, encryption
+8. `docs/part-c` - this entry
+
+Dropped after checking: kohdennus usage count (Kitsas counts the same way); deleting a VAT return
+(Kitsas' ALV page allows it). Not done: alarajahuojennus (boxes 315-317, abolished from 2025);
+an app login for the Node server (put a public hostname behind Cloudflare Access).
+
 ## 2026-10-07 - Persistence on `fix/persistence` (stacked on `fix/reports-like-kitsas`)
 
 - Download/Save-as of a locker book or a linked-file book is only a copy: it no longer marks the
@@ -153,5 +172,6 @@ posted only, NULL vs `''`, `erisarjaan` ON, a fiscal year that is not a calendar
 
 ### Context for agents
 - Bank-file import is out of scope here; `holvi-kitsas-import` (sibling project) creates draft
-  vouchers that are reviewed and posted in tilari. Until C1 and C2 are fixed, do not post or edit
-  imported vouchers in tilari on a production book.
+  vouchers that are reviewed and posted in tilari. C1 and C2 are fixed on the part C stack
+  (2026-10-07); until it is merged and the owner says so, do not post or edit imported vouchers
+  in tilari on a production book.
