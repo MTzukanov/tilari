@@ -5,7 +5,9 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { readBody, readJson, sendBytes, sendEmpty, sendJson } from '../httpUtil.ts'
 import {
   ObjectPathError,
+  ObjectPreconditionFailed,
   objectDownload,
+  objectSha256,
   objectExists,
   objectList,
   objectRemove,
@@ -62,7 +64,10 @@ export async function handleObjects(
         sendJson(res, 404, { detail: 'not_found' })
         return true
       }
-      sendBytes(res, 200, data, { 'Content-Type': 'application/octet-stream' })
+      sendBytes(res, 200, data, {
+        'Content-Type': 'application/octet-stream',
+        ETag: `"${objectSha256(data)}"`,
+      })
       return true
     }
 
@@ -70,15 +75,22 @@ export async function handleObjects(
       const upsert =
         method === 'PUT' || String(header(req, 'x-upsert') || '').toLowerCase() === 'true'
       const data = new Uint8Array(await readBody(req))
+      const ifMatch = (header(req, 'if-match') || '').replaceAll('"', '').trim() || null
+      let etag: string
       try {
-        objectUpload(rel, data, { upsert })
+        etag = objectUpload(rel, data, { upsert, ifMatch })
       } catch (err) {
+        if (err instanceof ObjectPreconditionFailed) {
+          sendJson(res, 412, { detail: 'etag_mismatch' })
+          return true
+        }
         if (err instanceof Error && (err.name === 'ObjectDuplicate' || err.message === 'duplicate')) {
           sendJson(res, 409, { detail: 'duplicate' })
           return true
         }
         throw err
       }
+      res.setHeader('ETag', `"${etag}"`)
       sendEmpty(res, 200)
       return true
     }

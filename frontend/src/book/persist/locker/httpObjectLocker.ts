@@ -31,15 +31,27 @@ export function createHttpObjectLocker(settings: HttpLockerSettings, origin?: st
   const encrypt = Boolean(settings.encrypt)
   let disposed = false
 
+  let building: Promise<ObjectStoreLockerBackend> | null = null
+
+  /** Build once (vault.json + PBKDF2 are slow); `next` settings rebuild. */
   async function ready(next?: unknown): Promise<ObjectStoreLockerBackend> {
     if (disposed) throw new Error('locker_not_configured')
+    if (!next && backend) return backend
+    if (!next && building) return building
     const s = next ? parseHttpLockerSettings(next) : settings
-    backend = await buildHttpObjectLocker(s, origin === undefined ? getHttpLockerOrigin() : origin)
-    if (disposed) {
-      backend = null
-      throw new Error('locker_not_configured')
+    const pending = buildHttpObjectLocker(s, origin === undefined ? getHttpLockerOrigin() : origin)
+    building = pending
+    try {
+      const built = await pending
+      if (disposed) {
+        backend = null
+        throw new Error('locker_not_configured')
+      }
+      backend = built
+      return built
+    } finally {
+      if (building === pending) building = null
     }
-    return backend
   }
 
   return {

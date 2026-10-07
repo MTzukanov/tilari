@@ -190,3 +190,49 @@ describe('writeFileAtomic', () => {
     assert.deepEqual(readdirSync(dir), ['meta.json'])
   })
 })
+
+describe('object store: atomic If-Match and GC grace', () => {
+  const root = mkdtempSync(join(tmpdir(), 'tilari-objects-'))
+  const server = startServer({ host: '127.0.0.1', port: 0 })
+  let base = ''
+
+  before(async () => {
+    setBooksDir(root)
+    if (!server.listening) await new Promise<void>((resolve) => server.once('listening', () => resolve()))
+    const addr = server.address()
+    assert.ok(addr && typeof addr === 'object')
+    base = `http://127.0.0.1:${addr.port}`
+  })
+
+  after(async () => {
+    setBooksDir(null)
+    await new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())))
+  })
+
+  it('returns ETags and refuses a write over a version the caller did not read', async () => {
+    const path = `${base}/api/objects/tilari/abc/book.kitsas`
+    const first = await fetch(path, { method: 'POST', body: new Uint8Array([1, 2, 3]) })
+    assert.equal(first.status, 200)
+    const tag1 = first.headers.get('etag')
+    assert.ok(tag1)
+    const got = await fetch(path)
+    assert.equal(got.headers.get('etag'), tag1)
+    // Writer A (read tag1) wins; writer B (also read tag1) gets 412.
+    const a = await fetch(path, { method: 'PUT', headers: { 'If-Match': tag1! }, body: new Uint8Array([4]) })
+    assert.equal(a.status, 200)
+    const b = await fetch(path, { method: 'PUT', headers: { 'If-Match': tag1! }, body: new Uint8Array([5]) })
+    assert.equal(b.status, 412)
+    assert.deepEqual(new Uint8Array(await (await fetch(path)).arrayBuffer()), new Uint8Array([4]))
+  })
+
+  it('lists objects with updated_at', async () => {
+    const res = await fetch(`${base}/api/objects/list`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prefix: 'tilari/' }),
+    })
+    const body = (await res.json()) as { objects: { name: string; updated_at: string }[] }
+    assert.ok(body.objects.length > 0)
+    assert.ok(body.objects.every((o) => !Number.isNaN(Date.parse(o.updated_at))))
+  })
+})

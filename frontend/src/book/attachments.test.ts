@@ -156,3 +156,16 @@ describe('resolveLockerPutId', () => {
   })
 })
 
+
+describe('export for Kitsas', () => {
+  it('refuses when bytes of an attachment are not in this browser', async () => {
+    const db = await loadGoldenDb()
+    const data = new Uint8Array([7, 8, 9])
+    attachAttachment(db, 1, { name: 'x.bin', type: 'application/octet-stream', data, lean: true })
+    await expect(packAttachmentsIntoDb(db, new AttachmentStore())).rejects.toThrow('attachments_missing')
+    const store = new AttachmentStore()
+    store.put(sha256hexSync(data), data)
+    const packed = await packAttachmentsIntoDb(db, store)
+    expect(packed.get<{ n: number }>('SELECT COUNT(*) AS n FROM Liite WHERE data IS NULL')?.n).toBe(0)
+  })
+})

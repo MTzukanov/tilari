@@ -71,7 +71,7 @@ test.describe('period-end closing', () => {
 
     await wizard.getByRole('button', { name: 'Sulje' }).click()
     await expect(page.getByRole('heading', { name: 'Tilikaudet' })).toBeVisible()
-    await saveBookInBrowser(page)
+    await saveBookInBrowser(page, 'tilari-period-end.kitsas')
     await expectDirtyStatus(page, false)
     let again = await openClosingWizard2024(page)
     await expectDirtyStatus(page, false)

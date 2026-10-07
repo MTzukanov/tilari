@@ -25,6 +25,8 @@ export type OpfsMeta = {
   sessionChanges?: SessionChange[]
   /** ISO — last known external source save time. */
   sourceModifiedAt?: string | null
+  /** ISO — when this working copy was last written to OPFS (picks the latest session). */
+  savedAt?: string
 }
 
 export type OpfsEntry = {
@@ -95,7 +97,8 @@ export async function opfsSaveWorking(meta: OpfsMeta, bytes: Uint8Array): Promis
   const dir = await bookDir(meta.bookId)
   if (!dir) return
   await writeFile(dir, 'working.kitsas', bytes)
-  await writeFile(dir, 'meta.json', new TextEncoder().encode(JSON.stringify(meta)))
+  const stamped: OpfsMeta = { ...meta, savedAt: new Date().toISOString() }
+  await writeFile(dir, 'meta.json', new TextEncoder().encode(JSON.stringify(stamped)))
 }
 
 export async function opfsSaveOriginal(bookId: string, bytes: Uint8Array): Promise<void> {
@@ -140,17 +143,29 @@ export async function opfsLoadForSession(opts: {
   return byPath
 }
 
+/** The most recently saved session (book ids are random, so their order means nothing). */
 export async function opfsLoadLatest(): Promise<{ meta: OpfsMeta; bytes: Uint8Array } | null> {
   const base = await root()
   if (!base) return null
-  const ids: string[] = []
+  let best: { id: string; at: number } | null = null
   for await (const [name, handle] of base.entries()) {
-    if (handle.kind === 'directory' && name !== OPFS_BLOBS_DIR) ids.push(name)
+    if (handle.kind !== 'directory' || name === OPFS_BLOBS_DIR) continue
+    const dir = await bookDir(name, false)
+    if (!dir) continue
+    let at = 0
+    const meta = await opfsLoadMeta(name)
+    if (meta?.savedAt) at = Date.parse(meta.savedAt) || 0
+    if (!at) {
+      try {
+        at = (await (await dir.getFileHandle('working.kitsas')).getFile()).lastModified
+      } catch {
+        continue
+      }
+    }
+    if (!best || at > best.at) best = { id: name, at }
   }
-  if (!ids.length) return null
-  ids.sort()
-  const bookId = ids[ids.length - 1]
-  const dir = await bookDir(bookId, false)
+  if (!best) return null
+  const dir = await bookDir(best.id, false)
   if (!dir) return null
   const metaBytes = await readFile(dir, 'meta.json')
   const bytes = await readFile(dir, 'working.kitsas')
@@ -160,6 +175,28 @@ export async function opfsLoadLatest(): Promise<{ meta: OpfsMeta; bytes: Uint8Ar
     return { meta, bytes }
   } catch {
     return null
+  }
+}
+
+/**
+ * Remove session folders of other books that have nothing unsaved (their working copy equals
+ * the file or locker version). Sessions with unsaved changes are kept for recovery.
+ */
+export async function opfsPruneCleanSessions(keepBookId: string): Promise<void> {
+  const base = await root(false)
+  if (!base) return
+  const names: string[] = []
+  for await (const [name, handle] of base.entries()) {
+    if (handle.kind === 'directory' && name !== OPFS_BLOBS_DIR && name !== keepBookId) names.push(name)
+  }
+  for (const name of names) {
+    const meta = await opfsLoadMeta(name)
+    if (!meta || meta.dirty || meta.attachmentsDirty) continue
+    try {
+      await base.removeEntry(name, { recursive: true })
+    } catch {
+      /* ignore */
+    }
   }
 }
 

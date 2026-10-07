@@ -17,6 +17,19 @@ describe('vaultCrypto', () => {
     await expect(decryptBytes(plain, key)).rejects.toThrow('locker_bad_secret')
   })
 
+  it('v2 binds the ciphertext to its object path; v1 objects still decrypt', async () => {
+    const key = await aesKey()
+    const plain = new TextEncoder().encode('ledger-bytes')
+    const v2 = await encryptBytes(plain, key, 'tilari/abc/book.kitsas')
+    expect(new TextDecoder().decode(v2.subarray(0, 8))).toBe('TILARIE2')
+    expect(new TextDecoder().decode(await decryptBytes(v2, key, 'tilari/abc/book.kitsas'))).toBe('ledger-bytes')
+    // A host that swaps objects between paths: decryption fails.
+    await expect(decryptBytes(v2, key, 'tilari/xyz/book.kitsas')).rejects.toThrow('locker_bad_secret')
+    await expect(decryptBytes(v2, key)).rejects.toThrow('locker_bad_secret')
+    const v1 = await encryptBytes(plain, key)
+    expect(new TextDecoder().decode(await decryptBytes(v1, key, 'any/path'))).toBe('ledger-bytes')
+  })
+
   it('generates a 32-byte hex secret and rejects short secrets', () => {
     expect(generateLockerSecret()).toMatch(/^[0-9a-f]{64}$/)
     expect(() => requireSecret('short')).toThrow('locker_secret')

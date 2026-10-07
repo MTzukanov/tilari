@@ -7,6 +7,26 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-07 - Persistence on `fix/persistence` (stacked on `fix/reports-like-kitsas`)
+
+- Download/Save-as of a locker book or a linked-file book is only a copy: it no longer marks the
+  book saved (before, the next locker save was skipped and reported as saved).
+- Attachments found inside a shelf ledger (Liite.data) on open/restore/reload, and ones written
+  inline during the session (VAT/TP HTML), are uploaded with the next locker save.
+- Kitsas-file export refuses (`attachments_missing`) while attachment bytes are missing; the HTTP
+  engine's download packs locker attachments (`/api/export?pack=1`).
+- Linking a file refuses one that changed after the copy was opened or holds another company's
+  book; `saveLocal` re-checks the file time.
+- No blind ETag: a missing ETag is adopted only if the shelf has not changed since the session
+  loaded it (wasm and HTTP engine); reload-from-locker takes the fresh ETags.
+- Node object store: ETags on GET/upload and atomic `If-Match` on the ledger write, so two
+  concurrent saves cannot both win; GC spares blobs younger than 15 min (a save in progress);
+  a deleted book's own blobs still go at once. Supabase has no conditional write (documented).
+- One writer per working copy (Web Lock per book); a restore that finishes after another open no
+  longer replaces it; latest OPFS session by save time; clean old sessions pruned on open.
+- Encrypted shelves: v2 envelope binds ciphertext to its object path (GCM additional data); v1
+  still read. The HTTP object locker no longer re-derives the vault key on every call.
+
 ## 2026-10-07 - Reports like Kitsas on `fix/reports-like-kitsas` (stacked on `fix/vat-like-kitsas`)
 
 - Chart reports (tase/tulos) follow `LaatijanTaseTulos::kirjoitaRaportti`: `S` = show even when
