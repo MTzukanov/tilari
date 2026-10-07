@@ -28,6 +28,21 @@ export function locationHash(): string {
   return window.location.hash || '#/'
 }
 
+const HISTORY_INDEX_KEY = 'tilariHistoryIndex'
+
+/** Position tag of the current history entry (null for an entry the app has not seen yet). */
+export function historyIndex(): number | null {
+  const state = history.state as Record<string, unknown> | null
+  const value = state?.[HISTORY_INDEX_KEY]
+  return typeof value === 'number' ? value : null
+}
+
+/** Tag the current entry with its position; the URL is unchanged. */
+export function tagHistoryIndex(index: number): void {
+  const state = (history.state as Record<string, unknown> | null) ?? {}
+  history.replaceState({ ...state, [HISTORY_INDEX_KEY]: index }, '')
+}
+
 export function restoreLocationHash(hash: string) {
   const url = new URL(window.location.href)
   url.hash = hash

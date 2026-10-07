@@ -6,15 +6,18 @@ const PICKER_OPEN = 'is-native-picker-open'
 export function markNativePickerAncestors(from: HTMLElement, on: boolean) {
   let el: HTMLElement | null = from.parentElement
   while (el && !el.classList.contains('app-shell')) {
+    // The class itself makes the element look unclipped, so removal must not re-test overflow.
+    if (!on) {
+      el.classList.remove(PICKER_OPEN)
+      el = el.parentElement
+      continue
+    }
     const style = window.getComputedStyle(el)
     const clip =
       /auto|hidden|scroll|clip/.test(style.overflow) ||
       /auto|hidden|scroll|clip/.test(style.overflowY) ||
       /auto|hidden|scroll|clip/.test(style.overflowX)
-    if (clip) {
-      if (on) el.classList.add(PICKER_OPEN)
-      else el.classList.remove(PICKER_OPEN)
-    }
+    if (clip) el.classList.add(PICKER_OPEN)
     el = el.parentElement
   }
 }

@@ -4,6 +4,7 @@ import {
   clearTilariStorage,
   confirmEngineOpen,
   installSyncChipRecorder,
+  lockerBookRow,
   openServerBookList,
   recordedSyncChips,
   resetRecordedSyncChips,
@@ -62,7 +63,7 @@ test.describe('wasm locker open attachment progress', () => {
     await expect(page.getByRole('heading', { name: 'Ei kirjaa auki' })).toBeVisible()
 
     await openServerBookList(page)
-    await page.getByRole('button', { name: bookName }).click()
+    await lockerBookRow(page, bookName).click()
     await confirmEngineOpen(page, 'wasm')
 
     await expect(page.getByRole('heading', { name: 'Testikirja Oy' })).toBeVisible({
@@ -108,7 +109,7 @@ test.describe('wasm locker open attachment progress', () => {
     await expect(page.getByRole('heading', { name: 'Ei kirjaa auki' })).toBeVisible()
 
     await openServerBookList(page)
-    await page.getByRole('button', { name: bookName }).click()
+    await lockerBookRow(page, bookName).click()
     await confirmEngineOpen(page, 'wasm')
     await expect(page.getByRole('heading', { name: 'Testikirja Oy' })).toBeVisible({
       timeout: 180_000,
@@ -117,7 +118,7 @@ test.describe('wasm locker open attachment progress', () => {
     await resetRecordedSyncChips(page)
 
     await openServerBookList(page)
-    await page.getByRole('button', { name: bookName }).click()
+    await lockerBookRow(page, bookName).click()
     await confirmEngineOpen(page, 'wasm')
     await expect(page.getByRole('heading', { name: 'Testikirja Oy' })).toBeVisible({
       timeout: 180_000,

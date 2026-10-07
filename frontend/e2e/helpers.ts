@@ -142,10 +142,20 @@ export async function confirmEngineOpen(page: Page, engine: 'wasm' | 'http') {
   await page.getByRole('button', { name: 'Avaa', exact: true }).click()
 }
 
-/** File menu option — works with or without a book open (empty-state is a button). */
+/**
+ * File menu option — works with or without a book open (empty-state is a button).
+ * Connects this page's own Node server as the locker when not connected yet (the server
+ * engine and the locker list need an explicit BYO connection).
+ */
 export async function openServerBookList(page: Page) {
   await page.getByLabel('Kirjanpitotiedosto').selectOption({ label: 'Avaa omasta säilytyksestä…' })
   await expect(page.getByRole('heading', { name: 'Oma säilytys (BYO)' })).toBeVisible()
+  const thisPage = page.getByRole('button', { name: 'Tämä kone' })
+  if (await thisPage.isVisible().catch(() => false)) {
+    await thisPage.click()
+    await page.getByRole('button', { name: 'Yhdistä', exact: true }).click()
+  }
+  await expect(page.getByText(/Yhdistetty ·/).first()).toBeVisible({ timeout: 15_000 })
 }
 
 async function openKitsasFile(page: Page, bookPath: string) {
@@ -179,6 +189,11 @@ export async function openBookHttpEngine(page: Page) {
   await clearTilariStorage(page)
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Ei kirjaa auki' })).toBeVisible()
+  // "On the server" is offered only with a connected same-origin Node locker.
+  await openServerBookList(page)
+  const lockerHeading = page.getByRole('heading', { name: 'Oma säilytys (BYO)' })
+  await page.locator('.back-btn').filter({ hasText: 'Sulje' }).click()
+  await expect(lockerHeading).toBeHidden()
   await page.locator('input[type=file][accept*=".kitsas"]').setInputFiles(testBook)
   await confirmEngineOpen(page, 'http')
   await expect(page.getByRole('heading', { name: 'Testikirja Oy' })).toBeVisible({
@@ -252,4 +267,9 @@ export async function gotoMonth(page: Page, isoStart: string) {
     await prev.click()
   }
   await expect(nav).toHaveAttribute('data-start', isoStart)
+}
+
+/** A book row in the locker list (its delete button's label also contains the book name). */
+export function lockerBookRow(page: Page, name: string) {
+  return page.locator('.file-picker-row').filter({ hasText: name })
 }

@@ -53,7 +53,13 @@ import {
 } from './open/lastBook'
 import { formatBookDate } from './open/bookDates'
 import { forgetLocale, useI18n } from '../i18n'
-import { allowLeave, locationHash, restoreLocationHash } from './leaveGuard'
+import {
+  allowLeave,
+  historyIndex,
+  locationHash,
+  restoreLocationHash,
+  tagHistoryIndex,
+} from './leaveGuard'
 import { parseRoute, routeAllowsNoBook, type Route } from './routing'
 import { periodContaining } from '../shared/periodNav'
 import { normalizeSessionChanges } from '../book/sessionLog'
@@ -325,6 +331,12 @@ export function BookShell() {
   }
 
   useEffect(() => {
+    // Every history entry the app shows gets a position tag (history.state). A blocked
+    // Back/Forward is undone with exactly history.go(allowed - current); a blocked new entry
+    // is rewritten in place. (Before, a 0 ms fallback raced history.go(1): in Firefox go()
+    // lands later, the fallback rewrote the previous entry and the next Back stayed put.)
+    let allowedIndex = historyIndex() ?? 0
+    if (historyIndex() == null) tagHistoryIndex(allowedIndex)
     let restoring = false
     let restoreTimer = 0
     function cancelRestore() {
@@ -334,11 +346,22 @@ export function BookShell() {
         restoreTimer = 0
       }
     }
+    /** Accept the entry now shown: a new entry sits right after the one we came from. */
+    function acceptEntry() {
+      const index = historyIndex()
+      if (index == null) {
+        allowedIndex += 1
+        tagHistoryIndex(allowedIndex)
+      } else {
+        allowedIndex = index
+      }
+      allowedHashRef.current = locationHash()
+    }
     const onHash = () => {
       if (applyingHashRef.current) {
         applyingHashRef.current = false
         cancelRestore()
-        allowedHashRef.current = locationHash()
+        acceptEntry()
         setRoute(parseRoute())
         return
       }
@@ -347,21 +370,29 @@ export function BookShell() {
         if (locationHash() !== allowedHashRef.current) {
           restoreLocationHash(allowedHashRef.current)
         }
+        allowedIndex = historyIndex() ?? allowedIndex
         return
       }
       if (!allowLeave()) {
-        restoring = true
-        history.go(1)
-        restoreTimer = window.setTimeout(() => {
-          restoreTimer = 0
-          restoring = false
-          if (locationHash() !== allowedHashRef.current) {
-            restoreLocationHash(allowedHashRef.current)
-          }
-        }, 0)
+        const index = historyIndex()
+        if (index != null && index !== allowedIndex) {
+          // Back/Forward over known entries: go back to the entry we came from.
+          restoring = true
+          history.go(allowedIndex - index)
+          // Safety net only (go() normally lands well before this).
+          restoreTimer = window.setTimeout(() => {
+            restoreTimer = 0
+            restoring = false
+          }, 1000)
+        } else {
+          // A new entry (link, typed URL): show the allowed page in it instead.
+          restoreLocationHash(allowedHashRef.current)
+          allowedIndex += 1
+          tagHistoryIndex(allowedIndex)
+        }
         return
       }
-      allowedHashRef.current = locationHash()
+      acceptEntry()
       setRoute(parseRoute())
     }
     window.addEventListener('hashchange', onHash)

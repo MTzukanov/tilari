@@ -83,7 +83,9 @@ export async function createExpenseVoucher(
   await page.getByRole('option', { name: new RegExp(`^${expenseAccount} `) }).click()
   await page.getByLabel('Määrä', { exact: true }).fill(opts.amount)
   await page.getByRole('button', { name: 'Tallenna', exact: true }).click()
-  await expect(page.getByRole('heading', { name: opts.title })).toBeVisible()
+  // Saving keeps the editor open on the saved voucher.
+  await expect(page).toHaveURL(/voucher\/\d+(\/v\/\d+)?\/edit/)
+  await expect(page.getByRole('textbox', { name: 'Otsikko' })).toHaveValue(opts.title)
 }
 
 export async function expectSessionPanelRows(page: Page, labels: string[]) {
