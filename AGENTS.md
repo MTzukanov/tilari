@@ -128,9 +128,16 @@ Rules already encoded:
 12. **VAT-filed lock**: a date is filed when a posted `tyyppi 9100` voucher covers it
     (`json.alv.kausialkaa..kausipaattyy`, `kitsas/alv/alvilmoitustenmodel.cpp`). Kitsas blocks
     VAT-coded lines dated there and deleting such vouchers, unless `Asetus.OhitaAlvLukko = ON`.
-13. **Save round-trip**: saving a voucher must preserve per-line fields the UI does not edit -
-    `Vienti.arkistotunnus` (bank archive id, the idempotency key of bank importers), `tyyppi`
-    (entry type), line `pvm`, `eraid`, `json`. An unchanged save should write identical rows.
+13. **Save round-trip** (`posting.ts saveVoucher`, like Kitsas `lisaaTaiPaivita`): lines with an
+    `id` of the voucher are updated in place (Vienti ids, `eraid` links and `Merkkaus` survive),
+    lines without one are inserted, missing ones deleted. Fields a line omits keep their stored
+    value (`arkistotunnus`, `tyyppi`, `pvm`, `eraid`, `json`, `kumppani`, `sarja`/`viite` NULL,
+    BLOB `Tosite.json`). An unchanged save writes nothing. The editor keeps these fields on its
+    drafts (`modules/vouchers/editorLines.ts`); the assistant/transfer form rebuilds lines only
+    after its own fields change, reusing line ids, and vouchers it cannot rebuild exactly open on
+    "Viennit" only. Statement rows loaded from the book are saved as stored until edited; loaded
+    rows are hidden (and dropped) only by archive id. `postVoucher` posts a draft as it is
+    (status + number, Kitsas PATCH). Every `Ledger.mutate` is one SAVEPOINT; never await inside it.
 14. **Tositeloki writer signature**: tilari writes `userid 0` + `{"toiminto": ...}`; Kitsas desktop
     writes `userid NULL` + the full voucher JSON. Keep tilari's writes distinguishable.
 

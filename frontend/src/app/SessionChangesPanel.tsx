@@ -10,6 +10,7 @@ function sessionChangeHref(change: SessionChange): string | null {
     case 'voucher_create':
     case 'voucher_update':
     case 'voucher_delete':
+    case 'voucher_post':
       return typeof p.id === 'number' && p.id > 0 ? `#/voucher/${p.id}/edit` : null
     case 'attachment_add':
     case 'attachment_delete':

@@ -89,6 +89,10 @@ export function deleteVoucher(id: number) {
   return getBookService().deleteVoucher(id)
 }
 
+export function postVoucher(id: number) {
+  return getBookService().postVoucher(id)
+}
+
 export function splitBankStatement(
   voucherId: number,
   entryId: number,

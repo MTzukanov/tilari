@@ -39,6 +39,7 @@ export const WASM_SESSION_METHODS = new Set([
   'fetchPartners',
   'saveVoucher',
   'deleteVoucher',
+  'postVoucher',
   'splitBankStatement',
   'fetchBankStatementOverlay',
   'uploadAttachment',

@@ -2,6 +2,7 @@ export type SessionChangeKind =
   | 'voucher_create'
   | 'voucher_update'
   | 'voucher_delete'
+  | 'voucher_post'
   | 'attachment_add'
   | 'attachment_delete'
   | 'bank_split'

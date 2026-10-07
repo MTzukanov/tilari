@@ -25,7 +25,15 @@ import { BookError } from './errors'
 import { listFiscalPeriods, type FiscalPeriodSummary } from './fiscalPeriods'
 import { updateFiscalPeriodJson } from './fiscalPeriod'
 import type { BookModules, KernelContext, KernelSettings } from './modules/types'
-import { attachAttachment, deleteAttachment, deleteVoucher, lockDate, saveVoucher } from './posting'
+import {
+  attachAttachment,
+  deleteAttachment,
+  deleteVoucher,
+  lockDate,
+  postVoucher,
+  saveVoucher,
+} from './posting'
+import { sha256hex } from './sha256'
 import { computeOverview } from './overview'
 import { balancesWithLines, entriesWithRunning } from './reports'
 import { getCompany, getPaymentMethods, putCompany, saveAccount, saveAllocation, saveFiscalPeriod } from './settings'
@@ -61,6 +69,10 @@ type OpenBytesOpts = {
   sessionId?: string
   /** ISO timestamp of external source last save, when known. */
   sourceModifiedAt?: string | null
+}
+
+function totalChanges(db: SqliteDb): number {
+  return Number(db.get<{ n: number }>('SELECT total_changes() AS n')?.n ?? 0)
 }
 
 function lastTositelokiActivity(db: SqliteDb): string | null {
@@ -180,20 +192,42 @@ class LedgerKernel implements KernelContext {
     return this.requireDb().export()
   }
 
+  /** Writes run one at a time; each is one SQLite savepoint (all or nothing). */
+  private mutateQueue: Promise<unknown> = Promise.resolve()
+
   async mutate<T>(
-    fn: (db: SqliteDb) => T | Promise<T>,
+    fn: (db: SqliteDb) => T,
     meta: MutateMeta | ((result: T) => MutateMeta),
   ): Promise<T> {
-    const db = this.requireDb()
-    try {
-      const result = await fn(db)
+    const run = async (): Promise<T> => {
+      const db = this.requireDb()
+      let result: T
+      let changed: boolean
+      try {
+        const before = totalChanges(db)
+        db.run('SAVEPOINT tilari_mutate')
+        try {
+          result = fn(db)
+          db.run('RELEASE tilari_mutate')
+        } catch (err) {
+          db.run('ROLLBACK TO tilari_mutate')
+          db.run('RELEASE tilari_mutate')
+          throw err
+        }
+        changed = totalChanges(db) !== before
+      } catch (err) {
+        this.mapMutateError(err)
+      }
+      // A save that changed nothing (e.g. unchanged voucher) leaves the book clean.
+      if (!changed) return result
       this.sessionJournal.record(typeof meta === 'function' ? meta(result) : meta)
       this.setDirty(true)
       await this.afterMutate()
       return result
-    } catch (err) {
-      this.mapMutateError(err)
     }
+    const next = this.mutateQueue.then(run, run)
+    this.mutateQueue = next.catch(() => undefined)
+    return next
   }
 
   listSessionChanges(): Promise<SessionChange[]> {
@@ -384,6 +418,12 @@ class LedgerKernel implements KernelContext {
     }, { kind: 'voucher_delete', params: { id } })
   }
 
+  /** Post a draft as it is (status + number only). */
+  async postVoucher(id: number): Promise<VoucherDetail> {
+    await this.mutate((db) => postVoucher(db, id), { kind: 'voucher_post', params: { id } })
+    return this.wrapVoucher(getVoucher(this.requireDb(), id))
+  }
+
   async splitBankStatement(
     voucherId: number,
     entryId: number,
@@ -415,13 +455,16 @@ class LedgerKernel implements KernelContext {
     file: { name: string; type: string; data: Uint8Array },
     opts: { lean: boolean } = { lean: false },
   ): Promise<{ id: number; sha: string }> {
+    // Hash before the write: the savepoint must not stay open across an await.
+    const sha = await sha256hex(file.data)
     return this.mutate(
-      async (db) => {
-        const attached = await attachAttachment(db, voucherId, {
+      (db) => {
+        const attached = attachAttachment(db, voucherId, {
           name: file.name || 'attachment',
           type: file.type || 'application/octet-stream',
           data: file.data,
           lean: opts.lean,
+          sha,
         })
         return { id: attached.id, sha: attached.sha }
       },

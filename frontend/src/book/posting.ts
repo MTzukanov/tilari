@@ -1,16 +1,18 @@
 import { asCents } from './cents'
+import { parseJson } from './json'
 import { PostingError } from './errors'
-import { sha256hex } from './sha256'
+import { sha256hexSync } from './sha256'
 import type { SaveEntryInput, SavePartnerInput, SaveVoucherInput, VoucherEntry } from './types'
 import {
   getVoucher,
   READONLY_TYPES,
+  STATUS_DRAFT,
   STATUS_POSTED,
   TYPE_ATTACHMENT_NOTE,
   TYPE_OPENING,
   WRITABLE_TYPES,
 } from './vouchers'
-import type { SqliteDb } from './sqlite'
+import type { BindValue, SqliteDb } from './sqlite'
 import { expandPostedLines, runAfterDelete } from './kernel/postingHooks'
 
 export function lockDate(db: SqliteDb): string | null {
@@ -60,18 +62,22 @@ export function resolvePartner(db: SqliteDb, value: SavePartnerInput | undefined
   return null
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value) && !ArrayBuffer.isView(value)
+}
+
 function normalizeVoucherJson(extra: unknown): Record<string, unknown> {
-  if (!extra || typeof extra !== 'object' || Array.isArray(extra)) return {}
-  const out = { ...(extra as Record<string, unknown>) }
+  if (!isPlainObject(extra)) return {}
+  const out = { ...extra }
   const bank = out.bank_statement
   delete out.bank_statement
-  // Kitsas Tosite.json.tiliote uses alkupvm/loppupvm/tili (start, end, account).
-  if (bank && typeof bank === 'object' && !Array.isArray(bank) && !('tiliote' in out)) {
-    const src = bank as Record<string, unknown>
-    const tiliote: Record<string, unknown> = {}
-    const start = src.alkupvm || src.start_date
-    const end = src.loppupvm || src.end_date
-    const account = src.tili !== undefined ? src.tili : src.account
+  // Kitsas Tosite.json.tiliote uses alkupvm/loppupvm/tili (start, end, account). Merge into an
+  // existing tiliote so keys tilari does not edit survive.
+  if (isPlainObject(bank)) {
+    const tiliote: Record<string, unknown> = isPlainObject(out.tiliote) ? { ...out.tiliote } : {}
+    const start = bank.alkupvm || bank.start_date
+    const end = bank.loppupvm || bank.end_date
+    const account = bank.tili !== undefined ? bank.tili : bank.account
     if (start) tiliote.alkupvm = start
     if (end) tiliote.loppupvm = end
     if (account !== undefined) tiliote.tili = account
@@ -81,6 +87,57 @@ function normalizeVoucherJson(extra: unknown): Record<string, unknown> {
   delete out.vat
   if (vat && typeof vat === 'object' && !('alv' in out)) out.alv = vat
   return out
+}
+
+/** Key-order independent JSON text, for comparing stored and new json columns. */
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`
+  if (isPlainObject(value)) {
+    return `{${Object.keys(value)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${stableJson(value[k])}`)
+      .join(',')}}`
+  }
+  return JSON.stringify(value ?? null)
+}
+
+function sameJsonColumn(stored: unknown, next: unknown): boolean {
+  return stableJson(parseJson(stored)) === stableJson(parseJson(next))
+}
+
+type RawRow = Record<string, unknown>
+
+/** Columns compared as numbers where NULL and 0 mean the same (Kitsas writes NULL for 0). */
+const NUMERIC_COLUMNS = new Set([
+  'rivi',
+  'tyyppi',
+  'tili',
+  'kohdennus',
+  'debetsnt',
+  'kreditsnt',
+  'eraid',
+  'alvkoodi',
+  'kumppani',
+  'tila',
+  'tunniste',
+])
+
+/** Stored vs new value; NULL and '' are equal for text, NULL and 0 for numbers. */
+function sameColumn(column: string, stored: unknown, next: unknown): boolean {
+  if (column === 'json') return sameJsonColumn(stored, next)
+  if (column === 'alvprosentti') {
+    const a = stored == null || stored === '' ? null : Number(stored)
+    const b = next == null || next === '' ? null : Number(next)
+    return (a || null) === (b || null)
+  }
+  if (NUMERIC_COLUMNS.has(column)) return Number(stored ?? 0) === Number(next ?? 0)
+  const a = stored == null ? '' : stored instanceof Uint8Array ? new TextDecoder().decode(stored) : String(stored)
+  const b = next == null ? '' : String(next)
+  return a === b
+}
+
+function changedColumns(stored: RawRow, next: RawRow): string[] {
+  return Object.keys(next).filter((col) => !sameColumn(col, stored[col], next[col]))
 }
 
 export function appendLoki(
@@ -105,6 +162,7 @@ function lineAmounts(line: SaveEntryInput): [number, number] {
 
 function entriesFromExisting(entries: VoucherEntry[]): SaveEntryInput[] {
   return entries.map((e) => ({
+    id: e.id,
     line_no: e.line_no,
     entry_type: e.entry_type,
     date: e.date,
@@ -127,6 +185,7 @@ function entriesFromExisting(entries: VoucherEntry[]): SaveEntryInput[] {
 export function validatePayload(
   payload: SaveVoucherInput,
   existingType: number | null = null,
+  opts: { allowEmpty?: boolean } = {},
 ): void {
   const type = Number(payload.type ?? existingType ?? 0)
   if (READONLY_TYPES.has(type)) {
@@ -141,7 +200,9 @@ export function validatePayload(
     if (lines.length) throw new PostingError('Liitetiedolla ei ole vienteja')
     return
   }
-  if (!lines.length && Number(payload.status ?? STATUS_POSTED) >= STATUS_POSTED) {
+  // Kitsas posts vouchers without lines (e.g. a tiliote whose rows all became own vouchers);
+  // only a new posted voucher must have lines here.
+  if (!lines.length && !opts.allowEmpty && Number(payload.status ?? STATUS_POSTED) >= STATUS_POSTED) {
     throw new PostingError('Kirjatussa tositteessa on oltava vienteja')
   }
   let debitSum = 0
@@ -158,6 +219,39 @@ export function validatePayload(
   }
 }
 
+const VIENTI_COLUMNS = [
+  'rivi',
+  'tyyppi',
+  'pvm',
+  'tili',
+  'kohdennus',
+  'selite',
+  'debetsnt',
+  'kreditsnt',
+  'eraid',
+  'alvprosentti',
+  'alvkoodi',
+  'kumppani',
+  'jaksoalkaa',
+  'jaksoloppuu',
+  'arkistotunnus',
+  'json',
+] as const
+
+type PlannedLine = {
+  /** Stored row this line updates; null for a new row. */
+  stored: RawRow | null
+  values: RawRow
+  newEra: boolean
+}
+
+/**
+ * Create or update a voucher like Kitsas `TositeRoute::lisaaTaiPaivita`:
+ * lines with an `id` of this voucher are updated in place (ids, eraid links and Merkkaus
+ * stay valid), lines without one are inserted, stored lines missing from the payload are
+ * deleted. Fields a line omits keep their stored value. A save that changes nothing writes
+ * nothing (no Tositeloki row).
+ */
 export function saveVoucher(
   db: SqliteDb,
   payload: SaveVoucherInput,
@@ -165,6 +259,7 @@ export function saveVoucher(
 ): number {
   const existing = voucherId ? getVoucher(db, voucherId) : null
   if (voucherId && !existing) throw new PostingError(`Tosite ${voucherId} not found`, 404)
+  const raw = voucherId ? (db.get<RawRow>('SELECT * FROM Tosite WHERE id = ?', [voucherId]) ?? null) : null
 
   let type: number
   if (existing) {
@@ -182,128 +277,232 @@ export function saveVoucher(
       : existing?.entries
         ? entriesFromExisting(existing.entries)
         : []
-  validatePayload({ ...payload, type, date, entries: lines }, type)
+  validatePayload({ ...payload, type, date, entries: lines }, type, { allowEmpty: Boolean(existing) })
 
   const status = Number(payload.status ?? existing?.status ?? STATUS_POSTED)
-  const series = String(payload.series ?? existing?.series ?? '')
+  const series =
+    payload.series !== undefined ? payload.series || null : raw ? (raw.sarja as string | null) : null
   let docNumber: number | string | null | undefined = payload.doc_number
   if (docNumber == null) docNumber = existing?.doc_number
-  if (!docNumber) docNumber = nextDocNumber(db, date, series)
+  if (!docNumber) docNumber = nextDocNumber(db, date, series || '')
 
   const partnerId = resolvePartner(
     db,
     payload.partner !== undefined ? payload.partner : existing?.partner,
   )
-  const extra = payload.json === undefined ? existing?.json || {} : payload.json
-  const jsonText = JSON.stringify(normalizeVoucherJson(extra))
   const title = String(payload.title ?? existing?.title ?? '')
   const invoiceDate = payload.invoice_date !== undefined ? payload.invoice_date : existing?.invoice_date
   const dueDate = payload.due_date !== undefined ? payload.due_date : existing?.due_date
-  const reference = String(payload.reference ?? existing?.reference ?? '')
+  const reference =
+    payload.reference !== undefined ? String(payload.reference ?? '') : raw ? (raw.viite as string | null) : ''
+  const jsonValue =
+    payload.json === undefined
+      ? raw
+        ? raw.json
+        : '{}'
+      : JSON.stringify(normalizeVoucherJson(payload.json))
 
-  const tunniste = Number(docNumber)
+  const tositeValues: RawRow = {
+    pvm: date,
+    tyyppi: type,
+    tila: status,
+    tunniste: Number(docNumber),
+    sarja: series,
+    otsikko: title,
+    kumppani: partnerId,
+    laskupvm: invoiceDate ?? null,
+    erapvm: dueDate ?? null,
+    viite: reference,
+    json: jsonValue,
+  }
+
+  // Stored lines by id; payload ids must belong to this voucher (Kitsas: 206).
+  const storedRows = voucherId
+    ? db.all<RawRow>('SELECT * FROM Vienti WHERE tosite = ? ORDER BY rivi, id', [voucherId])
+    : []
+  const storedById = new Map(storedRows.map((r) => [Number(r.id), r]))
+  const seen = new Set<number>()
+  for (const line of lines) {
+    if (line.id == null) continue
+    const id = Number(line.id)
+    if (!storedById.has(id) || seen.has(id)) {
+      throw new PostingError(`Virheellinen viennin id ${id}`, 400)
+    }
+    seen.add(id)
+  }
+
+  // Cash-basis VAT etc. expand lines that are posted for the first time: new lines, or all
+  // lines when a draft becomes posted. Re-saving a posted voucher does not expand again.
+  const wasPosted = Boolean(existing && existing.status >= STATUS_POSTED)
+  let extras: SaveEntryInput[] = []
+  if (status >= STATUS_POSTED) {
+    const eligible = lines.filter((l) => !wasPosted || l.id == null)
+    if (eligible.length) extras = expandPostedLines(db, [...eligible], date).slice(eligible.length)
+  }
+  const allLines = [...lines, ...extras]
+
+  // Same lines in the same order: keep the stored line numbers (rivi) as they are.
+  const sameStructure =
+    !extras.length &&
+    lines.length === storedRows.length &&
+    lines.every((l, i) => l.id != null && Number(l.id) === Number(storedRows[i].id))
+
+  const planned: PlannedLine[] = allLines.map((line, idx) => {
+    const stored = line.id != null ? (storedById.get(Number(line.id)) ?? null) : null
+    const [d, k] = lineAmounts(line)
+    const newEra = line.item_id === -1 || line.new_era === true
+    let eraid: unknown
+    if (newEra) eraid = stored ? stored.id : null
+    else if (line.item_id !== undefined) eraid = line.item_id == null ? null : Number(line.item_id)
+    else eraid = stored ? stored.eraid : null
+    let kumppani: unknown
+    if (stored) kumppani = line.partner === undefined ? stored.kumppani : resolvePartner(db, line.partner)
+    else kumppani = resolvePartner(db, line.partner) || partnerId
+    const values: RawRow = {
+      rivi: sameStructure && stored ? stored.rivi : Number(line.line_no || idx + 1),
+      tyyppi: line.entry_type !== undefined ? Number(line.entry_type || 0) : stored ? stored.tyyppi : 0,
+      pvm: line.date || (stored ? stored.pvm : date),
+      tili: Number(line.account),
+      kohdennus: Number(line.allocation || 0),
+      selite: stored
+        ? line.description !== undefined
+          ? String(line.description ?? '')
+          : stored.selite
+        : line.description || title || '',
+      debetsnt: d || null,
+      kreditsnt: k || null,
+      eraid,
+      alvprosentti: line.vat_percent !== undefined ? line.vat_percent : stored ? stored.alvprosentti : null,
+      alvkoodi: line.vat_code !== undefined ? Number(line.vat_code || 0) : stored ? stored.alvkoodi : 0,
+      kumppani,
+      jaksoalkaa:
+        line.accrual_starts !== undefined ? line.accrual_starts || null : stored ? stored.jaksoalkaa : null,
+      jaksoloppuu:
+        line.accrual_ends !== undefined ? line.accrual_ends || null : stored ? stored.jaksoloppuu : null,
+      arkistotunnus:
+        line.archive_id !== undefined ? line.archive_id || null : stored ? stored.arkistotunnus : null,
+      json: line.json !== undefined ? JSON.stringify(line.json || {}) : stored ? stored.json : '{}',
+    }
+    return { stored, values, newEra: newEra && !stored }
+  })
+
+  const keptIds = new Set(planned.filter((p) => p.stored).map((p) => Number(p.stored!.id)))
+  const removedIds = storedRows.map((r) => Number(r.id)).filter((id) => !keptIds.has(id))
+  const tositeChanges = raw ? changedColumns(raw, tositeValues) : Object.keys(tositeValues)
+  const lineChanges = planned.map((p) => (p.stored ? changedColumns(p.stored, p.values) : null))
+  const nothingChanged =
+    raw != null &&
+    !tositeChanges.length &&
+    !removedIds.length &&
+    planned.every((p, i) => p.stored && !lineChanges[i]!.length)
+  if (nothingChanged) return Number(voucherId)
+
   let savedId: number
   if (voucherId) {
-    db.run(
-      `UPDATE Tosite SET
-         pvm=?, tyyppi=?, tila=?, tunniste=?, sarja=?, otsikko=?,
-         kumppani=?, laskupvm=?, erapvm=?, viite=?, json=?
-       WHERE id=?`,
-      [
-        date,
-        type,
-        status,
-        tunniste,
-        series,
-        title,
-        partnerId,
-        invoiceDate ?? null,
-        dueDate ?? null,
-        reference,
-        jsonText,
-        voucherId,
-      ],
-    )
-    db.run('DELETE FROM Vienti WHERE tosite = ?', [voucherId])
+    if (tositeChanges.length) {
+      db.run(
+        `UPDATE Tosite SET ${tositeChanges.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`,
+        [...tositeChanges.map((c) => tositeValues[c] as BindValue), voucherId],
+      )
+    }
     savedId = voucherId
   } else {
+    const cols = Object.keys(tositeValues)
     const ins = db.run(
-      `INSERT INTO Tosite (
-         pvm, tyyppi, tila, tunniste, sarja, otsikko,
-         kumppani, laskupvm, erapvm, viite, json
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        date,
-        type,
-        status,
-        tunniste,
-        series,
-        title,
-        partnerId,
-        invoiceDate ?? null,
-        dueDate ?? null,
-        reference,
-        jsonText,
-      ],
+      `INSERT INTO Tosite (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`,
+      cols.map((c) => tositeValues[c] as BindValue),
     )
     savedId = ins.lastInsertRowid
   }
 
-  // Preserve eraid on update when caller omits item_id (avoid Kitsas-style NULL wipe).
-  const priorByLine = new Map<number, number>()
-  if (existing?.entries?.length) {
-    for (const e of existing.entries) {
-      const lid = Number(e.line_no || 0)
-      const era = e.item_id
-      if (lid && era != null) priorByLine.set(lid, Number(era))
-    }
+  if (removedIds.length) {
+    const marks = removedIds.map(() => '?').join(',')
+    db.run(`DELETE FROM Merkkaus WHERE vienti IN (${marks})`, removedIds)
+    db.run(`DELETE FROM Vienti WHERE id IN (${marks})`, removedIds)
   }
 
-  const expandedLines =
-    status >= STATUS_POSTED ? expandPostedLines(db, [...lines], date) : [...lines]
-
-  expandedLines.forEach((line, idx) => {
-    const [d, k] = lineAmounts(line)
-    const linePartner = resolvePartner(db, line.partner) || partnerId
-    const lineNo = Number(line.line_no || idx + 1)
-    let eraId: number | null =
-      line.item_id === undefined ? (priorByLine.get(lineNo) ?? null) : line.item_id == null ? null : Number(line.item_id)
-    const newEra = eraId === -1 || line.new_era === true
-    if (newEra) eraId = null
-
+  planned.forEach((p, i) => {
+    if (p.stored) {
+      const cols = lineChanges[i]!
+      if (!cols.length) return
+      db.run(`UPDATE Vienti SET ${cols.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`, [
+        ...cols.map((c) => p.values[c] as BindValue),
+        Number(p.stored.id),
+      ])
+      return
+    }
     const ins = db.run(
-      `INSERT INTO Vienti (
-         rivi, tosite, tyyppi, pvm, tili, kohdennus, selite,
-         debetsnt, kreditsnt, eraid, alvprosentti, alvkoodi,
-         kumppani, jaksoalkaa, jaksoloppuu, arkistotunnus, json
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO Vienti (tosite, ${VIENTI_COLUMNS.join(', ')})
+       VALUES (?, ${VIENTI_COLUMNS.map(() => '?').join(', ')})`,
+      [savedId, ...VIENTI_COLUMNS.map((c) => p.values[c] as BindValue)],
+    )
+    if (p.newEra) db.run('UPDATE Vienti SET eraid = id WHERE id = ?', [ins.lastInsertRowid])
+  })
+
+  appendLoki(db, savedId, status, { toiminto: 'tallenna' })
+  return savedId
+}
+
+/**
+ * Post a draft without touching its lines (Kitsas `TositeRoute::patch`): sets `tila` and
+ * assigns a number. Lines are expanded once (cash-basis VAT), as a posting save would.
+ */
+export function postVoucher(db: SqliteDb, voucherId: number): number {
+  const existing = getVoucher(db, voucherId)
+  if (!existing) throw new PostingError(`Tosite ${voucherId} not found`, 404)
+  if (READONLY_TYPES.has(existing.type)) {
+    throw new PostingError('Myyntilaskuja ei voi muokata tässä versiossa (ks. docs/SCOPE.md)', 501)
+  }
+  if (existing.status >= STATUS_POSTED) return voucherId
+  if (existing.status < STATUS_DRAFT) throw new PostingError(`Tosite ${voucherId} on poistettu`, 409)
+  assertUnlocked(db, existing.date)
+  const lines = entriesFromExisting(existing.entries)
+  validatePayload(
+    { type: existing.type, date: existing.date, status: STATUS_POSTED, entries: lines },
+    existing.type,
+    { allowEmpty: true },
+  )
+
+  const raw = db.get<{ tunniste: number | null; sarja: string | null }>(
+    'SELECT tunniste, sarja FROM Tosite WHERE id = ?',
+    [voucherId],
+  )
+  const tunniste = Number(raw?.tunniste || 0) || nextDocNumber(db, existing.date, raw?.sarja || '')
+  const extras = expandPostedLines(db, [...lines], existing.date).slice(lines.length)
+  db.run('UPDATE Tosite SET tila = ?, tunniste = ? WHERE id = ?', [STATUS_POSTED, tunniste, voucherId])
+  let rivi = Math.max(0, ...existing.entries.map((e) => Number(e.line_no || 0)))
+  for (const line of extras) {
+    const [d, k] = lineAmounts(line)
+    rivi += 1
+    const ins = db.run(
+      `INSERT INTO Vienti (tosite, ${VIENTI_COLUMNS.join(', ')})
+       VALUES (?, ${VIENTI_COLUMNS.map(() => '?').join(', ')})`,
       [
-        lineNo,
-        savedId,
+        voucherId,
+        rivi,
         Number(line.entry_type ?? 0),
-        line.date || date,
+        line.date || existing.date,
         Number(line.account),
         Number(line.allocation || 0),
-        line.description || title || '',
+        line.description || existing.title || '',
         d || null,
         k || null,
-        eraId,
+        line.item_id == null || line.item_id === -1 ? null : Number(line.item_id),
         line.vat_percent ?? null,
         Number(line.vat_code || 0),
-        linePartner,
+        resolvePartner(db, line.partner) || existing.partner?.id || null,
         line.accrual_starts || null,
         line.accrual_ends || null,
         line.archive_id || null,
         JSON.stringify(line.json || {}),
       ],
     )
-    if (newEra) {
+    if (line.item_id === -1 || line.new_era) {
       db.run('UPDATE Vienti SET eraid = id WHERE id = ?', [ins.lastInsertRowid])
     }
-  })
-
-  appendLoki(db, savedId, status, { toiminto: 'tallenna' })
-  return savedId
+  }
+  appendLoki(db, voucherId, STATUS_POSTED, { toiminto: 'kirjaa' })
+  return voucherId
 }
 
 export function deleteVoucher(db: SqliteDb, voucherId: number): void {
@@ -320,7 +519,7 @@ export function deleteVoucher(db: SqliteDb, voucherId: number): void {
   runAfterDelete(db, periodEnd, type)
 }
 
-export async function attachAttachment(
+export function attachAttachment(
   db: SqliteDb,
   voucherId: number,
   opts: {
@@ -330,12 +529,14 @@ export async function attachAttachment(
     roleName?: string | null
     /** When true (web format), store sha only; caller keeps bytes in AttachmentStore. */
     lean?: boolean
+    /** SHA-256 hex of `data` when the caller already has it (async Web Crypto). */
+    sha?: string
   },
-): Promise<{ id: number; sha: string }> {
+): { id: number; sha: string } {
   const existing = getVoucher(db, voucherId)
   if (!existing) throw new PostingError(`Tosite ${voucherId} not found`, 404)
   assertUnlocked(db, existing.date)
-  const sha = await sha256hex(opts.data)
+  const sha = opts.sha || sha256hexSync(opts.data)
   const lean = opts.lean !== false
   const ins = db.run(
     'INSERT INTO Liite (tosite, nimi, roolinimi, tyyppi, sha, data) VALUES (?, ?, ?, ?, ?, ?)',

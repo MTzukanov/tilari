@@ -76,6 +76,8 @@ export interface BookService {
   fetchPartners(): Promise<{ partners: { id: number; name: string; vat_id: string }[] }>
   saveVoucher(payload: SaveVoucherInput, id?: number): Promise<VoucherDetail>
   deleteVoucher(id: number): Promise<void>
+  /** Post a draft as it is: status and number only, lines untouched. */
+  postVoucher(id: number): Promise<VoucherDetail>
   splitBankStatement(voucherId: number, entryId: number, type?: number, entryIds?: number[]): Promise<VoucherDetail>
   fetchBankStatementOverlay(opts: {
     account: number

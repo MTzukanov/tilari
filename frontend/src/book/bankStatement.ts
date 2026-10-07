@@ -14,6 +14,7 @@ import type { SqliteDb } from './sqlite'
 import {
   ENTRY_COUNTER_POSTING,
   ENTRY_POSTING,
+  ENTRY_VAT_POSTING,
   getVoucher,
   TYPE_BANK_STATEMENT,
   TYPE_EXPENSE,
@@ -68,6 +69,20 @@ export type StatementOwnRow = {
   entryIds?: number[]
   /** When loaded from Kitsas multi-line splits, keep original viennit until edited. */
   rawEntries?: SaveEntryInput[]
+  /**
+   * Imported from a bank file in this session (Kitsas `tuotu`). Only such rows are hidden by
+   * date + amount; rows loaded from the book are hidden by archive id only.
+   */
+  imported?: boolean
+  /** Stored line ids of a loaded row, reused when the row is edited (ids keep eraid links). */
+  lineIds?: { bank?: number; counter?: number; vat?: number }
+  /** Line class as stored (100/200/300/400); kept on edit while the counter account is unchanged. */
+  loadedClass?: number
+  /** Counter account and eraid as loaded; the eraid is kept while the account is unchanged. */
+  loadedCounterAccount?: number | null
+  loadedCounterItemId?: number | null
+  /** Partner as loaded; kept by id while the payee text is unchanged. */
+  payeePartner?: { id: number; name: string } | null
 }
 
 /** Bank line booked on another voucher (green row). */
@@ -111,6 +126,10 @@ type GroupableEntry = {
   allocation?: number
   archive_id?: string
   partner?: { id: number; name: string } | null
+  item_id?: number | null
+  json?: Record<string, unknown>
+  accrual_starts?: string | null
+  accrual_ends?: string | null
 }
 
 let keySeq = 0
@@ -158,6 +177,11 @@ function bankSignedCents(entry: GroupableEntry): number {
 
 function toSaveEntry(e: GroupableEntry): SaveEntryInput {
   return {
+    ...(e.id != null ? { id: e.id } : {}),
+    ...(e.item_id !== undefined ? { item_id: e.item_id } : {}),
+    ...(e.json !== undefined ? { json: e.json } : {}),
+    ...(e.accrual_starts !== undefined ? { accrual_starts: e.accrual_starts } : {}),
+    ...(e.accrual_ends !== undefined ? { accrual_ends: e.accrual_ends } : {}),
     line_no: e.line_no,
     entry_type: e.entry_type,
     date: e.date,
@@ -198,8 +222,15 @@ export function groupOwnRows(entries: GroupableEntry[], bankAccount: number): St
       group[0]
     const counterparts = group.filter((e) => e !== bank && !isVatish(e))
     const primary = counterparts[0]
+    const vatLine = group.find((e) => e !== bank && isVatish(e))
     const code = Number(primary?.vat_code || 0)
-    const keepRaw = counterparts.length !== 1 || group.some((e) => isVatish(e))
+    // Rows loaded from the book (lines with ids) are saved as stored until edited; only an
+    // edited row is rebuilt from its fields (clearOwnRowRaw).
+    const keepRaw =
+      counterparts.length !== 1 || group.some((e) => isVatish(e)) || group.some((e) => e.id != null)
+    const payeePartner = bank.partner || primary?.partner || null
+    const typed = isBankLeg(bank, bankAccount) ? Number(bank.entry_type || 0) : Number(primary?.entry_type || 0)
+    const loadedClass = typed - (typed % 100)
     return {
       kind: 'own' as const,
       key: nextStatementRowKey(),
@@ -215,8 +246,44 @@ export function groupOwnRows(entries: GroupableEntry[], bankAccount: number): St
       bankEntryId: bank.id ?? null,
       entryIds: group.map((e) => e.id).filter((id): id is number => id != null),
       rawEntries: keepRaw ? group.map(toSaveEntry) : undefined,
+      lineIds: {
+        ...(bank.id != null ? { bank: bank.id } : {}),
+        ...(primary?.id != null ? { counter: primary.id } : {}),
+        ...(vatLine?.id != null ? { vat: vatLine.id } : {}),
+      },
+      loadedClass,
+      loadedCounterAccount: primary?.account ?? null,
+      loadedCounterItemId: primary?.item_id ?? null,
+      payeePartner,
     }
   })
+}
+
+export type ExpandOpts = {
+  /** Kitsas account type (`Tili.tyyppi`) of an account number, when known. */
+  accountType?: (account: number) => string | undefined
+}
+
+/**
+ * Line class of a statement row like Kitsas `TilioteKirjausRivi::paivitaTyyppi`:
+ * open-item payment 300, balance sheet 400, expense 100, income 200 (0 = unknown).
+ * The bank line adds 2, the counter line 1, a VAT line 3.
+ */
+export function statementRowClass(
+  counterAccount: number | null,
+  deposit: boolean,
+  opts: ExpandOpts & { openItem?: boolean } = {},
+): number {
+  if (opts.openItem) return 300
+  if (!counterAccount) return 0
+  const type = opts.accountType?.(counterAccount)
+  if (type) {
+    if (type.startsWith('A') || type.startsWith('B') || type === 'T') return 400
+    if (type.startsWith('C')) return 200
+    if (type.startsWith('D')) return 100
+  }
+  if (String(counterAccount) < '3') return 400
+  return deposit ? 200 : 100
 }
 
 /**
@@ -226,6 +293,7 @@ export function groupOwnRows(entries: GroupableEntry[], bankAccount: number): St
 export function expandOwnRowToEntries(
   row: StatementOwnRow,
   bankAccount: number,
+  opts: ExpandOpts = {},
 ): SaveEntryInput[] {
   if (row.rawEntries?.length) {
     return row.rawEntries.map((e, i) => ({ ...e, line_no: i + 1 }))
@@ -236,8 +304,25 @@ export function expandOwnRowToEntries(
 
   const abs = Math.abs(amount)
   const deposit = amount > 0
-  const partner = row.payee.trim() ? { name: row.payee.trim() } : null
+  const payee = row.payee.trim()
+  const partner =
+    row.payeePartner && payee && payee === row.payeePartner.name
+      ? { id: row.payeePartner.id, name: payee }
+      : payee
+        ? { name: payee }
+        : null
   const desc = row.description || row.payee || ''
+  const ids = row.lineIds ?? {}
+  const counterAccount = row.counterAccount
+  // The loaded counter line's eraid (open-item payment) survives while its account does.
+  const sameCounter = ids.counter != null && counterAccount === (row.loadedCounterAccount ?? null)
+  const openItem = sameCounter && Boolean(row.loadedCounterItemId)
+  // Kitsas keeps the stored class (TilioteKirjausRivi loads it from the line type) and
+  // recomputes it only when the account changes (paivitaTyyppi).
+  const cls =
+    sameCounter && row.loadedClass
+      ? row.loadedClass
+      : statementRowClass(counterAccount, deposit, { ...opts, openItem })
 
   const vatCode = Number(row.vat_code || 0)
   const vatPct = Number(row.vat_percent || 0)
@@ -249,7 +334,8 @@ export function expandOwnRowToEntries(
   const net = abs - vatCents
 
   const bank: SaveEntryInput = {
-    entry_type: ENTRY_COUNTER_POSTING,
+    ...(ids.bank != null ? { id: ids.bank } : {}),
+    entry_type: cls + ENTRY_COUNTER_POSTING,
     date: row.date,
     account: bankAccount,
     description: desc,
@@ -261,15 +347,17 @@ export function expandOwnRowToEntries(
     partner,
   }
 
-  const counterAccount = row.counterAccount
   if (!counterAccount) {
     return [bank]
   }
 
   const purchase = isPurchaseVatCode(vatCode)
   // Deposit (income): credit counterpart; withdrawal (expense): debit counterpart.
+  // Kitsas puts arkistotunnus on the bank line only.
   const counter: SaveEntryInput = {
-    entry_type: ENTRY_POSTING,
+    ...(ids.counter != null ? { id: ids.counter } : { archive_id: null }),
+    ...(ids.counter != null && !sameCounter ? { item_id: null } : {}),
+    entry_type: cls + ENTRY_POSTING,
     date: row.date,
     account: counterAccount,
     description: desc,
@@ -278,14 +366,14 @@ export function expandOwnRowToEntries(
     vat_code: vatCode,
     vat_percent: vatPct || null,
     allocation: row.allocation || 0,
-    archive_id: row.archive_id || null,
     partner,
   }
 
   const out: SaveEntryInput[] = [bank, counter]
   if (vatAcc && vatCents) {
     out.push({
-      entry_type: 0,
+      ...(ids.vat != null ? { id: ids.vat } : {}),
+      entry_type: cls + ENTRY_VAT_POSTING,
       date: row.date,
       account: vatAcc,
       description: 'ALV',
@@ -303,12 +391,13 @@ export function expandOwnRowToEntries(
 export function expandOwnRowsToEntries(
   rows: StatementOwnRow[],
   bankAccount: number,
+  opts: ExpandOpts = {},
 ): SaveEntryInput[] {
   const out: SaveEntryInput[] = []
   let lineNo = 1
   for (const row of rows) {
     if (row.hidden) continue
-    for (const e of expandOwnRowToEntries(row, bankAccount)) {
+    for (const e of expandOwnRowToEntries(row, bankAccount, opts)) {
       out.push({ ...e, line_no: lineNo++ })
     }
   }
@@ -454,7 +543,9 @@ export function listOtherBankRows(
 
 /**
  * Hide own (white) rows that duplicate green rows — Kitsas peitaHarmailla.
- * Archive id first; else date + amount (± partner / description).
+ * Archive id first; date + amount (± partner / description) only for rows imported in this
+ * session (Kitsas `tuotu()`). Hidden rows are not saved, so a loaded row must never be hidden
+ * just because another voucher has the same date and amount.
  */
 export function matchAndHideDuplicates(
   own: StatementOwnRow[],
@@ -474,7 +565,14 @@ export function matchAndHideDuplicates(
     if (matchIdx < 0) {
       const candidates = result
         .map((r, i) => ({ r, i }))
-        .filter(({ r, i }) => !used.has(i) && !r.hidden && r.date === green.date && r.amountCents === green.amountCents)
+        .filter(
+          ({ r, i }) =>
+            !used.has(i) &&
+            !r.hidden &&
+            r.imported === true &&
+            r.date === green.date &&
+            r.amountCents === green.amountCents,
+        )
       if (candidates.length === 1) {
         matchIdx = candidates[0].i
       } else if (candidates.length > 1) {

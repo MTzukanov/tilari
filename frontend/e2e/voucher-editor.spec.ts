@@ -207,6 +207,19 @@ test.describe('voucher editor', () => {
     await expect(editorSaveButton(page)).toBeEnabled()
   })
 
+  test('an unchanged draft can be posted as it is', async ({ page }) => {
+    await openBook(page)
+    await page.goto('/#/voucher/6/edit')
+    await expect(page.getByRole('textbox', { name: 'Otsikko' })).toHaveValue('Luonnos - ei kirjattu')
+    await expect(page.getByRole('button', { name: 'Tallenna luonnos' })).toBeVisible()
+    // Kitsas allows posting a draft without edits; only status and number change.
+    await expect(editorSaveButton(page)).toBeEnabled()
+    await editorSaveButton(page).click()
+    await expect(page.getByRole('button', { name: 'Tallenna luonnos' })).toHaveCount(0)
+    await expect(page.locator('.editor-doc-number')).toBeVisible()
+    await expect(editorSaveButton(page)).toBeDisabled()
+  })
+
   test('footer has Kitsas buttons, shortcuts, and no duplicate title', async ({ page }) => {
     await openBook(page)
     await page.goto('/#/voucher/new/100')
