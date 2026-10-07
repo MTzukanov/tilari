@@ -8,6 +8,8 @@ Local-first **Node** + React (Vite) **read-write** ledger for Kitsas `.kitsas` S
 
 Human docs: [README.md](README.md). User HTML (fi/en/sv/de, GitHub Pages): [site/](site/). How Pages is published: [docs/PAGES.md](docs/PAGES.md). Decisions: [docs/DECISIONS.md](docs/DECISIONS.md). Scope: [docs/SCOPE.md](docs/SCOPE.md). Testing: [docs/TESTING.md](docs/TESTING.md). Working modes: [docs/WORKING_MODES.md](docs/WORKING_MODES.md). Packaging: [docs/PACKAGING.md](docs/PACKAGING.md). Tilari server: [docs/DEPLOY.md](docs/DEPLOY.md).
 
+Known open defects and dated decisions: [MEMORY.md](MEMORY.md).
+
 ## Toolchain (verified)
 
 - **Node 24.x**, **npm 11.x** (server uses `node:sqlite` + sql.js)
@@ -54,6 +56,7 @@ cd server && npm test
 ```
 
 Env: `KITSAS_BOOKS_DIR` / `TILARI_BOOKS_DIR` for locker storage; `TILARI_STATIC` for production UI; `TILARI_PORT` (default 8000).
+Browser access (`server/src/requestGuard.ts`): same origin always; cross-origin only from `TILARI_ALLOWED_ORIGINS` (default the Pages origin); `TILARI_ALLOWED_HOSTS`; `TILARI_MAX_BODY_MB`. Locker book ids are folder names (`^[A-Za-z0-9_-]+$`); server writes go through `writeFileAtomic`.
 
 ## Architecture
 
@@ -115,6 +118,21 @@ Rules already encoded:
 8. Writable types: 0, 100, 200, 300, 400, 800, 9100, and edit 9910/9920/9930. Type 210 is read-only until Billing.
 9. JSON blobs stay opaque except documented fields (`tiliote`, `alv`, `tilioterivi`).
 10. Fiscal year can start mid-month. Period lookup for month ranges must use **overlap**.
+11. **Voucher numbers** (`tunniste`): Kitsas assigns them only when a voucher is saved with
+    `tila >= 100` and has none: `MAX(tunniste)+1` over the **fiscal year** (`Tilikausi`), same
+    series, `tila >= 100` (`kitsas/sqlite/routes/tositeroute.cpp` ~225). Drafts keep 0. Series:
+    `erisarjaan` off -> `sarja IS NULL` (write NULL, never `''`; Kitsas does not see `''` rows);
+    on -> `tositesarjat[tyyppi]` (`*` for >= 1000, default `X`); `kateissarjaan` + cash -> `K`
+    (`kitsas/db/tositetyyppimodel.cpp`). Since kitsas `5ae038d1` the number is kept when the date
+    moves to another fiscal year. Current tilari does **not** follow this yet (see MEMORY.md).
+12. **VAT-filed lock**: a date is filed when a posted `tyyppi 9100` voucher covers it
+    (`json.alv.kausialkaa..kausipaattyy`, `kitsas/alv/alvilmoitustenmodel.cpp`). Kitsas blocks
+    VAT-coded lines dated there and deleting such vouchers, unless `Asetus.OhitaAlvLukko = ON`.
+13. **Save round-trip**: saving a voucher must preserve per-line fields the UI does not edit -
+    `Vienti.arkistotunnus` (bank archive id, the idempotency key of bank importers), `tyyppi`
+    (entry type), line `pvm`, `eraid`, `json`. An unchanged save should write identical rows.
+14. **Tositeloki writer signature**: tilari writes `userid 0` + `{"toiminto": ...}`; Kitsas desktop
+    writes `userid NULL` + the full voucher JSON. Keep tilari's writes distinguishable.
 
 ## UI conventions
 

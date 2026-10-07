@@ -45,6 +45,24 @@ Books and uploads: `~/tilari/data` (container `/data`, locker files in `/data/bo
 3. Access application on that hostname: allowlisted emails, MFA.
 4. DNS for the hostname is the tunnel CNAME Cloudflare creates. Do not point it at the VPS A record.
 
+## Browser access
+
+The server has no login. It only serves browsers it trusts:
+
+- **Same origin** (the UI this server serves, or the Vite dev proxy) is always allowed.
+- **Cross-origin** callers need `TILARI_ALLOWED_ORIGINS` (comma-separated origins). Default:
+  `https://mtzukanov.github.io` (the Pages build of `tilari.html`). Setting the variable replaces
+  the default. `null` origins (`file://`, sandboxed frames) are never allowed.
+- Any other `Origin` gets **403** before routing, also for "simple" requests that skip the CORS
+  preflight.
+- Bound to loopback (default `127.0.0.1`), the `Host` header must be `localhost`, `127.0.0.1` or
+  `[::1]` (DNS rebinding). `TILARI_ALLOWED_HOSTS` (comma-separated) sets an explicit list for any
+  bind address; set it on a public host to the tunnel hostname.
+- `TILARI_MAX_BODY_MB` limits request bodies (default 1024).
+
+A public hostname still needs the Cloudflare **Access** application above: the origin check
+stops other websites, not people who reach the URL directly.
+
 ## Local check of Compose (no tunnel)
 
 ```bash

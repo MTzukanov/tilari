@@ -8,9 +8,9 @@ import {
   readFileSync,
   rmSync,
   statSync,
-  writeFileSync,
 } from 'node:fs'
 import { dirname, join, resolve, sep } from 'node:path'
+import { writeFileAtomic } from '../httpUtil.ts'
 import { booksDir } from './store.ts'
 
 export class ObjectPathError extends Error {
@@ -69,7 +69,7 @@ export function objectUpload(rel: string, data: Uint8Array, opts?: { upsert?: bo
     throw err
   }
   mkdirSync(dirname(path), { recursive: true })
-  writeFileSync(path, data)
+  writeFileAtomic(path, data)
 }
 
 export function objectRemove(rels: string[]): void {
