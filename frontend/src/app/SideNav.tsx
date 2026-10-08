@@ -3,7 +3,7 @@ import { useI18n } from '../i18n'
 import { TilariMark } from '../shared/TilariMark'
 import { NAV_ITEMS, activeNav as activeNavFromModules } from '../modules/registry'
 import { useEffect, useState } from 'react'
-import { fetchSettings } from '../api'
+import { fetchAllocations, fetchSettings } from '../api'
 import { isVatLiableSetting } from '../book/settings'
 
 export type NavId = string
@@ -66,6 +66,15 @@ function NavGlyph({ name }: { name: string }) {
           />
         </svg>
       )
+    case 'home':
+      return (
+        <svg {...common}>
+          <path
+            fill="currentColor"
+            d="M12 3.6 3.2 11h2.3v8.9h5.1v-5.4h2.8v5.4h5.1V11h2.3L12 3.6zm0 2.8 4.5 3.8v7.7h-1.1v-5.4H8.6v5.4H7.5v-7.7L12 6.4z"
+          />
+        </svg>
+      )
     case 'pct':
       return (
         <svg {...common}>
@@ -122,18 +131,25 @@ export function SideNav({
   const current = activeNav(route)
   const { t } = useI18n()
   const [vatLiable, setVatLiable] = useState(true)
+  const [hasCostCentres, setHasCostCentres] = useState(false)
 
   useEffect(() => {
     if (!bookOpen) {
       setVatLiable(true)
+      setHasCostCentres(false)
       return
     }
     void fetchSettings()
       .then((s) => setVatLiable(isVatLiableSetting(s.company.AlvVelvollinen)))
       .catch(() => setVatLiable(true))
+    void fetchAllocations()
+      .then((a) => setHasCostCentres(a.allocations.some((item) => item.type === 1)))
+      .catch(() => setHasCostCentres(false))
   }, [bookOpen, route.view])
 
-  const items = NAV_ITEMS.filter((item) => item.id !== 'vat' || vatLiable)
+  const items = NAV_ITEMS.filter(
+    (item) => (item.id !== 'vat' || vatLiable) && (item.id !== 'properties' || hasCostCentres),
+  )
 
   return (
     <>

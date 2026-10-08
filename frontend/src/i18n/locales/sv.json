@@ -55,7 +55,8 @@
     "help": "Hjälp",
     "balanceSheetItems": "Balansposter",
     "costCentres": "Kostnadsställen",
-    "journal": "Dagbok"
+    "journal": "Dagbok",
+    "properties": "Hyresobjekt"
   },
   "file": {
     "label": "Bokföringsfil",
@@ -344,7 +345,9 @@
     "overviewTaxEstimateHint": "20 % av det beskattningsbara resultatet, utan tidigare förlust",
     "overviewTaxUnpaid": "{amount} skatt kvar",
     "overviewMonths": "Månader under det här räkenskapsåret",
-    "overviewYears": "Räkenskapsår"
+    "overviewYears": "Räkenskapsår",
+    "hubProperties": "Hyresobjekt",
+    "hubPropertiesHint": "Kassaflöde, avkastning och nollpris per objekt"
   },
   "browse": {
     "title": "Bläddring",
@@ -494,7 +497,9 @@
     "closing": "Till bokslut",
     "reports": "Till balans / resultat",
     "reportsHub": "Till rapporter",
-    "bankStatement": "Till kontoutdraget"
+    "bankStatement": "Till kontoutdraget",
+    "property": "Till objektet",
+    "properties": "Till hyresobjekten"
   },
   "ledger": {
     "empty": "Inga transaktioner på det här kontot under perioden."
@@ -977,5 +982,208 @@
     "DPZ": "Ej avdragsgilla avskrivningar",
     "DVE": "Förskottsskatt",
     "unknown": "Kontotyp {code}"
+  },
+  "properties": {
+    "title": "Hyresobjekt",
+    "lead": "Kostnadsställen som hyresobjekt: investerade pengar, kassaflöde, avkastning och priset som ger pengarna tillbaka. Siffrorna kommer från bokföringen; Tilari sparar bara länkar och uppskattningar i en egen tabell.",
+    "asOf": "Läge {date}",
+    "dataThrough": "kontoutdrag till {date}",
+    "acquired": "förvärvad {date}",
+    "soldOn": "såld {date}",
+    "editLink": "Redigera objekt",
+    "openAllocation": "Kostnadsställets resultat",
+    "empty": "Inga objekt att visa.",
+    "showSold": "Visa sålda ({n})",
+    "setupBanner": "{n} kostnadsställen väntar på inställning.",
+    "setupOpen": "Ställ in objekt",
+    "footnote": "* ägt kortare än 12 mån, omräknat till år. † inga försäljningskostnader angivna. IRR: till uppskattat pris om ett finns, annars till bokfört värde; faktisk för sålda objekt.",
+    "kpi": {
+      "invested": "Investerat",
+      "investedHint": "Anskaffningsutgift och annat kapital",
+      "bookValue": "Bokfört värde",
+      "bookValueHint": "Balansposter för ägda objekt",
+      "proceeds": "Försäljningsintäkt",
+      "operating": "Kassaflöde hittills",
+      "operatingHint": "Intäkter {income}, kostnader {expense}",
+      "interest": "Räntor",
+      "unrecovered": "Ej återfått",
+      "unrecoveredHint": "Investerade pengar som kassaflödet ännu inte gett tillbaka",
+      "gain": "Vinst",
+      "t12m": "Kassaflöde 12 mån",
+      "yieldHint": "nettoavkastning {pct} av bokfört värde",
+      "annualized": "{n} mån omräknat till år",
+      "irr": "Årsavkastning (IRR)",
+      "irrMarket": "vid försäljning till uppskattningen {price}",
+      "irrAtCost": "vid försäljning till bokfört värde",
+      "irrActual": "faktisk",
+      "portfolioIrr": "Portföljens årsavkastning (IRR)",
+      "portfolioIrrHint": "sålda faktiska, övriga till bokfört värde",
+      "totalResult": "Totalt resultat",
+      "totalResultHint": "Försäljning + kassaflöde - investerat"
+    },
+    "col": {
+      "object": "Objekt",
+      "status": "Status",
+      "bookValue": "Bokfört värde",
+      "t12m": "Kassaflöde 12 mån",
+      "yield": "Nettoavkastning",
+      "irr": "IRR",
+      "unrecovered": "Ej återfått",
+      "breakEven": "Nollpris",
+      "valuation": "Uppskattning"
+    },
+    "status": {
+      "active": "Ägs",
+      "partly_sold": "Delvis sålt",
+      "sold": "Sålt",
+      "unlinked": "Ingen anskaffningsutgift",
+      "excluded": "Inte hyresobjekt"
+    },
+    "kind": {
+      "apartment": "Bostad",
+      "parking": "Bilplats",
+      "garage": "Garage",
+      "commercial": "Affärslokal",
+      "storage": "Förråd",
+      "other": "Övrigt"
+    },
+    "defaults": {
+      "title": "Standardvärden för alla objekt",
+      "lead": "Försäljningskostnader (t.ex. mäklararvode och disponentintyg) och målavkastning. Objektets egna värden går före."
+    },
+    "field": {
+      "kind": "Typ",
+      "excluded": "Inte hyresobjekt (dölj i listan)",
+      "salePct": "Försäljningskostnader, % av priset",
+      "saleFixed": "Försäljningskostnader, fast €",
+      "targetReturn": "Målavkastning, % per år",
+      "price": "Försäljningspris (utan låneandel)",
+      "debtFreePrice": "Skuldfritt pris",
+      "source": "Källa",
+      "loanAccounts": "Lånekonton",
+      "interestAccounts": "Räntekonton",
+      "note": "Anteckning"
+    },
+    "breakEven": {
+      "title": "Nollpris: priset som ger pengarna tillbaka",
+      "caption": "försäljningspris utan bolagslåneandel",
+      "explain": "Ej återfått {unrecovered}. Försäljningskostnader {pct} och {fixed} dras av från priset; till detta pris har alla pengar som satts in i objektet kommit tillbaka.",
+      "recovered": "Objektet har redan gett tillbaka de investerade pengarna; varje pris efter försäljningskostnader är vinst.",
+      "costsUnset": "Inga försäljningskostnader är angivna, så siffran antar noll. Ange dem för objektet eller i standardvärdena.",
+      "bookLoss": "Ingen bokföringsmässig förlust vid ett pris på minst {price} (bokfört värde + försäljningskostnader).",
+      "taxNote": "Skatt: när vinst och förlust beskattas med samma 20 % och en förlust kan dras av från annan vinst är nollpriset efter skatt samma siffra.",
+      "debtFree": "Skuldfritt pris = försäljningspris + återstående bolagslåneandel. Uppföljning av låneandelen kommer i nästa skede.",
+      "calculate": "Beräkna",
+      "targetPrice": "Årsavkastning {pct}: försäljningspris {price}"
+    },
+    "chart": {
+      "cashFlow": "Kassaflöde per månad",
+      "income": "Intäkter",
+      "expense": "Kostnader och räntor",
+      "allMonths": "Hela ägartiden",
+      "payback": "Ej återfått vid månadens slut"
+    },
+    "years": {
+      "title": "Per räkenskapsperiod",
+      "period": "Räkenskapsperiod",
+      "income": "Intäkter",
+      "expense": "Kostnader",
+      "net": "Netto",
+      "interest": "Räntor",
+      "capex": "Investerat",
+      "proceeds": "Försäljning",
+      "kitsas": "Kitsas resultat",
+      "kitsasHint": "Alla resultatposter för kostnadsstället som i Kitsas rapport (även periodiseringar och försäljning)"
+    },
+    "eras": {
+      "title": "Anskaffningsutgift (balansposter)",
+      "item": "Balanspost",
+      "none": "Ingen balanspost är länkad, så investerade pengar och avkastning kan inte beräknas.",
+      "link": "Länka balanspost",
+      "missing": "Balanspost {id} finns inte längre"
+    },
+    "sales": {
+      "title": "Försäljningar",
+      "proceeds": "försäljningsintäkt {amount}"
+    },
+    "docs": {
+      "title": "Dokument",
+      "linkedTitle": "Länkade dokument",
+      "empty": "Inga bilagor.",
+      "missing": "Verifikat {id} har raderats",
+      "showBank": "Visa kontoutdrag ({n})",
+      "group": {
+        "linked": "Länkade (avtal och meddelanden)",
+        "acquisition": "Köp och balansposter",
+        "other": "Fakturor och andra verifikat",
+        "bank": "Kontoutdrag"
+      },
+      "showAll": "Visa alla ({n})"
+    },
+    "edit": {
+      "title": "Redigera: {name}",
+      "basics": "Grunduppgifter",
+      "erasLead": "Balansposter där objektets anskaffningsutgift (köpesumma, överlåtelseskatt, kostnader) är bokförd.",
+      "addEra": "Lägg till balanspost…",
+      "addDoc": "Lägg till bilageverifikat…",
+      "remove": "Ta bort",
+      "valuations": "Prisuppskattningar",
+      "valuationsLead": "Din uppskattning av vad objektet skulle säljas för nu. Den senaste används för IRR.",
+      "addValuation": "Lägg till uppskattning",
+      "sale": "Försäljning och mål",
+      "saleLead": "Tomt = standardvärden används.",
+      "financing": "Banklån",
+      "financingLead": "Om objektet är finansierat med eget lån: poster på räntekonton, på verifikat som också har en post på lånekontot, räknas som objektets kostnad.",
+      "capital": "Annat investerat kapital",
+      "capitalLead": "Kapital som inte bokförts på en länkad balanspost (t.ex. före bokföringens början). Positivt = investerat.",
+      "addCapital": "Lägg till rad",
+      "delete": "Radera objektets uppgifter",
+      "deleteConfirm": "Radera Tilaris uppgifter om detta objekt? Bokföringen påverkas inte.",
+      "readOnly": "Uppgifterna sparades med en nyare Tilari; denna version kan bara visa dem."
+    },
+    "setup": {
+      "title": "Inställning av hyresobjekt",
+      "lead": "Välj vilka kostnadsställen som är hyresobjekt och koppla deras anskaffningsposter och dokument. Förslagen kommer från bokföringen; ★ = förslag. Bokföringen påverkas inte.",
+      "centres": "Kostnadsställen",
+      "centresLead": "Avmarkera kostnadsställen som inte är hyresobjekt.",
+      "isObject": "Hyresobjekt",
+      "ends": "slutar {date}",
+      "eras": "Anskaffningsutgifter (balansposter)",
+      "erasLead": "Aktieposter och objektet som var och en hör till.",
+      "closedEras": "Stängda balansposter (sålda)",
+      "belongsTo": "Objekt",
+      "none": "– inget objekt –",
+      "showAllEras": "Visa övriga balansposter ({n})",
+      "docs": "Dokument (bilageverifikat)",
+      "docsLead": "Hyresavtal, hyreshöjningar, vederlagsmeddelanden och andra dokument.",
+      "docTitle": "Rubrik",
+      "files": "Filer",
+      "showAllDocs": "Visa övriga ({n})",
+      "apply": "Spara inställningen"
+    },
+    "evidence": {
+      "sale": "försäljningsverifikat",
+      "era_allocation": "kostnadsställe på posten",
+      "voucher_allocation": "kostnadsställe på verifikatet",
+      "text": "enligt namn",
+      "ambiguous": "välj"
+    },
+    "warn": {
+      "sale_costs_unset": "Inga försäljningskostnader angivna.",
+      "sale_line_split": "Verifikat {voucher} sålde flera objekt; poster utan kostnadsställe delades i proportion till anskaffningsutgifterna.",
+      "era_missing": "Länkad balanspost {eraid} finns inte längre.",
+      "no_capital": "Ingen anskaffningsutgift länkad: avkastning och nollpris kan inte beräknas.",
+      "doc_corrupt": "De sparade uppgifterna är skadade; sparande ersätter dem.",
+      "doc_newer": "Uppgifterna sparades med en nyare Tilari."
+    },
+    "error": {
+      "invalid_field": "Kontrollera fältet {path}.",
+      "stale": "Objektet har ändrats någon annanstans. Öppna sidan på nytt.",
+      "era_linked": "Balansposten hör redan till ett annat objekt.",
+      "newer_version": "Uppgifterna sparades med en nyare Tilari och kan inte ändras med denna version.",
+      "not_found": "Kostnadsstället hittades inte.",
+      "percent": "Procent som 3,5.",
+      "accounts": "Kontonummer åtskilda med kommatecken."
+    }
   }
 }

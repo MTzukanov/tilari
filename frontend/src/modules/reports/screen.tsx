@@ -26,6 +26,7 @@ function ReportsScreen({
         onOpenBalanceSheetItems={() => goTo('#/balance-sheet-items')}
         onOpenJournal={() => goTo('#/journal')}
         onOpenAllocations={() => goTo('#/allocations')}
+        onOpenProperties={() => goTo('#/properties')}
       />
     )
   }

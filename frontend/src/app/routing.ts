@@ -1,6 +1,8 @@
 export type VoucherVia =
   | { kind: 'account'; account: number }
   | { kind: 'allocation'; id: number }
+  /** Opened from a rental object's page (`#/property/{id}`). */
+  | { kind: 'property'; id: number }
   | { kind: 'balanceSheetItems' }
   | { kind: 'browse' }
   | { kind: 'journal' }
@@ -15,6 +17,10 @@ export type Route =
   | { view: 'balanceSheetItems' }
   | { view: 'allocations' }
   | { view: 'allocation'; id: number }
+  | { view: 'properties' }
+  | { view: 'propertiesSetup' }
+  | { view: 'property'; id: number }
+  | { view: 'propertyEdit'; id: number }
   | { view: 'reportsHub' }
   | { view: 'overview' }
   | { view: 'browse' }
@@ -62,6 +68,8 @@ export function voucherHash(
       return `#/account/${via.account}${tail}`
     case 'allocation':
       return `#/allocation/${via.id}${tail}`
+    case 'property':
+      return `#/property/${via.id}${tail}`
     case 'balanceSheetItems':
       return `#/balance-sheet-items${tail}`
     case 'browse':
@@ -83,6 +91,8 @@ export function voucherParentHash(via: VoucherVia): string {
       return `#/account/${via.account}`
     case 'allocation':
       return `#/allocation/${via.id}`
+    case 'property':
+      return `#/property/${via.id}`
     case 'balanceSheetItems':
       return '#/balance-sheet-items'
     case 'browse':
@@ -106,6 +116,8 @@ export function voucherUpI18n(via: VoucherVia): { key: string; vars?: Record<str
       return { key: 'up.account', vars: { number: via.account } }
     case 'allocation':
       return { key: 'up.allocation' }
+    case 'property':
+      return { key: 'up.property' }
     case 'balanceSheetItems':
       return { key: 'up.balanceSheetItems' }
     case 'browse':
@@ -174,6 +186,15 @@ export function parseRoute(hash: string = window.location.hash): Route {
     if (ref) return voucherRoute({ kind: 'allocation', id: Number(allocation[1]) }, ref)
   }
 
+  const property = hash.match(/^#\/property\/(\d+)(?:\/(.+))?$/)
+  if (property) {
+    const id = Number(property[1])
+    if (!property[2]) return { view: 'property', id }
+    if (property[2] === 'edit') return { view: 'propertyEdit', id }
+    const ref = parseVoucherSegment(property[2])
+    if (ref) return voucherRoute({ kind: 'property', id }, ref)
+  }
+
   const account = hash.match(/^#\/account\/(\d+)(?:\/(.+))?$/)
   if (account) {
     if (!account[2]) return { view: 'ledger', account: Number(account[1]) }
@@ -228,6 +249,8 @@ export function parseRoute(hash: string = window.location.hash): Route {
   if (hash === '#/reports') return { view: 'reportsHub' }
   if (hash === '#/overview') return { view: 'overview' }
   if (hash === '#/allocations') return { view: 'allocations' }
+  if (hash === '#/properties') return { view: 'properties' }
+  if (hash === '#/properties/setup') return { view: 'propertiesSetup' }
   if (hash === '#/settings/storage') return { view: 'settings', page: 'storage' }
   if (hash === '#/settings') return { view: 'settings' }
   if (hash === '#/fiscal-periods') return { view: 'fiscalPeriods' }

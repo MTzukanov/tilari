@@ -6,12 +6,14 @@ export function ReportsHub({
   onOpenBalanceSheetItems,
   onOpenJournal,
   onOpenAllocations,
+  onOpenProperties,
 }: {
   onOpenOverview: () => void
   onOpenBalanceSheet: () => void
   onOpenBalanceSheetItems: () => void
   onOpenJournal: () => void
   onOpenAllocations: () => void
+  onOpenProperties: () => void
 }) {
   const { t } = useI18n()
   return (
@@ -38,6 +40,10 @@ export function ReportsHub({
         <button type="button" className="hub-card" onClick={onOpenAllocations}>
           <strong>{t('reports.hubCostCentres')}</strong>
           <span>{t('reports.hubCostCentresHint')}</span>
+        </button>
+        <button type="button" className="hub-card" onClick={onOpenProperties}>
+          <strong>{t('reports.hubProperties')}</strong>
+          <span>{t('reports.hubPropertiesHint')}</span>
         </button>
       </div>
     </div>

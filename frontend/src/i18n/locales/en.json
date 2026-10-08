@@ -55,7 +55,8 @@
     "help": "Help",
     "balanceSheetItems": "Balance-sheet items",
     "costCentres": "Cost centres",
-    "journal": "Journal"
+    "journal": "Journal",
+    "properties": "Rental objects"
   },
   "file": {
     "label": "Bookkeeping file",
@@ -344,7 +345,9 @@
     "overviewTaxEstimateHint": "20 % of taxable profit, not including prior losses",
     "overviewTaxUnpaid": "{amount} tax remaining",
     "overviewMonths": "Months in this financial year",
-    "overviewYears": "Financial years"
+    "overviewYears": "Financial years",
+    "hubProperties": "Rental objects",
+    "hubPropertiesHint": "Cash flow, return and break-even price per object"
   },
   "browse": {
     "title": "Browse",
@@ -494,7 +497,9 @@
     "closing": "To year-end close",
     "reports": "To balance sheet / P&L",
     "reportsHub": "To reports",
-    "bankStatement": "To bank statement"
+    "bankStatement": "To bank statement",
+    "property": "To the object",
+    "properties": "To rental objects"
   },
   "ledger": {
     "empty": "No postings on this account in the period."
@@ -977,5 +982,208 @@
     "DPZ": "Non-deductible depreciation",
     "DVE": "Prepaid tax",
     "unknown": "Account type {code}"
+  },
+  "properties": {
+    "title": "Rental objects",
+    "lead": "Cost centres as rental objects: money invested, cash flow, return, and the price that gets the money back. Figures come from the books; Tilari stores only links and estimates in its own table.",
+    "asOf": "As of {date}",
+    "dataThrough": "bank statements to {date}",
+    "acquired": "acquired {date}",
+    "soldOn": "sold {date}",
+    "editLink": "Edit object",
+    "openAllocation": "Cost-centre result",
+    "empty": "No objects to show.",
+    "showSold": "Show sold ({n})",
+    "setupBanner": "{n} cost centres are waiting for setup.",
+    "setupOpen": "Set up objects",
+    "footnote": "* owned less than 12 months, scaled to a year. † no sale costs set. IRR: at the estimated price if there is one, else at book value; actual for sold objects.",
+    "kpi": {
+      "invested": "Invested",
+      "investedHint": "Acquisition cost and other capital",
+      "bookValue": "Book value",
+      "bookValueHint": "Balance-sheet items of objects held",
+      "proceeds": "Sale proceeds",
+      "operating": "Cash flow to date",
+      "operatingHint": "Income {income}, costs {expense}",
+      "interest": "Interest",
+      "unrecovered": "Not yet recovered",
+      "unrecoveredHint": "Money invested that cash flow has not returned yet",
+      "gain": "Gain",
+      "t12m": "Cash flow 12 mo",
+      "yieldHint": "net yield {pct} of book value",
+      "annualized": "{n} months scaled to a year",
+      "irr": "Annual return (IRR)",
+      "irrMarket": "if sold at the estimate {price}",
+      "irrAtCost": "if sold at book value",
+      "irrActual": "actual",
+      "portfolioIrr": "Portfolio annual return (IRR)",
+      "portfolioIrrHint": "sold objects actual, others at book value",
+      "totalResult": "Total result",
+      "totalResultHint": "Sale + cash flow - invested"
+    },
+    "col": {
+      "object": "Object",
+      "status": "Status",
+      "bookValue": "Book value",
+      "t12m": "Cash flow 12 mo",
+      "yield": "Net yield",
+      "irr": "IRR",
+      "unrecovered": "Not recovered",
+      "breakEven": "Break-even price",
+      "valuation": "Estimate"
+    },
+    "status": {
+      "active": "Owned",
+      "partly_sold": "Partly sold",
+      "sold": "Sold",
+      "unlinked": "No acquisition cost",
+      "excluded": "Not a rental object"
+    },
+    "kind": {
+      "apartment": "Apartment",
+      "parking": "Parking space",
+      "garage": "Garage",
+      "commercial": "Commercial unit",
+      "storage": "Storage",
+      "other": "Other"
+    },
+    "defaults": {
+      "title": "Defaults for all objects",
+      "lead": "Sale costs (e.g. broker fee and manager's certificate) and target return. An object's own values override these."
+    },
+    "field": {
+      "kind": "Kind",
+      "excluded": "Not a rental object (hide from the list)",
+      "salePct": "Sale costs, % of price",
+      "saleFixed": "Sale costs, fixed €",
+      "targetReturn": "Target return, % per year",
+      "price": "Selling price (without loan share)",
+      "debtFreePrice": "Debt-free price",
+      "source": "Source",
+      "loanAccounts": "Loan accounts",
+      "interestAccounts": "Interest accounts",
+      "note": "Note"
+    },
+    "breakEven": {
+      "title": "Break-even price: the price that returns the money",
+      "caption": "selling price without the housing-company loan share",
+      "explain": "Not yet recovered {unrecovered}. Sale costs {pct} and {fixed} come off the price; at this price every euro put into the object has come back.",
+      "recovered": "The object has already returned the money invested; any price after sale costs is a gain.",
+      "costsUnset": "No sale costs are set, so the figure assumes none. Set them for the object or in the defaults.",
+      "bookLoss": "No accounting loss at a price of at least {price} (book value + sale costs).",
+      "taxNote": "Taxes: when gains and losses are taxed at the same 20 % and a loss can be deducted from other profit, the after-tax break-even is the same figure.",
+      "debtFree": "Debt-free price = selling price + remaining housing-company loan share. Loan-share tracking comes in the next phase.",
+      "calculate": "Calculate",
+      "targetPrice": "Annual return {pct}: selling price {price}"
+    },
+    "chart": {
+      "cashFlow": "Cash flow by month",
+      "income": "Income",
+      "expense": "Costs and interest",
+      "allMonths": "Whole ownership",
+      "payback": "Not yet recovered at month end"
+    },
+    "years": {
+      "title": "By fiscal year",
+      "period": "Fiscal year",
+      "income": "Income",
+      "expense": "Costs",
+      "net": "Net",
+      "interest": "Interest",
+      "capex": "Invested",
+      "proceeds": "Sale",
+      "kitsas": "Kitsas result",
+      "kitsasHint": "Every P&L line of the cost centre as in the Kitsas report (accruals and sale included)"
+    },
+    "eras": {
+      "title": "Acquisition cost (balance-sheet items)",
+      "item": "Item",
+      "none": "No balance-sheet item is linked, so invested money and return cannot be computed.",
+      "link": "Link an item",
+      "missing": "Item {id} no longer exists"
+    },
+    "sales": {
+      "title": "Sales",
+      "proceeds": "proceeds {amount}"
+    },
+    "docs": {
+      "title": "Documents",
+      "linkedTitle": "Linked documents",
+      "empty": "No attachments.",
+      "missing": "Voucher {id} has been deleted",
+      "showBank": "Show bank statements ({n})",
+      "group": {
+        "linked": "Linked (agreements and notices)",
+        "acquisition": "Purchase and balance-sheet items",
+        "other": "Invoices and other vouchers",
+        "bank": "Bank statements"
+      },
+      "showAll": "Show all ({n})"
+    },
+    "edit": {
+      "title": "Edit: {name}",
+      "basics": "Basics",
+      "erasLead": "Balance-sheet items holding the acquisition cost (price, transfer tax, fees).",
+      "addEra": "Add an item…",
+      "addDoc": "Add a notes voucher…",
+      "remove": "Remove",
+      "valuations": "Price estimates",
+      "valuationsLead": "Your estimate of what the object would sell for now. The latest is used for the IRR.",
+      "addValuation": "Add estimate",
+      "sale": "Sale and target",
+      "saleLead": "Empty = use the defaults.",
+      "financing": "Bank loan",
+      "financingLead": "If the object is financed with a loan: lines on the interest accounts, on vouchers that also have a loan-account line, count as the object's cost.",
+      "capital": "Other capital invested",
+      "capitalLead": "Capital not booked on a linked item (e.g. before the books started). Positive = invested.",
+      "addCapital": "Add row",
+      "delete": "Delete object data",
+      "deleteConfirm": "Delete Tilari's data for this object? The books are not touched.",
+      "readOnly": "The data was saved by a newer Tilari; this version can only show it."
+    },
+    "setup": {
+      "title": "Set up rental objects",
+      "lead": "Choose which cost centres are rental objects and link their acquisition items and documents. Suggestions come from the books; ★ = suggested. The books are not touched.",
+      "centres": "Cost centres",
+      "centresLead": "Untick cost centres that are not rental objects.",
+      "isObject": "Rental object",
+      "ends": "ends {date}",
+      "eras": "Acquisition costs (balance-sheet items)",
+      "erasLead": "Share items and the object each belongs to.",
+      "closedEras": "Closed items (sold)",
+      "belongsTo": "Object",
+      "none": "– no object –",
+      "showAllEras": "Show other items ({n})",
+      "docs": "Documents (notes vouchers)",
+      "docsLead": "Leases, rent increases, maintenance-charge notices and other documents.",
+      "docTitle": "Title",
+      "files": "Files",
+      "showAllDocs": "Show others ({n})",
+      "apply": "Save setup"
+    },
+    "evidence": {
+      "sale": "sale voucher",
+      "era_allocation": "cost centre on item",
+      "voucher_allocation": "cost centre on voucher",
+      "text": "by name",
+      "ambiguous": "choose"
+    },
+    "warn": {
+      "sale_costs_unset": "No sale costs set.",
+      "sale_line_split": "Voucher {voucher} sold several objects; lines without a cost centre were split by acquisition cost.",
+      "era_missing": "Linked item {eraid} no longer exists.",
+      "no_capital": "No acquisition cost linked: return and break-even cannot be computed.",
+      "doc_corrupt": "The stored data is damaged; saving replaces it.",
+      "doc_newer": "The data was saved by a newer Tilari."
+    },
+    "error": {
+      "invalid_field": "Check the field {path}.",
+      "stale": "The object was changed elsewhere. Reopen the page.",
+      "era_linked": "The item already belongs to another object.",
+      "newer_version": "The data was saved by a newer Tilari and cannot be changed with this version.",
+      "not_found": "Cost centre not found.",
+      "percent": "Percent like 3,5.",
+      "accounts": "Account numbers separated by commas."
+    }
   }
 }
