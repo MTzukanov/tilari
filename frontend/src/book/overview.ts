@@ -2,6 +2,7 @@ import { getPeriods, getSettings, periodForDate } from './access'
 import { asCents } from './cents'
 import { fiscalPeriodJson, isTaxBookingComplete, reconcileStoredTax } from './fiscalPeriod'
 import { pnlAccount, SQL_POSTED } from './kernel/sqlFragments'
+import { monthKeys } from './months'
 import type { SqliteDb } from './sqlite'
 import { computeTaxBasis, taxFromBasis } from './taxBasis'
 import { TYPE_INCOME_TAX } from './vouchers'
@@ -30,23 +31,6 @@ export type OverviewResponse = {
 
 function isTurnoverType(type: string): boolean {
   return type.startsWith('CL')
-}
-
-function monthKeys(starts: string, ends: string): string[] {
-  const out: string[] = []
-  let y = Number(starts.slice(0, 4))
-  let m = Number(starts.slice(5, 7))
-  const endY = Number(ends.slice(0, 4))
-  const endM = Number(ends.slice(5, 7))
-  while (y < endY || (y === endY && m <= endM)) {
-    out.push(`${y}-${String(m).padStart(2, '0')}`)
-    m += 1
-    if (m > 12) {
-      m = 1
-      y += 1
-    }
-  }
-  return out
 }
 
 type AggRow = { bucket: string; type: string; credit: number; debit: number }
