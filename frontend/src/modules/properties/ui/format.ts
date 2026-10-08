@@ -35,3 +35,20 @@ export function saveErrorText(t: T, raw: string): string {
   const text = t(key, { path: path ?? '' })
   return text === key ? raw : text
 }
+
+/** Column label of a fiscal year: its calendar year, with the start when it is not a full year. */
+export function periodLabel(p: { starts: string; ends: string }): string {
+  const full = p.starts.slice(5) === '01-01' && p.ends.slice(5) === '12-31'
+  if (full) return p.ends.slice(0, 4)
+  return `${Number(p.starts.slice(8, 10))}.${Number(p.starts.slice(5, 7))}.–${p.ends.slice(0, 4)}`
+}
+
+/** "2 v 3 kk" style holding time between two ISO dates. */
+export function holdingText(t: T, from: string | null, to: string | null): string {
+  if (!from || !to) return ''
+  const [y1, m1, d1] = from.split('-').map(Number)
+  const [y2, m2, d2] = to.split('-').map(Number)
+  let months = (y2 - y1) * 12 + (m2 - m1) - (d2 < d1 ? 1 : 0)
+  if (months < 0) months = 0
+  return t('properties.holding', { years: Math.floor(months / 12), months: months % 12 })
+}

@@ -993,10 +993,9 @@
     "editLink": "Edit object",
     "openAllocation": "Cost-centre result",
     "empty": "No objects to show.",
-    "showSold": "Show sold ({n})",
     "setupBanner": "{n} cost centres are waiting for setup.",
     "setupOpen": "Set up objects",
-    "footnote": "* owned less than 12 months, scaled to a year. † no sale costs set. IRR: at the estimated price if there is one, else at book value; actual for sold objects.",
+    "footnote": "* owned less than 12 months, scaled to a year. † no sale costs set (Defaults below). Hover a column header for its explanation; columns can be sorted and resized.",
     "kpi": {
       "invested": "Invested",
       "investedHint": "Acquisition cost and other capital",
@@ -1030,7 +1029,26 @@
       "irr": "IRR",
       "unrecovered": "Not recovered",
       "breakEven": "Break-even price",
-      "valuation": "Estimate"
+      "valuation": "Price estimate",
+      "bookValueHint": "Acquisition cost on the balance sheet (linked items) on the as-of date",
+      "t12mHint": "Income - costs over the last 12 months (no investments or sales)",
+      "yieldHint": "12-month cash flow / book value",
+      "irrHint": "Annual return over the holding time: at the estimated price if given, else at book value, after sale costs",
+      "breakEvenHint": "Selling price (without loan share) that returns all money invested after sale costs",
+      "valuationHint": "Your estimate of the selling price (Edit object → Price estimates)",
+      "cashTotal": "Total",
+      "cashTotalHint": "Cash flow over the whole holding time",
+      "held": "Held",
+      "purchase": "Acquisition cost",
+      "purchaseHint": "Price, transfer tax and other acquisition costs (refunds deducted)",
+      "income": "Income",
+      "spent": "Costs",
+      "spentHint": "Maintenance charges, repairs and other costs while held (and interest if a loan is linked)",
+      "salePrice": "Selling price",
+      "saleCosts": "Sale costs",
+      "bookGain": "Gain on sale",
+      "bookGainHint": "Accounting gain or loss: selling price - sale costs - acquisition cost",
+      "totalResult": "Total result"
     },
     "status": {
       "active": "Owned",
@@ -1092,19 +1110,31 @@
       "interest": "Interest",
       "capex": "Invested",
       "proceeds": "Sale",
-      "kitsas": "Kitsas result",
-      "kitsasHint": "Every P&L line of the cost centre as in the Kitsas report (accruals and sale included)"
+      "result": "Result",
+      "resultHint": "The cost centre's result in the books: every P&L line, accruals and the sale included",
+      "netHint": "Income - costs (cash basis: no accruals)",
+      "capexHint": "Change in acquisition cost. Negative = capital came back, e.g. a transfer-tax refund. The lines are listed below under the item.",
+      "proceedsHint": "Money from the sale after sale costs"
     },
     "eras": {
       "title": "Acquisition cost (balance-sheet items)",
       "item": "Item",
       "none": "No balance-sheet item is linked, so invested money and return cannot be computed.",
       "link": "Link an item",
-      "missing": "Item {id} no longer exists"
+      "missing": "Item {id} no longer exists",
+      "lead": "Changes in acquisition cost per balance-sheet item. A row opens its voucher.",
+      "balance": "balance {amount}",
+      "kind": {
+        "acquisition": "Acquisition",
+        "addition": "Addition",
+        "return": "Refund",
+        "sale": "Sale",
+        "depreciation": "Depreciation"
+      }
     },
     "sales": {
       "title": "Sales",
-      "proceeds": "proceeds {amount}"
+      "line": "selling price {price}, sale costs {costs}, received {proceeds}"
     },
     "docs": {
       "title": "Documents",
@@ -1159,7 +1189,9 @@
       "docTitle": "Title",
       "files": "Files",
       "showAllDocs": "Show others ({n})",
-      "apply": "Save setup"
+      "apply": "Save setup",
+      "starLegend": "★ = Tilari's suggestion from the books or the name. A clear suggestion is preselected; otherwise choose yourself. Nothing is saved until you press Save setup.",
+      "starLegendEdit": "★ = suggested for this object from the books or the name."
     },
     "evidence": {
       "sale": "sale voucher",
@@ -1184,6 +1216,19 @@
       "not_found": "Cost centre not found.",
       "percent": "Percent like 3,5.",
       "accounts": "Account numbers separated by commas."
+    },
+    "total": "Total",
+    "holding": "{years} y {months} mo",
+    "held": {
+      "title": "Held ({n})"
+    },
+    "cash": {
+      "title": "Cash flow by year",
+      "lead": "Income - costs per fiscal year, over the whole holding time and the last 12 months. Investments and sales not included."
+    },
+    "sold": {
+      "title": "Sold objects ({n})",
+      "lead": "Figures over the whole holding time: what was bought, what was spent, what the sale brought."
     }
   }
 }

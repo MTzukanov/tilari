@@ -993,10 +993,9 @@
     "editLink": "Objekt bearbeiten",
     "openAllocation": "Ergebnis der Kostenstelle",
     "empty": "Keine Objekte anzuzeigen.",
-    "showSold": "Verkaufte anzeigen ({n})",
     "setupBanner": "{n} Kostenstellen warten auf die Einrichtung.",
     "setupOpen": "Objekte einrichten",
-    "footnote": "* weniger als 12 Monate im Besitz, auf ein Jahr hochgerechnet. † keine Verkaufskosten angegeben. IRR: zum geschätzten Preis, falls vorhanden, sonst zum Buchwert; bei verkauften Objekten tatsächlich.",
+    "footnote": "* weniger als 12 Monate im Besitz, auf ein Jahr hochgerechnet. † keine Verkaufskosten angegeben (Standardwerte unten). Spaltenkopf mit der Maus berühren für eine Erklärung; Spalten lassen sich sortieren und verbreitern.",
     "kpi": {
       "invested": "Investiert",
       "investedHint": "Anschaffungskosten und sonstiges Kapital",
@@ -1030,7 +1029,26 @@
       "irr": "IRR",
       "unrecovered": "Nicht zurück",
       "breakEven": "Break-even-Preis",
-      "valuation": "Schätzung"
+      "valuation": "Preisschätzung",
+      "bookValueHint": "Anschaffungskosten in der Bilanz (verknüpfte Posten) am Stichtag",
+      "t12mHint": "Erträge - Kosten der letzten 12 Monate (ohne Investitionen und Verkäufe)",
+      "yieldHint": "Cashflow 12 Monate / Buchwert",
+      "irrHint": "Jahresrendite über die Besitzdauer: zum geschätzten Preis, falls angegeben, sonst zum Buchwert, nach Verkaufskosten",
+      "breakEvenHint": "Verkaufspreis (ohne Darlehensanteil), der nach Verkaufskosten alles investierte Geld zurückbringt",
+      "valuationHint": "Ihre Schätzung des Verkaufspreises (Objekt bearbeiten → Preisschätzungen)",
+      "cashTotal": "Summe",
+      "cashTotalHint": "Cashflow über die gesamte Besitzdauer",
+      "held": "Im Besitz",
+      "purchase": "Anschaffungskosten",
+      "purchaseHint": "Kaufpreis, Grunderwerbsteuer und weitere Anschaffungskosten (Erstattungen abgezogen)",
+      "income": "Erträge",
+      "spent": "Kosten",
+      "spentHint": "Hausgeld, Reparaturen und sonstige Kosten in der Besitzzeit (und Zinsen, wenn ein Darlehen verknüpft ist)",
+      "salePrice": "Verkaufspreis",
+      "saleCosts": "Verkaufskosten",
+      "bookGain": "Veräußerungsgewinn",
+      "bookGainHint": "Buchhalterischer Gewinn oder Verlust: Verkaufspreis - Verkaufskosten - Anschaffungskosten",
+      "totalResult": "Gesamtergebnis"
     },
     "status": {
       "active": "Im Besitz",
@@ -1092,19 +1110,31 @@
       "interest": "Zinsen",
       "capex": "Investiert",
       "proceeds": "Verkauf",
-      "kitsas": "Kitsas-Ergebnis",
-      "kitsasHint": "Alle GuV-Buchungen der Kostenstelle wie im Kitsas-Bericht (auch Abgrenzungen und Verkauf)"
+      "result": "Ergebnis",
+      "resultHint": "Ergebnis der Kostenstelle in der Buchhaltung: alle GuV-Buchungen, auch Abgrenzungen und Verkauf",
+      "netHint": "Erträge - Kosten (Zahlungsbasis: ohne Abgrenzungen)",
+      "capexHint": "Änderung der Anschaffungskosten. Negativ = Kapital floss zurück, z. B. Erstattung der Grunderwerbsteuer. Die Buchungen stehen unten beim Bilanzposten.",
+      "proceedsHint": "Geld aus dem Verkauf nach Verkaufskosten"
     },
     "eras": {
       "title": "Anschaffungskosten (Bilanzposten)",
       "item": "Bilanzposten",
       "none": "Kein Bilanzposten verknüpft, daher können investiertes Geld und Rendite nicht berechnet werden.",
       "link": "Bilanzposten verknüpfen",
-      "missing": "Bilanzposten {id} existiert nicht mehr"
+      "missing": "Bilanzposten {id} existiert nicht mehr",
+      "lead": "Änderungen der Anschaffungskosten je Bilanzposten. Eine Zeile öffnet den Beleg.",
+      "balance": "Saldo {amount}",
+      "kind": {
+        "acquisition": "Anschaffung",
+        "addition": "Zugang",
+        "return": "Erstattung",
+        "sale": "Verkauf",
+        "depreciation": "Abschreibung"
+      }
     },
     "sales": {
       "title": "Verkäufe",
-      "proceeds": "Verkaufserlös {amount}"
+      "line": "Verkaufspreis {price}, Verkaufskosten {costs}, erhalten {proceeds}"
     },
     "docs": {
       "title": "Dokumente",
@@ -1159,7 +1189,9 @@
       "docTitle": "Titel",
       "files": "Dateien",
       "showAllDocs": "Weitere anzeigen ({n})",
-      "apply": "Einrichtung speichern"
+      "apply": "Einrichtung speichern",
+      "starLegend": "★ = Tilaris Vorschlag aus der Buchhaltung oder dem Namen. Ein eindeutiger Vorschlag ist vorausgewählt; sonst selbst wählen. Gespeichert wird erst mit Einrichtung speichern.",
+      "starLegendEdit": "★ = für dieses Objekt vorgeschlagen, aus der Buchhaltung oder dem Namen."
     },
     "evidence": {
       "sale": "Verkaufsbeleg",
@@ -1184,6 +1216,19 @@
       "not_found": "Kostenstelle nicht gefunden.",
       "percent": "Prozent wie 3,5.",
       "accounts": "Kontonummern durch Kommas getrennt."
+    },
+    "total": "Summe",
+    "holding": "{years} J. {months} Mon.",
+    "held": {
+      "title": "Im Besitz ({n})"
+    },
+    "cash": {
+      "title": "Cashflow pro Jahr",
+      "lead": "Erträge - Kosten je Geschäftsjahr, über die gesamte Besitzdauer und die letzten 12 Monate. Ohne Investitionen und Verkäufe."
+    },
+    "sold": {
+      "title": "Verkaufte Objekte ({n})",
+      "lead": "Zahlen über die gesamte Besitzdauer: was gekauft wurde, was ausgegeben wurde, was der Verkauf brachte."
     }
   }
 }

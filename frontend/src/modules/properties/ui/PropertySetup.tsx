@@ -56,7 +56,8 @@ function SetupForm({ setup, onDone }: { setup: SetupResponse; onDone: () => void
   const [centres, setCentres] = useState(
     () =>
       new Map<number, CentreDraft>(
-        setup.cost_centres.map((c) => [c.id, { included: !c.excluded, kind: c.kind ?? '' }]),
+        // New cost centres default to apartments; a stored choice wins.
+        setup.cost_centres.map((c) => [c.id, { included: !c.excluded, kind: c.kind ?? (c.configured ? '' : 'apartment') }]),
       ),
   )
   const [eraChoice, setEraChoice] = useState(() => new Map(setup.eras.map((e) => [e.eraid, initialEra(e)])))
@@ -164,6 +165,7 @@ function SetupForm({ setup, onDone }: { setup: SetupResponse; onDone: () => void
       <section className="property-section">
         <h3>{t('properties.setup.eras')}</h3>
         <p className="muted">{t('properties.setup.erasLead')}</p>
+        <p className="property-legend">{t('properties.setup.starLegend')}</p>
         <table className="ledger-table compact property-setup-table">
           <thead>
             <tr>
@@ -194,6 +196,7 @@ function SetupForm({ setup, onDone }: { setup: SetupResponse; onDone: () => void
       <section className="property-section">
         <h3>{t('properties.setup.docs')}</h3>
         <p className="muted">{t('properties.setup.docsLead')}</p>
+        <p className="property-legend">{t('properties.setup.starLegend')}</p>
         <table className="ledger-table compact property-setup-table">
           <thead>
             <tr>

@@ -18,7 +18,10 @@ test.describe('rental objects', () => {
     await expect(page.getByText(/odottaa määritystä/)).toBeHidden()
     await expect(page.getByRole('row', { name: /Toimisto/ })).toBeHidden()
 
-    await page.getByRole('row', { name: /Asunto/ }).click()
+    await page
+      .locator('.property-table tbody tr', { has: page.locator('.property-name', { hasText: /^Asunto$/ }) })
+      .first()
+      .click()
     await expect(page).toHaveURL(/#\/property\/4$/)
     await expect(page.getByRole('heading', { name: 'Asunto' })).toBeVisible()
     await expect(page.getByText('Hankintamenoa ei ole linkitetty', { exact: false }).first()).toBeVisible()

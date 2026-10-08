@@ -20,7 +20,9 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 - "Data through" is the latest bank-statement voucher date: Kitsas dates a statement at its
   period end, while its last transaction is often days earlier.
 - Name-based setup suggestions need a shared word: statement titles with dates matched unit
-  numbers in cost-centre names on a real book.
+  numbers in cost-centre names on a real book. Words also match in another case (prefix of 5+
+  letters: Kuopio/Kuopion), and a name that matches everything a close rival does plus its unit
+  number wins (F 44 over F 48); two flats named only by their housing company stay undecided.
 - Checked on a copy of a real book (pass/fail only): every object's per-year result equals the
   Kitsas cost-centre report; linked share items equal the 1453 balance, and 1441 once the
   ambiguous items (two flats in one housing company) are chosen; desktop-Kitsas open/edit/backup

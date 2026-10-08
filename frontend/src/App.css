@@ -115,6 +115,14 @@ body {
   text-align: center;
 }
 
+.sidenav-item .fit-text {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: center;
+}
+
 .sidenav-item:hover {
   background: color-mix(in srgb, #fff 35%, transparent);
 }
@@ -4920,20 +4928,6 @@ tr.tax-total td {
   font-size: 0.78rem;
 }
 
-.property-table-wrap {
-  overflow-x: auto;
-}
-
-.property-table td,
-.property-table th {
-  white-space: nowrap;
-}
-
-.property-table td:first-child {
-  white-space: normal;
-  min-width: 14rem;
-}
-
 .property-name {
   font-weight: 600;
 }
@@ -5176,4 +5170,69 @@ tr.tax-total td {
 .property-evidence-ambiguous {
   color: #8a5a00;
   border-color: color-mix(in srgb, #c98a00 40%, var(--line));
+}
+
+.sortable-table-wrap {
+  overflow-x: auto;
+}
+
+.property-table .property-name,
+.property-table .property-sub {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.property-table tfoot td,
+.property-strong {
+  font-weight: 600;
+}
+
+.property-legend {
+  font-size: 0.85rem;
+  border-left: 3px solid var(--accent);
+  padding: 0.2rem 0 0.2rem 0.6rem;
+  margin: 0.4rem 0 0.75rem;
+}
+
+.property-era {
+  margin: 0.75rem 0 1rem;
+}
+
+.property-era h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+}
+
+.property-col-date {
+  width: 7rem;
+}
+
+.property-col-kind {
+  width: 7.5rem;
+}
+
+.property-move {
+  font-size: 0.75rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.property-move-acquisition,
+.property-move-addition {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+
+.property-move-return,
+.property-move-depreciation {
+  color: #8a5a00;
+  border-color: color-mix(in srgb, #c98a00 40%, var(--line));
+}
+
+.property-move-sale {
+  color: #2f6fed;
+  border-color: color-mix(in srgb, #2f6fed 40%, var(--line));
 }

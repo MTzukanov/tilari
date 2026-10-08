@@ -1,5 +1,6 @@
 import type { Route } from './routing'
 import { useI18n } from '../i18n'
+import { FitText } from '../shared/FitText'
 import { TilariMark } from '../shared/TilariMark'
 import { NAV_ITEMS, activeNav as activeNavFromModules } from '../modules/registry'
 import { useEffect, useState } from 'react'
@@ -169,7 +170,7 @@ export function SideNav({
             }}
           >
             <NavGlyph name={item.icon} />
-            <span>{t(item.labelKey)}</span>
+            <FitText>{t(item.labelKey)}</FitText>
           </a>
         ))}
       </nav>

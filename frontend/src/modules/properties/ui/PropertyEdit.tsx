@@ -160,6 +160,7 @@ function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: Se
       <section className="property-section">
         <h3>{t('properties.eras.title')}</h3>
         <p className="muted">{t('properties.edit.erasLead')}</p>
+        <p className="property-legend">{t('properties.setup.starLegendEdit')}</p>
         <ul className="property-doc-list">
           {eras.map((eraid) => {
             const e = eraById.get(eraid)

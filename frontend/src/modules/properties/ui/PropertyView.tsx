@@ -8,7 +8,8 @@ import { formatCents } from '../../../shared/money'
 import { formatBp, formatPercentInput, parsePercentInput } from '../../../shared/percent'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import { voucherTypeName } from '../../../shared/voucherTypes'
-import { fetchProperty, fetchPropertyDocuments, type PropertyDetail, type PropertyDocuments } from '../api'
+import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
+import { fetchProperty, fetchPropertyDocuments, type PropertyDetail, type PropertyDocuments, type YearRow } from '../api'
 import { CashFlowChart, PaybackChart } from './Charts'
 import { formatEuro, statusClass, warningText } from './format'
 
@@ -137,6 +138,35 @@ function Documents({ id, onOpenVoucher }: { id: number; onOpenVoucher: (voucherI
       ) : null}
     </section>
   )
+}
+
+function yearColumns(t: (key: string, vars?: Record<string, string | number>) => string, withInterest: boolean): TableColumn<YearRow>[] {
+  const money = (id: keyof YearRow & string, label: string, title?: string, signed = false): TableColumn<YearRow> => ({
+    id,
+    label,
+    title,
+    width: 120,
+    align: 'right',
+    sortValue: (y) => Number(y[id]),
+    cellClass: (y) => (signed && Number(y[id]) < 0 ? 'neg' : ''),
+    render: (y) => formatCents(Number(y[id]), { emptyZero: id !== 'net_snt' && id !== 'kitsas_result_snt' }),
+  })
+  return [
+    {
+      id: 'period',
+      label: t('properties.years.period'),
+      width: 190,
+      sortValue: (y) => y.starts,
+      render: (y) => `${formatDate(y.starts)}–${formatDate(y.ends)}`,
+    },
+    money('income_snt', t('properties.years.income')),
+    money('expense_snt', t('properties.years.expense')),
+    money('net_snt', t('properties.years.net'), t('properties.years.netHint'), true),
+    ...(withInterest ? [money('interest_snt', t('properties.years.interest'))] : []),
+    money('capex_snt', t('properties.years.capex'), t('properties.years.capexHint'), true),
+    money('proceeds_snt', t('properties.years.proceeds'), t('properties.years.proceedsHint')),
+    money('kitsas_result_snt', t('properties.years.result'), t('properties.years.resultHint'), true),
+  ]
 }
 
 export function PropertyView({
@@ -290,42 +320,13 @@ export function PropertyView({
           {d.years.length ? (
             <section className="property-section">
               <h3>{t('properties.years.title')}</h3>
-              <div className="property-table-wrap">
-                <table className="ledger-table compact">
-                  <thead>
-                    <tr>
-                      <th>{t('properties.years.period')}</th>
-                      <th className="amount">{t('properties.years.income')}</th>
-                      <th className="amount">{t('properties.years.expense')}</th>
-                      <th className="amount">{t('properties.years.net')}</th>
-                      {s.interest_snt != null ? <th className="amount">{t('properties.years.interest')}</th> : null}
-                      <th className="amount">{t('properties.years.capex')}</th>
-                      <th className="amount">{t('properties.years.proceeds')}</th>
-                      <th className="amount" title={t('properties.years.kitsasHint')}>
-                        {t('properties.years.kitsas')}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {d.years.map((y) => (
-                      <tr key={y.starts}>
-                        <td className="num">
-                          {formatDate(y.starts)}–{formatDate(y.ends)}
-                        </td>
-                        <td className="amount">{formatCents(y.income_snt, { emptyZero: true })}</td>
-                        <td className="amount">{formatCents(y.expense_snt, { emptyZero: true })}</td>
-                        <td className={`amount ${y.net_snt < 0 ? 'neg' : ''}`}>{formatCents(y.net_snt)}</td>
-                        {s.interest_snt != null ? (
-                          <td className="amount">{formatCents(y.interest_snt, { emptyZero: true })}</td>
-                        ) : null}
-                        <td className="amount">{formatCents(y.capex_snt, { emptyZero: true })}</td>
-                        <td className="amount">{formatCents(y.proceeds_snt, { emptyZero: true })}</td>
-                        <td className={`amount ${y.kitsas_result_snt < 0 ? 'neg' : ''}`}>{formatCents(y.kitsas_result_snt)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <SortableTable
+                storageKey="tilari.properties.years.cols"
+                columns={yearColumns(t, d.summary.interest_snt != null)}
+                rows={d.years}
+                rowKey={(y) => y.starts}
+                className="compact"
+              />
             </section>
           ) : null}
 
@@ -339,30 +340,34 @@ export function PropertyView({
                 </button>
               </p>
             ) : (
-              <table className="ledger-table compact">
-                <thead>
-                  <tr>
-                    <th>{t('properties.eras.item')}</th>
-                    <th>{t('table.account')}</th>
-                    <th>{t('table.date')}</th>
-                    <th className="amount">{t('table.balance')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {d.eras.map((e) => (
-                    <tr
-                      key={e.eraid}
-                      className={e.voucher_id ? 'clickable' : ''}
-                      onClick={() => (e.voucher_id ? onOpenVoucher(e.voucher_id) : undefined)}
-                    >
-                      <td>{e.missing ? t('properties.eras.missing', { id: e.eraid }) : e.description}</td>
-                      <td className="num">{e.account}</td>
-                      <td className="num">{formatDate(e.date)}</td>
-                      <td className="amount">{formatCents(e.balance_snt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <>
+                <p className="muted">{t('properties.eras.lead')}</p>
+                {d.eras.map((e) => (
+                  <div key={e.eraid} className="property-era">
+                    <h4>
+                      {e.missing ? t('properties.eras.missing', { id: e.eraid }) : e.description}
+                      <span className="muted">
+                        {' '}
+                        · {e.account} · {t('properties.eras.balance', { amount: formatCents(e.balance_snt) })}
+                      </span>
+                    </h4>
+                    <table className="ledger-table compact">
+                      <tbody>
+                        {e.movements.map((m, i) => (
+                          <tr key={`${m.voucher_id}-${i}`} className="clickable" onClick={() => onOpenVoucher(m.voucher_id)}>
+                            <td className="num property-col-date">{formatDate(m.date)}</td>
+                            <td className="property-col-kind">
+                              <span className={`property-move property-move-${m.kind}`}>{t(`properties.eras.kind.${m.kind}`)}</span>
+                            </td>
+                            <td>{m.description}</td>
+                            <td className={`amount ${m.amount_snt < 0 ? 'neg' : ''}`}>{formatCents(m.amount_snt)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </>
             )}
           </section>
 
@@ -375,7 +380,11 @@ export function PropertyView({
                     <button type="button" className="btn-link" onClick={() => onOpenVoucher(x.voucher_id)}>
                       {formatDate(x.date)}
                     </button>{' '}
-                    {t('properties.sales.proceeds', { amount: formatCents(x.proceeds_snt) })}
+                    {t('properties.sales.line', {
+                      price: formatCents(x.price_snt),
+                      costs: formatCents(x.price_snt - x.proceeds_snt),
+                      proceeds: formatCents(x.proceeds_snt),
+                    })}
                   </li>
                 ))}
               </ul>
