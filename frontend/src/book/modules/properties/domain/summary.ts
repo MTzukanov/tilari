@@ -131,7 +131,7 @@ export function computeObject(input: ObjectInput): ObjectResult {
 
   // Months from the first activity to the as-of month (at most 25 years back).
   const firstDate = [flows[0]?.date, input.pnl[0]?.date].filter(Boolean).sort()[0] as string | undefined
-  const toKey = asOf.slice(0, 7)
+  const toKey = (soldOn ?? asOf).slice(0, 7)
   const fromKey = firstDate ? (firstDate.slice(0, 7) < toKey ? firstDate.slice(0, 7) : toKey) : toKey
   const earliest = addMonths(toKey, -300)
   const months = monthlySeries(upTo, classified.operating.filter((r) => r.date <= asOf), fromKey < earliest ? earliest : fromKey, toKey)

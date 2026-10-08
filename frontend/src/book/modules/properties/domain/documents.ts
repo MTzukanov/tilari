@@ -82,12 +82,13 @@ export function listPropertyDocuments(
   let bankHidden = 0
   for (const { via, ...v } of vouchers.values()) {
     if (via.has('linked')) groups.linked.push(v)
-    else if (via.has('era')) groups.acquisition.push(v)
-    else if (!v.attachments.length) continue
     else if (v.type === TYPE_BANK_STATEMENT) {
+      // A month's statement can also pay a purchase; it still belongs with the statements.
+      if (!v.attachments.length) continue
       if (opts.includeBank) groups.bank.push(v)
       else bankHidden += 1
-    } else groups.other.push(v)
+    } else if (via.has('era')) groups.acquisition.push(v)
+    else if (v.attachments.length) groups.other.push(v)
   }
   // Linked vouchers that are gone (deleted in Kitsas) are shown as missing.
   for (const id of opts.linked) {
