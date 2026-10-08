@@ -7,6 +7,7 @@ describe('tokenize', () => {
     expect(tokenize('Asunto B5')).toEqual(['asunto', 'b', '5', 'b5'])
     expect(tokenize('Bostads Ab Exempelgatan')).toEqual(['exempelgatan'])
     expect(tokenize('Pysäköinti, Ä-talo')).toEqual(['pysäköinti', 'ä', 'talo'])
+    expect(tokenize('Tiliote 01.01.2023 - 31.12.2023, 2024-05-01')).toEqual(['tiliote'])
   })
 })
 
@@ -23,5 +24,7 @@ describe('textScorer and pickBest', () => {
     expect(pickBest(score('Vastikelasku Rantatie 3'))).toEqual({ id: null, candidates: [1, 2] })
     expect(pickBest(score('Autotalli Kuusikuja'))).toEqual({ id: 3, candidates: [3] })
     expect(pickBest(score('Pankki'))).toEqual({ id: null, candidates: [] })
+    // Numbers alone (here "4", "7") never make a match.
+    expect(pickBest(score('Rahasto A4 / B7 osto'))).toEqual({ id: null, candidates: [] })
   })
 })

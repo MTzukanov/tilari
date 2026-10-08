@@ -9,9 +9,12 @@ import type { SuggestionSource } from './types'
 /** Words every housing-company name shares; they say nothing about which object it is. */
 const STOP_WORDS = new Set(['as', 'oy', 'koy', 'asoy', 'ab', 'bostads', 'fastighets', 'kiinteisto', 'kiinteistö'])
 
+/** Dates in titles ("Tiliote 01.01.2023 - 31.12.2023") would match unit numbers. */
+const DATE_PATTERN = /\b\d{1,2}\.\d{1,2}\.(?:\d{4}|\d{2})?|\b\d{4}-\d{2}-\d{2}\b/g
+
 export function tokenize(text: string): string[] {
   const out = new Set<string>()
-  const lower = text.normalize('NFC').toLowerCase()
+  const lower = text.normalize('NFC').toLowerCase().replace(DATE_PATTERN, ' ')
   for (const word of lower.split(/[^\p{L}\p{N}]+/u)) {
     if (!word || STOP_WORDS.has(word)) continue
     const parts = word.match(/\p{L}+|\p{N}+/gu) ?? []
@@ -24,7 +27,12 @@ export function tokenize(text: string): string[] {
 
 export type TextScorer = (text: string) => { id: number; score: number }[]
 
-/** IDF-weighted token overlap against cost-centre names. */
+/** A word, not a unit letter or number: the match must share at least one of these. */
+function isWord(token: string): boolean {
+  return token.length >= 3 && /^\p{L}+$/u.test(token)
+}
+
+/** IDF-weighted token overlap against cost-centre names; needs a shared word to count. */
 export function textScorer(names: { id: number; name: string }[]): TextScorer {
   const tokens = names.map((n) => ({ id: n.id, tokens: new Set(tokenize(n.name)) }))
   const df = new Map<string, number>()
@@ -35,8 +43,13 @@ export function textScorer(names: { id: number; name: string }[]): TextScorer {
     return tokens
       .map((t) => {
         let score = 0
-        for (const tok of query) if (t.tokens.has(tok)) score += Math.log(1 + n / (df.get(tok) ?? 1))
-        return { id: t.id, score }
+        let word = false
+        for (const tok of query) {
+          if (!t.tokens.has(tok)) continue
+          score += Math.log(1 + n / (df.get(tok) ?? 1))
+          if (isWord(tok)) word = true
+        }
+        return { id: t.id, score: word ? score : 0 }
       })
       .filter((s) => s.score > 0)
       .sort((a, b) => b.score - a.score || a.id - b.id)
