@@ -23,6 +23,36 @@ Money is **integer cents**. See [DECISIONS.md](DECISIONS.md) ADR-002.
 truthy value except empty / `0` / `EI`). The simulated “today” used in practice
 mode is **session-only** and is never written to the file.
 
+## Tilari's own table
+
+`TilariData` (ADR-023) - created on the first write, absent in a fresh Kitsas book.
+
+| Column | Meaning |
+|--------|---------|
+| `key` | `property/{kohdennusId}` (one rental object) or `portfolio` (defaults) |
+| `value` | JSON document, keys sorted |
+| `updated` | ISO timestamp of the last write |
+
+`property/{id}` - a rental object is a cost centre (`Kohdennus` tyyppi 1) and its projects.
+Money in integer cents (`*_snt`), percentages in basis points (`*_bp`, 100 = 1 %):
+
+| Key | Meaning |
+|-----|---------|
+| `v`, `rev`, `updated_at` | Format version (1), save counter, last save |
+| `excluded` | The cost centre is not a rental object |
+| `kind` | `apartment` / `parking` / `garage` / `commercial` / `storage` / `other` |
+| `eras[]` | `{ eraid, account }` - balance-sheet items holding the acquisition cost (root `Vienti.id`) |
+| `manual_capital[]` | `{ date, amount_snt, note? }` - capital not on a linked item |
+| `sale_voucher_ids[]` | Vouchers whose lines on the object belong to a sale |
+| `doc_voucher_ids[]` | Document vouchers (usually type 800 Liitetieto) |
+| `financing` | `{ loan_accounts[], interest_accounts[] }` - interest on vouchers touching the loan |
+| `valuations[]` | `{ date, price_snt, debt_free_price_snt?, source? }` - owner's price estimate |
+| `sale_costs` | `{ pct_bp, fixed_snt }` - overrides `portfolio.sale_costs` |
+| `target_return_bp`, `note` | Target annual return; free text |
+
+`portfolio`: `v`, `rev`, `sale_costs`, `target_return_bp`, `dismissed[]` (setup suggestions
+the owner rejected: `era:{eraid}`, `doc:{voucherId}`).
+
 ## Tables we leave alone (v1)
 
 `Budjetti`, `Tuote`, `Rivi`, `Vakioviite`, `Ryhma`, `KumppaniRyhmassa`,

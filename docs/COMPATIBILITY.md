@@ -72,6 +72,14 @@ Two differences to know about:
   stored under the `TP_` role that Kitsas expects; otherwise re-print the
   document in desktop Kitsas if you need that attachment.
 
+## Tilari's own table
+
+Books where rental objects were set up contain one extra table, `TilariData` (ADR-023).
+Desktop Kitsas opens, edits, saves and backs up such a file without touching it; editing a
+cost centre in Kitsas does not affect it. Kitsas cloud upload ("Siirrä pilveen") does not
+carry it over. Deleting a voucher or cost centre in Kitsas leaves a link that Tilari shows as
+missing.
+
 ## What we will not change in the file
 
 - Chart layout / heading rows (read-only)
