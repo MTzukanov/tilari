@@ -161,6 +161,7 @@ function toRow(c: Computed): PropertyRow {
     returns: result.returns,
     break_even: result.break_even,
     valuation: result.valuation,
+    cash_years: result.cash_years,
     warnings,
   }
 }
@@ -194,6 +195,9 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
     as_of: asOf,
     data_through: dataThrough,
     settings: loaded.settings.doc,
+    periods: getPeriods(db)
+      .filter((p) => p.starts <= asOf)
+      .map((p) => ({ starts: p.starts, ends: p.ends })),
     rows,
     undecided: loaded.centres.filter((c) => !loaded.docs.has(c.id)).length,
     totals: {

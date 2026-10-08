@@ -28,3 +28,30 @@ describe('textScorer and pickBest', () => {
     expect(pickBest(score('Rahasto A4 / B7 osto'))).toEqual({ id: null, candidates: [] })
   })
 })
+
+describe('inflected names and unit numbers', () => {
+  const names = [
+    { id: 44, name: 'As Oy Kuopion Koivikkotie 7 F 44' },
+    { id: 48, name: 'As Oy Kuopion Koivikkotie 7 F 48' },
+    { id: 6, name: 'As Oy Kajaanin Orvokki, Kanervakuja 7 as 6' },
+    { id: 21, name: 'As Oy Kajaanin Orvokki, Kanervakuja 7 as 21' },
+    { id: 45, name: 'As Oy Kajaanin Orvokki, Kanervakuja 7 AP45' },
+    { id: 32, name: 'As Oy Oulun Rehtori 3, Rehtorintie 15 C 32, 90100 Oulu' },
+    { id: 2, name: 'As Oy Oulun Rehtori 3, Rehtorintie 15 C 2, 90100 Oulu' },
+  ]
+  const score = textScorer(names)
+
+  it('picks the unit whose number the text names', () => {
+    expect(pickBest(score('Vuokrankorotus Koivikkotie 7 F 44, Kuopio 1.1.2024-')).id).toBe(44)
+    expect(pickBest(score('Vuokrasopimus Koivikkotie 7 F 48 Kuopio')).id).toBe(48)
+    expect(pickBest(score('Kajaani Orvokki A21 vastikelasku 1.11.2023-')).id).toBe(21)
+    expect(pickBest(score('Kajaani Orvokki A6 vastikelasku 1.11.2023-')).id).toBe(6)
+    expect(pickBest(score('Kauppahinta - Tekninen kirjaus - Rehtorintie 15 C 32 tase-erä')).id).toBe(32)
+  })
+
+  it('stays undecided when the text fits two units equally', () => {
+    const r = pickBest(score('KAUPPAKIRJA AS OY OULUN REHTORI 3 OSAKKEET 59-97'))
+    expect(r.id).toBeNull()
+    expect(r.candidates.sort((a, b) => a - b)).toEqual([2, 32])
+  })
+})

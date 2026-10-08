@@ -129,6 +129,14 @@ describe('rental objects: figures', () => {
     expect(d.t12m?.net_yield_bp).toBe(Math.round((8_400 * 10000) / 86_200))
     expect(d.returns.at_cost_bp).toBeGreaterThan(0)
     expect(d.eras.map((e) => e.balance_snt).sort((a, b) => a - b)).toEqual([5_000 * E, 81_200 * E])
+    // The flat's item: purchase, transfer tax, and the refund moved off it (a return of capital).
+    const flat = d.eras.find((e) => e.balance_snt === 81_200 * E)!
+    expect(flat.movements.map((m) => [m.kind, m.amount_snt])).toEqual([
+      ['acquisition', 80_000 * E],
+      ['addition', 1_600 * E],
+      ['return', -400 * E],
+    ])
+    expect(d.cash_years.find((y) => y.starts === '2024-01-01')).toMatchObject({ net_snt: 6_400 * E })
   })
 
   it('per fiscal year, the Kitsas result column equals the cost-centre report', async () => {
@@ -155,7 +163,11 @@ describe('rental objects: figures', () => {
       expect.objectContaining({ voucher_id: vouchers.saleB, proceeds_snt: 53_500 * E }),
     ])
     expect(d.summary.proceeds_snt).toBe(53_500 * E)
+    expect(d.summary.sale_price_snt).toBe(55_000 * E)
+    expect(d.summary.disposed_cost_snt).toBe(60_000 * E)
+    expect(d.disposals[0].price_snt).toBe(55_000 * E)
     expect(d.summary.book_value_snt).toBe(0)
+    expect(d.eras[0].movements.map((m) => m.kind)).toEqual(['acquisition', 'sale'])
     // 27 months of (800 - 250); the broker fee is a sale cost, not operating.
     expect(d.summary.operating.net_snt).toBe(14_850 * E)
     expect(d.summary.unrecovered_snt).toBe(-8_350 * E)
@@ -233,6 +245,7 @@ describe('rental objects: figures', () => {
     expect(held.map((r) => r.id).sort((a, b) => a - b)).toEqual([CC.bundle, CC.garage, CC.commercial, CC.opening])
     expect(p.totals.book_value_snt).toBe((86_200 + 4_000 + 50_000 + 30_000) * E)
     expect(p.totals.irr_bp).not.toBeNull()
+    expect(p.periods.map((x) => x.starts)).toEqual(['2023-01-01', '2024-01-01', '2025-01-01', '2026-01-01'])
   })
 
   it('cost centres show their P&L before setup, as unlinked', async () => {

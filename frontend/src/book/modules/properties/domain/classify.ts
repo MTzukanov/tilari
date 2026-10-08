@@ -83,22 +83,26 @@ export function classifyObject(input: ClassifyInput): Classified {
     const allCredit = Math.max(input.linkedCreditsByVoucher.get(voucherId) ?? ownCredit, ownCredit)
     const date = credits[0]?.date ?? ''
     let proceeds = ownCredit
+    let price = 0
     let shared = false
     for (const line of input.voucherPnl.get(voucherId) ?? []) {
+      let part: number
       if (input.allocations.has(line.allocation)) {
-        proceeds += line.net_snt
+        part = line.net_snt
         saleLineIds.add(line.id)
         if (line.net_snt < 0) saleCostAccounts.add(line.account)
       } else if (line.allocation === 0) {
-        const part = allCredit > 0 ? Math.round((line.net_snt * ownCredit) / allCredit) : line.net_snt
+        part = allCredit > 0 ? Math.round((line.net_snt * ownCredit) / allCredit) : line.net_snt
         if (allCredit > ownCredit) shared = true
-        proceeds += part
-      }
+      } else continue
+      proceeds += part
+      if (part > 0) price += part
     }
     if (shared) warnings.push({ code: 'sale_line_split', params: { voucher: voucherId } })
     disposals.push({
       voucher_id: voucherId,
       date,
+      price_snt: price,
       proceeds_snt: proceeds,
       eras: credits.map((row) => ({ eraid: row.eraid, credit_snt: -row.signed_snt })),
     })

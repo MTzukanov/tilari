@@ -4,8 +4,10 @@ import { classifyObject, type CashFlow, type Classified } from './classify'
 import type { CostCentre, EraRoot, EraRow, PnlRow } from './ledger'
 import { breakEvenPrice, requiredSalePrice, saleNet, toBp, xirr, type Flow } from './returns'
 import { isIncome, monthlySeries, trailing12, yearTable } from './series'
+import { TYPE_DEPRECIATION } from '../../../vouchers'
 import type {
   BreakEven,
+  EraMovementKind,
   EraState,
   MonthPoint,
   ObjectSummary,
@@ -17,6 +19,7 @@ import type {
   Trailing12,
   Valuation,
   Warning,
+  YearCashFlow,
   YearRow,
 } from './types'
 
@@ -38,6 +41,7 @@ export type ObjectInput = {
 export type ObjectResult = {
   /** Dated cash flows up to the as-of date (manual capital included). */
   cash: Flow[]
+  cash_years: YearCashFlow[]
   status: PropertyStatus
   summary: ObjectSummary
   classified: Classified
@@ -126,6 +130,8 @@ export function computeObject(input: ObjectInput): ObjectResult {
     operating,
     interest_snt: doc.financing ? -interestFlows.reduce((s, f) => s + f.amount_snt, 0) : null,
     proceeds_snt: proceeds,
+    sale_price_snt: disposals.reduce((sum, d) => sum + d.price_snt, 0),
+    disposed_cost_snt: disposals.reduce((sum, d) => sum + d.eras.reduce((t, e) => t + e.credit_snt, 0), 0),
     unrecovered_snt: unrecovered,
   }
 
@@ -174,11 +180,17 @@ export function computeObject(input: ObjectInput): ObjectResult {
     if (!costsSet) warnings.push({ code: 'sale_costs_unset' })
   }
 
+  const saleVouchers = new Set(classified.disposals.map((d) => d.voucher_id))
+  const movementKind = (row: EraRow): EraMovementKind => {
+    if (row.id === row.eraid) return 'acquisition'
+    if (row.voucher_type === TYPE_DEPRECIATION) return 'depreciation'
+    if (row.signed_snt < 0) return saleVouchers.has(row.voucher_id) ? 'sale' : 'return'
+    return 'addition'
+  }
   const eras: EraState[] = doc.eras.map((link) => {
     const root = input.eraRoots.get(link.eraid)
-    const balance = input.eraRows
-      .filter((r) => r.eraid === link.eraid && r.date <= asOf)
-      .reduce((s, r) => s + r.signed_snt, 0)
+    const rows = input.eraRows.filter((r) => r.eraid === link.eraid && r.date <= asOf)
+    const balance = rows.reduce((s, r) => s + r.signed_snt, 0)
     if (!root) warnings.push({ code: 'era_missing', params: { eraid: link.eraid } })
     return {
       ...link,
@@ -187,12 +199,20 @@ export function computeObject(input: ObjectInput): ObjectResult {
       description: root ? root.description || root.voucher_title : '',
       balance_snt: balance,
       missing: !root,
+      movements: rows.map((r) => ({
+        date: r.date,
+        voucher_id: r.voucher_id,
+        description: r.description,
+        amount_snt: r.signed_snt,
+        kind: movementKind(r),
+      })),
     }
   })
   if (status === 'unlinked' && !doc.excluded) warnings.push({ code: 'no_capital' })
 
   return {
     cash,
+    cash_years: years.map((y) => ({ starts: y.starts, ends: y.ends, net_snt: y.net_snt, interest_snt: y.interest_snt })),
     status,
     summary,
     classified,

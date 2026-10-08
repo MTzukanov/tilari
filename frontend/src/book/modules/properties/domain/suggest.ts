@@ -25,43 +25,77 @@ export function tokenize(text: string): string[] {
   return [...out]
 }
 
-export type TextScorer = (text: string) => { id: number; score: number }[]
+export type TextScore = { id: number; score: number; matched: Set<string> }
+export type TextScorer = (text: string) => TextScore[]
 
 /** A word, not a unit letter or number: the match must share at least one of these. */
 function isWord(token: string): boolean {
   return token.length >= 3 && /^\p{L}+$/u.test(token)
 }
 
+/**
+ * Same token, or the same Finnish word in another case ("Kuopio" / "Kuopion",
+ * "Kajaani" / "Kajaanin"): letters only, the shorter one at least five long and a prefix.
+ */
+function tokensMatch(a: string, b: string): boolean {
+  if (a === b) return true
+  if (!isWord(a) || !isWord(b)) return false
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a]
+  return short.length >= 5 && long.startsWith(short)
+}
+
 /** IDF-weighted token overlap against cost-centre names; needs a shared word to count. */
 export function textScorer(names: { id: number; name: string }[]): TextScorer {
-  const tokens = names.map((n) => ({ id: n.id, tokens: new Set(tokenize(n.name)) }))
+  const tokens = names.map((n) => ({ id: n.id, tokens: [...new Set(tokenize(n.name))] }))
   const df = new Map<string, number>()
   for (const t of tokens) for (const tok of t.tokens) df.set(tok, (df.get(tok) ?? 0) + 1)
   const n = Math.max(1, names.length)
   return (text: string) => {
-    const query = new Set(tokenize(text))
+    const query = tokenize(text)
     return tokens
       .map((t) => {
         let score = 0
         let word = false
-        for (const tok of query) {
-          if (!t.tokens.has(tok)) continue
-          score += Math.log(1 + n / (df.get(tok) ?? 1))
-          if (isWord(tok)) word = true
+        const matched = new Set<string>()
+        for (const nameToken of t.tokens) {
+          if (!query.some((q) => tokensMatch(q, nameToken))) continue
+          matched.add(nameToken)
+          score += Math.log(1 + n / (df.get(nameToken) ?? 1))
+          if (isWord(nameToken)) word = true
         }
-        return { id: t.id, score: word ? score : 0 }
+        return { id: t.id, score: word ? score : 0, matched }
       })
       .filter((s) => s.score > 0)
       .sort((a, b) => b.score - a.score || a.id - b.id)
   }
 }
 
-/** The clear winner of a scored list, or the tied candidates. */
-export function pickBest(scores: { id: number; score: number }[]): { id: number | null; candidates: number[] } {
+function containsAll(big: Set<string>, small: Set<string>): boolean {
+  for (const tok of small) if (!big.has(tok)) return false
+  return true
+}
+
+/**
+ * The winner of a scored list, or the tied candidates. A name wins when it scores clearly
+ * higher, or when it matches everything a close rival matches and more ("F 44" over "F 48"
+ * for a text naming F 44).
+ */
+export function pickBest(scores: { id: number; score: number; matched?: Set<string> }[]): {
+  id: number | null
+  candidates: number[]
+} {
   if (!scores.length) return { id: null, candidates: [] }
   const [best, second] = scores
   if (!second || best.score >= second.score * 1.5) return { id: best.id, candidates: [best.id] }
-  return { id: null, candidates: scores.filter((s) => s.score >= best.score / 1.5).map((s) => s.id) }
+  const close = scores.filter((s) => s.score >= best.score / 1.5)
+  const bestMatched = best.matched
+  if (
+    bestMatched &&
+    close.slice(1).every((s) => s.matched && s.matched.size < bestMatched.size && containsAll(bestMatched, s.matched))
+  ) {
+    return { id: best.id, candidates: close.map((s) => s.id) }
+  }
+  return { id: null, candidates: close.map((s) => s.id) }
 }
 
 export type EraSuggestion = { cost_centre_id: number | null; source: SuggestionSource; candidates: number[] }

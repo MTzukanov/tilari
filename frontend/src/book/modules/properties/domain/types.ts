@@ -79,6 +79,10 @@ export type ObjectSummary = {
   operating: OperatingTotals
   interest_snt: number | null
   proceeds_snt: number
+  /** Gross selling price of sales so far; sale costs = price - proceeds. */
+  sale_price_snt: number
+  /** Book value of what was sold (the items' credits on sale vouchers). */
+  disposed_cost_snt: number
   /** Money not yet recovered: -(capital + operating + interest + proceeds flows). */
   unrecovered_snt: number
 }
@@ -123,9 +127,14 @@ export type YearRow = {
 export type Disposal = {
   voucher_id: number
   date: string
+  /** Gross selling price: the sale's income lines. */
+  price_snt: number
+  /** Cash from the sale: price minus sale costs. */
   proceeds_snt: number
   eras: { eraid: number; credit_snt: number }[]
 }
+
+export type EraMovementKind = 'acquisition' | 'addition' | 'return' | 'sale' | 'depreciation'
 
 export type EraState = EraLink & {
   date: string | null
@@ -133,7 +142,18 @@ export type EraState = EraLink & {
   description: string
   balance_snt: number
   missing: boolean
+  /** Every booked change of the item, oldest first. */
+  movements: {
+    date: string
+    voucher_id: number
+    description: string
+    amount_snt: number
+    kind: EraMovementKind
+  }[]
 }
+
+/** Cash flow of one fiscal year: operating net and interest (if financing is linked). */
+export type YearCashFlow = { starts: string; ends: string; net_snt: number; interest_snt: number }
 
 export type BreakEven = {
   price_snt: number
@@ -166,6 +186,8 @@ export type PropertyRow = {
   returns: Returns
   break_even: BreakEven | null
   valuation: Valuation | null
+  /** Operating cash flow per fiscal year with activity. */
+  cash_years: YearCashFlow[]
   warnings: Warning[]
 }
 
@@ -173,6 +195,8 @@ export type PortfolioResponse = {
   as_of: string
   data_through: string | null
   settings: PortfolioSettings
+  /** Fiscal years up to the as-of date, oldest first. */
+  periods: { starts: string; ends: string }[]
   rows: PropertyRow[]
   /** Cost centres with no stored decision yet. */
   undecided: number
