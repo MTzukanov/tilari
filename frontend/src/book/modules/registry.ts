@@ -1,4 +1,5 @@
 import { periodEndModule } from './periodEnd'
+import { propertiesModule } from './properties'
 import { vatModule } from './vat'
 import type { KernelContext } from './types'
 
@@ -6,6 +7,7 @@ import type { KernelContext } from './types'
 export const BOOK_MODULES = {
   vat: vatModule,
   periodEnd: periodEndModule,
+  properties: propertiesModule,
 } as const
 
 export type BookModuleId = keyof typeof BOOK_MODULES

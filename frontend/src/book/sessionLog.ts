@@ -24,6 +24,9 @@ export type SessionChangeKind =
   | 'statement_confirm'
   | 'statement_unconfirm'
   | 'tax_reconcile'
+  | 'property'
+  | 'property_setup'
+  | 'property_settings'
   | 'book_saved'
 
 export type SessionChange = {

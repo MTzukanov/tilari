@@ -7,6 +7,12 @@ import { join } from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { startServer } from './app.ts'
+import { SqliteDb } from '../../frontend/src/book/sqlite.ts'
+import {
+  computeDetail,
+  computePortfolio,
+  saveProperty,
+} from '../../frontend/src/book/modules/properties/domain/portfolio.ts'
 
 const GOLDEN = join(
   fileURLToPath(new URL('../../testdb/tilari-test.kitsas', import.meta.url)),
@@ -194,5 +200,61 @@ describe('ledger http', () => {
     const attText = await attRes.text()
     assert.equal(attRes.status, 200, attText)
     assert.equal(attText, 'test-liite\n')
+  })
+
+  it('rental objects over HTTP match the in-browser engine', async () => {
+    await fetch(`${base}/api/close`, { method: 'POST' })
+    const openRes = await fetch(`${base}/api/open-path`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: GOLDEN }),
+    })
+    assert.equal(openRes.status, 200, await openRes.text())
+    const local = await SqliteDb.fromBytes(readFileSync(GOLDEN))
+    const asOf = '2025-12-31'
+
+    const list = await fetch(`${base}/api/properties?as_of=${asOf}`).then((r) => r.json())
+    assert.deepEqual(list, JSON.parse(JSON.stringify(computePortfolio(local, { today: asOf, asOf }))))
+
+    const doc = {
+      v: 1,
+      rev: 0,
+      eras: [],
+      kind: 'apartment',
+      valuations: [{ date: '2025-06-01', price_snt: 1_000_000 }],
+      sale_costs: { pct_bp: 300, fixed_snt: 0 },
+    }
+    const putRes = await fetch(`${base}/api/properties/4?as_of=${asOf}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(doc),
+    })
+    const putText = await putRes.text()
+    assert.equal(putRes.status, 200, putText)
+    saveProperty(local, 4, doc, 'now')
+    const remote = JSON.parse(putText) as { doc: { rev: number; updated_at?: string } }
+    const expected = JSON.parse(JSON.stringify(computeDetail(local, 4, { today: asOf, asOf })))
+    expected.doc.updated_at = remote.doc.updated_at
+    assert.deepEqual(remote, expected)
+    assert.equal(remote.doc.rev, 1)
+
+    const stale = await fetch(`${base}/api/properties/4`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(doc),
+    })
+    assert.equal(stale.status, 400)
+    assert.match(await stale.text(), /stale/)
+
+    const docs = await fetch(`${base}/api/properties/4/documents`)
+    assert.equal(docs.status, 200)
+    const setup = (await fetch(`${base}/api/properties/setup`).then((r) => r.json())) as {
+      cost_centres: { id: number; configured: boolean }[]
+    }
+    assert.equal(setup.cost_centres.find((c) => c.id === 4)?.configured, true)
+    // The kernel's own allocation routes are untouched.
+    assert.equal((await fetch(`${base}/api/allocations/4`)).status, 200)
+    assert.equal((await fetch(`${base}/api/properties/999`)).status, 404)
+    local.close()
   })
 })
