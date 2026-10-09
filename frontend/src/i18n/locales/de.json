@@ -1198,14 +1198,15 @@
       "openVoucher": "Beleg öffnen",
       "rowsOpen": "Eine Zeile mit Bilanzposten oder Dokument öffnet den Beleg; ungespeicherte Auswahl und die Stelle auf der Seite bleiben erhalten, wenn Sie zurückkehren.",
       "draftRestored": "Ungespeicherte Auswahl wurde wiederhergestellt.",
-      "discard": "Änderungen verwerfen"
+      "discard": "Änderungen verwerfen",
+      "needChoice": "{n} warten auf Auswahl"
     },
     "evidence": {
       "sale": "Verkaufsbeleg",
       "era_allocation": "Kostenstelle am Posten",
       "voucher_allocation": "Kostenstelle am Beleg",
       "text": "nach Name",
-      "ambiguous": "auswählen"
+      "ambiguous": "Objekt wählen"
     },
     "warn": {
       "sale_costs_unset": "Keine Verkaufskosten angegeben.",

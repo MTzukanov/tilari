@@ -5167,9 +5167,47 @@ tr.tax-total td {
   border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
 }
 
+.property-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+}
+
+.property-choice select {
+  max-width: 100%;
+}
+
 .property-evidence-ambiguous {
-  color: #8a5a00;
-  border-color: color-mix(in srgb, #c98a00 40%, var(--line));
+  color: #fff;
+  background: var(--neg);
+  border-color: var(--neg);
+  font-weight: 600;
+}
+
+.property-select-needed {
+  border: 1px solid var(--neg);
+  background: color-mix(in srgb, var(--neg) 8%, #fff);
+  outline: 1px solid color-mix(in srgb, var(--neg) 35%, transparent);
+}
+
+tr.property-needs-choice td {
+  background: color-mix(in srgb, var(--neg) 6%, transparent);
+}
+
+tr.property-needs-choice td:first-child {
+  box-shadow: inset 3px 0 0 var(--neg);
+}
+
+.property-needed-count {
+  margin-left: 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--neg);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  vertical-align: middle;
 }
 
 .sortable-table-wrap {

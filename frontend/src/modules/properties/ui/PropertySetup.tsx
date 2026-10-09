@@ -19,18 +19,26 @@ function CentreSelect({
   value,
   centres,
   candidates,
+  needed = false,
   onChange,
 }: {
   value: number | null
   centres: SetupResponse['cost_centres']
   candidates: number[]
+  /** Tilari could not decide between candidates: the owner has to choose. */
+  needed?: boolean
   onChange: (id: number | null) => void
 }) {
   const { t } = useI18n()
   const first = centres.filter((c) => candidates.includes(c.id))
   const rest = centres.filter((c) => !candidates.includes(c.id))
   return (
-    <select value={value ?? ''} onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}>
+    <select
+      className={needed ? 'property-select-needed' : undefined}
+      aria-invalid={needed || undefined}
+      value={value ?? ''}
+      onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
+    >
       <option value="">{t('properties.setup.none')}</option>
       {first.map((c) => (
         <option key={c.id} value={c.id}>
@@ -213,11 +221,19 @@ function SetupForm({
     }
   }
 
+  // Tilari found several candidates and nothing is chosen yet: these rows need the owner.
+  const eraNeeds = (e: EraCandidate) =>
+    e.linked_to == null && e.suggestion != null && e.suggestion.cost_centre_id == null && eraChoice.get(e.eraid) == null
+  const docNeeds = (d: DocCandidate) =>
+    d.linked_to.length === 0 && d.suggestion != null && d.suggestion.cost_centre_id == null && docChoice.get(d.voucher_id) == null
+  const eraNeedCount = setup.eras.filter(eraNeeds).length
+  const docNeedCount = setup.docs.filter(docNeeds).length
+
   const eraRows = (list: EraCandidate[]) =>
     list.map((e) => (
       <tr
         key={e.eraid}
-        className="clickable"
+        className={eraNeeds(e) ? 'clickable property-needs-choice' : 'clickable'}
         tabIndex={0}
         title={t('properties.setup.openVoucher')}
         onClick={() => openVoucher(e.voucher_id)}
@@ -232,13 +248,20 @@ function SetupForm({
         <td className="num">{formatDate(e.date)}</td>
         <td className="amount">{formatCents(e.balance_snt)}</td>
         <td onClick={(ev) => ev.stopPropagation()}>
-          <CentreSelect
-            value={eraChoice.get(e.eraid) ?? null}
-            centres={included}
-            candidates={e.suggestion?.candidates ?? []}
-            onChange={(id) => setEraChoice(new Map(eraChoice).set(e.eraid, id))}
-          />{' '}
-          {e.linked_to == null ? <Evidence source={e.suggestion?.cost_centre_id != null ? e.suggestion.source : e.suggestion ? 'ambiguous' : undefined} /> : null}
+          <div className="property-choice">
+            <CentreSelect
+              value={eraChoice.get(e.eraid) ?? null}
+              centres={included}
+              candidates={e.suggestion?.candidates ?? []}
+              needed={eraNeeds(e)}
+              onChange={(id) => setEraChoice(new Map(eraChoice).set(e.eraid, id))}
+            />
+            {eraNeeds(e) ? (
+              <Evidence source="ambiguous" />
+            ) : e.linked_to == null && e.suggestion?.cost_centre_id != null ? (
+              <Evidence source={e.suggestion.source} />
+            ) : null}
+          </div>
         </td>
       </tr>
     ))
@@ -317,7 +340,10 @@ function SetupForm({
       </section>
 
       <section className="property-section">
-        <h3>{t('properties.setup.eras')}</h3>
+        <h3>
+          {t('properties.setup.eras')}
+          {eraNeedCount ? <span className="property-needed-count">{t('properties.setup.needChoice', { n: eraNeedCount })}</span> : null}
+        </h3>
         <p className="muted">{t('properties.setup.erasLead')}</p>
         <p className="property-legend">{t('properties.setup.starLegend')}</p>
         <table className="ledger-table compact property-setup-table">
@@ -348,7 +374,10 @@ function SetupForm({
       </section>
 
       <section className="property-section">
-        <h3>{t('properties.setup.docs')}</h3>
+        <h3>
+          {t('properties.setup.docs')}
+          {docNeedCount ? <span className="property-needed-count">{t('properties.setup.needChoice', { n: docNeedCount })}</span> : null}
+        </h3>
         <p className="muted">{t('properties.setup.docsLead')}</p>
         <p className="property-legend">{t('properties.setup.starLegend')}</p>
         <table className="ledger-table compact property-setup-table">
@@ -364,7 +393,7 @@ function SetupForm({
             {docs.map((d) => (
               <tr
                 key={d.voucher_id}
-                className="clickable"
+                className={docNeeds(d) ? 'clickable property-needs-choice' : 'clickable'}
                 tabIndex={0}
                 title={t('properties.setup.openVoucher')}
                 onClick={() => openVoucher(d.voucher_id)}
@@ -374,13 +403,17 @@ function SetupForm({
                 <td>{d.title || '–'}</td>
                 <td className="amount">{d.attachments}</td>
                 <td onClick={(ev) => ev.stopPropagation()}>
-                  <CentreSelect
-                    value={docChoice.get(d.voucher_id) ?? null}
-                    centres={included}
-                    candidates={d.suggestion?.candidates ?? []}
-                    onChange={(id) => setDocChoice(new Map(docChoice).set(d.voucher_id, id))}
-                  />
-                  {d.linked_to.length > 1 ? <span className="muted"> +{d.linked_to.length - 1}</span> : null}
+                  <div className="property-choice">
+                    <CentreSelect
+                      value={docChoice.get(d.voucher_id) ?? null}
+                      centres={included}
+                      candidates={d.suggestion?.candidates ?? []}
+                      needed={docNeeds(d)}
+                      onChange={(id) => setDocChoice(new Map(docChoice).set(d.voucher_id, id))}
+                    />
+                    {docNeeds(d) ? <Evidence source="ambiguous" /> : null}
+                    {d.linked_to.length > 1 ? <span className="muted">+{d.linked_to.length - 1}</span> : null}
+                  </div>
                 </td>
               </tr>
             ))}

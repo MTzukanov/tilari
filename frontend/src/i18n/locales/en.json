@@ -1198,14 +1198,15 @@
       "openVoucher": "Open voucher",
       "rowsOpen": "A balance-sheet item or document row opens its voucher; unsaved choices and your place on the page are kept when you come back.",
       "draftRestored": "Unsaved choices were restored.",
-      "discard": "Discard changes"
+      "discard": "Discard changes",
+      "needChoice": "{n} need a choice"
     },
     "evidence": {
       "sale": "sale voucher",
       "era_allocation": "cost centre on item",
       "voucher_allocation": "cost centre on voucher",
       "text": "by name",
-      "ambiguous": "choose"
+      "ambiguous": "Choose the object"
     },
     "warn": {
       "sale_costs_unset": "No sale costs set.",

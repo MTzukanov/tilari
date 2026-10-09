@@ -1198,14 +1198,15 @@
       "openVoucher": "Avaa tosite",
       "rowsOpen": "Tase-erän tai asiakirjan rivistä aukeaa tosite; tallentamattomat valinnat ja kohta sivulla säilyvät, kun palaat.",
       "draftRestored": "Tallentamattomat valinnat palautettiin.",
-      "discard": "Hylkää muutokset"
+      "discard": "Hylkää muutokset",
+      "needChoice": "{n} odottaa valintaa"
     },
     "evidence": {
       "sale": "myyntitosite",
       "era_allocation": "kohdennus erällä",
       "voucher_allocation": "kohdennus tositteella",
       "text": "nimen perusteella",
-      "ambiguous": "valitse"
+      "ambiguous": "Valitse kohde"
     },
     "warn": {
       "sale_costs_unset": "Myyntikuluja ei ole asetettu.",

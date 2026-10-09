@@ -1198,14 +1198,15 @@
       "openVoucher": "Öppna verifikat",
       "rowsOpen": "En rad med balanspost eller dokument öppnar verifikatet; osparade val och platsen på sidan finns kvar när du kommer tillbaka.",
       "draftRestored": "Osparade val återställdes.",
-      "discard": "Förkasta ändringar"
+      "discard": "Förkasta ändringar",
+      "needChoice": "{n} väntar på val"
     },
     "evidence": {
       "sale": "försäljningsverifikat",
       "era_allocation": "kostnadsställe på posten",
       "voucher_allocation": "kostnadsställe på verifikatet",
       "text": "enligt namn",
-      "ambiguous": "välj"
+      "ambiguous": "Välj objekt"
     },
     "warn": {
       "sale_costs_unset": "Inga försäljningskostnader angivna.",
