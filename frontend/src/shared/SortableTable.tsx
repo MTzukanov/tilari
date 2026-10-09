@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from 'react'
 import { useI18n } from '../i18n'
 import { ColResizeHandle } from './ColResizeHandle'
+import { showCutText } from './cutText'
 import { SortTh } from './SortTh'
 import { useColumnResize } from './useColumnResize'
 import { sortRows, useTableSort } from './useTableSort'
@@ -22,7 +23,8 @@ export type TableColumn<T> = {
 
 /**
  * Ledger table with click-to-sort headers and drag-to-resize columns (widths kept in
- * localStorage under `storageKey`), built from the same pieces as the voucher list.
+ * localStorage under `storageKey`), built from the same pieces as the voucher list. A cell cut
+ * off by a narrow column shows its full text on hover.
  */
 export function SortableTable<T>({
   storageKey,
@@ -30,7 +32,6 @@ export function SortableTable<T>({
   rows,
   rowKey,
   onRowClick,
-  rowTitle,
   className,
 }: {
   storageKey: string
@@ -38,7 +39,6 @@ export function SortableTable<T>({
   rows: T[]
   rowKey: (row: T) => string | number
   onRowClick?: (row: T) => void
-  rowTitle?: string
   className?: string
 }) {
   const { t } = useI18n()
@@ -69,6 +69,7 @@ export function SortableTable<T>({
       <table
         className={['ledger-table resizable', cols.dragging ? 'is-resizing' : '', className].filter(Boolean).join(' ')}
         style={{ minWidth }}
+        onMouseOver={showCutText}
       >
         <colgroup>
           {columns.map((c, i) => (
@@ -105,7 +106,6 @@ export function SortableTable<T>({
               key={rowKey(row)}
               className={onRowClick ? 'clickable' : undefined}
               tabIndex={onRowClick ? 0 : undefined}
-              title={rowTitle}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
               onKeyDown={
                 onRowClick

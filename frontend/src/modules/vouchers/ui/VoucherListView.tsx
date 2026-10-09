@@ -24,6 +24,7 @@ import { VoucherTypeIcon } from './VoucherTypeIcon'
 import { IconSelect, type IconSelectOption } from './IconSelect'
 import { usePeriodNav } from '../../../shared/usePeriodNav'
 import { useColumnResize } from '../../../shared/useColumnResize'
+import { showCutText } from '../../../shared/cutText'
 import { sortRows, useTableSort, voucherSortKey } from '../../../shared/useTableSort'
 
 type BrowseMode = 'vouchers' | 'entries'
@@ -296,7 +297,10 @@ export function VoucherListView({
           onOpen={(voucherId, entryId) => onOpen(voucherId, entryId)}
         />
       ) : (
-        <table className={`ledger-table zebra dense resizable${cols.dragging ? ' is-resizing' : ''}`}>
+        <table
+          className={`ledger-table zebra dense resizable${cols.dragging ? ' is-resizing' : ''}`}
+          onMouseOver={showCutText}
+        >
           <colgroup>
             <col style={{ width: cols.widths.voucher }} />
             <col style={{ width: cols.widths.date }} />

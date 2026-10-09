@@ -159,6 +159,9 @@ Rules already encoded:
 
 - Put user-visible strings in `frontend/src/i18n/locales/{fi,sv,en,de}.json` and call `t('key')`. Finnish is the source catalog; keep the other three in sync. Do not hardcode Finnish in components.
 - i18n **keys** and TypeScript identifiers are English. Finnish UI strings stay in `fi.json` values. Kitsas schema names (`Tosite`, `Vienti`, `Asetus.tilinpaatos`, …) stay as stored; comment the English meaning on first use.
+- Tables with resizable columns cut long cells with an ellipsis: give them `onMouseOver={showCutText}`
+  (`shared/cutText.ts`; `SortableTable` has it) so a cut cell shows its full text on hover. No generic
+  row tooltips such as "Avaa tosite" there - the full text is more useful.
 - **Always write source files as UTF-8.** Never introduce Windows-1252 bytes (especially `0x97` en-dash). Prefer ASCII `-`.
 - No react-router in v1; hashes: `#/browse`, `#/journal`, `#/vat`, `#/settings`, `#/voucher/new/100`, `#/account/{n}`, `#/allocation/{id}`,
   `#/properties`, `#/properties/setup`, `#/property/{id}`, `#/property/{id}/edit`; a

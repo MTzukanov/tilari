@@ -8,6 +8,7 @@ import { useColumnResize } from '../../../shared/useColumnResize'
 import { sortRows, useTableSort, voucherSortKey } from '../../../shared/useTableSort'
 import { VatIcon } from '../../vat/ui/VatIcon'
 import { ColResizeHandle } from '../../../shared/ColResizeHandle'
+import { showCutText } from '../../../shared/cutText'
 import { SortTh } from '../../../shared/SortTh'
 import { AttachmentClip } from './AttachmentClip'
 import { StatusMark, statusDotKind, statusDotTitleKey } from './browseMarks'
@@ -114,6 +115,7 @@ export function BrowseEntriesTable({
   return (
     <table
       className={`ledger-table ${groupedZebra ? 'zebra-voucher' : 'zebra'} dense resizable${cols.dragging ? ' is-resizing' : ''}`}
+      onMouseOver={showCutText}
     >
       <colgroup>
         <col style={{ width: cols.widths.voucher }} />

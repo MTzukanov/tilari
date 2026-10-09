@@ -20,6 +20,9 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   (`loan_linked`); a file saved before that shows `loan_shared` on both. Before this, both objects
   counted all of the loan's interest and the portfolio total counted it twice. Setup never changes
   loans and is not blocked by an older double link.
+- Owner review: hover text on a table row should show the cell's full text, not "Avaa tosite".
+  `showCutText` sets the title only on cells (or spans) actually cut off, on every resizable table:
+  `SortableTable`, Selaa Viennit and Tositteet, the statement editor.
 
 ## 2026-10-09 - Cost-centre page uses the shared tables
 

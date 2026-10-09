@@ -119,7 +119,6 @@ export function MonthLinesPanel({
           columns={columns}
           rows={lines}
           rowKey={(l) => l.entry.id}
-          rowTitle={t('voucher.openVoucher')}
           onRowClick={(l) => onOpenVoucher(l.entry.voucher.id, l.entry.id)}
         />
       ) : (

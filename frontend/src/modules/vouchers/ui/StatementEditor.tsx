@@ -24,6 +24,7 @@ import { VatIcon } from '../../vat/ui/VatIcon'
 import { ColResizeHandle } from '../../../shared/ColResizeHandle'
 import { SortTh } from '../../../shared/SortTh'
 import { VatSelect } from './VatSelect'
+import { showCutText } from '../../../shared/cutText'
 
 type Props = {
   startDate: string
@@ -556,6 +557,7 @@ export function StatementEditor({
       >
         <table
           className={`ledger-table dense resizable statement-table${cols.dragging ? ' is-resizing' : ''}`}
+          onMouseOver={showCutText}
         >
           <colgroup>
             <col style={{ width: cols.widths.date }} />
