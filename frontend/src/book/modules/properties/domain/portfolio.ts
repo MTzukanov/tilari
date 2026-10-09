@@ -22,6 +22,7 @@ import { kindFromName } from './kind'
 import {
   loadAccountNumbers,
   loadCapitalEraRoots,
+  loadCorrectionDates,
   loadCostCentres,
   loadDataThrough,
   loadEraRoots,
@@ -111,6 +112,11 @@ function computeObjects(
     }
   }
   const voucherPnl = groupBy(loadVoucherPnlRows(db, disposalCandidates(allEraRows)), (r) => r.voucher_id)
+  const allPnl = [...pnlByAllocation.values()].flat()
+  const correctionDates = loadCorrectionDates(
+    db,
+    new Set(allPnl.filter((r) => r.voucher_type === 0).map((r) => r.voucher_id)),
+  )
   const periods = getPeriods(db).map((p) => ({ starts: p.starts, ends: p.ends }))
 
   return centres.map((centre) => {
@@ -129,6 +135,7 @@ function computeObjects(
       eraRows,
       eraRoots: roots,
       pnl,
+      correctionDates,
       voucherPnl,
       linkedCreditsByVoucher,
       interest,

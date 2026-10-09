@@ -30,6 +30,8 @@ export type ObjectInput = {
   eraRows: EraRow[]
   eraRoots: Map<number, EraRoot>
   pnl: PnlRow[]
+  /** Correction line id -> date of the booking it corrects (see loadCorrectionDates). */
+  correctionDates?: Map<number, string>
   voucherPnl: Map<number, PnlRow[]>
   linkedCreditsByVoucher: Map<number, number>
   interest: PnlRow[]
@@ -77,7 +79,10 @@ export function computeObject(input: ObjectInput): ObjectResult {
     allocations,
     eras: linked,
     eraRows: input.eraRows,
-    pnl: input.pnl,
+    // Corrections count in the month of the booking they correct; the Kitsas column keeps dates.
+    pnl: input.correctionDates?.size
+      ? input.pnl.map((r) => (input.correctionDates!.has(r.id) ? { ...r, date: input.correctionDates!.get(r.id)! } : r))
+      : input.pnl,
     voucherPnl: input.voucherPnl,
     linkedCreditsByVoucher: input.linkedCreditsByVoucher,
     saleVoucherIds: new Set(doc.sale_voucher_ids ?? []),

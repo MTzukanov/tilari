@@ -143,7 +143,8 @@ describe('rental objects: figures', () => {
       ['addition', 1_600 * E],
       ['return', -400 * E],
     ])
-    expect(d.cash_years.find((y) => y.starts === '2024-01-01')).toMatchObject({ net_snt: 6_400 * E })
+    // 2024: 12 x 700 - 2 000 renovation - 300 accrual reversal (the cost belongs to 2023).
+    expect(d.cash_years.find((y) => y.starts === '2024-01-01')).toMatchObject({ net_snt: 6_700 * E })
   })
 
   it('per fiscal year, the Kitsas result column equals the cost-centre report', async () => {
@@ -158,7 +159,7 @@ describe('rental objects: figures', () => {
     const bundle = computeDetail(db, CC.bundle, { today: TODAY })
     const y2023 = bundle.years.find((y) => y.starts === '2023-01-01')!
     expect(y2023.kitsas_result_snt).toBe(6_700 * E) // includes the year-end accrual
-    expect(y2023.net_snt).toBe(7_000 * E) // cash basis does not
+    expect(y2023.net_snt).toBe(6_700 * E) // so do the monthly figures: the cost is 2023's
   })
 
   it('sold object: sale proceeds include the later broker invoice; actual IRR', async () => {
@@ -370,3 +371,47 @@ describe('rental objects: through the Ledger', () => {
     expect(list.rows.find((r) => r.id === CC.bundle)?.status).toBe('active')
   })
 })
+
+describe('rental objects: corrections in a later year', () => {
+  it('count in the month of the booking they correct', async () => {
+    const { db } = await setUp()
+    const voucher = (pvm: string, tyyppi: number, lines: [number, number, number, string][]) => {
+      const id = db.run("INSERT INTO Tosite (pvm, tyyppi, tila, tunniste, otsikko, json) VALUES (?, ?, 100, 900, 'x', '{}')", [
+        pvm,
+        tyyppi,
+      ]).lastInsertRowid
+      lines.forEach(([tili, k, amt, selite], i) =>
+        db.run('INSERT INTO Vienti (rivi, tosite, pvm, tili, kohdennus, selite, debetsnt, kreditsnt) VALUES (?,?,?,?,?,?,?,?)', [
+          i + 1,
+          id,
+          pvm,
+          tili,
+          k,
+          selite,
+          amt > 0 ? amt : 0,
+          amt < 0 ? -amt : 0,
+        ]),
+      )
+    }
+    // Paid for the garage in March 2025, booked on the bundle; corrected in a 2026 Muu voucher.
+    voucher('2025-03-10', 100, [
+      [7300, CC.bundle, 123_45, 'Vastike autotalli'],
+      [1910, 0, -123_45, 'Vastike autotalli'],
+    ])
+    voucher('2026-01-01', 0, [
+      [7300, CC.bundle, -123_45, 'Oikaisu: autotalli'],
+      [7300, CC.garage, 123_45, 'Oikaisu: autotalli'],
+    ])
+    const month = (id: number, key: string) =>
+      computeDetail(db, id, { today: TODAY }).months.find((m) => m.key === key)!
+    expect(month(CC.garage, '2025-03').expense_snt).toBe(123_45)
+    expect(month(CC.garage, '2026-01').expense_snt).toBe(0)
+    // The bundle's March 2025 is back to its own 300 vastike.
+    expect(month(CC.bundle, '2025-03').expense_snt).toBe(300 * E)
+    // The year rows keep the books' dates in the Kitsas column.
+    const garage = computeDetail(db, CC.garage, { today: TODAY })
+    expect(garage.years.find((y) => y.starts === '2025-01-01')!.expense_snt).toBe(123_45)
+    expect(garage.years.find((y) => y.starts === '2026-01-01')!.kitsas_result_snt).toBe(100 * 9 * E - 123_45)
+  })
+})
+

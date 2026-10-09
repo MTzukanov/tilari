@@ -327,3 +327,61 @@ export function loadVoucherRefs(db: SqliteDb, voucherIds: Iterable<number>): Map
 export function loadAccountNumbers(db: SqliteDb): Set<number> {
   return new Set(db.all<{ numero: number }>('SELECT numero FROM Tili').map((row) => Number(row.numero)))
 }
+
+/**
+ * Correction lines that move an earlier booking to another cost centre or account (a "Muu"
+ * voucher made of P&L line pairs with opposite amounts and the same text, e.g. an oikaisu for a
+ * locked year): line id -> date of the booking it corrects, when that booking is unique (same
+ * account, cost centre and amount, earlier). Figures by month then show the money in the month
+ * it was paid instead of on the correction date.
+ */
+export function loadCorrectionDates(db: SqliteDb, voucherIds: Iterable<number>): Map<number, string> {
+  const out = new Map<number, string>()
+  const rows = db.all<{
+    id: number
+    voucher_id: number
+    rivi: number
+    tili: number
+    k: number
+    amt: number
+    selite: string
+    pvm: string
+    tyyppi: number
+  }>(
+    `SELECT Vienti.id AS id, Vienti.tosite AS voucher_id, Vienti.rivi AS rivi, Vienti.tili AS tili,
+            COALESCE(Vienti.kohdennus, 0) AS k,
+            COALESCE(Vienti.debetsnt, 0) - COALESCE(Vienti.kreditsnt, 0) AS amt,
+            COALESCE(Vienti.selite, '') AS selite, Tosite.pvm AS pvm, Tosite.tyyppi AS tyyppi
+     FROM Vienti JOIN Tosite ON Vienti.tosite = Tosite.id
+     WHERE ${SQL_POSTED} AND Tosite.tyyppi = 0 AND Vienti.tosite IN (${inList(voucherIds)})
+     ORDER BY Vienti.tosite, Vienti.rivi`,
+  )
+  const byVoucher = new Map<number, typeof rows>()
+  for (const r of rows) byVoucher.set(Number(r.voucher_id), [...(byVoucher.get(Number(r.voucher_id)) ?? []), r])
+  for (const lines of byVoucher.values()) {
+    if (!lines.every((l) => String(l.tili) >= '3')) continue
+    const used = new Set<number>()
+    for (const a of lines) {
+      if (used.has(a.id)) continue
+      const b = lines.find(
+        (l) => !used.has(l.id) && l.id !== a.id && Number(l.amt) === -Number(a.amt) && l.selite === a.selite,
+      )
+      if (!b) continue
+      used.add(a.id)
+      used.add(b.id)
+      // The earlier booking sits where one of the two lines takes the money away from.
+      const original = (from: typeof a) =>
+        db.all<{ pvm: string }>(
+          `SELECT Vienti.pvm AS pvm FROM Vienti JOIN Tosite ON Vienti.tosite = Tosite.id
+           WHERE ${SQL_POSTED} AND Vienti.tosite <> ? AND Vienti.tili = ? AND COALESCE(Vienti.kohdennus, 0) = ?
+             AND COALESCE(Vienti.debetsnt, 0) - COALESCE(Vienti.kreditsnt, 0) = ? AND Vienti.pvm <= ?`,
+          [from.voucher_id, from.tili, from.k, -Number(from.amt), from.pvm],
+        )
+      const found = [...original(a), ...original(b)]
+      if (found.length !== 1) continue
+      out.set(Number(a.id), String(found[0].pvm))
+      out.set(Number(b.id), String(found[0].pvm))
+    }
+  }
+  return out
+}

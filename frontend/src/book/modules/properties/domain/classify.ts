@@ -10,11 +10,15 @@ import { TYPE_ACCRUAL, TYPE_BANK_STATEMENT, TYPE_DEPRECIATION, TYPE_INCOME_TAX }
 import type { EraRow, PnlRow } from './ledger'
 import type { Disposal, Warning } from './types'
 
-/** Not cash: depreciation, accruals and income tax are left out of cash flows. */
-export const NON_CASH_TYPES: ReadonlySet<number> = new Set([TYPE_DEPRECIATION, TYPE_ACCRUAL, TYPE_INCOME_TAX])
+/**
+ * Not part of an object's flows: depreciation and income tax. Year-end accruals (9920) do
+ * count - they move a cost to the month it belongs to (a January charge paid in December), and
+ * the accrual and its reversal add up to zero.
+ */
+export const NON_CASH_TYPES: ReadonlySet<number> = new Set([TYPE_DEPRECIATION, TYPE_INCOME_TAX])
 
 /** A bank statement may credit an item (a refund) next to other objects' rent: never a sale. */
-const NOT_DISPOSAL_TYPES: ReadonlySet<number> = new Set([TYPE_BANK_STATEMENT, ...NON_CASH_TYPES])
+const NOT_DISPOSAL_TYPES: ReadonlySet<number> = new Set([TYPE_BANK_STATEMENT, TYPE_ACCRUAL, ...NON_CASH_TYPES])
 
 /** Sale costs booked on other vouchers (broker invoice) count when this close to the sale. */
 const NEAR_SALE_DAYS = 180
