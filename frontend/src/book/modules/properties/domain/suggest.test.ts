@@ -20,7 +20,7 @@ describe('textScorer and pickBest', () => {
   const score = textScorer(names)
 
   it('picks a clear winner and returns ties as candidates', () => {
-    expect(pickBest(score('Vuokrasopimus Rantatie 3 B 7'))).toEqual({ id: 2, candidates: [2] })
+    expect(pickBest(score('Vuokrasopimus Rantatie 3 B 7'))).toEqual({ id: 2, candidates: [2, 1] })
     expect(pickBest(score('Vastikelasku Rantatie 3'))).toEqual({ id: null, candidates: [1, 2] })
     expect(pickBest(score('Autotalli Kuusikuja'))).toEqual({ id: 3, candidates: [3] })
     expect(pickBest(score('Pankki'))).toEqual({ id: null, candidates: [] })
@@ -55,3 +55,31 @@ describe('inflected names and unit numbers', () => {
     expect(r.candidates.sort((a, b) => a - b)).toEqual([2, 32])
   })
 })
+
+describe('words before numbers', () => {
+  const names = [
+    { id: 24, name: 'As Oy Oulun Tammipuisto, Kirkkokatu 11A12' },
+    { id: 3, name: 'As Oy Oulun Etelän Puutarha, Puutarhantie 1 AP6' },
+    { id: 4, name: 'As Oy Oulun Etelän Puutarha, Puutarhantie 1 AP5' },
+    { id: 1, name: 'As Oy Oulun Rehtori 3, Rehtorintie 15 C 32, 90100 Oulu' },
+    { id: 5, name: 'As Oy Oulun Tehtaan Flora, Vaunukatu 8 AH250' },
+    { id: 9, name: 'As Oy Kangasalan Tuulimylly, Tuulimyllynkatu 6 A 22' },
+  ]
+  const score = textScorer(names)
+
+  it('a housing-company name beats a city plus a stray number', () => {
+    expect(pickBest(score('As Oy Oulun Tammipuisto 7.2024-6.2025')).id).toBe(24)
+    expect(pickBest(score('Vastikelasku Tammipuisto 1.10.24-30.6.25')).id).toBe(24)
+  })
+
+  it('a city alone never picks, even with a matching number', () => {
+    const r = pickBest(score('Oulun vuokrasopimus 6 kk'))
+    expect(r.id).toBeNull()
+    expect(r.candidates.length).toBeGreaterThan(1)
+  })
+
+  it('month.year dates are not unit numbers', () => {
+    expect(tokenize('As Oy Oulun Tammipuisto 7.2024-6.2025')).toEqual(['oulun', 'tammipuisto'])
+  })
+})
+

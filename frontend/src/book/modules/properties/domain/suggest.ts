@@ -9,8 +9,11 @@ import type { SuggestionSource } from './types'
 /** Words every housing-company name shares; they say nothing about which object it is. */
 const STOP_WORDS = new Set(['as', 'oy', 'koy', 'asoy', 'ab', 'bostads', 'fastighets', 'kiinteisto', 'kiinteistö'])
 
-/** Dates in titles ("Tiliote 01.01.2023 - 31.12.2023") would match unit numbers. */
-const DATE_PATTERN = /\b\d{1,2}\.\d{1,2}\.(?:\d{4}|\d{2})?|\b\d{4}-\d{2}-\d{2}\b/g
+/**
+ * Dates in titles would match unit numbers: "Tiliote 01.01.2023 - 31.12.2023",
+ * "1.10.24-30.6.25", "7.2024-6.2025" (month.year), "2024-05-01".
+ */
+const DATE_PATTERN = /\b\d{1,2}\.\d{1,2}\.(?:\d{4}|\d{2})?|\b\d{1,2}\.\d{4}\b|\b\d{4}-\d{2}-\d{2}\b/g
 
 export function tokenize(text: string): string[] {
   const out = new Set<string>()
@@ -25,7 +28,11 @@ export function tokenize(text: string): string[] {
   return [...out]
 }
 
-export type TextScore = { id: number; score: number; matched: Set<string> }
+/**
+ * `word_score` counts shared words only (street, housing company, city); `score` adds unit
+ * letters and numbers. `specific` = a shared word that few names have (not just the city).
+ */
+export type TextScore = { id: number; score: number; word_score: number; specific: boolean; matched: Set<string> }
 export type TextScorer = (text: string) => TextScore[]
 
 /** A word, not a unit letter or number: the match must share at least one of these. */
@@ -50,23 +57,30 @@ export function textScorer(names: { id: number; name: string }[]): TextScorer {
   const df = new Map<string, number>()
   for (const t of tokens) for (const tok of t.tokens) df.set(tok, (df.get(tok) ?? 0) + 1)
   const n = Math.max(1, names.length)
+  // A city shared by many objects is not specific; a street or housing-company name is.
+  const specificDf = Math.max(3, Math.ceil(n * 0.2))
   return (text: string) => {
     const query = tokenize(text)
     return tokens
       .map((t) => {
         let score = 0
-        let word = false
+        let wordScore = 0
+        let specific = false
         const matched = new Set<string>()
         for (const nameToken of t.tokens) {
           if (!query.some((q) => tokensMatch(q, nameToken))) continue
           matched.add(nameToken)
-          score += Math.log(1 + n / (df.get(nameToken) ?? 1))
-          if (isWord(nameToken)) word = true
+          const idf = Math.log(1 + n / (df.get(nameToken) ?? 1))
+          score += idf
+          if (isWord(nameToken)) {
+            wordScore += idf
+            if ((df.get(nameToken) ?? 1) <= specificDf) specific = true
+          }
         }
-        return { id: t.id, score: word ? score : 0, matched }
+        return { id: t.id, score, word_score: wordScore, specific, matched }
       })
-      .filter((s) => s.score > 0)
-      .sort((a, b) => b.score - a.score || a.id - b.id)
+      .filter((s) => s.word_score > 0)
+      .sort((a, b) => b.word_score - a.word_score || b.score - a.score || a.id - b.id)
   }
 }
 
@@ -76,22 +90,25 @@ function containsAll(big: Set<string>, small: Set<string>): boolean {
 }
 
 /**
- * The winner of a scored list, or the tied candidates. A name wins when it scores clearly
- * higher, or when it matches everything a close rival matches and more ("F 44" over "F 48"
- * for a text naming F 44).
+ * The winner of a scored list, or the tied candidates. Words decide first: a name whose
+ * shared words score clearly higher wins. Among names with the same words, unit letters and
+ * numbers break the tie: a name that matches everything its rivals match and more wins
+ * ("F 44" over "F 48"), but only on a specific word - a city alone never picks.
  */
-export function pickBest(scores: { id: number; score: number; matched?: Set<string> }[]): {
-  id: number | null
-  candidates: number[]
-} {
+export function pickBest(
+  scores: { id: number; score: number; word_score?: number; specific?: boolean; matched?: Set<string> }[],
+): { id: number | null; candidates: number[] } {
   if (!scores.length) return { id: null, candidates: [] }
-  const [best, second] = scores
-  if (!second || best.score >= second.score * 1.5) return { id: best.id, candidates: [best.id] }
-  const close = scores.filter((s) => s.score >= best.score / 1.5)
+  const words = (s: (typeof scores)[number]) => s.word_score ?? s.score
+  const top = words(scores[0])
+  const close = scores.filter((s) => words(s) * 1.5 > top)
+  if (close.length === 1) return { id: close[0].id, candidates: [close[0].id] }
+  const best = [...close].sort((a, b) => b.score - a.score || a.id - b.id)[0]
   const bestMatched = best.matched
   if (
     bestMatched &&
-    close.slice(1).every((s) => s.matched && s.matched.size < bestMatched.size && containsAll(bestMatched, s.matched))
+    best.specific !== false &&
+    close.every((s) => s === best || (s.matched && s.matched.size < bestMatched.size && containsAll(bestMatched, s.matched)))
   ) {
     return { id: best.id, candidates: close.map((s) => s.id) }
   }
