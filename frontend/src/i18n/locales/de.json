@@ -55,7 +55,8 @@
     "help": "Hilfe",
     "balanceSheetItems": "Bilanzgliederung",
     "costCentres": "Kostenstellen",
-    "journal": "Journal"
+    "journal": "Journal",
+    "properties": "Mietobjekte"
   },
   "file": {
     "label": "Buchhaltungsdatei",
@@ -344,7 +345,9 @@
     "overviewTaxEstimateHint": "20 % vom steuerpflichtigen Ergebnis, ohne früheren Verlust",
     "overviewTaxUnpaid": "{amount} Steuer offen",
     "overviewMonths": "Monate in diesem Geschäftsjahr",
-    "overviewYears": "Geschäftsjahre"
+    "overviewYears": "Geschäftsjahre",
+    "hubProperties": "Mietobjekte",
+    "hubPropertiesHint": "Cashflow, Rendite und Break-even-Preis je Objekt"
   },
   "browse": {
     "title": "Durchsuchen",
@@ -494,7 +497,10 @@
     "closing": "Zum Jahresabschluss",
     "reports": "Zu Bilanz / GuV",
     "reportsHub": "Zu den Berichten",
-    "bankStatement": "Zum Kontoauszug"
+    "bankStatement": "Zum Kontoauszug",
+    "property": "Zum Objekt",
+    "properties": "Zu den Mietobjekten",
+    "propertiesSetup": "Zur Einrichtung der Objekte"
   },
   "ledger": {
     "empty": "Keine Buchungen auf diesem Konto in der Periode."
@@ -977,5 +983,262 @@
     "DPZ": "Nicht abzugsfähige Abschreibungen",
     "DVE": "Steuervorauszahlungen",
     "unknown": "Kontotyp {code}"
+  },
+  "properties": {
+    "title": "Mietobjekte",
+    "lead": "Kostenstellen als Mietobjekte: investiertes Geld, Cashflow, Rendite und der Preis, der das Geld zurückbringt. Die Zahlen stammen aus der Buchhaltung; Tilari speichert nur Verknüpfungen und Schätzungen in einer eigenen Tabelle.",
+    "asOf": "Stand {date}",
+    "dataThrough": "Kontoauszüge bis {date}",
+    "acquired": "erworben {date}",
+    "soldOn": "verkauft {date}",
+    "editLink": "Objekt bearbeiten",
+    "openAllocation": "Ergebnis der Kostenstelle",
+    "empty": "Keine Objekte anzuzeigen.",
+    "setupBanner": "{n} Kostenstellen warten auf die Einrichtung.",
+    "setupOpen": "Objekte einrichten",
+    "footnote": "* weniger als 12 Monate im Besitz, auf ein Jahr hochgerechnet. † keine Verkaufskosten angegeben (Standardwerte unten). Spaltenkopf mit der Maus berühren für eine Erklärung; Spalten lassen sich sortieren und verbreitern.",
+    "kpi": {
+      "invested": "Investiert",
+      "investedHint": "Anschaffungskosten und sonstiges Kapital",
+      "bookValue": "Buchwert",
+      "bookValueHint": "Bilanzposten der gehaltenen Objekte",
+      "proceeds": "Verkaufserlös",
+      "operating": "Cashflow bisher",
+      "operatingHint": "Erträge {income}, Kosten {expense}",
+      "interest": "Zinsen",
+      "unrecovered": "Noch nicht zurück",
+      "unrecoveredHint": "Investiertes Geld, das der Cashflow noch nicht zurückgebracht hat",
+      "gain": "Gewinn",
+      "t12m": "Cashflow 12 Mon.",
+      "yieldHint": "Nettorendite {pct} vom Buchwert",
+      "annualized": "{n} Mon. auf ein Jahr hochgerechnet",
+      "irr": "Jahresrendite (IRR)",
+      "irrMarket": "bei Verkauf zur Schätzung {price}",
+      "irrAtCost": "bei Verkauf zum Buchwert",
+      "irrActual": "tatsächlich",
+      "portfolioIrr": "Jahresrendite des Portfolios (IRR)",
+      "portfolioIrrHint": "verkaufte tatsächlich, übrige zum Buchwert",
+      "totalResult": "Gesamtergebnis",
+      "totalResultHint": "Verkauf + Cashflow - investiert"
+    },
+    "col": {
+      "object": "Objekt",
+      "status": "Status",
+      "bookValue": "Buchwert",
+      "t12m": "Cashflow 12 Mon.",
+      "yield": "Nettorendite",
+      "irr": "IRR",
+      "unrecovered": "Nicht zurück",
+      "breakEven": "Break-even-Preis",
+      "valuation": "Preisschätzung",
+      "bookValueHint": "Anschaffungskosten in der Bilanz (verknüpfte Posten) am Stichtag",
+      "t12mHint": "Erträge - Kosten der letzten 12 Monate (ohne Investitionen und Verkäufe)",
+      "yieldHint": "Cashflow 12 Monate / Buchwert",
+      "irrHint": "Interner Zinsfuß (IRR) = Jahresrendite: der jährliche Zinssatz, bei dem sich die Zahlungen der Besitzzeit - Kauf, Mieten, Kosten und Verkauf - aufheben. Er berücksichtigt, wann Geld floss, und ist daher nicht das Gesamtergebnis geteilt durch die Anschaffungskosten. Gehaltene Objekte werden in der Rechnung heute zur Schätzung oder zum Buchwert nach Verkaufskosten verkauft. Die Summenzeile nimmt alle Zahlungen zusammen.",
+      "breakEvenHint": "Verkaufspreis (ohne Darlehensanteil), der nach Verkaufskosten alles investierte Geld zurückbringt",
+      "valuationHint": "Ihre Schätzung des Verkaufspreises (Objekt bearbeiten → Preisschätzungen)",
+      "cashTotal": "Summe",
+      "cashTotalHint": "Cashflow über die gesamte Besitzdauer",
+      "held": "Im Besitz",
+      "purchase": "Anschaffungskosten",
+      "purchaseHint": "Kaufpreis, Grunderwerbsteuer und weitere Anschaffungskosten (Erstattungen abgezogen)",
+      "income": "Erträge",
+      "spent": "Kosten",
+      "spentHint": "Hausgeld, Reparaturen und sonstige Kosten in der Besitzzeit (und Zinsen, wenn ein Darlehen verknüpft ist)",
+      "salePrice": "Verkaufspreis",
+      "saleCosts": "Verkaufskosten",
+      "bookGain": "Veräußerungsgewinn",
+      "bookGainHint": "Buchhalterischer Gewinn oder Verlust: Verkaufspreis - Verkaufskosten - Anschaffungskosten",
+      "totalResult": "Gesamtergebnis",
+      "irrSoldHint": "Interner Zinsfuß (IRR) über die Besitzzeit: der jährliche Zinssatz, bei dem sich Kauf, Mieten, Kosten und Verkauf aufheben. Nicht das Gesamtergebnis geteilt durch die Anschaffungskosten: -20 % in 16 Monaten sind etwa -15 % pro Jahr. Die Summenzeile nimmt die Zahlungen aller verkauften Objekte zusammen.",
+      "totalResultHint": "Verkauf + Cashflow - Anschaffungskosten in Euro; darunter in Prozent der Anschaffungskosten (gesamte Besitzzeit, nicht pro Jahr)."
+    },
+    "status": {
+      "active": "Im Besitz",
+      "partly_sold": "Teilweise verkauft",
+      "sold": "Verkauft",
+      "unlinked": "Keine Anschaffungskosten",
+      "excluded": "Kein Mietobjekt"
+    },
+    "kind": {
+      "apartment": "Wohnung",
+      "parking": "Stellplatz",
+      "garage": "Garage",
+      "commercial": "Gewerbeeinheit",
+      "storage": "Lager",
+      "other": "Sonstiges"
+    },
+    "defaults": {
+      "title": "Standardwerte für alle Objekte",
+      "lead": "Verkaufskosten (z. B. Maklerprovision und Verwalterbescheinigung) und Zielrendite. Eigene Werte eines Objekts gehen vor."
+    },
+    "field": {
+      "kind": "Art",
+      "excluded": "Kein Mietobjekt (in der Liste ausblenden)",
+      "salePct": "Verkaufskosten, % vom Preis",
+      "saleFixed": "Verkaufskosten, fest €",
+      "targetReturn": "Zielrendite, % pro Jahr",
+      "price": "Verkaufspreis (ohne Darlehensanteil)",
+      "debtFreePrice": "Schuldenfreier Preis",
+      "source": "Quelle",
+      "loanAccounts": "Darlehenskonten",
+      "interestAccounts": "Zinskonten",
+      "note": "Notiz"
+    },
+    "breakEven": {
+      "title": "Break-even-Preis: der Preis, der das Geld zurückbringt",
+      "caption": "Verkaufspreis ohne Darlehensanteil der Wohnungsgesellschaft",
+      "explain": "Noch nicht zurück {unrecovered}. Verkaufskosten {pct} und {fixed} gehen vom Preis ab; zu diesem Preis ist jeder investierte Euro zurück.",
+      "recovered": "Das Objekt hat das investierte Geld bereits zurückgebracht; jeder Preis nach Verkaufskosten ist Gewinn.",
+      "costsUnset": "Keine Verkaufskosten angegeben, die Zahl nimmt null an. Für das Objekt oder in den Standardwerten angeben.",
+      "bookLoss": "Kein buchhalterischer Verlust ab einem Preis von {price} (Buchwert + Verkaufskosten).",
+      "taxNote": "Steuern: Werden Gewinne und Verluste mit denselben 20 % besteuert und ist ein Verlust mit anderem Gewinn verrechenbar, ist der Break-even nach Steuern dieselbe Zahl.",
+      "debtFree": "Schuldenfreier Preis = Verkaufspreis + verbleibender Darlehensanteil. Die Verfolgung des Darlehensanteils kommt in der nächsten Phase.",
+      "calculate": "Berechnen",
+      "targetPrice": "Jahresrendite {pct}: Verkaufspreis {price}"
+    },
+    "chart": {
+      "cashFlow": "Cashflow pro Monat",
+      "income": "Erträge",
+      "expense": "Kosten und Zinsen",
+      "allMonths": "Gesamte Besitzdauer",
+      "payback": "Noch nicht zurück am Monatsende"
+    },
+    "years": {
+      "title": "Nach Geschäftsjahr",
+      "period": "Geschäftsjahr",
+      "income": "Erträge",
+      "expense": "Kosten",
+      "net": "Netto",
+      "interest": "Zinsen",
+      "capex": "Investiert",
+      "proceeds": "Verkauf",
+      "result": "Ergebnis",
+      "resultHint": "Ergebnis der Kostenstelle in der Buchhaltung: alle GuV-Buchungen, auch Abgrenzungen und Verkauf",
+      "netHint": "Erträge - Kosten im Monat, zu dem sie gehören: Abgrenzungen und spätere Korrekturen enthalten",
+      "capexHint": "Änderung der Anschaffungskosten. Negativ = Kapital floss zurück, z. B. Erstattung der Grunderwerbsteuer. Die Buchungen stehen unten beim Bilanzposten.",
+      "proceedsHint": "Geld aus dem Verkauf nach Verkaufskosten"
+    },
+    "eras": {
+      "title": "Anschaffungskosten (Bilanzposten)",
+      "item": "Bilanzposten",
+      "none": "Kein Bilanzposten verknüpft, daher können investiertes Geld und Rendite nicht berechnet werden.",
+      "link": "Bilanzposten verknüpfen",
+      "missing": "Bilanzposten {id} existiert nicht mehr",
+      "lead": "Änderungen der Anschaffungskosten je Bilanzposten. Eine Zeile öffnet den Beleg.",
+      "balance": "Saldo {amount}",
+      "kind": {
+        "acquisition": "Anschaffung",
+        "addition": "Zugang",
+        "return": "Erstattung",
+        "sale": "Verkauf",
+        "depreciation": "Abschreibung"
+      }
+    },
+    "sales": {
+      "title": "Verkäufe",
+      "line": "Verkaufspreis {price}, Verkaufskosten {costs}, erhalten {proceeds}"
+    },
+    "docs": {
+      "title": "Dokumente",
+      "linkedTitle": "Verknüpfte Dokumente",
+      "empty": "Keine Anhänge.",
+      "missing": "Beleg {id} wurde gelöscht",
+      "showBank": "Kontoauszüge anzeigen ({n})",
+      "group": {
+        "linked": "Verknüpft (Verträge und Mitteilungen)",
+        "acquisition": "Kauf und Bilanzposten",
+        "other": "Rechnungen und andere Belege",
+        "bank": "Kontoauszüge"
+      },
+      "showAll": "Alle anzeigen ({n})"
+    },
+    "edit": {
+      "title": "Bearbeiten: {name}",
+      "basics": "Grunddaten",
+      "erasLead": "Bilanzposten mit den Anschaffungskosten des Objekts (Kaufpreis, Grunderwerbsteuer, Kosten).",
+      "addEra": "Bilanzposten hinzufügen…",
+      "addDoc": "Notizbeleg hinzufügen…",
+      "remove": "Entfernen",
+      "valuations": "Preisschätzungen",
+      "valuationsLead": "Ihre Schätzung, was das Objekt jetzt einbringen würde. Die neueste wird für den IRR verwendet.",
+      "addValuation": "Schätzung hinzufügen",
+      "sale": "Verkauf und Ziel",
+      "saleLead": "Leer = Standardwerte.",
+      "financing": "Bankdarlehen",
+      "financingLead": "Bei Finanzierung mit eigenem Darlehen: Buchungen auf Zinskonten, auf Belegen mit einer Buchung auf dem Darlehenskonto, zählen als Kosten des Objekts.",
+      "capital": "Sonstiges investiertes Kapital",
+      "capitalLead": "Kapital, das nicht auf einem verknüpften Bilanzposten gebucht ist (z. B. vor Beginn der Buchhaltung). Positiv = investiert.",
+      "addCapital": "Zeile hinzufügen",
+      "delete": "Objektdaten löschen",
+      "deleteConfirm": "Tilaris Daten zu diesem Objekt löschen? Die Buchhaltung bleibt unverändert.",
+      "readOnly": "Die Daten wurden mit einem neueren Tilari gespeichert; diese Version kann sie nur anzeigen."
+    },
+    "setup": {
+      "title": "Mietobjekte einrichten",
+      "lead": "Wählen Sie, welche Kostenstellen Mietobjekte sind, und verknüpfen Sie Anschaffungsposten und Dokumente. Vorschläge stammen aus der Buchhaltung; ★ = Vorschlag. Die Buchhaltung bleibt unverändert.",
+      "centres": "Kostenstellen",
+      "centresLead": "Haken bei Kostenstellen entfernen, die keine Mietobjekte sind.",
+      "isObject": "Mietobjekt",
+      "ends": "endet {date}",
+      "eras": "Anschaffungskosten (Bilanzposten)",
+      "erasLead": "Anteilsposten und das Objekt, zu dem jeder gehört.",
+      "closedEras": "Geschlossene Posten (verkauft)",
+      "belongsTo": "Objekt",
+      "none": "– kein Objekt –",
+      "showAllEras": "Weitere Posten anzeigen ({n})",
+      "docs": "Dokumente (Notizbelege)",
+      "docsLead": "Mietverträge, Mieterhöhungen, Hausgeldmitteilungen und andere Dokumente.",
+      "docTitle": "Titel",
+      "files": "Dateien",
+      "showAllDocs": "Weitere anzeigen ({n})",
+      "apply": "Einrichtung speichern",
+      "starLegend": "★ = Tilaris Vorschlag aus der Buchhaltung oder dem Namen. Ein eindeutiger Vorschlag ist vorausgewählt; sonst selbst wählen. Gespeichert wird erst mit Einrichtung speichern.",
+      "starLegendEdit": "★ = für dieses Objekt vorgeschlagen, aus der Buchhaltung oder dem Namen.",
+      "kindLegend": "Die Art wird aus dem Namen gelesen: AP, AH oder AK = Stellplatz, LH = Gewerbeeinheit, sonst Wohnung (★ = nach dem Namen).",
+      "kindsFromNames": "Alle Arten nach dem Namen setzen",
+      "openVoucher": "Beleg öffnen",
+      "rowsOpen": "Eine Zeile mit Bilanzposten oder Dokument öffnet den Beleg; ungespeicherte Auswahl und die Stelle auf der Seite bleiben erhalten, wenn Sie zurückkehren.",
+      "draftRestored": "Ungespeicherte Auswahl wurde wiederhergestellt.",
+      "discard": "Änderungen verwerfen",
+      "needChoice": "{n} warten auf Auswahl"
+    },
+    "evidence": {
+      "sale": "Verkaufsbeleg",
+      "era_allocation": "Kostenstelle am Posten",
+      "voucher_allocation": "Kostenstelle am Beleg",
+      "text": "nach Name",
+      "ambiguous": "Objekt wählen"
+    },
+    "warn": {
+      "sale_costs_unset": "Keine Verkaufskosten angegeben.",
+      "sale_line_split": "Beleg {voucher} verkaufte mehrere Objekte; Buchungen ohne Kostenstelle wurden nach Anschaffungskosten aufgeteilt.",
+      "era_missing": "Verknüpfter Bilanzposten {eraid} existiert nicht mehr.",
+      "no_capital": "Keine Anschaffungskosten verknüpft: Rendite und Break-even können nicht berechnet werden.",
+      "doc_corrupt": "Die gespeicherten Daten sind beschädigt; Speichern ersetzt sie.",
+      "doc_newer": "Die Daten wurden mit einem neueren Tilari gespeichert."
+    },
+    "error": {
+      "invalid_field": "Feld {path} prüfen.",
+      "stale": "Das Objekt wurde anderswo geändert. Seite neu öffnen.",
+      "era_linked": "Der Bilanzposten gehört bereits zu einem anderen Objekt.",
+      "newer_version": "Die Daten wurden mit einem neueren Tilari gespeichert und können mit dieser Version nicht geändert werden.",
+      "not_found": "Kostenstelle nicht gefunden.",
+      "percent": "Prozent wie 3,5.",
+      "accounts": "Kontonummern durch Kommas getrennt."
+    },
+    "total": "Summe",
+    "holding": "{years} J. {months} Mon.",
+    "held": {
+      "title": "Im Besitz ({n})"
+    },
+    "cash": {
+      "title": "Cashflow pro Jahr",
+      "lead": "Erträge - Kosten im Monat, zu dem sie gehören (Abgrenzungen und Korrekturen enthalten); ohne Investitionen und Verkäufe."
+    },
+    "sold": {
+      "title": "Verkaufte Objekte ({n})",
+      "lead": "Zahlen über die gesamte Besitzdauer: was gekauft wurde, was ausgegeben wurde, was der Verkauf brachte."
+    }
   }
 }

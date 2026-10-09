@@ -149,6 +149,34 @@ Finnish *vienti* is **not** “export”. It is one debit or credit line on a vo
 | Yleinen | Allmän (ej fördelad) | General (unallocated) | Allgemein (nicht zugeordnet) |
 | Jaksotus (date range on a line) | Periodisering | Accrual period | Abgrenzungszeitraum |
 
+## Rental objects (vuokrakohteet)
+
+A rental object is a cost centre with the balance-sheet items holding its acquisition cost
+(`#/properties`, ADR-023). Kitsas "huoneisto" is the cloud housing-company billing feature,
+not this.
+
+| Finnish | Swedish | English | German |
+|---------|---------|---------|--------|
+| Vuokrakohde | Hyresobjekt | Rental object | Mietobjekt |
+| Huoneisto-osakkeet | Bostadsaktier | Apartment shares | Wohnungsanteile |
+| Tase-erä | Balanspost | Balance-sheet item | Bilanzposten |
+| Hankintameno | Anskaffningsutgift | Acquisition cost | Anschaffungskosten |
+| Kirjanpitoarvo | Bokfört värde | Book value | Buchwert |
+| Hoitovastike | Skötselvederlag | Maintenance charge | Hausgeld (Bewirtschaftung) |
+| Rahoitusvastike | Finansieringsvederlag | Financing charge | Finanzierungsumlage |
+| Yhtiölainaosuus | Andel av bolagslån | Housing-company loan share | Darlehensanteil der Wohnungsgesellschaft |
+| Velaton hinta | Skuldfritt pris | Debt-free price | Schuldenfreier Preis |
+| Myyntihinta | Försäljningspris | Selling price (without loan share) | Verkaufspreis (ohne Darlehensanteil) |
+| Myyntikulut / välityspalkkio | Försäljningskostnader / mäklararvode | Sale costs / broker fee | Verkaufskosten / Maklerprovision |
+| Isännöitsijäntodistus | Disponentintyg | Housing-company manager's certificate | Verwalterbescheinigung |
+| Varainsiirtovero | Överlåtelseskatt | Transfer tax | Grunderwerbsteuer (FI) |
+| Vuokrasopimus | Hyresavtal | Lease | Mietvertrag |
+| Vuokravakuus | Hyresdeposition | Rent deposit | Mietkaution |
+| Nettotuotto | Nettoavkastning | Net yield | Nettorendite |
+| Vuosituotto (IRR) | Årsavkastning (IRR) | Annual return (IRR) | Jahresrendite (IRR) |
+| Palauttamatta | Ej återfått | Not yet recovered | Noch nicht zurück |
+| Nollahinta | Nollpris | Break-even price | Break-even-Preis |
+
 ## VAT (ALV / arvonlisävero)
 
 | Finnish | Swedish | English | German |

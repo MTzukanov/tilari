@@ -21,8 +21,8 @@ import { sortRows, useTableSort } from '../../../shared/useTableSort'
 import { useI18n } from '../../../i18n'
 import { vatFromKey, vatKey, vatPercentLabel } from '../../vat/ui/vatCodes'
 import { VatIcon } from '../../vat/ui/VatIcon'
-import { ColResizeHandle } from './ColResizeHandle'
-import { SortTh } from './SortTh'
+import { ColResizeHandle } from '../../../shared/ColResizeHandle'
+import { SortTh } from '../../../shared/SortTh'
 import { VatSelect } from './VatSelect'
 
 type Props = {

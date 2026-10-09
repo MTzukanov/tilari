@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { TableSort } from '../../../shared/useTableSort'
+import type { TableSort } from './useTableSort'
 
 export function SortTh({
   id,

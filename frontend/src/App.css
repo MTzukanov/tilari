@@ -115,6 +115,14 @@ body {
   text-align: center;
 }
 
+.sidenav-item .fit-text {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: center;
+}
+
 .sidenav-item:hover {
   background: color-mix(in srgb, #fff 35%, transparent);
 }
@@ -4895,4 +4903,380 @@ tr.tax-total td {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.85rem;
   resize: vertical;
+}
+
+/* Rental objects (modules/properties) */
+.property-asof {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+}
+
+.property-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface));
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+
+.property-kpi-hint {
+  font-size: 0.78rem;
+}
+
+.property-name {
+  font-weight: 600;
+}
+
+.property-sub {
+  display: block;
+  font-size: 0.78rem;
+}
+
+.property-status {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.property-status-active {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  background: color-mix(in srgb, var(--accent-soft) 45%, var(--surface));
+}
+
+.property-status-partly_sold,
+.property-status-unlinked {
+  color: #8a5a00;
+  border-color: color-mix(in srgb, #c98a00 40%, var(--line));
+  background: color-mix(in srgb, #f6e7c4 50%, var(--surface));
+}
+
+.property-gain {
+  color: var(--accent);
+}
+
+.property-footnote {
+  font-size: 0.78rem;
+  margin: 0.4rem 0 1rem;
+}
+
+.property-defaults {
+  margin: 1.25rem 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 0.75rem 1rem;
+}
+
+.property-defaults summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.property-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.75rem 1rem;
+  margin: 0.75rem 0;
+  align-items: end;
+}
+
+.property-form-grid label,
+.property-form-row label,
+.property-target label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.property-form-grid label.allocation-check {
+  flex-direction: row;
+}
+
+.property-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: end;
+  margin: 0.5rem 0;
+}
+
+.property-warnings {
+  margin: 0.5rem 0 1rem;
+  padding: 0.6rem 1rem 0.6rem 2rem;
+  border: 1px solid color-mix(in srgb, #c98a00 40%, var(--line));
+  background: color-mix(in srgb, #f6e7c4 45%, var(--surface));
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+
+.property-breakeven-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.property-big {
+  font-size: 1.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.property-breakeven p {
+  margin: 0.35rem 0;
+}
+
+.property-note {
+  color: #8a5a00;
+}
+
+.property-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.6rem 1rem;
+  margin: 0.75rem 0 0.4rem;
+}
+
+.property-target input {
+  width: 6rem;
+}
+
+.property-chart {
+  margin-bottom: 0.75rem;
+}
+
+.property-bar-income,
+.property-swatch-income {
+  fill: #1f6b54;
+  background: #1f6b54;
+}
+
+.property-bar-expense,
+.property-swatch-expense {
+  fill: #c45c26;
+  background: #c45c26;
+}
+
+.property-payback-line {
+  fill: none;
+  stroke: #2f6fed;
+  stroke-width: 2;
+}
+
+.property-payback-dot {
+  fill: #2f6fed;
+}
+
+.property-section {
+  margin: 1.5rem 0;
+}
+
+.property-section h3,
+.property-doc-group h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.property-doc-group h4 {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.property-doc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.property-doc-list li {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  align-items: baseline;
+}
+
+.property-attachment {
+  font-size: 0.85rem;
+}
+
+.property-attachment::before {
+  content: '📎 ';
+}
+
+.property-note-text {
+  white-space: pre-wrap;
+}
+
+.property-textarea {
+  width: 100%;
+  font: inherit;
+}
+
+.property-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1.5rem 0;
+}
+
+.property-delete {
+  margin-left: auto;
+  color: var(--neg);
+}
+
+/* Same width on every row: a select otherwise sizes to its longest (starred) option. */
+.property-kind-select {
+  width: 10rem;
+}
+
+.property-setup-table .property-choice {
+  width: 24rem;
+  max-width: 100%;
+}
+
+.property-setup-table .property-choice select {
+  width: 100%;
+}
+
+.property-subhead td {
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--paper-deep);
+}
+
+.property-evidence {
+  font-size: 0.72rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.property-evidence-sale,
+.property-evidence-era_allocation,
+.property-evidence-voucher_allocation {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+
+.property-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+}
+
+.property-evidence-ambiguous {
+  color: #fff;
+  background: var(--neg);
+  border-color: var(--neg);
+  font-weight: 600;
+}
+
+.property-select-needed {
+  border: 1px solid var(--neg);
+  background: color-mix(in srgb, var(--neg) 8%, #fff);
+  outline: 1px solid color-mix(in srgb, var(--neg) 35%, transparent);
+}
+
+tr.property-needs-choice td {
+  background: color-mix(in srgb, var(--neg) 6%, transparent);
+}
+
+tr.property-needs-choice td:first-child {
+  box-shadow: inset 3px 0 0 var(--neg);
+}
+
+.property-needed-count {
+  margin-left: 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--neg);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  vertical-align: middle;
+}
+
+.sortable-table-wrap {
+  overflow-x: auto;
+}
+
+.property-table .property-name,
+.property-table .property-sub {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.property-table tfoot td,
+.property-strong {
+  font-weight: 600;
+}
+
+.property-legend {
+  font-size: 0.85rem;
+  border-left: 3px solid var(--accent);
+  padding: 0.2rem 0 0.2rem 0.6rem;
+  margin: 0.4rem 0 0.75rem;
+}
+
+.property-era {
+  margin: 0.75rem 0 1rem;
+}
+
+.property-era h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+}
+
+.property-col-date {
+  width: 7rem;
+}
+
+.property-col-kind {
+  width: 7.5rem;
+}
+
+.property-move {
+  font-size: 0.75rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.property-move-acquisition,
+.property-move-addition {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+
+.property-move-return,
+.property-move-depreciation {
+  color: #8a5a00;
+  border-color: color-mix(in srgb, #c98a00 40%, var(--line));
+}
+
+.property-move-sale {
+  color: #2f6fed;
+  border-color: color-mix(in srgb, #2f6fed 40%, var(--line));
 }

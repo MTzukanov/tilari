@@ -55,7 +55,8 @@
     "help": "Ohje",
     "balanceSheetItems": "Tase-erät",
     "costCentres": "Kustannuspaikat",
-    "journal": "Päiväkirja"
+    "journal": "Päiväkirja",
+    "properties": "Vuokrakohteet"
   },
   "file": {
     "label": "Kirjanpitotiedosto",
@@ -344,7 +345,9 @@
     "overviewTaxEstimateHint": "20 % verotettavasta tuloksesta, ei sisällä aiempaa tappiota",
     "overviewTaxUnpaid": "Jää veroa {amount}",
     "overviewMonths": "Kuukaudet tällä tilikaudella",
-    "overviewYears": "Tilikaudet"
+    "overviewYears": "Tilikaudet",
+    "hubProperties": "Vuokrakohteet",
+    "hubPropertiesHint": "Kohteiden kassavirta, tuotto ja nollahinta"
   },
   "browse": {
     "title": "Selaus",
@@ -494,7 +497,10 @@
     "closing": "Tilinpäätökseen",
     "reports": "Taseeseen / tulokseen",
     "reportsHub": "Raportteihin",
-    "bankStatement": "Tiliotteelle"
+    "bankStatement": "Tiliotteelle",
+    "property": "Kohteeseen",
+    "properties": "Vuokrakohteisiin",
+    "propertiesSetup": "Kohteiden määritykseen"
   },
   "ledger": {
     "empty": "Ei vientejä tällä tilillä jaksolla."
@@ -977,5 +983,262 @@
     "DPZ": "Vähennyskelvottomat poistot",
     "DVE": "Ennakkoverot",
     "unknown": "Tilityyppi {code}"
+  },
+  "properties": {
+    "title": "Vuokrakohteet",
+    "lead": "Kustannuspaikat vuokrakohteina: sijoitettu raha, kassavirta, tuotto ja hinta, jolla rahat tulevat takaisin. Luvut lasketaan kirjanpidosta; Tilari tallentaa vain linkit ja arviot omaan tauluunsa.",
+    "asOf": "Tilanne {date}",
+    "dataThrough": "tiliotteet {date} asti",
+    "acquired": "hankittu {date}",
+    "soldOn": "myyty {date}",
+    "editLink": "Muokkaa kohdetta",
+    "openAllocation": "Kustannuspaikan tulos",
+    "empty": "Ei näytettäviä kohteita.",
+    "setupBanner": "{n} kustannuspaikkaa odottaa määritystä.",
+    "setupOpen": "Määritä kohteet",
+    "footnote": "* alle 12 kk omistus, laskettu vuodelle. † myyntikuluja ei ole asetettu (Oletukset alla). Vie hiiri sarakeotsikon päälle nähdäksesi selityksen; sarakkeita voi lajitella ja leventää.",
+    "kpi": {
+      "invested": "Sijoitettu",
+      "investedHint": "Hankintameno ja muut pääomat",
+      "bookValue": "Kirjanpitoarvo",
+      "bookValueHint": "Omistettujen kohteiden tase-erät",
+      "proceeds": "Myynnistä saatu",
+      "operating": "Kassavirta yhteensä",
+      "operatingHint": "Tuotot {income}, kulut {expense}",
+      "interest": "Korot",
+      "unrecovered": "Palauttamatta",
+      "unrecoveredHint": "Sijoitettu raha, jota kassavirta ei ole vielä tuonut takaisin",
+      "gain": "Voittoa",
+      "t12m": "Kassavirta 12 kk",
+      "yieldHint": "nettotuotto {pct} kirjanpitoarvosta",
+      "annualized": "{n} kk vuodeksi laskettuna",
+      "irr": "Vuosituotto (IRR)",
+      "irrMarket": "myytäessä arviohintaan {price}",
+      "irrAtCost": "myytäessä kirjanpitoarvoon",
+      "irrActual": "toteutunut",
+      "portfolioIrr": "Salkun vuosituotto (IRR)",
+      "portfolioIrrHint": "myydyt toteutuneina, muut kirjanpitoarvoon",
+      "totalResult": "Kokonaistulos",
+      "totalResultHint": "Myynti + kassavirta - sijoitettu"
+    },
+    "col": {
+      "object": "Kohde",
+      "status": "Tila",
+      "bookValue": "Kirjanpitoarvo",
+      "t12m": "Kassavirta 12 kk",
+      "yield": "Nettotuotto",
+      "irr": "IRR",
+      "unrecovered": "Palauttamatta",
+      "breakEven": "Nollahinta",
+      "valuation": "Hinta-arvio",
+      "bookValueHint": "Hankintameno taseessa (linkitetyt tase-erät) tilannepäivänä",
+      "t12mHint": "Tuotot - kulut viimeiset 12 kk (ei sijoituksia eikä myyntiä)",
+      "yieldHint": "12 kk kassavirta / kirjanpitoarvo",
+      "irrHint": "Sisäinen korko eli vuosituotto (IRR): vuotuinen korko, jolla omistusajan rahavirrat - osto, vuokrat, kulut ja myynti - kumoavat toisensa. Ottaa huomioon, milloin raha liikkui, joten se ei ole sama kuin kokonaistulos jaettuna hankintamenolla. Omistuksessa olevat myydään laskelmassa tänään arviohintaan tai kirjanpitoarvoon myyntikulujen jälkeen. Yhteensä-rivillä kaikkien rahavirrat yhdessä.",
+      "breakEvenHint": "Myyntihinta (ilman yhtiölainaosuutta), jolla kaikki sijoitettu raha palaa myyntikulujen jälkeen",
+      "valuationHint": "Oma arviosi myyntihinnasta (Muokkaa kohdetta → Hinta-arviot)",
+      "cashTotal": "Yhteensä",
+      "cashTotalHint": "Kassavirta koko omistusajalta",
+      "held": "Omistettu",
+      "purchase": "Hankintameno",
+      "purchaseHint": "Kauppahinta, varainsiirtovero ja muut hankintakulut (palautukset vähennetty)",
+      "income": "Tuotot",
+      "spent": "Kulut",
+      "spentHint": "Vastikkeet, korjaukset ja muut kulut omistusaikana (ja korot, jos laina on linkitetty)",
+      "salePrice": "Myyntihinta",
+      "saleCosts": "Myyntikulut",
+      "bookGain": "Myyntivoitto",
+      "bookGainHint": "Kirjanpidon myyntivoitto tai -tappio: myyntihinta - myyntikulut - hankintameno",
+      "totalResult": "Kokonaistulos",
+      "irrSoldHint": "Sisäinen korko eli vuosituotto (IRR) omistusajalta: vuotuinen korko, jolla osto, vuokrat, kulut ja myynti kumoavat toisensa. Ei sama kuin kokonaistulos jaettuna hankintamenolla: -20 % 16 kuukaudessa on noin -15 % vuodessa. Yhteensä-rivillä kaikkien myytyjen rahavirrat yhdessä.",
+      "totalResultHint": "Myynti + kassavirta - hankintameno euroina; alla prosentteina hankintamenosta (koko omistusajalta, ei vuotta kohden)."
+    },
+    "status": {
+      "active": "Omistuksessa",
+      "partly_sold": "Osin myyty",
+      "sold": "Myyty",
+      "unlinked": "Ei hankintamenoa",
+      "excluded": "Ei vuokrakohde"
+    },
+    "kind": {
+      "apartment": "Asunto",
+      "parking": "Autopaikka",
+      "garage": "Autotalli",
+      "commercial": "Liiketila",
+      "storage": "Varasto",
+      "other": "Muu"
+    },
+    "defaults": {
+      "title": "Oletukset kaikille kohteille",
+      "lead": "Myyntikulut (esim. välityspalkkio ja isännöitsijäntodistus) ja tavoitetuotto. Kohteen omat arvot ohittavat nämä."
+    },
+    "field": {
+      "kind": "Laji",
+      "excluded": "Ei vuokrakohde (piilota listalta)",
+      "salePct": "Myyntikulut, % hinnasta",
+      "saleFixed": "Myyntikulut, kiinteä €",
+      "targetReturn": "Tavoitetuotto, % vuodessa",
+      "price": "Myyntihinta (ilman lainaosuutta)",
+      "debtFreePrice": "Velaton hinta",
+      "source": "Lähde",
+      "loanAccounts": "Lainatilit",
+      "interestAccounts": "Korkotilit",
+      "note": "Muistiinpano"
+    },
+    "breakEven": {
+      "title": "Nollahinta: millä hinnalla rahat tulevat takaisin",
+      "caption": "myyntihinta ilman yhtiölainaosuutta",
+      "explain": "Palauttamatta {unrecovered}. Hinnasta vähennetään myyntikulut {pct} ja {fixed}; tällä hinnalla kaikki kohteeseen sijoitettu raha on palannut.",
+      "recovered": "Kohde on jo tuonut sijoitetun rahan takaisin; mikä tahansa myyntihinta myyntikulujen jälkeen on voittoa.",
+      "costsUnset": "Myyntikuluja ei ole asetettu, joten luku olettaa kulut nollaksi. Aseta ne kohteelle tai oletuksiin.",
+      "bookLoss": "Kirjanpidollista tappiota ei synny, kun hinta on vähintään {price} (kirjanpitoarvo + myyntikulut).",
+      "taxNote": "Verot: kun voitto ja tappio verotetaan samalla 20 %:lla ja tappio voidaan vähentää muusta tuloksesta, verojen jälkeinen nollahinta on sama luku.",
+      "debtFree": "Velaton hinta = myyntihinta + jäljellä oleva yhtiölainaosuus. Lainaosuuden seuranta tulee seuraavassa vaiheessa.",
+      "calculate": "Laske",
+      "targetPrice": "Vuosituotto {pct}: myyntihinta {price}"
+    },
+    "chart": {
+      "cashFlow": "Kassavirta kuukausittain",
+      "income": "Tuotot",
+      "expense": "Kulut ja korot",
+      "allMonths": "Koko omistusaika",
+      "payback": "Palauttamatta kuukauden lopussa"
+    },
+    "years": {
+      "title": "Tilikausittain",
+      "period": "Tilikausi",
+      "income": "Tuotot",
+      "expense": "Kulut",
+      "net": "Netto",
+      "interest": "Korot",
+      "capex": "Sijoitettu",
+      "proceeds": "Myynti",
+      "result": "Tulos",
+      "resultHint": "Kustannuspaikan tulos kirjanpidossa: kaikki tulosviennit, myös jaksotukset ja myynti",
+      "netHint": "Tuotot - kulut sille kuukaudelle, jota ne koskevat: jaksotukset ja myöhemmät oikaisut mukana",
+      "capexHint": "Muutos hankintamenossa. Negatiivinen = pääomaa palautui, esim. varainsiirtoveron palautus. Rivit näkyvät alla tase-erän kohdalla.",
+      "proceedsHint": "Myynnistä saatu raha myyntikulujen jälkeen"
+    },
+    "eras": {
+      "title": "Hankintameno (tase-erät)",
+      "item": "Tase-erä",
+      "none": "Kohteeseen ei ole linkitetty tase-erää, joten sijoitettua rahaa ja tuottoa ei voi laskea.",
+      "link": "Linkitä tase-erä",
+      "missing": "Tase-erää {id} ei enää löydy",
+      "lead": "Hankintamenon muutokset tase-erittäin. Rivistä aukeaa tosite.",
+      "balance": "saldo {amount}",
+      "kind": {
+        "acquisition": "Hankinta",
+        "addition": "Lisäys",
+        "return": "Palautus",
+        "sale": "Myynti",
+        "depreciation": "Poisto"
+      }
+    },
+    "sales": {
+      "title": "Myynnit",
+      "line": "myyntihinta {price}, myyntikulut {costs}, käteen {proceeds}"
+    },
+    "docs": {
+      "title": "Asiakirjat",
+      "linkedTitle": "Linkitetyt asiakirjat",
+      "empty": "Ei liitteitä.",
+      "missing": "Tosite {id} on poistettu",
+      "showBank": "Näytä tiliotteet ({n})",
+      "group": {
+        "linked": "Linkitetyt (sopimukset ja ilmoitukset)",
+        "acquisition": "Kauppa ja tase-erät",
+        "other": "Laskut ja muut tositteet",
+        "bank": "Tiliotteet"
+      },
+      "showAll": "Näytä kaikki ({n})"
+    },
+    "edit": {
+      "title": "Muokkaa: {name}",
+      "basics": "Perustiedot",
+      "erasLead": "Tase-erät, joille kohteen hankintameno (kauppahinta, varainsiirtovero, kulut) on kirjattu.",
+      "addEra": "Lisää tase-erä…",
+      "addDoc": "Lisää Liitetieto-tosite…",
+      "remove": "Poista",
+      "valuations": "Hinta-arviot",
+      "valuationsLead": "Oma arvio siitä, mitä kohteesta saisi nyt. Uusin arvio käytetään IRR:n laskemiseen.",
+      "addValuation": "Lisää arvio",
+      "sale": "Myynti ja tavoite",
+      "saleLead": "Tyhjä = käytetään oletuksia.",
+      "financing": "Pankkilaina",
+      "financingLead": "Jos kohde on rahoitettu omalla lainalla: korkotilien viennit tositteilla, joilla on myös lainatilin vienti, lasketaan kohteen kuluksi.",
+      "capital": "Muu sijoitettu pääoma",
+      "capitalLead": "Pääoma, jota ei ole kirjattu linkitetylle tase-erälle (esim. ennen kirjanpidon alkua). Positiivinen = sijoitettu.",
+      "addCapital": "Lisää rivi",
+      "delete": "Poista kohteen tiedot",
+      "deleteConfirm": "Poistetaanko Tilarin tiedot tästä kohteesta? Kirjanpitoon ei kosketa.",
+      "readOnly": "Tiedot on tallennettu uudemmalla Tilarilla; tämä versio voi vain näyttää ne."
+    },
+    "setup": {
+      "title": "Vuokrakohteiden määritys",
+      "lead": "Valitse, mitkä kustannuspaikat ovat vuokrakohteita, ja yhdistä niihin hankintamenon tase-erät ja asiakirjat. Ehdotukset tulevat kirjanpidosta; ★ = ehdotettu. Kirjanpitoon ei kosketa.",
+      "centres": "Kustannuspaikat",
+      "centresLead": "Poista rasti kustannuspaikoilta, jotka eivät ole vuokrakohteita.",
+      "isObject": "Vuokrakohde",
+      "ends": "päättyy {date}",
+      "eras": "Hankintamenot (tase-erät)",
+      "erasLead": "Osakkeiden tase-erät ja kohde, johon kukin kuuluu.",
+      "closedEras": "Suljetut tase-erät (myydyt)",
+      "belongsTo": "Kohde",
+      "none": "– ei kohdetta –",
+      "showAllEras": "Näytä muut tase-erät ({n})",
+      "docs": "Asiakirjat (Liitetieto-tositteet)",
+      "docsLead": "Vuokrasopimukset, vuokrankorotukset, vastikeilmoitukset ja muut asiakirjat.",
+      "docTitle": "Otsikko",
+      "files": "Liitteitä",
+      "showAllDocs": "Näytä muut ({n})",
+      "apply": "Tallenna määritys",
+      "starLegend": "★ = Tilarin ehdotus kirjanpidon tai nimen perusteella. Ehdotettu kohde on valmiiksi valittuna, kun se on yksiselitteinen; muuten valitse itse. Mitään ei tallenneta ennen kuin painat Tallenna määritys.",
+      "starLegendEdit": "★ = ehdotettu tälle kohteelle kirjanpidon tai nimen perusteella.",
+      "kindLegend": "Laji päätellään nimestä: AP, AH tai AK = autopaikka, LH = liiketila, muuten asunto (★ = nimen perusteella).",
+      "kindsFromNames": "Aseta kaikkien lajit nimen perusteella",
+      "openVoucher": "Avaa tosite",
+      "rowsOpen": "Tase-erän tai asiakirjan rivistä aukeaa tosite; tallentamattomat valinnat ja kohta sivulla säilyvät, kun palaat.",
+      "draftRestored": "Tallentamattomat valinnat palautettiin.",
+      "discard": "Hylkää muutokset",
+      "needChoice": "{n} odottaa valintaa"
+    },
+    "evidence": {
+      "sale": "myyntitosite",
+      "era_allocation": "kohdennus erällä",
+      "voucher_allocation": "kohdennus tositteella",
+      "text": "nimen perusteella",
+      "ambiguous": "Valitse kohde"
+    },
+    "warn": {
+      "sale_costs_unset": "Myyntikuluja ei ole asetettu.",
+      "sale_line_split": "Tosite {voucher} myi useamman kohteen; kohdistamattomat rivit jaettiin hankintamenojen suhteessa.",
+      "era_missing": "Linkitettyä tase-erää {eraid} ei enää löydy.",
+      "no_capital": "Hankintamenoa ei ole linkitetty: tuottoa ja nollahintaa ei voi laskea.",
+      "doc_corrupt": "Tallennetut tiedot ovat vioittuneet; tallennus korvaa ne.",
+      "doc_newer": "Tiedot on tallennettu uudemmalla Tilarilla."
+    },
+    "error": {
+      "invalid_field": "Tarkista kenttä {path}.",
+      "stale": "Kohdetta on muutettu toisaalla. Avaa sivu uudelleen.",
+      "era_linked": "Tase-erä kuuluu jo toiseen kohteeseen.",
+      "newer_version": "Tiedot on tallennettu uudemmalla Tilarilla eikä niitä voi muuttaa tällä versiolla.",
+      "not_found": "Kustannuspaikkaa ei löydy.",
+      "percent": "Prosentti muodossa 3,5.",
+      "accounts": "Tilinumerot pilkuilla eroteltuina."
+    },
+    "total": "Yhteensä",
+    "holding": "{years} v {months} kk",
+    "held": {
+      "title": "Omistuksessa ({n})"
+    },
+    "cash": {
+      "title": "Kassavirta vuosittain",
+      "lead": "Tuotot - kulut kuukaudelle, jota ne koskevat (jaksotukset ja oikaisut mukana); ei sijoituksia eikä myyntiä."
+    },
+    "sold": {
+      "title": "Myydyt kohteet ({n})",
+      "lead": "Koko omistusajan luvut: mitä ostettiin, mitä kului, mitä myynnistä saatiin."
+    }
   }
 }

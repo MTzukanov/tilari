@@ -81,4 +81,20 @@ describe('activeNav', () => {
       }),
     ).toBe('vat')
   })
+
+  it('highlights rental objects on their pages and on vouchers opened from them', () => {
+    expect(activeNav({ view: 'properties' })).toBe('properties')
+    expect(activeNav({ view: 'propertiesSetup' })).toBe('properties')
+    expect(activeNav({ view: 'property', id: 4 })).toBe('properties')
+    expect(activeNav({ view: 'propertyEdit', id: 4 })).toBe('properties')
+    expect(
+      activeNav({
+        view: 'edit',
+        voucherId: 8,
+        type: null,
+        via: { kind: 'property', id: 4 },
+        entryId: null,
+      }),
+    ).toBe('properties')
+  })
 })

@@ -43,6 +43,34 @@ describe('parseRoute', () => {
     })
   })
 
+  it('parses rental-object routes and returns to the object from a voucher', () => {
+    expect(parseRoute('#/properties')).toEqual({ view: 'properties' })
+    expect(parseRoute('#/properties/setup')).toEqual({ view: 'propertiesSetup' })
+    expect(parseRoute('#/property/15')).toEqual({ view: 'property', id: 15 })
+    expect(parseRoute('#/property/15/edit')).toEqual({ view: 'propertyEdit', id: 15 })
+    const via = { kind: 'property' as const, id: 15 }
+    expect(parseRoute('#/property/15/voucher/8')).toEqual({
+      view: 'edit',
+      voucherId: 8,
+      type: null,
+      via,
+      entryId: null,
+    })
+    expect(voucherHash(via, 8)).toBe('#/property/15/voucher/8/edit')
+    expect(voucherParentHash(via)).toBe('#/property/15')
+    expect(voucherUpI18n(via)).toEqual({ key: 'up.property' })
+    const setupVia = { kind: 'propertiesSetup' as const }
+    expect(parseRoute('#/properties/setup/voucher/12/edit')).toEqual({
+      view: 'edit',
+      voucherId: 12,
+      type: null,
+      via: setupVia,
+      entryId: null,
+    })
+    expect(voucherHash(setupVia, 12)).toBe('#/properties/setup/voucher/12/edit')
+    expect(voucherParentHash(setupVia)).toBe('#/properties/setup')
+  })
+
   it('parses reports hub and fiscal periods', () => {
     expect(parseRoute('#/reports')).toEqual({ view: 'reportsHub' })
     expect(parseRoute('#/overview')).toEqual({ view: 'overview' })

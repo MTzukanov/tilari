@@ -4,6 +4,7 @@ import { allocationsUi } from './allocations/screen'
 import { deferredUi } from './deferred/screen'
 import { fiscalPeriodsUi } from './fiscalPeriods/screen'
 import { journalUi } from './journal/screen'
+import { propertiesUi } from './properties/screen'
 import type { ModuleNavItem } from './nav'
 import { reportsUi } from './reports/screen'
 import { settingsUi } from './settings/screen'
@@ -19,6 +20,7 @@ export const UI_MODULES: UiModule[] = [
   deferredUi,
   journalUi,
   allocationsUi,
+  propertiesUi,
   reportsUi,
   settingsUi,
   helpUi,
@@ -29,6 +31,7 @@ export const NAV_ITEMS: ModuleNavItem[] = [
   ...(vouchersUi.navItems ?? []),
   ...(deferredUi.navItems ?? []),
   ...(reportsUi.navItems ?? []).filter((item) => item.id === 'reportsHub'),
+  ...(propertiesUi.navItems ?? []),
   ...(fiscalPeriodsUi.navItems ?? []),
   ...(vatUi.navItems ?? []),
   ...(settingsUi.navItems ?? []),

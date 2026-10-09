@@ -21,6 +21,10 @@ On start, Tilari can create a new Finnish business-chart book in the browser. De
 - Browser app: one HTML file, a local server, or a self-hosted locker
 - Time navigation (Month / financial year / all, prev/next) on reports and ledgers
 - Click-through reports: balance sheet → account ledger → voucher, plus an overview with monthly bars (turnover, profit, tax paid)
+- **Rental objects** (vuokrakohteet): per cost centre the money invested, cash flow, net yield,
+  annual return (IRR), the selling price that returns every euro (after sale costs) and the
+  object's documents, computed from the books; links and estimates live in Tilari's own
+  `TilariData` table (ADR-023)
 - Running **balance** on the account ledger
 - In-session **change log**
 - Fully working in the browser (OPFS working copy; Chromium can save in place)
@@ -48,6 +52,7 @@ On start, Tilari can create a new Finnish business-chart book in the browser. De
 | Archive | Not yet | Kitsas stores the archive path outside the SQLite file |
 | Partners | Partial | Create-on-the-fly when booking; no full partner register |
 | Allocations | In | List, P&L, lines; add in settings |
+| Rental objects | Partial | Tilari addition. Portfolio, object page, setup from ledger evidence, documents. Leases, rent arrears, housing-company loan share and forecast come next |
 | Company settings | Partial | Name, business id, city, VAT period, practice flag. Not a full Kitsas settings dialog |
 | Billing | Not yet | Type 210 is read-only |
 | Approval workflow | Not yet | Stub only (`#/workflow`, API 501) |
