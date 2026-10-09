@@ -7,19 +7,32 @@ export type BarSeries<K extends string> = {
   label: string
 }
 
-/** Grouped bars per point (one per series); negative values hang below the zero line. */
+/**
+ * Grouped bars per point (one per series); negative values hang below the zero line. With
+ * `onSelect` each point's column is a button (click, Enter or Space) and `selectedKey` is shaded.
+ */
 export function BarChart<K extends string>({
   points,
   series,
   labelFor,
   locale,
   className = 'overview-chart',
+  tooltip,
+  nameFor,
+  selectedKey,
+  onSelect,
 }: {
   points: ({ key: string } & Record<K, number>)[]
   series: BarSeries<K>[]
   labelFor: (key: string) => string
   locale: string
   className?: string
+  /** Bar hover text; default "label: amount". */
+  tooltip?: (key: string, series: BarSeries<K>, value: number) => string
+  /** Full name of a point (column button label and its hover text). */
+  nameFor?: (key: string) => string
+  selectedKey?: string | null
+  onSelect?: (key: string) => void
 }) {
   const width = 680
   const height = 240
@@ -67,8 +80,34 @@ export function BarChart<K extends string>({
       {points.map((p, i) => {
         const cx = padL + groupW * i + groupW / 2
         const startX = cx - clusterW / 2
+        const name = nameFor?.(p.key) ?? p.key
         return (
-          <g key={p.key}>
+          <g
+            key={p.key}
+            className={onSelect ? 'chart-col' : undefined}
+            onClick={onSelect ? () => onSelect(p.key) : undefined}
+          >
+            {onSelect ? (
+              <rect
+                className={`chart-col-hit${p.key === selectedKey ? ' is-selected' : ''}`}
+                x={padL + groupW * i}
+                y={padT}
+                width={groupW}
+                height={plotH}
+                role="button"
+                tabIndex={0}
+                aria-label={name}
+                aria-pressed={p.key === selectedKey}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    onSelect(p.key)
+                  }
+                }}
+              >
+                <title>{name}</title>
+              </rect>
+            ) : null}
             {series.map((s, si) => {
               const value = p[s.key]
               if (value === 0) return null
@@ -83,9 +122,7 @@ export function BarChart<K extends string>({
                   width={barW}
                   height={h}
                 >
-                  <title>
-                    {s.label}: {formatCents(value)}
-                  </title>
+                  <title>{tooltip ? tooltip(p.key, s, value) : `${s.label}: ${formatCents(value)}`}</title>
                 </rect>
               )
             })}

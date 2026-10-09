@@ -9,6 +9,7 @@ export type { LockerBook }
 export type {
   Account,
   Allocation,
+  AllocationBalanceLine,
   BalanceLine,
   BalancesResponse,
   EntriesResponse,

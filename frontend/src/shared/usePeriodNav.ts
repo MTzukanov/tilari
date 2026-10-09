@@ -15,16 +15,18 @@ export function usePeriodNav(
   initialStartDate: string,
   initialEndDate: string,
   resetKey?: string | number,
+  /** 'month' when the initial range is one month (a link to that month). */
+  initialMode: NavMode = 'year',
 ) {
-  const [mode, setMode] = useState<NavMode>('year')
+  const [mode, setMode] = useState<NavMode>(initialMode)
   const [start_date, setStartDate] = useState(initialStartDate)
   const [end_date, setEndDate] = useState(initialEndDate)
 
   useEffect(() => {
-    setMode('year')
+    setMode(initialMode)
     setStartDate(initialStartDate)
     setEndDate(initialEndDate)
-  }, [initialStartDate, initialEndDate, resetKey])
+  }, [initialStartDate, initialEndDate, resetKey, initialMode])
 
   const canPrev = useMemo(() => {
     if (mode === 'all') return false

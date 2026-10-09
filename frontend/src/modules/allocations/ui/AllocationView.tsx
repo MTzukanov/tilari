@@ -1,22 +1,29 @@
+import { useEffect, useState } from 'react'
 import {
   fetchAllocationBalances,
   fetchAllocationEntries,
+  fetchSettings,
+  type AllocationBalanceLine,
   type Period,
 } from '../../../api'
+import { isVatLiableSetting } from '../../../book/settings'
+import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import { TypeTag } from '../../../shared/TypeTag'
 import { type AllocationPrefs } from '../allocationPrefs'
 import { formatCents } from '../../../shared/money'
 import { PeriodNav } from '../../../shared/PeriodNav'
-import { formatVoucherId } from '../../../shared/formatVoucherId'
+import { monthRange, parseISO } from '../../../shared/periodNav'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import { useI18n } from '../../../i18n'
 import { allocationTypeName } from '../../../shared/voucherTypes'
 import { usePeriodNav } from '../../../shared/usePeriodNav'
+import { BrowseEntriesTable } from '../../vouchers/ui/BrowseEntriesTable'
 
 export function AllocationView({
   allocationId,
   initialStartDate,
   initialEndDate,
+  initialMonth,
   periods,
   prefs,
   onBack,
@@ -28,16 +35,26 @@ export function AllocationView({
   allocationId: number
   initialStartDate: string
   initialEndDate: string
+  /** YYYY-MM: open on that month (Kuukausi) instead of the fiscal year. */
+  initialMonth?: string
   periods: Period[]
   prefs: AllocationPrefs
   onBack: () => void
-  onOpenVoucher: (voucherId: number, entryId: number) => void
+  /** `month` while the page shows one month, so back from the voucher returns to it. */
+  onOpenVoucher: (voucherId: number, entryId: number, month?: string) => void
   onTogglePnlOnly: () => void
   onToggleProjects: () => void
   onToggleProfitMode: () => void
 }) {
   const { t } = useI18n()
-  const nav = usePeriodNav(periods, initialStartDate, initialEndDate, allocationId)
+  const month = initialMonth ? monthRange(parseISO(`${initialMonth}-01`)) : null
+  const nav = usePeriodNav(
+    periods,
+    month?.starts ?? initialStartDate,
+    month?.ends ?? initialEndDate,
+    allocationId,
+    month ? 'month' : 'year',
+  )
   const { data, error, loading } = usePeriodQuery(
     () =>
       Promise.all([
@@ -54,6 +71,43 @@ export function AllocationView({
   )
   const balances = data?.[0] ?? null
   const entries = data?.[1] ?? null
+  const [vatLiable, setVatLiable] = useState(true)
+
+  useEffect(() => {
+    void fetchSettings().then((s) => setVatLiable(isVatLiableSetting(s.company.AlvVelvollinen)))
+  }, [])
+
+  const balanceColumns: TableColumn<AllocationBalanceLine>[] = [
+    {
+      id: 'account',
+      label: t('table.account'),
+      width: 96,
+      sortValue: (line) => line.number,
+      cellClass: () => 'num',
+      render: (line) => line.number,
+    },
+    {
+      id: 'name',
+      label: t('table.name'),
+      width: 420,
+      sortValue: (line) => line.name,
+      render: (line) => (
+        <>
+          {line.name}
+          <TypeTag type={line.type} />
+        </>
+      ),
+    },
+    {
+      id: 'balance',
+      label: t('table.balance'),
+      width: 140,
+      align: 'right',
+      sortValue: (line) => line.balance_cents,
+      cellClass: (line) => (line.balance_cents < 0 ? 'neg' : ''),
+      render: (line) => formatCents(line.balance_cents),
+    },
+  ]
 
   const profitValue =
     prefs.profitMode === 'types' ? (balances?.profit_cents ?? 0) : (balances?.kitsas_profit_cents ?? 0)
@@ -144,92 +198,40 @@ export function AllocationView({
       ) : null}
 
       {balances && balances.lines.length > 0 ? (
-        <table className="ledger-table allocation-pnl">
-          <thead>
-            <tr>
-              <th>{t('table.account')}</th>
-              <th>{t('table.name')}</th>
-              <th className="amount">{t('table.balance')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {balances.lines.map((line) => (
-              <tr key={line.number}>
-                <td className="num">{line.number}</td>
-                <td>
-                  {line.name}
-                  <TypeTag type={line.type} />
-                </td>
-                <td className={`amount ${line.balance_cents < 0 ? 'neg' : ''}`}>
-                  {formatCents(line.balance_cents)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <SortableTable
+          storageKey="tilari.allocation.balanceCols"
+          className="allocation-pnl"
+          columns={balanceColumns}
+          rows={balances.lines}
+          rowKey={(line) => line.number}
+        />
       ) : null}
 
       {entries ? (
         entries.entries.length === 0 ? (
           <p className="empty">{t('costCentres.emptyLines')}</p>
         ) : (
-          <table className="ledger-table">
-            <thead>
-              <tr>
-                <th>{t('table.date')}</th>
-                <th>{t('table.voucher')}</th>
-                <th>{t('table.account')}</th>
-                <th>{t('table.description')}</th>
-                <th className="amount">{t('table.debit')}</th>
-                <th className="amount">{t('table.credit')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.entries.map((v) => {
-                const partner = v.partner?.name
-                const description =
-                  partner && v.description && partner !== v.description
-                    ? `${partner} - ${v.description}`
-                    : partner || v.description || '-'
-                return (
-                  <tr
-                    key={v.id}
-                    className="clickable"
-                    tabIndex={0}
-                    title={t('voucher.openVoucher')}
-                    onClick={() => onOpenVoucher(v.voucher.id, v.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        onOpenVoucher(v.voucher.id, v.id)
-                      }
-                    }}
-                  >
-                    <td className="num">{v.date}</td>
-                    <td className="num">
-                      {formatVoucherId(v.voucher.series, v.voucher.doc_number, v.voucher.date || v.date)}
-                    </td>
-                    <td>
-                      <span className="num">{v.account}</span> {v.account_name}
-                      <TypeTag type={v.account_type} />
-                    </td>
-                    <td>{description}</td>
-                    <td className="amount">{formatCents(v.debit_cents, { emptyZero: true })}</td>
-                    <td className="amount">{formatCents(v.credit_cents, { emptyZero: true })}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan={4}>
-                  {t('table.rows', { n: entries.count })}
-                </td>
-                <td className="amount">{formatCents(entries.debit_sum_cents)}</td>
-                <td className="amount">{formatCents(entries.credit_sum_cents)}</td>
-              </tr>
-            </tfoot>
-          </table>
+          <>
+            <div className="allocation-entries-head">
+              <span className="browse-count muted">
+                <span>
+                  {t('table.debit')} {formatCents(entries.debit_sum_cents)}
+                </span>
+                <span>
+                  {t('table.credit')} {formatCents(entries.credit_sum_cents)}
+                </span>
+                <span>{t('table.count', { n: entries.count })}</span>
+              </span>
+            </div>
+            <BrowseEntriesTable
+              rows={entries.entries}
+              showVat={vatLiable}
+              storageKey="tilari.allocation.entryCols"
+              onOpen={(voucherId, entryId) =>
+                onOpenVoucher(voucherId, entryId, nav.mode === 'month' ? nav.start_date.slice(0, 7) : undefined)
+              }
+            />
+          </>
         )
       ) : null}
     </div>

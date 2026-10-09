@@ -151,6 +151,100 @@ function pushTilaClauses(
   params.push(STATUS_POSTED)
 }
 
+/** Joins behind a Selaus Viennit row. */
+const BROWSE_FROM = `FROM Vienti
+     JOIN Tosite ON Vienti.tosite = Tosite.id
+     LEFT OUTER JOIN Tili ON Tili.numero = Vienti.tili
+     LEFT OUTER JOIN Kohdennus ON Kohdennus.id = Vienti.kohdennus
+     LEFT OUTER JOIN Kumppani ON Kumppani.id = COALESCE(NULLIF(Vienti.kumppani, 0), NULLIF(Tosite.kumppani, 0))
+     LEFT OUTER JOIN Vienti AS EraVienti ON EraVienti.id = Vienti.eraid
+     LEFT OUTER JOIN Tosite AS EraTosite ON EraTosite.id = EraVienti.tosite
+     LEFT OUTER JOIN Kumppani AS EraKumppani ON EraKumppani.id = COALESCE(NULLIF(EraVienti.kumppani, 0), NULLIF(EraTosite.kumppani, 0))
+     LEFT OUTER JOIN (
+       SELECT Vienti.eraid AS eraid, SUM(Vienti.debetsnt) AS debit, SUM(Vienti.kreditsnt) AS credit
+       FROM Vienti
+       JOIN Tosite ON Vienti.tosite = Tosite.id
+       WHERE ${SQL_POSTED} AND Vienti.eraid IS NOT NULL
+       GROUP BY Vienti.eraid
+     ) AS era_sum ON era_sum.eraid = Vienti.eraid
+     LEFT OUTER JOIN (
+       SELECT tosite, COUNT(id) AS lkm FROM Liite GROUP BY tosite
+     ) AS l ON l.tosite = Tosite.id`
+
+/** Viennit rows in browse order, for a WHERE over `BROWSE_FROM` (Selaus, cost-centre page). */
+export function selectBrowseEntries(
+  db: SqliteDb,
+  where: string,
+  params: (string | number)[],
+): BrowseEntry[] {
+  const rows = db.all<Record<string, unknown>>(
+    `SELECT
+       Vienti.id AS id,
+       Vienti.pvm AS date,
+       Vienti.tili AS account,
+       COALESCE(json_extract(Tili.json, '$.nimi.fi'), '') AS account_name,
+       Tili.tyyppi AS account_type,
+       Vienti.selite AS description,
+       Vienti.debetsnt AS debetsnt,
+       Vienti.kreditsnt AS kreditsnt,
+       Vienti.kohdennus AS allocation,
+       COALESCE(json_extract(Kohdennus.json, '$.nimi.fi'), '') AS allocation_name,
+       Vienti.alvkoodi AS vat_code,
+       Vienti.alvprosentti AS vat_percent,
+       COALESCE(l.lkm, 0) AS attachment_count,
+       Vienti.eraid AS item_id,
+       EraTosite.id AS era_voucher_id,
+       EraTosite.pvm AS era_date,
+       EraTosite.tunniste AS era_doc_number,
+       EraTosite.sarja AS era_series,
+       EraVienti.selite AS era_description,
+       EraKumppani.nimi AS era_partner_name,
+       COALESCE(era_sum.debit, 0) AS era_debit,
+       COALESCE(era_sum.credit, 0) AS era_credit,
+       Tosite.id AS voucher_id,
+       Tosite.pvm AS voucher_date,
+       Tosite.tunniste AS voucher_doc_number,
+       Tosite.tyyppi AS voucher_type,
+       Tosite.sarja AS voucher_series,
+       Tosite.tila AS voucher_status,
+       Kumppani.id AS partner_id,
+       Kumppani.nimi AS partner_name
+     ${BROWSE_FROM}
+     WHERE ${where}
+     ORDER BY Vienti.pvm, Tosite.sarja, Tosite.tunniste, Vienti.rivi, Vienti.id`,
+    params,
+  )
+
+  return rows.map((row) => ({
+    id: Number(row.id),
+    date: String(row.date),
+    account: Number(row.account || 0),
+    account_name: String(row.account_name || ''),
+    account_type: String(row.account_type || ''),
+    description: String(row.description || ''),
+    debit_cents: centsOrNull(row.debetsnt),
+    credit_cents: centsOrNull(row.kreditsnt),
+    allocation: Number(row.allocation || 0),
+    allocation_name: String(row.allocation_name || ''),
+    vat_code: row.vat_code == null ? null : Number(row.vat_code),
+    vat_percent: row.vat_percent == null ? null : Number(row.vat_percent),
+    attachment_count: Number(row.attachment_count || 0),
+    voucher: {
+      id: Number(row.voucher_id),
+      date: String(row.voucher_date),
+      doc_number: row.voucher_doc_number == null ? null : Number(row.voucher_doc_number),
+      type: Number(row.voucher_type),
+      series: String(row.voucher_series || ''),
+      status: Number(row.voucher_status),
+    },
+    partner: row.partner_id
+      ? { id: Number(row.partner_id), name: String(row.partner_name) }
+      : null,
+    item_id: row.item_id == null || Number(row.item_id) === 0 ? null : Number(row.item_id),
+    era: mapBrowseEra(row),
+  }))
+}
+
 export function listBrowseEntries(
   db: SqliteDb,
   opts: {
@@ -190,31 +284,13 @@ export function listBrowseEntries(
     params.push(like, like, like, like, like, like)
   }
 
-  const from = `FROM Vienti
-     JOIN Tosite ON Vienti.tosite = Tosite.id
-     LEFT OUTER JOIN Tili ON Tili.numero = Vienti.tili
-     LEFT OUTER JOIN Kohdennus ON Kohdennus.id = Vienti.kohdennus
-     LEFT OUTER JOIN Kumppani ON Kumppani.id = COALESCE(NULLIF(Vienti.kumppani, 0), NULLIF(Tosite.kumppani, 0))
-     LEFT OUTER JOIN Vienti AS EraVienti ON EraVienti.id = Vienti.eraid
-     LEFT OUTER JOIN Tosite AS EraTosite ON EraTosite.id = EraVienti.tosite
-     LEFT OUTER JOIN Kumppani AS EraKumppani ON EraKumppani.id = COALESCE(NULLIF(EraVienti.kumppani, 0), NULLIF(EraTosite.kumppani, 0))
-     LEFT OUTER JOIN (
-       SELECT Vienti.eraid AS eraid, SUM(Vienti.debetsnt) AS debit, SUM(Vienti.kreditsnt) AS credit
-       FROM Vienti
-       JOIN Tosite ON Vienti.tosite = Tosite.id
-       WHERE ${SQL_POSTED} AND Vienti.eraid IS NOT NULL
-       GROUP BY Vienti.eraid
-     ) AS era_sum ON era_sum.eraid = Vienti.eraid
-     LEFT OUTER JOIN (
-       SELECT tosite, COUNT(id) AS lkm FROM Liite GROUP BY tosite
-     ) AS l ON l.tosite = Tosite.id`
   const where = clauses.length ? clauses.join(' AND ') : '1=1'
 
   const accountRows = db.all<Record<string, unknown>>(
     `SELECT DISTINCT
        Vienti.tili AS number,
        COALESCE(json_extract(Tili.json, '$.nimi.fi'), '') AS name
-     ${from}
+     ${BROWSE_FROM}
      WHERE ${where}
      ORDER BY Vienti.tili`,
     params,
@@ -232,70 +308,7 @@ export function listBrowseEntries(
   }
   const lineWhere = lineClauses.length ? lineClauses.join(' AND ') : '1=1'
 
-  const rows = db.all<Record<string, unknown>>(
-    `SELECT
-       Vienti.id AS id,
-       Vienti.pvm AS date,
-       Vienti.tili AS account,
-       COALESCE(json_extract(Tili.json, '$.nimi.fi'), '') AS account_name,
-       Vienti.selite AS description,
-       Vienti.debetsnt AS debetsnt,
-       Vienti.kreditsnt AS kreditsnt,
-       Vienti.kohdennus AS allocation,
-       COALESCE(json_extract(Kohdennus.json, '$.nimi.fi'), '') AS allocation_name,
-       Vienti.alvkoodi AS vat_code,
-       Vienti.alvprosentti AS vat_percent,
-       COALESCE(l.lkm, 0) AS attachment_count,
-       Vienti.eraid AS item_id,
-       EraTosite.id AS era_voucher_id,
-       EraTosite.pvm AS era_date,
-       EraTosite.tunniste AS era_doc_number,
-       EraTosite.sarja AS era_series,
-       EraVienti.selite AS era_description,
-       EraKumppani.nimi AS era_partner_name,
-       COALESCE(era_sum.debit, 0) AS era_debit,
-       COALESCE(era_sum.credit, 0) AS era_credit,
-       Tosite.id AS voucher_id,
-       Tosite.pvm AS voucher_date,
-       Tosite.tunniste AS voucher_doc_number,
-       Tosite.tyyppi AS voucher_type,
-       Tosite.sarja AS voucher_series,
-       Tosite.tila AS voucher_status,
-       Kumppani.id AS partner_id,
-       Kumppani.nimi AS partner_name
-     ${from}
-     WHERE ${lineWhere}
-     ORDER BY Vienti.pvm, Tosite.sarja, Tosite.tunniste, Vienti.rivi, Vienti.id`,
-    lineParams,
-  )
-
-  const entries: BrowseEntry[] = rows.map((row) => ({
-    id: Number(row.id),
-    date: String(row.date),
-    account: Number(row.account || 0),
-    account_name: String(row.account_name || ''),
-    description: String(row.description || ''),
-    debit_cents: centsOrNull(row.debetsnt),
-    credit_cents: centsOrNull(row.kreditsnt),
-    allocation: Number(row.allocation || 0),
-    allocation_name: String(row.allocation_name || ''),
-    vat_code: row.vat_code == null ? null : Number(row.vat_code),
-    vat_percent: row.vat_percent == null ? null : Number(row.vat_percent),
-    attachment_count: Number(row.attachment_count || 0),
-    voucher: {
-      id: Number(row.voucher_id),
-      date: String(row.voucher_date),
-      doc_number: row.voucher_doc_number == null ? null : Number(row.voucher_doc_number),
-      type: Number(row.voucher_type),
-      series: String(row.voucher_series || ''),
-      status: Number(row.voucher_status),
-    },
-    partner: row.partner_id
-      ? { id: Number(row.partner_id), name: String(row.partner_name) }
-      : null,
-    item_id: row.item_id == null || Number(row.item_id) === 0 ? null : Number(row.item_id),
-    era: mapBrowseEra(row),
-  }))
+  const entries = selectBrowseEntries(db, lineWhere, lineParams)
 
   let debit_sum_cents = 0
   let credit_sum_cents = 0

@@ -1102,7 +1102,9 @@
       "income": "Intäkter",
       "expense": "Kostnader och räntor",
       "allMonths": "Hela ägartiden",
-      "payback": "Ej återfått vid månadens slut"
+      "payback": "Ej återfått vid månadens slut",
+      "clickHint": "Klicka: månadens poster",
+      "more": "… och {n} till"
     },
     "years": {
       "title": "Per räkenskapsperiod",
@@ -1216,7 +1218,8 @@
       "era_missing": "Länkad balanspost {eraid} finns inte längre.",
       "no_capital": "Ingen anskaffningsutgift länkad: avkastning och nollpris kan inte beräknas.",
       "doc_corrupt": "De sparade uppgifterna är skadade; sparande ersätter dem.",
-      "doc_newer": "Uppgifterna sparades med en nyare Tilari."
+      "doc_newer": "Uppgifterna sparades med en nyare Tilari.",
+      "loan_shared": "Lånekonto {account} är också ett annat objekts banklån, så räntan räknas för båda. Ta bort det från det ena objektet."
     },
     "error": {
       "invalid_field": "Kontrollera fältet {path}.",
@@ -1225,7 +1228,8 @@
       "newer_version": "Uppgifterna sparades med en nyare Tilari och kan inte ändras med denna version.",
       "not_found": "Kostnadsstället hittades inte.",
       "percent": "Procent som 3,5.",
-      "accounts": "Kontonummer åtskilda med kommatecken."
+      "accounts": "Kontonummer åtskilda med kommatecken.",
+      "loan_linked": "Lånekonto {path} är redan ett annat objekts banklån. Ett lån kan höra till bara ett objekt, annars räknas räntan två gånger."
     },
     "total": "Totalt",
     "holding": "{years} år {months} mån",
@@ -1239,6 +1243,17 @@
     "sold": {
       "title": "Sålda objekt ({n})",
       "lead": "Siffror för hela ägartiden: vad som köptes, vad som gick åt, vad försäljningen gav."
+    },
+    "month": {
+      "title": "Poster: {month}",
+      "close": "Stäng",
+      "openAllocation": "Kostnadsställets poster denna månad",
+      "openAllocationHint": "Kostnadsstället visar poster enligt bokföringsdag och bara de som bokförts på det. Här räknas periodiseringar och rättelser till den månad de gäller och banklånets ränta hör till objektet, så posterna kan skilja sig.",
+      "empty": "Inga intäkter eller kostnader denna månad.",
+      "moved": "bokförd {date}",
+      "movedHint": "En rättelse som flyttade bokningen till objektet. Den räknas till den månad den ursprungliga bokningen gäller; kostnadsställets rapport visar den på bokföringsdagen.",
+      "accrual": "periodisering",
+      "interest": "lånets ränta"
     }
   }
 }

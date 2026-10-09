@@ -1,8 +1,10 @@
 /** SQL loaders for rental objects. Everything else in this module is pure. */
+import { selectBrowseEntries } from '../../../browse'
 import { asCents } from '../../../cents'
 import { jsonDate, nameFi } from '../../../json'
 import { pnlAccount, SQL_POSTED } from '../../../kernel/sqlFragments'
 import type { SqliteDb } from '../../../sqlite'
+import type { BrowseEntry } from '../../../types'
 import { TYPE_BANK_STATEMENT } from '../../../vouchers'
 
 /** Kitsas brutto VAT codes: the line amount includes VAT (sales 12, purchases 22). */
@@ -278,6 +280,12 @@ export function loadInterestRows(
        ORDER BY Vienti.pvm, Vienti.tosite, Vienti.rivi, Vienti.id`,
     )
     .map(mapPnl)
+}
+
+/** The given lines as Selaa rows (voucher number, account name, partner, text). */
+export function loadEntries(db: SqliteDb, entryIds: number[]): Map<number, BrowseEntry> {
+  if (!entryIds.length) return new Map()
+  return new Map(selectBrowseEntries(db, `Vienti.id IN (${inList(entryIds)})`, []).map((e) => [e.id, e]))
 }
 
 /** Loan accounts' balance (credit - debit) on `asOf`. */

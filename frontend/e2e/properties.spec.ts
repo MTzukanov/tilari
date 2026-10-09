@@ -93,3 +93,48 @@ test.describe('rental objects setup keeps unsaved choices', () => {
     await expect(toimisto).toBeChecked()
   })
 })
+
+test.describe('rental object month lines', () => {
+  test('a month opens its lines; a line opens its voucher and back keeps the month', async ({ page }) => {
+    await openBook(page)
+    // A narrow text column, so one line is cut off below.
+    await page.evaluate(() => localStorage.setItem('tilari.properties.monthLines.cols', JSON.stringify({ text: 70 })))
+    await page.goto('/#/property/4')
+    await expect(page.getByRole('heading', { name: 'Asunto' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'helmikuu 2025' }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/month\/2025-02$/)
+    const panel = page.locator('.property-month-lines')
+    await expect(panel.getByRole('heading', { name: 'Viennit: helmikuu 2025' })).toBeVisible()
+    await expect(panel.locator('tbody tr')).toHaveCount(2)
+
+    // A text cut off by a narrow column shows in full on hover (no generic row tooltip).
+    const cut = panel.getByRole('cell', { name: 'Asiakas Oy - Vuokratulo Asunto' })
+    await cut.hover()
+    await expect(cut).toHaveAttribute('title', 'Asiakas Oy - Vuokratulo Asunto')
+    await expect(panel.locator('tbody tr').first()).not.toHaveAttribute('title')
+    await page.getByRole('row', { name: /Hoitovastike/ }).getByRole('cell').first().hover()
+    await expect(panel.getByRole('cell', { name: '1.2.2025' })).not.toHaveAttribute('title')
+
+    await panel.getByRole('row', { name: /Hoitovastike/ }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/month\/2025-02\/voucher\/\d+\/v\/\d+\/edit$/)
+    await page.getByRole('button', { name: 'Sulje' }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/month\/2025-02$/)
+    await expect(panel.getByRole('heading', { name: 'Viennit: helmikuu 2025' })).toBeVisible()
+
+    // The same month on the cost-centre page, kept through a voucher there too.
+    await panel.getByRole('button', { name: 'Kustannuspaikan viennit tältä kuukaudelta' }).click()
+    await expect(page).toHaveURL(/#\/allocation\/4\/month\/2025-02$/)
+    await expect(page.locator('.ledger-head-nav').first()).toHaveAttribute('data-start', '2025-02-01')
+    await page.locator('.allocation-detail .zebra-voucher tbody tr').first().click()
+    await expect(page).toHaveURL(/#\/allocation\/4\/month\/2025-02\/voucher\/\d+/)
+    await page.goBack()
+    await expect(page.locator('.ledger-head-nav').first()).toHaveAttribute('data-start', '2025-02-01')
+
+    // Closing the panel drops the month from the address.
+    await page.goto('/#/property/4/month/2025-02')
+    await panel.getByRole('button', { name: 'Sulje' }).click()
+    await expect(panel).toBeHidden()
+    await expect(page).toHaveURL(/#\/property\/4$/)
+  })
+})

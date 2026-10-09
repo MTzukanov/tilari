@@ -41,7 +41,10 @@ export function emptyPortfolioSettings(): PortfolioSettings {
   return { v: PROPERTY_DOC_VERSION, rev: 0 }
 }
 
-/** Validation failure (400): `invalid_field` with the JSON path, or `stale` / `era_linked` / `newer_version`. */
+/**
+ * Validation failure (400): `invalid_field` with the JSON path, or `stale` / `era_linked` /
+ * `newer_version`; `loan_linked` carries the loan account number as its path.
+ */
 export class PropertyDocError extends BookError {
   path: string
   constructor(code: string, path = '', status = 400) {

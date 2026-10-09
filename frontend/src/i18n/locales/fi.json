@@ -1102,7 +1102,9 @@
       "income": "Tuotot",
       "expense": "Kulut ja korot",
       "allMonths": "Koko omistusaika",
-      "payback": "Palauttamatta kuukauden lopussa"
+      "payback": "Palauttamatta kuukauden lopussa",
+      "clickHint": "Klikkaa: kuukauden viennit",
+      "more": "… ja {n} muuta"
     },
     "years": {
       "title": "Tilikausittain",
@@ -1216,7 +1218,8 @@
       "era_missing": "Linkitettyä tase-erää {eraid} ei enää löydy.",
       "no_capital": "Hankintamenoa ei ole linkitetty: tuottoa ja nollahintaa ei voi laskea.",
       "doc_corrupt": "Tallennetut tiedot ovat vioittuneet; tallennus korvaa ne.",
-      "doc_newer": "Tiedot on tallennettu uudemmalla Tilarilla."
+      "doc_newer": "Tiedot on tallennettu uudemmalla Tilarilla.",
+      "loan_shared": "Lainatili {account} on myös toisen kohteen pankkilaina, joten sen korot lasketaan molemmille. Poista se toiselta kohteelta."
     },
     "error": {
       "invalid_field": "Tarkista kenttä {path}.",
@@ -1225,7 +1228,8 @@
       "newer_version": "Tiedot on tallennettu uudemmalla Tilarilla eikä niitä voi muuttaa tällä versiolla.",
       "not_found": "Kustannuspaikkaa ei löydy.",
       "percent": "Prosentti muodossa 3,5.",
-      "accounts": "Tilinumerot pilkuilla eroteltuina."
+      "accounts": "Tilinumerot pilkuilla eroteltuina.",
+      "loan_linked": "Lainatili {path} on jo toisen kohteen pankkilaina. Laina voi kuulua vain yhdelle kohteelle, muuten sen korot laskettaisiin kahdesti."
     },
     "total": "Yhteensä",
     "holding": "{years} v {months} kk",
@@ -1239,6 +1243,17 @@
     "sold": {
       "title": "Myydyt kohteet ({n})",
       "lead": "Koko omistusajan luvut: mitä ostettiin, mitä kului, mitä myynnistä saatiin."
+    },
+    "month": {
+      "title": "Viennit: {month}",
+      "close": "Sulje",
+      "openAllocation": "Kustannuspaikan viennit tältä kuukaudelta",
+      "openAllocationHint": "Kustannuspaikka näyttää viennit kirjauspäivän mukaan ja vain kustannuspaikalle kirjatut. Täällä jaksotukset ja oikaisut lasketaan kuukauteen, jota ne koskevat, ja pankkilainan korot kuuluvat kohteelle, joten viennit voivat erota.",
+      "empty": "Ei tuottoja eikä kuluja tässä kuussa.",
+      "moved": "kirjattu {date}",
+      "movedHint": "Oikaisu, joka siirsi kirjauksen tälle kohteelle. Se lasketaan kuukauteen, jota alkuperäinen kirjaus koskee; kustannuspaikan raportissa se näkyy kirjauspäivänä.",
+      "accrual": "jaksotus",
+      "interest": "lainan korko"
     }
   }
 }

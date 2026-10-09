@@ -105,6 +105,16 @@ test.describe('cost centres', () => {
     await page.goto('/#/allocation/4')
     await expect(page.getByRole('heading', { name: 'Asunto' })).toBeVisible()
     await expect(page.locator('.allocation-summary')).toContainText(eur('300,00'))
+
+    // Same tables as elsewhere: account totals and Selaus rows sort by a header click.
+    const detail = page.locator('.allocation-detail')
+    await expect(detail.locator('table.resizable')).toHaveCount(2)
+    const balance = detail.locator('.allocation-pnl th', { hasText: 'Saldo' })
+    await balance.click()
+    await expect(balance).toHaveAttribute('aria-sort', 'ascending')
+    const debit = detail.locator('.zebra-voucher th, .zebra th').filter({ hasText: 'Debet' })
+    await debit.click()
+    await expect(debit).toHaveAttribute('aria-sort', 'ascending')
   })
 })
 

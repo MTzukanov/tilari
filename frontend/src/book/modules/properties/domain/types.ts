@@ -5,6 +5,8 @@
  * percentages in basis points (`*_bp`, 100 bp = 1 %).
  */
 
+import type { BrowseEntry } from '../../../types'
+
 export const PROPERTY_KEY_PREFIX = 'property/'
 export const PORTFOLIO_KEY = 'portfolio'
 export const PROPERTY_DOC_VERSION = 1
@@ -224,9 +226,26 @@ export type PropertyDetail = PropertyRow & {
   eras: EraState[]
   disposals: Disposal[]
   months: MonthPoint[]
+  /** The lines behind each month's bars, oldest first. */
+  month_lines: MonthLine[]
   years: YearRow[]
   target: { rate_bp: number; price_snt: number } | null
   financing: Financing | null
+}
+
+export type MonthLineKind = 'income' | 'expense' | 'interest'
+
+/** One ledger line behind a month's bars: rent and other income, an expense, or loan interest. */
+export type MonthLine = {
+  /** Month it counts in (YYYY-MM). */
+  month: string
+  kind: MonthLineKind
+  /** Booked date, or for a correction the date of the booking it corrects. */
+  counted_date: string
+  /** credit - debit without VAT, as the bars add it up. */
+  amount_snt: number
+  /** The line as Selaa shows it. */
+  entry: BrowseEntry
 }
 
 export type DocumentGroupKind = 'linked' | 'acquisition' | 'other' | 'bank'

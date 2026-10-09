@@ -1102,7 +1102,9 @@
       "income": "Income",
       "expense": "Costs and interest",
       "allMonths": "Whole ownership",
-      "payback": "Not yet recovered at month end"
+      "payback": "Not yet recovered at month end",
+      "clickHint": "Click: the month's entries",
+      "more": "… and {n} more"
     },
     "years": {
       "title": "By fiscal year",
@@ -1216,7 +1218,8 @@
       "era_missing": "Linked item {eraid} no longer exists.",
       "no_capital": "No acquisition cost linked: return and break-even cannot be computed.",
       "doc_corrupt": "The stored data is damaged; saving replaces it.",
-      "doc_newer": "The data was saved by a newer Tilari."
+      "doc_newer": "The data was saved by a newer Tilari.",
+      "loan_shared": "Loan account {account} is also another object's bank loan, so its interest counts for both. Remove it from one of them."
     },
     "error": {
       "invalid_field": "Check the field {path}.",
@@ -1225,7 +1228,8 @@
       "newer_version": "The data was saved by a newer Tilari and cannot be changed with this version.",
       "not_found": "Cost centre not found.",
       "percent": "Percent like 3,5.",
-      "accounts": "Account numbers separated by commas."
+      "accounts": "Account numbers separated by commas.",
+      "loan_linked": "Loan account {path} is already another object's bank loan. A loan can belong to one object only; otherwise its interest would count twice."
     },
     "total": "Total",
     "holding": "{years} y {months} mo",
@@ -1239,6 +1243,17 @@
     "sold": {
       "title": "Sold objects ({n})",
       "lead": "Figures over the whole holding time: what was bought, what was spent, what the sale brought."
+    },
+    "month": {
+      "title": "Entries: {month}",
+      "close": "Close",
+      "openAllocation": "The cost centre's entries this month",
+      "openAllocationHint": "The cost centre lists lines by booking date and only those booked on it. Here accruals and corrections count in the month they belong to and bank-loan interest belongs to the object, so the lines can differ.",
+      "empty": "No income or expenses this month.",
+      "moved": "booked {date}",
+      "movedHint": "A correction that moved the booking to this object. It counts in the month of the booking it corrects; the cost-centre report shows it on its booking date.",
+      "accrual": "accrual",
+      "interest": "loan interest"
     }
   }
 }

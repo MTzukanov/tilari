@@ -1,8 +1,9 @@
-import { asCents, centsOrNull } from './cents'
+import { asCents } from './cents'
+import { selectBrowseEntries } from './browse'
 import { jsonDate, nameFi, parseJson } from './json'
 import { pnlAccount, SQL_POSTED } from './kernel/sqlFragments'
 import type { SqliteDb } from './sqlite'
-import type { AllocationSummaryRow } from './types'
+import type { AllocationSummaryRow, BrowseEntry } from './types'
 
 export const TYPE_NONE = 0
 export const TYPE_COST_CENTRE = 1
@@ -82,10 +83,8 @@ export function getAllocation(db: SqliteDb, allocationId: number) {
   }
 }
 
-function allocationFilterSql(includeProjects: boolean): string {
-  return includeProjects
-    ? 'AND (Kohdennus.id = ? OR Kohdennus.kuuluu = ?)'
-    : 'AND Kohdennus.id = ?'
+function allocationFilter(includeProjects: boolean): string {
+  return includeProjects ? '(Kohdennus.id = ? OR Kohdennus.kuuluu = ?)' : 'Kohdennus.id = ?'
 }
 
 function filterParams(allocationId: number, includeProjects: boolean): number[] {
@@ -121,7 +120,7 @@ export function computeAllocationBalances(
        AND ${pnlAccount()}
        AND Vienti.pvm >= ?
        AND Vienti.pvm <= ?
-       ${allocationFilterSql(includeProjects)}
+       AND ${allocationFilter(includeProjects)}
      GROUP BY Vienti.tili`,
     [startDate, endDate, ...filterParams(allocationId, includeProjects)],
   )
@@ -187,76 +186,17 @@ export function listAllocationEntries(
   startDate: string,
   endDate: string,
   opts: { includeProjects?: boolean; pnlOnly?: boolean } = {},
-) {
+): BrowseEntry[] {
   const includeProjects = opts.includeProjects !== false
   const pnlOnly = Boolean(opts.pnlOnly)
-  const pnlSql = pnlOnly ? `AND ${pnlAccount()}` : ''
-  const rows = db.all<Record<string, unknown>>(
-    `SELECT
-       Vienti.id AS id,
-       Vienti.pvm AS date,
-       Vienti.tili AS account,
-       COALESCE(json_extract(Tili.json, '$.nimi.fi'), '') AS account_name,
-       Tili.tyyppi AS account_type,
-       Vienti.debetsnt AS debetsnt,
-       Vienti.kreditsnt AS kreditsnt,
-       Vienti.selite AS description,
-       Vienti.alvprosentti AS vat_percent,
-       Vienti.kohdennus AS allocation_id,
-       json_extract(Kohdennus.json, '$.nimi.fi') AS allocation_name,
-       Tosite.id AS voucher_id,
-       Tosite.pvm AS voucher_date,
-       Tosite.tunniste AS voucher_doc_number,
-       Tosite.tyyppi AS voucher_type,
-       Tosite.sarja AS voucher_series,
-       Kumppani.id AS partner_id,
-       Kumppani.nimi AS partner_name
-     FROM Vienti
-     JOIN Tosite ON Vienti.tosite = Tosite.id
-     JOIN Kohdennus ON Vienti.kohdennus = Kohdennus.id
-     LEFT OUTER JOIN Tili ON Tili.numero = Vienti.tili
-     LEFT OUTER JOIN Kumppani ON Vienti.kumppani = Kumppani.id
-     WHERE ${SQL_POSTED}
-       AND Vienti.pvm >= ?
-       AND Vienti.pvm <= ?
-       ${pnlSql}
-       ${allocationFilterSql(includeProjects)}
-     ORDER BY Vienti.pvm, Tosite.sarja, Tosite.tunniste, Vienti.rivi, Vienti.id`,
-    [startDate, endDate, ...filterParams(allocationId, includeProjects)],
-  )
-
-  const out = []
-  for (const row of rows) {
-    const account = Number(row.account)
-    const type = String(row.account_type || '')
-    if (pnlOnly && !isPnlAccount(account, type)) continue
-    out.push({
-      id: Number(row.id),
-      date: String(row.date),
-      account,
-      account_name: String(row.account_name || ''),
-      account_type: type,
-      debit_cents: centsOrNull(row.debetsnt),
-      credit_cents: centsOrNull(row.kreditsnt),
-      description: String(row.description || ''),
-      vat_percent: row.vat_percent == null ? null : Number(row.vat_percent),
-      allocation: {
-        id: Number(row.allocation_id),
-        name: String(row.allocation_name || ''),
-      },
-      voucher: {
-        id: Number(row.voucher_id),
-        date: String(row.voucher_date),
-        doc_number: row.voucher_doc_number == null ? null : Number(row.voucher_doc_number),
-        type: Number(row.voucher_type),
-        series: String(row.voucher_series || ''),
-      },
-      partner: row.partner_id
-        ? { id: Number(row.partner_id), name: String(row.partner_name) }
-        : null,
-    })
-  }
-  return out
+  const where = [SQL_POSTED, 'Vienti.pvm >= ?', 'Vienti.pvm <= ?', allocationFilter(includeProjects)]
+  if (pnlOnly) where.push(pnlAccount())
+  const rows = selectBrowseEntries(db, where.join(' AND '), [
+    startDate,
+    endDate,
+    ...filterParams(allocationId, includeProjects),
+  ])
+  return pnlOnly ? rows.filter((row) => isPnlAccount(row.account, row.account_type)) : rows
 }
 
 export { parseJson }

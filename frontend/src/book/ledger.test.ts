@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { computeAllocationBalances, listAllocations } from './allocations'
+import { computeAllocationBalances, listAllocationEntries, listAllocations } from './allocations'
+import { listBrowseEntries } from './browse'
 import { computeAccountOpening, computeBalances } from './balances'
 import { listVouchers } from './browse'
 import {
@@ -84,6 +85,25 @@ describe('read-only domain', () => {
       const without = computeAllocationBalances(db, 1, '2024-01-01', '2024-12-31', false)
       expect(withP.profit_cents).toBe(KP1_2024_WITH_PROJECTS.profit_cents)
       expect(without.profit_cents).toBe(KP1_2024_WITHOUT_PROJECTS.profit_cents)
+    })
+  })
+
+  it('allocation lines are Selaus rows, with projects and P&L only', async () => {
+    await withGolden((db) => {
+      const range = ['2024-01-01', '2024-12-31'] as const
+      const own = listAllocationEntries(db, 1, ...range, { includeProjects: false })
+      const all = listAllocationEntries(db, 1, ...range, { includeProjects: true })
+      const pnl = listAllocationEntries(db, 1, ...range, { includeProjects: true, pnlOnly: true })
+      expect(own.length).toBeGreaterThan(0)
+      expect(own.every((e) => e.allocation === 1)).toBe(true)
+      expect(all.length).toBeGreaterThan(own.length)
+      expect(pnl.every((e) => String(e.account) >= '3')).toBe(true)
+      const browse = new Map(
+        listBrowseEntries(db, { startDate: range[0], endDate: range[1] }).entries.map((e) => [e.id, e]),
+      )
+      for (const e of all) expect(e).toEqual(browse.get(e.id))
+      const net = pnl.reduce((s, e) => s + (e.credit_cents ?? 0) - (e.debit_cents ?? 0), 0)
+      expect(net).toBe(computeAllocationBalances(db, 1, ...range, true).kitsas_profit_cents)
     })
   })
 

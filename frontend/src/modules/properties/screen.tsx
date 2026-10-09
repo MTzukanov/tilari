@@ -1,4 +1,4 @@
-import { voucherHash } from '../../app/routing'
+import { allocationHash, voucherHash } from '../../app/routing'
 import type { BookViewCtx, UiModule } from '../ui'
 import { viaKind } from '../ui'
 import { PortfolioView } from './ui/PortfolioView'
@@ -12,10 +12,13 @@ function PropertiesScreen({ route, goTo, meta }: BookViewCtx) {
       <PropertyView
         key={route.id}
         id={route.id}
+        month={route.month}
         onBack={() => goTo('#/properties')}
         onEdit={() => goTo(`#/property/${route.id}/edit`)}
-        onOpenAllocation={() => goTo(`#/allocation/${route.id}`)}
-        onOpenVoucher={(voucherId) => goTo(voucherHash({ kind: 'property', id: route.id }, voucherId))}
+        onOpenAllocation={(month) => goTo(allocationHash(route.id, month))}
+        onOpenVoucher={(voucherId, entryId, month) =>
+          goTo(voucherHash({ kind: 'property', id: route.id, month }, voucherId, entryId))
+        }
       />
     )
   }

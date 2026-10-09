@@ -2,7 +2,10 @@ import { getBcp47 } from '../../../i18n'
 import { BarChart } from '../../../shared/BarChart'
 import { formatAxisEur, niceMax } from '../../../shared/chartScale'
 import { formatCents } from '../../../shared/money'
-import type { MonthPoint } from '../api'
+import type { MonthLine, MonthPoint } from '../api'
+import { lineText, monthName } from './format'
+
+const TOOLTIP_LINES = 8
 
 function monthLabel(key: string, locale: string, withYear: boolean): string {
   const [y, m] = key.split('-').map(Number)
@@ -11,9 +14,41 @@ function monthLabel(key: string, locale: string, withYear: boolean): string {
   )
 }
 
-/** Income up, expenses (incl. interest) down, per month. */
-export function CashFlowChart({ months, labels }: { months: MonthPoint[]; labels: { income: string; expense: string } }) {
+function shortDate(iso: string): string {
+  return `${Number(iso.slice(8, 10))}.${Number(iso.slice(5, 7))}.`
+}
+
+/**
+ * Income up, expenses (incl. interest) down, per month. With `lines` a bar's hover text lists
+ * the month's lines; with `onSelect` a click on a month opens them (MonthLinesPanel).
+ */
+export function CashFlowChart({
+  months,
+  labels,
+  lines,
+  selectedKey,
+  onSelect,
+}: {
+  months: MonthPoint[]
+  labels: { income: string; expense: string; clickHint?: string; more?: (n: number) => string }
+  lines?: MonthLine[]
+  selectedKey?: string | null
+  onSelect?: (key: string) => void
+}) {
   const locale = getBcp47()
+  const byMonth = new Map<string, MonthLine[]>()
+  for (const line of lines ?? []) byMonth.set(line.month, [...(byMonth.get(line.month) ?? []), line])
+  const tooltip = (key: string, series: { key: string; label: string }, value: number) => {
+    const incomeBar = series.key === 'income_snt'
+    const rows = (byMonth.get(key) ?? []).filter((l) => (l.kind === 'income') === incomeBar)
+    const out = [`${series.label}, ${monthName(key, locale)}: ${formatCents(value)}`]
+    for (const l of rows.slice(0, TOOLTIP_LINES)) {
+      out.push(`${shortDate(l.counted_date)}  ${lineText(l)}  ${formatCents(l.amount_snt)}`)
+    }
+    if (rows.length > TOOLTIP_LINES && labels.more) out.push(labels.more(rows.length - TOOLTIP_LINES))
+    if (onSelect && labels.clickHint) out.push(labels.clickHint)
+    return out.join('\n')
+  }
   const points = months.map((m) => ({
     key: m.key,
     income_snt: m.income_snt,
@@ -33,6 +68,10 @@ export function CashFlowChart({ months, labels }: { months: MonthPoint[]; labels
         return i % every === 0 ? monthLabel(key, locale, points.length > 12) : ''
       }}
       locale={locale}
+      tooltip={lines ? tooltip : undefined}
+      nameFor={(key) => monthName(key, locale)}
+      selectedKey={selectedKey}
+      onSelect={onSelect}
     />
   )
 }

@@ -8,6 +8,7 @@ import { useColumnResize } from '../../../shared/useColumnResize'
 import { sortRows, useTableSort, voucherSortKey } from '../../../shared/useTableSort'
 import { VatIcon } from '../../vat/ui/VatIcon'
 import { ColResizeHandle } from '../../../shared/ColResizeHandle'
+import { showCutText } from '../../../shared/cutText'
 import { SortTh } from '../../../shared/SortTh'
 import { AttachmentClip } from './AttachmentClip'
 import { StatusMark, statusDotKind, statusDotTitleKey } from './browseMarks'
@@ -50,8 +51,9 @@ function BrowseKohdennus({ row }: { row: BrowseEntry }) {
           ✓
         </span>
       ) : null}
-      {eraLabel}
-      {allocation}
+      {/* Own elements: the flex gap only separates elements, not adjacent text. */}
+      {eraLabel ? <span>{eraLabel}</span> : null}
+      {allocation ? <span>{allocation}</span> : null}
     </span>
   )
 }
@@ -60,13 +62,16 @@ export function BrowseEntriesTable({
   rows,
   showVat,
   onOpen,
+  storageKey = 'tilari.browse.entryCols',
 }: {
   rows: BrowseEntry[]
   showVat: boolean
   onOpen: (voucherId: number, entryId: number) => void
+  /** localStorage key for the column widths (each view keeps its own). */
+  storageKey?: string
 }) {
   const { t } = useI18n()
-  const cols = useColumnResize('tilari.browse.entryCols', ENTRY_COL_WIDTHS, ENTRY_COL_MINS)
+  const cols = useColumnResize(storageKey, ENTRY_COL_WIDTHS, ENTRY_COL_MINS)
   const tableSort = useTableSort()
   const resizeLabel = t('browse.resizeColumn')
   const sorted = useMemo(
@@ -110,6 +115,7 @@ export function BrowseEntriesTable({
   return (
     <table
       className={`ledger-table ${groupedZebra ? 'zebra-voucher' : 'zebra'} dense resizable${cols.dragging ? ' is-resizing' : ''}`}
+      onMouseOver={showCutText}
     >
       <colgroup>
         <col style={{ width: cols.widths.voucher }} />
