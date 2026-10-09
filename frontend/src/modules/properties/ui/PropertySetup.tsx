@@ -320,6 +320,7 @@ function SetupForm({
                   </td>
                   <td>
                     <select
+                      className="property-kind-select"
                       value={draft.kind}
                       onChange={(e) => setCentres(new Map(centres).set(c.id, { ...draft, kind: e.target.value as PropertyKind | '' }))}
                     >

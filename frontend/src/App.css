@@ -5141,8 +5141,18 @@ tr.tax-total td {
   color: var(--neg);
 }
 
-.property-setup-table select {
-  max-width: 22rem;
+/* Same width on every row: a select otherwise sizes to its longest (starred) option. */
+.property-kind-select {
+  width: 10rem;
+}
+
+.property-setup-table .property-choice {
+  width: 24rem;
+  max-width: 100%;
+}
+
+.property-setup-table .property-choice select {
+  width: 100%;
 }
 
 .property-subhead td {
@@ -5172,10 +5182,6 @@ tr.tax-total td {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.2rem;
-}
-
-.property-choice select {
-  max-width: 100%;
 }
 
 .property-evidence-ambiguous {
