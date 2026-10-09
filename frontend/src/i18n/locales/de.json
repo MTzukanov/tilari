@@ -1115,7 +1115,7 @@
       "proceeds": "Verkauf",
       "result": "Ergebnis",
       "resultHint": "Ergebnis der Kostenstelle in der Buchhaltung: alle GuV-Buchungen, auch Abgrenzungen und Verkauf",
-      "netHint": "Erträge - Kosten (Zahlungsbasis: ohne Abgrenzungen)",
+      "netHint": "Erträge - Kosten im Monat, zu dem sie gehören: Abgrenzungen und spätere Korrekturen enthalten",
       "capexHint": "Änderung der Anschaffungskosten. Negativ = Kapital floss zurück, z. B. Erstattung der Grunderwerbsteuer. Die Buchungen stehen unten beim Bilanzposten.",
       "proceedsHint": "Geld aus dem Verkauf nach Verkaufskosten"
     },
@@ -1234,7 +1234,7 @@
     },
     "cash": {
       "title": "Cashflow pro Jahr",
-      "lead": "Erträge - Kosten je Geschäftsjahr, über die gesamte Besitzdauer und die letzten 12 Monate. Ohne Investitionen und Verkäufe."
+      "lead": "Erträge - Kosten im Monat, zu dem sie gehören (Abgrenzungen und Korrekturen enthalten); ohne Investitionen und Verkäufe."
     },
     "sold": {
       "title": "Verkaufte Objekte ({n})",

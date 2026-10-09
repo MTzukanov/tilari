@@ -1115,7 +1115,7 @@
       "proceeds": "Försäljning",
       "result": "Resultat",
       "resultHint": "Kostnadsställets resultat i bokföringen: alla resultatposter, även periodiseringar och försäljning",
-      "netHint": "Intäkter - kostnader (kontantprincip: inga periodiseringar)",
+      "netHint": "Intäkter - kostnader för den månad de gäller: periodiseringar och senare rättelser ingår",
       "capexHint": "Ändring i anskaffningsutgiften. Negativt = kapital kom tillbaka, t.ex. återbäring av överlåtelseskatt. Posterna visas nedan under balansposten.",
       "proceedsHint": "Pengar från försäljningen efter försäljningskostnader"
     },
@@ -1234,7 +1234,7 @@
     },
     "cash": {
       "title": "Kassaflöde per år",
-      "lead": "Intäkter - kostnader per räkenskapsperiod, under hela ägartiden och de senaste 12 mån. Investeringar och försäljningar ingår inte."
+      "lead": "Intäkter - kostnader för den månad de gäller (periodiseringar och rättelser ingår); inga investeringar eller försäljningar."
     },
     "sold": {
       "title": "Sålda objekt ({n})",

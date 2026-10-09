@@ -1115,7 +1115,7 @@
       "proceeds": "Myynti",
       "result": "Tulos",
       "resultHint": "Kustannuspaikan tulos kirjanpidossa: kaikki tulosviennit, myös jaksotukset ja myynti",
-      "netHint": "Tuotot - kulut (kassaperuste: ei jaksotuksia)",
+      "netHint": "Tuotot - kulut sille kuukaudelle, jota ne koskevat: jaksotukset ja myöhemmät oikaisut mukana",
       "capexHint": "Muutos hankintamenossa. Negatiivinen = pääomaa palautui, esim. varainsiirtoveron palautus. Rivit näkyvät alla tase-erän kohdalla.",
       "proceedsHint": "Myynnistä saatu raha myyntikulujen jälkeen"
     },
@@ -1234,7 +1234,7 @@
     },
     "cash": {
       "title": "Kassavirta vuosittain",
-      "lead": "Tuotot - kulut tilikausittain, koko omistusaika ja viimeiset 12 kk. Ei sisällä sijoituksia eikä myyntejä."
+      "lead": "Tuotot - kulut kuukaudelle, jota ne koskevat (jaksotukset ja oikaisut mukana); ei sijoituksia eikä myyntiä."
     },
     "sold": {
       "title": "Myydyt kohteet ({n})",

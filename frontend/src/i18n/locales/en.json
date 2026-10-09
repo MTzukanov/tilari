@@ -1115,7 +1115,7 @@
       "proceeds": "Sale",
       "result": "Result",
       "resultHint": "The cost centre's result in the books: every P&L line, accruals and the sale included",
-      "netHint": "Income - costs (cash basis: no accruals)",
+      "netHint": "Income - costs in the month they belong to: accruals and later corrections included",
       "capexHint": "Change in acquisition cost. Negative = capital came back, e.g. a transfer-tax refund. The lines are listed below under the item.",
       "proceedsHint": "Money from the sale after sale costs"
     },
@@ -1234,7 +1234,7 @@
     },
     "cash": {
       "title": "Cash flow by year",
-      "lead": "Income - costs per fiscal year, over the whole holding time and the last 12 months. Investments and sales not included."
+      "lead": "Income - costs in the month they belong to (accruals and corrections included); no investments or sales."
     },
     "sold": {
       "title": "Sold objects ({n})",
