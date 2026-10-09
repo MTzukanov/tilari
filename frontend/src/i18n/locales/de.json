@@ -1034,7 +1034,7 @@
       "bookValueHint": "Anschaffungskosten in der Bilanz (verknüpfte Posten) am Stichtag",
       "t12mHint": "Erträge - Kosten der letzten 12 Monate (ohne Investitionen und Verkäufe)",
       "yieldHint": "Cashflow 12 Monate / Buchwert",
-      "irrHint": "Jahresrendite über die Besitzdauer: zum geschätzten Preis, falls angegeben, sonst zum Buchwert, nach Verkaufskosten",
+      "irrHint": "Interner Zinsfuß (IRR) = Jahresrendite: der jährliche Zinssatz, bei dem sich die Zahlungen der Besitzzeit - Kauf, Mieten, Kosten und Verkauf - aufheben. Er berücksichtigt, wann Geld floss, und ist daher nicht das Gesamtergebnis geteilt durch die Anschaffungskosten. Gehaltene Objekte werden in der Rechnung heute zur Schätzung oder zum Buchwert nach Verkaufskosten verkauft. Die Summenzeile nimmt alle Zahlungen zusammen.",
       "breakEvenHint": "Verkaufspreis (ohne Darlehensanteil), der nach Verkaufskosten alles investierte Geld zurückbringt",
       "valuationHint": "Ihre Schätzung des Verkaufspreises (Objekt bearbeiten → Preisschätzungen)",
       "cashTotal": "Summe",
@@ -1049,7 +1049,9 @@
       "saleCosts": "Verkaufskosten",
       "bookGain": "Veräußerungsgewinn",
       "bookGainHint": "Buchhalterischer Gewinn oder Verlust: Verkaufspreis - Verkaufskosten - Anschaffungskosten",
-      "totalResult": "Gesamtergebnis"
+      "totalResult": "Gesamtergebnis",
+      "irrSoldHint": "Interner Zinsfuß (IRR) über die Besitzzeit: der jährliche Zinssatz, bei dem sich Kauf, Mieten, Kosten und Verkauf aufheben. Nicht das Gesamtergebnis geteilt durch die Anschaffungskosten: -20 % in 16 Monaten sind etwa -15 % pro Jahr. Die Summenzeile nimmt die Zahlungen aller verkauften Objekte zusammen.",
+      "totalResultHint": "Verkauf + Cashflow - Anschaffungskosten in Euro; darunter in Prozent der Anschaffungskosten (gesamte Besitzzeit, nicht pro Jahr)."
     },
     "status": {
       "active": "Im Besitz",

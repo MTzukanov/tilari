@@ -1034,7 +1034,7 @@
       "bookValueHint": "Acquisition cost on the balance sheet (linked items) on the as-of date",
       "t12mHint": "Income - costs over the last 12 months (no investments or sales)",
       "yieldHint": "12-month cash flow / book value",
-      "irrHint": "Annual return over the holding time: at the estimated price if given, else at book value, after sale costs",
+      "irrHint": "Internal rate of return (IRR) = annual return: the yearly rate at which the holding-time cash flows - purchase, rents, costs and sale - cancel out. It accounts for when money moved, so it is not the total result divided by the acquisition cost. Objects held are sold in the calculation today at the estimate or book value, after sale costs. The total row takes all flows together.",
       "breakEvenHint": "Selling price (without loan share) that returns all money invested after sale costs",
       "valuationHint": "Your estimate of the selling price (Edit object → Price estimates)",
       "cashTotal": "Total",
@@ -1049,7 +1049,9 @@
       "saleCosts": "Sale costs",
       "bookGain": "Gain on sale",
       "bookGainHint": "Accounting gain or loss: selling price - sale costs - acquisition cost",
-      "totalResult": "Total result"
+      "totalResult": "Total result",
+      "irrSoldHint": "Internal rate of return (IRR) over the holding time: the yearly rate at which purchase, rents, costs and sale cancel out. Not the total result divided by the acquisition cost: -20 % over 16 months is about -15 % a year. The total row takes all sold objects' flows together.",
+      "totalResultHint": "Sale + cash flow - acquisition cost in euros; below as a percentage of the acquisition cost (whole holding time, not per year)."
     },
     "status": {
       "active": "Owned",

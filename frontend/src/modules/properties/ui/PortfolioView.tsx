@@ -7,6 +7,7 @@ import { formatBp, formatPercentInput, parsePercentInput } from '../../../shared
 import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import { fetchPortfolio, savePortfolioSettings, type PortfolioResponse, type PortfolioSettings, type PropertyRow } from '../api'
+import { yieldBp } from '../../../book/modules/properties/domain/returns'
 import { formatEuro, holdingText, periodLabel, saveErrorText, statusClass } from './format'
 
 function Kpi({ label, value, neg, hint }: { label: string; value: string; neg?: boolean; hint?: string }) {
@@ -91,7 +92,7 @@ function nameColumn(t: T, withDates: 'acquired' | 'none'): TableColumn<PropertyR
   return {
     id: 'object',
     label: t('properties.col.object'),
-    width: withDates === 'acquired' ? 270 : 220,
+    width: withDates === 'acquired' ? 270 : 210,
     minWidth: 140,
     sortValue: (r) => r.name,
     render: (r) => (
@@ -164,6 +165,7 @@ function heldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
       sortValue: (r) => r.returns.market_bp ?? r.returns.at_cost_bp ?? -1e9,
       cellClass: (r) => negClass(r.returns.market_bp ?? r.returns.at_cost_bp),
       render: (r) => formatBp(r.returns.market_bp ?? r.returns.at_cost_bp),
+      footer: formatBp(data.totals.held_irr_bp),
     },
     {
       id: 'unrecovered',
@@ -245,7 +247,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
   ]
 }
 
-function soldColumns(t: T, rows: PropertyRow[]): TableColumn<PropertyRow>[] {
+function soldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableColumn<PropertyRow>[] {
   const saleCosts = (r: PropertyRow) => r.summary.sale_price_snt - r.summary.proceeds_snt
   const bookGain = (r: PropertyRow) => r.summary.proceeds_snt - r.summary.disposed_cost_snt
   const total = (r: PropertyRow) => -r.summary.unrecovered_snt
@@ -259,7 +261,7 @@ function soldColumns(t: T, rows: PropertyRow[]): TableColumn<PropertyRow>[] {
     id,
     label,
     title: opts.title,
-    width: 106,
+    width: 100,
     align: 'right',
     sortValue: value,
     cellClass: (r) => [opts.strong ? 'property-strong' : '', opts.signed ? negClass(value(r)) : ''].filter(Boolean).join(' '),
@@ -287,16 +289,39 @@ function soldColumns(t: T, rows: PropertyRow[]): TableColumn<PropertyRow>[] {
     money('price', t('properties.col.salePrice'), (r) => r.summary.sale_price_snt),
     money('saleCosts', t('properties.col.saleCosts'), saleCosts),
     money('bookGain', t('properties.col.bookGain'), bookGain, { title: t('properties.col.bookGainHint'), signed: true }),
-    money('total', t('properties.col.totalResult'), total, { title: t('properties.kpi.totalResultHint'), strong: true, signed: true }),
+    {
+      id: 'total',
+      label: t('properties.col.totalResult'),
+      title: t('properties.col.totalResultHint'),
+      width: 110,
+      align: 'right',
+      sortValue: total,
+      cellClass: (r) => `property-strong ${negClass(total(r))}`,
+      render: (r) => (
+        <>
+          {formatEuro(total(r))}
+          <span className="muted property-sub">{formatBp(yieldBp(total(r), r.summary.invested_snt))}</span>
+        </>
+      ),
+      footer: (
+        <>
+          {formatEuro(sum(rows, total))}
+          <span className="muted property-sub">
+            {formatBp(yieldBp(sum(rows, total), sum(rows, (r) => r.summary.invested_snt)))}
+          </span>
+        </>
+      ),
+    },
     {
       id: 'irr',
       label: t('properties.col.irr'),
-      title: t('properties.kpi.irrActual'),
+      title: t('properties.col.irrSoldHint'),
       width: 80,
       align: 'right',
       sortValue: (r) => r.returns.actual_bp ?? -1e9,
       cellClass: (r) => negClass(r.returns.actual_bp),
       render: (r) => formatBp(r.returns.actual_bp),
+      footer: formatBp(data.totals.sold_irr_bp),
     },
   ]
 }
@@ -399,7 +424,7 @@ export function PortfolioView({ onOpen, onSetup }: { onOpen: (id: number) => voi
               <p className="muted">{t('properties.sold.lead')}</p>
               <SortableTable
                 storageKey="tilari.properties.sold.cols"
-                columns={soldColumns(t, sold)}
+                columns={soldColumns(t, sold, data)}
                 rows={sold}
                 rowKey={(r) => r.id}
                 onRowClick={openRow}

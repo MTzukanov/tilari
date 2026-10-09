@@ -13,9 +13,9 @@ import { fetchProperty, fetchPropertyDocuments, type PropertyDetail, type Proper
 import { CashFlowChart, PaybackChart } from './Charts'
 import { formatEuro, statusClass, warningText } from './format'
 
-function Kpi({ label, value, neg, hint }: { label: string; value: string; neg?: boolean; hint?: string }) {
+function Kpi({ label, value, neg, hint, title }: { label: string; value: string; neg?: boolean; hint?: string; title?: string }) {
   return (
-    <div className="overview-kpi">
+    <div className="overview-kpi" title={title}>
       <span className="overview-kpi-label">{label}</span>
       <strong className={neg ? 'neg' : ''}>{value || '–'}</strong>
       {hint ? <span className="muted property-kpi-hint">{hint}</span> : null}
@@ -283,7 +283,13 @@ export function PropertyView({
                 }
               />
             ) : null}
-            <Kpi label={t('properties.kpi.irr')} value={formatBp(irr)} neg={(irr ?? 0) < 0} hint={irrHint} />
+            <Kpi
+              label={t('properties.kpi.irr')}
+              value={formatBp(irr)}
+              neg={(irr ?? 0) < 0}
+              hint={irrHint}
+              title={d.status === 'sold' ? t('properties.col.irrSoldHint') : t('properties.col.irrHint')}
+            />
           </div>
 
           <BreakEvenPanel key={d.target?.rate_bp ?? 'none'} d={d} onTarget={setTargetBp} />

@@ -1034,7 +1034,7 @@
       "bookValueHint": "Hankintameno taseessa (linkitetyt tase-erät) tilannepäivänä",
       "t12mHint": "Tuotot - kulut viimeiset 12 kk (ei sijoituksia eikä myyntiä)",
       "yieldHint": "12 kk kassavirta / kirjanpitoarvo",
-      "irrHint": "Vuosituotto omistusajalta: arviohinnalla, jos arvio on annettu, muuten kirjanpitoarvolla myyntikulujen jälkeen",
+      "irrHint": "Sisäinen korko eli vuosituotto (IRR): vuotuinen korko, jolla omistusajan rahavirrat - osto, vuokrat, kulut ja myynti - kumoavat toisensa. Ottaa huomioon, milloin raha liikkui, joten se ei ole sama kuin kokonaistulos jaettuna hankintamenolla. Omistuksessa olevat myydään laskelmassa tänään arviohintaan tai kirjanpitoarvoon myyntikulujen jälkeen. Yhteensä-rivillä kaikkien rahavirrat yhdessä.",
       "breakEvenHint": "Myyntihinta (ilman yhtiölainaosuutta), jolla kaikki sijoitettu raha palaa myyntikulujen jälkeen",
       "valuationHint": "Oma arviosi myyntihinnasta (Muokkaa kohdetta → Hinta-arviot)",
       "cashTotal": "Yhteensä",
@@ -1049,7 +1049,9 @@
       "saleCosts": "Myyntikulut",
       "bookGain": "Myyntivoitto",
       "bookGainHint": "Kirjanpidon myyntivoitto tai -tappio: myyntihinta - myyntikulut - hankintameno",
-      "totalResult": "Kokonaistulos"
+      "totalResult": "Kokonaistulos",
+      "irrSoldHint": "Sisäinen korko eli vuosituotto (IRR) omistusajalta: vuotuinen korko, jolla osto, vuokrat, kulut ja myynti kumoavat toisensa. Ei sama kuin kokonaistulos jaettuna hankintamenolla: -20 % 16 kuukaudessa on noin -15 % vuodessa. Yhteensä-rivillä kaikkien myytyjen rahavirrat yhdessä.",
+      "totalResultHint": "Myynti + kassavirta - hankintameno euroina; alla prosentteina hankintamenosta (koko omistusajalta, ei vuotta kohden)."
     },
     "status": {
       "active": "Omistuksessa",

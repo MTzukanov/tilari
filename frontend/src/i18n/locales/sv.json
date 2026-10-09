@@ -1034,7 +1034,7 @@
       "bookValueHint": "Anskaffningsutgift i balansen (länkade poster) på lägesdagen",
       "t12mHint": "Intäkter - kostnader de senaste 12 mån (inga investeringar eller försäljningar)",
       "yieldHint": "Kassaflöde 12 mån / bokfört värde",
-      "irrHint": "Årsavkastning under ägartiden: till uppskattat pris om angivet, annars till bokfört värde, efter försäljningskostnader",
+      "irrHint": "Internränta (IRR) = årsavkastning: den årliga räntan vid vilken ägartidens kassaflöden - köp, hyror, kostnader och försäljning - tar ut varandra. Den beaktar när pengarna rörde sig och är därför inte totalresultatet delat med anskaffningsutgiften. Ägda objekt säljs i kalkylen i dag till uppskattat pris eller bokfört värde efter försäljningskostnader. Totalraden tar alla flöden tillsammans.",
       "breakEvenHint": "Försäljningspris (utan låneandel) som ger tillbaka alla investerade pengar efter försäljningskostnader",
       "valuationHint": "Din uppskattning av försäljningspriset (Redigera objekt → Prisuppskattningar)",
       "cashTotal": "Totalt",
@@ -1049,7 +1049,9 @@
       "saleCosts": "Försäljningskostnader",
       "bookGain": "Försäljningsvinst",
       "bookGainHint": "Bokföringsmässig vinst eller förlust: försäljningspris - försäljningskostnader - anskaffningsutgift",
-      "totalResult": "Totalt resultat"
+      "totalResult": "Totalt resultat",
+      "irrSoldHint": "Internränta (IRR) under ägartiden: den årliga räntan vid vilken köp, hyror, kostnader och försäljning tar ut varandra. Inte totalresultatet delat med anskaffningsutgiften: -20 % på 16 månader är cirka -15 % per år. Totalraden tar alla sålda objekts flöden tillsammans.",
+      "totalResultHint": "Försäljning + kassaflöde - anskaffningsutgift i euro; nedan i procent av anskaffningsutgiften (hela ägartiden, inte per år)."
     },
     "status": {
       "active": "Ägs",

@@ -60,10 +60,16 @@ export function SortableTable<T>({
   const sorted = sortRows(rows, sort, (key, row) => byId.get(key)?.sortValue?.(row) ?? '')
   const hasFooter = columns.some((c) => c.footer !== undefined)
   const resizeLabel = t('browse.resizeColumn')
+  // Never narrower than its columns: a fixed layout would squeeze the last column to nothing;
+  // the wrapper scrolls sideways instead.
+  const minWidth = columns.reduce((sum, c, i) => sum + (i === columns.length - 1 ? c.width : (cols.widths[c.id] ?? c.width)), 0)
 
   return (
     <div className="sortable-table-wrap">
-      <table className={['ledger-table resizable', cols.dragging ? 'is-resizing' : '', className].filter(Boolean).join(' ')}>
+      <table
+        className={['ledger-table resizable', cols.dragging ? 'is-resizing' : '', className].filter(Boolean).join(' ')}
+        style={{ minWidth }}
+      >
         <colgroup>
           {columns.map((c, i) => (
             <col key={c.id} style={i === columns.length - 1 ? undefined : { width: cols.widths[c.id] ?? c.width }} />
