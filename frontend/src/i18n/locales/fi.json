@@ -1191,7 +1191,9 @@
       "showAllDocs": "Näytä muut ({n})",
       "apply": "Tallenna määritys",
       "starLegend": "★ = Tilarin ehdotus kirjanpidon tai nimen perusteella. Ehdotettu kohde on valmiiksi valittuna, kun se on yksiselitteinen; muuten valitse itse. Mitään ei tallenneta ennen kuin painat Tallenna määritys.",
-      "starLegendEdit": "★ = ehdotettu tälle kohteelle kirjanpidon tai nimen perusteella."
+      "starLegendEdit": "★ = ehdotettu tälle kohteelle kirjanpidon tai nimen perusteella.",
+      "kindLegend": "Laji päätellään nimestä: AP, AH tai AK = autopaikka, LH = liiketila, muuten asunto (★ = nimen perusteella).",
+      "kindsFromNames": "Aseta kaikkien lajit nimen perusteella"
     },
     "evidence": {
       "sale": "myyntitosite",

@@ -1191,7 +1191,9 @@
       "showAllDocs": "Weitere anzeigen ({n})",
       "apply": "Einrichtung speichern",
       "starLegend": "★ = Tilaris Vorschlag aus der Buchhaltung oder dem Namen. Ein eindeutiger Vorschlag ist vorausgewählt; sonst selbst wählen. Gespeichert wird erst mit Einrichtung speichern.",
-      "starLegendEdit": "★ = für dieses Objekt vorgeschlagen, aus der Buchhaltung oder dem Namen."
+      "starLegendEdit": "★ = für dieses Objekt vorgeschlagen, aus der Buchhaltung oder dem Namen.",
+      "kindLegend": "Die Art wird aus dem Namen gelesen: AP, AH oder AK = Stellplatz, LH = Gewerbeeinheit, sonst Wohnung (★ = nach dem Namen).",
+      "kindsFromNames": "Alle Arten nach dem Namen setzen"
     },
     "evidence": {
       "sale": "Verkaufsbeleg",

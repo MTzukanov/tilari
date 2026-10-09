@@ -56,8 +56,8 @@ function SetupForm({ setup, onDone }: { setup: SetupResponse; onDone: () => void
   const [centres, setCentres] = useState(
     () =>
       new Map<number, CentreDraft>(
-        // New cost centres default to apartments; a stored choice wins.
-        setup.cost_centres.map((c) => [c.id, { included: !c.excluded, kind: c.kind ?? (c.configured ? '' : 'apartment') }]),
+        // A stored choice wins; otherwise the kind guessed from the name (apartment by default).
+        setup.cost_centres.map((c) => [c.id, { included: !c.excluded, kind: c.kind ?? c.suggested_kind }]),
       ),
   )
   const [eraChoice, setEraChoice] = useState(() => new Map(setup.eras.map((e) => [e.eraid, initialEra(e)])))
@@ -118,6 +118,20 @@ function SetupForm({ setup, onDone }: { setup: SetupResponse; onDone: () => void
       <section className="property-section">
         <h3>{t('properties.setup.centres')}</h3>
         <p className="muted">{t('properties.setup.centresLead')}</p>
+        <p className="property-legend">
+          {t('properties.setup.kindLegend')}{' '}
+          <button
+            type="button"
+            className="btn-small"
+            onClick={() =>
+              setCentres(
+                new Map(setup.cost_centres.map((c) => [c.id, { ...centres.get(c.id)!, kind: c.suggested_kind }])),
+              )
+            }
+          >
+            {t('properties.setup.kindsFromNames')}
+          </button>
+        </p>
         <table className="ledger-table compact">
           <thead>
             <tr>
@@ -150,6 +164,7 @@ function SetupForm({ setup, onDone }: { setup: SetupResponse; onDone: () => void
                       <option value="">–</option>
                       {PROPERTY_KINDS.map((k) => (
                         <option key={k} value={k}>
+                          {k === c.suggested_kind ? '★ ' : ''}
                           {t(`properties.kind.${k}`)}
                         </option>
                       ))}

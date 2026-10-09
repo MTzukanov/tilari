@@ -1191,7 +1191,9 @@
       "showAllDocs": "Visa övriga ({n})",
       "apply": "Spara inställningen",
       "starLegend": "★ = Tilaris förslag utifrån bokföringen eller namnet. Ett entydigt förslag är förvalt; annars väljer du själv. Inget sparas förrän du trycker Spara inställningen.",
-      "starLegendEdit": "★ = föreslaget för detta objekt utifrån bokföringen eller namnet."
+      "starLegendEdit": "★ = föreslaget för detta objekt utifrån bokföringen eller namnet.",
+      "kindLegend": "Typen läses ur namnet: AP, AH eller AK = bilplats, LH = affärslokal, annars bostad (★ = enligt namnet).",
+      "kindsFromNames": "Sätt alla typer enligt namnet"
     },
     "evidence": {
       "sale": "försäljningsverifikat",
