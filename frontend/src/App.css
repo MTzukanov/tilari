@@ -2847,6 +2847,11 @@ tr.is-ended td {
   margin-bottom: 1.75rem;
 }
 
+.allocation-entries-head {
+  display: flex;
+  margin: 0 0 0.4rem;
+}
+
 .allocation-summary-total {
   border: 1px solid var(--line);
   border-radius: 2px;

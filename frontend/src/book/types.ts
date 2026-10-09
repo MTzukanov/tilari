@@ -116,6 +116,8 @@ export type BrowseEntry = {
   date: string
   account: number
   account_name: string
+  /** `Tili.tyyppi` (empty for an account missing from the chart). */
+  account_type: string
   description: string
   debit_cents: number | null
   credit_cents: number | null
@@ -382,33 +384,13 @@ export type AllocationsSummaryResponse = {
   allocations: AllocationSummaryRow[]
 }
 
-export type AllocationEntry = {
-  id: number
-  date: string
-  account: number
-  account_name: string
-  account_type: string
-  debit_cents: number | null
-  credit_cents: number | null
-  description: string
-  vat_percent: number | null
-  allocation: { id: number; name: string }
-  voucher: {
-    id: number
-    date: string
-    doc_number: number | null
-    type: number
-    series: string
-  }
-  partner: { id: number; name: string } | null
-}
-
 export type AllocationEntries = Allocation & {
   start_date: string
   end_date: string
   include_projects: boolean
   pnl_only: boolean
-  entries: AllocationEntry[]
+  /** Same rows as Selaus Viennit. */
+  entries: BrowseEntry[]
   debit_sum_cents: number
   credit_sum_cents: number
   count: number

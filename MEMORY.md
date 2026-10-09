@@ -7,6 +7,18 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-09 - Cost-centre page uses the shared tables
+
+- Rental objects phase 1 pushed after the owner's review: PR #26 (`feature/properties-core`)
+  and PR #27 (`feature/properties-ui`, stacked on it). Test names were replaced with made-up
+  ones before the push; the unscrubbed local commits are kept as `archive/properties-*-unscrubbed`.
+- `#/allocation/{id}`: account totals in `SortableTable`; the lines are the Selaus Viennit rows
+  (`selectBrowseEntries` with a cost-centre WHERE) in `BrowseEntriesTable` with its own column
+  widths, so status, attachments, balance-sheet item and VAT show as in Selaa. Partner now comes
+  from the voucher when the line has none, as in Selaa.
+- Fixed: an item reference and a cost-centre name in the Kohdennus column ran together (the flex
+  gap does not separate adjacent text nodes).
+
 ## 2026-10-08 - Rental objects (vuokrakohteet), phase 1, local branches only
 
 - Branches `feature/properties-core` (book module, TilariData, ADR-023) and
