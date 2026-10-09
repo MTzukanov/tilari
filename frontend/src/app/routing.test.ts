@@ -71,6 +71,33 @@ describe('parseRoute', () => {
     expect(voucherParentHash(setupVia)).toBe('#/properties/setup')
   })
 
+  it('keeps an open month on the object and cost-centre pages through a voucher', () => {
+    expect(parseRoute('#/property/15/month/2025-03')).toEqual({ view: 'property', id: 15, month: '2025-03' })
+    const via = { kind: 'property' as const, id: 15, month: '2025-03' }
+    expect(parseRoute('#/property/15/month/2025-03/voucher/8/v/3/edit')).toEqual({
+      view: 'edit',
+      voucherId: 8,
+      type: null,
+      via,
+      entryId: 3,
+    })
+    expect(voucherHash(via, 8, 3)).toBe('#/property/15/month/2025-03/voucher/8/v/3/edit')
+    expect(voucherParentHash(via)).toBe('#/property/15/month/2025-03')
+    expect(parseRoute('#/allocation/4/month/2026-01')).toEqual({ view: 'allocation', id: 4, month: '2026-01' })
+    const allocationVia = { kind: 'allocation' as const, id: 4, month: '2026-01' }
+    expect(parseRoute('#/allocation/4/month/2026-01/voucher/9')).toEqual({
+      view: 'edit',
+      voucherId: 9,
+      type: null,
+      via: allocationVia,
+      entryId: null,
+    })
+    expect(voucherParentHash(allocationVia)).toBe('#/allocation/4/month/2026-01')
+    // Not a month: no month view, and edit has no month form.
+    expect(parseRoute('#/property/15/month/2025-13')).toEqual({ view: 'reports' })
+    expect(parseRoute('#/property/15/month/2025-03/edit')).toEqual({ view: 'reports' })
+  })
+
   it('parses reports hub and fiscal periods', () => {
     expect(parseRoute('#/reports')).toEqual({ view: 'reportsHub' })
     expect(parseRoute('#/overview')).toEqual({ view: 'overview' })

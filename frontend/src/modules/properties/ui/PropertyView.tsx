@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { restoreLocationHash } from '../../../app/leaveGuard'
+import { propertyHash } from '../../../app/routing'
 import { grossPriceFor } from '../../../book/modules/properties/domain/returns'
-import { useI18n } from '../../../i18n'
+import { getBcp47, useI18n } from '../../../i18n'
 import { AttachmentLink } from '../../../shared/AttachmentLink'
 import { formatDate } from '../../../shared/dates'
 import { formatVoucherId } from '../../../shared/formatVoucherId'
@@ -12,6 +14,7 @@ import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import { fetchProperty, fetchPropertyDocuments, type PropertyDetail, type PropertyDocuments, type YearRow } from '../api'
 import { CashFlowChart, PaybackChart } from './Charts'
 import { formatEuro, statusClass, warningText } from './format'
+import { MonthLinesPanel } from './MonthLines'
 
 function Kpi({ label, value, neg, hint, title }: { label: string; value: string; neg?: boolean; hint?: string; title?: string }) {
   return (
@@ -171,24 +174,49 @@ function yearColumns(t: (key: string, vars?: Record<string, string | number>) =>
 
 export function PropertyView({
   id,
+  month,
   onBack,
   onEdit,
   onOpenAllocation,
   onOpenVoucher,
 }: {
   id: number
+  /** YYYY-MM whose lines are open under the chart (from the URL). */
+  month?: string
   onBack: () => void
   onEdit: () => void
-  onOpenAllocation: () => void
-  onOpenVoucher: (voucherId: number) => void
+  /** `month`: open the cost-centre page on that month. */
+  onOpenAllocation: (month?: string) => void
+  /** `month`: the open month panel, kept for the way back. */
+  onOpenVoucher: (voucherId: number, entryId: number | null, month?: string) => void
 }) {
   const { t } = useI18n()
   const [targetBp, setTargetBp] = useState<number | null>(null)
   const [allMonths, setAllMonths] = useState(false)
+  const [selected, setSelected] = useState<string | null>(month ?? null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const { data: d, error, loading } = usePeriodQuery(
     () => fetchProperty(id, targetBp != null ? { targetBp } : {}),
     [id, targetBp],
   )
+  const loaded = Boolean(d)
+
+  // Opened on a month (back from one of its vouchers): show its bar and bring the lines into view.
+  useEffect(() => {
+    if (!loaded || !month) return
+    if (d && !d.months.slice(-24).some((m) => m.key === month)) setAllMonths(true)
+    panelRef.current?.scrollIntoView({ block: 'nearest' })
+    // Only when the data first arrives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded])
+
+  /** Open or close a month's lines; the URL follows without a new history entry. */
+  function selectMonth(key: string | null) {
+    setSelected(key)
+    restoreLocationHash(propertyHash(id, key ?? undefined))
+  }
+  const openVoucher = (voucherId: number, entryId: number | null = null) =>
+    onOpenVoucher(voucherId, entryId, selected ?? undefined)
 
   const s = d?.summary
   const irr = d ? (d.status === 'sold' ? d.returns.actual_bp : (d.returns.market_bp ?? d.returns.at_cost_bp)) : null
@@ -225,7 +253,7 @@ export function PropertyView({
                 {t('properties.editLink')}
               </button>
               {' · '}
-              <button type="button" className="btn-link" onClick={onOpenAllocation}>
+              <button type="button" className="btn-link" onClick={() => onOpenAllocation()}>
                 {t('properties.openAllocation')}
               </button>
             </p>
@@ -313,7 +341,31 @@ export function PropertyView({
                   </label>
                 ) : null}
               </div>
-              <CashFlowChart months={months} labels={{ income: t('properties.chart.income'), expense: t('properties.chart.expense') }} />
+              <CashFlowChart
+                months={months}
+                lines={d.month_lines}
+                selectedKey={selected}
+                onSelect={(key) => selectMonth(key === selected ? null : key)}
+                labels={{
+                  income: t('properties.chart.income'),
+                  expense: t('properties.chart.expense'),
+                  clickHint: t('properties.chart.clickHint'),
+                  more: (n) => t('properties.chart.more', { n }),
+                }}
+              />
+              {selected ? (
+                <div ref={panelRef}>
+                  <MonthLinesPanel
+                    month={selected}
+                    lines={d.month_lines.filter((l) => l.month === selected)}
+                    locale={getBcp47()}
+                    labels={{ income: t('properties.chart.income'), expense: t('properties.chart.expense') }}
+                    onClose={() => selectMonth(null)}
+                    onOpenVoucher={openVoucher}
+                    onOpenAllocation={() => onOpenAllocation(selected)}
+                  />
+                </div>
+              ) : null}
               {s.acquired_on ? (
                 <>
                   <h3>{t('properties.chart.payback')}</h3>
@@ -360,7 +412,7 @@ export function PropertyView({
                     <table className="ledger-table compact">
                       <tbody>
                         {e.movements.map((m, i) => (
-                          <tr key={`${m.voucher_id}-${i}`} className="clickable" onClick={() => onOpenVoucher(m.voucher_id)}>
+                          <tr key={`${m.voucher_id}-${i}`} className="clickable" onClick={() => openVoucher(m.voucher_id)}>
                             <td className="num property-col-date">{formatDate(m.date)}</td>
                             <td className="property-col-kind">
                               <span className={`property-move property-move-${m.kind}`}>{t(`properties.eras.kind.${m.kind}`)}</span>
@@ -383,7 +435,7 @@ export function PropertyView({
               <ul className="property-doc-list">
                 {d.disposals.map((x) => (
                   <li key={x.voucher_id}>
-                    <button type="button" className="btn-link" onClick={() => onOpenVoucher(x.voucher_id)}>
+                    <button type="button" className="btn-link" onClick={() => openVoucher(x.voucher_id)}>
                       {formatDate(x.date)}
                     </button>{' '}
                     {t('properties.sales.line', {
@@ -397,7 +449,7 @@ export function PropertyView({
             </section>
           ) : null}
 
-          <Documents id={id} onOpenVoucher={onOpenVoucher} />
+          <Documents id={id} onOpenVoucher={openVoucher} />
 
           {d.doc.note ? (
             <section className="property-section">

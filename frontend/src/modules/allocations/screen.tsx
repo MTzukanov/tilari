@@ -18,11 +18,12 @@ function AllocationsScreen({
         allocationId={route.id}
         initialStartDate={period.starts}
         initialEndDate={period.ends}
+        initialMonth={route.month}
         periods={meta?.periods ?? []}
         prefs={allocationPrefs}
         onBack={() => goTo('#/allocations')}
-        onOpenVoucher={(voucherId, entryId) =>
-          goTo(voucherHash({ kind: 'allocation', id: route.id }, voucherId, entryId))
+        onOpenVoucher={(voucherId, entryId, month) =>
+          goTo(voucherHash({ kind: 'allocation', id: route.id, month }, voucherId, entryId))
         }
         onTogglePnlOnly={() => onAllocationPrefs({ pnlOnly: !allocationPrefs.pnlOnly })}
         onToggleProjects={() =>

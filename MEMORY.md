@@ -7,6 +7,20 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-09 - Rental object: a month's lines; one loan per object
+
+- Clicking a month on the object's cash-flow chart opens the lines behind its bars under the
+  chart (`PropertyDetail.month_lines`, Selaus rows plus the net amount and the date each counts
+  on). They add up to the bars by construction: corrections on their corrected booking's date,
+  year-end accruals as booked, and bank-loan interest without a cost centre. The bar tooltip
+  lists the first lines. The month is in the URL (`#/property/{id}/month/{YYYY-MM}`) and survives
+  opening a voucher; the panel links to `#/allocation/{id}/month/{YYYY-MM}`, which opens the
+  cost-centre page in Kuukausi mode. The two can differ on purpose (booking dates, cost centre only).
+- A loan account can be one object's Pankkilaina only: saving it on a second object is refused
+  (`loan_linked`); a file saved before that shows `loan_shared` on both. Before this, both objects
+  counted all of the loan's interest and the portfolio total counted it twice. Setup never changes
+  loans and is not blocked by an older double link.
+
 ## 2026-10-09 - Cost-centre page uses the shared tables
 
 - Rental objects phase 1 pushed after the owner's review: PR #26 (`feature/properties-core`)

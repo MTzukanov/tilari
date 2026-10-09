@@ -1102,7 +1102,9 @@
       "income": "Erträge",
       "expense": "Kosten und Zinsen",
       "allMonths": "Gesamte Besitzdauer",
-      "payback": "Noch nicht zurück am Monatsende"
+      "payback": "Noch nicht zurück am Monatsende",
+      "clickHint": "Klicken: Buchungen des Monats",
+      "more": "… und {n} weitere"
     },
     "years": {
       "title": "Nach Geschäftsjahr",
@@ -1216,7 +1218,8 @@
       "era_missing": "Verknüpfter Bilanzposten {eraid} existiert nicht mehr.",
       "no_capital": "Keine Anschaffungskosten verknüpft: Rendite und Break-even können nicht berechnet werden.",
       "doc_corrupt": "Die gespeicherten Daten sind beschädigt; Speichern ersetzt sie.",
-      "doc_newer": "Die Daten wurden mit einem neueren Tilari gespeichert."
+      "doc_newer": "Die Daten wurden mit einem neueren Tilari gespeichert.",
+      "loan_shared": "Darlehenskonto {account} ist auch das Bankdarlehen eines anderen Objekts, daher zählen die Zinsen für beide. Bei einem Objekt entfernen."
     },
     "error": {
       "invalid_field": "Feld {path} prüfen.",
@@ -1225,7 +1228,8 @@
       "newer_version": "Die Daten wurden mit einem neueren Tilari gespeichert und können mit dieser Version nicht geändert werden.",
       "not_found": "Kostenstelle nicht gefunden.",
       "percent": "Prozent wie 3,5.",
-      "accounts": "Kontonummern durch Kommas getrennt."
+      "accounts": "Kontonummern durch Kommas getrennt.",
+      "loan_linked": "Darlehenskonto {path} ist bereits das Bankdarlehen eines anderen Objekts. Ein Darlehen kann nur zu einem Objekt gehören, sonst würden die Zinsen doppelt gezählt."
     },
     "total": "Summe",
     "holding": "{years} J. {months} Mon.",
@@ -1239,6 +1243,17 @@
     "sold": {
       "title": "Verkaufte Objekte ({n})",
       "lead": "Zahlen über die gesamte Besitzdauer: was gekauft wurde, was ausgegeben wurde, was der Verkauf brachte."
+    },
+    "month": {
+      "title": "Buchungen: {month}",
+      "close": "Schließen",
+      "openAllocation": "Buchungen der Kostenstelle in diesem Monat",
+      "openAllocationHint": "Die Kostenstelle zeigt Buchungen nach Buchungsdatum und nur die auf ihr gebuchten. Hier zählen Abgrenzungen und Korrekturen im Monat, den sie betreffen, und Bankdarlehenszinsen gehören zum Objekt, daher können die Buchungen abweichen.",
+      "empty": "Keine Erträge oder Kosten in diesem Monat.",
+      "moved": "gebucht {date}",
+      "movedHint": "Eine Korrektur, die die Buchung auf dieses Objekt verschoben hat. Sie zählt im Monat der ursprünglichen Buchung; der Kostenstellenbericht zeigt sie am Buchungsdatum.",
+      "accrual": "Abgrenzung",
+      "interest": "Darlehenszinsen"
     }
   }
 }

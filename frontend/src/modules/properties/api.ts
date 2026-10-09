@@ -7,6 +7,8 @@ export type {
   DocumentVoucher,
   EraCandidate,
   DocCandidate,
+  MonthLine,
+  MonthLineKind,
   MonthPoint,
   PortfolioResponse,
   PortfolioSettings,

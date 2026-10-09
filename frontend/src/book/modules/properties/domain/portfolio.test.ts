@@ -6,7 +6,7 @@ import { hasTilariData, readTilariData, writeTilariData } from '../../../kernel/
 import { Ledger } from '../../../ledger'
 import type { SqliteDb } from '../../../sqlite'
 import { buildPropertyFixture, CC, type PropertyFixture } from '../testFixture'
-import { propertyKey } from './doc'
+import { propertyKey, serializeDoc } from './doc'
 import { listPropertyDocuments } from './documents'
 import {
   applySetup,
@@ -218,6 +218,40 @@ describe('rental objects: figures', () => {
     expect(after.summary.operating.net_snt).toBe(28_100 * E)
   })
 
+  it('the lines behind each month add up to its bars, interest included', async () => {
+    const { db } = await setUp()
+    const before = computeDetail(db, CC.bundle, { today: TODAY })
+    saveProperty(db, CC.bundle, { ...before.doc, financing: { loan_accounts: [2621], interest_accounts: [9460] } }, 'now')
+    const d = computeDetail(db, CC.bundle, { today: TODAY })
+    expect(d.month_lines.some((l) => l.kind === 'interest')).toBe(true)
+    expect(d.month_lines.every((l) => d.months.some((m) => m.key === l.month))).toBe(true)
+    for (const m of d.months) {
+      const lines = d.month_lines.filter((l) => l.month === m.key)
+      const sum = (kinds: string[]) => lines.filter((l) => kinds.includes(l.kind)).reduce((s, l) => s + l.amount_snt, 0)
+      expect(sum(['income'])).toBe(m.income_snt)
+      expect(sum(['expense', 'interest']) + m.expense_snt + m.interest_snt).toBe(0)
+    }
+    const rent = d.month_lines.find((l) => l.kind === 'income')!
+    expect(rent.entry.voucher.id).toBeGreaterThan(0)
+    expect(rent.entry.account).toBeGreaterThanOrEqual(3000)
+    expect(rent.counted_date).toBe(rent.entry.date)
+  })
+
+  it('one bank loan belongs to one object; an older double link is flagged on both', async () => {
+    const { db } = await setUp()
+    const financing = { loan_accounts: [2621], interest_accounts: [9460] }
+    saveProperty(db, CC.bundle, { ...computeDetail(db, CC.bundle, { today: TODAY }).doc, financing }, 'now')
+    const garage = computeDetail(db, CC.garage, { today: TODAY })
+    expect(() => saveProperty(db, CC.garage, { ...garage.doc, financing }, 'now')).toThrow(/loan_linked:2621/)
+    const bundle = computeDetail(db, CC.bundle, { today: TODAY })
+    expect(saveProperty(db, CC.bundle, { ...bundle.doc, note: 'oma laina' }, 'now')).toBe(true)
+    // Written by a build without the guard.
+    writeTilariData(db, propertyKey(CC.garage), serializeDoc({ ...garage.doc, financing }), 'now')
+    for (const id of [CC.bundle, CC.garage]) {
+      expect(computeDetail(db, id, { today: TODAY }).warnings).toContainEqual({ code: 'loan_shared', params: { account: 2621 } })
+    }
+  })
+
   it('valuation, sale costs and a target return drive the prices', async () => {
     const { db } = await setUp()
     const base = computeDetail(db, CC.garage, { today: TODAY })
@@ -406,6 +440,11 @@ describe('rental objects: corrections in a later year', () => {
       computeDetail(db, id, { today: TODAY }).months.find((m) => m.key === key)!
     expect(month(CC.garage, '2025-03').expense_snt).toBe(123_45)
     expect(month(CC.garage, '2026-01').expense_snt).toBe(0)
+    // The month's lines show the correction there, with the date it was booked on.
+    const moved = computeDetail(db, CC.garage, { today: TODAY }).month_lines.filter((l) => l.entry.description === 'Oikaisu: autotalli')
+    expect(moved.map((l) => [l.month, l.counted_date, l.entry.date, l.amount_snt])).toEqual([
+      ['2025-03', '2025-03-10', '2026-01-01', -123_45],
+    ])
     // The bundle's March 2025 is back to its own 300 vastike.
     expect(month(CC.bundle, '2025-03').expense_snt).toBe(300 * E)
     // A year-end accrual left on Yleinen, moved to the bundle later: the bundle has a 300

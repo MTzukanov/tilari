@@ -1,5 +1,5 @@
 import { getBcp47 } from '../../../i18n'
-import type { PropertyStatus, Warning } from '../api'
+import type { MonthLine, PropertyStatus, Warning } from '../api'
 
 const wholeEuro = new Map<string, Intl.NumberFormat>()
 
@@ -51,4 +51,18 @@ export function holdingText(t: T, from: string | null, to: string | null): strin
   let months = (y2 - y1) * 12 + (m2 - m1) - (d2 < d1 ? 1 : 0)
   if (months < 0) months = 0
   return t('properties.holding', { years: Math.floor(months / 12), months: months % 12 })
+}
+
+/** "maaliskuu 2025" for "2025-03". */
+export function monthName(key: string, locale: string): string {
+  const [y, m] = key.split('-').map(Number)
+  return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(y, m - 1, 1))
+}
+
+/** Partner and line text as Selaa joins them; the account name when both are empty. */
+export function lineText(line: MonthLine): string {
+  const partner = line.entry.partner?.name ?? ''
+  const text = line.entry.description
+  if (partner && text && partner !== text) return `${partner} - ${text}`
+  return partner || text || line.entry.account_name
 }

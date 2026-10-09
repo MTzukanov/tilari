@@ -12,6 +12,7 @@ import { TypeTag } from '../../../shared/TypeTag'
 import { type AllocationPrefs } from '../allocationPrefs'
 import { formatCents } from '../../../shared/money'
 import { PeriodNav } from '../../../shared/PeriodNav'
+import { monthRange, parseISO } from '../../../shared/periodNav'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import { useI18n } from '../../../i18n'
 import { allocationTypeName } from '../../../shared/voucherTypes'
@@ -22,6 +23,7 @@ export function AllocationView({
   allocationId,
   initialStartDate,
   initialEndDate,
+  initialMonth,
   periods,
   prefs,
   onBack,
@@ -33,16 +35,26 @@ export function AllocationView({
   allocationId: number
   initialStartDate: string
   initialEndDate: string
+  /** YYYY-MM: open on that month (Kuukausi) instead of the fiscal year. */
+  initialMonth?: string
   periods: Period[]
   prefs: AllocationPrefs
   onBack: () => void
-  onOpenVoucher: (voucherId: number, entryId: number) => void
+  /** `month` while the page shows one month, so back from the voucher returns to it. */
+  onOpenVoucher: (voucherId: number, entryId: number, month?: string) => void
   onTogglePnlOnly: () => void
   onToggleProjects: () => void
   onToggleProfitMode: () => void
 }) {
   const { t } = useI18n()
-  const nav = usePeriodNav(periods, initialStartDate, initialEndDate, allocationId)
+  const month = initialMonth ? monthRange(parseISO(`${initialMonth}-01`)) : null
+  const nav = usePeriodNav(
+    periods,
+    month?.starts ?? initialStartDate,
+    month?.ends ?? initialEndDate,
+    allocationId,
+    month ? 'month' : 'year',
+  )
   const { data, error, loading } = usePeriodQuery(
     () =>
       Promise.all([
@@ -215,7 +227,9 @@ export function AllocationView({
               rows={entries.entries}
               showVat={vatLiable}
               storageKey="tilari.allocation.entryCols"
-              onOpen={onOpenVoucher}
+              onOpen={(voucherId, entryId) =>
+                onOpenVoucher(voucherId, entryId, nav.mode === 'month' ? nav.start_date.slice(0, 7) : undefined)
+              }
             />
           </>
         )

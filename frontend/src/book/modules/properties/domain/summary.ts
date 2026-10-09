@@ -1,6 +1,6 @@
 /** Everything shown for one rental object, computed from the ledger and its stored links. */
 import { addMonths } from '../../../months'
-import { classifyObject, type CashFlow, type Classified } from './classify'
+import { classifyObject, NON_CASH_TYPES, type CashFlow, type Classified } from './classify'
 import type { CostCentre, EraRoot, EraRow, PnlRow } from './ledger'
 import { breakEvenPrice, requiredSalePrice, saleNet, toBp, xirr, type Flow } from './returns'
 import { isIncome, monthlySeries, trailing12, yearTable } from './series'
@@ -9,6 +9,7 @@ import type {
   BreakEven,
   EraMovementKind,
   EraState,
+  MonthLineKind,
   MonthPoint,
   ObjectSummary,
   PortfolioSettings,
@@ -40,6 +41,9 @@ export type ObjectInput = {
   targetBp?: number | null
 }
 
+/** A line behind a month's bars (`MonthLine` without the ledger details). */
+export type CountedLine = { id: number; month: string; kind: MonthLineKind; counted_date: string; amount_snt: number }
+
 export type ObjectResult = {
   /** Dated cash flows up to the as-of date (manual capital included). */
   cash: Flow[]
@@ -48,6 +52,7 @@ export type ObjectResult = {
   summary: ObjectSummary
   classified: Classified
   months: MonthPoint[]
+  lines: CountedLine[]
   t12m: Trailing12 | null
   years: YearRow[]
   returns: Returns
@@ -147,6 +152,20 @@ export function computeObject(input: ObjectInput): ObjectResult {
   const earliest = addMonths(toKey, -300)
   const months = monthlySeries(upTo, classified.operating.filter((r) => r.date <= asOf), fromKey < earliest ? earliest : fromKey, toKey)
 
+  // The same lines as the bars: operating P&L (corrections on their booking's date) and interest.
+  const shown = new Set(months.map((m) => m.key))
+  const lines: CountedLine[] = []
+  for (const row of classified.operating) {
+    if (row.date > asOf || !shown.has(row.date.slice(0, 7))) continue
+    const kind = isIncome(row) ? 'income' : 'expense'
+    lines.push({ id: row.id, month: row.date.slice(0, 7), kind, counted_date: row.date, amount_snt: row.net_snt })
+  }
+  for (const row of input.interest) {
+    if (NON_CASH_TYPES.has(row.voucher_type) || row.date > asOf || !shown.has(row.date.slice(0, 7))) continue
+    lines.push({ id: row.id, month: row.date.slice(0, 7), kind: 'interest', counted_date: row.date, amount_snt: row.net_snt })
+  }
+  lines.sort((a, b) => a.counted_date.localeCompare(b.counted_date) || a.id - b.id)
+
   const t12m =
     status === 'active' || status === 'partly_sold' || status === 'unlinked'
       ? trailing12(months, asOf, { from: acquiredOn ?? centre.starts, to: soldOn ?? centre.ends }, bookValue)
@@ -222,6 +241,7 @@ export function computeObject(input: ObjectInput): ObjectResult {
     summary,
     classified,
     months,
+    lines,
     t12m,
     years,
     returns,

@@ -115,7 +115,6 @@ test.describe('cost centres', () => {
     const debit = detail.locator('.zebra-voucher th, .zebra th').filter({ hasText: 'Debet' })
     await debit.click()
     await expect(debit).toHaveAttribute('aria-sort', 'ascending')
-    await page.screenshot({ path: test.info().outputPath('allocation.png'), fullPage: true })
   })
 })
 

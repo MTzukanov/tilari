@@ -26,6 +26,7 @@ import {
   loadCostCentres,
   loadDataThrough,
   loadEraRoots,
+  loadEntries,
   loadEraRows,
   loadInterestRows,
   loadPnlRows,
@@ -38,12 +39,13 @@ import {
 } from './ledger'
 import { saleNet, toBp, xirr, yieldBp, type Flow } from './returns'
 import { defaultAsOf } from './series'
-import { allocationSet, computeObject, resolveSaleCosts, type ObjectResult } from './summary'
+import { allocationSet, computeObject, resolveSaleCosts, type CountedLine, type ObjectResult } from './summary'
 import { pickBest, suggestEra, textScorer } from './suggest'
 import {
   PORTFOLIO_KEY,
   PROPERTY_KEY_PREFIX,
   type PortfolioResponse,
+  type MonthLine,
   type PortfolioSettings,
   type PropertyDetail,
   type PropertyDoc,
@@ -58,6 +60,8 @@ type Loaded = {
   settings: ParsedDoc<PortfolioSettings>
   /** eraid -> cost centre id, over every stored document. */
   owner: Map<number, number>
+  /** Loan account -> cost centres whose bank loan it is (Pankkilaina); one, unless saved before the guard. */
+  loanOwners: Map<number, number[]>
 }
 
 function loadStored(db: SqliteDb): Loaded {
@@ -68,8 +72,14 @@ function loadStored(db: SqliteDb): Loaded {
     if (id != null) docs.set(id, parsePropertyDoc(row.value))
   }
   const owner = new Map<number, number>()
-  for (const [id, parsed] of docs) for (const era of parsed.doc.eras) owner.set(era.eraid, id)
-  return { centres, docs, settings: parsePortfolioSettings(readTilariData(db, PORTFOLIO_KEY)), owner }
+  const loanOwners = new Map<number, number[]>()
+  for (const [id, parsed] of docs) {
+    for (const era of parsed.doc.eras) owner.set(era.eraid, id)
+    for (const account of parsed.doc.financing?.loan_accounts ?? []) {
+      loanOwners.set(account, [...(loanOwners.get(account) ?? []), id])
+    }
+  }
+  return { centres, docs, settings: parsePortfolioSettings(readTilariData(db, PORTFOLIO_KEY)), owner, loanOwners }
 }
 
 function docFor(loaded: Loaded, id: number): ParsedDoc<PropertyDoc> {
@@ -143,6 +153,8 @@ function computeObjects(
       asOf,
       targetBp,
     })
+    const shared = (financing?.loan_accounts ?? []).find((a) => (loaded.loanOwners.get(a) ?? []).some((o) => o !== centre.id))
+    if (shared != null) result.warnings.push({ code: 'loan_shared', params: { account: shared } })
     return { centre, parsed, result }
   })
 }
@@ -252,10 +264,19 @@ export function computeDetail(
     eras: computed.result.eras,
     disposals: computed.result.classified.disposals,
     months: computed.result.months,
+    month_lines: monthLines(db, computed.result.lines),
     years: computed.result.years,
     target: computed.result.target,
     financing: computed.parsed.doc.financing ?? null,
   }
+}
+
+function monthLines(db: SqliteDb, lines: CountedLine[]): MonthLine[] {
+  const entries = loadEntries(db, lines.map((l) => l.id))
+  return lines.flatMap(({ id, ...line }) => {
+    const entry = entries.get(id)
+    return entry ? [{ ...line, entry }] : []
+  })
 }
 
 export function requireCostCentre(db: SqliteDb, id: number): CostCentre {
@@ -265,7 +286,8 @@ export function requireCostCentre(db: SqliteDb, id: number): CostCentre {
 }
 
 /** Write-side checks against the ledger; fills each item's account from its root line. */
-function checkLinks(db: SqliteDb, id: number, doc: PropertyDoc, owner: Map<number, number>): PropertyDoc {
+function checkLinks(db: SqliteDb, id: number, doc: PropertyDoc, loaded: Pick<Loaded, 'owner' | 'loanOwners'>): PropertyDoc {
+  const { owner, loanOwners } = loaded
   const roots = new Map(loadEraRoots(db, doc.eras.map((e) => e.eraid)).map((r) => [r.eraid, r]))
   const eras = doc.eras.map((link, i) => {
     const root = roots.get(link.eraid)
@@ -287,6 +309,12 @@ function checkLinks(db: SqliteDb, id: number, doc: PropertyDoc, owner: Map<numbe
         if (!accounts.has(n)) throw new PropertyDocError('invalid_field', `financing.${key}[${i}]`)
       })
     }
+    // One loan, one object: on two, its interest would count twice in the portfolio.
+    for (const account of doc.financing.loan_accounts) {
+      if ((loanOwners.get(account) ?? []).some((other) => other !== id)) {
+        throw new PropertyDocError('loan_linked', String(account), 400)
+      }
+    }
   }
   return { ...doc, eras }
 }
@@ -295,7 +323,7 @@ function checkLinks(db: SqliteDb, id: number, doc: PropertyDoc, owner: Map<numbe
 export function saveProperty(db: SqliteDb, id: number, input: unknown, now: string): boolean {
   requireCostCentre(db, id)
   const loaded = loadStored(db)
-  const doc = checkLinks(db, id, normalizePropertyDoc(input), loaded.owner)
+  const doc = checkLinks(db, id, normalizePropertyDoc(input), loaded)
   const merged = mergePropertyDoc(docFor(loaded, id), doc, now)
   if (!merged) return false
   return writeTilariData(db, propertyKey(id), serializeDoc(merged), now)
@@ -430,7 +458,8 @@ export function applySetup(db: SqliteDb, input: SetupApplyInput, now: string): n
 
   let changed = 0
   for (const [id, doc] of next) {
-    const checked = checkLinks(db, id, normalizePropertyDoc(doc), owner)
+    // Setup never changes a bank loan, so an older double link does not block it.
+    const checked = checkLinks(db, id, normalizePropertyDoc(doc), { owner, loanOwners: new Map() })
     const merged = mergePropertyDoc(docFor(loaded, id), checked, now)
     if (merged && writeTilariData(db, propertyKey(id), serializeDoc(merged), now)) changed += 1
   }

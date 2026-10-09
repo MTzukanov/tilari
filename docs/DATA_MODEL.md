@@ -45,7 +45,7 @@ Money in integer cents (`*_snt`), percentages in basis points (`*_bp`, 100 = 1 %
 | `manual_capital[]` | `{ date, amount_snt, note? }` - capital not on a linked item |
 | `sale_voucher_ids[]` | Vouchers whose lines on the object belong to a sale |
 | `doc_voucher_ids[]` | Document vouchers (usually type 800 Liitetieto) |
-| `financing` | `{ loan_accounts[], interest_accounts[] }` - interest on vouchers touching the loan |
+| `financing` | `{ loan_accounts[], interest_accounts[] }` - interest on vouchers touching the loan; a loan account belongs to one object (`loan_linked` on save, `loan_shared` warning for older files) |
 | `valuations[]` | `{ date, price_snt, debt_free_price_snt?, source? }` - owner's price estimate |
 | `sale_costs` | `{ pct_bp, fixed_snt }` - overrides `portfolio.sale_costs` |
 | `target_return_bp`, `note` | Target annual return; free text |

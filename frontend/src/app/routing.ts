@@ -1,8 +1,9 @@
 export type VoucherVia =
   | { kind: 'account'; account: number }
-  | { kind: 'allocation'; id: number }
-  /** Opened from a rental object's page (`#/property/{id}`). */
-  | { kind: 'property'; id: number }
+  /** `month` (YYYY-MM): the page was showing that month; back returns to it. */
+  | { kind: 'allocation'; id: number; month?: string }
+  /** Opened from a rental object's page (`#/property/{id}`), `month` its open month panel. */
+  | { kind: 'property'; id: number; month?: string }
   /** Opened from the rental-object setup (`#/properties/setup`); its unsaved choices are kept. */
   | { kind: 'propertiesSetup' }
   | { kind: 'balanceSheetItems' }
@@ -18,10 +19,10 @@ export type Route =
   | { view: 'ledger'; account: number }
   | { view: 'balanceSheetItems' }
   | { view: 'allocations' }
-  | { view: 'allocation'; id: number }
+  | { view: 'allocation'; id: number; month?: string }
   | { view: 'properties' }
   | { view: 'propertiesSetup' }
-  | { view: 'property'; id: number }
+  | { view: 'property'; id: number; month?: string }
   | { view: 'propertyEdit'; id: number }
   | { view: 'reportsHub' }
   | { view: 'overview' }
@@ -42,6 +43,18 @@ export type Route =
     }
 
 type VoucherRef = { voucherId: number; entryId: number | null }
+
+/** `#/allocation/{id}`, or `#/allocation/{id}/month/{YYYY-MM}` opened on that month. */
+export function allocationHash(id: number, month?: string): string {
+  return `#/allocation/${id}${month ? `/month/${month}` : ''}`
+}
+
+/** `#/property/{id}`, or `#/property/{id}/month/{YYYY-MM}` with that month's lines open. */
+export function propertyHash(id: number, month?: string): string {
+  return `#/property/${id}${month ? `/month/${month}` : ''}`
+}
+
+const MONTH = '(\\d{4}-(?:0[1-9]|1[0-2]))'
 
 /** `voucher/2`, `voucher/2/v/7`, optional trailing `/edit` (legacy view URLs). */
 function parseVoucherSegment(seg: string): VoucherRef | null {
@@ -69,9 +82,9 @@ export function voucherHash(
     case 'account':
       return `#/account/${via.account}${tail}`
     case 'allocation':
-      return `#/allocation/${via.id}${tail}`
+      return `${allocationHash(via.id, via.month)}${tail}`
     case 'property':
-      return `#/property/${via.id}${tail}`
+      return `${propertyHash(via.id, via.month)}${tail}`
     case 'propertiesSetup':
       return `#/properties/setup${tail}`
     case 'balanceSheetItems':
@@ -94,9 +107,9 @@ export function voucherParentHash(via: VoucherVia): string {
     case 'account':
       return `#/account/${via.account}`
     case 'allocation':
-      return `#/allocation/${via.id}`
+      return allocationHash(via.id, via.month)
     case 'property':
-      return `#/property/${via.id}`
+      return propertyHash(via.id, via.month)
     case 'propertiesSetup':
       return '#/properties/setup'
     case 'balanceSheetItems':
@@ -187,11 +200,13 @@ export function parseRoute(hash: string = window.location.hash): Route {
     if (ref) return voucherRoute({ kind: 'balanceSheetItems' }, ref)
   }
 
-  const allocation = hash.match(/^#\/allocation\/(\d+)(?:\/(.+))?$/)
+  const allocation = hash.match(new RegExp(`^#/allocation/(\\d+)(?:/month/${MONTH})?(?:/(.+))?$`))
   if (allocation) {
-    if (!allocation[2]) return { view: 'allocation', id: Number(allocation[1]) }
-    const ref = parseVoucherSegment(allocation[2])
-    if (ref) return voucherRoute({ kind: 'allocation', id: Number(allocation[1]) }, ref)
+    const id = Number(allocation[1])
+    const month = allocation[2] ? { month: allocation[2] } : {}
+    if (!allocation[3]) return { view: 'allocation', id, ...month }
+    const ref = parseVoucherSegment(allocation[3])
+    if (ref) return voucherRoute({ kind: 'allocation', id, ...month }, ref)
   }
 
   const setup = hash.match(/^#\/properties\/setup(?:\/(.+))?$/)
@@ -201,13 +216,14 @@ export function parseRoute(hash: string = window.location.hash): Route {
     if (ref) return voucherRoute({ kind: 'propertiesSetup' }, ref)
   }
 
-  const property = hash.match(/^#\/property\/(\d+)(?:\/(.+))?$/)
+  const property = hash.match(new RegExp(`^#/property/(\\d+)(?:/month/${MONTH})?(?:/(.+))?$`))
   if (property) {
     const id = Number(property[1])
-    if (!property[2]) return { view: 'property', id }
-    if (property[2] === 'edit') return { view: 'propertyEdit', id }
-    const ref = parseVoucherSegment(property[2])
-    if (ref) return voucherRoute({ kind: 'property', id }, ref)
+    const month = property[2] ? { month: property[2] } : {}
+    if (!property[3]) return { view: 'property', id, ...month }
+    if (property[3] === 'edit' && !property[2]) return { view: 'propertyEdit', id }
+    const ref = parseVoucherSegment(property[3])
+    if (ref) return voucherRoute({ kind: 'property', id, ...month }, ref)
   }
 
   const account = hash.match(/^#\/account\/(\d+)(?:\/(.+))?$/)
