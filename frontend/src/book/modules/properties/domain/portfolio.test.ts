@@ -408,6 +408,18 @@ describe('rental objects: corrections in a later year', () => {
     expect(month(CC.garage, '2026-01').expense_snt).toBe(0)
     // The bundle's March 2025 is back to its own 300 vastike.
     expect(month(CC.bundle, '2025-03').expense_snt).toBe(300 * E)
+    // A year-end accrual left on Yleinen, moved to the bundle later: the bundle has a 300
+    // vastike every month, so only the Yleinen side identifies the booking.
+    voucher('2024-12-31', 100, [
+      [7300, 0, -300 * E, 'Jaksotus tammikuu'],
+      [1849, 0, 300 * E, 'Jaksotus tammikuu'],
+    ])
+    voucher('2026-01-01', 0, [
+      [7300, 0, 300 * E, 'Oikaisu: jaksotus'],
+      [7300, CC.bundle, -300 * E, 'Oikaisu: jaksotus'],
+    ])
+    expect(month(CC.bundle, '2024-12').expense_snt).toBe(0)
+    expect(month(CC.bundle, '2026-01').expense_snt).toBe(300 * E)
     // The year rows keep the books' dates in the Kitsas column.
     const garage = computeDetail(db, CC.garage, { today: TODAY })
     expect(garage.years.find((y) => y.starts === '2025-01-01')!.expense_snt).toBe(123_45)

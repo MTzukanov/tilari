@@ -377,8 +377,12 @@ export function loadCorrectionDates(db: SqliteDb, voucherIds: Iterable<number>):
              AND COALESCE(Vienti.debetsnt, 0) - COALESCE(Vienti.kreditsnt, 0) = ? AND Vienti.pvm <= ?`,
           [from.voucher_id, from.tili, from.k, -Number(from.amt), from.pvm],
         )
-      const found = [...original(a), ...original(b)]
-      if (found.length !== 1) continue
+      // One side reverses the earlier booking; the other side may match many ordinary
+      // bookings of the same amount (monthly vastike), so use the side with exactly one.
+      const fromA = original(a)
+      const fromB = original(b)
+      const found = fromA.length === 1 && fromB.length !== 1 ? fromA : fromB.length === 1 && fromA.length !== 1 ? fromB : null
+      if (!found) continue
       out.set(Number(a.id), String(found[0].pvm))
       out.set(Number(b.id), String(found[0].pvm))
     }
