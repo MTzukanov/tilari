@@ -499,7 +499,8 @@
     "reportsHub": "Raportteihin",
     "bankStatement": "Tiliotteelle",
     "property": "Kohteeseen",
-    "properties": "Vuokrakohteisiin"
+    "properties": "Vuokrakohteisiin",
+    "propertiesSetup": "Kohteiden määritykseen"
   },
   "ledger": {
     "empty": "Ei vientejä tällä tilillä jaksolla."
@@ -1193,7 +1194,11 @@
       "starLegend": "★ = Tilarin ehdotus kirjanpidon tai nimen perusteella. Ehdotettu kohde on valmiiksi valittuna, kun se on yksiselitteinen; muuten valitse itse. Mitään ei tallenneta ennen kuin painat Tallenna määritys.",
       "starLegendEdit": "★ = ehdotettu tälle kohteelle kirjanpidon tai nimen perusteella.",
       "kindLegend": "Laji päätellään nimestä: AP, AH tai AK = autopaikka, LH = liiketila, muuten asunto (★ = nimen perusteella).",
-      "kindsFromNames": "Aseta kaikkien lajit nimen perusteella"
+      "kindsFromNames": "Aseta kaikkien lajit nimen perusteella",
+      "openVoucher": "Avaa tosite",
+      "rowsOpen": "Tase-erän tai asiakirjan rivistä aukeaa tosite; tallentamattomat valinnat ja kohta sivulla säilyvät, kun palaat.",
+      "draftRestored": "Tallentamattomat valinnat palautettiin.",
+      "discard": "Hylkää muutokset"
     },
     "evidence": {
       "sale": "myyntitosite",

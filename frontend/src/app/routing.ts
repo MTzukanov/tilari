@@ -3,6 +3,8 @@ export type VoucherVia =
   | { kind: 'allocation'; id: number }
   /** Opened from a rental object's page (`#/property/{id}`). */
   | { kind: 'property'; id: number }
+  /** Opened from the rental-object setup (`#/properties/setup`); its unsaved choices are kept. */
+  | { kind: 'propertiesSetup' }
   | { kind: 'balanceSheetItems' }
   | { kind: 'browse' }
   | { kind: 'journal' }
@@ -70,6 +72,8 @@ export function voucherHash(
       return `#/allocation/${via.id}${tail}`
     case 'property':
       return `#/property/${via.id}${tail}`
+    case 'propertiesSetup':
+      return `#/properties/setup${tail}`
     case 'balanceSheetItems':
       return `#/balance-sheet-items${tail}`
     case 'browse':
@@ -93,6 +97,8 @@ export function voucherParentHash(via: VoucherVia): string {
       return `#/allocation/${via.id}`
     case 'property':
       return `#/property/${via.id}`
+    case 'propertiesSetup':
+      return '#/properties/setup'
     case 'balanceSheetItems':
       return '#/balance-sheet-items'
     case 'browse':
@@ -118,6 +124,8 @@ export function voucherUpI18n(via: VoucherVia): { key: string; vars?: Record<str
       return { key: 'up.allocation' }
     case 'property':
       return { key: 'up.property' }
+    case 'propertiesSetup':
+      return { key: 'up.propertiesSetup' }
     case 'balanceSheetItems':
       return { key: 'up.balanceSheetItems' }
     case 'browse':
@@ -186,6 +194,13 @@ export function parseRoute(hash: string = window.location.hash): Route {
     if (ref) return voucherRoute({ kind: 'allocation', id: Number(allocation[1]) }, ref)
   }
 
+  const setup = hash.match(/^#\/properties\/setup(?:\/(.+))?$/)
+  if (setup) {
+    if (!setup[1]) return { view: 'propertiesSetup' }
+    const ref = parseVoucherSegment(setup[1])
+    if (ref) return voucherRoute({ kind: 'propertiesSetup' }, ref)
+  }
+
   const property = hash.match(/^#\/property\/(\d+)(?:\/(.+))?$/)
   if (property) {
     const id = Number(property[1])
@@ -250,7 +265,6 @@ export function parseRoute(hash: string = window.location.hash): Route {
   if (hash === '#/overview') return { view: 'overview' }
   if (hash === '#/allocations') return { view: 'allocations' }
   if (hash === '#/properties') return { view: 'properties' }
-  if (hash === '#/properties/setup') return { view: 'propertiesSetup' }
   if (hash === '#/settings/storage') return { view: 'settings', page: 'storage' }
   if (hash === '#/settings') return { view: 'settings' }
   if (hash === '#/fiscal-periods') return { view: 'fiscalPeriods' }

@@ -499,7 +499,8 @@
     "reportsHub": "Till rapporter",
     "bankStatement": "Till kontoutdraget",
     "property": "Till objektet",
-    "properties": "Till hyresobjekten"
+    "properties": "Till hyresobjekten",
+    "propertiesSetup": "Till inställningen av objekt"
   },
   "ledger": {
     "empty": "Inga transaktioner på det här kontot under perioden."
@@ -1193,7 +1194,11 @@
       "starLegend": "★ = Tilaris förslag utifrån bokföringen eller namnet. Ett entydigt förslag är förvalt; annars väljer du själv. Inget sparas förrän du trycker Spara inställningen.",
       "starLegendEdit": "★ = föreslaget för detta objekt utifrån bokföringen eller namnet.",
       "kindLegend": "Typen läses ur namnet: AP, AH eller AK = bilplats, LH = affärslokal, annars bostad (★ = enligt namnet).",
-      "kindsFromNames": "Sätt alla typer enligt namnet"
+      "kindsFromNames": "Sätt alla typer enligt namnet",
+      "openVoucher": "Öppna verifikat",
+      "rowsOpen": "En rad med balanspost eller dokument öppnar verifikatet; osparade val och platsen på sidan finns kvar när du kommer tillbaka.",
+      "draftRestored": "Osparade val återställdes.",
+      "discard": "Förkasta ändringar"
     },
     "evidence": {
       "sale": "försäljningsverifikat",

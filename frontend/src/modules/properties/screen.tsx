@@ -6,7 +6,7 @@ import { PropertyEdit } from './ui/PropertyEdit'
 import { PropertySetup } from './ui/PropertySetup'
 import { PropertyView } from './ui/PropertyView'
 
-function PropertiesScreen({ route, goTo }: BookViewCtx) {
+function PropertiesScreen({ route, goTo, meta }: BookViewCtx) {
   if (route.view === 'property') {
     return (
       <PropertyView
@@ -23,7 +23,13 @@ function PropertiesScreen({ route, goTo }: BookViewCtx) {
     return <PropertyEdit key={route.id} id={route.id} onDone={() => goTo(`#/property/${route.id}`)} />
   }
   if (route.view === 'propertiesSetup') {
-    return <PropertySetup onDone={() => goTo('#/properties')} />
+    return (
+      <PropertySetup
+        bookKey={meta?.session_id ?? ''}
+        onDone={() => goTo('#/properties')}
+        onOpenVoucher={(voucherId) => goTo(voucherHash({ kind: 'propertiesSetup' }, voucherId))}
+      />
+    )
   }
   if (route.view === 'properties') {
     return <PortfolioView onOpen={(id) => goTo(`#/property/${id}`)} onSetup={() => goTo('#/properties/setup')} />
@@ -38,5 +44,6 @@ export const propertiesUi: UiModule = {
   navItems: [{ id: 'properties', href: '#/properties', icon: 'home', labelKey: 'nav.properties' }],
   match: (route) => VIEWS.has(route.view),
   Screen: PropertiesScreen,
-  activeNav: (route) => (VIEWS.has(route.view) || viaKind(route) === 'property' ? 'properties' : null),
+  activeNav: (route) =>
+    VIEWS.has(route.view) || viaKind(route) === 'property' || viaKind(route) === 'propertiesSetup' ? 'properties' : null,
 }

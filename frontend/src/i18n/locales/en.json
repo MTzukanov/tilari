@@ -499,7 +499,8 @@
     "reportsHub": "To reports",
     "bankStatement": "To bank statement",
     "property": "To the object",
-    "properties": "To rental objects"
+    "properties": "To rental objects",
+    "propertiesSetup": "To object setup"
   },
   "ledger": {
     "empty": "No postings on this account in the period."
@@ -1193,7 +1194,11 @@
       "starLegend": "★ = Tilari's suggestion from the books or the name. A clear suggestion is preselected; otherwise choose yourself. Nothing is saved until you press Save setup.",
       "starLegendEdit": "★ = suggested for this object from the books or the name.",
       "kindLegend": "The kind is read from the name: AP, AH or AK = parking space, LH = commercial unit, otherwise an apartment (★ = from the name).",
-      "kindsFromNames": "Set every kind from its name"
+      "kindsFromNames": "Set every kind from its name",
+      "openVoucher": "Open voucher",
+      "rowsOpen": "A balance-sheet item or document row opens its voucher; unsaved choices and your place on the page are kept when you come back.",
+      "draftRestored": "Unsaved choices were restored.",
+      "discard": "Discard changes"
     },
     "evidence": {
       "sale": "sale voucher",

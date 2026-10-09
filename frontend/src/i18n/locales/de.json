@@ -499,7 +499,8 @@
     "reportsHub": "Zu den Berichten",
     "bankStatement": "Zum Kontoauszug",
     "property": "Zum Objekt",
-    "properties": "Zu den Mietobjekten"
+    "properties": "Zu den Mietobjekten",
+    "propertiesSetup": "Zur Einrichtung der Objekte"
   },
   "ledger": {
     "empty": "Keine Buchungen auf diesem Konto in der Periode."
@@ -1193,7 +1194,11 @@
       "starLegend": "★ = Tilaris Vorschlag aus der Buchhaltung oder dem Namen. Ein eindeutiger Vorschlag ist vorausgewählt; sonst selbst wählen. Gespeichert wird erst mit Einrichtung speichern.",
       "starLegendEdit": "★ = für dieses Objekt vorgeschlagen, aus der Buchhaltung oder dem Namen.",
       "kindLegend": "Die Art wird aus dem Namen gelesen: AP, AH oder AK = Stellplatz, LH = Gewerbeeinheit, sonst Wohnung (★ = nach dem Namen).",
-      "kindsFromNames": "Alle Arten nach dem Namen setzen"
+      "kindsFromNames": "Alle Arten nach dem Namen setzen",
+      "openVoucher": "Beleg öffnen",
+      "rowsOpen": "Eine Zeile mit Bilanzposten oder Dokument öffnet den Beleg; ungespeicherte Auswahl und die Stelle auf der Seite bleiben erhalten, wenn Sie zurückkehren.",
+      "draftRestored": "Ungespeicherte Auswahl wurde wiederhergestellt.",
+      "discard": "Änderungen verwerfen"
     },
     "evidence": {
       "sale": "Verkaufsbeleg",

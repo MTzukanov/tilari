@@ -59,6 +59,16 @@ describe('parseRoute', () => {
     expect(voucherHash(via, 8)).toBe('#/property/15/voucher/8/edit')
     expect(voucherParentHash(via)).toBe('#/property/15')
     expect(voucherUpI18n(via)).toEqual({ key: 'up.property' })
+    const setupVia = { kind: 'propertiesSetup' as const }
+    expect(parseRoute('#/properties/setup/voucher/12/edit')).toEqual({
+      view: 'edit',
+      voucherId: 12,
+      type: null,
+      via: setupVia,
+      entryId: null,
+    })
+    expect(voucherHash(setupVia, 12)).toBe('#/properties/setup/voucher/12/edit')
+    expect(voucherParentHash(setupVia)).toBe('#/properties/setup')
   })
 
   it('parses reports hub and fiscal periods', () => {
