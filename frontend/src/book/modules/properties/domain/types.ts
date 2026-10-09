@@ -208,6 +208,10 @@ export type PortfolioResponse = {
     unrecovered_snt: number
     net_yield_bp: number | null
     irr_bp: number | null
+    /** IRR of the objects still held, each sold now at its estimate or book value. */
+    held_irr_bp: number | null
+    /** IRR of the sold objects together (actual flows). */
+    sold_irr_bp: number | null
   }
 }
 

@@ -183,13 +183,23 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
   const bookValue = holding.reduce((s, c) => s + c.result.summary.book_value_snt, 0)
   const t12mNet = holding.reduce((s, c) => s + (c.result.t12m?.net_snt ?? 0), 0)
   const portfolioFlows: Flow[] = []
+  const heldFlows: Flow[] = []
+  const soldFlows: Flow[] = []
   for (const c of computed) {
     if (c.result.status === 'unlinked' || c.result.status === 'excluded') continue
     portfolioFlows.push(...c.result.cash)
-    if (c.result.status !== 'sold' && c.result.summary.book_value_snt > 0) {
-      const { costs } = resolveSaleCosts(c.parsed.doc, loaded.settings.doc)
+    if (c.result.status === 'sold') {
+      soldFlows.push(...c.result.cash)
+      continue
+    }
+    const { costs } = resolveSaleCosts(c.parsed.doc, loaded.settings.doc)
+    if (c.result.summary.book_value_snt > 0) {
       portfolioFlows.push({ date: asOf, amount_snt: saleNet(c.result.summary.book_value_snt, costs) })
     }
+    // Held objects: sold now at the owner's estimate, else at book value (as their own IRR).
+    const exit = c.result.valuation?.price_snt ?? c.result.summary.book_value_snt
+    heldFlows.push(...c.result.cash)
+    if (exit > 0) heldFlows.push({ date: asOf, amount_snt: saleNet(exit, costs) })
   }
   const linkedRows = computed.filter((c) => c.result.status !== 'unlinked')
   return {
@@ -209,6 +219,8 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
       unrecovered_snt: holding.reduce((s, c) => s + c.result.summary.unrecovered_snt, 0),
       net_yield_bp: yieldBp(t12mNet, bookValue),
       irr_bp: toBp(xirr(portfolioFlows).rate),
+      held_irr_bp: toBp(xirr(heldFlows).rate),
+      sold_irr_bp: toBp(xirr(soldFlows).rate),
     },
   }
 }

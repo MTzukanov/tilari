@@ -252,6 +252,9 @@ describe('rental objects: figures', () => {
     expect(held.map((r) => r.id).sort((a, b) => a - b)).toEqual([CC.bundle, CC.garage, CC.commercial, CC.opening])
     expect(p.totals.book_value_snt).toBe((86_200 + 4_000 + 50_000 + 30_000) * E)
     expect(p.totals.irr_bp).not.toBeNull()
+    // Sold together: 60 000 + 3 000 + 3 000 in, 14 850 + 53 500 + 2 x 2 500 back -> a gain.
+    expect(p.totals.sold_irr_bp).toBeGreaterThan(0)
+    expect(p.totals.held_irr_bp).not.toBeNull()
     expect(p.periods.map((x) => x.starts)).toEqual(['2023-01-01', '2024-01-01', '2025-01-01', '2026-01-01'])
   })
 
