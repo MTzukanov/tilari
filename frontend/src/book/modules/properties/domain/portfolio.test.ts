@@ -76,6 +76,13 @@ describe('rental objects: setup suggestions', () => {
     expect(doc(vouchers.leaseGarage)?.suggestion?.cost_centre_id).toBe(CC.garage)
     expect(doc(vouchers.leaseOld)).toBeUndefined() // deleted voucher
     expect(setup.cost_centres.every((c) => !c.configured)).toBe(true)
+    const kind = (id: number) => setup.cost_centres.find((c) => c.id === id)?.suggested_kind
+    expect([kind(CC.bundle), kind(CC.garage), kind(CC.commercial), kind(CC.parkingA)]).toEqual([
+      'apartment',
+      'garage',
+      'commercial',
+      'parking',
+    ])
   })
 
   it('writes only TilariData and logs nothing into Kitsas tables', async () => {

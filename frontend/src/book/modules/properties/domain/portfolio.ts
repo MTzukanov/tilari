@@ -18,6 +18,7 @@ import {
   type ParsedDoc,
 } from './doc'
 import { listNoteVouchers } from './documents'
+import { kindFromName } from './kind'
 import {
   loadAccountNumbers,
   loadCapitalEraRoots,
@@ -354,6 +355,7 @@ export function buildSetup(db: SqliteDb): SetupResponse {
         configured: parsed.exists,
         excluded: Boolean(parsed.doc.excluded),
         kind: parsed.doc.kind ?? null,
+        suggested_kind: kindFromName(c.name),
         eras: parsed.doc.eras.map((e) => e.eraid),
         docs: parsed.doc.doc_voucher_ids ?? [],
       }

@@ -276,6 +276,8 @@ export type SetupResponse = {
     configured: boolean
     excluded: boolean
     kind: PropertyKind | null
+    /** Kind guessed from the name (unit designators AP/AH/AK, LH; words). */
+    suggested_kind: PropertyKind
     eras: number[]
     docs: number[]
   }[]
