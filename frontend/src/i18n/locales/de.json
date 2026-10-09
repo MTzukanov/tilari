@@ -925,7 +925,10 @@
       "statement_unconfirm": "Bestätigung des Jahresabschlusses für Geschäftsjahr bis {ends} zurückgenommen",
       "tax_reconcile": "Veraltete Steuerberechnung für Geschäftsjahr bis {ends} korrigiert",
       "book_saved_locker": "Auf den Server gespeichert ({name})",
-      "book_saved_disk": "In Datei gespeichert ({name})"
+      "book_saved_disk": "In Datei gespeichert ({name})",
+      "property": "Mietobjekt {id} bearbeitet",
+      "property_setup": "Mietobjekte eingerichtet ({count} Objekte)",
+      "property_settings": "Standardwerte für Mietobjekte bearbeitet"
     }
   },
   "voucherStatus": {

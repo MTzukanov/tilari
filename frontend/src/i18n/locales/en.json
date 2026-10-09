@@ -925,7 +925,10 @@
       "statement_unconfirm": "Undid confirmation of financial statements for year ending {ends}",
       "tax_reconcile": "Corrected a stale tax calculation for year ending {ends}",
       "book_saved_locker": "Saved to your storage ({name})",
-      "book_saved_disk": "Saved to file ({name})"
+      "book_saved_disk": "Saved to file ({name})",
+      "property": "Edited rental object {id}",
+      "property_setup": "Set up rental objects ({count} objects)",
+      "property_settings": "Edited rental object defaults"
     }
   },
   "voucherStatus": {

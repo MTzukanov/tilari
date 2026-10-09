@@ -364,4 +364,41 @@ layout (`{id}.kitsas` at booksDir root).
 
 Desktop and remote Tilari-server are the same Node binary; only the URL differs.
 
+## ADR-023 Tilari-owned data table `TilariData` (2026-10-08)
 
+**Status:** accepted. Amends ADR-001 ("normalizing JSON into extra tables" stays forbidden;
+this adds one Tilari-owned table and touches no Kitsas table).
+
+Rental objects (vuokrakohteet) need data the ledger does not hold: which balance-sheet item
+(tase-erä) holds an object's acquisition cost, which notes vouchers are its documents, the
+owner's price estimate and sale-cost assumptions, and later leases and the housing-company
+loan share. It lives in one table Tilari owns:
+
+```sql
+CREATE TABLE IF NOT EXISTS TilariData (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL, updated TEXT)
+```
+
+- Created on the first write; a book without it reads as empty. Values are versioned JSON
+  documents (`v`, `rev`); unknown keys are kept on save; a newer `v` is read-only. Keys:
+  `property/{kohdennusId}`, `portfolio`. Schema in [DATA_MODEL.md](DATA_MODEL.md).
+- Only links and inputs are stored. Every figure is computed from the ledger on read.
+- Links use Kitsas ids (`Kohdennus.id`, era root `Vienti.id`, `Tosite.id`). No foreign keys
+  or triggers: Kitsas enforces none and may delete referenced rows; orphans show as missing.
+- Code: `frontend/src/book/kernel/tilariData.ts`; the rental-object module is
+  `frontend/src/book/modules/properties/`.
+
+Why not elsewhere (checked in kitupiikki `b081bfa3`):
+
+- `Kohdennus.json`: the cost-centre dialog builds a new object on OK
+  (`maaritys/kohdennusdialog.cpp` `tallenna`), so any edit (e.g. an end date after a sale)
+  drops unknown keys. `Kumppani.json`, `Vakioviite.json` and `Vienti.json` are rebuilt the
+  same way by their dialogs and voucher helpers. `Tosite.info` is the visible "Lisätietoja".
+- `Asetus`: survives, but the developer-tool chart export (`tools/devtool.cpp` `vieKartta`)
+  copies every key into a `.kitsaskartta` file, and a new book made from that chart inherits
+  them.
+- An extra table survives desktop Kitsas: it checks only `Asetus.KpVersio` on open, never
+  scans the schema or vacuums, and backs up by copying the file. Kitsas cloud upload ("Siirrä
+  pilveen") drops it; that path is out of scope.
+
+Forbidden without a new ADR: Tilari data in Kitsas JSON columns, `Tosite.info` or `Asetus`;
+a second Tilari table; foreign keys or triggers on Kitsas tables; storing computed figures.

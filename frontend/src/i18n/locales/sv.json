@@ -925,7 +925,10 @@
       "statement_unconfirm": "Ångrade bekräftelse av bokslut för räkenskapsår som slutar {ends}",
       "tax_reconcile": "Korrigerade föråldrad skattekalkyl för räkenskapsår som slutar {ends}",
       "book_saved_locker": "Sparad till din lagring ({name})",
-      "book_saved_disk": "Sparad till fil ({name})"
+      "book_saved_disk": "Sparad till fil ({name})",
+      "property": "Hyresobjekt {id} ändrat",
+      "property_setup": "Hyresobjekt inställda ({count} objekt)",
+      "property_settings": "Standardvärden för hyresobjekt ändrade"
     }
   },
   "voucherStatus": {

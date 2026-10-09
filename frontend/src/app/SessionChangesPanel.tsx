@@ -40,6 +40,11 @@ function sessionChangeHref(change: SessionChange): string | null {
       return typeof p.number === 'number' ? `#/account/${p.number}` : null
     case 'allocation':
       return typeof p.id === 'number' ? `#/allocation/${p.id}` : null
+    case 'property':
+      return typeof p.id === 'number' ? `#/property/${p.id}` : null
+    case 'property_setup':
+    case 'property_settings':
+      return '#/properties'
     default:
       return null
   }

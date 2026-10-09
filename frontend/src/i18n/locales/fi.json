@@ -925,7 +925,10 @@
       "statement_unconfirm": "Peruttiin tilinpäätöksen vahvistus tilikaudelle {ends}",
       "tax_reconcile": "Korjattiin vanhentunut verolaskelma tilikaudella {ends}",
       "book_saved_locker": "Tallennettu omaan säilytykseen ({name})",
-      "book_saved_disk": "Tallennettu tiedostoon ({name})"
+      "book_saved_disk": "Tallennettu tiedostoon ({name})",
+      "property": "Muokattiin vuokrakohdetta {id}",
+      "property_setup": "Vuokrakohteiden määritys ({count} kohdetta)",
+      "property_settings": "Muokattiin vuokrakohteiden oletuksia"
     }
   },
   "voucherStatus": {

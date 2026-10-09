@@ -1,5 +1,5 @@
 import { asCents } from './cents'
-import { parseJson } from './json'
+import { parseJson, stableJson } from './json'
 import { PostingError } from './errors'
 import { sha256hexSync } from './sha256'
 import type { SaveEntryInput, SavePartnerInput, SaveVoucherInput, VoucherEntry } from './types'
@@ -143,17 +143,6 @@ export function normalizeVoucherJson(extra: unknown): Record<string, unknown> {
 }
 
 /** Key-order independent JSON text, for comparing stored and new json columns. */
-function stableJson(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`
-  if (isPlainObject(value)) {
-    return `{${Object.keys(value)
-      .sort()
-      .map((k) => `${JSON.stringify(k)}:${stableJson(value[k])}`)
-      .join(',')}}`
-  }
-  return JSON.stringify(value ?? null)
-}
-
 function sameJsonColumn(stored: unknown, next: unknown): boolean {
   return stableJson(parseJson(stored)) === stableJson(parseJson(next))
 }
