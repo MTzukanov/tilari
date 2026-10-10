@@ -410,8 +410,8 @@
         <h3>En fil på disken (USB, e-post)</h3>
         <ol>
           <li>Spara <a href="../tilari.html"><code>tilari.html</code></a> och dubbelklicka på den.</li>
-          <li>Välj <strong>Välj en ny fil…</strong> och peka ut en <code>.kitsas</code>.</li>
-          <li>Spara med <strong>Spara som…</strong> — webbläsaren laddar ner en ny fil.</li>
+          <li>Välj <strong>Öppna fil…</strong> och peka ut en <code>.kitsas</code>.</li>
+          <li>Spara med <strong>Spara som fil…</strong> — webbläsaren laddar ner en ny fil.</li>
         </ol>
         <p>
           På <code>file://</code> dör arbetskopian vanligtvis vid omladdning, överskrivning på plats
@@ -472,13 +472,13 @@
         <ol>
           <li>Starta Tilari. En webbläsarflik öppnas av sig själv.</li>
           <li>
-            Öppna en bok från disken (<strong>Välj en ny fil…</strong>) eller från skåpet
+            Öppna en bok från disken (<strong>Öppna fil…</strong>) eller från skåpet
             (<strong>Öppna från din lagring…</strong>).
           </li>
           <li>
             På Chrome eller Edge på skrivbordet skriver <strong>Spara</strong> samma
             <code>.kitsas</code> om filen är kopplad. I andra webbläsare använd
-            <strong>Spara som…</strong>.
+            <strong>Spara som fil…</strong>.
           </li>
         </ol>
         <p>
@@ -549,7 +549,7 @@
               <td>Chrome, Edge, Opera, Brave (Windows, macOS, Linux)</td>
               <td>Ja</td>
               <td>
-                <strong>Välj en ny fil…</strong> kopplar filen.
+                <strong>Öppna fil…</strong> kopplar filen.
                 <strong>Spara</strong> uppdaterar den. En Dropbox-mapp fungerar om den är en riktig
                 katalog på disken.
               </td>
@@ -557,7 +557,7 @@
             <tr>
               <td>Firefox</td>
               <td>Nej</td>
-              <td>Arbetskopian i webbläsaren överlever. På disken, använd <strong>Spara som…</strong>.</td>
+              <td>Arbetskopian i webbläsaren överlever. På disken, använd <strong>Spara som fil…</strong>.</td>
             </tr>
             <tr>
               <td>Safari (Mac, iPhone, iPad)</td>
@@ -575,15 +575,22 @@
             <tr>
               <td>iPhone / iPad, andra webbläsare</td>
               <td>Nej</td>
-              <td>Dela eller <strong>Spara som…</strong>. Ett skåp (VPN eller Supabase) är ofta enklare.</td>
+              <td>Dela eller <strong>Spara som fil…</strong>. Ett skåp (VPN eller Supabase) är ofta enklare.</td>
             </tr>
           </tbody>
         </table>
         <p>
-          Om webbläsaren inte kan skriva på plats säger menyn att du ska använda
-          <strong>Spara som…</strong>. Du kan också
-          <strong>Koppla originalfil…</strong> när API:t finns men boken öppnades utan
-          skrivrätt.
+          Om webbläsaren inte kan skriva på plats, använd <strong>Spara som fil…</strong>.
+          <strong>Koppla originalfil…</strong> visas i menyn bara när webbläsaren stöder det och
+          boken öppnades utan skrivrätt.
+        </p>
+        <p>
+          Menyn <strong>Bokföringsfil</strong> börjar med <strong>Skapa en ny bok…</strong>, följt av
+          grupperna <strong>Öppen bok</strong> (stäng eller förkasta ändringar),
+          <strong>Den här enheten</strong> (filer på den här datorn) och
+          <strong>Din lagring</strong> (din Tilari-server eller Supabase). De senaste böckerna visas under
+          den grupp de öppnades från. I Chrome och Edge öppnas en senaste fil direkt igen
+          (webbläsaren kan be om lov); andra webbläsare ber dig välja filen igen.
         </p>
 
         <h2 id="supabase">Supabase som skåp</h2>
@@ -670,11 +677,11 @@ create policy "tilari_locker_delete"
         </p>
         <ul>
           <li>
-            <strong>Öppna:</strong> <strong>Välj en ny fil…</strong> → Androids
+            <strong>Öppna:</strong> <strong>Öppna fil…</strong> → Androids
             dokumentväljare → Dropbox, Google Drive eller Filer. Tilari läser bytena.
           </li>
           <li>
-            <strong>Spara:</strong> <strong>Spara som…</strong> lägger en kopia i Hämtade filer eller
+            <strong>Spara:</strong> <strong>Spara som fil…</strong> lägger en kopia i Hämtade filer eller
             i webbläsarens platssida. Ladda upp den till Drive eller Dropbox därifrån, eller använd
             systemets “Spara till” om webbläsaren visar en.
           </li>

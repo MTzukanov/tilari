@@ -20,6 +20,8 @@ test.describe('create a new book', () => {
       timeout: 60_000,
     })
     await expect(page.getByText('1234567-1')).toBeVisible()
+    // A new book is not in the recent list yet; the menu still names it.
+    await expect(page.getByRole('button', { name: /^Kirjanpitotiedosto/ })).toHaveText(/Uusi.Testi.Oy/)
     await page.getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Uusi Testi Oy' })).toBeVisible()
   })

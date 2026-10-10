@@ -420,8 +420,8 @@
         <h3>Eine Datei auf dem Datenträger (USB, E-Mail)</h3>
         <ol>
           <li>Speichern Sie <a href="../tilari.html"><code>tilari.html</code></a> und doppelklicken Sie sie.</li>
-          <li>Wählen Sie <strong>Neue Datei wählen…</strong> und eine <code>.kitsas</code>.</li>
-          <li>Speichern mit <strong>Speichern unter…</strong> — der Browser lädt eine neue Datei herunter.</li>
+          <li>Wählen Sie <strong>Datei öffnen…</strong> und eine <code>.kitsas</code>.</li>
+          <li>Speichern mit <strong>Als Datei speichern…</strong> — der Browser lädt eine neue Datei herunter.</li>
         </ol>
         <p>
           Unter <code>file://</code> stirbt die Arbeitskopie meist beim Neuladen, Überschreiben an
@@ -483,13 +483,13 @@
         <ol>
           <li>Starten Sie Tilari. Ein Browser-Tab öffnet sich von selbst.</li>
           <li>
-            Öffnen Sie ein Buch von der Platte (<strong>Neue Datei wählen…</strong>) oder aus dem
+            Öffnen Sie ein Buch von der Platte (<strong>Datei öffnen…</strong>) oder aus dem
             Schließfach (<strong>Aus eigenem Speicher öffnen…</strong>).
           </li>
           <li>
             Auf Chrome oder Edge am Desktop schreibt <strong>Speichern</strong> dieselbe
             <code>.kitsas</code>, wenn die Datei verknüpft ist. In anderen Browsern nutzen Sie
-            <strong>Speichern unter…</strong>.
+            <strong>Als Datei speichern…</strong>.
           </li>
         </ol>
         <p>
@@ -562,7 +562,7 @@
               <td>Chrome, Edge, Opera, Brave (Windows, macOS, Linux)</td>
               <td>Ja</td>
               <td>
-                <strong>Neue Datei wählen…</strong> verknüpft die Datei.
+                <strong>Datei öffnen…</strong> verknüpft die Datei.
                 <strong>Speichern</strong> aktualisiert sie. Ein Dropbox-Ordner funktioniert, wenn
                 er ein echtes Verzeichnis auf der Platte ist.
               </td>
@@ -570,7 +570,7 @@
             <tr>
               <td>Firefox</td>
               <td>Nein</td>
-              <td>Die Arbeitskopie im Browser überlebt. Auf der Platte nutzen Sie <strong>Speichern unter…</strong>.</td>
+              <td>Die Arbeitskopie im Browser überlebt. Auf der Platte nutzen Sie <strong>Als Datei speichern…</strong>.</td>
             </tr>
             <tr>
               <td>Safari (Mac, iPhone, iPad)</td>
@@ -588,15 +588,23 @@
             <tr>
               <td>iPhone / iPad, andere Browser</td>
               <td>Nein</td>
-              <td>Teilen oder <strong>Speichern unter…</strong>. Ein Schließfach (VPN oder Supabase) ist oft einfacher.</td>
+              <td>Teilen oder <strong>Als Datei speichern…</strong>. Ein Schließfach (VPN oder Supabase) ist oft einfacher.</td>
             </tr>
           </tbody>
         </table>
         <p>
-          Wenn der Browser nicht an Ort und Stelle schreiben kann, sagt das Menü, Sie sollen
-          <strong>Speichern unter…</strong> nutzen. Sie können auch
-          <strong>Originaldatei verknüpfen…</strong>, wenn die API existiert, das Buch aber ohne
-          Schreibrecht geöffnet wurde.
+          Wenn der Browser nicht an Ort und Stelle schreiben kann, nutzen Sie
+          <strong>Als Datei speichern…</strong>. <strong>Originaldatei verknüpfen…</strong> steht nur
+          im Menü, wenn der Browser es unterstützt und das Buch ohne Schreibrecht geöffnet wurde.
+        </p>
+        <p>
+          Das Menü <strong>Buchhaltungsdatei</strong> beginnt mit <strong>Neues Buch anlegen…</strong>,
+          dann folgen die Gruppen <strong>Geöffnetes Buch</strong> (schließen oder Änderungen
+          verwerfen), <strong>Dieses Gerät</strong> (Dateien auf diesem Rechner) und
+          <strong>Eigener Speicher</strong> (eigener Tilari-Server oder Supabase). Zuletzt geöffnete
+          Bücher stehen unter der Gruppe, aus der sie kamen. In Chrome und Edge öffnet sich eine
+          zuletzt genutzte Datei direkt wieder (der Browser kann um Erlaubnis fragen); andere Browser
+          bitten Sie, die Datei erneut zu wählen.
         </p>
 
         <h2 id="supabase">Supabase als Schließfach</h2>
@@ -685,11 +693,11 @@ create policy "tilari_locker_delete"
         </p>
         <ul>
           <li>
-            <strong>Öffnen:</strong> <strong>Neue Datei wählen…</strong> → Android-Dokumentwähler
+            <strong>Öffnen:</strong> <strong>Datei öffnen…</strong> → Android-Dokumentwähler
             → Dropbox, Google Drive oder Dateien. Tilari liest die Bytes.
           </li>
           <li>
-            <strong>Speichern:</strong> <strong>Speichern unter…</strong> legt eine Kopie in Downloads
+            <strong>Speichern:</strong> <strong>Als Datei speichern…</strong> legt eine Kopie in Downloads
             oder in der Ortsauswahl des Browsers ab. Laden Sie sie von dort nach Drive oder Dropbox,
             oder nutzen Sie das Systemziel „Speichern unter“, wenn der Browser eines zeigt.
           </li>

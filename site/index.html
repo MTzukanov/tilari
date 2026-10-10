@@ -413,8 +413,8 @@
         <h3>Tiedosto koneella (USB, sähköposti)</h3>
         <ol>
           <li>Tallenna <a href="tilari.html"><code>tilari.html</code></a> ja avaa kaksoisklikkaamalla.</li>
-          <li>Valitse <strong>Valitse uusi tiedosto…</strong> ja etsi <code>.kitsas</code>.</li>
-          <li>Tallenna <strong>Tallenna nimellä…</strong> – selain lataa uuden tiedoston.</li>
+          <li>Valitse <strong>Avaa tiedosto…</strong> ja etsi <code>.kitsas</code>.</li>
+          <li>Tallenna <strong>Tallenna tiedostoksi…</strong> – selain lataa uuden tiedoston.</li>
         </ol>
         <p>
           <code>file://</code>-osoitteessa työkopio ei yleensä säily sivun päivityksen yli, suora
@@ -475,13 +475,13 @@
         <ol>
           <li>Käynnistä Tilari. Selain aukeaa itsestään.</li>
           <li>
-            Avaa kirja levyltä (<strong>Valitse uusi tiedosto…</strong>) tai lokerosta
+            Avaa kirja levyltä (<strong>Avaa tiedosto…</strong>) tai lokerosta
             (<strong>Avaa omasta säilytyksestä…</strong>).
           </li>
           <li>
             Chrome- tai Edge-työpöydällä <strong>Tallenna</strong> kirjoittaa samaan
             <code>.kitsas</code>-tiedostoon, jos tiedosto on yhdistetty. Muissa selaimissa käytä
-            <strong>Tallenna nimellä…</strong>.
+            <strong>Tallenna tiedostoksi…</strong>.
           </li>
         </ol>
         <p>
@@ -552,7 +552,7 @@
               <td>Chrome, Edge, Opera, Brave (Windows, macOS, Linux)</td>
               <td>Kyllä</td>
               <td>
-                <strong>Valitse uusi tiedosto…</strong> yhdistää tiedoston.
+                <strong>Avaa tiedosto…</strong> yhdistää tiedoston.
                 <strong>Tallenna</strong> päivittää sen. Dropbox-kansio toimii, jos se on oikea
                 kansio levyllä.
               </td>
@@ -560,7 +560,7 @@
             <tr>
               <td>Firefox</td>
               <td>Ei</td>
-              <td>Työkopio selaimessa säilyy. Levyllä käytä <strong>Tallenna nimellä…</strong>.</td>
+              <td>Työkopio selaimessa säilyy. Levyllä käytä <strong>Tallenna tiedostoksi…</strong>.</td>
             </tr>
             <tr>
               <td>Safari (Mac, iPhone, iPad)</td>
@@ -578,15 +578,23 @@
             <tr>
               <td>iPhone / iPad, muut selaimet</td>
               <td>Ei</td>
-              <td>Jaa tai Tallenna nimellä. Lokero (VPN tai Supabase) on usein helpompi.</td>
+              <td>Jaa tai Tallenna tiedostoksi. Lokero (VPN tai Supabase) on usein helpompi.</td>
             </tr>
           </tbody>
         </table>
         <p>
-          Jos selain ei tue suoraa tallennusta, valikossa lukee ohje käyttää
-          <strong>Tallenna nimellä…</strong>. Voit myös valita
-          <strong>Yhdistä alkuperäistiedostoon…</strong>, kun tuki on olemassa mutta tiedosto avattiin
-          ilman kirjoitusoikeutta.
+          Jos selain ei osaa kirjoittaa suoraan tiedostoon, käytä
+          <strong>Tallenna tiedostoksi…</strong>. <strong>Yhdistä alkuperäistiedostoon…</strong>
+          näkyy valikossa vain, kun selain tukee sitä ja kirja avattiin ilman kirjoitusoikeutta.
+        </p>
+        <p>
+          <strong>Kirjanpitotiedosto</strong>-valikossa on ensin <strong>Luo uusi kirja…</strong> ja
+          sitten ryhmät <strong>Avoin kirja</strong> (sulje tai hylkää muutokset),
+          <strong>Tämä laite</strong> (tiedostot tällä koneella) ja
+          <strong>Oma säilytys</strong> (oma Tilari-palvelin tai Supabase). Viimeksi avatut kirjat ovat sen
+          ryhmän alla, josta ne avattiin. Chromessa ja Edgessä tiedosto avautuu viimeisimmistä
+          suoraan (selain voi kysyä luvan); muissa selaimissa Tilari pyytää valitsemaan tiedoston
+          uudelleen.
         </p>
 
         <h2 id="supabase">Supabase lokerona</h2>
@@ -673,11 +681,11 @@ create policy "tilari_locker_delete"
         </p>
         <ul>
           <li>
-            <strong>Avaa:</strong> <strong>Valitse uusi tiedosto…</strong> → Androidin
+            <strong>Avaa:</strong> <strong>Avaa tiedosto…</strong> → Androidin
             tiedostovalitsin → Dropbox, Google Drive tai Tiedostot. Tilari lukee tiedoston.
           </li>
           <li>
-            <strong>Tallenna:</strong> <strong>Tallenna nimellä…</strong> vie kopion Lataukset-kansioon
+            <strong>Tallenna:</strong> <strong>Tallenna tiedostoksi…</strong> vie kopion Lataukset-kansioon
             tai selaimen sijaintivalintaan. Lataa se sieltä Driveen tai Dropboxiin, tai valitse
             järjestelmän “Tallenna sijaintiin”, jos selain sen näyttää.
           </li>

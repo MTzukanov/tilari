@@ -220,25 +220,25 @@ export function AppLayout({
               <FilePick
                 recents={recents}
                 currentPath={meta?.db_path ?? null}
+                currentName={meta?.source_name ?? null}
                 opening={blocked}
                 disabled={saving}
-                showActions={Boolean(meta)}
                 engine={openEngine ?? 'wasm'}
+                storageKind={meta ? fileStorageKind(meta.db_path, writableLinked, openEngine) : null}
                 writableLinked={writableLinked}
                 canLinkWritableFile={canLinkWritableFile()}
+                dirty={dirty}
                 onChooseNew={onChooseNewFile}
                 onCreateBook={onCreateBook}
                 onOpenPath={onOpenRecent}
                 onOpenServer={onOpenServerList}
-                onLinkFile={openEngine !== 'http' ? onLinkWritableFile : undefined}
-                onSaveCopy={openEngine !== 'http' ? onSaveAsName : undefined}
-                onDownload={openEngine === 'http' ? onSaveAsName : undefined}
-                onDownloadLean={openEngine !== 'http' ? onDownloadLean : undefined}
-                onSaveServerAs={meta ? onSaveServerAs : undefined}
-                onSaveServerKeepCopy={meta ? onSaveServerKeepCopy : undefined}
-                onReload={meta ? onReloadDiscard : undefined}
-                reloadEnabled={dirty}
-                onClose={meta ? onForgetDevice : undefined}
+                onLinkFile={onLinkWritableFile}
+                onSaveAs={onSaveAsName}
+                onDownloadLean={onDownloadLean}
+                onSaveServerAs={onSaveServerAs}
+                onSaveServerKeepCopy={onSaveServerKeepCopy}
+                onReload={onReloadDiscard}
+                onClose={onForgetDevice}
               />
               <input
                 ref={fileInputRef}

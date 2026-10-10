@@ -1452,7 +1452,7 @@ button.status-chip:focus-visible {
     max-width: none;
   }
 
-  .file-pick select {
+  .file-pick-select {
     width: 100%;
     max-width: none;
   }
@@ -1542,13 +1542,8 @@ button.status-chip:focus-visible {
   margin-bottom: 0.35rem;
 }
 
-.file-pick {
-  font-size: 0.72rem;
-  color: var(--muted);
-}
-
-.file-pick select,
 .file-pick-select {
+  display: block;
   width: 100%;
   min-width: 11rem;
   box-sizing: border-box;
@@ -1566,19 +1561,135 @@ button.status-chip:focus-visible {
   background-repeat: no-repeat;
   background-position: right 0.45rem center;
   background-size: 0.65rem;
+  text-align: left;
+  cursor: pointer;
 }
 
-.file-pick select:focus-visible,
+.file-pick-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .file-pick-select:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: 1px;
   border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
 }
 
-.file-pick select:disabled,
 .file-pick-select:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+}
+
+.book-menu-panel {
+  /* Position via inline fixed style (portaled to body) so topbar overflow cannot clip it. */
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 0.3rem 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 12%, transparent);
+  font-size: 0.85rem;
+}
+
+.book-menu-sep {
+  height: 1px;
+  margin: 0.3rem 0;
+  background: var(--line);
+}
+
+.book-menu-head {
+  padding: 0.35rem 0.85rem 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.book-menu-sub {
+  padding: 0.4rem 0.85rem 0.1rem 1.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.book-menu-item {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0.3rem 0.85rem 0.3rem 1.6rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.book-menu-item:focus {
+  outline: none;
+}
+
+.book-menu-item:hover,
+.book-menu-item:focus-visible {
+  background: var(--accent-soft);
+}
+
+.book-menu-item.is-disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.book-menu-item.is-disabled:hover {
+  background: none;
+}
+
+.book-menu-create .book-menu-item {
+  padding-left: 0.85rem;
+  font-weight: 600;
+}
+
+.book-menu-hint {
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--muted);
+}
+
+.book-menu-recent {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 0.4rem;
+  /* Names sit under the "Viimeisimmät" subheading, one step in from the actions. */
+  padding-left: 1.6rem;
+}
+
+.book-menu-mark {
+  flex: 0 0 0.75rem;
+  font-size: 0.7rem;
+  color: var(--accent);
+}
+
+.book-menu-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.book-menu-recent.is-current .book-menu-name {
+  font-weight: 600;
+}
+
+.book-menu-date {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
 }
 
 .period {
@@ -1805,14 +1916,6 @@ button.status-chip:focus-visible {
   width: 100%;
   justify-content: center;
   text-align: center;
-}
-
-.file-pick {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  font-size: 0.8rem;
-  color: var(--muted);
 }
 
 .file-row {

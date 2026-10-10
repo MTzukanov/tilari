@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, type Page } from '@playwright/test'
+import { chooseFileMenu } from './helpers'
 
 export const SETTINGS_CHANGE = 'Muokattiin yrityksen asetuksia'
 export const ALLOCATION_CHANGE = 'Muokattiin kohdennus'
@@ -136,6 +137,6 @@ export async function saveBookToLocker(page: Page, name = `e2e-session-${Date.no
     expect(dialog.type()).toBe('prompt')
     await dialog.accept(name)
   })
-  await page.getByLabel('Kirjanpitotiedosto').selectOption({ label: 'Tallenna säilytykseen nimellä…' })
+  await chooseFileMenu(page, 'Tallenna säilytykseen nimellä…')
   await expect(page.getByText('Tallennettu omaan säilytykseen.')).toBeVisible({ timeout: 60_000 })
 }

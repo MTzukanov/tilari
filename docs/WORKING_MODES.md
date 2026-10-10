@@ -192,11 +192,13 @@ Node locker (server/src/locker/)
 - Desktop: `./scripts/run-desktop.sh`
 - Tilari server: [DEPLOY.md](DEPLOY.md) (Docker Compose; Cloudflare Access for who can reach the host)
 
-In the UI: **Avaa omasta säilytyksestä…** / **Tallenna säilytykseen**. Opening from the
+In the UI: the **Oma säilytys** group of the book file menu (**Avaa omasta säilytyksestä…**,
+**Tallenna säilytykseen nimellä…**, and **Tallenna uutena kopiona** for a book already in
+storage) and the header **Tallenna**. Opening from the
 locker downloads the lean DB first; attachments sync in the background (progress
 in the top bar) unless every `Liite.sha` is already in `tilari/blobs/`.
 
-Without a same-origin Node process (single HTML / GitHub Pages), that menu opens a
+Without a connection the group offers only **Yhdistä omaan säilytykseen…**, which opens the
 **BYO** connect panel: paste your Tilari server URL or Supabase project.
 Tilari does not host books; the file is only sent to the address you provide.
 
@@ -385,7 +387,13 @@ the same path on disk** uses the File System Access API:
 - Save as: `showSaveFilePicker` (`frontend/src/app/open/saveKitsasAs.ts`)
 
 Fallback when the API is missing or permission is denied: `<input type="file">`
-to open, then **Tallenna nimellä…** (`downloadBytes` / a download).
+to open, then **Tallenna tiedostoksi…** (`downloadBytes` / a download).
+
+The handle of each opened file is kept in IndexedDB (`tilari-handles`, keyed by the book path;
+`frontend/src/book/persist/fileHandles.ts`). A recent book under **Tämä laite** reopens through
+it (the browser may ask for permission again), and a working copy restored after a refresh stays
+linked, so **Tallenna** still writes the file. Without a handle (Firefox, Safari, or a file that
+moved) Tilari asks to pick the file again and keeps the open book.
 
 Secure context required. `file://` single HTML often cannot overwrite.
 
@@ -415,7 +423,7 @@ Tilari has no Dropbox/Drive SDK. Sync is “the OS folder is a folder”.
 
 1. Install the vendor client so `~/Dropbox/…` or `Google Drive/…` is a real
    directory (not a placeholder online-only stub if you can avoid it).
-2. Use **Chromium desktop**, **Valitse uusi tiedosto**, pick the `.kitsas`
+2. Use **Chromium desktop**, **Avaa tiedosto…**, pick the `.kitsas`
    inside that folder so the handle stays linked.
 3. **Tallenna** overwrites the same path; the client uploads the new bytes.
 
@@ -430,9 +438,9 @@ folder or you will fork copies.
 
 There is no in-place File System Access handle.
 
-- **Open:** **Valitse uusi tiedosto…** → Android document UI → Dropbox,
+- **Open:** **Avaa tiedosto…** → Android document UI → Dropbox,
   Drive, or Files. Tilari reads the bytes into OPFS (https host) or memory.
-- **Save:** **Tallenna nimellä…** lands in Downloads (or the browser’s save
+- **Save:** **Tallenna tiedostoksi…** lands in Downloads (or the browser’s save
   sheet). From there: Drive/Dropbox “upload”, or the system **Save to** /
   share target if the browser offers it.
 

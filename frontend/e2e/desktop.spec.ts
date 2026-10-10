@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import {
+  chooseFileMenu,
   eur,
   lockerBookRow,
   openBook,
@@ -59,7 +60,7 @@ test('http engine saves book to locker with a non-empty body', async ({ page }) 
   page.once('dialog', async (dialog) => {
     await dialog.accept(name)
   })
-  await page.getByLabel('Kirjanpitotiedosto').selectOption({ label: 'Tallenna säilytykseen nimellä…' })
+  await chooseFileMenu(page, 'Tallenna säilytykseen nimellä…')
 
   const exportRes = await exportWait
   expect(exportRes.status()).toBe(200)
@@ -79,7 +80,7 @@ test('http engine saves book to locker with a non-empty body', async ({ page }) 
   expect(saved, JSON.stringify(listed.books.map((b) => b.name))).toBeTruthy()
   expect(saved!.size).toBeGreaterThan(1000)
 
-  await page.getByLabel('Kirjanpitotiedosto').selectOption({ label: 'Avaa omasta säilytyksestä…' })
+  await chooseFileMenu(page, 'Avaa omasta säilytyksestä…')
   await expect(page.getByRole('heading', { name: 'Oma säilytys (BYO)' })).toBeVisible()
   await expect(lockerBookRow(page, name)).toBeVisible()
 })

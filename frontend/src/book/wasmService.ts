@@ -20,6 +20,7 @@ import {
   type LockerBinding,
 } from './persist/locker/lockerBinding'
 import { wrapSession } from './persist/wrapSession'
+import { ensureFilePermission, loadFileHandle, saveFileHandle } from './persist/fileHandles'
 import { lockerUploadPlan, resolveLockerPutId } from './lockerSave'
 import { loadBookSession } from '../app/open/lastBook'
 import {
@@ -229,6 +230,7 @@ export class WasmBookService extends Ledger implements BookService {
     const perm = await handle.requestPermission({ mode: 'readwrite' })
     if (perm !== 'granted') throw new Error('permission_denied')
     this.fileHandle = handle
+    void saveFileHandle(this.dbPath, handle)
     if (file.name !== this.sourceName) this.sourceName = file.name
     this.setSourceModifiedAt(isoFromFileLastModified(file.lastModified))
     this.emitLocalLinkChange()
@@ -331,6 +333,9 @@ export class WasmBookService extends Ledger implements BookService {
       return
     }
     const gen = this.persistGeneration
+    // A copy linked to a file on this device stays linked after refresh; Tallenna asks for
+    // permission again when the browser has dropped it.
+    const handle = saved.meta.lockerId ? null : await loadFileHandle(saved.meta.dbPath)
     try {
       await this.adopt(
         saved.bytes,
@@ -340,7 +345,7 @@ export class WasmBookService extends Ledger implements BookService {
           attachmentsEtag: saved.meta.attachmentsEtag,
           attachmentSync: saved.meta.attachmentSync ?? 'idle',
         },
-        null,
+        handle,
         () => !this.skipRestore && gen === this.persistGeneration,
       )
       if (this.skipRestore || gen !== this.persistGeneration) return
@@ -806,6 +811,7 @@ export class WasmBookService extends Ledger implements BookService {
 
   async saveLocal() {
     if (!this.fileHandle) throw new Error('no_writable_link')
+    if (!(await ensureFilePermission(this.fileHandle))) throw new Error('permission_denied')
     const current = await this.fileHandle.getFile()
     if (this.isNewerThanSource(current.lastModified)) throw new Error('file_newer_than_copy')
     const bytes = await this.exportPackedKitsas()
