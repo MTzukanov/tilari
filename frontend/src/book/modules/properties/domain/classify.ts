@@ -5,6 +5,10 @@
  * object (and its share of lines without a cost centre) are sale lines; with the item's credit
  * they add up to the cash the sale brought in, whatever accounts were used:
  * Cr sale price P, Dr cost of sold shares B, Cr item B -> P.
+ *
+ * Items of several objects sold on one voucher: an object without P&L lines of its own there,
+ * next to one that has them, was sold inside the other's price (a parking space in the flat's
+ * price, its cost booked on the flat). It brings nothing in; its credit goes with those lines.
  */
 import { TYPE_ACCRUAL, TYPE_BANK_STATEMENT, TYPE_DEPRECIATION, TYPE_INCOME_TAX } from '../../../vouchers'
 import type { EraRow, PnlRow } from './ledger'
@@ -27,6 +31,15 @@ export type CashFlowKind = 'capital' | 'operating' | 'interest' | 'proceeds'
 
 export type CashFlow = { date: string; amount_snt: number; kind: CashFlowKind; voucher_id: number }
 
+/** One linked object's part in a voucher that credits its items. */
+export type SaleShare = {
+  owner: number
+  name: string
+  credit_snt: number
+  /** The voucher has P&L lines on the object's cost centre (or its projects). */
+  has_lines: boolean
+}
+
 export type ClassifyInput = {
   allocations: ReadonlySet<number>
   eras: ReadonlySet<number>
@@ -36,8 +49,8 @@ export type ClassifyInput = {
   pnl: PnlRow[]
   /** All P&L lines, any cost centre, of candidate disposal vouchers. */
   voucherPnl: Map<number, PnlRow[]>
-  /** Credits of every linked item (all objects) per voucher, for sharing unallocated sale lines. */
-  linkedCreditsByVoucher: Map<number, number>
+  /** Per voucher, every linked object whose items it credits (see `saleShares`). */
+  saleShares: Map<number, SaleShare[]>
   saleVoucherIds: ReadonlySet<number>
   interest: PnlRow[]
 }
@@ -64,6 +77,44 @@ export function disposalCandidates(eraRows: EraRow[]): Set<number> {
   return out
 }
 
+/**
+ * Item credits per voucher and linked object, over every object's item lines. `owner` maps an
+ * item (eraid) to its object, `centres` an object to its name and cost centres.
+ */
+export function saleShares(
+  eraRows: EraRow[],
+  owner: ReadonlyMap<number, number>,
+  centres: ReadonlyMap<number, { name: string; allocations: ReadonlySet<number> }>,
+  voucherPnl: ReadonlyMap<number, PnlRow[]>,
+): Map<number, SaleShare[]> {
+  const out = new Map<number, SaleShare[]>()
+  for (const row of eraRows) {
+    if (row.signed_snt >= 0 || row.id === row.eraid) continue
+    const id = owner.get(row.eraid)
+    if (id == null) continue
+    const shares = out.get(row.voucher_id) ?? []
+    let share = shares.find((s) => s.owner === id)
+    if (!share) {
+      const centre = centres.get(id)
+      const lines = voucherPnl.get(row.voucher_id) ?? []
+      share = {
+        owner: id,
+        name: centre?.name ?? '',
+        credit_snt: 0,
+        has_lines: Boolean(centre && lines.some((l) => centre.allocations.has(l.allocation))),
+      }
+      shares.push(share)
+      out.set(row.voucher_id, shares)
+    }
+    share.credit_snt -= row.signed_snt
+  }
+  return out
+}
+
+function sumCredits(shares: SaleShare[]): number {
+  return shares.reduce((s, x) => s + x.credit_snt, 0)
+}
+
 export function classifyObject(input: ClassifyInput): Classified {
   const warnings: Warning[] = []
   const flows: CashFlow[] = []
@@ -84,20 +135,35 @@ export function classifyObject(input: ClassifyInput): Classified {
   for (const voucherId of [...disposalIds].sort((a, b) => a - b)) {
     const credits = input.eraRows.filter((row) => row.voucher_id === voucherId && row.signed_snt < 0)
     const ownCredit = credits.reduce((s, row) => s - row.signed_snt, 0)
-    const allCredit = Math.max(input.linkedCreditsByVoucher.get(voucherId) ?? ownCredit, ownCredit)
+    const shares = input.saleShares.get(voucherId) ?? []
+    const allCredit = Math.max(sumCredits(shares), ownCredit)
     const date = credits[0]?.date ?? ''
-    let proceeds = ownCredit
+    const lines = input.voucherPnl.get(voucherId) ?? []
+    // The credit this object's sale lines stand against: its own, plus items sold inside its price.
+    let base = ownCredit
+    const carriers = shares.filter((s) => s.has_lines)
+    const carried = carriers.length ? shares.filter((s) => !s.has_lines) : []
+    if (carried.length) {
+      if (!lines.some((l) => input.allocations.has(l.allocation))) {
+        base = 0
+        warnings.push({ code: 'sale_carried', params: { object: carriers.map((c) => c.name).join(', ') } })
+      } else {
+        const carrierCredit = sumCredits(carriers)
+        if (carrierCredit > 0) base += Math.round((sumCredits(carried) * ownCredit) / carrierCredit)
+      }
+    }
+    let proceeds = base
     let price = 0
     let shared = false
-    for (const line of input.voucherPnl.get(voucherId) ?? []) {
+    for (const line of lines) {
       let part: number
       if (input.allocations.has(line.allocation)) {
         part = line.net_snt
         saleLineIds.add(line.id)
         if (line.net_snt < 0) saleCostAccounts.add(line.account)
       } else if (line.allocation === 0) {
-        part = allCredit > 0 ? Math.round((line.net_snt * ownCredit) / allCredit) : line.net_snt
-        if (allCredit > ownCredit) shared = true
+        part = allCredit > 0 ? Math.round((line.net_snt * base) / allCredit) : line.net_snt
+        if (base > 0 && base < allCredit) shared = true
       } else continue
       proceeds += part
       if (part > 0) price += part

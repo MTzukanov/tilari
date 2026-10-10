@@ -3,7 +3,7 @@ import { getPeriods } from '../../../access'
 import { BookError } from '../../../errors'
 import { readTilariData, readTilariDataPrefix, writeTilariData } from '../../../kernel/tilariData'
 import type { SqliteDb } from '../../../sqlite'
-import { disposalCandidates } from './classify'
+import { disposalCandidates, saleShares } from './classify'
 import {
   costCentreIdFromKey,
   mergePortfolioSettings,
@@ -115,13 +115,9 @@ function computeObjects(
   const eraRowsById = groupBy(allEraRows, (r) => r.eraid)
   const roots = new Map(loadEraRoots(db, linkedEraids).map((r) => [r.eraid, r]))
 
-  const linkedCreditsByVoucher = new Map<number, number>()
-  for (const row of allEraRows) {
-    if (row.signed_snt < 0 && row.id !== row.eraid) {
-      linkedCreditsByVoucher.set(row.voucher_id, (linkedCreditsByVoucher.get(row.voucher_id) ?? 0) - row.signed_snt)
-    }
-  }
   const voucherPnl = groupBy(loadVoucherPnlRows(db, disposalCandidates(allEraRows)), (r) => r.voucher_id)
+  const centreInfo = new Map(loaded.centres.map((c) => [c.id, { name: c.name, allocations: allocationSet(c) }]))
+  const shares = saleShares(allEraRows, loaded.owner, centreInfo, voucherPnl)
   const allPnl = [...pnlByAllocation.values()].flat()
   const correctionDates = loadCorrectionDates(
     db,
@@ -147,7 +143,7 @@ function computeObjects(
       pnl,
       correctionDates,
       voucherPnl,
-      linkedCreditsByVoucher,
+      saleShares: shares,
       interest,
       periods,
       asOf,

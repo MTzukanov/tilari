@@ -7,6 +7,22 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-10 - Rental objects: an item sold inside another object's price
+
+- Owner report: a flat and its parking space sold on one voucher for one price (the parking space
+  at 0 in the contract), the price and the cost of both items booked on the flat's cost centre.
+  The parking space showed its book value as proceeds and negative sale costs; the flat showed
+  that book value as an extra sale cost. The pair's total was right.
+- Rule (`classify.ts`, `saleShares`): on a voucher crediting items of several objects, an object
+  with no P&L lines of its own there, next to one that has them, brings in nothing and gets the
+  `sale_carried` note; its credit goes with the objects that have lines (pro rata to their own
+  credits). Its book value becomes its loss on sale. Unchanged when every object has lines, or
+  none (unallocated lines are still split by credit, `sale_line_split`).
+- The fix is in Tilari, not the books: the year was closed, and a correction pair in a later year
+  would read as running costs and income, not as part of the sale.
+- Open: setup still suggests such a parking space's item for the flat (the sale voucher's lines
+  are all on the flat); the owner moves it by hand.
+
 ## 2026-10-09 - Rental object: a month's lines; one loan per object
 
 - Clicking a month on the object's cash-flow chart opens the lines behind its bars under the

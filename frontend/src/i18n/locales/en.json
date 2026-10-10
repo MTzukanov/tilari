@@ -1215,6 +1215,7 @@
     "warn": {
       "sale_costs_unset": "No sale costs set.",
       "sale_line_split": "Voucher {voucher} sold several objects; lines without a cost centre were split by acquisition cost.",
+      "sale_carried": "Sold on one voucher with {object}, whose cost centre has the sale lines. This object counts as sold within that price: sale price 0 € and its acquisition cost a loss on sale.",
       "era_missing": "Linked item {eraid} no longer exists.",
       "no_capital": "No acquisition cost linked: return and break-even cannot be computed.",
       "doc_corrupt": "The stored data is damaged; saving replaces it.",

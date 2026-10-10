@@ -1215,6 +1215,7 @@
     "warn": {
       "sale_costs_unset": "Keine Verkaufskosten angegeben.",
       "sale_line_split": "Beleg {voucher} verkaufte mehrere Objekte; Buchungen ohne Kostenstelle wurden nach Anschaffungskosten aufgeteilt.",
+      "sale_carried": "Auf demselben Beleg wie {object} verkauft, dessen Kostenstelle die Verkaufsbuchungen trägt. Dieses Objekt gilt als in diesem Preis mitverkauft: Verkaufspreis 0 € und die Anschaffungskosten ein Veräußerungsverlust.",
       "era_missing": "Verknüpfter Bilanzposten {eraid} existiert nicht mehr.",
       "no_capital": "Keine Anschaffungskosten verknüpft: Rendite und Break-even können nicht berechnet werden.",
       "doc_corrupt": "Die gespeicherten Daten sind beschädigt; Speichern ersetzt sie.",

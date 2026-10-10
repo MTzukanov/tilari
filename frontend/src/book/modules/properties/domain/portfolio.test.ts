@@ -53,6 +53,17 @@ function applySuggestions(setup: SetupResponse): SetupApplyInput {
 async function setUp(): Promise<PropertyFixture> {
   const fx = await buildPropertyFixture()
   applySetup(fx.db, applySuggestions(buildSetup(fx.db)), '2026-10-08T10:00:00Z')
+  // The sale voucher points the parking space at the flat (all its lines are there); the owner moves it.
+  applySetup(
+    fx.db,
+    {
+      objects: [
+        { id: CC.duoFlat, remove_eras: [fx.eras.duoParking] },
+        { id: CC.duoParking, add_eras: [fx.eras.duoParking] },
+      ],
+    },
+    '2026-10-08T10:01:00Z',
+  )
   return fx
 }
 
@@ -149,7 +160,7 @@ describe('rental objects: figures', () => {
 
   it('per fiscal year, the Kitsas result column equals the cost-centre report', async () => {
     const { db } = await setUp()
-    for (const id of [CC.bundle, CC.sold, CC.commercial, CC.garage, CC.parkingA]) {
+    for (const id of [CC.bundle, CC.sold, CC.commercial, CC.garage, CC.parkingA, CC.duoFlat, CC.duoParking]) {
       const d = computeDetail(db, id, { today: TODAY })
       for (const year of d.years) {
         const kitsas = computeAllocationBalances(db, id, year.starts, year.ends, true).kitsas_profit_cents
@@ -192,6 +203,33 @@ describe('rental objects: figures', () => {
       expect(d.summary.proceeds_snt).toBe(2_500 * E)
       expect(d.summary.unrecovered_snt).toBe(500 * E)
     }
+  })
+
+  it('a parking space sold inside the flat price brings nothing in; its credit goes with the flat', async () => {
+    const { db, vouchers } = await setUp()
+    const flat = computeDetail(db, CC.duoFlat, { today: TODAY })
+    expect(flat.status).toBe('sold')
+    // 40 000 + 2 000 credited + 45 000 price - 42 000 cost of both items - 1 800 broker fee.
+    expect(flat.summary).toMatchObject({
+      sale_price_snt: 45_000 * E,
+      proceeds_snt: 43_200 * E,
+      disposed_cost_snt: 40_000 * E,
+    })
+    expect(flat.warnings.map((w) => w.code)).not.toContain('sale_carried')
+    const parking = computeDetail(db, CC.duoParking, { today: TODAY })
+    expect(parking.status).toBe('sold')
+    expect(parking.summary).toMatchObject({
+      sale_price_snt: 0,
+      proceeds_snt: 0,
+      disposed_cost_snt: 2_000 * E,
+      unrecovered_snt: 2_000 * E,
+    })
+    expect(parking.disposals).toEqual([
+      expect.objectContaining({ voucher_id: vouchers.saleDuo, price_snt: 0, proceeds_snt: 0 }),
+    ])
+    expect(parking.warnings).toContainEqual({ code: 'sale_carried', params: { object: 'As Oy Rantapolku 5 A 3' } })
+    // Together: what the sale brought in after the fee.
+    expect(flat.summary.proceeds_snt + parking.summary.proceeds_snt).toBe(43_200 * E)
   })
 
   it('brutto VAT rent counts net in cash figures and gross in the Kitsas column', async () => {
@@ -287,7 +325,7 @@ describe('rental objects: figures', () => {
     expect(held.map((r) => r.id).sort((a, b) => a - b)).toEqual([CC.bundle, CC.garage, CC.commercial, CC.opening])
     expect(p.totals.book_value_snt).toBe((86_200 + 4_000 + 50_000 + 30_000) * E)
     expect(p.totals.irr_bp).not.toBeNull()
-    // Sold together: 60 000 + 3 000 + 3 000 in, 14 850 + 53 500 + 2 x 2 500 back -> a gain.
+    // Sold: 60 000 + 3 000 + 3 000 + 42 000 in, 14 850 + 53 500 + 2 x 2 500 + 43 200 back -> a gain.
     expect(p.totals.sold_irr_bp).toBeGreaterThan(0)
     expect(p.totals.held_irr_bp).not.toBeNull()
     expect(p.periods.map((x) => x.starts)).toEqual(['2023-01-01', '2024-01-01', '2025-01-01', '2026-01-01'])

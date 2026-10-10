@@ -1,6 +1,6 @@
 /** Everything shown for one rental object, computed from the ledger and its stored links. */
 import { addMonths } from '../../../months'
-import { classifyObject, NON_CASH_TYPES, type CashFlow, type Classified } from './classify'
+import { classifyObject, NON_CASH_TYPES, type CashFlow, type Classified, type SaleShare } from './classify'
 import type { CostCentre, EraRoot, EraRow, PnlRow } from './ledger'
 import { breakEvenPrice, requiredSalePrice, saleNet, toBp, xirr, type Flow } from './returns'
 import { isIncome, monthlySeries, trailing12, yearTable } from './series'
@@ -34,7 +34,7 @@ export type ObjectInput = {
   /** Correction line id -> date of the booking it corrects (see loadCorrectionDates). */
   correctionDates?: Map<number, string>
   voucherPnl: Map<number, PnlRow[]>
-  linkedCreditsByVoucher: Map<number, number>
+  saleShares: Map<number, SaleShare[]>
   interest: PnlRow[]
   periods: { starts: string; ends: string }[]
   asOf: string
@@ -89,7 +89,7 @@ export function computeObject(input: ObjectInput): ObjectResult {
       ? input.pnl.map((r) => (input.correctionDates!.has(r.id) ? { ...r, date: input.correctionDates!.get(r.id)! } : r))
       : input.pnl,
     voucherPnl: input.voucherPnl,
-    linkedCreditsByVoucher: input.linkedCreditsByVoucher,
+    saleShares: input.saleShares,
     saleVoucherIds: new Set(doc.sale_voucher_ids ?? []),
     interest: input.interest,
   })

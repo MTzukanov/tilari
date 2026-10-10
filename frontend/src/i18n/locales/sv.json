@@ -1215,6 +1215,7 @@
     "warn": {
       "sale_costs_unset": "Inga försäljningskostnader angivna.",
       "sale_line_split": "Verifikat {voucher} sålde flera objekt; poster utan kostnadsställe delades i proportion till anskaffningsutgifterna.",
+      "sale_carried": "Såld på samma verifikat som {object}, vars kostnadsställe har försäljningsposterna. Objektet räknas som sålt i det priset: försäljningspris 0 € och anskaffningsutgiften en förlust vid försäljning.",
       "era_missing": "Länkad balanspost {eraid} finns inte längre.",
       "no_capital": "Ingen anskaffningsutgift länkad: avkastning och nollpris kan inte beräknas.",
       "doc_corrupt": "De sparade uppgifterna är skadade; sparande ersätter dem.",
