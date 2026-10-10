@@ -142,13 +142,23 @@ export async function confirmEngineOpen(page: Page, engine: 'wasm' | 'http') {
   await page.getByRole('button', { name: 'Avaa', exact: true }).click()
 }
 
+/** Topbar book file menu: open it and pick an item by its label. */
+export async function chooseFileMenu(page: Page, item: string | RegExp) {
+  await page.getByRole('button', { name: /^Kirjanpitotiedosto/ }).click()
+  await page
+    .getByRole('menu', { name: 'Kirjanpitotiedosto' })
+    .getByRole('menuitem', { name: item, exact: true })
+    .click()
+}
+
 /**
  * File menu option — works with or without a book open (empty-state is a button).
  * Connects this page's own Node server as the locker when not connected yet (the server
  * engine and the locker list need an explicit BYO connection).
  */
 export async function openServerBookList(page: Page) {
-  await page.getByLabel('Kirjanpitotiedosto').selectOption({ label: 'Avaa omasta säilytyksestä…' })
+  // Without a connection the storage group offers only "Yhdistä"; both open the storage panel.
+  await chooseFileMenu(page, /^(Avaa omasta säilytyksestä…|Yhdistä omaan säilytykseen…)$/)
   await expect(page.getByRole('heading', { name: 'Oma säilytys (BYO)' })).toBeVisible()
   const thisPage = page.getByRole('button', { name: 'Tämä kone' })
   if (await thisPage.isVisible().catch(() => false)) {

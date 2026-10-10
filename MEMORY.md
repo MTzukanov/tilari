@@ -7,6 +7,27 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-10 - Book file menu grouped by where the book lives
+
+- Owner review: the native `<select>` mixed local-file and storage actions under "Toiminnot" and
+  listed all recents together. It is now a custom menu (`FilePick.tsx`, model in
+  `app/open/bookMenu.ts`): **Luo uusi kirja** alone, then **Avoin kirja** (owner: right under
+  create), **Tämä laite** and **Oma säilytys**, each recent under the group it came from
+  (`locker:` = storage, anything else = device). Items that cannot work are hidden, not greyed
+  (link only for an unlinked browser copy that is not a storage book and only where the API
+  exists; **Tallenna uutena kopiona** only for a storage book; storage off = only
+  **Yhdistä omaan säilytykseen…**). Renamed: Avaa tiedosto, Tallenna tiedostoksi, Tallenna uutena
+  kopiona, Sulje ja poista tästä selaimesta (first in its group).
+- Fixed: a recent `local:`/`server:` book could not be reopened. `openKitsasPath` accepts only the
+  book already open, but `prepareEngine` closed the current book first, then the open failed with
+  `file.lastGone` and the entry was deleted. Device recents now reopen through a
+  `FileSystemFileHandle` kept in IndexedDB (`book/persist/fileHandles.ts`); the file is read
+  before the current book is closed. Without a handle: `file.pickAgain` + the picker, entry kept.
+- Fixed: a working copy restored after refresh lost its disk link (`restore()` adopted with a
+  null handle). It now reloads the handle; `saveLocal` asks for permission again when needed.
+- Fixed: a new book showed "Luo uusi kirja…" in the menu (it is not in recents; the select fell
+  back to its first option). The button shows `meta.source_name`.
+
 ## 2026-10-10 - Open: no UI for an object's sale vouchers
 
 - `property/{id}.sale_voucher_ids` (vouchers whose lines on the object count as the sale's costs,

@@ -413,8 +413,8 @@
         <h3>A file on disk (USB, email)</h3>
         <ol>
           <li>Save <a href="../tilari.html"><code>tilari.html</code></a> and double-click it.</li>
-          <li>Choose <strong>Valitse uusi tiedosto…</strong> and pick a <code>.kitsas</code>.</li>
-          <li>Save with <strong>Tallenna nimellä…</strong> — the browser downloads a new file.</li>
+          <li>Choose <strong>Avaa tiedosto…</strong> and pick a <code>.kitsas</code>.</li>
+          <li>Save with <strong>Tallenna tiedostoksi…</strong> — the browser downloads a new file.</li>
         </ol>
         <p>
           On <code>file://</code> the working copy usually dies on refresh, in-place overwrite
@@ -475,13 +475,13 @@
         <ol>
           <li>Start Tilari. A browser tab opens on its own.</li>
           <li>
-            Open a book from disk (<strong>Valitse uusi tiedosto…</strong>) or from the locker
+            Open a book from disk (<strong>Avaa tiedosto…</strong>) or from the locker
             (<strong>Avaa omasta säilytyksestä…</strong>).
           </li>
           <li>
             On Chrome or Edge desktop, <strong>Tallenna</strong> writes the same
             <code>.kitsas</code> if the file is linked. In other browsers use
-            <strong>Tallenna nimellä…</strong>.
+            <strong>Tallenna tiedostoksi…</strong>.
           </li>
         </ol>
         <p>
@@ -552,7 +552,7 @@
               <td>Chrome, Edge, Opera, Brave (Windows, macOS, Linux)</td>
               <td>Yes</td>
               <td>
-                <strong>Valitse uusi tiedosto…</strong> links the file.
+                <strong>Avaa tiedosto…</strong> links the file.
                 <strong>Tallenna</strong> updates it. A Dropbox folder works if it is a real
                 directory on disk.
               </td>
@@ -560,7 +560,7 @@
             <tr>
               <td>Firefox</td>
               <td>No</td>
-              <td>The working copy in the browser still survives. On disk, use <strong>Tallenna nimellä…</strong>.</td>
+              <td>The working copy in the browser still survives. On disk, use <strong>Tallenna tiedostoksi…</strong>.</td>
             </tr>
             <tr>
               <td>Safari (Mac, iPhone, iPad)</td>
@@ -578,15 +578,24 @@
             <tr>
               <td>iPhone / iPad, other browsers</td>
               <td>No</td>
-              <td>Share or <strong>Tallenna nimellä…</strong>. A locker (VPN or Supabase) is often easier.</td>
+              <td>Share or <strong>Tallenna tiedostoksi…</strong>. A locker (VPN or Supabase) is often easier.</td>
             </tr>
           </tbody>
         </table>
         <p>
-          If the browser cannot write in place, the menu tells you to use
-          <strong>Tallenna nimellä…</strong>. You can also
-          <strong>Yhdistä alkuperäistiedostoon…</strong> (link to the original file) when the API
-          exists but the book was opened without write permission.
+          If the browser cannot write in place, use <strong>Tallenna tiedostoksi…</strong> (save as
+          file). <strong>Yhdistä alkuperäistiedostoon…</strong> (link to the original file) shows in
+          the menu only when the browser supports it and the book was opened without write
+          permission.
+        </p>
+        <p>
+          The <strong>Kirjanpitotiedosto</strong> (bookkeeping file) menu starts with
+          <strong>Luo uusi kirja…</strong> (create a book), then the groups
+          <strong>Avoin kirja</strong> (close or discard changes), <strong>Tämä laite</strong> (files
+          on this device) and <strong>Oma säilytys</strong> (your own Tilari server or Supabase).
+          Recent books are listed under the group they came from. In Chrome and Edge a recent file
+          opens again directly (the browser may ask for permission); other browsers ask you to pick
+          the file again.
         </p>
 
         <h2 id="supabase">Supabase as a locker</h2>
@@ -672,11 +681,11 @@ create policy "tilari_locker_delete"
         </p>
         <ul>
           <li>
-            <strong>Open:</strong> <strong>Valitse uusi tiedosto…</strong> → Android document
+            <strong>Open:</strong> <strong>Avaa tiedosto…</strong> → Android document
             picker → Dropbox, Google Drive, or Files. Tilari reads the bytes.
           </li>
           <li>
-            <strong>Save:</strong> <strong>Tallenna nimellä…</strong> puts a copy in Downloads or
+            <strong>Save:</strong> <strong>Tallenna tiedostoksi…</strong> puts a copy in Downloads or
             in the browser’s location sheet. Upload it to Drive or Dropbox from there, or use the
             system “Save to” target if the browser shows one.
           </li>

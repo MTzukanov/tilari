@@ -68,6 +68,14 @@ import { getBookServiceEpoch, getEngine, resetBookService, resolveEngine, setEng
 import { getLockerConnection, lockerSupportsHttpEngine, probeSameOriginNode, subscribeLockerConnection } from '../book/persist/locker'
 import { forcedEngineForPath } from '../book/openPath'
 import {
+  clearFileHandles,
+  deleteFileHandle,
+  ensureFilePermission,
+  keepFileHandles,
+  loadFileHandle,
+  saveFileHandle,
+} from '../book/persist/fileHandles'
+import {
   clearStoredPracticeDate,
   loadStoredPracticeDate,
   saveStoredPracticeDate,
@@ -100,7 +108,13 @@ function enrichRecentsFromLocker(books: LockerBook[]): LastBook[] {
 }
 
 type PendingOpen =
-  | { type: 'file'; file: File; label: string; handle?: FileSystemFileHandle | null }
+  | {
+      type: 'file'
+      file: File
+      label: string
+      handle?: FileSystemFileHandle | null
+      forcedEngine?: EngineKind
+    }
   | { type: 'path'; path: string; label: string; forcedEngine?: EngineKind }
   | { type: 'locker'; id: string; label: string }
 
@@ -621,10 +635,17 @@ export function BookShell() {
       await applyMeta(m!, kind)
       setDirty(false)
       setWritableLinked(hasWritableLocalFile())
+      if (pending.type === 'file' && pending.handle) {
+        const path = m!.db_path
+        void saveFileHandle(path, pending.handle).then(() =>
+          keepFileHandles(loadRecentBooks().map((book) => book.path)),
+        )
+      }
       goTo('#/')
     } catch (err) {
       if (pending.type === 'path' && !pending.path.startsWith('locker:')) {
         setRecents(removeRecent(pending.path))
+        void deleteFileHandle(pending.path)
         setError(t('file.lastGone'))
       } else {
         const msg = mapFileError(err)
@@ -647,7 +668,7 @@ export function BookShell() {
         await executeOpen('wasm', pending, hadBook)
         return
       }
-      const forced = pending.type === 'path' ? pending.forcedEngine : undefined
+      const forced = pending.type === 'locker' ? undefined : pending.forcedEngine
       if (forced) {
         await executeOpen(forced, pending, hadBook)
         return
@@ -989,6 +1010,7 @@ export function BookShell() {
         await opfsClear()
       }
       clearTilariWebStorage()
+      void clearFileHandles()
       forgetLocale()
       setRecents([])
       goTo('#/')
@@ -1009,7 +1031,10 @@ export function BookShell() {
       await closeBook({ discard: true })
       resetBookService()
       setServiceEpoch(getBookServiceEpoch())
-      if (path && openEngine !== 'http') setRecents(removeRecent(path))
+      if (path && openEngine !== 'http') {
+        setRecents(removeRecent(path))
+        void deleteFileHandle(path)
+      }
       dropBook()
       setSessionPersist(null)
       setAttSync({ status: 'idle', loaded: 0, total: null })
@@ -1051,12 +1076,35 @@ export function BookShell() {
       return
     }
     const name = recents.find((book) => book.path === path)?.name ?? path.split(/[/\\]/).pop() ?? path
-    queueOpen({
-      type: 'path',
-      path,
-      label: name,
-      forcedEngine: forcedEngineForPath(path),
-    })
+    // This tab's own working copy, not shown yet: the browser still has it.
+    if (!meta && path === loadBookSession()?.path) {
+      queueOpen({ type: 'path', path, label: name, forcedEngine: forcedEngineForPath(path) })
+      return
+    }
+    void reopenDeviceFile(path, name)
+  }
+
+  /**
+   * A recent file from this device opens again through its remembered handle. The file is
+   * read before the open book is closed, so an open that cannot work loses nothing.
+   */
+  async function reopenDeviceFile(path: string, name: string) {
+    const handle = await loadFileHandle(path)
+    if (handle) {
+      if (!(await ensureFilePermission(handle))) {
+        setFileNote(t('file.pickAgain', { name }))
+        return
+      }
+      try {
+        const file = await handle.getFile()
+        queueOpen({ type: 'file', file, label: file.name, handle, forcedEngine: forcedEngineForPath(path) })
+        return
+      } catch {
+        void deleteFileHandle(path)
+      }
+    }
+    setFileNote(t('file.pickAgain', { name }))
+    await onChooseNewFile()
   }
 
   const period = useMemo(() => {
@@ -1124,7 +1172,9 @@ export function BookShell() {
       asOfDate={balances?.date ?? periodEnd}
       pendingOpen={pendingOpen != null}
       pendingOpenLabel={pendingOpen?.label ?? ''}
-      pendingOpenForcedEngine={pendingOpen?.type === 'path' ? pendingOpen.forcedEngine : undefined}
+      pendingOpenForcedEngine={
+        pendingOpen && pendingOpen.type !== 'locker' ? pendingOpen.forcedEngine : undefined
+      }
       onConfirmPendingOpen={confirmPendingOpen}
       onCancelPendingOpen={cancelPendingOpen}
       onCancelBusy={() => abortRef.current?.abort()}
