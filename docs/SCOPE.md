@@ -52,7 +52,7 @@ On start, Tilari can create a new Finnish business-chart book in the browser. De
 | Archive | Not yet | Kitsas stores the archive path outside the SQLite file |
 | Partners | Partial | Create-on-the-fly when booking; no full partner register |
 | Allocations | In | List, P&L, lines; add in settings |
-| Rental objects | Partial | Tilari addition. Portfolio, object page, setup from ledger evidence, documents. Leases, rent arrears, housing-company loan share and forecast come next |
+| Rental objects | Partial | Tilari addition. Portfolio, object page, setup from ledger evidence, documents. Leases, rent arrears, housing-company loan share and forecast come next; a picker for an object's sale vouchers is not built yet |
 | Company settings | Partial | Name, business id, city, VAT period, practice flag. Not a full Kitsas settings dialog |
 | Billing | Not yet | Type 210 is read-only |
 | Approval workflow | Not yet | Stub only (`#/workflow`, API 501) |

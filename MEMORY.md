@@ -7,6 +7,17 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-10 - Open: no UI for an object's sale vouchers
+
+- `property/{id}.sale_voucher_ids` (vouchers whose lines on the object count as the sale's costs,
+  e.g. a broker invoice or a property manager's certificate for the sale) is stored, checked on
+  save (`checkLinks`) and counted (`classify.ts`), and the object page lists such vouchers under
+  each sale - but no screen sets it. The edit page keeps a stored value (`{ ...doc }`) without
+  showing it. Today only costs matched automatically (same cost account within 180 days of the
+  sale) reach Myyntikulut; anything else stays in Kulut.
+- Owner: not needed now; note it so it is not forgotten. When wanted: a "Myyntitositteet" section on
+  `#/property/{id}/edit` that picks posted vouchers with lines on the object's cost centre.
+
 ## 2026-10-10 - Rental objects: lines left uncorrected on purpose
 
 - Owner decision (kept): a closed year's income/cost misclassification is not corrected in the
