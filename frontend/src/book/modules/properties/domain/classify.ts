@@ -172,6 +172,9 @@ export function classifyObject(input: ClassifyInput): Classified {
     disposals.push({
       voucher_id: voucherId,
       date,
+      doc_number: null,
+      series: null,
+      title: '',
       price_snt: price,
       proceeds_snt: proceeds,
       eras: credits.map((row) => ({ eraid: row.eraid, credit_snt: -row.signed_snt })),

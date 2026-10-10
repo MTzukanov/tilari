@@ -1139,8 +1139,9 @@
     },
     "sales": {
       "title": "Myynnit",
-      "line": "myyntihinta {price}, myyntikulut {costs}, käteen {proceeds}",
-      "costFrom": "Myyntikulut {amount} tositteelta"
+      "price": "Myyntihinta",
+      "costs": "Myyntikulut",
+      "proceeds": "Käteen"
     },
     "docs": {
       "title": "Asiakirjat",

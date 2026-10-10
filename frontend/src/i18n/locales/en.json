@@ -1139,8 +1139,9 @@
     },
     "sales": {
       "title": "Sales",
-      "line": "selling price {price}, sale costs {costs}, received {proceeds}",
-      "costFrom": "Sale costs {amount} from voucher"
+      "price": "Selling price",
+      "costs": "Sale costs",
+      "proceeds": "Received"
     },
     "docs": {
       "title": "Documents",

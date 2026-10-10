@@ -27,8 +27,10 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   the two items of that sale changed (the parking space now by its own name).
 - Owner review: from a sale on the object page there was no way to the sale-cost voucher (only
   the sale voucher's date was a link). Each sale now lists the other vouchers whose lines counted
-  as its costs (`Disposal.cost_vouchers`: listed or matched near the sale), with number and title
-  as links, so a wrongly matched cost is visible.
+  as its costs (`Disposal.cost_vouchers`: listed or matched near the sale). The section shows
+  each sale as rows Myyntihinta / Myyntikulut / Käteen, every amount next to its voucher link
+  (number and title); several cost vouchers get one row each under the total. On a phone the
+  voucher goes on its own line.
 
 ## 2026-10-09 - Rental object: a month's lines; one loan per object
 

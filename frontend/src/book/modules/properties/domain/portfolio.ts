@@ -268,16 +268,14 @@ export function computeDetail(
   }
 }
 
-/** Kitsas number and title of each sale's cost vouchers, for links on the object page. */
+/** Kitsas number and title of each sale voucher and its cost vouchers, for links on the object page. */
 function withVoucherRefs(db: SqliteDb, disposals: Disposal[]): Disposal[] {
-  const refs = loadVoucherRefs(db, disposals.flatMap((d) => d.cost_vouchers.map((v) => v.voucher_id)))
-  return disposals.map((d) => ({
-    ...d,
-    cost_vouchers: d.cost_vouchers.map((v) => {
-      const ref = refs.get(v.voucher_id)
-      return ref ? { ...v, doc_number: ref.doc_number, series: ref.series, title: ref.title } : v
-    }),
-  }))
+  const refs = loadVoucherRefs(db, disposals.flatMap((d) => [d.voucher_id, ...d.cost_vouchers.map((v) => v.voucher_id)]))
+  const label = <T extends { voucher_id: number }>(v: T): T => {
+    const ref = refs.get(v.voucher_id)
+    return ref ? { ...v, doc_number: ref.doc_number, series: ref.series, title: ref.title } : v
+  }
+  return disposals.map((d) => ({ ...label(d), cost_vouchers: d.cost_vouchers.map(label) }))
 }
 
 function monthLines(db: SqliteDb, lines: CountedLine[]): MonthLine[] {

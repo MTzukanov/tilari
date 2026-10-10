@@ -1139,8 +1139,9 @@
     },
     "sales": {
       "title": "Verkäufe",
-      "line": "Verkaufspreis {price}, Verkaufskosten {costs}, erhalten {proceeds}",
-      "costFrom": "Verkaufskosten {amount} aus Beleg"
+      "price": "Verkaufspreis",
+      "costs": "Verkaufskosten",
+      "proceeds": "Erhalten"
     },
     "docs": {
       "title": "Dokumente",

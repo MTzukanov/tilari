@@ -177,14 +177,15 @@ describe('rental objects: figures', () => {
     expect(d.summary.sale_price_snt).toBe(55_000 * E)
     expect(d.summary.disposed_cost_snt).toBe(60_000 * E)
     expect(d.disposals[0].price_snt).toBe(55_000 * E)
-    // The broker invoice is listed with the sale, with its Kitsas number for the link.
-    const number = db.get<{ tunniste: number }>('SELECT tunniste FROM Tosite WHERE id = ?', [vouchers.broker])!.tunniste
+    // The sale voucher and the broker invoice listed with it carry their Kitsas number for the links.
+    const number = (id: number) => db.get<{ tunniste: number }>('SELECT tunniste FROM Tosite WHERE id = ?', [id])!.tunniste
+    expect(d.disposals[0]).toMatchObject({ doc_number: number(vouchers.saleB), series: null, title: 'Myynti Mallitie 2 B 5' })
     expect(d.disposals[0].cost_vouchers).toEqual([
       {
         voucher_id: vouchers.broker,
         date: '2025-06-29',
         amount_snt: 1_500 * E,
-        doc_number: number,
+        doc_number: number(vouchers.broker),
         series: null,
         title: 'Välityspalkkio Mallitie 2 B 5',
       },

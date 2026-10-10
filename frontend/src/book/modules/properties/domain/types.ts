@@ -129,6 +129,10 @@ export type YearRow = {
 export type Disposal = {
   voucher_id: number
   date: string
+  /** The sale voucher's Kitsas number, series and title: filled for the object page, empty in the figures. */
+  doc_number: number | null
+  series: string | null
+  title: string
   /** Gross selling price: the sale's income lines. */
   price_snt: number
   /** Cash from the sale: price minus sale costs. */
