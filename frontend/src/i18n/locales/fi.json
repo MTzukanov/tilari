@@ -1139,7 +1139,9 @@
     },
     "sales": {
       "title": "Myynnit",
-      "line": "myyntihinta {price}, myyntikulut {costs}, käteen {proceeds}"
+      "price": "Myyntihinta",
+      "costs": "Myyntikulut",
+      "proceeds": "Käteen"
     },
     "docs": {
       "title": "Asiakirjat",
@@ -1215,6 +1217,7 @@
     "warn": {
       "sale_costs_unset": "Myyntikuluja ei ole asetettu.",
       "sale_line_split": "Tosite {voucher} myi useamman kohteen; kohdistamattomat rivit jaettiin hankintamenojen suhteessa.",
+      "sale_carried": "Myyty samalla tositteella kuin {object}, jonka kustannuspaikalla myyntirivit ovat. Tämä kohde lasketaan myydyksi sen kauppahinnassa: myyntihinta 0 € ja hankintameno myyntitappiona.",
       "era_missing": "Linkitettyä tase-erää {eraid} ei enää löydy.",
       "no_capital": "Hankintamenoa ei ole linkitetty: tuottoa ja nollahintaa ei voi laskea.",
       "doc_corrupt": "Tallennetut tiedot ovat vioittuneet; tallennus korvaa ne.",
@@ -1253,7 +1256,9 @@
       "moved": "kirjattu {date}",
       "movedHint": "Oikaisu, joka siirsi kirjauksen tälle kohteelle. Se lasketaan kuukauteen, jota alkuperäinen kirjaus koskee; kustannuspaikan raportissa se näkyy kirjauspäivänä.",
       "accrual": "jaksotus",
-      "interest": "lainan korko"
+      "interest": "lainan korko",
+      "recounted": "lasketaan tilille {account}",
+      "recountedHint": "Kirjattu tilille {booked}. Oikaisutositteen lisätiedoissa rivi on jätetty oikaisematta, koska tilikausi on suljettu; Tilari laskee sen tilille {account}. Kustannuspaikan raportissa se näkyy kirjatulla tilillä."
     }
   }
 }

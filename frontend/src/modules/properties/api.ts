@@ -4,6 +4,7 @@ import type { PortfolioSettings, PropertyDoc, SetupApplyInput } from '../../book
 
 export type {
   BreakEven,
+  Disposal,
   DocumentVoucher,
   EraCandidate,
   DocCandidate,

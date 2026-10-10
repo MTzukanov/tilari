@@ -129,11 +129,28 @@ export type YearRow = {
 export type Disposal = {
   voucher_id: number
   date: string
+  /** The sale voucher's Kitsas number, series and title: filled for the object page, empty in the figures. */
+  doc_number: number | null
+  series: string | null
+  title: string
   /** Gross selling price: the sale's income lines. */
   price_snt: number
   /** Cash from the sale: price minus sale costs. */
   proceeds_snt: number
   eras: { eraid: number; credit_snt: number }[]
+  /** Other vouchers whose lines counted as this sale's costs: listed, or the same cost account near it. */
+  cost_vouchers: SaleCostVoucher[]
+}
+
+export type SaleCostVoucher = {
+  voucher_id: number
+  date: string
+  /** What its lines added to the sale costs (a refund is negative). */
+  amount_snt: number
+  /** Kitsas number, series and title: filled for the object page, empty in the figures. */
+  doc_number: number | null
+  series: string | null
+  title: string
 }
 
 export type EraMovementKind = 'acquisition' | 'addition' | 'return' | 'sale' | 'depreciation'
@@ -244,6 +261,8 @@ export type MonthLine = {
   counted_date: string
   /** credit - debit without VAT, as the bars add it up. */
   amount_snt: number
+  /** The account it counts on, when a correction voucher's notes say it belongs there (ADR-024). */
+  counted_account?: { account: number; name: string }
   /** The line as Selaa shows it. */
   entry: BrowseEntry
 }

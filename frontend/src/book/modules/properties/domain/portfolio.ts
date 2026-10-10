@@ -3,7 +3,7 @@ import { getPeriods } from '../../../access'
 import { BookError } from '../../../errors'
 import { readTilariData, readTilariDataPrefix, writeTilariData } from '../../../kernel/tilariData'
 import type { SqliteDb } from '../../../sqlite'
-import { disposalCandidates } from './classify'
+import { disposalCandidates, saleShares } from './classify'
 import {
   costCentreIdFromKey,
   mergePortfolioSettings,
@@ -30,11 +30,13 @@ import {
   loadEraRows,
   loadInterestRows,
   loadPnlRows,
+  loadRecountedLines,
   loadVoucherPnlRows,
   loadVoucherRefs,
   type CostCentre,
   type EraRoot,
   type EraRow,
+  recountLines,
   type PnlRow,
 } from './ledger'
 import { saleNet, toBp, xirr, yieldBp, type Flow } from './returns'
@@ -44,6 +46,7 @@ import { pickBest, suggestEra, textScorer } from './suggest'
 import {
   PORTFOLIO_KEY,
   PROPERTY_KEY_PREFIX,
+  type Disposal,
   type PortfolioResponse,
   type MonthLine,
   type PortfolioSettings,
@@ -108,20 +111,20 @@ function computeObjects(
 ): Computed[] {
   const allocations = new Set<number>()
   for (const c of centres) for (const a of allocationSet(c)) allocations.add(a)
-  const pnlByAllocation = groupBy(loadPnlRows(db, allocations), (r) => r.allocation)
+  const recounted = loadRecountedLines(db)
+  const pnlByAllocation = groupBy(recountLines(loadPnlRows(db, allocations), recounted), (r) => r.allocation)
 
   const linkedEraids = [...loaded.owner.keys()]
   const allEraRows = loadEraRows(db, linkedEraids)
   const eraRowsById = groupBy(allEraRows, (r) => r.eraid)
   const roots = new Map(loadEraRoots(db, linkedEraids).map((r) => [r.eraid, r]))
 
-  const linkedCreditsByVoucher = new Map<number, number>()
-  for (const row of allEraRows) {
-    if (row.signed_snt < 0 && row.id !== row.eraid) {
-      linkedCreditsByVoucher.set(row.voucher_id, (linkedCreditsByVoucher.get(row.voucher_id) ?? 0) - row.signed_snt)
-    }
-  }
-  const voucherPnl = groupBy(loadVoucherPnlRows(db, disposalCandidates(allEraRows)), (r) => r.voucher_id)
+  const voucherPnl = groupBy(
+    recountLines(loadVoucherPnlRows(db, disposalCandidates(allEraRows)), recounted),
+    (r) => r.voucher_id,
+  )
+  const centreInfo = new Map(loaded.centres.map((c) => [c.id, { name: c.name, allocations: allocationSet(c) }]))
+  const shares = saleShares(allEraRows, loaded.owner, centreInfo, voucherPnl)
   const allPnl = [...pnlByAllocation.values()].flat()
   const correctionDates = loadCorrectionDates(
     db,
@@ -147,7 +150,7 @@ function computeObjects(
       pnl,
       correctionDates,
       voucherPnl,
-      linkedCreditsByVoucher,
+      saleShares: shares,
       interest,
       periods,
       asOf,
@@ -262,13 +265,23 @@ export function computeDetail(
     as_of: asOf,
     data_through: dataThrough,
     eras: computed.result.eras,
-    disposals: computed.result.classified.disposals,
+    disposals: withVoucherRefs(db, computed.result.classified.disposals),
     months: computed.result.months,
     month_lines: monthLines(db, computed.result.lines),
     years: computed.result.years,
     target: computed.result.target,
     financing: computed.parsed.doc.financing ?? null,
   }
+}
+
+/** Kitsas number and title of each sale voucher and its cost vouchers, for links on the object page. */
+function withVoucherRefs(db: SqliteDb, disposals: Disposal[]): Disposal[] {
+  const refs = loadVoucherRefs(db, disposals.flatMap((d) => [d.voucher_id, ...d.cost_vouchers.map((v) => v.voucher_id)]))
+  const label = <T extends { voucher_id: number }>(v: T): T => {
+    const ref = refs.get(v.voucher_id)
+    return ref ? { ...v, doc_number: ref.doc_number, series: ref.series, title: ref.title } : v
+  }
+  return disposals.map((d) => ({ ...label(d), cost_vouchers: d.cost_vouchers.map(label) }))
 }
 
 function monthLines(db: SqliteDb, lines: CountedLine[]): MonthLine[] {

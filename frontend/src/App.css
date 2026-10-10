@@ -5178,6 +5178,92 @@ tr.tax-total td {
   font-size: 0.85rem;
 }
 
+.property-sales {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.property-sales th,
+.property-sales td {
+  padding: 0.2rem 0.75rem 0.2rem 0;
+  border: 0;
+  text-align: left;
+  font-weight: normal;
+  vertical-align: baseline;
+}
+
+.property-sales th {
+  width: 8.5rem;
+  color: inherit;
+  font-size: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  background: none;
+}
+
+.property-sales td.num {
+  width: 8rem;
+  color: inherit;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.property-sales-voucher {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+.property-sales-voucher .btn-link {
+  text-align: left;
+}
+
+.property-sales-part td.num {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.property-sales-total th,
+.property-sales-total td.num {
+  border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  font-weight: 600;
+}
+
+.property-sales tbody + tbody tr:first-child > * {
+  padding-top: 1rem;
+}
+
+/* Phone: the voucher goes on its own line under the label and the amount. */
+@media (max-width: 640px) {
+  .property-sales,
+  .property-sales tbody {
+    display: block;
+  }
+
+  .property-sales tr {
+    display: grid;
+    grid-template-columns: 7rem 7rem 1fr;
+  }
+
+  .property-sales th,
+  .property-sales td.num {
+    width: auto;
+  }
+
+  .property-sales-voucher {
+    grid-column: 1 / -1;
+    padding-top: 0;
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+
+  .property-sales-voucher:empty {
+    display: none;
+  }
+}
+
 .property-attachment::before {
   content: '📎 ';
 }

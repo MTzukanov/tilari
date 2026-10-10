@@ -17,6 +17,8 @@ export const CC = {
   parkingA: 60, // sold with parkingB on one voucher, equal amounts
   parkingB: 61,
   opening: 70, // item from the opening balance, cost centre on the opening line
+  duoFlat: 80, // flat and parking space sold on one voucher, every sale line on the flat
+  duoParking: 81,
 } as const
 
 const E = 100 // euro in cents
@@ -69,6 +71,8 @@ export async function buildPropertyFixture(): Promise<PropertyFixture> {
   centre(CC.parkingA, 'Pysäköinti Satama P1', 1)
   centre(CC.parkingB, 'Pysäköinti Satama P2', 1)
   centre(CC.opening, 'As Oy Vanhatie 7 C 9', 1)
+  centre(CC.duoFlat, 'As Oy Rantapolku 5 A 3', 1)
+  centre(CC.duoParking, 'As Oy Rantapolku 5 AP 7', 1)
 
   const eras: Record<string, number> = {}
   const vouchers: Record<string, number> = {}
@@ -177,6 +181,18 @@ export async function buildPropertyFixture(): Promise<PropertyFixture> {
   ])
   eras.parkingB = eras['buyPB:0']
 
+  // Flat and parking space in one housing company, bought on their own vouchers.
+  voucher('buyDuoFlat', '2023-04-01', 300, 'Kauppahinta Rantapolku 5 A 3', [
+    { account: 1441, debit: 40_000 * E, era: 'new' },
+    { account: 1910, credit: 40_000 * E },
+  ])
+  eras.duoFlat = eras['buyDuoFlat:0']
+  voucher('buyDuoParking', '2023-04-01', 300, 'Autopaikka Rantapolku 5 AP 7', [
+    { account: 1453, debit: 2_000 * E, era: 'new' },
+    { account: 1910, credit: 2_000 * E },
+  ])
+  eras.duoParking = eras['buyDuoParking:0']
+
   // Monthly bank statements: rent and vastike for several objects on one voucher.
   const months: string[] = []
   for (let y = 2023; y <= 2026; y++) {
@@ -268,6 +284,20 @@ export async function buildPropertyFixture(): Promise<PropertyFixture> {
   voucher('broker', '2025-06-29', 100, 'Välityspalkkio Mallitie 2 B 5', [
     { account: 8850, debit: 1_500 * E, allocation: CC.sold },
     { account: 1910, credit: 1_500 * E },
+  ])
+
+  // Flat and parking space sold for one price (the parking space at 0): the price and the
+  // cost of both items on the flat's cost centre. The broker fee comes later.
+  voucher('saleDuo', '2025-09-01', 0, 'Myynti Rantapolku 5 A 3 ja AP 7', [
+    { account: 1910, debit: 45_000 * E },
+    { account: 3990, credit: 45_000 * E, allocation: CC.duoFlat },
+    { account: 8850, debit: 42_000 * E, allocation: CC.duoFlat },
+    { account: 1441, credit: 40_000 * E, era: 'buyDuoFlat:0' },
+    { account: 1453, credit: 2_000 * E, era: 'buyDuoParking:0' },
+  ])
+  voucher('brokerDuo', '2025-09-10', 100, 'Välityspalkkio Rantapolku 5', [
+    { account: 8850, debit: 1_800 * E, allocation: CC.duoFlat },
+    { account: 1910, credit: 1_800 * E },
   ])
 
   // Office costs: a cost centre that is not a rental object.

@@ -1139,7 +1139,9 @@
     },
     "sales": {
       "title": "Verkäufe",
-      "line": "Verkaufspreis {price}, Verkaufskosten {costs}, erhalten {proceeds}"
+      "price": "Verkaufspreis",
+      "costs": "Verkaufskosten",
+      "proceeds": "Erhalten"
     },
     "docs": {
       "title": "Dokumente",
@@ -1215,6 +1217,7 @@
     "warn": {
       "sale_costs_unset": "Keine Verkaufskosten angegeben.",
       "sale_line_split": "Beleg {voucher} verkaufte mehrere Objekte; Buchungen ohne Kostenstelle wurden nach Anschaffungskosten aufgeteilt.",
+      "sale_carried": "Auf demselben Beleg wie {object} verkauft, dessen Kostenstelle die Verkaufsbuchungen trägt. Dieses Objekt gilt als in diesem Preis mitverkauft: Verkaufspreis 0 € und die Anschaffungskosten ein Veräußerungsverlust.",
       "era_missing": "Verknüpfter Bilanzposten {eraid} existiert nicht mehr.",
       "no_capital": "Keine Anschaffungskosten verknüpft: Rendite und Break-even können nicht berechnet werden.",
       "doc_corrupt": "Die gespeicherten Daten sind beschädigt; Speichern ersetzt sie.",
@@ -1253,7 +1256,9 @@
       "moved": "gebucht {date}",
       "movedHint": "Eine Korrektur, die die Buchung auf dieses Objekt verschoben hat. Sie zählt im Monat der ursprünglichen Buchung; der Kostenstellenbericht zeigt sie am Buchungsdatum.",
       "accrual": "Abgrenzung",
-      "interest": "Darlehenszinsen"
+      "interest": "Darlehenszinsen",
+      "recounted": "gezählt auf Konto {account}",
+      "recountedHint": "Gebucht auf {booked}. Laut den Notizen eines Korrekturbelegs blieb die Buchung unkorrigiert, weil das Geschäftsjahr abgeschlossen ist; Tilari zählt sie auf {account}. Der Kostenstellenbericht zeigt sie wie gebucht."
     }
   }
 }

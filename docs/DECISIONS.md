@@ -402,3 +402,23 @@ Why not elsewhere (checked in kitupiikki `b081bfa3`):
 
 Forbidden without a new ADR: Tilari data in Kitsas JSON columns, `Tosite.info` or `Asetus`;
 a second Tilari table; foreign keys or triggers on Kitsas tables; storing computed figures.
+
+## ADR-024 Lines left uncorrected on purpose, read from voucher notes (2026-10-10)
+
+**Status:** accepted. Adds one read-only use of `Tosite.json.info` to ADR-001's opaque JSON.
+
+A closed year can only be fixed by a correction voucher in the open year. An owner may decide
+not to correct a closed year's misclassification between income and cost accounts, because the
+correction would change the open year's income statement lines. The rental-object figures
+(income and costs per month) would then stay wrong for that line.
+
+- A correction tool lists each such line in a posted voucher's notes (Lisätiedot,
+  `Tosite.json.info`) as `[hki:omit:<Vienti.id>:tili=<account>]` - the format of the owner's
+  importer (tilari-bank-import), which writes it into its locked-period correction voucher.
+- Tilari reads these keys read-only (`loadRecountedLines` in the rental-object module) and counts
+  the line on that account: monthly bars, income and costs, the year table. The net amount is the
+  same, so the Kitsas result column stays as booked. The month panel tags the line.
+- Only posted vouchers count, and only P&L target accounts that exist in the chart.
+- Why not `TilariData`: the decision belongs with the books (the correction voucher, also in the
+  Kitsas archive), and the importer regenerates it from its rules, so there is no second copy to
+  keep in sync. Tilari never writes these keys.

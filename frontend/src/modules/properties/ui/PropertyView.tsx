@@ -10,8 +10,16 @@ import { formatCents } from '../../../shared/money'
 import { formatBp, formatPercentInput, parsePercentInput } from '../../../shared/percent'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import { voucherTypeName } from '../../../shared/voucherTypes'
+import { showCutText } from '../../../shared/cutText'
 import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
-import { fetchProperty, fetchPropertyDocuments, type PropertyDetail, type PropertyDocuments, type YearRow } from '../api'
+import {
+  fetchProperty,
+  fetchPropertyDocuments,
+  type Disposal,
+  type PropertyDetail,
+  type PropertyDocuments,
+  type YearRow,
+} from '../api'
 import { CashFlowChart, PaybackChart } from './Charts'
 import { formatEuro, statusClass, warningText } from './format'
 import { MonthLinesPanel } from './MonthLines'
@@ -91,6 +99,65 @@ function BreakEvenPanel({ d, onTarget }: { d: PropertyDetail; onTarget: (bp: num
 }
 
 const DOCS_PER_GROUP = 8
+
+type VoucherLabel = { voucher_id: number; date: string; doc_number: number | null; series: string | null; title: string }
+
+function VoucherButton({ v, onOpen }: { v: VoucherLabel; onOpen: (voucherId: number) => void }) {
+  return (
+    <button type="button" className="btn-link" onClick={() => onOpen(v.voucher_id)}>
+      {[formatDate(v.date), formatVoucherId(v.series, v.doc_number, v.date), v.title].filter(Boolean).join(' · ')}
+    </button>
+  )
+}
+
+/** Each sale as price, costs and cash received, every amount next to the voucher it comes from. */
+function Sales({ disposals, onOpenVoucher }: { disposals: Disposal[]; onOpenVoucher: (voucherId: number) => void }) {
+  const { t } = useI18n()
+  return (
+    <table className="property-sales" onMouseOver={showCutText}>
+      {disposals.map((x) => {
+        const costs = x.price_snt - x.proceeds_snt
+        // Costs on the sale voucher itself: what the other vouchers do not explain.
+        const onSale = costs - x.cost_vouchers.reduce((s, v) => s + v.amount_snt, 0)
+        const sources = [...(onSale !== 0 ? [{ ...x, amount_snt: onSale }] : []), ...x.cost_vouchers]
+        return (
+          <tbody key={x.voucher_id}>
+            <tr>
+              <th scope="row">{t('properties.sales.price')}</th>
+              <td className="num">{formatCents(x.price_snt)}</td>
+              <td className="property-sales-voucher">
+                <VoucherButton v={x} onOpen={onOpenVoucher} />
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">{t('properties.sales.costs')}</th>
+              <td className="num">{formatCents(costs)}</td>
+              <td className="property-sales-voucher">
+                {sources.length === 1 ? <VoucherButton v={sources[0]} onOpen={onOpenVoucher} /> : null}
+              </td>
+            </tr>
+            {sources.length > 1
+              ? sources.map((v) => (
+                  <tr key={v.voucher_id} className="property-sales-part">
+                    <th scope="row" />
+                    <td className="num">{formatCents(v.amount_snt)}</td>
+                    <td className="property-sales-voucher">
+                      <VoucherButton v={v} onOpen={onOpenVoucher} />
+                    </td>
+                  </tr>
+                ))
+              : null}
+            <tr className="property-sales-total">
+              <th scope="row">{t('properties.sales.proceeds')}</th>
+              <td className="num">{formatCents(x.proceeds_snt)}</td>
+              <td />
+            </tr>
+          </tbody>
+        )
+      })}
+    </table>
+  )
+}
 
 function Documents({ id, onOpenVoucher }: { id: number; onOpenVoucher: (voucherId: number) => void }) {
   const { t } = useI18n()
@@ -432,20 +499,7 @@ export function PropertyView({
           {d.disposals.length ? (
             <section className="property-section">
               <h3>{t('properties.sales.title')}</h3>
-              <ul className="property-doc-list">
-                {d.disposals.map((x) => (
-                  <li key={x.voucher_id}>
-                    <button type="button" className="btn-link" onClick={() => openVoucher(x.voucher_id)}>
-                      {formatDate(x.date)}
-                    </button>{' '}
-                    {t('properties.sales.line', {
-                      price: formatCents(x.price_snt),
-                      costs: formatCents(x.price_snt - x.proceeds_snt),
-                      proceeds: formatCents(x.proceeds_snt),
-                    })}
-                  </li>
-                ))}
-              </ul>
+              <Sales disposals={d.disposals} onOpenVoucher={openVoucher} />
             </section>
           ) : null}
 

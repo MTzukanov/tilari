@@ -70,6 +70,9 @@ describe('rental objects: setup suggestions', () => {
     // Equal amounts on a two-object sale: the voucher alone cannot tell; the names can.
     expect(suggestion(eras.parkingA)).toMatchObject({ cost_centre_id: CC.parkingA, source: 'text' })
     expect(suggestion(eras.parkingB)).toMatchObject({ cost_centre_id: CC.parkingB, source: 'text' })
+    // Sold together with every sale line on the flat: the parking space still goes by its own name.
+    expect(suggestion(eras.duoFlat)).toMatchObject({ cost_centre_id: CC.duoFlat, source: 'text' })
+    expect(suggestion(eras.duoParking)).toMatchObject({ cost_centre_id: CC.duoParking, source: 'text' })
 
     const doc = (id: number) => setup.docs.find((d) => d.voucher_id === id)
     expect(doc(vouchers.lease)?.suggestion?.cost_centre_id).toBe(CC.bundle)
@@ -149,7 +152,7 @@ describe('rental objects: figures', () => {
 
   it('per fiscal year, the Kitsas result column equals the cost-centre report', async () => {
     const { db } = await setUp()
-    for (const id of [CC.bundle, CC.sold, CC.commercial, CC.garage, CC.parkingA]) {
+    for (const id of [CC.bundle, CC.sold, CC.commercial, CC.garage, CC.parkingA, CC.duoFlat, CC.duoParking]) {
       const d = computeDetail(db, id, { today: TODAY })
       for (const year of d.years) {
         const kitsas = computeAllocationBalances(db, id, year.starts, year.ends, true).kitsas_profit_cents
@@ -174,6 +177,19 @@ describe('rental objects: figures', () => {
     expect(d.summary.sale_price_snt).toBe(55_000 * E)
     expect(d.summary.disposed_cost_snt).toBe(60_000 * E)
     expect(d.disposals[0].price_snt).toBe(55_000 * E)
+    // The sale voucher and the broker invoice listed with it carry their Kitsas number for the links.
+    const number = (id: number) => db.get<{ tunniste: number }>('SELECT tunniste FROM Tosite WHERE id = ?', [id])!.tunniste
+    expect(d.disposals[0]).toMatchObject({ doc_number: number(vouchers.saleB), series: null, title: 'Myynti Mallitie 2 B 5' })
+    expect(d.disposals[0].cost_vouchers).toEqual([
+      {
+        voucher_id: vouchers.broker,
+        date: '2025-06-29',
+        amount_snt: 1_500 * E,
+        doc_number: number(vouchers.broker),
+        series: null,
+        title: 'Välityspalkkio Mallitie 2 B 5',
+      },
+    ])
     expect(d.summary.book_value_snt).toBe(0)
     expect(d.eras[0].movements.map((m) => m.kind)).toEqual(['acquisition', 'sale'])
     // 27 months of (800 - 250); the broker fee is a sale cost, not operating.
@@ -192,6 +208,36 @@ describe('rental objects: figures', () => {
       expect(d.summary.proceeds_snt).toBe(2_500 * E)
       expect(d.summary.unrecovered_snt).toBe(500 * E)
     }
+  })
+
+  it('a parking space sold inside the flat price brings nothing in; its credit goes with the flat', async () => {
+    const { db, vouchers } = await setUp()
+    const flat = computeDetail(db, CC.duoFlat, { today: TODAY })
+    expect(flat.status).toBe('sold')
+    // 40 000 + 2 000 credited + 45 000 price - 42 000 cost of both items - 1 800 broker fee.
+    expect(flat.summary).toMatchObject({
+      sale_price_snt: 45_000 * E,
+      proceeds_snt: 43_200 * E,
+      disposed_cost_snt: 40_000 * E,
+    })
+    expect(flat.warnings.map((w) => w.code)).not.toContain('sale_carried')
+    expect(flat.disposals[0].cost_vouchers).toEqual([
+      expect.objectContaining({ voucher_id: vouchers.brokerDuo, amount_snt: 1_800 * E }),
+    ])
+    const parking = computeDetail(db, CC.duoParking, { today: TODAY })
+    expect(parking.status).toBe('sold')
+    expect(parking.summary).toMatchObject({
+      sale_price_snt: 0,
+      proceeds_snt: 0,
+      disposed_cost_snt: 2_000 * E,
+      unrecovered_snt: 2_000 * E,
+    })
+    expect(parking.disposals).toEqual([
+      expect.objectContaining({ voucher_id: vouchers.saleDuo, price_snt: 0, proceeds_snt: 0, cost_vouchers: [] }),
+    ])
+    expect(parking.warnings).toContainEqual({ code: 'sale_carried', params: { object: 'As Oy Rantapolku 5 A 3' } })
+    // Together: what the sale brought in after the fee.
+    expect(flat.summary.proceeds_snt + parking.summary.proceeds_snt).toBe(43_200 * E)
   })
 
   it('brutto VAT rent counts net in cash figures and gross in the Kitsas column', async () => {
@@ -287,7 +333,7 @@ describe('rental objects: figures', () => {
     expect(held.map((r) => r.id).sort((a, b) => a - b)).toEqual([CC.bundle, CC.garage, CC.commercial, CC.opening])
     expect(p.totals.book_value_snt).toBe((86_200 + 4_000 + 50_000 + 30_000) * E)
     expect(p.totals.irr_bp).not.toBeNull()
-    // Sold together: 60 000 + 3 000 + 3 000 in, 14 850 + 53 500 + 2 x 2 500 back -> a gain.
+    // Sold: 60 000 + 3 000 + 3 000 + 42 000 in, 14 850 + 53 500 + 2 x 2 500 + 43 200 back -> a gain.
     expect(p.totals.sold_irr_bp).toBeGreaterThan(0)
     expect(p.totals.held_irr_bp).not.toBeNull()
     expect(p.periods.map((x) => x.starts)).toEqual(['2023-01-01', '2024-01-01', '2025-01-01', '2026-01-01'])
@@ -403,6 +449,48 @@ describe('rental objects: through the Ledger', () => {
     expect(changes.map((c) => c.kind)).toEqual(['property_setup'])
     const list = await props.listProperties({ asOf: '2026-09-30' })
     expect(list.rows.find((r) => r.id === CC.bundle)?.status).toBe('active')
+  })
+})
+
+describe('rental objects: lines left uncorrected on purpose', () => {
+  it('a correction voucher note moves a line to the account it belongs on', async () => {
+    const { db } = await setUp()
+    // A housing-company charge booked as a debit on the rent account.
+    const voucher = db.run(
+      "INSERT INTO Tosite (pvm, tyyppi, tila, tunniste, otsikko, json) VALUES ('2025-03-05', 100, 100, 901, 'Vastike', '{}')",
+    ).lastInsertRowid
+    db.run(
+      "INSERT INTO Vienti (rivi, tosite, pvm, tili, kohdennus, selite, kreditsnt) VALUES (1, ?, '2025-03-05', 1910, 0, 'Vastike', ?)",
+      [voucher, 200 * E],
+    )
+    const line = db.run(
+      "INSERT INTO Vienti (rivi, tosite, pvm, tili, kohdennus, selite, debetsnt) VALUES (2, ?, '2025-03-05', 3760, ?, 'Vastike', ?)",
+      [voucher, CC.garage, 200 * E],
+    ).lastInsertRowid
+    const before = computeDetail(db, CC.garage, { today: TODAY })
+
+    const note = (status: number) =>
+      db.run('INSERT INTO Tosite (pvm, tyyppi, tila, tunniste, otsikko, json) VALUES (?, 0, ?, ?, ?, ?)', [
+        '2026-01-01',
+        status,
+        status >= 100 ? 902 : 0,
+        'Oikaisu',
+        JSON.stringify({ info: `Jätetty pois:\n- vastike rent-tilillä [hki:omit:${line}:tili=7300]` }),
+      ])
+    note(50) // a draft's note does not count
+    expect(computeDetail(db, CC.garage, { today: TODAY }).summary.operating).toEqual(before.summary.operating)
+
+    note(100)
+    const after = computeDetail(db, CC.garage, { today: TODAY })
+    expect(after.summary.operating).toEqual({
+      income_snt: before.summary.operating.income_snt + 200 * E,
+      expense_snt: before.summary.operating.expense_snt + 200 * E,
+      net_snt: before.summary.operating.net_snt,
+    })
+    expect(after.years.map((y) => y.kitsas_result_snt)).toEqual(before.years.map((y) => y.kitsas_result_snt))
+    const shown = after.month_lines.find((l) => l.entry.id === line)
+    expect(shown).toMatchObject({ kind: 'expense', amount_snt: -200 * E, counted_account: { account: 7300 } })
+    expect(shown!.entry.account).toBe(3760)
   })
 })
 

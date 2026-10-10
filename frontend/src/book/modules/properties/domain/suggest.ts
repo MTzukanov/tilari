@@ -146,13 +146,23 @@ export function suggestEra(root: EraRoot, input: SuggestEraInput): EraSuggestion
   const rows = input.eraRows.filter((r) => r.eraid === root.eraid)
 
   // 1. Sale: a voucher crediting the item with P&L lines on exactly one object, or one
-  //    whose cost line matches the credited amount.
+  //    whose cost line matches the credited amount. When it credits other items too, lines on
+  //    one object only say the item went in that object's price (a parking space sold with a
+  //    flat): the item's own evidence below decides, and that object only when nothing does.
   const ambiguous = new Set<number>()
+  let soldWith: number | null = null
   for (const credit of rows.filter((r) => r.signed_snt < 0 && r.id !== r.eraid)) {
     const lines = input.voucherPnl.get(credit.voucher_id) ?? []
     if (!lines.length) continue
     const centres = unique(lines.map((l) => centreOf(l.allocation)))
-    if (centres.length === 1) return { cost_centre_id: centres[0], source: 'sale', candidates: centres }
+    if (centres.length === 1) {
+      const others = input.eraRows.some(
+        (r) => r.voucher_id === credit.voucher_id && r.eraid !== root.eraid && r.signed_snt < 0 && r.id !== r.eraid,
+      )
+      if (!others) return { cost_centre_id: centres[0], source: 'sale', candidates: centres }
+      soldWith ??= centres[0]
+      continue
+    }
     const matching = unique(
       lines.filter((l) => l.net_snt === credit.signed_snt).map((l) => centreOf(l.allocation)),
     )
@@ -174,6 +184,7 @@ export function suggestEra(root: EraRoot, input: SuggestEraInput): EraSuggestion
   // 4. Text: the item's description and voucher title against cost-centre names.
   const picked = pickBest(input.scorer(`${root.description} ${root.voucher_title}`))
   if (picked.id != null) return { cost_centre_id: picked.id, source: 'text', candidates: picked.candidates }
+  if (soldWith != null) return { cost_centre_id: soldWith, source: 'sale', candidates: unique([soldWith, ...picked.candidates]) }
   const candidates = unique([...ambiguous, ...picked.candidates])
   if (candidates.length) return { cost_centre_id: null, source: ambiguous.size ? 'sale' : 'text', candidates }
   return null

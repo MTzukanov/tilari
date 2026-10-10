@@ -1139,7 +1139,9 @@
     },
     "sales": {
       "title": "Sales",
-      "line": "selling price {price}, sale costs {costs}, received {proceeds}"
+      "price": "Selling price",
+      "costs": "Sale costs",
+      "proceeds": "Received"
     },
     "docs": {
       "title": "Documents",
@@ -1215,6 +1217,7 @@
     "warn": {
       "sale_costs_unset": "No sale costs set.",
       "sale_line_split": "Voucher {voucher} sold several objects; lines without a cost centre were split by acquisition cost.",
+      "sale_carried": "Sold on one voucher with {object}, whose cost centre has the sale lines. This object counts as sold within that price: sale price 0 € and its acquisition cost a loss on sale.",
       "era_missing": "Linked item {eraid} no longer exists.",
       "no_capital": "No acquisition cost linked: return and break-even cannot be computed.",
       "doc_corrupt": "The stored data is damaged; saving replaces it.",
@@ -1253,7 +1256,9 @@
       "moved": "booked {date}",
       "movedHint": "A correction that moved the booking to this object. It counts in the month of the booking it corrects; the cost-centre report shows it on its booking date.",
       "accrual": "accrual",
-      "interest": "loan interest"
+      "interest": "loan interest",
+      "recounted": "counted as {account}",
+      "recountedHint": "Booked on {booked}. A correction voucher's notes list this line as left uncorrected because the year is closed; Tilari counts it on {account}. The cost-centre report shows it as booked."
     }
   }
 }

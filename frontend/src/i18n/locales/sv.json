@@ -1139,7 +1139,9 @@
     },
     "sales": {
       "title": "Försäljningar",
-      "line": "försäljningspris {price}, försäljningskostnader {costs}, erhållet {proceeds}"
+      "price": "Försäljningspris",
+      "costs": "Försäljningskostnader",
+      "proceeds": "Erhållet"
     },
     "docs": {
       "title": "Dokument",
@@ -1215,6 +1217,7 @@
     "warn": {
       "sale_costs_unset": "Inga försäljningskostnader angivna.",
       "sale_line_split": "Verifikat {voucher} sålde flera objekt; poster utan kostnadsställe delades i proportion till anskaffningsutgifterna.",
+      "sale_carried": "Såld på samma verifikat som {object}, vars kostnadsställe har försäljningsposterna. Objektet räknas som sålt i det priset: försäljningspris 0 € och anskaffningsutgiften en förlust vid försäljning.",
       "era_missing": "Länkad balanspost {eraid} finns inte längre.",
       "no_capital": "Ingen anskaffningsutgift länkad: avkastning och nollpris kan inte beräknas.",
       "doc_corrupt": "De sparade uppgifterna är skadade; sparande ersätter dem.",
@@ -1253,7 +1256,9 @@
       "moved": "bokförd {date}",
       "movedHint": "En rättelse som flyttade bokningen till objektet. Den räknas till den månad den ursprungliga bokningen gäller; kostnadsställets rapport visar den på bokföringsdagen.",
       "accrual": "periodisering",
-      "interest": "lånets ränta"
+      "interest": "lånets ränta",
+      "recounted": "räknas på konto {account}",
+      "recountedHint": "Bokförd på {booked}. Enligt anteckningarna i ett rättelseverifikat lämnades raden orättad eftersom räkenskapsperioden är stängd; Tilari räknar den på {account}. Kostnadsställesrapporten visar den som bokförd."
     }
   }
 }
