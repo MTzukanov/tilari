@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { pickBest, textScorer, tokenize } from './suggest'
+import type { CostCentre, EraRoot, EraRow, PnlRow } from './ledger'
+import { pickBest, suggestEra, textScorer, tokenize } from './suggest'
 
 describe('tokenize', () => {
   it('drops housing-company words and keeps unit designators', () => {
@@ -83,3 +84,79 @@ describe('words before numbers', () => {
   })
 })
 
+
+describe('suggestEra: items sold on one voucher', () => {
+  const centres: CostCentre[] = [
+    { id: 80, name: 'As Oy Rantapolku 5 A 3', starts: null, ends: null, child_ids: [] },
+    { id: 81, name: 'As Oy Rantapolku 5 AP 7', starts: null, ends: null, child_ids: [] },
+  ]
+  const root = (eraid: number, account: number, description: string): EraRoot => ({
+    eraid,
+    account,
+    account_type: 'A',
+    account_name: '',
+    date: '2023-04-01',
+    voucher_id: eraid,
+    voucher_type: 300,
+    voucher_title: description,
+    description,
+    allocation: 0,
+  })
+  const row = (id: number, eraid: number, voucher: number, signed: number): EraRow => ({
+    id,
+    eraid,
+    account: 1441,
+    date: '2023-04-01',
+    voucher_id: voucher,
+    voucher_type: 0,
+    signed_snt: signed,
+    allocation: 0,
+    description: '',
+  })
+  const pnl = (id: number, account: number, net: number): PnlRow => ({
+    id,
+    date: '2025-09-01',
+    voucher_id: 9,
+    voucher_type: 0,
+    allocation: 80,
+    account,
+    account_type: '',
+    gross_snt: net,
+    net_snt: net,
+    partner_id: null,
+  })
+  const suggest = (flat: EraRoot, parking: EraRoot, withParking = true) =>
+    [flat, parking].map((r) =>
+      suggestEra(r, {
+        centres,
+        roots: [flat, parking],
+        // Both bought on their own voucher, then credited on sale voucher 9.
+        eraRows: [
+          row(1, 1, 1, 40_000),
+          row(2, 2, 2, 2_000),
+          row(91, 1, 9, -40_000),
+          ...(withParking ? [row(92, 2, 9, -2_000)] : []),
+        ],
+        // Price and the cost of both items, all on the flat.
+        voucherPnl: new Map([[9, [pnl(93, 3990, 45_000), pnl(94, 8850, -42_000)]]]),
+        scorer: textScorer(centres),
+      }),
+    )
+
+  it("the item's own name decides, not the cost centre of the sale lines", () => {
+    const [flat, parking] = suggest(root(1, 1441, 'Kauppahinta Rantapolku 5 A 3'), root(2, 1453, 'Autopaikka Rantapolku 5 AP 7'))
+    expect(flat).toMatchObject({ cost_centre_id: 80, source: 'text' })
+    expect(parking).toMatchObject({ cost_centre_id: 81, source: 'text' })
+  })
+
+  it('with nothing else to go on, the item goes with the sale lines', () => {
+    const [flat, parking] = suggest(root(1, 1441, 'Kauppakirja'), root(2, 1453, 'Autopaikka'))
+    expect(flat).toMatchObject({ cost_centre_id: 80, source: 'sale' })
+    expect(parking).toMatchObject({ cost_centre_id: 80, source: 'sale' })
+  })
+
+  it('a voucher selling one item still decides on its own', () => {
+    const [flat] = suggest(root(1, 1441, 'Kauppahinta Rantapolku 5 AP 7'), root(2, 1453, 'Autopaikka'), false)
+    expect(flat).toMatchObject({ cost_centre_id: 80, source: 'sale' })
+  })
+})

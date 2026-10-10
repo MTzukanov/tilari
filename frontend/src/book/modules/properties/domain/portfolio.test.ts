@@ -53,17 +53,6 @@ function applySuggestions(setup: SetupResponse): SetupApplyInput {
 async function setUp(): Promise<PropertyFixture> {
   const fx = await buildPropertyFixture()
   applySetup(fx.db, applySuggestions(buildSetup(fx.db)), '2026-10-08T10:00:00Z')
-  // The sale voucher points the parking space at the flat (all its lines are there); the owner moves it.
-  applySetup(
-    fx.db,
-    {
-      objects: [
-        { id: CC.duoFlat, remove_eras: [fx.eras.duoParking] },
-        { id: CC.duoParking, add_eras: [fx.eras.duoParking] },
-      ],
-    },
-    '2026-10-08T10:01:00Z',
-  )
   return fx
 }
 
@@ -81,6 +70,9 @@ describe('rental objects: setup suggestions', () => {
     // Equal amounts on a two-object sale: the voucher alone cannot tell; the names can.
     expect(suggestion(eras.parkingA)).toMatchObject({ cost_centre_id: CC.parkingA, source: 'text' })
     expect(suggestion(eras.parkingB)).toMatchObject({ cost_centre_id: CC.parkingB, source: 'text' })
+    // Sold together with every sale line on the flat: the parking space still goes by its own name.
+    expect(suggestion(eras.duoFlat)).toMatchObject({ cost_centre_id: CC.duoFlat, source: 'text' })
+    expect(suggestion(eras.duoParking)).toMatchObject({ cost_centre_id: CC.duoParking, source: 'text' })
 
     const doc = (id: number) => setup.docs.find((d) => d.voucher_id === id)
     expect(doc(vouchers.lease)?.suggestion?.cost_centre_id).toBe(CC.bundle)

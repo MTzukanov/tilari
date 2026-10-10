@@ -20,8 +20,11 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   none (unallocated lines are still split by credit, `sale_line_split`).
 - The fix is in Tilari, not the books: the year was closed, and a correction pair in a later year
   would read as running costs and income, not as part of the sale.
-- Open: setup still suggests such a parking space's item for the flat (the sale voucher's lines
-  are all on the flat); the owner moves it by hand.
+- Setup (`suggest.ts`): such a sale voucher no longer decides on its own. Before, its lines on
+  one object made setup suggest the parking space's item for the flat. When the voucher credits
+  other items too, the item's own evidence (cost centre on its lines, its voucher, its text)
+  decides first, and the object with the sale lines only when nothing does. On a real book only
+  the two items of that sale changed (the parking space now by its own name).
 
 ## 2026-10-09 - Rental object: a month's lines; one loan per object
 
