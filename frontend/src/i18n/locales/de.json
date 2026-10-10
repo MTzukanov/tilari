@@ -1256,7 +1256,9 @@
       "moved": "gebucht {date}",
       "movedHint": "Eine Korrektur, die die Buchung auf dieses Objekt verschoben hat. Sie zählt im Monat der ursprünglichen Buchung; der Kostenstellenbericht zeigt sie am Buchungsdatum.",
       "accrual": "Abgrenzung",
-      "interest": "Darlehenszinsen"
+      "interest": "Darlehenszinsen",
+      "recounted": "gezählt auf Konto {account}",
+      "recountedHint": "Gebucht auf {booked}. Laut den Notizen eines Korrekturbelegs blieb die Buchung unkorrigiert, weil das Geschäftsjahr abgeschlossen ist; Tilari zählt sie auf {account}. Der Kostenstellenbericht zeigt sie wie gebucht."
     }
   }
 }

@@ -261,6 +261,8 @@ export type MonthLine = {
   counted_date: string
   /** credit - debit without VAT, as the bars add it up. */
   amount_snt: number
+  /** The account it counts on, when a correction voucher's notes say it belongs there (ADR-024). */
+  counted_account?: { account: number; name: string }
   /** The line as Selaa shows it. */
   entry: BrowseEntry
 }

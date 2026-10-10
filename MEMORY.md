@@ -7,6 +7,15 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-10 - Rental objects: lines left uncorrected on purpose
+
+- Owner decision (kept): a closed year's income/cost misclassification is not corrected in the
+  open year. The owner's importer now lists such lines in its correction voucher's notes as
+  `[hki:omit:<Vienti.id>:tili=<account>]`; Tilari counts them on that account (ADR-024), so an
+  object's month shows the charge as a cost instead of negative rent. Kitsas column unchanged.
+- Found on the way: a housing company's refund (water settlement) shows as a cost bar above zero
+  when the month's own charge is the misbooked line; with the line recounted the bar is normal.
+
 ## 2026-10-10 - Rental objects: an item sold inside another object's price
 
 - Owner report: a flat and its parking space sold on one voucher for one price (the parking space

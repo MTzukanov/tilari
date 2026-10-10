@@ -30,11 +30,13 @@ import {
   loadEraRows,
   loadInterestRows,
   loadPnlRows,
+  loadRecountedLines,
   loadVoucherPnlRows,
   loadVoucherRefs,
   type CostCentre,
   type EraRoot,
   type EraRow,
+  recountLines,
   type PnlRow,
 } from './ledger'
 import { saleNet, toBp, xirr, yieldBp, type Flow } from './returns'
@@ -109,14 +111,18 @@ function computeObjects(
 ): Computed[] {
   const allocations = new Set<number>()
   for (const c of centres) for (const a of allocationSet(c)) allocations.add(a)
-  const pnlByAllocation = groupBy(loadPnlRows(db, allocations), (r) => r.allocation)
+  const recounted = loadRecountedLines(db)
+  const pnlByAllocation = groupBy(recountLines(loadPnlRows(db, allocations), recounted), (r) => r.allocation)
 
   const linkedEraids = [...loaded.owner.keys()]
   const allEraRows = loadEraRows(db, linkedEraids)
   const eraRowsById = groupBy(allEraRows, (r) => r.eraid)
   const roots = new Map(loadEraRoots(db, linkedEraids).map((r) => [r.eraid, r]))
 
-  const voucherPnl = groupBy(loadVoucherPnlRows(db, disposalCandidates(allEraRows)), (r) => r.voucher_id)
+  const voucherPnl = groupBy(
+    recountLines(loadVoucherPnlRows(db, disposalCandidates(allEraRows)), recounted),
+    (r) => r.voucher_id,
+  )
   const centreInfo = new Map(loaded.centres.map((c) => [c.id, { name: c.name, allocations: allocationSet(c) }]))
   const shares = saleShares(allEraRows, loaded.owner, centreInfo, voucherPnl)
   const allPnl = [...pnlByAllocation.values()].flat()

@@ -1,7 +1,7 @@
 /** SQL loaders for rental objects. Everything else in this module is pure. */
 import { selectBrowseEntries } from '../../../browse'
 import { asCents } from '../../../cents'
-import { jsonDate, nameFi } from '../../../json'
+import { jsonDate, nameFi, parseJson } from '../../../json'
 import { pnlAccount, SQL_POSTED } from '../../../kernel/sqlFragments'
 import type { SqliteDb } from '../../../sqlite'
 import type { BrowseEntry } from '../../../types'
@@ -32,6 +32,8 @@ export type PnlRow = {
   /** gross without VAT for brutto-coded lines. */
   net_snt: number
   partner_id: number | null
+  /** Set when the line counts on another account than booked (see `loadRecountedLines`). */
+  recounted?: { booked_account: number; account_name: string }
 }
 
 export type EraRow = {
@@ -141,6 +143,54 @@ function mapPnl(row: RawPnl): PnlRow {
     net_snt: netOf(gross, code, pct),
     partner_id: row.partner_id == null ? null : Number(row.partner_id),
   }
+}
+
+const OMIT_KEY = /\[hki:omit:(\d+):tili=(\d+)\]/g
+
+/**
+ * Lines left uncorrected on purpose (ADR-024): a correction tool lists a closed year's line it
+ * did not move, with the account it belongs on, in a posted voucher's notes (Lisätiedot,
+ * `Tosite.json.info`) as `[hki:omit:<Vienti.id>:tili=<account>]`. Line id -> that account.
+ */
+export function loadRecountedLines(db: SqliteDb): Map<number, { account: number; account_type: string; account_name: string }> {
+  const wanted = new Map<number, number>()
+  const rows = db.all<{ json: unknown }>(
+    `SELECT json FROM Tosite WHERE ${SQL_POSTED} AND CAST(json AS TEXT) LIKE '%[hki:omit:%'`,
+  )
+  for (const row of rows) {
+    const info = String(parseJson(row.json).info ?? '')
+    for (const m of info.matchAll(OMIT_KEY)) wanted.set(Number(m[1]), Number(m[2]))
+  }
+  const out = new Map<number, { account: number; account_type: string; account_name: string }>()
+  if (!wanted.size) return out
+  const accounts = new Map(
+    db
+      .all<{ numero: number; tyyppi: string | null; json: unknown }>(
+        `SELECT numero, tyyppi, json FROM Tili WHERE numero IN (${inList(new Set(wanted.values()))})`,
+      )
+      .map((r) => [Number(r.numero), { type: String(r.tyyppi || ''), name: nameFi(r.json) }]),
+  )
+  for (const [lineId, account] of wanted) {
+    const info = accounts.get(account)
+    // Only P&L accounts: a balance-sheet target would take the line out of the figures.
+    if (info && String(account) >= '3') out.set(lineId, { account, account_type: info.type, account_name: info.name })
+  }
+  return out
+}
+
+/** The rows with recounted lines on their noted account (`booked_account` keeps the booked one). */
+export function recountLines(rows: PnlRow[], recounted: ReturnType<typeof loadRecountedLines>): PnlRow[] {
+  if (!recounted.size) return rows
+  return rows.map((row) => {
+    const to = recounted.get(row.id)
+    if (!to || to.account === row.account) return row
+    return {
+      ...row,
+      account: to.account,
+      account_type: to.account_type,
+      recounted: { booked_account: row.account, account_name: to.account_name },
+    }
+  })
 }
 
 /** Posted P&L lines on the given cost centres / projects, oldest first. */

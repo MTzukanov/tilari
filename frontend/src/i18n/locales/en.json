@@ -1256,7 +1256,9 @@
       "moved": "booked {date}",
       "movedHint": "A correction that moved the booking to this object. It counts in the month of the booking it corrects; the cost-centre report shows it on its booking date.",
       "accrual": "accrual",
-      "interest": "loan interest"
+      "interest": "loan interest",
+      "recounted": "counted as {account}",
+      "recountedHint": "Booked on {booked}. A correction voucher's notes list this line as left uncorrected because the year is closed; Tilari counts it on {account}. The cost-centre report shows it as booked."
     }
   }
 }

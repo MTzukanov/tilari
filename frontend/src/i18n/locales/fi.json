@@ -1256,7 +1256,9 @@
       "moved": "kirjattu {date}",
       "movedHint": "Oikaisu, joka siirsi kirjauksen tälle kohteelle. Se lasketaan kuukauteen, jota alkuperäinen kirjaus koskee; kustannuspaikan raportissa se näkyy kirjauspäivänä.",
       "accrual": "jaksotus",
-      "interest": "lainan korko"
+      "interest": "lainan korko",
+      "recounted": "lasketaan tilille {account}",
+      "recountedHint": "Kirjattu tilille {booked}. Oikaisutositteen lisätiedoissa rivi on jätetty oikaisematta, koska tilikausi on suljettu; Tilari laskee sen tilille {account}. Kustannuspaikan raportissa se näkyy kirjatulla tilillä."
     }
   }
 }

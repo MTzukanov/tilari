@@ -116,7 +116,8 @@ Rules already encoded:
 6. BS vs P&L: `CAST(tili AS text) < '3'` vs `>= '3'`.
 7. Sign: assets (`tyyppi` starts with `A`, or number `1...`): debit-credit; else credit-debit.
 8. Writable types: 0, 100, 200, 300, 400, 800, 9100, and edit 9910/9920/9930. Type 210 is read-only until Billing.
-9. JSON blobs stay opaque except documented fields (`tiliote`, `alv`, `tilioterivi`).
+9. JSON blobs stay opaque except documented fields (`tiliote`, `alv`, `tilioterivi`); `info` is
+   read only for `[hki:omit:...]` keys of lines left uncorrected on purpose (ADR-024).
    Tilari's own data (rental objects) lives only in the `TilariData` table (ADR-023):
    never in Kitsas JSON columns, `Tosite.info` or `Asetus` - Kitsas dialogs rebuild those JSONs
    and its chart export copies every `Asetus` key. Store links and inputs, never computed figures.

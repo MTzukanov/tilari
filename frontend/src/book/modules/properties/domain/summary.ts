@@ -42,7 +42,14 @@ export type ObjectInput = {
 }
 
 /** A line behind a month's bars (`MonthLine` without the ledger details). */
-export type CountedLine = { id: number; month: string; kind: MonthLineKind; counted_date: string; amount_snt: number }
+export type CountedLine = {
+  id: number
+  month: string
+  kind: MonthLineKind
+  counted_date: string
+  amount_snt: number
+  counted_account?: { account: number; name: string }
+}
 
 export type ObjectResult = {
   /** Dated cash flows up to the as-of date (manual capital included). */
@@ -158,7 +165,14 @@ export function computeObject(input: ObjectInput): ObjectResult {
   for (const row of classified.operating) {
     if (row.date > asOf || !shown.has(row.date.slice(0, 7))) continue
     const kind = isIncome(row) ? 'income' : 'expense'
-    lines.push({ id: row.id, month: row.date.slice(0, 7), kind, counted_date: row.date, amount_snt: row.net_snt })
+    lines.push({
+      id: row.id,
+      month: row.date.slice(0, 7),
+      kind,
+      counted_date: row.date,
+      amount_snt: row.net_snt,
+      ...(row.recounted ? { counted_account: { account: row.account, name: row.recounted.account_name } } : {}),
+    })
   }
   for (const row of input.interest) {
     if (NON_CASH_TYPES.has(row.voucher_type) || row.date > asOf || !shown.has(row.date.slice(0, 7))) continue

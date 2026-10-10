@@ -452,6 +452,48 @@ describe('rental objects: through the Ledger', () => {
   })
 })
 
+describe('rental objects: lines left uncorrected on purpose', () => {
+  it('a correction voucher note moves a line to the account it belongs on', async () => {
+    const { db } = await setUp()
+    // A housing-company charge booked as a debit on the rent account.
+    const voucher = db.run(
+      "INSERT INTO Tosite (pvm, tyyppi, tila, tunniste, otsikko, json) VALUES ('2025-03-05', 100, 100, 901, 'Vastike', '{}')",
+    ).lastInsertRowid
+    db.run(
+      "INSERT INTO Vienti (rivi, tosite, pvm, tili, kohdennus, selite, kreditsnt) VALUES (1, ?, '2025-03-05', 1910, 0, 'Vastike', ?)",
+      [voucher, 200 * E],
+    )
+    const line = db.run(
+      "INSERT INTO Vienti (rivi, tosite, pvm, tili, kohdennus, selite, debetsnt) VALUES (2, ?, '2025-03-05', 3760, ?, 'Vastike', ?)",
+      [voucher, CC.garage, 200 * E],
+    ).lastInsertRowid
+    const before = computeDetail(db, CC.garage, { today: TODAY })
+
+    const note = (status: number) =>
+      db.run('INSERT INTO Tosite (pvm, tyyppi, tila, tunniste, otsikko, json) VALUES (?, 0, ?, ?, ?, ?)', [
+        '2026-01-01',
+        status,
+        status >= 100 ? 902 : 0,
+        'Oikaisu',
+        JSON.stringify({ info: `Jätetty pois:\n- vastike rent-tilillä [hki:omit:${line}:tili=7300]` }),
+      ])
+    note(50) // a draft's note does not count
+    expect(computeDetail(db, CC.garage, { today: TODAY }).summary.operating).toEqual(before.summary.operating)
+
+    note(100)
+    const after = computeDetail(db, CC.garage, { today: TODAY })
+    expect(after.summary.operating).toEqual({
+      income_snt: before.summary.operating.income_snt + 200 * E,
+      expense_snt: before.summary.operating.expense_snt + 200 * E,
+      net_snt: before.summary.operating.net_snt,
+    })
+    expect(after.years.map((y) => y.kitsas_result_snt)).toEqual(before.years.map((y) => y.kitsas_result_snt))
+    const shown = after.month_lines.find((l) => l.entry.id === line)
+    expect(shown).toMatchObject({ kind: 'expense', amount_snt: -200 * E, counted_account: { account: 7300 } })
+    expect(shown!.entry.account).toBe(3760)
+  })
+})
+
 describe('rental objects: corrections in a later year', () => {
   it('count in the month of the booking they correct', async () => {
     const { db } = await setUp()

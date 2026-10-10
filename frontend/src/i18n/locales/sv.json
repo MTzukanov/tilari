@@ -1256,7 +1256,9 @@
       "moved": "bokförd {date}",
       "movedHint": "En rättelse som flyttade bokningen till objektet. Den räknas till den månad den ursprungliga bokningen gäller; kostnadsställets rapport visar den på bokföringsdagen.",
       "accrual": "periodisering",
-      "interest": "lånets ränta"
+      "interest": "lånets ränta",
+      "recounted": "räknas på konto {account}",
+      "recountedHint": "Bokförd på {booked}. Enligt anteckningarna i ett rättelseverifikat lämnades raden orättad eftersom räkenskapsperioden är stängd; Tilari räknar den på {account}. Kostnadsställesrapporten visar den som bokförd."
     }
   }
 }

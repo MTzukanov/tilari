@@ -66,7 +66,22 @@ export function MonthLinesPanel({
       label: t('table.account'),
       width: 210,
       sortValue: (l) => l.entry.account,
-      render: (l) => `${l.entry.account} ${l.entry.account_name}`,
+      render: (l) => (
+        <>
+          {`${l.entry.account} ${l.entry.account_name}`}
+          {l.counted_account ? (
+            <span
+              className="property-line-tag"
+              title={t('properties.month.recountedHint', {
+                booked: l.entry.account,
+                account: `${l.counted_account.account} ${l.counted_account.name}`,
+              })}
+            >
+              {t('properties.month.recounted', { account: l.counted_account.account })}
+            </span>
+          ) : null}
+        </>
+      ),
     },
     {
       id: 'text',
