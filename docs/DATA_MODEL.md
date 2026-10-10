@@ -43,7 +43,7 @@ Money in integer cents (`*_snt`), percentages in basis points (`*_bp`, 100 = 1 %
 | `kind` | `apartment` / `parking` / `garage` / `commercial` / `storage` / `other` |
 | `eras[]` | `{ eraid, account }` - balance-sheet items holding the acquisition cost (root `Vienti.id`) |
 | `manual_capital[]` | `{ date, amount_snt, note? }` - capital not on a linked item |
-| `sale_voucher_ids[]` | Vouchers whose lines on the object belong to a sale |
+| `sale_voucher_ids[]` | Vouchers whose lines on the object belong to a sale. No UI yet: stored, checked and counted, but no screen sets it (MEMORY 2026-10-10) |
 | `doc_voucher_ids[]` | Document vouchers (usually type 800 Liitetieto) |
 | `financing` | `{ loan_accounts[], interest_accounts[] }` - interest on vouchers touching the loan; a loan account belongs to one object (`loan_linked` on save, `loan_shared` warning for older files) |
 | `valuations[]` | `{ date, price_snt, debt_free_price_snt?, source? }` - owner's price estimate |
