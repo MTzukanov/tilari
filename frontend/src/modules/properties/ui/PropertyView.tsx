@@ -443,6 +443,14 @@ export function PropertyView({
                       costs: formatCents(x.price_snt - x.proceeds_snt),
                       proceeds: formatCents(x.proceeds_snt),
                     })}
+                    {x.cost_vouchers.map((v) => (
+                      <span key={v.voucher_id} className="property-sale-cost muted">
+                        {t('properties.sales.costFrom', { amount: formatCents(v.amount_snt) })}{' '}
+                        <button type="button" className="btn-link" onClick={() => openVoucher(v.voucher_id)}>
+                          {[formatDate(v.date), formatVoucherId(v.series, v.doc_number, v.date), v.title].filter(Boolean).join(' · ')}
+                        </button>
+                      </span>
+                    ))}
                   </li>
                 ))}
               </ul>

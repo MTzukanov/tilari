@@ -177,6 +177,18 @@ describe('rental objects: figures', () => {
     expect(d.summary.sale_price_snt).toBe(55_000 * E)
     expect(d.summary.disposed_cost_snt).toBe(60_000 * E)
     expect(d.disposals[0].price_snt).toBe(55_000 * E)
+    // The broker invoice is listed with the sale, with its Kitsas number for the link.
+    const number = db.get<{ tunniste: number }>('SELECT tunniste FROM Tosite WHERE id = ?', [vouchers.broker])!.tunniste
+    expect(d.disposals[0].cost_vouchers).toEqual([
+      {
+        voucher_id: vouchers.broker,
+        date: '2025-06-29',
+        amount_snt: 1_500 * E,
+        doc_number: number,
+        series: null,
+        title: 'Välityspalkkio Mallitie 2 B 5',
+      },
+    ])
     expect(d.summary.book_value_snt).toBe(0)
     expect(d.eras[0].movements.map((m) => m.kind)).toEqual(['acquisition', 'sale'])
     // 27 months of (800 - 250); the broker fee is a sale cost, not operating.
@@ -208,6 +220,9 @@ describe('rental objects: figures', () => {
       disposed_cost_snt: 40_000 * E,
     })
     expect(flat.warnings.map((w) => w.code)).not.toContain('sale_carried')
+    expect(flat.disposals[0].cost_vouchers).toEqual([
+      expect.objectContaining({ voucher_id: vouchers.brokerDuo, amount_snt: 1_800 * E }),
+    ])
     const parking = computeDetail(db, CC.duoParking, { today: TODAY })
     expect(parking.status).toBe('sold')
     expect(parking.summary).toMatchObject({
@@ -217,7 +232,7 @@ describe('rental objects: figures', () => {
       unrecovered_snt: 2_000 * E,
     })
     expect(parking.disposals).toEqual([
-      expect.objectContaining({ voucher_id: vouchers.saleDuo, price_snt: 0, proceeds_snt: 0 }),
+      expect.objectContaining({ voucher_id: vouchers.saleDuo, price_snt: 0, proceeds_snt: 0, cost_vouchers: [] }),
     ])
     expect(parking.warnings).toContainEqual({ code: 'sale_carried', params: { object: 'As Oy Rantapolku 5 A 3' } })
     // Together: what the sale brought in after the fee.

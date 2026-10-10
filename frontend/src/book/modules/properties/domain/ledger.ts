@@ -312,12 +312,26 @@ export function loadDataThrough(db: SqliteDb): string | null {
   return row?.d ? String(row.d) : null
 }
 
-export type VoucherRef = { id: number; date: string; type: number; title: string; posted: boolean }
+export type VoucherRef = {
+  id: number
+  date: string
+  type: number
+  title: string
+  posted: boolean
+  doc_number: number | null
+  series: string | null
+}
 
 export function loadVoucherRefs(db: SqliteDb, voucherIds: Iterable<number>): Map<number, VoucherRef> {
-  const rows = db.all<{ id: number; pvm: string; tyyppi: number; otsikko: string | null; tila: number }>(
-    `SELECT id, pvm, tyyppi, otsikko, tila FROM Tosite WHERE id IN (${inList(voucherIds)})`,
-  )
+  const rows = db.all<{
+    id: number
+    pvm: string
+    tyyppi: number
+    otsikko: string | null
+    tila: number
+    tunniste: number | null
+    sarja: string | null
+  }>(`SELECT id, pvm, tyyppi, otsikko, tila, tunniste, sarja FROM Tosite WHERE id IN (${inList(voucherIds)})`)
   return new Map(
     rows.map((row) => [
       Number(row.id),
@@ -327,6 +341,9 @@ export function loadVoucherRefs(db: SqliteDb, voucherIds: Iterable<number>): Map
         type: Number(row.tyyppi),
         title: String(row.otsikko || ''),
         posted: Number(row.tila) >= 100,
+        // Drafts have 0 (see AGENTS.md, voucher numbers).
+        doc_number: row.tunniste ? Number(row.tunniste) : null,
+        series: row.sarja || null,
       },
     ]),
   )

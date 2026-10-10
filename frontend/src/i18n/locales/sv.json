@@ -1139,7 +1139,8 @@
     },
     "sales": {
       "title": "Försäljningar",
-      "line": "försäljningspris {price}, försäljningskostnader {costs}, erhållet {proceeds}"
+      "line": "försäljningspris {price}, försäljningskostnader {costs}, erhållet {proceeds}",
+      "costFrom": "Försäljningskostnader {amount} från verifikat"
     },
     "docs": {
       "title": "Dokument",

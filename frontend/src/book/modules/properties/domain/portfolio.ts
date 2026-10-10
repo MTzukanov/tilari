@@ -44,6 +44,7 @@ import { pickBest, suggestEra, textScorer } from './suggest'
 import {
   PORTFOLIO_KEY,
   PROPERTY_KEY_PREFIX,
+  type Disposal,
   type PortfolioResponse,
   type MonthLine,
   type PortfolioSettings,
@@ -258,13 +259,25 @@ export function computeDetail(
     as_of: asOf,
     data_through: dataThrough,
     eras: computed.result.eras,
-    disposals: computed.result.classified.disposals,
+    disposals: withVoucherRefs(db, computed.result.classified.disposals),
     months: computed.result.months,
     month_lines: monthLines(db, computed.result.lines),
     years: computed.result.years,
     target: computed.result.target,
     financing: computed.parsed.doc.financing ?? null,
   }
+}
+
+/** Kitsas number and title of each sale's cost vouchers, for links on the object page. */
+function withVoucherRefs(db: SqliteDb, disposals: Disposal[]): Disposal[] {
+  const refs = loadVoucherRefs(db, disposals.flatMap((d) => d.cost_vouchers.map((v) => v.voucher_id)))
+  return disposals.map((d) => ({
+    ...d,
+    cost_vouchers: d.cost_vouchers.map((v) => {
+      const ref = refs.get(v.voucher_id)
+      return ref ? { ...v, doc_number: ref.doc_number, series: ref.series, title: ref.title } : v
+    }),
+  }))
 }
 
 function monthLines(db: SqliteDb, lines: CountedLine[]): MonthLine[] {

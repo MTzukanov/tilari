@@ -5178,6 +5178,11 @@ tr.tax-total td {
   font-size: 0.85rem;
 }
 
+.property-sale-cost {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+}
+
 .property-attachment::before {
   content: '📎 ';
 }

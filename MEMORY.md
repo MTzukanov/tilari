@@ -25,6 +25,10 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   other items too, the item's own evidence (cost centre on its lines, its voucher, its text)
   decides first, and the object with the sale lines only when nothing does. On a real book only
   the two items of that sale changed (the parking space now by its own name).
+- Owner review: from a sale on the object page there was no way to the sale-cost voucher (only
+  the sale voucher's date was a link). Each sale now lists the other vouchers whose lines counted
+  as its costs (`Disposal.cost_vouchers`: listed or matched near the sale), with number and title
+  as links, so a wrongly matched cost is visible.
 
 ## 2026-10-09 - Rental object: a month's lines; one loan per object
 

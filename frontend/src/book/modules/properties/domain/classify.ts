@@ -175,6 +175,7 @@ export function classifyObject(input: ClassifyInput): Classified {
       price_snt: price,
       proceeds_snt: proceeds,
       eras: credits.map((row) => ({ eraid: row.eraid, credit_snt: -row.signed_snt })),
+      cost_vouchers: [],
     })
   }
 
@@ -189,8 +190,21 @@ export function classifyObject(input: ClassifyInput): Classified {
     if (!listed && !near) continue
     saleLineIds.add(line.id)
     const nearest = [...disposals].sort((a, b) => dayDiff(a.date, line.date) - dayDiff(b.date, line.date))[0]
-    if (nearest) nearest.proceeds_snt += line.net_snt
-    else flows.push({ date: line.date, amount_snt: line.net_snt, kind: 'proceeds', voucher_id: line.voucher_id })
+    if (nearest) {
+      nearest.proceeds_snt += line.net_snt
+      const entry = nearest.cost_vouchers.find((v) => v.voucher_id === line.voucher_id)
+      if (entry) entry.amount_snt -= line.net_snt
+      else {
+        nearest.cost_vouchers.push({
+          voucher_id: line.voucher_id,
+          date: line.date,
+          amount_snt: -line.net_snt,
+          doc_number: null,
+          series: null,
+          title: '',
+        })
+      }
+    } else flows.push({ date: line.date, amount_snt: line.net_snt, kind: 'proceeds', voucher_id: line.voucher_id })
   }
   for (const d of disposals) {
     flows.push({ date: d.date, amount_snt: d.proceeds_snt, kind: 'proceeds', voucher_id: d.voucher_id })
