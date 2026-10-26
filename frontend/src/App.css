@@ -5295,6 +5295,30 @@ tr.tax-total td {
   grid-column: span 3;
 }
 
+/* A document pick and its "open" link side by side; the pick takes the room. */
+.property-doc-picker {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.property-doc-picker .search-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.property-doc-picker a.btn-small {
+  display: inline-flex;
+  align-items: center;
+  height: 2.15rem;
+  box-sizing: border-box;
+  padding: 0 0.7rem;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
 .property-lease-total {
   font-size: 0.85rem;
   color: var(--muted);

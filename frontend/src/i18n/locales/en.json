@@ -1259,7 +1259,11 @@
       "addSuggestion": "Add",
       "addAllSuggestions": "Add all",
       "addIncrease": "Add increase",
-      "createNotice": "Create increase notice"
+      "createNotice": "Create increase notice",
+      "viewDoc": "View",
+      "undoNotice": "Undo increase notice",
+      "confirmDeleteNotice": "Delete the increase notice created on this page from the books: {titles}?",
+      "confirmDeleteUnsaved": "{n} increase notices were created on this page but not saved to the object. Delete them from the books? Cancel keeps them (they may have been sent already)."
     },
     "setup": {
       "title": "Set up rental objects",

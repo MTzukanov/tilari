@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchPartners, fetchSettings, saveVoucher, uploadAttachment } from '../../../api'
+import { deleteVoucher, fetchPartners, fetchSettings, saveVoucher, uploadAttachment } from '../../../api'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { downloadFile, localToday } from '../../../shared/downloadFile'
@@ -159,8 +159,11 @@ function EditForm({
         entries: [],
       })
       const name = `${fileSlug(t('properties.notice.fileName'))}-${fileSlug(detail.name)}-${increase.from}.pdf`
-      await uploadAttachment(saved.id, new File([pdf as BlobPart], name, { type: 'application/pdf' }))
-      setNewDocs([...newDocs, { voucher_id: saved.id, date: today, title, doc_number: null, attachments: 1, linked_to: [], suggestion: null }])
+      const attachment = await uploadAttachment(saved.id, new File([pdf as BlobPart], name, { type: 'application/pdf' }))
+      setNewDocs([
+        ...newDocs,
+        { voucher_id: saved.id, date: today, title, doc_number: null, attachments: 1, first_attachment: attachment.id, linked_to: [], suggestion: null },
+      ])
       setLeases(
         leases.map((l, li) =>
           li === i ? { ...l, increases: l.increases.map((r, ri) => (ri === k ? { ...r, voucherId: String(saved.id) } : r)) } : l,
@@ -170,6 +173,40 @@ function EditForm({
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     }
+  }
+
+  /**
+   * Deletes notices written on this page (an undo), after asking. Returns false when the owner
+   * keeps them. Only these: a document that was already in the book is only unlinked.
+   */
+  async function deleteCreated(voucherIds: number[]): Promise<boolean> {
+    const own = voucherIds.filter((id) => newDocs.some((d) => d.voucher_id === id))
+    if (!own.length) return true
+    const titles = newDocs.filter((d) => own.includes(d.voucher_id)).map((d) => d.title)
+    if (!window.confirm(t('properties.edit.confirmDeleteNotice', { titles: titles.join(', ') }))) return false
+    setError(null)
+    try {
+      for (const id of own) await deleteVoucher(id)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+      return false
+    }
+    setNewDocs(newDocs.filter((d) => !own.includes(d.voucher_id)))
+    return true
+  }
+
+  async function cancel() {
+    // Notices written here but not saved to the object: keep them (they may be sent) or delete them.
+    const unsaved = newDocs.map((d) => d.voucher_id)
+    if (unsaved.length && window.confirm(t('properties.edit.confirmDeleteUnsaved', { n: unsaved.length }))) {
+      try {
+        for (const id of unsaved) await deleteVoucher(id)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err))
+        return
+      }
+    }
+    onDone()
   }
 
   function build(): PropertyDoc | string {
@@ -270,10 +307,11 @@ function EditForm({
           onChange={setLeases}
           partners={partners}
           docs={[...setup.docs, ...newDocs]}
-          linkedDocs={docs}
           suggestions={[...detail.lease_suggestions].reverse()}
           today={today}
           onCreateNotice={createNotice}
+          created={new Set(newDocs.map((d) => d.voucher_id))}
+          onDeleteCreated={deleteCreated}
         />
       </section>
 
@@ -441,7 +479,7 @@ function EditForm({
         <button type="button" className="btn-primary" disabled={saving || detail.read_only} onClick={() => void save()}>
           {saving ? t('common.saving') : t('common.save')}
         </button>
-        <button type="button" className="btn-secondary" onClick={onDone}>
+        <button type="button" className="btn-secondary" onClick={() => void cancel()}>
           {t('common.cancel')}
         </button>
         {detail.configured ? (

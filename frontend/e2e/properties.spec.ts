@@ -65,10 +65,22 @@ test.describe('rental object leases', () => {
     const increase = lease.locator('.property-lease-increase').first()
     await expect(increase.getByLabel('Vuokra €/kk')).toHaveValue('665,00')
     await increase.getByLabel('Alkaen').fill('2026-01-01')
+    const notice = increase.getByRole('textbox', { name: 'Korotusilmoitus' })
     const download = page.waitForEvent('download')
     await increase.getByRole('button', { name: 'Luo korotusilmoitus' }).click()
     expect((await download).suggestedFilename()).toMatch(/^vuokrankorotusilmoitus-.*-2026-01-01\.pdf$/)
-    await expect(increase.getByLabel('Korotusilmoitus')).toHaveValue(/\d+/)
+    await expect(notice).toHaveValue(/Vuokrankorotusilmoitus Asunto 1\.1\.2026/)
+    await expect(increase.getByRole('link', { name: 'Näytä' })).toBeVisible()
+
+    // Undo deletes the voucher again; then write it once more and keep it.
+    page.once('dialog', (dialog) => void dialog.accept())
+    await increase.getByRole('button', { name: 'Kumoa korotusilmoitus' }).click()
+    await expect(notice).toHaveValue('–')
+    await expect(increase.getByRole('link', { name: 'Näytä' })).toBeHidden()
+    const again = page.waitForEvent('download')
+    await increase.getByRole('button', { name: 'Luo korotusilmoitus' }).click()
+    await again
+    await expect(notice).toHaveValue(/Vuokrankorotusilmoitus Asunto 1\.1\.2026/)
     await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
 
     await expect(page).toHaveURL(/#\/property\/4$/)
@@ -78,7 +90,14 @@ test.describe('rental object leases', () => {
     // On the as-of date (31.12.2025) the starting rent is in force; the increase comes in January.
     await expect(card).toContainText('670,00 €/kk (vuokra 650,00 €, vesi 20,00 €) · eräpäivä 2. · korotus 15,00 € vuodessa')
     await card.getByText('Korotukset (1)').click()
-    await expect(card.getByRole('button', { name: /Vuokrankorotusilmoitus .* 1\.1\.2026/ })).toBeVisible()
+    await expect(card.getByRole('button', { name: /Vuokrankorotusilmoitus .* 1\.1\.2026/ })).toHaveCount(1)
+    // The undone notice is gone from the book: the pickers offer only the kept one.
+    await page.goto('/#/property/4/edit')
+    const picker = page.locator('.property-lease-edit').first().getByRole('textbox', { name: 'Sopimus' })
+    await picker.click()
+    await picker.fill('Vuokrankorotusilmoitus')
+    await expect(page.getByRole('option', { name: /Vuokrankorotusilmoitus Asunto/ })).toHaveCount(1)
+    await picker.press('Escape')
 
     await page.goto('/#/properties')
     await expect(page.locator('.property-table').first()).toContainText('Testi Vuokralainen · 670,00 €/kk')

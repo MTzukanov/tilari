@@ -1259,7 +1259,11 @@
       "addSuggestion": "Hinzufügen",
       "addAllSuggestions": "Alle hinzufügen",
       "addIncrease": "Erhöhung hinzufügen",
-      "createNotice": "Erhöhungsmitteilung erstellen"
+      "createNotice": "Erhöhungsmitteilung erstellen",
+      "viewDoc": "Anzeigen",
+      "undoNotice": "Erhöhungsmitteilung rückgängig",
+      "confirmDeleteNotice": "Die auf dieser Seite erstellte Erhöhungsmitteilung aus der Buchhaltung löschen: {titles}?",
+      "confirmDeleteUnsaved": "Auf dieser Seite wurden {n} Erhöhungsmitteilungen erstellt, aber nicht beim Objekt gespeichert. Aus der Buchhaltung löschen? Abbrechen behält sie (sie wurden evtl. schon versandt)."
     },
     "setup": {
       "title": "Mietobjekte einrichten",

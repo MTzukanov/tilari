@@ -1259,7 +1259,11 @@
       "addSuggestion": "Lisää",
       "addAllSuggestions": "Lisää kaikki",
       "addIncrease": "Lisää korotus",
-      "createNotice": "Luo korotusilmoitus"
+      "createNotice": "Luo korotusilmoitus",
+      "viewDoc": "Näytä",
+      "undoNotice": "Kumoa korotusilmoitus",
+      "confirmDeleteNotice": "Poistetaanko tällä sivulla luotu korotusilmoitus kirjanpidosta: {titles}?",
+      "confirmDeleteUnsaved": "Tällä sivulla luotiin {n} korotusilmoitusta, joita ei tallennettu kohteelle. Poistetaanko ne kirjanpidosta? Peruuta säilyttää ne (ne on ehkä jo lähetetty)."
     },
     "setup": {
       "title": "Vuokrakohteiden määritys",

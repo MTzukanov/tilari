@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getBcp47, useI18n } from '../../../i18n'
+import { AttachmentLink } from '../../../shared/AttachmentLink'
 import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
 import { formatCents } from '../../../shared/money'
@@ -43,28 +44,68 @@ function Amounts({ value, onChange }: { value: AmountsDraft; onChange: (patch: P
   )
 }
 
+/** A searchable pick of a Liitetieto voucher, newest first, with a link that opens its document. */
+function DocPicker({
+  docs,
+  value,
+  onChange,
+  label,
+  className,
+}: {
+  docs: DocCandidate[]
+  value: string
+  onChange: (value: string) => void
+  label: string
+  className?: string
+}) {
+  const { t } = useI18n()
+  const items = [
+    { value: '', label: '–' },
+    ...[...docs]
+      .sort((a, b) => b.date.localeCompare(a.date) || b.voucher_id - a.voucher_id)
+      .map((d) => ({ value: String(d.voucher_id), label: `${formatDate(d.date)} · ${d.title}` })),
+  ]
+  const picked = docs.find((d) => String(d.voucher_id) === value)
+  return (
+    <label className={className}>
+      {label}
+      <span className="property-doc-picker">
+        <SearchSelect aria-label={label} items={items} value={value} onChange={onChange} />
+        {picked?.first_attachment != null ? (
+          <AttachmentLink id={picked.first_attachment} lazy className="btn-small">
+            {t('properties.edit.viewDoc')}
+          </AttachmentLink>
+        ) : null}
+      </span>
+    </label>
+  )
+}
+
 export function LeasesEditor({
   drafts,
   onChange,
   partners,
   docs,
-  linkedDocs,
   suggestions,
   today,
   onCreateNotice,
+  created,
+  onDeleteCreated,
 }: {
   drafts: LeaseDraft[]
   onChange: (drafts: LeaseDraft[]) => void
   partners: Partner[]
   /** Liitetieto vouchers to pick the contract and increase notices from. */
   docs: DocCandidate[]
-  /** This object's linked documents, listed first. */
-  linkedDocs: number[]
   /** Leases the book suggests, oldest start first. */
   suggestions: LeaseSuggestionView[]
   today: string
   /** Writes the increase notice (PDF on a Liitetieto voucher) for one increase. */
   onCreateNotice: (lease: number, increase: number) => Promise<void>
+  /** Notices written on this page, which can still be undone. */
+  created: Set<number>
+  /** Deletes notices written on this page after asking; false when the owner keeps them. */
+  onDeleteCreated: (voucherIds: number[]) => Promise<boolean>
 }) {
   const { t } = useI18n()
   const [added, setAdded] = useState<Set<number>>(new Set())
@@ -75,26 +116,27 @@ export function LeasesEditor({
     setAdded(new Set([...added, ...indices]))
   }
   const partnerItems = partners.map((p) => ({ value: p.name, label: p.name }))
-  const docOptions = [...docs].sort((a, b) => {
-    const la = linkedDocs.includes(a.voucher_id) ? 0 : 1
-    const lb = linkedDocs.includes(b.voucher_id) ? 0 : 1
-    return la - lb || b.date.localeCompare(a.date)
-  })
   const months = monthNames()
   const set = (i: number, patch: Partial<LeaseDraft>) => onChange(drafts.map((d, j) => (j === i ? { ...d, ...patch } : d)))
   const setIncrease = (i: number, k: number, patch: Partial<IncreaseDraft>) =>
     set(i, { increases: drafts[i].increases.map((r, j) => (j === k ? { ...r, ...patch } : r)) })
 
-  const docSelect = (value: string, onPick: (value: string) => void) => (
-    <select value={value} onChange={(e) => onPick(e.target.value)}>
-      <option value="">–</option>
-      {docOptions.map((doc) => (
-        <option key={doc.voucher_id} value={doc.voucher_id}>
-          {formatDate(doc.date)} · {doc.title}
-        </option>
-      ))}
-    </select>
-  )
+  const createdIn = (ids: string[]) => ids.filter((id) => id && created.has(Number(id))).map(Number)
+
+  async function removeIncrease(i: number, k: number) {
+    if (!(await onDeleteCreated(createdIn([drafts[i].increases[k].voucherId])))) return
+    set(i, { increases: drafts[i].increases.filter((_, j) => j !== k) })
+  }
+
+  async function undoNotice(i: number, k: number) {
+    if (!(await onDeleteCreated(createdIn([drafts[i].increases[k].voucherId])))) return
+    setIncrease(i, k, { voucherId: '' })
+  }
+
+  async function removeLease(i: number) {
+    if (!(await onDeleteCreated(createdIn(drafts[i].increases.map((r) => r.voucherId))))) return
+    onChange(drafts.filter((_, j) => j !== i))
+  }
 
   async function createNotice(i: number, k: number) {
     setCreating(`${i}-${k}`)
@@ -154,10 +196,13 @@ export function LeasesEditor({
               {t('properties.field.dueDay')}
               <input type="text" inputMode="numeric" value={d.dueDay} onChange={(e) => set(i, { dueDay: e.target.value })} />
             </label>
-            <label className="span-3">
-              {t('properties.field.contract')}
-              {docSelect(d.contractId, (contractId) => set(i, { contractId }))}
-            </label>
+            <DocPicker
+              className="span-3"
+              label={t('properties.field.contract')}
+              docs={docs}
+              value={d.contractId}
+              onChange={(contractId) => set(i, { contractId })}
+            />
           </div>
 
           <h4>{t('properties.lease.initial')}</h4>
@@ -208,20 +253,29 @@ export function LeasesEditor({
                 <input type="date" value={r.from} onChange={(e) => setIncrease(i, k, { from: e.target.value })} />
               </label>
               <Amounts value={r} onChange={(patch) => setIncrease(i, k, patch)} />
-              <label className="span-2">
-                {t('properties.field.increaseNotice')}
-                {docSelect(r.voucherId, (voucherId) => setIncrease(i, k, { voucherId }))}
-              </label>
+              <DocPicker
+                className="span-2"
+                label={t('properties.field.increaseNotice')}
+                docs={docs}
+                value={r.voucherId}
+                onChange={(voucherId) => setIncrease(i, k, { voucherId })}
+              />
               <div className="property-lease-actions span-2">
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  disabled={creating != null || !r.from}
-                  onClick={() => void createNotice(i, k)}
-                >
-                  {creating === `${i}-${k}` ? t('common.saving') : t('properties.edit.createNotice')}
-                </button>
-                <button type="button" className="btn-secondary" onClick={() => set(i, { increases: d.increases.filter((_, j) => j !== k) })}>
+                {r.voucherId && created.has(Number(r.voucherId)) ? (
+                  <button type="button" className="btn-secondary" onClick={() => void undoNotice(i, k)}>
+                    {t('properties.edit.undoNotice')}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    disabled={creating != null || !r.from}
+                    onClick={() => void createNotice(i, k)}
+                  >
+                    {creating === `${i}-${k}` ? t('common.saving') : t('properties.edit.createNotice')}
+                  </button>
+                )}
+                <button type="button" className="btn-secondary" onClick={() => void removeIncrease(i, k)}>
                   {t('properties.edit.remove')}
                 </button>
               </div>
@@ -231,7 +285,7 @@ export function LeasesEditor({
             <button type="button" className="btn-secondary" onClick={() => set(i, { increases: [...d.increases, nextIncrease(d, today)] })}>
               {t('properties.edit.addIncrease')}
             </button>
-            <button type="button" className="btn-link property-delete" onClick={() => onChange(drafts.filter((_, j) => j !== i))}>
+            <button type="button" className="btn-link property-delete" onClick={() => void removeLease(i)}>
               {t('properties.edit.removeLease')}
             </button>
           </div>

@@ -1259,7 +1259,11 @@
       "addSuggestion": "Lägg till",
       "addAllSuggestions": "Lägg till alla",
       "addIncrease": "Lägg till höjning",
-      "createNotice": "Skapa höjningsmeddelande"
+      "createNotice": "Skapa höjningsmeddelande",
+      "viewDoc": "Visa",
+      "undoNotice": "Ångra höjningsmeddelande",
+      "confirmDeleteNotice": "Ta bort höjningsmeddelandet som skapades på den här sidan ur bokföringen: {titles}?",
+      "confirmDeleteUnsaved": "{n} höjningsmeddelanden skapades på den här sidan men sparades inte för objektet. Ta bort dem ur bokföringen? Avbryt behåller dem (de kan redan ha skickats)."
     },
     "setup": {
       "title": "Inställning av hyresobjekt",

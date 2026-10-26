@@ -378,6 +378,8 @@ export type DocCandidate = {
   title: string
   doc_number: number | null
   attachments: number
+  /** The first attachment, to open the document from a form. */
+  first_attachment: number | null
   linked_to: number[]
   suggestion: { cost_centre_id: number | null; candidates: number[] } | null
 }
