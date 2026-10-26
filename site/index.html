@@ -608,8 +608,10 @@
         <ol>
           <li>Luo projekti osoitteessa supabase.com ja avaa <strong>Project Settings → API</strong>.</li>
           <li>
-            Kopioi <strong>Project URL</strong> ja <strong>anon public</strong> -avain. Älä koskaan
-            liitä <code>service_role</code>-avainta Tilarin – se kuuluu vain palvelimelle.
+            Kopioi <strong>Project URL</strong> ja <strong>publishable</strong>-avain
+            (<code>sb_publishable_…</code>) tai vanha <strong>anon public</strong> -avain. Älä koskaan
+            liitä <code>service_role</code>- tai <code>sb_secret_…</code>-avainta Tilariin – ne
+            kuuluvat vain palvelimelle.
           </li>
           <li>
             Luo Storageyn <strong>yksityinen</strong> bucket nimeltä <code>tilari</code> (ei public

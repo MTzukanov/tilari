@@ -233,7 +233,7 @@ App auth is still out of scope (ADR-006); self-host relies on network gate
 Same as mode 3 (wasm in the tab, opaque shelf, OPFS working copy) except the
 shelf is **the user’s** Supabase Storage project, not `server/src/locker/`.
 No Tilari Node process is required. The user pastes Project URL, bucket, anon
-key, and a locker-wide encryption secret (all four in `sessionStorage` as
+or publishable key, and a locker-wide encryption secret (all four in `sessionStorage` as
 `tilari.locker.supabase`).
 
 **Mode 4 / On the server is not available.** There is no Node `Ledger` and no

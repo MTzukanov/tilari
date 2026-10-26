@@ -1,30 +1,9 @@
 import { xhrTransfer, type TransferOpts } from '../../http'
 import type { ListOpts, LockerObjectStore } from './objectStore'
+import { storageError, xhrBodyText } from './storageError'
 
 function joinUrl(base: string, path: string): string {
   return `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`
-}
-
-function xhrBodyText(xhr: XMLHttpRequest): string {
-  if (typeof xhr.response === 'string') return xhr.response
-  if (xhr.response instanceof ArrayBuffer) return new TextDecoder().decode(xhr.response)
-  return xhr.responseText || ''
-}
-
-function storageError(status: number, text: string, fallback: string): Error {
-  const trimmed = text.trim()
-  const lower = trimmed.toLowerCase()
-  if (status === 404 || lower.includes('not found') || lower.includes('not_found')) {
-    return new Error('not_found')
-  }
-  if (status === 409 || lower.includes('duplicate') || lower.includes('already exists')) {
-    return new Error('duplicate')
-  }
-  // Prefer stable codes for UI mapping when the body is empty or not a known token.
-  if (!trimmed || trimmed.length > 80 || /[\s{<]/.test(trimmed)) {
-    return new Error(fallback || `HTTP ${status}`)
-  }
-  return new Error(trimmed)
 }
 
 type SupabaseListRow = {
@@ -95,9 +74,11 @@ export function createSupabaseObjectStore(
   bucket: string,
 ): LockerObjectStore {
   const root = joinUrl(projectUrl, `storage/v1/object`)
+  // A legacy anon key is a JWT and also goes as the bearer token. A publishable key
+  // (`sb_publishable_…`) is not a JWT: Storage rejects it as a bearer token, so `apikey` only.
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${anonKey}`,
     apikey: anonKey,
+    ...(/^sb_/.test(anonKey) ? {} : { Authorization: `Bearer ${anonKey}` }),
   }
 
   return {

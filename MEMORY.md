@@ -37,6 +37,23 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 - Fixed: a new book showed "Luo uusi kirja…" in the menu (it is not in recents; the select fell
   back to its first option). The button shows `meta.source_name`.
 
+## 2026-10-10 - Fixed: Supabase storage errors hid the reason
+
+- Supabase Storage answers most failures with HTTP 400 and the real status in the JSON body
+  (`statusCode`, `message`). The stores looked only at the HTTP status, so an RLS refusal showed as
+  "upload failed, check the connection". `locker/storageError.ts` now reads that body: 401/403 or
+  an RLS message -> `locker_forbidden` (names the anon key and the storage policies), and the
+  server's own message rides on `Error.cause`, which `mapFileError` appends in brackets.
+- A bucket with no select policy for anon lists as empty and reads every object as missing, so
+  "connected, no books" does not prove the policies are right. The first encrypted connect
+  (writing `vault.json`) is where it shows.
+- Supabase publishable keys (`sb_publishable_…`) are not JWTs. Sent as `Authorization: Bearer`,
+  Storage answers 403 "JWS Protected Header is invalid". They now go on `apikey` only; the legacy
+  anon JWT still goes on both. `sb_secret_…` keys are refused like `service_role`.
+- `vault.json` is now created create-only (no upsert); on `duplicate` the existing vault is read.
+  Before, two tabs connecting to an empty bucket could each write one, and the second replaced
+  the salt that keyed the first tab's books.
+
 ## 2026-10-10 - Open: no UI for an object's sale vouchers
 
 - `property/{id}.sale_voucher_ids` (vouchers whose lines on the object count as the sale's costs,

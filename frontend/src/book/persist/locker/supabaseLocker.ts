@@ -27,7 +27,9 @@ export function parseSupabaseSettings(raw: unknown): SupabaseLockerSettings {
   const pathRaw = String(o.path || o.bucket || DEFAULT_STORAGE_PATH).trim() || DEFAULT_STORAGE_PATH
   if (!url || !anonKey) throw new Error('locker_settings')
   if (!/^https:\/\//i.test(url)) throw new Error('locker_url')
-  if (jwtRole(anonKey) === 'service_role') throw new Error('locker_service_role')
+  if (jwtRole(anonKey) === 'service_role' || /^sb_secret_/i.test(anonKey)) {
+    throw new Error('locker_service_role')
+  }
   const encrypt = o.encrypt !== false && o.encrypt !== 'false'
   let secret: string | undefined
   if (encrypt) secret = requireSecret(String(o.secret || ''))

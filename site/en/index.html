@@ -609,8 +609,10 @@
         <ol>
           <li>Create a project at supabase.com and open <strong>Project Settings → API</strong>.</li>
           <li>
-            Copy the <strong>Project URL</strong> and the <strong>anon public</strong> key. Never
-            paste the <code>service_role</code> key into Tilari — that key is for a backend only.
+            Copy the <strong>Project URL</strong> and the <strong>publishable</strong> key
+            (<code>sb_publishable_…</code>) or the legacy <strong>anon public</strong> key. Never
+            paste a <code>service_role</code> or <code>sb_secret_…</code> key into Tilari — those are
+            for a backend only.
           </li>
           <li>
             In Storage, create a <strong>private</strong> bucket named <code>tilari</code> (not a

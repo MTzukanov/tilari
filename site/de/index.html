@@ -618,9 +618,10 @@
         <ol>
           <li>Erstellen Sie ein Projekt auf supabase.com und öffnen Sie <strong>Project Settings → API</strong>.</li>
           <li>
-            Kopieren Sie die <strong>Project URL</strong> und den <strong>anon public</strong>-Schlüssel.
-            Fügen Sie niemals den <code>service_role</code>-Schlüssel in Tilari ein — der Schlüssel
-            ist nur für ein Backend.
+            Kopieren Sie die <strong>Project URL</strong> und den <strong>Publishable</strong>-Schlüssel
+            (<code>sb_publishable_…</code>) oder den älteren <strong>anon public</strong>-Schlüssel.
+            Fügen Sie niemals einen <code>service_role</code>- oder <code>sb_secret_…</code>-Schlüssel
+            in Tilari ein — diese sind nur für ein Backend.
           </li>
           <li>
             In Storage erstellen Sie einen <strong>privaten</strong> Bucket namens <code>tilari</code>
