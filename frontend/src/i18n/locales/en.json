@@ -1265,6 +1265,25 @@
       "exceptionNormal": "Normal rent then {amount}/month",
       "editTerms": "Add an increase or an agreed exception (discount, agreed rent)…"
     },
+    "deposit": {
+      "title": "Rent deposit",
+      "field": "Rent deposit",
+      "add": "Add a deposit…",
+      "lead": "The deposit's balance-sheet item or a line on a liability account, as booked in Kitsas. ★ = booked on this object and received from the tenant or within 60 days of the lease's start.",
+      "missing": "Line {id} is no longer in the book.",
+      "received": "received {amount}",
+      "returned": "returned {amount}",
+      "deducted": "of which kept {amount}",
+      "paidOnTop": "paid on top {amount}",
+      "balance": "balance {amount}",
+      "movements": "Deposit bookings ({n})",
+      "kind": {
+        "received": "Received",
+        "returned": "Returned"
+      },
+      "deductionsHint": "Income and costs booked in the same payment: rent kept, a water settlement or costs.",
+      "missingCount": "{n} linked lines are no longer in the book"
+    },
     "edit": {
       "title": "Edit: {name}",
       "basics": "Basics",
@@ -1353,7 +1372,9 @@
       "loan_shared": "Loan account {account} is also another object's bank loan, so its interest counts for both. Remove it from one of them.",
       "rent_arrears": "Rent arrears {amount}.",
       "former_owes": "Ended leases still owe {amount}.",
-      "former_paid_ahead": "Ended leases were paid {amount} more than the rent."
+      "former_paid_ahead": "Ended leases were paid {amount} more than the rent.",
+      "deposit_open": "An ended lease still holds a deposit of {amount}.",
+      "deposit_over": "{amount} more deposit was returned than received: is the receipt linked to the lease?"
     },
     "error": {
       "invalid_field": "Check the field {path}.",
@@ -1363,7 +1384,8 @@
       "not_found": "Cost centre not found.",
       "percent": "Percent like 3,5.",
       "accounts": "Account numbers separated by commas.",
-      "loan_linked": "Loan account {path} is already another object's bank loan. A loan can belong to one object only; otherwise its interest would count twice."
+      "loan_linked": "Loan account {path} is already another object's bank loan. A loan can belong to one object only; otherwise its interest would count twice.",
+      "deposit_linked": "The deposit already belongs to another lease."
     },
     "total": "Total",
     "holding": "{years} y {months} mo",

@@ -137,6 +137,50 @@ test.describe('rental object leases', () => {
   })
 })
 
+test.describe('rental object deposits', () => {
+  test('a deposit booked for the object is offered for its lease, linked and shown with its balance', async ({ page }) => {
+    await openBook(page)
+    // The golden book has no deposit account: the deposit goes on a liability account, its text names it.
+    await page.goto('/#/voucher/new/200')
+    await expect(page.getByLabel('Otsikko')).toBeVisible()
+    await page.getByLabel('Otsikko').fill('Vuokravakuus Asunto')
+    await page.getByLabel('Tositteen pvm').fill('2025-01-05')
+    const customer = page.getByLabel('Asiakas')
+    await customer.fill('Testi Vuokralainen')
+    await customer.press('Escape')
+    const income = page.getByLabel('Tulotili')
+    await expect(income).toBeVisible({ timeout: 30_000 })
+    await income.click()
+    await page.getByRole('option', { name: /^2000 / }).click()
+    // No VAT: the whole amount on the liability account.
+    await page.locator('.assistant-vat .vat-select-type .icon-select-btn').click()
+    await page.getByRole('option', { name: 'Veroton', exact: true }).click()
+    await page.getByLabel('Määrä', { exact: true }).fill('500')
+    await editorSaveButton(page).click()
+    await expect(page).toHaveURL(/voucher\/\d+(\/v\/\d+)?\/edit/)
+
+    await page.goto('/#/property/4/edit')
+    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
+    const lease = page.locator('.property-lease-edit').first()
+    const tenant = lease.getByRole('combobox', { name: 'Vuokralainen' }).or(lease.getByLabel('Vuokralainen'))
+    await tenant.first().fill('Testi Vuokralainen')
+    await tenant.first().press('Escape')
+    await lease.getByLabel('Alkaa', { exact: true }).fill('2025-01-01')
+    await lease.getByLabel('Vuokra €/kk').first().fill('650')
+    // Booked for the object and received near the lease's start: starred.
+    await lease.getByLabel('Lisää vakuus…').click()
+    await page.getByRole('option', { name: /^★ 5\.1\.2025 · Vuokravakuus Asunto · Testi Vuokralainen · 500,00\s€$/ }).click()
+    await expect(lease.locator('.property-lease-deposit .property-doc-list')).toContainText('5.1.2025 · Vuokravakuus Asunto')
+    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+
+    await expect(page).toHaveURL(/#\/property\/4$/)
+    const card = page.locator('.property-lease-card')
+    await expect(card).toContainText(/Vuokravakuus: saatu 500,00\s€ · saldo 500,00\s€/)
+    await card.getByText('Vakuuden kirjaukset (1)').click()
+    await expect(card.locator('.property-deposit li')).toContainText(/Saatu\s*5\.1\.2025 500,00\s€/)
+  })
+})
+
 test.describe('rental object rent exceptions', () => {
   test('an agreed exception lowers the expected rent on its days and shows on the card and in the months', async ({ page }) => {
     await openBook(page)

@@ -126,6 +126,22 @@ describe('normalizePropertyDoc', () => {
     ])
   })
 
+  it("keeps a lease's deposit items and lines sorted and unique; an empty deposit is dropped", () => {
+    const lease = { key: 'l1', starts: '2025-01-01', rents: [] }
+    const doc = normalizePropertyDoc({
+      eras: [],
+      leases: [
+        { ...lease, deposit: { eraids: [30, 12, 30], line_ids: [7] } },
+        { ...lease, key: 'l2', deposit: { eraids: [], line_ids: [] } },
+      ],
+    })
+    expect(doc.leases?.map((l) => l.deposit)).toEqual([{ eraids: [12, 30], line_ids: [7] }, undefined])
+    const bad = (deposit: unknown) => () => normalizePropertyDoc({ eras: [], leases: [{ ...lease, deposit }] })
+    expect(bad([1])).toThrow('invalid_field:leases[0].deposit')
+    expect(bad({ eraids: [0] })).toThrow('invalid_field:leases[0].deposit.eraids[0]')
+    expect(bad({ line_ids: ['7'] })).toThrow('invalid_field:leases[0].deposit.line_ids[0]')
+  })
+
   it('names the bad lease field', () => {
     const lease = { starts: '2025-01-01', rents: [{ from: '2025-01-01', rent_snt: 500 }] }
     const bad = (patch: Record<string, unknown>) => () => normalizePropertyDoc({ eras: [], leases: [{ ...lease, ...patch }] })

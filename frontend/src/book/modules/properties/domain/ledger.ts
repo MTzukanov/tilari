@@ -355,6 +355,122 @@ export function loadCapitalEraRoots(db: SqliteDb): EraRoot[] {
     .map(mapRoot)
 }
 
+/** A line on a deposit's liability account (ADR-029): + received (credit), - returned (debit). */
+export type DepositLine = {
+  id: number
+  /** The item's root line id; null for a line booked without an item. */
+  eraid: number | null
+  account: number
+  account_type: string
+  account_name: string
+  date: string
+  voucher_id: number
+  voucher_title: string
+  signed_snt: number
+  partner_id: number | null
+  text: string
+  allocation: number
+}
+
+const DEPOSIT_SELECT = `SELECT
+    Vienti.id AS id,
+    NULLIF(COALESCE(Vienti.eraid, 0), 0) AS eraid,
+    Vienti.tili AS account,
+    COALESCE(Tili.tyyppi, '') AS account_type,
+    COALESCE(json_extract(Tili.json, '$.nimi.fi'), '') AS account_name,
+    Vienti.pvm AS date,
+    Vienti.tosite AS voucher_id,
+    COALESCE(Tosite.otsikko, '') AS voucher_title,
+    COALESCE(Vienti.debetsnt, 0) AS ds,
+    COALESCE(Vienti.kreditsnt, 0) AS ks,
+    Vienti.kumppani AS partner_id,
+    COALESCE(Vienti.selite, '') AS text,
+    COALESCE(Vienti.kohdennus, 0) AS allocation
+  FROM Vienti
+  JOIN Tosite ON Vienti.tosite = Tosite.id
+  LEFT OUTER JOIN Tili ON Tili.numero = Vienti.tili
+  WHERE ${SQL_POSTED}`
+
+function mapDeposit(row: Record<string, unknown>): DepositLine {
+  return {
+    id: Number(row.id),
+    eraid: row.eraid == null ? null : Number(row.eraid),
+    account: Number(row.account),
+    account_type: String(row.account_type || ''),
+    account_name: String(row.account_name || ''),
+    date: String(row.date),
+    voucher_id: Number(row.voucher_id),
+    voucher_title: String(row.voucher_title || ''),
+    signed_snt: asCents(row.ks) - asCents(row.ds),
+    partner_id: row.partner_id == null ? null : Number(row.partner_id),
+    text: String(row.text || ''),
+    allocation: Number(row.allocation),
+  }
+}
+
+/** Posted lines of the given deposit items (on the item's own account) and the given loose lines, oldest first. */
+export function loadDepositLines(db: SqliteDb, eraids: Iterable<number>, lineIds: Iterable<number>): DepositLine[] {
+  return db
+    .all<Record<string, unknown>>(
+      `${DEPOSIT_SELECT}
+         AND ((Vienti.eraid IN (${inList(eraids)}) AND Vienti.tili = (SELECT r.tili FROM Vienti r WHERE r.id = Vienti.eraid))
+              OR Vienti.id IN (${inList(lineIds)}))
+       ORDER BY Vienti.pvm, Vienti.tosite, Vienti.rivi, Vienti.id`,
+    )
+    .map(mapDeposit)
+}
+
+/** Posted item roots and lines without an item on liability accounts: where deposits are looked for. */
+export function loadLiabilityRoots(db: SqliteDb): DepositLine[] {
+  return db
+    .all<Record<string, unknown>>(
+      `${DEPOSIT_SELECT}
+         AND CAST(Vienti.tili AS text) < '3' AND COALESCE(Tili.tyyppi, '') LIKE 'B%'
+         AND (COALESCE(Vienti.eraid, 0) = 0 OR Vienti.eraid = Vienti.id)
+       ORDER BY Vienti.pvm, Vienti.id`,
+    )
+    .map(mapDeposit)
+}
+
+/** An income or cost line booked in the same payment as a deposit return: + kept from the deposit. */
+export type DeductionLine = {
+  return_id: number
+  id: number
+  date: string
+  voucher_id: number
+  amount_snt: number
+  partner_id: number | null
+  text: string
+}
+
+/**
+ * The P&L lines of each return's payment: on the same voucher, date, partner and text as the
+ * return line - a bank statement row and its counter lines share those (credit - debit as booked).
+ */
+export function loadDeductionLines(db: SqliteDb, returnIds: Iterable<number>): DeductionLine[] {
+  return db
+    .all<Record<string, unknown>>(
+      `SELECT r.id AS return_id, o.id AS id, o.pvm AS date, o.tosite AS voucher_id,
+              COALESCE(o.kreditsnt, 0) - COALESCE(o.debetsnt, 0) AS amount, o.kumppani AS partner_id,
+              COALESCE(o.selite, '') AS text
+       FROM Vienti r
+       JOIN Vienti o ON o.tosite = r.tosite AND o.pvm = r.pvm AND o.id <> r.id
+         AND COALESCE(o.kumppani, 0) = COALESCE(r.kumppani, 0) AND COALESCE(o.selite, '') = COALESCE(r.selite, '')
+       JOIN Tosite ON Tosite.id = o.tosite
+       WHERE ${SQL_POSTED} AND r.id IN (${inList(returnIds)}) AND ${pnlAccount('o.tili')}
+       ORDER BY o.pvm, o.rivi, o.id`,
+    )
+    .map((row) => ({
+      return_id: Number(row.return_id),
+      id: Number(row.id),
+      date: String(row.date),
+      voucher_id: Number(row.voucher_id),
+      amount_snt: asCents(row.amount),
+      partner_id: row.partner_id == null ? null : Number(row.partner_id),
+      text: String(row.text || ''),
+    }))
+}
+
 /** Interest lines (not on the object's own cost centre) on vouchers that touch a loan account. */
 export function loadInterestRows(
   db: SqliteDb,

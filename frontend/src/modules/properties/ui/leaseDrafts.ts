@@ -1,4 +1,5 @@
 /** Lease form drafts: strings while editing, the stored leases on save. */
+import { depositKeys } from '../../../book/modules/properties/domain/deposits'
 import { DEFAULT_DUE_DAY } from '../../../book/modules/properties/domain/leaseSuggest'
 import { monthEnd } from '../../../book/months'
 import { formatEurInput, parseEurInput } from '../../../shared/money'
@@ -39,11 +40,13 @@ export type LeaseDraft = {
   increaseMonth: string
   increases: IncreaseDraft[]
   exceptions: ExceptionDraft[]
+  /** The deposit's items and loose lines: `e:{eraid}` / `l:{line id}` (ADR-029). */
+  deposits: string[]
 }
 
 type T = (key: string, vars?: Record<string, string | number>) => string
 
-const OPTIONAL_KEYS = ['tenant_partner_id', 'tenant_name', 'ends', 'due_day', 'exceptions', 'increase', 'doc_voucher_id', 'water']
+const OPTIONAL_KEYS = ['tenant_partner_id', 'tenant_name', 'ends', 'due_day', 'exceptions', 'increase', 'doc_voucher_id', 'water', 'deposit']
 
 const eur = (snt: number | undefined) => (snt ? formatEurInput(snt) : '')
 
@@ -76,6 +79,7 @@ export function leaseDrafts(leases: Lease[] | undefined, partners: Partner[]): L
       note: e.note ?? '',
       voucherId: e.voucher_id != null ? String(e.voucher_id) : '',
     })),
+    deposits: depositKeys(l.deposit),
   }))
 }
 
@@ -96,6 +100,7 @@ export function newLease(): LeaseDraft {
     increaseMonth: '',
     increases: [],
     exceptions: [],
+    deposits: [],
   }
 }
 
@@ -167,6 +172,13 @@ export function buildLeases(t: T, drafts: LeaseDraft[], partners: Partner[]): Le
     }
     if (d.contractId) lease.doc_voucher_id = Number(d.contractId)
     if (d.waterFlat) lease.water = 'flat'
+    const eraids = d.deposits.filter((k) => k.startsWith('e:')).map((k) => Number(k.slice(2)))
+    const lineIds = d.deposits.filter((k) => k.startsWith('l:')).map((k) => Number(k.slice(2)))
+    if (eraids.length || lineIds.length) {
+      lease.deposit = {}
+      if (eraids.length) lease.deposit.eraids = eraids
+      if (lineIds.length) lease.deposit.line_ids = lineIds
+    }
     out.push(lease)
   }
   return out

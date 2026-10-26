@@ -418,6 +418,68 @@ describe('rental objects: figures', () => {
     )
   })
 
+  it('deposits: the tenant own receipt is suggested; stored, its return and deduction show; ended and held, it warns', async () => {
+    const fx = await setUp()
+    const { db, eras, vouchers } = fx
+    // The tenant's deposit on its own item, received before the lease started.
+    fx.voucher('depositIn', '2023-02-28', 400, 'Tiliote 2023-02', [
+      { account: 1910, debit: 2_000 * E, date: '2023-02-25', partner: 'Vuokralainen Virtanen', description: 'Vuokravakuus A 1' },
+      { account: 2741, credit: 2_000 * E, era: 'new', date: '2023-02-25', partner: 'Vuokralainen Virtanen', description: 'Vuokravakuus A 1' },
+    ])
+    // The garage's deposit, booked without an item.
+    fx.voucher('depositGarage', '2024-02-29', 400, 'Tiliote 2024-02', [
+      { account: 1910, debit: 300 * E, date: '2024-02-10' },
+      { account: 2741, credit: 300 * E, date: '2024-02-10', description: 'Vakuus autotalli Testikuja 3' },
+    ])
+    const lineOn = (voucher: number) => db.get<{ id: number }>('SELECT id FROM Vienti WHERE tosite = ? AND tili = 2741', [voucher])!.id
+    const item = eras['depositIn:1']
+    const garageLine = lineOn(vouchers.depositGarage)
+
+    const before = computeDetail(db, CC.bundle, { today: TODAY })
+    // Offered on the bundle: its tenant's item first, the garage's line after it.
+    expect(before.deposit_candidates.map((c) => [c.kind, c.id, c.related])).toEqual([
+      ['item', item, true],
+      ['line', garageLine, false],
+    ])
+    expect(before.deposit_candidates[0]).toMatchObject({ amount_snt: 2_000 * E, balance_snt: 2_000 * E, partner: 'Vuokralainen Virtanen', linked_to: null })
+    // The suggested lease brings its tenant's deposit along.
+    expect(before.lease_suggestions[0].lease.deposit).toEqual({ eraids: [item] })
+    saveProperty(db, CC.bundle, { ...before.doc, leases: [before.lease_suggestions[0].lease] }, 'now')
+    const stored = computeDetail(db, CC.bundle, { today: TODAY })
+    expect(stored.lease?.deposit).toMatchObject({ received_snt: 2_000 * E, returned_snt: 0, balance_snt: 2_000 * E })
+    expect(stored.deposit_candidates[0].linked_to).toEqual({ object_id: CC.bundle, lease_key: 'l1' })
+
+    // Returned less a cost kept from it, all in one payment.
+    fx.voucher('depositBack', '2026-03-31', 0, 'Vuokravakuuden palautus A 1', [
+      { account: 2741, debit: 2_000 * E, era: 'depositIn:1', partner: 'Vuokralainen Virtanen', description: 'Vakuuden palautus A 1' },
+      { account: 1910, credit: 1_850 * E, partner: 'Vuokralainen Virtanen', description: 'Vakuuden palautus A 1' },
+      { account: 7300, credit: 150 * E, allocation: CC.bundle, partner: 'Vuokralainen Virtanen', description: 'Vakuuden palautus A 1' },
+    ])
+    const back = computeDetail(db, CC.bundle, { today: TODAY })
+    expect(back.leases[0].deposit).toMatchObject({ received_snt: 2_000 * E, returned_snt: 2_000 * E, deducted_snt: 150 * E, balance_snt: 0 })
+    const returned = back.leases[0].deposit!.movements[1]
+    expect(returned).toMatchObject({ kind: 'returned', amount_snt: -2_000 * E, deducted_snt: 150 * E })
+    expect(returned.deductions).toMatchObject([{ amount_snt: 150 * E, voucher: { voucher_id: vouchers.depositBack } }])
+    expect(back.warnings.some((w) => w.code.startsWith('deposit_'))).toBe(false)
+
+    // The garage's lease ended at the turn of the year and still holds its deposit.
+    const garage = computeDetail(db, CC.garage, { today: TODAY })
+    const garageLease = { tenant_name: 'Autotallin vuokralainen', starts: '2024-02-01', ends: '2025-12-31', rents: [{ from: '2024-02-01', rent_snt: 100 * E }] }
+    saveProperty(db, CC.garage, { ...garage.doc, leases: [{ ...garageLease, deposit: { line_ids: [garageLine] } }] }, 'now')
+    const row = computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.garage)
+    expect(row?.warnings).toContainEqual({ code: 'deposit_open', params: { amount_snt: 300 * E } })
+
+    // One deposit, one lease: across objects and within one; only liability items and loose lines.
+    const save = (deposit: object, extra: object[] = []) => () =>
+      saveProperty(db, CC.garage, { ...garage.doc, leases: [{ ...garageLease, deposit }, ...extra] }, 'now')
+    expect(save({ eraids: [item] })).toThrow('deposit_linked:leases[0].deposit.eraids[0]')
+    expect(save({ eraids: [eras.duoParking] })).toThrow('invalid_field:leases[0].deposit.eraids[0]')
+    expect(save({ line_ids: [lineOn(vouchers.depositBack)] })).toThrow('invalid_field:leases[0].deposit.line_ids[0]')
+    expect(save({ line_ids: [garageLine] }, [{ ...garageLease, starts: '2026-01-01', ends: undefined, rents: [], deposit: { line_ids: [garageLine] } }])).toThrow(
+      /deposit_linked:leases\[\d\]\.deposit\.line_ids\[0\]/,
+    )
+  })
+
   it('a lease must name an existing partner and posted vouchers', async () => {
     const { db, vouchers } = await setUp()
     const doc = computeDetail(db, CC.bundle, { today: TODAY }).doc

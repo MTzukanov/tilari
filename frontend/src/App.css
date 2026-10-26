@@ -5505,6 +5505,15 @@ tr.tax-total td {
   margin: 0.3rem 0 0.2rem;
 }
 
+/* A lease's deposit: its line, and its bookings folded below; on a list row it takes the row's width. */
+.property-deposit p {
+  margin: 0;
+}
+
+.property-doc-list li > .property-deposit {
+  flex-basis: 100%;
+}
+
 /* A lease's rent account: on a list row it takes the row's width; payments sit in the last column.
    A table wider than the page scrolls sideways instead of running past its edge. */
 .property-rent {

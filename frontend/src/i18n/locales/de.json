@@ -1265,6 +1265,25 @@
       "exceptionNormal": "Reguläre Miete dann {amount}/Monat",
       "editTerms": "Erhöhung oder abweichende Miete (Nachlass, vereinbarte Miete) hinzufügen…"
     },
+    "deposit": {
+      "title": "Mietkaution",
+      "field": "Mietkaution",
+      "add": "Kaution hinzufügen…",
+      "lead": "Der Bilanzposten der Kaution oder eine Buchung auf einem Verbindlichkeitskonto, wie in Kitsas gebucht. ★ = auf dieses Objekt gebucht und vom Mieter oder innerhalb von 60 Tagen nach Mietbeginn erhalten.",
+      "missing": "Buchung {id} ist nicht mehr im Buch.",
+      "received": "erhalten {amount}",
+      "returned": "zurückgezahlt {amount}",
+      "deducted": "davon einbehalten {amount}",
+      "paidOnTop": "zusätzlich gezahlt {amount}",
+      "balance": "Saldo {amount}",
+      "movements": "Buchungen der Kaution ({n})",
+      "kind": {
+        "received": "Erhalten",
+        "returned": "Zurückgezahlt"
+      },
+      "deductionsHint": "Mit derselben Zahlung gebuchte Erträge und Kosten: einbehaltene Miete, Wasserabrechnung oder Kosten.",
+      "missingCount": "{n} verknüpfte Buchungen fehlen im Buch"
+    },
     "edit": {
       "title": "Bearbeiten: {name}",
       "basics": "Grunddaten",
@@ -1353,7 +1372,9 @@
       "loan_shared": "Darlehenskonto {account} ist auch das Bankdarlehen eines anderen Objekts, daher zählen die Zinsen für beide. Bei einem Objekt entfernen.",
       "rent_arrears": "Mietrückstand {amount}.",
       "former_owes": "Aus beendeten Mietverhältnissen stehen {amount} aus.",
-      "former_paid_ahead": "In beendeten Mietverhältnissen wurden {amount} mehr als die Miete gezahlt."
+      "former_paid_ahead": "In beendeten Mietverhältnissen wurden {amount} mehr als die Miete gezahlt.",
+      "deposit_open": "Ein beendetes Mietverhältnis hält noch eine Kaution von {amount}.",
+      "deposit_over": "Es wurde {amount} mehr Kaution zurückgezahlt als erhalten: ist der Eingang mit dem Mietverhältnis verknüpft?"
     },
     "error": {
       "invalid_field": "Feld {path} prüfen.",
@@ -1363,7 +1384,8 @@
       "not_found": "Kostenstelle nicht gefunden.",
       "percent": "Prozent wie 3,5.",
       "accounts": "Kontonummern durch Kommas getrennt.",
-      "loan_linked": "Darlehenskonto {path} ist bereits das Bankdarlehen eines anderen Objekts. Ein Darlehen kann nur zu einem Objekt gehören, sonst würden die Zinsen doppelt gezählt."
+      "loan_linked": "Darlehenskonto {path} ist bereits das Bankdarlehen eines anderen Objekts. Ein Darlehen kann nur zu einem Objekt gehören, sonst würden die Zinsen doppelt gezählt.",
+      "deposit_linked": "Die Kaution gehört bereits zu einem anderen Mietverhältnis."
     },
     "total": "Summe",
     "holding": "{years} J. {months} Mon.",

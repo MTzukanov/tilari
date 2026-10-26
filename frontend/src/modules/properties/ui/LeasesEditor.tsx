@@ -1,15 +1,16 @@
 import { useState } from 'react'
+import { candidateKey, depositFits } from '../../../book/modules/properties/domain/deposits'
 import { getBcp47, useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
 import { FileButton } from '../../../shared/FileButton'
 import { formatCents } from '../../../shared/money'
 import { SearchSelect } from '../../../shared/SearchSelect'
-import { LEASE_INCREASE_KINDS, type DocCandidate, type Lease, type LeaseIncreaseKind, type LeaseSuggestionView } from '../api'
+import { LEASE_INCREASE_KINDS, type DepositCandidate, type DocCandidate, type Lease, type LeaseIncreaseKind, type LeaseSuggestionView } from '../api'
 import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
 import { Shown } from './FormParts'
-import { leasePeriod, leaseRentText } from './format'
+import { depositOptionText, leasePeriod, leaseRentText } from './format'
 import { LeaseSources, SuggestionSource } from './LeasesPanel'
 import {
   draftStepAt,
@@ -72,12 +73,81 @@ function exceptionTotal(e: ExceptionDraft, d: LeaseDraft): { text: string; norma
   return { text: diff ? `${formatCents(total)} (${diff > 0 ? '+' : ''}${formatCents(diff)})` : formatCents(total), normal }
 }
 
+/**
+ * The lease's deposit: its linked items and lines, and a pick of the free ones - the ones that fit
+ * this lease (★, `depositFits`) first. A deposit belongs to one lease (ADR-029).
+ */
+function DepositField({
+  draft,
+  drafts,
+  deposits,
+  objectId,
+  tenantId,
+  onChange,
+  onOpenVoucher,
+}: {
+  draft: LeaseDraft
+  drafts: LeaseDraft[]
+  deposits: DepositCandidate[]
+  objectId: number
+  tenantId: number | null
+  onChange: (keys: string[]) => void
+  onOpenVoucher: (voucherId: number) => void
+}) {
+  const { t } = useI18n()
+  const byKey = new Map(deposits.map((c) => [candidateKey(c), c]))
+  const inForm = new Set(drafts.flatMap((d) => d.deposits))
+  const fits = (c: DepositCandidate) => depositFits(c, { starts: draft.starts, tenant_partner_id: tenantId })
+  // Free: not on another object's lease, and not in any lease of this form.
+  const offered = deposits
+    .filter((c) => (!c.linked_to || c.linked_to.object_id === objectId) && !inForm.has(candidateKey(c)))
+    .sort((a, b) => Number(fits(b)) - Number(fits(a)))
+  return (
+    <div className="property-lease-deposit">
+      <h4>{t('properties.deposit.title')}</h4>
+      <p className="muted property-lease-hint">{t('properties.deposit.lead')}</p>
+      {draft.deposits.length ? (
+        <ul className="property-doc-list property-linked-list">
+          {draft.deposits.map((key) => {
+            const c = byKey.get(key)
+            return (
+              <li key={key}>
+                {c ? (
+                  <button type="button" className="btn-link" onClick={() => onOpenVoucher(c.voucher_id)}>
+                    {depositOptionText(t, c, false)}
+                  </button>
+                ) : (
+                  <span className="muted">{t('properties.deposit.missing', { id: key.slice(2) })}</span>
+                )}{' '}
+                <button type="button" className="btn-small" onClick={() => onChange(draft.deposits.filter((k) => k !== key))}>
+                  {t('properties.edit.remove')}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      ) : null}
+      {offered.length ? (
+        <SearchSelect
+          aria-label={t('properties.deposit.add')}
+          placeholder={t('properties.deposit.add')}
+          items={offered.map((c) => ({ value: candidateKey(c), label: depositOptionText(t, c, fits(c)) }))}
+          value=""
+          onChange={(key) => key && onChange([...draft.deposits, key])}
+        />
+      ) : null}
+    </div>
+  )
+}
+
 export function LeasesEditor({
   drafts,
   onChange,
   partners,
   docs,
   suggestions,
+  deposits,
+  objectId,
   today,
   onCreateNotice,
   onUpload,
@@ -93,6 +163,9 @@ export function LeasesEditor({
   docs: DocCandidate[]
   /** Leases the book suggests, oldest start first. */
   suggestions: LeaseSuggestionView[]
+  /** Deposits to link (ADR-029), and the object they are offered on. */
+  deposits: DepositCandidate[]
+  objectId: number
   today: string
   /** Writes the increase notice (PDF on a Liitetieto voucher) for one increase. */
   onCreateNotice: (lease: number, increase: number) => Promise<void>
@@ -110,6 +183,7 @@ export function LeasesEditor({
   const { t } = useI18n()
   const [creating, setCreating] = useState<string | null>(null)
   const names = new Map(partners.map((p) => [p.id, p.name.trim().toLowerCase()]))
+  const partnerIds = new Map(partners.map((p) => [p.name.trim().toLowerCase(), p.id]))
   /** A suggestion already in the form: its contract, or its tenant from the same day. */
   const inForm = (lease: Lease) =>
     drafts.some(
@@ -212,6 +286,16 @@ export function LeasesEditor({
               <FileButton onFiles={(files) => void onUpload(i, null, files)}>{t('properties.edit.uploadContract')}</FileButton>
             </div>
           </div>
+
+          <DepositField
+            draft={d}
+            drafts={drafts}
+            deposits={deposits}
+            objectId={objectId}
+            tenantId={partnerIds.get(d.tenant.trim().toLowerCase()) ?? null}
+            onChange={(keys) => set(i, { deposits: keys })}
+            onOpenVoucher={onOpenVoucher}
+          />
 
           <div className="property-lease-head">
             <h4>{t('properties.lease.initial')}</h4>

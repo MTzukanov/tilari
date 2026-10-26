@@ -2,7 +2,7 @@ import { getBcp47 } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { formatCents } from '../../../shared/money'
 import { formatBp } from '../../../shared/percent'
-import type { LeaseIncrease, LeaseView, MonthLine, PropertyStatus, Warning, WaterShareStatus } from '../api'
+import type { DepositCandidate, DepositView, LeaseIncrease, LeaseView, MonthLine, PropertyStatus, Warning, WaterShareStatus } from '../api'
 
 const wholeEuro = new Map<string, Intl.NumberFormat>()
 
@@ -155,4 +155,33 @@ export function waterStatusText(t: T, status: WaterShareStatus, balance: number,
   if (status === 'partial') return t('properties.water.status.partial', { amount: formatCents(Math.abs(balance - settled)) })
   if (status === 'over') return t('properties.water.status.over', { amount: formatCents(Math.abs(settled - balance)) })
   return t(`properties.water.status.${status}`)
+}
+
+/** A deposit's state, exact: "saatu 600,00 € · palautettu 600,00 €, josta pidätetty 123,45 € · saldo 0,00 €". */
+export function depositText(t: T, d: Pick<DepositView, 'received_snt' | 'returned_snt' | 'deducted_snt' | 'balance_snt'>): string {
+  const parts = [t('properties.deposit.received', { amount: formatCents(d.received_snt) })]
+  if (d.returned_snt) {
+    const returned = t('properties.deposit.returned', { amount: formatCents(d.returned_snt) })
+    parts.push(d.deducted_snt ? `${returned}, ${deductedText(t, d.deducted_snt)}` : returned)
+  }
+  parts.push(t('properties.deposit.balance', { amount: formatCents(d.balance_snt) }))
+  return parts.join(' · ')
+}
+
+/** What a return kept (+) or paid on top (-): "josta pidätetty 123,45 €". */
+export function deductedText(t: T, snt: number): string {
+  return t(snt > 0 ? 'properties.deposit.deducted' : 'properties.deposit.paidOnTop', { amount: formatCents(Math.abs(snt)) })
+}
+
+/** A deposit to pick: "★ 25.2.2023 · Vuokravakuus A 1 · Testi Vuokralainen · 600,00 € · saldo 0,00 €"; the balance for items only. */
+export function depositOptionText(t: T, c: DepositCandidate, star: boolean): string {
+  return [
+    `${star ? '★ ' : ''}${formatDate(c.date)}`,
+    c.text,
+    c.partner,
+    formatCents(c.amount_snt),
+    c.kind === 'item' ? t('properties.deposit.balance', { amount: formatCents(c.balance_snt) }) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }
