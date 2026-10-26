@@ -443,6 +443,8 @@ export type DepositCandidate = {
   amount_snt: number
   /** On the as-of date: the item's balance, or the line's amount. */
   balance_snt: number
+  /** The item's bookings up to the as-of date, oldest first (the line itself for a loose line): + received, - returned. */
+  movements: { line_id: number; date: string; amount_snt: number; voucher_id: number }[]
   /** The lease it belongs to, on this object or another. */
   linked_to: { object_id: number; lease_key: string } | null
   /** Booked on this object: its cost centre, a rent payer or tenant of it, or its name in the text. */

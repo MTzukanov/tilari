@@ -1282,7 +1282,8 @@
         "returned": "Zurückgezahlt"
       },
       "deductionsHint": "Mit derselben Zahlung gebuchte Erträge und Kosten: einbehaltene Miete, Wasserabrechnung oder Kosten.",
-      "missingCount": "{n} verknüpfte Buchungen fehlen im Buch"
+      "missingCount": "{n} verknüpfte Buchungen fehlen im Buch",
+      "returnedOn": "zurückgezahlt {date}"
     },
     "edit": {
       "title": "Bearbeiten: {name}",

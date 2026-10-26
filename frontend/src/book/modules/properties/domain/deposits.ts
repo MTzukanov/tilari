@@ -9,8 +9,11 @@ import { pickBest, type TextScorer } from './suggest'
 import type { BookedLine, DepositCandidate, DepositMovement, DepositView, Lease, LeaseDeposit, Warning } from './types'
 import { bookedLine } from './water'
 
-/** Words that name a deposit in an account's name or a line's text. */
-export const DEPOSIT_WORDS = /vakuu|takuu|pantti|deposit|säkerhet|kaution/i
+/**
+ * Words that name a deposit in an account's name or a line's text: vakuus in any form (vakuuden,
+ * vakuutta), but not insurance (vakuutus, vakuutettu, vakuuttaa).
+ */
+export const DEPOSIT_WORDS = /vakuu(?!tu|tet|tta\p{L})|takuu|pantti|deposit|säkerhet|kaution/iu
 
 /** A deposit received this many days before or after a lease starts is suggested for it. */
 export const DEPOSIT_START_DAYS = 60
@@ -125,7 +128,7 @@ export function depositCandidates(roots: DepositLine[], items: DepositLine[], ct
     // voucher titled for a deposit is no deposit.
     const text = root.text || root.voucher_title
     if (!DEPOSIT_WORDS.test(root.account_name) && !DEPOSIT_WORDS.test(text) && !ctx.owner.has(key)) continue
-    const lines = item ? (linesOf.get(root.id) ?? [root]) : [root]
+    const lines = (item ? (linesOf.get(root.id) ?? [root]) : [root]).filter((l) => l.date <= ctx.asOf)
     const related =
       lines.some((l) => ctx.allocations.has(l.allocation) || (l.partner_id != null && ctx.partners.has(l.partner_id))) ||
       pickBest(ctx.scorer(text)).id === ctx.objectId
@@ -140,7 +143,8 @@ export function depositCandidates(roots: DepositLine[], items: DepositLine[], ct
       partner_id: root.partner_id,
       partner: ctx.partnerName(root.partner_id),
       amount_snt: root.signed_snt,
-      balance_snt: lines.filter((l) => l.date <= ctx.asOf).reduce((s, l) => s + l.signed_snt, 0),
+      balance_snt: lines.reduce((s, l) => s + l.signed_snt, 0),
+      movements: lines.map((l) => ({ line_id: l.id, date: l.date, amount_snt: l.signed_snt, voucher_id: l.voucher_id })),
       linked_to: ctx.owner.get(key) ?? null,
       related,
     })

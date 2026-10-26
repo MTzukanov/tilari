@@ -1282,7 +1282,8 @@
         "returned": "Återbetald"
       },
       "deductionsHint": "Intäkter och kostnader bokförda med samma betalning: innehållen hyra, vattenutjämning eller kostnader.",
-      "missingCount": "{n} kopplade konteringar finns inte längre"
+      "missingCount": "{n} kopplade konteringar finns inte längre",
+      "returnedOn": "återbetald {date}"
     },
     "edit": {
       "title": "Redigera: {name}",

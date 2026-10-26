@@ -170,7 +170,10 @@ test.describe('rental object deposits', () => {
     // Booked for the object and received near the lease's start: starred.
     await lease.getByLabel('Lisää vakuus…').click()
     await page.getByRole('option', { name: /^★ 5\.1\.2025 · Vuokravakuus Asunto · Testi Vuokralainen · 500,00\s€$/ }).click()
-    await expect(lease.locator('.property-lease-deposit .property-doc-list')).toContainText('5.1.2025 · Vuokravakuus Asunto')
+    const linked = lease.locator('.property-lease-deposit .property-doc-list')
+    await expect(linked).toContainText('5.1.2025 · Vuokravakuus Asunto')
+    // Each booking opens its voucher from the form.
+    await expect(linked.getByRole('button', { name: /^Saatu 5\.1\.2025 500,00\s€$/ })).toBeVisible()
     await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
 
     await expect(page).toHaveURL(/#\/property\/4$/)

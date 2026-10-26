@@ -448,6 +448,7 @@ describe('rental objects: figures', () => {
     const stored = computeDetail(db, CC.bundle, { today: TODAY })
     expect(stored.lease?.deposit).toMatchObject({ received_snt: 2_000 * E, returned_snt: 0, balance_snt: 2_000 * E })
     expect(stored.deposit_candidates[0].linked_to).toEqual({ object_id: CC.bundle, lease_key: 'l1' })
+    expect(stored.deposit_candidates[0].movements).toEqual([{ line_id: item, date: '2023-02-25', amount_snt: 2_000 * E, voucher_id: vouchers.depositIn }])
 
     // Returned less a cost kept from it, all in one payment.
     fx.voucher('depositBack', '2026-03-31', 0, 'Vuokravakuuden palautus A 1', [
@@ -461,6 +462,11 @@ describe('rental objects: figures', () => {
     expect(returned).toMatchObject({ kind: 'returned', amount_snt: -2_000 * E, deducted_snt: 150 * E })
     expect(returned.deductions).toMatchObject([{ amount_snt: 150 * E, voucher: { voucher_id: vouchers.depositBack } }])
     expect(back.warnings.some((w) => w.code.startsWith('deposit_'))).toBe(false)
+    // On the edit page, the item shows its return too.
+    expect(back.deposit_candidates[0].movements.map((m) => [m.date, m.amount_snt])).toEqual([
+      ['2023-02-25', 2_000 * E],
+      ['2026-03-31', -2_000 * E],
+    ])
 
     // The garage's lease ended at the turn of the year and still holds its deposit.
     const garage = computeDetail(db, CC.garage, { today: TODAY })

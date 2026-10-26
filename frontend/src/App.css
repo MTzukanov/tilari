@@ -5382,6 +5382,16 @@ tr.tax-total td {
   color: var(--muted);
 }
 
+/* A checkbox standing alone in the row lines up by its text, like "Lisät:" beside it; on its
+   own the checkbox's bottom edge would be the baseline and lift it. */
+.property-lease-head > .allocation-check {
+  align-items: baseline;
+}
+
+.property-lease-head > .allocation-check > input {
+  align-self: center;
+}
+
 /* The notice pick takes the room its buttons leave on the row. */
 .property-lease-notice {
   grid-column: 1 / -1;
@@ -5503,6 +5513,12 @@ tr.tax-total td {
   flex-wrap: wrap;
   gap: 0.2rem 0.9rem;
   margin: 0.3rem 0 0.2rem;
+}
+
+/* A deposit linked on the edit page: its line, and below it each booking as a link. */
+.property-deposit-linked {
+  display: flex;
+  flex-direction: column;
 }
 
 /* A lease's deposit: its line, and its bookings folded below; on a list row it takes the row's width. */

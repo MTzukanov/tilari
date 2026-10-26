@@ -1282,7 +1282,8 @@
         "returned": "Palautettu"
       },
       "deductionsHint": "Samalla maksulla kirjatut tuotot ja kulut: pidätetty vuokra, vesitasaus tai kulut.",
-      "missingCount": "{n} linkitettyä vientiä puuttuu kirjanpidosta"
+      "missingCount": "{n} linkitettyä vientiä puuttuu kirjanpidosta",
+      "returnedOn": "palautettu {date}"
     },
     "edit": {
       "title": "Muokkaa: {name}",

@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { depositCandidates, depositFits, depositLinesOf, depositView, depositWarnings, suggestDeposit, type CandidateContext } from './deposits'
+import {
+  DEPOSIT_WORDS,
+  depositCandidates,
+  depositFits,
+  depositLinesOf,
+  depositView,
+  depositWarnings,
+  suggestDeposit,
+  type CandidateContext,
+} from './deposits'
 import type { DeductionLine, DepositLine } from './ledger'
 import { textScorer } from './suggest'
 import type { DepositCandidate, Lease } from './types'
@@ -66,6 +75,17 @@ describe('deposit view', () => {
   })
 })
 
+describe('deposit words', () => {
+  it('name a deposit in any form, never insurance', () => {
+    for (const text of ['Vuokravakuus A 1', 'VAKUUDEN PALAUTUS', 'vakuudet', 'Ei vakuutta', 'Takuuvuokra', 'Parkkihalli + pantti', 'Housing deposit']) {
+      expect(DEPOSIT_WORDS.test(text), text).toBe(true)
+    }
+    for (const text of ['Sairausvakuutusmaksu', 'Vakuutuksen maksu', 'VAKUUTETTU', 'vakuuttaa']) {
+      expect(DEPOSIT_WORDS.test(text), text).toBe(false)
+    }
+  })
+})
+
 describe('deposit candidates', () => {
   const context = (more: Partial<CandidateContext> = {}): CandidateContext => ({
     objectId: 10,
@@ -97,6 +117,12 @@ describe('deposit candidates', () => {
       ['line', 4, false],
     ])
     expect(list[1]).toMatchObject({ amount_snt: 600 * E, balance_snt: 400 * E, account_name: 'Pitkäaikaiset saadut vuokravakuudet' })
+    // The item's return is found through it: its bookings, oldest first.
+    expect(list[1].movements).toEqual([
+      { line_id: 1, date: '2024-02-20', amount_snt: 600 * E, voucher_id: 10 },
+      { line_id: 2, date: '2025-05-07', amount_snt: -200 * E, voucher_id: 20 },
+    ])
+    expect(depositCandidates(roots, items, context({ asOf: '2024-12-31' }))[1]).toMatchObject({ balance_snt: 600 * E, movements: [{ line_id: 1 }] })
   })
 
   it('a linked deposit is listed even without a deposit word, with the lease it belongs to', () => {

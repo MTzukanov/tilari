@@ -539,7 +539,8 @@ correction would change the open year's income statement lines. The rental-objec
   linked, or booked elsewhere). Exact, no tolerance.
 - **Offered and suggested:** the edit page offers item roots and loose lines on liability
   accounts whose account name or text (else the voucher's title) names a deposit
-  (`vakuu`, `takuu`, `pantti`, `deposit`, `säkerhet`, `kaution`), the object's own first: its
+  (vakuus in any form but not vakuutus - insurance, `takuu`, `pantti`, `deposit`, `säkerhet`,
+  `kaution`), the object's own first: its
   cost centre on a line, a rent payer or tenant of it, or its name in the text. ★ marks one that
   fits the lease: received from its tenant, or within 60 days of its start. A suggested lease
   takes the tenant's own receipt nearest its start, else the one receipt near it; with two near

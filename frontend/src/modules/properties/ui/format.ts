@@ -173,13 +173,18 @@ export function deductedText(t: T, snt: number): string {
   return t(snt > 0 ? 'properties.deposit.deducted' : 'properties.deposit.paidOnTop', { amount: formatCents(Math.abs(snt)) })
 }
 
-/** A deposit to pick: "★ 25.2.2023 · Vuokravakuus A 1 · Testi Vuokralainen · 600,00 € · saldo 0,00 €"; the balance for items only. */
+/**
+ * A deposit to pick: "★ 25.2.2023 · Vuokravakuus A 1 · Testi Vuokralainen · 600,00 € · palautettu
+ * 7.5.2025 · saldo 0,00 €"; an item's returns and balance, a loose line's amount alone.
+ */
 export function depositOptionText(t: T, c: DepositCandidate, star: boolean): string {
+  const returns = c.kind === 'item' ? c.movements.filter((m) => m.amount_snt < 0).map((m) => formatDate(m.date)) : []
   return [
     `${star ? '★ ' : ''}${formatDate(c.date)}`,
     c.text,
     c.partner,
     formatCents(c.amount_snt),
+    returns.length ? t('properties.deposit.returnedOn', { date: returns.join(', ') }) : null,
     c.kind === 'item' ? t('properties.deposit.balance', { amount: formatCents(c.balance_snt) }) : null,
   ]
     .filter(Boolean)

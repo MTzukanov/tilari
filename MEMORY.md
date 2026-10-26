@@ -22,6 +22,12 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   the e2e).
 - Two receipts near one lease start (two parking spaces bought the same day), neither from the
   tenant: no suggestion; the owner picks.
+- Owner's review (demo): the item's return was hard to find in the picker; the linked deposit now
+  lists its bookings (received, returned) as links, an item's label names its return dates, and
+  the picker is newest first (★ on top). "vakuu" also matched insurance (sairausvakuutusmaksu on a
+  liability account); insurance forms are left out now.
+- The lease form's water checkbox sat ~1.5 px above the parking one (Chromium and Firefox): a flex
+  row aligned by baseline took the checkbox's bottom edge as the label's baseline.
 
 ## 2026-10-26 - Rental objects: agreed rent exceptions; rent before a later acquisition (`feature/property-rent-exceptions`)
 

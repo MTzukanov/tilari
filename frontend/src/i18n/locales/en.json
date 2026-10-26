@@ -1282,7 +1282,8 @@
         "returned": "Returned"
       },
       "deductionsHint": "Income and costs booked in the same payment: rent kept, a water settlement or costs.",
-      "missingCount": "{n} linked lines are no longer in the book"
+      "missingCount": "{n} linked lines are no longer in the book",
+      "returnedOn": "returned {date}"
     },
     "edit": {
       "title": "Edit: {name}",

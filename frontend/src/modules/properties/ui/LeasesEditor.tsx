@@ -98,10 +98,10 @@ function DepositField({
   const byKey = new Map(deposits.map((c) => [candidateKey(c), c]))
   const inForm = new Set(drafts.flatMap((d) => d.deposits))
   const fits = (c: DepositCandidate) => depositFits(c, { starts: draft.starts, tenant_partner_id: tenantId })
-  // Free: not on another object's lease, and not in any lease of this form.
+  // Free: not on another object's lease, and not in any lease of this form. Those that fit first, then newest first.
   const offered = deposits
     .filter((c) => (!c.linked_to || c.linked_to.object_id === objectId) && !inForm.has(candidateKey(c)))
-    .sort((a, b) => Number(fits(b)) - Number(fits(a)))
+    .sort((a, b) => Number(fits(b)) - Number(fits(a)) || b.date.localeCompare(a.date) || b.id - a.id)
   return (
     <div className="property-lease-deposit">
       <h4>{t('properties.deposit.title')}</h4>
@@ -113,9 +113,18 @@ function DepositField({
             return (
               <li key={key}>
                 {c ? (
-                  <button type="button" className="btn-link" onClick={() => onOpenVoucher(c.voucher_id)}>
-                    {depositOptionText(t, c, false)}
-                  </button>
+                  <span className="property-deposit-linked">
+                    <span>{depositOptionText(t, c, false)}</span>
+                    {/* Each booking opens its voucher: the receipt, and the return found through the item. */}
+                    <span className="property-sources-lines">
+                      {c.movements.map((m) => (
+                        <button key={m.line_id} type="button" className="btn-link" onClick={() => onOpenVoucher(m.voucher_id)}>
+                          {t(`properties.deposit.kind.${m.amount_snt < 0 ? 'returned' : 'received'}`)} {formatDate(m.date)}{' '}
+                          {formatCents(Math.abs(m.amount_snt))}
+                        </button>
+                      ))}
+                    </span>
+                  </span>
                 ) : (
                   <span className="muted">{t('properties.deposit.missing', { id: key.slice(2) })}</span>
                 )}{' '}
