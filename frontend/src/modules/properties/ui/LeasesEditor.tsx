@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { getBcp47, useI18n } from '../../../i18n'
-import { AttachmentLink } from '../../../shared/AttachmentLink'
-import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
 import { formatCents } from '../../../shared/money'
 import { SearchSelect } from '../../../shared/SearchSelect'
 import { LEASE_INCREASE_KINDS, type DocCandidate, type Lease, type LeaseIncreaseKind, type LeaseSuggestionView } from '../api'
+import { DocPicker } from './DocPicker'
 import { leasePeriod, leaseRentText } from './format'
 import {
   draftTotal,
@@ -41,43 +40,6 @@ function Amounts({ value, onChange }: { value: AmountsDraft; onChange: (patch: P
         <EuroInput value={value.parking} onChange={(parking) => onChange({ parking })} />
       </label>
     </>
-  )
-}
-
-/** A searchable pick of a Liitetieto voucher, newest first, with a link that opens its document. */
-function DocPicker({
-  docs,
-  value,
-  onChange,
-  label,
-  className,
-}: {
-  docs: DocCandidate[]
-  value: string
-  onChange: (value: string) => void
-  label: string
-  className?: string
-}) {
-  const { t } = useI18n()
-  const items = [
-    { value: '', label: '–' },
-    ...[...docs]
-      .sort((a, b) => b.date.localeCompare(a.date) || b.voucher_id - a.voucher_id)
-      .map((d) => ({ value: String(d.voucher_id), label: `${formatDate(d.date)} · ${d.title}` })),
-  ]
-  const picked = docs.find((d) => String(d.voucher_id) === value)
-  return (
-    <label className={className}>
-      {label}
-      <span className="property-doc-picker">
-        <SearchSelect aria-label={label} items={items} value={value} onChange={onChange} />
-        {picked?.first_attachment != null ? (
-          <AttachmentLink id={picked.first_attachment} lazy className="btn-small">
-            {t('properties.edit.viewDoc')}
-          </AttachmentLink>
-        ) : null}
-      </span>
-    </label>
   )
 }
 

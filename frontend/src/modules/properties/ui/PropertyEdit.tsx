@@ -4,6 +4,7 @@ import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { downloadFile, localToday } from '../../../shared/downloadFile'
 import { EuroInput } from '../../../shared/EuroInput'
+import { SearchSelect } from '../../../shared/SearchSelect'
 import { formatCents, parseEurInput } from '../../../shared/money'
 import { parsePercentInput } from '../../../shared/percent'
 import {
@@ -18,6 +19,7 @@ import {
   type PropertyKind,
   type SetupResponse,
 } from '../api'
+import { DocPicker } from './DocPicker'
 import { clearEditDraft, loadEditDraft, saveEditDraft, stateFromDoc, type CapitalDraft, type EditState, type ValuationDraft } from './editDraft'
 import { clauseText, saveErrorText } from './format'
 import { increaseNoticePdf, noticeTitle, type NoticeAmounts } from './increaseNotice'
@@ -372,7 +374,13 @@ function EditForm({
             const e = eraById.get(eraid)
             return (
               <li key={eraid}>
-                {e ? `${e.account} · ${formatDate(e.date)} · ${e.description} · ${formatCents(e.balance_snt)}` : t('properties.eras.missing', { id: eraid })}{' '}
+                {e ? (
+                  <button type="button" className="btn-link" onClick={() => openVoucher(e.voucher_id)}>
+                    {e.account} · {formatDate(e.date)} · {e.description} · {formatCents(e.balance_snt)}
+                  </button>
+                ) : (
+                  t('properties.eras.missing', { id: eraid })
+                )}{' '}
                 <button type="button" className="btn-small" onClick={() => setEras(eras.filter((x) => x !== eraid))}>
                   {t('properties.edit.remove')}
                 </button>
@@ -381,21 +389,16 @@ function EditForm({
           })}
         </ul>
         {availableEras.length ? (
-          <select
+          <SearchSelect
+            aria-label={t('properties.edit.addEra')}
+            placeholder={t('properties.edit.addEra')}
+            items={availableEras.map((e) => ({
+              value: String(e.eraid),
+              label: `${e.suggestion?.candidates.includes(detail.id) ? '★ ' : ''}${e.account} · ${formatDate(e.date)} · ${e.description} · ${formatCents(e.balance_snt)}`,
+            }))}
             value=""
-            onChange={(e) => {
-              const id = Number(e.target.value)
-              if (id) setEras([...eras, id])
-            }}
-          >
-            <option value="">{t('properties.edit.addEra')}</option>
-            {availableEras.map((e) => (
-              <option key={e.eraid} value={e.eraid}>
-                {e.suggestion?.candidates.includes(detail.id) ? '★ ' : ''}
-                {e.account} · {formatDate(e.date)} · {e.description} · {formatCents(e.balance_snt)}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => v && setEras([...eras, Number(v)])}
+          />
         ) : null}
       </section>
 
@@ -421,21 +424,13 @@ function EditForm({
           })}
         </ul>
         {availableDocs.length ? (
-          <select
+          <DocPicker
+            docs={availableDocs}
             value=""
-            onChange={(e) => {
-              const id = Number(e.target.value)
-              if (id) setDocs([...docs, id])
-            }}
-          >
-            <option value="">{t('properties.edit.addDoc')}</option>
-            {availableDocs.map((d) => (
-              <option key={d.voucher_id} value={d.voucher_id}>
-                {d.suggestion?.candidates.includes(detail.id) ? '★ ' : ''}
-                {formatDate(d.date)} · {d.title}
-              </option>
-            ))}
-          </select>
+            placeholder={t('properties.edit.addDoc')}
+            starred={(d) => d.suggestion?.candidates.includes(detail.id) ?? false}
+            onChange={(v) => v && setDocs([...docs, Number(v)])}
+          />
         ) : null}
       </section>
 
