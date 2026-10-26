@@ -25,7 +25,7 @@ import {
 } from '../api'
 import { CashFlowChart, PaybackChart } from './Charts'
 import { LeasesPanel } from './LeasesPanel'
-import { formatEuro, statusClass, warningText } from './format'
+import { formatEuro, statusClass, tenantSide, warningText } from './format'
 import { MonthLinesPanel } from './MonthLines'
 import { WaterPanel } from './WaterPanel'
 
@@ -39,10 +39,11 @@ function Kpi({ label, value, neg, hint, title }: { label: string; value: string;
   )
 }
 
-/** The running lease's rent balance, exact; what other leases left in the hint. */
+/** The running lease's rent balance, exact; what other leases left in the hint, minus when owed. */
 function RentKpi({ rent }: { rent: RentBalance }) {
   const { t } = useI18n()
   const current = rent.current_snt
+  const others = tenantSide(rent.others_snt)
   const label =
     current == null || current === 0 ? 'properties.rent.kpi' : current > 0 ? 'properties.rent.kpiArrears' : 'properties.rent.kpiAhead'
   return (
@@ -50,7 +51,7 @@ function RentKpi({ rent }: { rent: RentBalance }) {
       label={t(label)}
       value={current == null ? '' : formatCents(Math.abs(current))}
       neg={(current ?? 0) > 0}
-      hint={rent.others_snt ? t('properties.rent.othersHint', { amount: formatCents(rent.others_snt) }) : t('properties.rent.kpiHint')}
+      hint={others ? t('properties.rent.othersHint', { amount: `${others > 0 ? '+' : ''}${formatCents(others)}` }) : t('properties.rent.kpiHint')}
     />
   )
 }
