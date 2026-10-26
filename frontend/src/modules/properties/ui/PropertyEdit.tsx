@@ -14,18 +14,33 @@ import {
   PROPERTY_KINDS,
   saveProperty,
   type DocCandidate,
+  type Lease,
   type PropertyDetail,
   type PropertyDoc,
   type PropertyKind,
   type SetupResponse,
 } from '../api'
+import { settlementShares } from '../../../book/modules/properties/domain/water'
 import { DocPicker } from './DocPicker'
-import { clearEditDraft, loadEditDraft, saveEditDraft, stateFromDoc, type CapitalDraft, type EditState, type ValuationDraft } from './editDraft'
+import {
+  clearEditDraft,
+  loadEditDraft,
+  saveEditDraft,
+  stateFromDoc,
+  type CapitalDraft,
+  type DocEdit,
+  type EditState,
+  type ValuationDraft,
+} from './editDraft'
 import { clauseText, saveErrorText } from './format'
 import { increaseNoticePdf, noticeTitle, type NoticeAmounts } from './increaseNotice'
-import { buildLeases, type AmountsDraft, type LeaseDraft, type Partner } from './leaseDrafts'
+import type { LetterCompany } from './letter'
+import { buildLeases, withKeys, type AmountsDraft, type Partner } from './leaseDrafts'
 import { LeasesEditor } from './LeasesEditor'
 import { scrollContainer } from './setupDraft'
+import { buildSettlements, draftSettlement, withShare, type SettlementDraft } from './waterDrafts'
+import { WaterEditor } from './WaterEditor'
+import { statementTitle, waterLetterPdf, waterLetterTitle } from './waterLetter'
 
 function accountList(raw: string): number[] | null {
   const parts = raw.split(/[\s,;]+/).filter(Boolean)
@@ -38,6 +53,19 @@ const cents = (a: AmountsDraft, withParking: boolean): NoticeAmounts => ({
   water: parseEurInput(a.water),
   parking: withParking ? parseEurInput(a.parking) : 0,
 })
+
+/** The book's company details (Asetus) as a letter's sender. */
+function letterCompany(company: Record<string, string>): LetterCompany {
+  return {
+    name: company.Nimi ?? '',
+    business_id: company.Ytunnus ?? '',
+    street: company.Katuosoite ?? '',
+    postcode: company.Postinumero ?? '',
+    city: company.Kaupunki ?? '',
+    email: company.Email ?? '',
+    phone: company.Puhelin ?? '',
+  }
+}
 
 /** A file name from free text: letters, digits and dashes. */
 function fileSlug(text: string): string {
@@ -76,7 +104,9 @@ function EditForm({
   const [draft] = useState(() => loadEditDraft(bookKey, detail.id, doc.rev))
   const [init] = useState<EditState>(() => draft?.state ?? stateFromDoc(doc, partners))
   const [kind, setKind] = useState<PropertyKind | ''>(init.kind)
-  const [leases, setLeases] = useState(init.leases)
+  const [leases, setLeases] = useState(() => withKeys(init.leases))
+  // A draft kept before water settlements existed has none.
+  const [water, setWater] = useState<SettlementDraft[]>(init.water ?? [])
   /** Increase notices written on this page: pickable before the page is saved. */
   const [newDocs, setNewDocs] = useState<DocCandidate[]>(init.newDocs)
   /** Earlier documents written from this form that the owner deleted: deleted from the book on save. */
@@ -98,6 +128,7 @@ function EditForm({
     kind,
     excluded,
     leases,
+    water,
     newDocs,
     eras,
     docs,
@@ -170,6 +201,15 @@ function EditForm({
   )
 
   const partnerOf = (name: string) => partners.find((p) => p.name.trim().toLowerCase() === name.trim().toLowerCase())
+  const tenantOf = (name: string) => {
+    const partner = partnerOf(name)
+    return { name: name.trim(), address: (partner && addresses.get(partner.id)) || [] }
+  }
+
+  /** The leases as the form has them now, for the water shares; none while a lease has a bad field. */
+  const builtLeases = buildLeases(t, leases, partners)
+  const formLeases: Lease[] = typeof builtLeases === 'string' ? [] : builtLeases
+  const leaseTenant = (lease: Lease) => leases.find((l) => l.key === lease.key)?.tenant.trim() ?? ''
 
   /** A new posted Liitetieto voucher with these files, the tenant as partner; this visit's document. */
   async function createDoc(title: string, tenant: string, files: File[]): Promise<number> {
@@ -212,21 +252,12 @@ function EditForm({
     const lease = leases[i]
     const increase = lease.increases[k]
     const before = k === 0 ? lease.initial : lease.increases[k - 1]
-    const partner = partnerOf(lease.tenant)
     const contract = docById.get(Number(lease.contractId))
     const built = buildLeases(t, [lease], partners)
     const rule = typeof built === 'string' ? undefined : built[0]?.increase
     const pdf = increaseNoticePdf(t, {
-      company: {
-        name: company.Nimi ?? '',
-        business_id: company.Ytunnus ?? '',
-        street: company.Katuosoite ?? '',
-        postcode: company.Postinumero ?? '',
-        city: company.Kaupunki ?? '',
-        email: company.Email ?? '',
-        phone: company.Puhelin ?? '',
-      },
-      tenant: { name: lease.tenant.trim(), address: (partner && addresses.get(partner.id)) || [] },
+      company: letterCompany(company),
+      tenant: tenantOf(lease.tenant),
       object: detail.name,
       contract: contract?.title ?? null,
       lease_starts: lease.starts,
@@ -271,12 +302,69 @@ function EditForm({
     }
   }
 
+  /** Points settlement `i`'s statement (`leaseKey` null) or the letter of `leaseKey`'s share at a voucher. */
+  const setWaterRef = (i: number, leaseKey: string | null, voucherId: string) =>
+    setWater((prev) =>
+      prev.map((d, j) =>
+        j !== i ? d : leaseKey == null ? { ...d, voucherId } : { ...d, shares: withShare(d.shares, leaseKey, { voucherId }) },
+      ),
+    )
+
+  /** Writes the water settlement letter to `leaseKey`'s tenant: a PDF on a new Liitetieto voucher, linked and downloaded. */
+  async function createLetter(i: number, leaseKey: string) {
+    setError(null)
+    const settlement = draftSettlement(water[i])
+    const share = settlement ? settlementShares(settlement, formLeases).find((s) => s.lease.key === leaseKey) : undefined
+    if (!settlement || !share) return
+    const tenant = leaseTenant(share.lease)
+    const pdf = waterLetterPdf(t, {
+      company: letterCompany(company),
+      tenant: tenantOf(tenant),
+      object: detail.name,
+      date: today,
+      from: settlement.from,
+      to: settlement.to,
+      stay: { from: share.from, to: share.to, days: share.days },
+      advance_snt: share.advance_snt,
+      balance_snt: share.balance_snt,
+    })
+    try {
+      const name = `${fileSlug(t('properties.water.letter.fileName'))}-${fileSlug(detail.name)}-${settlement.to}.pdf`
+      const id = await createDoc(waterLetterTitle(t, detail.name, settlement.from, settlement.to), tenant, [
+        new File([pdf as BlobPart], name, { type: 'application/pdf' }),
+      ])
+      setWaterRef(i, leaseKey, String(id))
+      downloadFile(pdf, name, 'application/pdf')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  /** Uploads the company's statement (`leaseKey` null) or the owner's own letter to a tenant, and picks it. */
+  async function uploadWater(i: number, leaseKey: string | null, files: File[]) {
+    if (!files.length) return
+    setError(null)
+    const d = water[i]
+    // The title names the period, so Kitsas search finds the document.
+    if (!d.from || !d.to) {
+      setError(t('properties.water.needPeriod'))
+      return
+    }
+    const lease = leaseKey != null ? formLeases.find((l) => l.key === leaseKey) : undefined
+    const title = (leaseKey == null ? statementTitle : waterLetterTitle)(t, detail.name, d.from, d.to)
+    try {
+      setWaterRef(i, leaseKey, String(await createDoc(title, lease ? leaseTenant(lease) : '', files)))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    }
+  }
+
   /**
    * Deletes documents written from this form, after asking: this visit's at once (an undo),
-   * earlier ones when the form is saved. Clears what pointed at them, then applies `edit` to the
-   * leases. Other documents are never deleted here; the caller's edit only unlinks them.
+   * earlier ones when the form is saved. Clears what pointed at them, then applies `edit` (e.g.
+   * removes the row). Other documents are never deleted here; the caller's edit only unlinks them.
    */
-  async function deleteDocs(voucherIds: number[], edit: (drafts: LeaseDraft[]) => LeaseDraft[] = (d) => d) {
+  async function deleteDocs(voucherIds: number[], edit: DocEdit = {}) {
     const own = [...new Set(voucherIds)].filter(isCreated)
     if (own.length) {
       const titles = own.map((id) => docById.get(id)?.title ?? `#${id}`)
@@ -294,12 +382,22 @@ function EditForm({
       setDocs((prev) => prev.filter((id) => !own.includes(id)))
     }
     const gone = new Set(own.map(String))
+    const same = <T,>(d: T) => d
     setLeases((prev) =>
-      edit(
+      (edit.leases ?? same)(
         prev.map((l) => ({
           ...l,
           contractId: gone.has(l.contractId) ? '' : l.contractId,
           increases: l.increases.map((r) => (gone.has(r.voucherId) ? { ...r, voucherId: '' } : r)),
+        })),
+      ),
+    )
+    setWater((prev) =>
+      (edit.water ?? same)(
+        prev.map((d) => ({
+          ...d,
+          voucherId: gone.has(d.voucherId) ? '' : d.voucherId,
+          shares: d.shares.map((s) => (gone.has(s.voucherId) ? { ...s, voucherId: '' } : s)),
         })),
       ),
     )
@@ -326,10 +424,13 @@ function EditForm({
     const loans = accountList(loanAccounts)
     const interests = accountList(interestAccounts)
     if (!loans || !interests) return t('properties.error.accounts')
-    const builtLeases = buildLeases(t, leases, partners)
     if (typeof builtLeases === 'string') return builtLeases
+    const settlements = buildSettlements(t, water, new Set(builtLeases.map((l) => l.key)))
+    if (typeof settlements === 'string') return settlements
     const next: PropertyDoc = { ...doc, eras: eras.map((eraid) => ({ eraid, account: eraById.get(eraid)?.account ?? 1 })) }
     next.leases = builtLeases
+    if (settlements.length) next.water_settlements = settlements
+    else delete next.water_settlements
     if (kind) next.kind = kind
     else delete next.kind
     if (excluded) next.excluded = true
@@ -422,13 +523,30 @@ function EditForm({
         <p className="muted">{t('properties.edit.leasesLead')}</p>
         <LeasesEditor
           drafts={leases}
-          onChange={setLeases}
+          onChange={(next) => setLeases(withKeys(next))}
           partners={partners}
           docs={allDocs}
           suggestions={[...detail.lease_suggestions].reverse()}
           today={today}
           onCreateNotice={createNotice}
           onUpload={upload}
+          isCreated={isCreated}
+          onDeleteDocs={deleteDocs}
+        />
+      </section>
+
+      <section className="property-section">
+        <h3>{t('properties.water.editTitle')}</h3>
+        <p className="muted">{t('properties.water.editLead')}</p>
+        <WaterEditor
+          drafts={water}
+          onChange={setWater}
+          leases={formLeases}
+          tenantName={(lease) => leaseTenant(lease) || t('properties.lease.tenantUnknown')}
+          docs={allDocs}
+          suggestions={detail.water.suggestions}
+          onCreateLetter={createLetter}
+          onUpload={uploadWater}
           isCreated={isCreated}
           onDeleteDocs={deleteDocs}
         />

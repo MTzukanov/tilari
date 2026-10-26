@@ -24,6 +24,7 @@ import { CashFlowChart, PaybackChart } from './Charts'
 import { LeasesPanel } from './LeasesPanel'
 import { formatEuro, statusClass, warningText } from './format'
 import { MonthLinesPanel } from './MonthLines'
+import { WaterPanel } from './WaterPanel'
 
 function Kpi({ label, value, neg, hint, title }: { label: string; value: string; neg?: boolean; hint?: string; title?: string }) {
   return (
@@ -412,6 +413,10 @@ export function PropertyView({
               onEdit={onEdit}
               onOpenVoucher={(v) => openVoucher(v)}
             />
+          ) : null}
+
+          {d.status !== 'sold' || d.water.settlements.length || d.water.suggestions.length ? (
+            <WaterPanel water={d.water} onEdit={onEdit} onOpenVoucher={(v) => openVoucher(v)} />
           ) : null}
 
           <BreakEvenPanel key={d.target?.rate_bp ?? 'none'} d={d} onTarget={setTargetBp} />

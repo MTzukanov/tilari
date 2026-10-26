@@ -31,6 +31,53 @@ describe('normalizePropertyDoc', () => {
     })
   })
 
+  it('validates water settlements: keys given, shares unique, a lease\'s water flat or the default advance', () => {
+    const doc = normalizePropertyDoc({
+      eras: [],
+      leases: [
+        { key: 'l1', starts: '2024-01-01', rents: [], water: 'advance' },
+        { key: 'l2', starts: '2025-01-01', rents: [], water: 'flat' },
+      ],
+      water_settlements: [
+        { from: '2024-11-01', to: '2025-10-31', difference_snt: 4_210, later: true },
+        {
+          key: 'w1',
+          from: '2023-11-01',
+          to: '2024-10-31',
+          difference_snt: -17_500,
+          usage_snt: 2_500,
+          voucher_id: 40,
+          shares: [{ lease_key: 'l1', balance_snt: -15_310, voucher_id: 41 }],
+        },
+      ],
+    })
+    expect(doc.leases?.map((l) => l.water ?? null)).toEqual([null, 'flat'])
+    expect(doc.water_settlements).toEqual([
+      {
+        key: 'w1',
+        from: '2023-11-01',
+        to: '2024-10-31',
+        difference_snt: -17_500,
+        usage_snt: 2_500,
+        voucher_id: 40,
+        shares: [{ lease_key: 'l1', balance_snt: -15_310, voucher_id: 41 }],
+      },
+      { key: 'w2', from: '2024-11-01', to: '2025-10-31', difference_snt: 4_210, later: true },
+    ])
+    const bad = (water_settlements: unknown, path: string) =>
+      expect(() => normalizePropertyDoc({ eras: [], water_settlements })).toThrow(`invalid_field:${path}`)
+    bad([{ from: '2024-11-01', to: '2024-10-31', difference_snt: 0 }], 'water_settlements[0].to')
+    bad([{ from: '2024-11-01', to: '2025-10-31' }], 'water_settlements[0].difference_snt')
+    bad([{ from: '2024-11-01', to: '2025-10-31', difference_snt: 0, usage_snt: -1 }], 'water_settlements[0].usage_snt')
+    bad(
+      [{ from: '2024-11-01', to: '2025-10-31', difference_snt: 0, shares: [{ lease_key: 'l1' }, { lease_key: 'l1' }] }],
+      'water_settlements[0].shares[1].lease_key',
+    )
+    expect(() => normalizePropertyDoc({ eras: [], leases: [{ starts: '2024-01-01', rents: [], water: 'free' }] })).toThrow(
+      'invalid_field:leases[0].water',
+    )
+  })
+
   it('validates leases: steps sorted, keys given, unknown keys kept', () => {
     const doc = normalizePropertyDoc({
       eras: [],

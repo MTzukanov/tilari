@@ -104,7 +104,7 @@ function words(text: string): string[] {
 
 /**
  * How well a partner's name shows in a title: its own words, and two adjacent words written
- * together ("Asunto Ensin Oy" in "Asuntoensin").
+ * together ("Koti Aina Oy" in "Kotiaina").
  */
 function nameScore(partnerName: string, titleWords: Set<string>, titleJoined: string, ignore: Set<string>): number {
   const all = words(partnerName)
@@ -128,6 +128,23 @@ const RENT = /vuokra|\brent\b|hyra|miete/
 const PARKING = /autopaik|parking|pysäköin|\bap ?\d/
 
 /**
+ * A water settlement (vesitasaus) or what is paid towards one: "Vesitasaus 31.10.2023",
+ * "VEDENTASAUS", "vesihyvitys", "vesimaksun loppuosa", "40e puuttuvaa vesimaksua", "puuttuneista
+ * vesimaksuista". Real texts have the typo "Vesitataus".
+ */
+const WATER_SETTLEMENT =
+  /vesitas|vedentas|vesitat|vesihyvit|vesimaksun loppuosa|puuttu\w*\s+vesimaks|vesimaksu(?:n|jen)\s+palautus|water\s+(?:settlement|refund)|vattenutjämning/
+
+export function isWaterSettlementText(text: string | undefined): boolean {
+  return WATER_SETTLEMENT.test((text ?? '').toLowerCase())
+}
+
+/** A rent payment's own words ("Vuokra 630e", "VUOKRA + VESI"), not "vuokravakuus". */
+export function mentionsRent(text: string | undefined): boolean {
+  return /\bvuokra\b|\brent\b|\bhyra\b|\bmiete\b/.test((text ?? '').toLowerCase())
+}
+
+/**
  * Which part of the payment a line is. Most tenants pay one line ("vuokra + vesi"), which is
  * rent; a line about water only is water, about parking only is parking.
  */
@@ -138,10 +155,14 @@ function partOf(row: SuggestIncome, parkingObject: boolean): Part {
   return 'rent'
 }
 
-/** Monthly totals per part, oldest first. */
+/**
+ * Monthly totals per part, oldest first. Water settlements are one-offs, not rent: months that
+ * carry one (also "vuokra 630 + 40 puuttuvaa vesimaksua") are left out, so they make no step.
+ */
 function monthlyTotals(rows: SuggestIncome[], parkingObject: boolean): [string, Parts][] {
   const totals = new Map<string, Parts>()
   for (const row of rows) {
+    if (isWaterSettlementText(row.text)) continue
     const key = monthKey(row.date)
     const parts = totals.get(key) ?? { rent: 0, water: 0, parking: 0 }
     parts[partOf(row, parkingObject)] += row.amount_snt

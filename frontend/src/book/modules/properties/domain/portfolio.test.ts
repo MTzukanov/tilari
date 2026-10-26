@@ -305,6 +305,82 @@ describe('rental objects: figures', () => {
     })
   })
 
+  it('water: the booked settlement suggests one; stored, it is shared by the lease and its lines found', async () => {
+    const fx = await setUp()
+    const { db, vouchers, partners } = fx
+    const tenant = partners['Vuokralainen Virtanen']
+    // The company refunds the owner; the owner passes the refund on to the tenant.
+    fx.voucher('waterCompany', '2024-11-30', 400, 'Tiliote 2024-11', [
+      { account: 7300, credit: 120 * E, allocation: CC.bundle, description: 'Vesitasaus 31.10.2024 A 1', date: '2024-11-20' },
+      { account: 1910, debit: 120 * E, date: '2024-11-20' },
+    ])
+    fx.voucher('waterTenant', '2024-12-31', 400, 'Tiliote 2024-12', [
+      { account: 3760, debit: 120 * E, allocation: CC.bundle, description: 'Vedentasaus A 1', partner: 'Vuokralainen Virtanen', date: '2024-12-05' },
+      { account: 1910, credit: 120 * E, date: '2024-12-05' },
+    ])
+    const statement = fx.voucher('waterStatement', '2024-11-15', 800, 'Vesitasauslaskelma Esimerkkikatu 1 A 1', [])
+    const before = computeDetail(db, CC.bundle, { today: TODAY })
+    expect(before.water.settlements).toEqual([])
+    expect(before.water.suggestions.map((s) => [s.source, s.settlement])).toEqual([
+      ['company', { key: '', from: '2023-11-01', to: '2024-10-31', difference_snt: -120 * E }],
+    ])
+    // Shared by the suggested lease while none is stored; the refund paid settles it.
+    expect(before.water.suggestions[0].view.shares).toMatchObject([
+      { tenant: 'Vuokralainen Virtanen', days: 366, balance_snt: -120 * E, settled_snt: -120 * E, status: 'settled' },
+    ])
+    // The settlement line makes no rent step.
+    expect(before.lease_suggestions[0].lease.rents).toEqual([{ from: '2023-03-01', rent_snt: 1_000 * E }])
+
+    saveProperty(
+      db,
+      CC.bundle,
+      {
+        ...before.doc,
+        leases: [{ key: 'l1', tenant_partner_id: tenant, starts: '2023-03-01', rents: [{ from: '2023-03-01', rent_snt: 980 * E, water_snt: 20 * E }] }],
+        water_settlements: [
+          { from: '2023-11-01', to: '2024-10-31', difference_snt: -120 * E, voucher_id: statement, shares: [{ lease_key: 'l1', voucher_id: vouchers.rentRise }] },
+        ],
+      },
+      'now',
+    )
+    const after = computeDetail(db, CC.bundle, { today: TODAY })
+    expect(after.doc.water_settlements?.[0].key).toBe('w1')
+    // The statement and the letter are documents of the object too.
+    expect(after.doc.doc_voucher_ids).toEqual(expect.arrayContaining([statement, vouchers.rentRise]))
+    expect(after.water.suggestions).toEqual([])
+    expect(after.water.settlements).toHaveLength(1)
+    expect(after.water.settlements[0]).toMatchObject({
+      key: 'w1',
+      advance_snt: null,
+      statement: { voucher_id: statement },
+      booked: [{ date: '2024-11-20', amount_snt: 120 * E }],
+      owner_snt: 0,
+    })
+    expect(after.water.settlements[0].shares).toMatchObject([
+      {
+        lease_key: 'l1',
+        tenant: 'Vuokralainen Virtanen',
+        advance_snt: 240 * E,
+        balance_snt: -120 * E,
+        settled_snt: -120 * E,
+        status: 'settled',
+        letter: { voucher_id: vouchers.rentRise },
+        movements: [{ date: '2024-12-05', amount_snt: -120 * E }],
+      },
+    ])
+    const latest = { from: '2023-11-01', to: '2024-10-31', balance_snt: -120 * E, settled_snt: -120 * E, status: 'settled' }
+    expect(after.leases[0].water_latest).toEqual(latest)
+    expect(after.lease?.water_latest).toEqual(latest)
+
+    const save = (settlement: Record<string, unknown>) => () =>
+      saveProperty(db, CC.bundle, { ...after.doc, water_settlements: [{ from: '2023-11-01', to: '2024-10-31', difference_snt: 0, ...settlement }] }, 'now')
+    expect(save({ shares: [{ lease_key: 'l9' }] })).toThrow('invalid_field:water_settlements[0].shares[0].lease_key')
+    expect(save({ voucher_id: vouchers.leaseOld })).toThrow('invalid_field:water_settlements[0].voucher_id')
+    expect(save({ shares: [{ lease_key: 'l1', voucher_id: vouchers.draft }] })).toThrow(
+      'invalid_field:water_settlements[0].shares[0].voucher_id',
+    )
+  })
+
   it('a lease must name an existing partner and posted vouchers', async () => {
     const { db, vouchers } = await setUp()
     const doc = computeDetail(db, CC.bundle, { today: TODAY }).doc

@@ -50,6 +50,13 @@ export type LeaseRent = { from: string; rent_snt: number; water_snt?: number; pa
 export type LeaseIncrease = { kind: LeaseIncreaseKind; pct_bp?: number; amount_snt?: number; month?: number }
 
 /**
+ * The lease's water: an advance (vesimaksuennakko) settled against actual use, the default and
+ * not stored, or a flat fee that is never settled.
+ */
+export const LEASE_WATER_KINDS = ['advance', 'flat'] as const
+export type LeaseWaterKind = (typeof LEASE_WATER_KINDS)[number]
+
+/**
  * A rental relationship (vuokrasuhde). The tenant is a Kitsas partner; `tenant_name` only when
  * they are not one yet. `ends` is a fixed term's end or the move-out. Unknown keys are kept.
  */
@@ -67,6 +74,31 @@ export type Lease = {
   increase?: LeaseIncrease
   /** The contract (a type-800 voucher). */
   doc_voucher_id?: number
+  /** Only `flat` is stored; missing means an advance. */
+  water?: LeaseWaterKind
+  [key: string]: unknown
+}
+
+/**
+ * A tenant's part of a water settlement, stored only when it carries something: the owner's own
+ * amount instead of the computed one (+ the tenant pays, - refunded), or the letter sent.
+ */
+export type WaterShare = { lease_key: string; balance_snt?: number; voucher_id?: number; [key: string]: unknown }
+
+/**
+ * The housing company's water settlement (vesitasaus) for one period, as on its statement:
+ * `difference_snt` + when the owner pays more, - for a refund; `usage_snt` the apartment's
+ * actual water cost, when known. Each tenant's share is computed from the leases (ADR-025).
+ */
+export type WaterSettlement = {
+  key: string
+  from: string
+  to: string
+  difference_snt: number
+  usage_snt?: number
+  /** The company's statement (a type-800 voucher). */
+  voucher_id?: number
+  shares?: WaterShare[]
   [key: string]: unknown
 }
 
@@ -91,6 +123,7 @@ export type PropertyDoc = {
   target_return_bp?: number
   note?: string
   leases?: Lease[]
+  water_settlements?: WaterSettlement[]
   [key: string]: unknown
 }
 
@@ -274,12 +307,82 @@ export type LeaseView = {
   increase: LeaseIncrease | null
   contract: LeaseVoucher | null
   steps: (LeaseRent & { voucher: LeaseVoucher | null })[]
+  water: LeaseWaterKind
+  /** The latest water settlement with a share for this lease (object page only). */
+  water_latest?: { from: string; to: string; balance_snt: number; settled_snt: number; status: WaterShareStatus } | null
   /** Suggested from the book (not stored): from a contract document, or from payments alone. */
   suggested?: 'contract' | 'payments'
 }
 
 /** A lease the book suggests: the lease to add on the edit page, and how the page shows it. */
 export type LeaseSuggestionView = { lease: Lease; view: LeaseView }
+
+/** A booked line about a water settlement, and what of it counts for the settlement. */
+export type WaterMovement = {
+  line_id: number
+  date: string
+  /** The part that settles water: the whole line, or what a rent payment had on top of the rent. */
+  amount_snt: number
+  /** credit - debit of the whole line. */
+  line_snt: number
+  text: string
+  voucher: LeaseVoucher
+}
+
+/** `none`: nothing to settle; `partial`: some booked, not all. */
+export type WaterShareStatus = 'none' | 'open' | 'partial' | 'settled'
+
+export type WaterShareView = {
+  lease_key: string
+  tenant: string | null
+  tenant_partner_id: number | null
+  /** The lease's part of the period. */
+  from: string
+  to: string
+  days: number
+  /** Water advances the lease agreed for those days. */
+  advance_snt: number
+  /** Share of the actual use; null when the company's difference is passed on by days. */
+  usage_snt: number | null
+  /** What the lease's figures give: + the tenant pays, - refunded. */
+  computed_snt: number
+  /** The owner's own amount when set, else `computed_snt`. */
+  balance_snt: number
+  own: boolean
+  letter: LeaseVoucher | null
+  movements: WaterMovement[]
+  /** What the movements settled so far (same sign as the balance when paid). */
+  settled_snt: number
+  status: WaterShareStatus
+}
+
+export type WaterSettlementView = {
+  key: string
+  from: string
+  to: string
+  days: number
+  difference_snt: number
+  usage_snt: number | null
+  /** The company's advances for the period: use less difference, when the use is known. */
+  advance_snt: number | null
+  statement: LeaseVoucher | null
+  /** The company's settlement as booked on the object (vastike account). */
+  booked: WaterMovement[]
+  shares: WaterShareView[]
+  /** What the owner keeps (+) or bears (-): the tenants' balances less the company's difference. */
+  owner_snt: number
+  /** Tenants' lines with no share to go to (no lease with water advances in the period). */
+  other: WaterMovement[]
+}
+
+/** A settlement the book suggests from booked lines: from the company's line, or the tenant's alone. */
+export type WaterSuggestionView = { settlement: WaterSettlement; view: WaterSettlementView; source: 'company' | 'tenant' }
+
+export type WaterDetail = {
+  /** Newest period first. */
+  settlements: WaterSettlementView[]
+  suggestions: WaterSuggestionView[]
+}
 
 export type PortfolioResponse = {
   as_of: string
@@ -323,6 +426,7 @@ export type PropertyDetail = PropertyRow & {
   leases: LeaseView[]
   /** Leases the book suggests that no stored lease stands for yet, newest start first. */
   lease_suggestions: LeaseSuggestionView[]
+  water: WaterDetail
 }
 
 export type MonthLineKind = 'income' | 'expense' | 'interest'

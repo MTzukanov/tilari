@@ -31,6 +31,14 @@ export type {
   SetupResponse,
   Valuation,
   Warning,
+  WaterDetail,
+  WaterMovement,
+  WaterSettlement,
+  WaterSettlementView,
+  WaterShare,
+  WaterShareStatus,
+  WaterShareView,
+  WaterSuggestionView,
   YearRow,
 } from '../../book/modules/properties/domain/types'
 export { LEASE_INCREASE_KINDS, PROPERTY_KINDS } from '../../book/modules/properties/domain/types'

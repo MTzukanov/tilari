@@ -1,24 +1,19 @@
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
-import { formatVoucherId } from '../../../shared/formatVoucherId'
-import type { LeaseView, LeaseVoucher } from '../api'
-import { increaseText, leasePeriod, leaseRentText } from './format'
+import type { LeaseView } from '../api'
+import { increaseText, leasePeriod, leaseRentText, periodText, waterBalanceText, waterStatusText } from './format'
+import { VoucherLink } from './FormParts'
 
-/** Where a suggested lease comes from: a linked contract, or rent payments alone (hover explains). */
-export function SuggestionSource({ source }: { source: 'contract' | 'payments' }) {
+/**
+ * Where a suggestion comes from (hover explains): a lease from a linked contract or from rent
+ * payments alone; a water settlement from the company's booked line or the tenant's alone.
+ */
+export function SuggestionSource({ source }: { source: 'contract' | 'payments' | 'waterCompany' | 'waterTenant' }) {
   const { t } = useI18n()
   return (
     <span className="muted property-lease-source" title={t(`properties.lease.sourceHint.${source}`)}>
       {t(`properties.lease.source.${source}`)}
     </span>
-  )
-}
-
-function VoucherLink({ voucher, onOpen }: { voucher: LeaseVoucher; onOpen: (voucherId: number) => void }) {
-  return (
-    <button type="button" className="btn-link" onClick={() => onOpen(voucher.voucher_id)}>
-      {formatVoucherId(voucher.series, voucher.doc_number, voucher.date)} · {voucher.title}
-    </button>
   )
 }
 
@@ -28,7 +23,9 @@ function LeaseCard({ lease, onOpenVoucher }: { lease: LeaseView; onOpenVoucher: 
     leaseRentText(t, lease.rent),
     lease.due_day != null ? t('properties.lease.due', { day: lease.due_day }) : '',
     increaseText(t, lease.increase),
+    t(lease.water === 'flat' ? 'properties.water.flat' : 'properties.water.advance'),
   ].filter(Boolean)
+  const latest = lease.water_latest
   return (
     <div className="property-lease-card">
       <p className="property-lease-head">
@@ -39,6 +36,12 @@ function LeaseCard({ lease, onOpenVoucher }: { lease: LeaseView; onOpenVoucher: 
       {lease.contract ? (
         <p className="property-lease-terms">
           {t('properties.lease.contract')}: <VoucherLink voucher={lease.contract} onOpen={onOpenVoucher} />
+        </p>
+      ) : null}
+      {latest ? (
+        <p className="property-lease-terms">
+          {t('properties.water.latest', { period: periodText(t, latest.from, latest.to) })}: {waterBalanceText(t, latest.balance_snt)}
+          {latest.status !== 'none' ? ` · ${waterStatusText(t, latest.status, latest.balance_snt, latest.settled_snt)}` : ''}
         </p>
       ) : null}
       {lease.steps.length > 1 ? (

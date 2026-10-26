@@ -1115,7 +1115,20 @@
       "increaseEur": "Höjning € / år",
       "increaseFrom": "Från",
       "increaseNotice": "Höjningsmeddelande",
-      "parkingExtra": "Bilplats"
+      "parkingExtra": "Bilplats",
+      "waterFrom": "Perioden börjar",
+      "waterTo": "Perioden slutar",
+      "waterResult": "Bolagets utjämning",
+      "waterAmount": "Belopp €",
+      "waterUsage": "Faktisk förbrukning €",
+      "waterAdvances": "Bolagets förskott",
+      "waterStatement": "Bolagets utjämningskalkyl",
+      "waterStay": "Boendetid under perioden",
+      "waterAdvancesTenant": "Vattenförskott",
+      "waterComputed": "Beräknad utjämning",
+      "waterBalance": "Utjämning med hyresgästen",
+      "waterLetter": "Utjämningskalkyl",
+      "waterSettled": "Vattenavgiften utjämnas enligt förbrukning"
     },
     "breakEven": {
       "title": "Nollpris: priset som ger pengarna tillbaka",
@@ -1224,7 +1237,9 @@
       "review": "Granska och spara",
       "source": {
         "contract": "källa: hyresavtal",
-        "payments": "källa: hyresbetalningar"
+        "payments": "källa: hyresbetalningar",
+        "waterCompany": "källa: bolagets utjämning",
+        "waterTenant": "källa: hyresgästens utjämning"
       },
       "suggestedNote": "★ = hyresförhållande föreslaget från bokföringen, inte sparat än.",
       "initial": "Hyra i början",
@@ -1235,7 +1250,9 @@
       "extras": "Tillägg:",
       "sourceHint": {
         "contract": "Ett hyresavtal länkat till objektet: start, slut och hyresgäst från dess rubrik, hyran från objektets hyresbetalningar.",
-        "payments": "Enbart hyresbetalningar: betalaren har betalat hyra dessa månader, men inget hyresavtal länkat till objektet täcker perioden. Länka avtalet till objektet så blir förslaget exaktare."
+        "payments": "Enbart hyresbetalningar: betalaren har betalat hyra dessa månader, men inget hyresavtal länkat till objektet täcker perioden. Länka avtalet till objektet så blir förslaget exaktare.",
+        "waterCompany": "Bostadsbolagets vattenutjämning bokförd på objektets vederlagskonto: perioden ur texten eller året före bokningen, beloppet ur bokningen. Kontrollera mot bolagets kalkyl.",
+        "waterTenant": "Endast en utjämning med hyresgästen (återbetalning eller tilläggsavgift) är bokförd: ingen utjämning från bolaget hittades, så den antas vara densamma. Kontrollera mot bolagets kalkyl."
       }
     },
     "edit": {
@@ -1384,6 +1401,76 @@
     },
     "upload": {
       "contractTitle": "Hyresavtal {object} {tenant} {date}-"
+    },
+    "water": {
+      "title": "Vattenavgifter och utjämningar",
+      "none": "Inga vattenutjämningar.",
+      "add": "Lägg till vattenutjämning",
+      "remove": "Ta bort vattenutjämning",
+      "period": "Utjämningsperiod {period}",
+      "company": "bostadsbolaget: {text}",
+      "usage": "förbrukning {amount}",
+      "advances": "förskott {amount}",
+      "companyRefund": "gottgörelse {amount}",
+      "companyCharge": "tilläggsfaktura {amount}",
+      "noDifference": "ingen skillnad",
+      "statement": "Utjämningskalkyl",
+      "booked": "Bokfört",
+      "notBooked": "Bolagets utjämning hittas inte i bokföringen.",
+      "stay": "{period}, {days} d",
+      "refund": "återbetalas {amount}",
+      "charge": "debiteras {amount}",
+      "nothing": "inget att utjämna",
+      "status": {
+        "paid": "betalt",
+        "refunded": "återbetalt",
+        "open": "öppen",
+        "partial": "delvis, {amount} kvar",
+        "none": "inget att utjämna"
+      },
+      "noShares": "Inga hyresförhållanden under perioden där vattenavgiften utjämnas.",
+      "other": "Övriga bokningar med hyresgästen",
+      "ownerKeeps": "Ägaren behåller {amount}.",
+      "ownerBears": "Ägaren står för {amount} (t.ex. tomma dagar).",
+      "suggestions": "Förslag från bokföringen ({n})",
+      "suggestionsLead": "Från vattenutjämningar bokförda på objektet. Inget har sparats: kontrollera beloppen mot bostadsbolagets kalkyl och spara på redigeringssidan.",
+      "flat": "vattenavgiften utjämnas inte",
+      "advance": "vattenavgiften utjämnas enligt förbrukning",
+      "latest": "Vattenutjämning {period}",
+      "editTitle": "Vattenutjämningar",
+      "editLead": "Bostadsbolagets vattenutjämningar per period. Hyresgästernas andelar beräknas från hyresavtalen: förbrukningen enligt boendedagar, minus vattenförskotten.",
+      "editSuggestions": "Bokföringen har {n} vattenutjämningar som inte finns i formuläret.",
+      "direction": {
+        "refund": "Gottgörelse till ägaren",
+        "charge": "Tilläggsfaktura till ägaren"
+      },
+      "shares": "Hyresgästernas andelar",
+      "sharesByUsage": "Förbrukningen fördelas enligt boendedagar och hyresgästens vattenförskott dras av.",
+      "sharesByDifference": "Ingen förbrukning angiven: bolagets gottgörelse eller tilläggsfaktura fördelas enligt boendedagar.",
+      "needPeriod": "Ange periodens början och slut.",
+      "mode": {
+        "computed": "Beräknad",
+        "refund": "Återbetalas",
+        "charge": "Debiteras"
+      },
+      "createLetter": "Skapa utjämningskalkyl",
+      "deleteLetter": "Ta bort kalkylen",
+      "uploadLetter": "Ladda upp kalkyl",
+      "uploadStatement": "Ladda upp utjämningskalkyl",
+      "statementTitle": "Bostadsbolagets vattenutjämning {object} {from}–{to}",
+      "letter": {
+        "voucherTitle": "Vattenutjämning {object} {from}–{to}",
+        "fileName": "vattenutjamning",
+        "heading": "UTJÄMNING AV VATTENAVGIFTER",
+        "period": "Bostadsbolaget har utjämnat lägenhetens vattenavgifter enligt faktisk förbrukning för perioden {from}–{to}.",
+        "stay": "Er boendetid under perioden: {from}–{to} ({days} dagar).",
+        "advances": "Vattenförskott under perioden",
+        "actual": "Vattenavgift enligt förbrukning",
+        "refund": "Vi återbetalar",
+        "charge": "Tilläggsavgift",
+        "refundText": "Vi återbetalar {amount} till ert konto. Meddela oss om ert kontonummer har ändrats.",
+        "chargeText": "Vi ber er betala {amount} tillsammans med nästa hyra, till samma konto och med samma referens som hyran."
+      }
     }
   }
 }

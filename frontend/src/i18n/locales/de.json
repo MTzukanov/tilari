@@ -1115,7 +1115,20 @@
       "increaseEur": "Erhöhung € / Jahr",
       "increaseFrom": "Ab",
       "increaseNotice": "Erhöhungsmitteilung",
-      "parkingExtra": "Stellplatz"
+      "parkingExtra": "Stellplatz",
+      "waterFrom": "Zeitraum beginnt",
+      "waterTo": "Zeitraum endet",
+      "waterResult": "Abrechnung der Gesellschaft",
+      "waterAmount": "Betrag €",
+      "waterUsage": "Tatsächlicher Verbrauch €",
+      "waterAdvances": "Vorauszahlungen der Gesellschaft",
+      "waterStatement": "Abrechnung der Gesellschaft",
+      "waterStay": "Mietzeit im Zeitraum",
+      "waterAdvancesTenant": "Wasservorauszahlungen",
+      "waterComputed": "Berechnete Abrechnung",
+      "waterBalance": "Abrechnung mit dem Mieter",
+      "waterLetter": "Wasserabrechnung",
+      "waterSettled": "Wasser nach Verbrauch abrechnen"
     },
     "breakEven": {
       "title": "Break-even-Preis: der Preis, der das Geld zurückbringt",
@@ -1224,7 +1237,9 @@
       "review": "Prüfen und speichern",
       "source": {
         "contract": "Quelle: Mietvertrag",
-        "payments": "Quelle: Mietzahlungen"
+        "payments": "Quelle: Mietzahlungen",
+        "waterCompany": "Quelle: Abrechnung der Gesellschaft",
+        "waterTenant": "Quelle: Abrechnung mit dem Mieter"
       },
       "suggestedNote": "★ = Mietverhältnis aus der Buchhaltung vorgeschlagen, noch nicht gespeichert.",
       "initial": "Anfangsmiete",
@@ -1235,7 +1250,9 @@
       "extras": "Extras:",
       "sourceHint": {
         "contract": "Ein mit dem Objekt verknüpfter Mietvertrag: Beginn, Ende und Mieter aus seinem Titel, die Miete aus den Mietzahlungen des Objekts.",
-        "payments": "Nur Mietzahlungen: Der Zahler hat in diesen Monaten Miete gezahlt, aber kein mit dem Objekt verknüpfter Mietvertrag deckt den Zeitraum. Verknüpfen Sie den Vertrag mit dem Objekt, um den Vorschlag zu schärfen."
+        "payments": "Nur Mietzahlungen: Der Zahler hat in diesen Monaten Miete gezahlt, aber kein mit dem Objekt verknüpfter Mietvertrag deckt den Zeitraum. Verknüpfen Sie den Vertrag mit dem Objekt, um den Vorschlag zu schärfen.",
+        "waterCompany": "Die auf dem Hausgeldkonto des Objekts gebuchte Wasserabrechnung der Gesellschaft: Zeitraum aus dem Text oder das Jahr vor der Buchung, Betrag aus der Buchung. Mit der Abrechnung der Gesellschaft prüfen.",
+        "waterTenant": "Nur eine Abrechnung mit dem Mieter (Erstattung oder Nachzahlung) ist gebucht: keine Abrechnung der Gesellschaft gefunden, daher wird dieselbe angenommen. Mit der Abrechnung der Gesellschaft prüfen."
       }
     },
     "edit": {
@@ -1384,6 +1401,76 @@
     },
     "upload": {
       "contractTitle": "Mietvertrag {object} {tenant} {date}-"
+    },
+    "water": {
+      "title": "Wasserkosten und Abrechnungen",
+      "none": "Keine Wasserabrechnungen.",
+      "add": "Wasserabrechnung hinzufügen",
+      "remove": "Wasserabrechnung entfernen",
+      "period": "Abrechnungszeitraum {period}",
+      "company": "Wohnungsgesellschaft: {text}",
+      "usage": "Verbrauch {amount}",
+      "advances": "Vorauszahlungen {amount}",
+      "companyRefund": "Gutschrift {amount}",
+      "companyCharge": "Nachzahlung {amount}",
+      "noDifference": "keine Differenz",
+      "statement": "Abrechnung",
+      "booked": "Gebucht",
+      "notBooked": "Die Abrechnung der Gesellschaft ist nicht in der Buchhaltung zu finden.",
+      "stay": "{period}, {days} T.",
+      "refund": "Erstattung {amount}",
+      "charge": "Nachforderung {amount}",
+      "nothing": "nichts abzurechnen",
+      "status": {
+        "paid": "bezahlt",
+        "refunded": "erstattet",
+        "open": "offen",
+        "partial": "teilweise, {amount} offen",
+        "none": "nichts abzurechnen"
+      },
+      "noShares": "Keine Mietverhältnisse im Zeitraum, deren Wasser abgerechnet wird.",
+      "other": "Weitere Buchungen mit dem Mieter",
+      "ownerKeeps": "Dem Eigentümer bleiben {amount}.",
+      "ownerBears": "Der Eigentümer trägt {amount} (z. B. Leerstandstage).",
+      "suggestions": "Vorschläge aus der Buchhaltung ({n})",
+      "suggestionsLead": "Aus den auf dem Objekt gebuchten Wasserabrechnungen. Nichts ist gespeichert: Beträge mit der Abrechnung der Gesellschaft prüfen und auf der Bearbeitungsseite speichern.",
+      "flat": "Wasser wird nicht abgerechnet",
+      "advance": "Wasser wird nach Verbrauch abgerechnet",
+      "latest": "Wasserabrechnung {period}",
+      "editTitle": "Wasserabrechnungen",
+      "editLead": "Die Wasserabrechnungen der Wohnungsgesellschaft je Zeitraum. Die Anteile der Mieter ergeben sich aus den Mietverträgen: Verbrauch nach Wohntagen, abzüglich der Wasservorauszahlungen.",
+      "editSuggestions": "Die Buchhaltung enthält {n} Wasserabrechnungen, die nicht im Formular sind.",
+      "direction": {
+        "refund": "Gutschrift an den Eigentümer",
+        "charge": "Nachzahlung des Eigentümers"
+      },
+      "shares": "Anteile der Mieter",
+      "sharesByUsage": "Der Verbrauch wird nach Wohntagen verteilt, die Wasservorauszahlungen des Mieters werden abgezogen.",
+      "sharesByDifference": "Kein Verbrauch angegeben: Gutschrift oder Nachzahlung der Gesellschaft wird nach Wohntagen verteilt.",
+      "needPeriod": "Beginn und Ende des Zeitraums angeben.",
+      "mode": {
+        "computed": "Berechnet",
+        "refund": "Erstatten",
+        "charge": "Nachfordern"
+      },
+      "createLetter": "Abrechnung erstellen",
+      "deleteLetter": "Abrechnung löschen",
+      "uploadLetter": "Abrechnung hochladen",
+      "uploadStatement": "Abrechnung der Gesellschaft hochladen",
+      "statementTitle": "Wasserabrechnung der Gesellschaft {object} {from}–{to}",
+      "letter": {
+        "voucherTitle": "Wasserabrechnung {object} {from}–{to}",
+        "fileName": "wasserabrechnung",
+        "heading": "WASSERKOSTENABRECHNUNG",
+        "period": "Die Wohnungsgesellschaft hat die Wasserkosten der Wohnung nach tatsächlichem Verbrauch für den Zeitraum {from}–{to} abgerechnet.",
+        "stay": "Ihre Mietzeit im Zeitraum: {from}–{to} ({days} Tage).",
+        "advances": "Wasservorauszahlungen im Zeitraum",
+        "actual": "Wasserkosten nach Verbrauch",
+        "refund": "Wir erstatten Ihnen",
+        "charge": "Nachzahlung",
+        "refundText": "Wir überweisen {amount} auf Ihr Konto. Bitte teilen Sie uns mit, falls sich Ihre Kontonummer geändert hat.",
+        "chargeText": "Bitte zahlen Sie {amount} mit der nächsten Miete auf dasselbe Konto und mit derselben Referenz wie die Miete."
+      }
     }
   }
 }

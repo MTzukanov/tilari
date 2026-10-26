@@ -1115,7 +1115,20 @@
       "increaseEur": "Increase € / yr",
       "increaseFrom": "From",
       "increaseNotice": "Increase notice",
-      "parkingExtra": "Parking space"
+      "parkingExtra": "Parking space",
+      "waterFrom": "Period starts",
+      "waterTo": "Period ends",
+      "waterResult": "Company settlement",
+      "waterAmount": "Amount €",
+      "waterUsage": "Actual use €",
+      "waterAdvances": "Company advances",
+      "waterStatement": "Company's statement",
+      "waterStay": "Tenancy in period",
+      "waterAdvancesTenant": "Water advances",
+      "waterComputed": "Computed",
+      "waterBalance": "Settle with tenant",
+      "waterLetter": "Settlement letter",
+      "waterSettled": "Water settled by actual use"
     },
     "breakEven": {
       "title": "Break-even price: the price that returns the money",
@@ -1224,7 +1237,9 @@
       "review": "Review and save",
       "source": {
         "contract": "source: lease contract",
-        "payments": "source: rent payments"
+        "payments": "source: rent payments",
+        "waterCompany": "source: company settlement",
+        "waterTenant": "source: tenant settlement"
       },
       "suggestedNote": "★ = a tenancy suggested from the books, not saved yet.",
       "initial": "Starting rent",
@@ -1235,7 +1250,9 @@
       "extras": "Extras:",
       "sourceHint": {
         "contract": "A lease contract linked to the object: start, end and tenant from its title, the rent from the object's rent payments.",
-        "payments": "Rent payments alone: the payer paid rent in these months, but no lease contract linked to the object covers the period. Link the contract to the object to sharpen the suggestion."
+        "payments": "Rent payments alone: the payer paid rent in these months, but no lease contract linked to the object covers the period. Link the contract to the object to sharpen the suggestion.",
+        "waterCompany": "The housing company's water settlement booked on the object's charges account: the period from the text or the year before the booking, the amount from the booking. Check against the company's statement.",
+        "waterTenant": "Only a settlement with the tenant (refund or extra charge) is booked: no company settlement was found, so it is assumed to be the same. Check against the company's statement."
       }
     },
     "edit": {
@@ -1384,6 +1401,76 @@
     },
     "upload": {
       "contractTitle": "Lease {object} {tenant} {date}-"
+    },
+    "water": {
+      "title": "Water charges and settlements",
+      "none": "No water settlements.",
+      "add": "Add water settlement",
+      "remove": "Remove water settlement",
+      "period": "Settlement period {period}",
+      "company": "housing company: {text}",
+      "usage": "use {amount}",
+      "advances": "advances {amount}",
+      "companyRefund": "refund {amount}",
+      "companyCharge": "extra charge {amount}",
+      "noDifference": "no difference",
+      "statement": "Statement",
+      "booked": "Booked",
+      "notBooked": "The housing company's settlement is not found in the books.",
+      "stay": "{period}, {days} d",
+      "refund": "to refund {amount}",
+      "charge": "to charge {amount}",
+      "nothing": "nothing to settle",
+      "status": {
+        "paid": "paid",
+        "refunded": "refunded",
+        "open": "open",
+        "partial": "partly, {amount} left",
+        "none": "nothing to settle"
+      },
+      "noShares": "No leases in the period whose water is settled.",
+      "other": "Other tenant bookings",
+      "ownerKeeps": "The owner keeps {amount}.",
+      "ownerBears": "The owner bears {amount} (e.g. vacant days).",
+      "suggestions": "Suggestions from the books ({n})",
+      "suggestionsLead": "From water settlements booked on the object. Nothing is saved: check the amounts against the housing company's statement and save on the edit page.",
+      "flat": "water is not settled",
+      "advance": "water is settled by actual use",
+      "latest": "Water settlement {period}",
+      "editTitle": "Water settlements",
+      "editLead": "The housing company's water settlements by period. The tenants' shares come from the leases: the use by days lived there, less the water advances.",
+      "editSuggestions": "The books have {n} water settlements that are not in the form.",
+      "direction": {
+        "refund": "Refund to the owner",
+        "charge": "Extra charge to the owner"
+      },
+      "shares": "Tenants' shares",
+      "sharesByUsage": "The use is split by days lived, and the tenant's water advances are deducted.",
+      "sharesByDifference": "No use given: the housing company's refund or extra charge is split by days lived.",
+      "needPeriod": "Give the period's start and end.",
+      "mode": {
+        "computed": "Computed",
+        "refund": "Refund",
+        "charge": "Charge"
+      },
+      "createLetter": "Create settlement letter",
+      "deleteLetter": "Delete letter",
+      "uploadLetter": "Upload letter",
+      "uploadStatement": "Upload statement",
+      "statementTitle": "Housing company water settlement {object} {from}–{to}",
+      "letter": {
+        "voucherTitle": "Water settlement {object} {from}–{to}",
+        "fileName": "water-settlement",
+        "heading": "WATER CHARGE SETTLEMENT",
+        "period": "The housing company has settled the apartment's water charges by actual use for {from}–{to}.",
+        "stay": "Your tenancy in the period: {from}–{to} ({days} days).",
+        "advances": "Water advances in the period",
+        "actual": "Water charge by actual use",
+        "refund": "We refund you",
+        "charge": "Extra charge",
+        "refundText": "We will refund {amount} to your account. Please tell us if your account number has changed.",
+        "chargeText": "Please pay {amount} with your next rent, to the same account and with the same reference as the rent."
+      }
     }
   }
 }

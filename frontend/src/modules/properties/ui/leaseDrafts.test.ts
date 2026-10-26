@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Lease } from '../api'
-import { buildLeases, draftTotal, leaseDrafts, newLease, nextIncrease } from './leaseDrafts'
+import { buildLeases, draftTotal, leaseDrafts, newLease, nextIncrease, withKeys } from './leaseDrafts'
 
 const t = (key: string, vars?: Record<string, string | number>) => `${key}${vars ? JSON.stringify(vars) : ''}`
 const partners = [{ id: 5, name: 'Vuokralainen Virtanen' }]
@@ -75,6 +75,17 @@ describe('lease drafts', () => {
     })
     // No month in the clause: the lease's start month.
     expect(nextIncrease({ ...lease, increaseMonth: '', increaseKind: 'index' }, '2026-02-10').from).toBe('2026-03-01')
+  })
+
+  it('water is an advance unless marked flat; new leases get the first free keys', () => {
+    const stored: Lease = { key: 'l2', starts: '2025-01-01', due_day: 5, rents: [], water: 'flat' }
+    const [draft] = leaseDrafts([stored], partners)
+    expect(draft.waterFlat).toBe(true)
+    expect(buildLeases(t, [draft], partners)).toEqual([stored])
+    expect(buildLeases(t, [{ ...draft, waterFlat: false }], partners)).toEqual([{ key: 'l2', starts: '2025-01-01', due_day: 5, rents: [] }])
+    const keyed = withKeys([newLease(), draft, newLease()])
+    expect(keyed.map((d) => d.key)).toEqual(['l1', 'l2', 'l3'])
+    expect(withKeys(keyed)).toEqual(keyed)
   })
 
   it('a bad number names its field', () => {

@@ -23,7 +23,7 @@ export const CC = {
 
 const E = 100 // euro in cents
 
-type Line = {
+export type Line = {
   account: number
   debit?: number
   credit?: number
@@ -44,6 +44,8 @@ export type PropertyFixture = {
   vouchers: Record<string, number>
   /** Kumppani id by name. */
   partners: Record<string, number>
+  /** Adds a voucher (posted unless `status` says otherwise); returns its id. */
+  voucher: (key: string, date: string, type: number, title: string, lines: Line[], status?: number) => number
 }
 
 export async function buildPropertyFixture(): Promise<PropertyFixture> {
@@ -339,5 +341,5 @@ export async function buildPropertyFixture(): Promise<PropertyFixture> {
   // A rent-increase notice for the bundle, and a partner who never paid anything.
   voucher('rentRise', '2025-01-15', 800, 'Vuokrankorotus Esimerkkikatu 1 A 1 1.3.2025', [])
   partner('Vuokralainen Lahtinen')
-  return { db, eras, vouchers, partners }
+  return { db, eras, vouchers, partners, voucher }
 }

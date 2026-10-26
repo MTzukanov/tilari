@@ -8,6 +8,7 @@ import {
   PROPERTY_KEY_PREFIX,
   PROPERTY_KINDS,
   LEASE_INCREASE_KINDS,
+  LEASE_WATER_KINDS,
   type CapitalEntry,
   type EraLink,
   type Financing,
@@ -15,11 +16,14 @@ import {
   type LeaseIncrease,
   type LeaseIncreaseKind,
   type LeaseRent,
+  type LeaseWaterKind,
   type PortfolioSettings,
   type PropertyDoc,
   type PropertyKind,
   type SaleCosts,
   type Valuation,
+  type WaterSettlement,
+  type WaterShare,
 } from './types'
 
 export { PORTFOLIO_KEY }
@@ -129,6 +133,7 @@ const DOC_KEYS = new Set([
   'note',
   'leases',
   'created_voucher_ids',
+  'water_settlements',
 ])
 
 const LEASE_KEYS = new Set([
@@ -141,6 +146,7 @@ const LEASE_KEYS = new Set([
   'rents',
   'increase',
   'doc_voucher_id',
+  'water',
 ])
 const LEASE_KEY = /^[A-Za-z0-9_-]{1,16}$/
 const MAX_ID = Number.MAX_SAFE_INTEGER
@@ -204,26 +210,89 @@ function lease(item: unknown, path: string): Lease {
   if (increase) out.increase = increase
   const contract = optionalId(item.doc_voucher_id, `${path}.doc_voucher_id`)
   if (contract != null) out.doc_voucher_id = contract
+  if (item.water != null) {
+    if (!LEASE_WATER_KINDS.includes(item.water as LeaseWaterKind)) fail(`${path}.water`)
+    // An advance is the default and not stored.
+    if (item.water === 'flat') out.water = 'flat'
+  }
   return out
 }
 
 /** Leases oldest start first; a missing key gets the first free `l{n}`, a repeated one fails. */
 function leases(value: unknown): Lease[] {
   const list = array(value, 'leases', 100).map((item, i) => lease(item, `leases[${i}]`))
+  assignKeys(list, 'l', 'leases')
+  return list.sort((a, b) => a.starts.localeCompare(b.starts) || a.key.localeCompare(b.key))
+}
+
+/** Keys of the given items, unique; a missing one gets the first free `{prefix}{n}`. */
+function assignKeys(list: { key: string }[], prefix: string, path: string): void {
   const used = new Set<string>()
-  list.forEach((l, i) => {
-    if (!l.key) return
-    if (used.has(l.key)) fail(`leases[${i}].key`)
-    used.add(l.key)
+  list.forEach((item, i) => {
+    if (!item.key) return
+    if (used.has(item.key)) fail(`${path}[${i}].key`)
+    used.add(item.key)
   })
   let n = 1
-  for (const l of list) {
-    if (l.key) continue
-    while (used.has(`l${n}`)) n += 1
-    l.key = `l${n}`
-    used.add(l.key)
+  for (const item of list) {
+    if (item.key) continue
+    while (used.has(`${prefix}${n}`)) n += 1
+    item.key = `${prefix}${n}`
+    used.add(item.key)
   }
-  return list.sort((a, b) => a.starts.localeCompare(b.starts) || a.key.localeCompare(b.key))
+}
+
+const SETTLEMENT_KEYS = new Set(['key', 'from', 'to', 'difference_snt', 'usage_snt', 'voucher_id', 'shares'])
+const SHARE_KEYS = new Set(['lease_key', 'balance_snt', 'voucher_id'])
+
+function keep(out: Record<string, unknown>, item: Record<string, unknown>, known: Set<string>): void {
+  for (const [key, value] of Object.entries(item)) if (!known.has(key) && value !== undefined) out[key] = value
+}
+
+function waterShare(item: unknown, path: string): WaterShare {
+  if (!isObject(item)) fail(path)
+  if (typeof item.lease_key !== 'string' || !LEASE_KEY.test(item.lease_key)) fail(`${path}.lease_key`)
+  const out: WaterShare = { lease_key: item.lease_key }
+  keep(out, item, SHARE_KEYS)
+  if (item.balance_snt != null) out.balance_snt = snt(item.balance_snt, `${path}.balance_snt`)
+  const voucher = optionalId(item.voucher_id, `${path}.voucher_id`)
+  if (voucher != null) out.voucher_id = voucher
+  return out
+}
+
+function waterSettlement(item: unknown, path: string): WaterSettlement {
+  if (!isObject(item)) fail(path)
+  const out: WaterSettlement = {
+    key: '',
+    from: date(item.from, `${path}.from`),
+    to: date(item.to, `${path}.to`),
+    difference_snt: snt(item.difference_snt, `${path}.difference_snt`),
+  }
+  keep(out, item, SETTLEMENT_KEYS)
+  if (out.to < out.from) fail(`${path}.to`)
+  if (item.key != null && item.key !== '') {
+    if (typeof item.key !== 'string' || !LEASE_KEY.test(item.key)) fail(`${path}.key`)
+    out.key = item.key
+  }
+  if (item.usage_snt != null) out.usage_snt = snt(item.usage_snt, `${path}.usage_snt`, 0)
+  const voucher = optionalId(item.voucher_id, `${path}.voucher_id`)
+  if (voucher != null) out.voucher_id = voucher
+  const seen = new Set<string>()
+  const shares = array(item.shares, `${path}.shares`, 50).map((raw, i) => {
+    const share = waterShare(raw, `${path}.shares[${i}]`)
+    if (seen.has(share.lease_key)) fail(`${path}.shares[${i}].lease_key`)
+    seen.add(share.lease_key)
+    return share
+  })
+  if (shares.length) out.shares = shares
+  return out
+}
+
+/** Settlements oldest period first; a missing key gets the first free `w{n}`. */
+function waterSettlements(value: unknown): WaterSettlement[] {
+  const list = array(value, 'water_settlements', 200).map((item, i) => waterSettlement(item, `water_settlements[${i}]`))
+  assignKeys(list, 'w', 'water_settlements')
+  return list.sort((a, b) => a.from.localeCompare(b.from) || a.key.localeCompare(b.key))
 }
 
 function checkVersion(value: unknown): void {
@@ -314,6 +383,8 @@ export function normalizePropertyDoc(input: unknown): PropertyDoc {
   if (note) out.note = note
   const leaseList = leases(input.leases)
   if (leaseList.length) out.leases = leaseList
+  const settlements = waterSettlements(input.water_settlements)
+  if (settlements.length) out.water_settlements = settlements
   checkSize(out)
   return out
 }

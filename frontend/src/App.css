@@ -5384,6 +5384,16 @@ tr.tax-total td {
   color: var(--muted);
 }
 
+/* A fixed-width choice before the document pick on the same row. */
+.property-lease-notice > label.property-water-mode {
+  flex: 0 0 11rem;
+}
+
+.property-lease-hint {
+  margin: 0.15rem 0 0.4rem;
+  font-size: 0.85rem;
+}
+
 .property-lease-increase {
   padding-top: 0.5rem;
   border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
@@ -5453,6 +5463,32 @@ tr.tax-total td {
   margin: 1rem 0 0.25rem;
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+/* Water settlements: one card per period, a tenant's status as a small badge. */
+.property-water-card + .property-water-card {
+  margin-top: 0.9rem;
+}
+
+.property-water-status {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+
+.property-water-status-settled {
+  color: #2f8f5b;
+  border-color: color-mix(in srgb, #2f8f5b 40%, var(--line));
+}
+
+.property-water-status-open,
+.property-water-status-partial {
+  color: #8a5a00;
+  border-color: color-mix(in srgb, #c98a00 40%, var(--line));
+  background: color-mix(in srgb, #f6e7c4 50%, var(--surface));
 }
 
 .property-section h3,
