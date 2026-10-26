@@ -7,6 +7,19 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-26 - Rental objects: agreed rent exceptions; rent before a later acquisition (`feature/property-rent-exceptions`)
+
+- Owner asked for exceptional rents (discounts or otherwise agreed). A lease's `exceptions[]`
+  holds stretches of days with their own amounts, a reason and the agreement voucher; they stand
+  over the steps without changing them (ADR-027). The rent account expects them, the month table
+  marks those months (the normal rent and the reason on hover), the lease card lists them.
+- Fixed: a lease taken over with an object whose acquisition is booked later than the first rent
+  (on a real book: the asset re-booked as a balance item on 1 January, after December's rent came
+  in) showed that month's rent as paid ahead for good. Counting now starts from the month of rent
+  received before the acquisition's date (`rentCountedFrom`, ADR-026). Only that object of the
+  book had rent before its acquisition date.
+- `<p>` around the "income without a lease" sources held a `<details>`; now a `<div>`.
+
 ## 2026-10-26 - Rental objects 1d: rent arrears per lease, exact (`feature/property-arrears`)
 
 - Owner decisions: figures exact to the cent with no tolerance (also in the water settlements:

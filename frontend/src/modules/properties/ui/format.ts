@@ -92,6 +92,13 @@ export function leaseRentText(t: T, rent: { rent_snt: number; water_snt?: number
   return parts.length ? `${base} (${t('properties.lease.rentPart', { amount: formatCents(rent.rent_snt) })}, ${parts.join(', ')})` : base
 }
 
+/** An exception as the lease card lists it: "1.3.2025–31.3.2025 · 470,00 €/kk, normaali 670,00 € · Remonttihyvitys". */
+export function exceptionText(t: T, e: { from: string; to: string; rent_snt: number; water_snt?: number; parking_snt?: number; normal_snt: number; note?: string }): string {
+  return [periodText(t, e.from, e.to), `${leaseRentText(t, e)}, ${t('properties.lease.normal', { amount: formatCents(e.normal_snt) })}`, e.note ?? '']
+    .filter(Boolean)
+    .join(' · ')
+}
+
 function longMonth(month: number): string {
   return new Intl.DateTimeFormat(getBcp47(), { month: 'long' }).format(new Date(2024, month - 1, 1))
 }

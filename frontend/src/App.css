@@ -5327,6 +5327,15 @@ tr.tax-total td {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+/* An exception has a second date: Alkaen, Päättyen, rent, water, (parking), total. */
+.property-lease-grid.property-lease-amounts.property-lease-exception {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.property-lease-grid.property-lease-amounts.property-lease-exception.no-parking {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 /* A read-only value lined up with the inputs beside it. */
 .property-lease-shown {
   display: flex;
@@ -5399,6 +5408,10 @@ tr.tax-total td {
   border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
 }
 
+.property-lease-add {
+  margin: 0.5rem 0 0.25rem;
+}
+
 .property-lease-foot {
   display: flex;
   justify-content: space-between;
@@ -5420,7 +5433,9 @@ tr.tax-total td {
 @media (max-width: 640px) {
   .property-lease-grid,
   .property-lease-grid.property-lease-amounts,
-  .property-lease-grid.property-lease-amounts.no-parking {
+  .property-lease-grid.property-lease-amounts.no-parking,
+  .property-lease-grid.property-lease-amounts.property-lease-exception,
+  .property-lease-grid.property-lease-amounts.property-lease-exception.no-parking {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -5493,6 +5508,11 @@ tr.tax-total td {
 
 .property-rent-lines .btn-link + .btn-link {
   margin-left: 0.6rem;
+}
+
+/* A month with an agreed exception: the normal rent and the reason on hover. */
+.property-rent-exception {
+  cursor: help;
 }
 
 /* Water settlements: one card per period, a tenant's status as a small badge. */

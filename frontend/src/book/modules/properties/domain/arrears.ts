@@ -1,13 +1,13 @@
 /**
  * Rent accounts per lease (vuokrarästi), exact to the cent (ADR-026): what each stored lease
- * expects month by month - rent, water advance, parking and its water settlement shares - what
- * was paid for it, and the running balance. Each lease has its own balance: a new tenant starts
+ * expects month by month - rent, water advance, parking, agreed exceptions and its water
+ * settlement shares - what was paid for it, and the running balance. Each lease has its own balance: a new tenant starts
  * at zero, and an ended lease keeps what it left. Pure.
  */
-import { addMonths, monthEnd, monthKeys } from '../../../months'
-import { leaseState, rentTotal } from './rent'
+import { addDays, addMonths, dayCount, monthEnd, monthKeys } from '../../../months'
+import { leaseState, rentSegments, rentTotal } from './rent'
 import type { Lease, LeaseRentAccount, RentAccount, RentBalance, RentMonth, WaterSettlement } from './types'
-import { addDays, bookedLine, dayCount, settlementShares } from './water'
+import { bookedLine, settlementShares } from './water'
 
 /** A booked line paid for rent (income) or a water refund passed on; `lease_key` when already known. */
 export type RentLine = {
@@ -26,9 +26,10 @@ export type WaterCharge = { lease_key: string; date: string; amount_snt: number 
 const monthOf = (date: string) => date.slice(0, 7)
 
 /**
- * What the lease expects per month from `from` to `until`: a full month is its step's total
- * exactly; a part month (the start, the end, a step from mid-month) is the total by days,
- * rounded once per step. Days before the first step expect nothing.
+ * What the lease expects per month from `from` to `until`: a full month at one set of amounts is
+ * its total exactly; a part month (the start, the end, a step or an agreed exception from
+ * mid-month) is each stretch's total by days, rounded once per stretch. Days before the first
+ * step expect nothing.
  */
 export function expectedRent(lease: Lease, from: string, until: string): Map<string, number> {
   const out = new Map<string, number>()
@@ -38,21 +39,31 @@ export function expectedRent(lease: Lease, from: string, until: string): Map<str
   for (const key of monthKeys(start, end)) {
     const first = `${key}-01`
     const last = monthEnd(key)
-    const from = start > first ? start : first
-    const to = end < last ? end : last
     let amount = 0
-    lease.rents.forEach((step, i) => {
-      const next = lease.rents[i + 1]?.from
-      const a = step.from > from ? step.from : from
-      const stepEnd = next ? addDays(next, -1) : to
-      const b = stepEnd < to ? stepEnd : to
-      if (a > b) return
-      const total = rentTotal(step)
-      amount += a === first && b === last ? total : Math.round((total * dayCount(a, b)) / dayCount(first, last))
-    })
+    for (const part of rentSegments(lease, start > first ? start : first, end < last ? end : last)) {
+      const total = rentTotal(part.terms)
+      amount += part.from === first && part.to === last ? total : Math.round((total * dayCount(part.from, part.to)) / dayCount(first, last))
+    }
     out.set(key, amount)
   }
   return out
+}
+
+/** The agreed exceptions that fall in month `key` between `from` and `until`. */
+function exceptionsIn(lease: Lease, key: string, from: string, until: string) {
+  const first = `${key}-01` > from ? `${key}-01` : from
+  const last = monthEnd(key) < until ? monthEnd(key) : until
+  return (lease.exceptions ?? []).filter((e) => e.from <= last && e.to >= first)
+}
+
+/**
+ * The first day the owner's rent counts: the acquisition, else the books' start. Rent received on
+ * the object before a later-dated acquisition (an asset re-booked as a balance item, say) shows
+ * the owner had it already: counting then starts from that payment's month.
+ */
+export function rentCountedFrom(owned: string, payments: Pick<RentLine, 'date'>[]): string {
+  const first = payments.reduce<string | null>((min, p) => (min == null || p.date < min ? p.date : min), null)
+  return first != null && first < owned ? `${monthOf(first)}-01` : owned
 }
 
 /**
@@ -97,12 +108,13 @@ export function leaseForLine(line: Pick<RentLine, 'date' | 'partner_id'>, leases
 
 type LineContext = Parameters<typeof bookedLine>[2]
 
-/** The period the owner's rent accounts cover: from the acquisition (or the books' start), to the sale or the as-of date. */
+/** The period the owner's rent accounts cover: from `rentCountedFrom`, to the sale or the as-of date. */
 export type RentWindow = { from: string; until: string; asOf: string }
 
 function leaseAccount(lease: Lease, lines: RentLine[], charges: WaterCharge[], window: RentWindow, ctx: LineContext): LeaseRentAccount {
   const { asOf } = window
   const rent = expectedRent(lease, window.from, window.until)
+  const normal = lease.exceptions?.length ? expectedRent({ ...lease, exceptions: [] }, window.from, window.until) : null
   const water = new Map<string, number>()
   for (const c of charges) if (c.date <= asOf) water.set(monthOf(c.date), (water.get(monthOf(c.date)) ?? 0) + c.amount_snt)
   const paid = new Map<string, RentLine[]>()
@@ -121,9 +133,13 @@ function leaseAccount(lease: Lease, lines: RentLine[], charges: WaterCharge[], w
       expected += monthRent + monthWater
       received += monthPaid
       balance += monthRent + monthWater - monthPaid
+      const exceptions = normal && rent.has(key) ? exceptionsIn(lease, key, window.from, window.until) : []
       months.push({
         key,
         rent_snt: monthRent,
+        ...(exceptions.length
+          ? { exception: { normal_snt: normal!.get(key) ?? 0, notes: exceptions.flatMap((e) => (e.note ? [e.note] : [])) } }
+          : {}),
         water_snt: monthWater,
         received_snt: monthPaid,
         balance_snt: balance,

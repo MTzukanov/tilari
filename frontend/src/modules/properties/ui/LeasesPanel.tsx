@@ -1,7 +1,7 @@
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import type { BookedLine, LeaseRentAccount, LeaseView } from '../api'
-import { increaseText, leasePeriod, leaseRentText, periodText, waterBalanceText, waterStatusText } from './format'
+import { exceptionText, increaseText, leasePeriod, leaseRentText, periodText, waterBalanceText, waterStatusText } from './format'
 import { LineSources, VoucherLink } from './FormParts'
 import { RentAccountView } from './RentAccount'
 
@@ -53,6 +53,7 @@ function LeaseCard({
     t(lease.water === 'flat' ? 'properties.water.flat' : 'properties.water.advance'),
   ].filter(Boolean)
   const latest = lease.water_latest
+  const exceptionNow = lease.exceptions.find((e) => e.from <= asOf && asOf <= e.to)
   return (
     <div className="property-lease-card">
       <p className="property-lease-head">
@@ -60,6 +61,11 @@ function LeaseCard({
         <span className="muted">{leasePeriod(t, lease)}</span>
       </p>
       {terms.length ? <p className="property-lease-terms">{terms.join(' · ')}</p> : null}
+      {exceptionNow ? (
+        <p className="property-lease-terms">
+          {t('properties.lease.exceptionNow')}: {exceptionText(t, exceptionNow)}
+        </p>
+      ) : null}
       {lease.contract ? (
         <p className="property-lease-terms">
           {t('properties.lease.contract')}: <VoucherLink voucher={lease.contract} onOpen={onOpenVoucher} />
@@ -82,6 +88,21 @@ function LeaseCard({
               <li key={step.from}>
                 {formatDate(step.from)} · {leaseRentText(t, step)}
                 {step.voucher ? <VoucherLink voucher={step.voucher} onOpen={onOpenVoucher} /> : null}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+      {lease.exceptions.length ? (
+        <details>
+          <summary>
+            {t('properties.lease.exceptions')} ({lease.exceptions.length})
+          </summary>
+          <ul className="property-doc-list">
+            {lease.exceptions.map((e) => (
+              <li key={e.from}>
+                {exceptionText(t, e)}
+                {e.voucher ? <VoucherLink voucher={e.voucher} onOpen={onOpenVoucher} /> : null}
               </li>
             ))}
           </ul>
@@ -138,9 +159,9 @@ export function LeasesPanel({
         </>
       ) : null}
       {unassigned.length ? (
-        <p className="property-lease-terms">
+        <div className="property-lease-terms">
           <LineSources label={t('properties.rent.unassigned', { n: unassigned.length })} lines={unassigned} onOpen={onOpenVoucher} />
-        </p>
+        </div>
       ) : null}
       {suggestions.length ? (
         <div className="property-lease-suggestions">

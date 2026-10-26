@@ -13,6 +13,7 @@ import {
   type EraLink,
   type Financing,
   type Lease,
+  type LeaseException,
   type LeaseIncrease,
   type LeaseIncreaseKind,
   type LeaseRent,
@@ -144,6 +145,7 @@ const LEASE_KEYS = new Set([
   'ends',
   'due_day',
   'rents',
+  'exceptions',
   'increase',
   'doc_voucher_id',
   'water',
@@ -166,6 +168,33 @@ function leaseIncrease(value: unknown, path: string): LeaseIncrease | undefined 
   if (value.month != null) out.month = int(value.month, `${path}.month`, 1, 12)
   const empty = out.pct_bp == null && out.amount_snt == null && out.month == null
   return out.kind === 'none' && empty ? undefined : out
+}
+
+/** Agreed exceptions within the lease, oldest first; they may not overlap each other. */
+function leaseExceptions(value: unknown, lease: Lease, path: string): LeaseException[] {
+  const list = array(value, path, 120).map((raw, i): LeaseException => {
+    const at = `${path}[${i}]`
+    if (!isObject(raw)) fail(at)
+    const from = date(raw.from, `${at}.from`)
+    const to = date(raw.to, `${at}.to`)
+    if (from < lease.starts || (lease.ends && from > lease.ends)) fail(`${at}.from`)
+    if (to < from || (lease.ends && to > lease.ends)) fail(`${at}.to`)
+    const out: LeaseException = { from, to, rent_snt: snt(raw.rent_snt, `${at}.rent_snt`, 0) }
+    for (const key of ['water_snt', 'parking_snt'] as const) {
+      const amount = raw[key] == null ? 0 : snt(raw[key], `${at}.${key}`, 0)
+      if (amount) out[key] = amount
+    }
+    const note = text(raw.note, `${at}.note`, MAX_TEXT)
+    if (note) out.note = note
+    const voucher = optionalId(raw.voucher_id, `${at}.voucher_id`)
+    if (voucher != null) out.voucher_id = voucher
+    return out
+  })
+  const sorted = list.map((e, i) => ({ e, i })).sort((a, b) => a.e.from.localeCompare(b.e.from))
+  sorted.forEach(({ e, i }, n) => {
+    if (n > 0 && e.from <= sorted[n - 1].e.to) fail(`${path}[${i}].from`)
+  })
+  return sorted.map(({ e }) => e)
 }
 
 function lease(item: unknown, path: string): Lease {
@@ -206,6 +235,8 @@ function lease(item: unknown, path: string): Lease {
       return rent
     })
     .sort((a, b) => a.from.localeCompare(b.from))
+  const exceptions = leaseExceptions(item.exceptions, out, `${path}.exceptions`)
+  if (exceptions.length) out.exceptions = exceptions
   const increase = leaseIncrease(item.increase, `${path}.increase`)
   if (increase) out.increase = increase
   const contract = optionalId(item.doc_voucher_id, `${path}.doc_voucher_id`)

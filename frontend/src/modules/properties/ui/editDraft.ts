@@ -78,7 +78,9 @@ export function loadEditDraft(book: string, id: number, rev: number): { state: E
     const draft = JSON.parse(raw) as EditDraft
     // A save elsewhere (another rev) makes the draft stale.
     if (!draft || draft.book !== book || draft.id !== id || draft.rev !== rev || !draft.state) return null
-    return { state: draft.state, scrollTop: draft.scrollTop ?? 0 }
+    // A draft kept by an earlier version of the form lacks fields added since.
+    const leases = (draft.state.leases ?? []).map((l) => ({ ...l, exceptions: l.exceptions ?? [] }))
+    return { state: { ...draft.state, leases }, scrollTop: draft.scrollTop ?? 0 }
   } catch {
     return null
   }

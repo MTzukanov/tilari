@@ -4,10 +4,10 @@
  * turn. Shares are computed from the leases: the period's use (or, without it, the company's
  * difference) split by the lease's days, less the advances the lease agreed. Pure (ADR-025).
  */
-import { addMonths, monthEnd } from '../../../months'
+import { addDays, addMonths, dayCount, monthEnd } from '../../../months'
 import type { PnlRow, VoucherRef } from './ledger'
 import { isWaterSettlementText, mentionsRent, titlePeriod } from './leaseSuggest'
-import { leaseState, rentAt, rentTotal } from './rent'
+import { leaseState, rentTotal, termsAt } from './rent'
 import { isIncome } from './series'
 import type {
   BookedLine,
@@ -22,15 +22,6 @@ import type {
 const DAY = 86_400_000
 const ms = (date: string) => Date.parse(`${date}T00:00:00Z`)
 const isoOf = (t: number) => new Date(t).toISOString().slice(0, 10)
-
-/** Days from `from` to `to`, both counted. */
-export function dayCount(from: string, to: string): number {
-  return Math.round((ms(to) - ms(from)) / DAY) + 1
-}
-
-export function addDays(date: string, days: number): string {
-  return isoOf(ms(date) + days * DAY)
-}
 
 function daysInMonth(date: string): number {
   return Number(monthEnd(date).slice(8, 10))
@@ -54,13 +45,12 @@ export function leaseSpan(lease: Lease, from: string, to: string): { from: strin
   return start <= end ? { from: start, to: end } : null
 }
 
-/** Water advances the lease agreed from `from` to `to`: each month's amount over its days. */
+/** Water advances the lease agreed from `from` to `to`: each month's amount over its days, exceptions included. */
 export function advanceBetween(lease: Lease, from: string, to: string): number {
   let total = 0
   for (let t = ms(from); t <= ms(to); t += DAY) {
     const day = isoOf(t)
-    let water = 0
-    for (const step of lease.rents) if (step.from <= day) water = step.water_snt ?? 0
+    const water = termsAt(lease, day)?.water_snt ?? 0
     if (water) total += water / daysInMonth(day)
   }
   return Math.round(total)
@@ -203,8 +193,8 @@ function tenantPart(line: WaterLine, leases: Lease[]): number {
   const named = NAMED_WATER.exec(line.text.toLowerCase())
   if (named) return Math.round(Number(named[1].replace(',', '.')) * 100)
   const lease = leaseOf(line, leases.map((l) => ({ lease: l })))?.lease
-  const step = lease ? rentAt(lease, line.date) : null
-  return step ? Math.max(0, line.net_snt - rentTotal(step)) : 0
+  const terms = lease && leaseState(lease, line.date) === 'current' ? termsAt(lease, line.date) : null
+  return terms ? Math.max(0, line.net_snt - rentTotal(terms)) : 0
 }
 
 /**

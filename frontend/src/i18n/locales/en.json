@@ -1128,7 +1128,11 @@
       "waterComputed": "Computed",
       "waterBalance": "Settle with tenant",
       "waterLetter": "Settlement letter",
-      "waterSettled": "Water settled by actual use"
+      "waterSettled": "Water settled by actual use",
+      "exceptionFrom": "From",
+      "exceptionTo": "Until",
+      "exceptionNote": "Reason",
+      "exceptionDoc": "Agreement"
     },
     "breakEven": {
       "title": "Break-even price: the price that returns the money",
@@ -1254,7 +1258,11 @@
         "waterCompany": "The housing company's water settlement booked on the object's charges account: the period from the text or the year before the booking, the amount from the booking. Check against the company's statement.",
         "waterTenant": "Only a settlement with the tenant (refund or extra charge) is booked: no company settlement was found, so it is assumed to be the same. Check against the company's statement."
       },
-      "payments": "Rent payments ({n})"
+      "payments": "Rent payments ({n})",
+      "exceptions": "Agreed exceptions",
+      "exceptionNow": "Exception now",
+      "normal": "normally {amount}",
+      "exceptionNormal": "Normal rent then {amount}/month"
     },
     "edit": {
       "title": "Edit: {name}",
@@ -1292,7 +1300,10 @@
       "deleteNotice": "Delete increase notice",
       "uploadContract": "Upload contract",
       "uploadNotice": "Upload notice",
-      "confirmDeleteDoc": "Delete the voucher from the books: {titles}? One created on this visit goes at once, an earlier one when you save."
+      "confirmDeleteDoc": "Delete the voucher from the books: {titles}? One created on this visit goes at once, an earlier one when you save.",
+      "exceptionsLead": "An agreed discount, a rent-free period or another exception: on its days the tenant pays these amounts instead of the rent and its increases, and the rent balance counts them. Type a discount as the lower rent.",
+      "addException": "Add an exception",
+      "uploadException": "Upload document"
     },
     "setup": {
       "title": "Set up rental objects",
@@ -1404,7 +1415,8 @@
       }
     },
     "upload": {
-      "contractTitle": "Lease {object} {tenant} {date}-"
+      "contractTitle": "Lease {object} {tenant} {date}-",
+      "exceptionTitle": "Rent exception {object} {tenant} {from}-{to}"
     },
     "water": {
       "title": "Water charges and settlements",
@@ -1482,7 +1494,7 @@
       "arrears": "rent arrears {amount}",
       "ahead": "paid ahead {amount}",
       "even": "settled, 0,00 €",
-      "countedFrom": "counted from {date} (the acquisition or the start of the books)",
+      "countedFrom": "counted from {date} (the acquisition, rent received before it, or the start of the books)",
       "months": "By month ({n})",
       "col": {
         "month": "Month",
@@ -1499,7 +1511,9 @@
       "kpiArrears": "Rent arrears",
       "kpiAhead": "Paid ahead",
       "kpiHint": "the running lease",
-      "othersHint": "other leases: {amount}"
+      "othersHint": "other leases: {amount}",
+      "exceptionHint": "Agreed exception, without it {amount}",
+      "exceptionLegend": "* agreed exception: the agreed amount. Hover it for the normal rent and the reason."
     }
   }
 }

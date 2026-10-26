@@ -466,7 +466,9 @@ correction would change the open year's income statement lines. The rental-objec
 - **Expected:** the lease's step totals (rent, water advance, parking) for its days; a full month
   is the total exactly, a part month the total by days. Counted from the later of the lease's
   start and the object's acquisition (else the books' first fiscal year), until the end, a sale
-  or the as-of date. Each water settlement share (ADR-025) is due on the letter's date, else in
+  or the as-of date. Rent received on the object before the acquisition's date (an asset
+  re-booked as a balance item later, say) moves the start back to that payment's month: the
+  owner had the object then, and the payment would otherwise show as paid ahead for good. Each water settlement share (ADR-025) is due on the letter's date, else in
   the month after the period's end; a refund is negative.
 - **Received:** the object's income lines (without VAT, as booked), each given to one lease: the
   lease whose tenant paid it (from 31 days before its start, also after its end); else the lease
@@ -475,3 +477,21 @@ correction would change the open year's income statement lines. The rental-objec
 - Why per lease and not one running balance per object: an old unresolved difference would
   otherwise follow every later tenant.
 
+## ADR-027 Agreed rent exceptions stand over the steps (2026-10-26)
+
+**Status:** accepted. Extends ADR-025's leases with `exceptions[]`; the ledger is not changed.
+
+- **An exception is a stretch of days with its own amounts** (rent, water advance, parking): a
+  discount, a rent-free month, a temporary rent the owner agreed. On its days it stands for the
+  steps, also across a step; the steps (the rent level and its increases) stay as they are, so
+  the next increase and its notice still start from the normal rent.
+- A discount is typed as the lower rent, not as a minus amount: the form prefills the amounts in
+  force and shows the difference. Exceptions lie within the lease and never overlap, so each day
+  has one set of amounts.
+- The rent account (ADR-026) expects the exception's amounts on its days, part months by days
+  and rounded once per stretch; a month with one shows what the steps alone would expect and the
+  owner's reason. Water advances in the settlements (ADR-025) follow the exception's water too:
+  "as agreed" includes the agreement.
+- Why not edit the steps: a temporary change entered as two steps (down, then back up) reads as
+  two rent changes, loses the reason, and would make the increase clause prefill from the
+  discounted rent.

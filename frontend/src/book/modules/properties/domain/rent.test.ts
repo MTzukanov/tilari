@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { VoucherRef } from './ledger'
-import { currentLease, leaseState, leaseView, rentAt, rentTotal } from './rent'
+import { currentLease, leaseState, leaseView, rentAt, rentSegments, rentTotal, termsAt } from './rent'
 import type { Lease } from './types'
 
 const lease: Lease = {
@@ -55,5 +55,32 @@ describe('rent', () => {
     expect(leaseView({ ...lease, tenant_partner_id: undefined, tenant_name: 'Ei kumppani' }, '2025-06-01', new Map(), refs).tenant).toBe(
       'Ei kumppani',
     )
+  })
+
+  it('an agreed exception stands over the steps on its days, also across a step', () => {
+    const discounted: Lease = {
+      ...lease,
+      exceptions: [{ from: '2025-12-16', to: '2026-01-15', rent_snt: 30_000, water_snt: 2_000, note: 'Putkiremontti' }],
+    }
+    expect(termsAt(discounted, '2025-12-15')?.rent_snt).toBe(68_000)
+    expect(termsAt(discounted, '2025-12-16')?.rent_snt).toBe(30_000)
+    expect(termsAt(discounted, '2026-01-16')?.rent_snt).toBe(70_000)
+    expect(termsAt(discounted, '2025-03-01')).toBeNull()
+    expect(rentSegments(discounted, '2025-12-01', '2026-01-31').map((s) => [s.from, s.to, s.terms.rent_snt, s.exception?.note ?? null])).toEqual([
+      ['2025-12-01', '2025-12-15', 68_000, null],
+      ['2025-12-16', '2026-01-15', 30_000, 'Putkiremontti'],
+      ['2026-01-16', '2026-01-31', 70_000, null],
+    ])
+    // Days before the first step have no amounts.
+    expect(rentSegments(discounted, '2025-03-01', '2025-03-12').map((s) => s.from)).toEqual(['2025-03-10'])
+    // The view gives each exception the step's total it stands for, and its document.
+    const refs = new Map<number, VoucherRef>([
+      [41, { id: 41, date: '2025-12-10', type: 800, title: 'Sopimus alennuksesta', posted: true, doc_number: 5, series: null }],
+    ])
+    const view = leaseView({ ...discounted, exceptions: [{ ...discounted.exceptions![0], voucher_id: 41 }] }, '2025-12-20', new Map(), refs)
+    expect(view.rent?.rent_snt).toBe(68_000)
+    expect(view.exceptions).toEqual([
+      expect.objectContaining({ from: '2025-12-16', rent_snt: 30_000, normal_snt: 68_000, voucher: expect.objectContaining({ voucher_id: 41 }) }),
+    ])
   })
 })
