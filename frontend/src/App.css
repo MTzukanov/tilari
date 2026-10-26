@@ -5250,6 +5250,42 @@ tr.tax-total td {
   margin: 1.5rem 0;
 }
 
+.property-lease-edit {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.property-lease-card {
+  border-left: 3px solid color-mix(in srgb, #2f8f5b 55%, var(--line));
+  padding: 0.1rem 0 0.1rem 0.8rem;
+}
+
+.property-lease-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: baseline;
+  margin: 0 0 0.3rem;
+}
+
+.property-lease-terms {
+  margin: 0.2rem 0;
+  font-size: 0.9rem;
+}
+
+.property-lease-card details {
+  margin-top: 0.4rem;
+  font-size: 0.88rem;
+}
+
+.property-lease-others {
+  margin: 1rem 0 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .property-section h3,
 .property-doc-group h4 {
   margin: 0 0 0.5rem;

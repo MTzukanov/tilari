@@ -399,6 +399,15 @@ export function loadVoucherRefs(db: SqliteDb, voucherIds: Iterable<number>): Map
   )
 }
 
+/** Partner (Kumppani) names by id. */
+export function loadPartnerNames(db: SqliteDb, ids: Iterable<number>): Map<number, string> {
+  return new Map(
+    db
+      .all<{ id: number; nimi: string | null }>(`SELECT id, nimi FROM Kumppani WHERE id IN (${inList(ids)})`)
+      .map((row) => [Number(row.id), String(row.nimi || '')]),
+  )
+}
+
 export function loadAccountNumbers(db: SqliteDb): Set<number> {
   return new Set(db.all<{ numero: number }>('SELECT numero FROM Tili').map((row) => Number(row.numero)))
 }

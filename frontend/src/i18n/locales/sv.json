@@ -1098,7 +1098,20 @@
       "source": "Källa",
       "loanAccounts": "Lånekonton",
       "interestAccounts": "Räntekonton",
-      "note": "Anteckning"
+      "note": "Anteckning",
+      "tenant": "Hyresgäst",
+      "leaseStarts": "Börjar",
+      "leaseEnds": "Slutar",
+      "dueDay": "Förfallodag",
+      "noticeMonths": "Uppsägningstid, mån",
+      "rentFrom": "Från",
+      "rent": "Hyra €/mån",
+      "charges": "Övriga avgifter €/mån",
+      "stepDoc": "Meddelande",
+      "contract": "Avtal",
+      "increaseKind": "Höjningsregel",
+      "increasePct": "Höjning % / år",
+      "increaseMonth": "Höjningsmånad"
     },
     "breakEven": {
       "title": "Nollpris: priset som ger pengarna tillbaka",
@@ -1172,6 +1185,37 @@
       },
       "showAll": "Visa alla ({n})"
     },
+    "lease": {
+      "title": "Hyresförhållanden",
+      "none": "Inga hyresavtal.",
+      "noCurrent": "Inget gällande hyresavtal {date}.",
+      "since": "från {date}",
+      "period": "{from}–{to}",
+      "perMonth": "{amount}/mån",
+      "charges": "+ avgifter {amount}/mån",
+      "due": "förfallodag {day}.",
+      "notice": "uppsägningstid {n} mån",
+      "increase": {
+        "fixed": "höjning {pct} per år",
+        "fixedMonth": "höjning {pct} per år ({month})",
+        "index": "indexhöjning",
+        "indexMonth": "indexhöjning ({month})"
+      },
+      "contract": "Avtal",
+      "steps": "Hyror",
+      "others": "Andra hyresavtal",
+      "state": {
+        "upcoming": "Börjar",
+        "current": "Gäller",
+        "ended": "Avslutat"
+      },
+      "tenantUnknown": "Hyresgäst okänd",
+      "kind": {
+        "none": "Ingen regel",
+        "fixed": "Fast %",
+        "index": "Index"
+      }
+    },
     "edit": {
       "title": "Redigera: {name}",
       "basics": "Grunduppgifter",
@@ -1191,7 +1235,12 @@
       "addCapital": "Lägg till rad",
       "delete": "Radera objektets uppgifter",
       "deleteConfirm": "Radera Tilaris uppgifter om detta objekt? Bokföringen påverkas inte.",
-      "readOnly": "Uppgifterna sparades med en nyare Tilari; denna version kan bara visa dem."
+      "readOnly": "Uppgifterna sparades med en nyare Tilari; denna version kan bara visa dem.",
+      "leases": "Hyresavtal",
+      "leasesLead": "Hyresgäst, villkor och hyra i steg. En hyreshöjning läggs till som ett nytt steg; höjningsregeln används bara för påminnelser och prognosen. Avtalet och meddelandena är Liitetieto-verifikat, så de hittas även i Kitsas.",
+      "addLease": "Lägg till hyresavtal",
+      "removeLease": "Ta bort hyresavtal",
+      "addStep": "Lägg till hyressteg"
     },
     "setup": {
       "title": "Inställning av hyresobjekt",

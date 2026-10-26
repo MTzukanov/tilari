@@ -1098,7 +1098,20 @@
       "source": "Source",
       "loanAccounts": "Loan accounts",
       "interestAccounts": "Interest accounts",
-      "note": "Note"
+      "note": "Note",
+      "tenant": "Tenant",
+      "leaseStarts": "Starts",
+      "leaseEnds": "Ends",
+      "dueDay": "Due day",
+      "noticeMonths": "Notice period, months",
+      "rentFrom": "From",
+      "rent": "Rent €/mo",
+      "charges": "Other charges €/mo",
+      "stepDoc": "Notice",
+      "contract": "Contract",
+      "increaseKind": "Increase rule",
+      "increasePct": "Increase % / yr",
+      "increaseMonth": "Increase month"
     },
     "breakEven": {
       "title": "Break-even price: the price that returns the money",
@@ -1172,6 +1185,37 @@
       },
       "showAll": "Show all ({n})"
     },
+    "lease": {
+      "title": "Tenancies",
+      "none": "No leases.",
+      "noCurrent": "No lease in force on {date}.",
+      "since": "from {date}",
+      "period": "{from}–{to}",
+      "perMonth": "{amount}/mo",
+      "charges": "+ charges {amount}/mo",
+      "due": "due on day {day}",
+      "notice": "notice {n} mo",
+      "increase": {
+        "fixed": "rise {pct} a year",
+        "fixedMonth": "rise {pct} a year ({month})",
+        "index": "index-linked rise",
+        "indexMonth": "index-linked rise ({month})"
+      },
+      "contract": "Contract",
+      "steps": "Rent",
+      "others": "Other leases",
+      "state": {
+        "upcoming": "Starts",
+        "current": "In force",
+        "ended": "Ended"
+      },
+      "tenantUnknown": "Tenant unknown",
+      "kind": {
+        "none": "No rule",
+        "fixed": "Fixed %",
+        "index": "Index"
+      }
+    },
     "edit": {
       "title": "Edit: {name}",
       "basics": "Basics",
@@ -1191,7 +1235,12 @@
       "addCapital": "Add row",
       "delete": "Delete object data",
       "deleteConfirm": "Delete Tilari's data for this object? The books are not touched.",
-      "readOnly": "The data was saved by a newer Tilari; this version can only show it."
+      "readOnly": "The data was saved by a newer Tilari; this version can only show it.",
+      "leases": "Leases",
+      "leasesLead": "Tenant, terms and rent in steps. Add a rent increase as a new step; the increase rule only drives reminders and the forecast. The contract and notices are Liitetieto vouchers, so Kitsas finds them too.",
+      "addLease": "Add lease",
+      "removeLease": "Remove lease",
+      "addStep": "Add rent step"
     },
     "setup": {
       "title": "Set up rental objects",

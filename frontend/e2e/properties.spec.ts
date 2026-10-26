@@ -36,6 +36,36 @@ test.describe('rental objects', () => {
   })
 })
 
+test.describe('rental object leases', () => {
+  test('a lease added on the edit page shows on the object page and in the list', async ({ page }) => {
+    await openBook(page)
+    await page.goto('/#/property/4')
+    await expect(page.getByRole('heading', { name: 'Vuokrasuhteet' })).toBeVisible()
+    await expect(page.getByText('Ei vuokrasopimuksia.', { exact: false })).toBeVisible()
+    await expect(page.locator('.property-leases').getByRole('button', { name: 'Lisää vuokrasopimus' })).toBeVisible()
+
+    await page.goto('/#/property/4/edit')
+    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
+    const lease = page.locator('.property-lease-edit').first()
+    const tenant = lease.getByRole('combobox', { name: 'Vuokralainen' }).or(lease.getByLabel('Vuokralainen'))
+    await tenant.first().fill('Testi Vuokralainen')
+    await tenant.first().press('Escape')
+    await lease.getByLabel('Alkaa', { exact: true }).fill('2025-01-01')
+    await lease.getByLabel('Vuokra €/kk').fill('650')
+    await lease.getByLabel('Eräpäivä').fill('2')
+    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+
+    await expect(page).toHaveURL(/#\/property\/4$/)
+    const card = page.locator('.property-lease-card')
+    await expect(card).toContainText('Testi Vuokralainen')
+    await expect(card).toContainText('1.1.2025 alkaen')
+    await expect(card).toContainText('650,00 €/kk · eräpäivä 2.')
+
+    await page.goto('/#/properties')
+    await expect(page.locator('.property-table').first()).toContainText('Testi Vuokralainen · 650,00 €/kk')
+  })
+})
+
 test.describe('rental objects setup keeps unsaved choices', () => {
   test('a row opens its voucher; back returns with choices and scroll intact', async ({ page }) => {
     await openBook(page)

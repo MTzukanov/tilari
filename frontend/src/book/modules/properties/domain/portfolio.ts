@@ -29,6 +29,7 @@ import {
   loadEntries,
   loadEraRows,
   loadInterestRows,
+  loadPartnerNames,
   loadPnlRows,
   loadRecountedLines,
   loadVoucherPnlRows,
@@ -38,7 +39,9 @@ import {
   type EraRow,
   recountLines,
   type PnlRow,
+  type VoucherRef,
 } from './ledger'
+import { currentLease, leasePartnerIds, leaseVoucherIds, leaseView } from './rent'
 import { saleNet, toBp, xirr, yieldBp, type Flow } from './returns'
 import { defaultAsOf } from './series'
 import { allocationSet, computeObject, resolveSaleCosts, type CountedLine, type ObjectResult } from './summary'
@@ -47,6 +50,7 @@ import {
   PORTFOLIO_KEY,
   PROPERTY_KEY_PREFIX,
   type Disposal,
+  type Lease,
   type PortfolioResponse,
   type MonthLine,
   type PortfolioSettings,
@@ -166,11 +170,20 @@ function byDate(a: { date: string; id: number }, b: { date: string; id: number }
   return a.date.localeCompare(b.date) || a.id - b.id
 }
 
-function toRow(c: Computed): PropertyRow {
+/** Tenant names and voucher labels for the leases on the page, loaded once. */
+type LeaseContext = { asOf: string; names: Map<number, string>; refs: Map<number, VoucherRef> }
+
+function leaseContext(db: SqliteDb, computed: Computed[], asOf: string): LeaseContext {
+  const leases: Lease[] = computed.flatMap((c) => c.parsed.doc.leases ?? [])
+  return { asOf, names: loadPartnerNames(db, leasePartnerIds(leases)), refs: loadVoucherRefs(db, leaseVoucherIds(leases)) }
+}
+
+function toRow(c: Computed, ctx: LeaseContext): PropertyRow {
   const { centre, parsed, result } = c
   const warnings = [...result.warnings]
   if (parsed.corrupt) warnings.unshift({ code: 'doc_corrupt' })
   else if (parsed.read_only) warnings.unshift({ code: 'doc_newer' })
+  const lease = currentLease(parsed.doc.leases ?? [], ctx.asOf)
   return {
     id: centre.id,
     name: centre.name,
@@ -185,6 +198,7 @@ function toRow(c: Computed): PropertyRow {
     break_even: result.break_even,
     valuation: result.valuation,
     cash_years: result.cash_years,
+    lease: lease ? leaseView(lease, ctx.asOf, ctx.names, ctx.refs) : null,
     warnings,
   }
 }
@@ -199,7 +213,8 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
   const { asOf, dataThrough } = resolveAsOf(db, opts.today, opts.asOf)
   const centres = loaded.centres.filter((c) => !docFor(loaded, c.id).doc.excluded)
   const computed = computeObjects(db, loaded, centres, asOf)
-  const rows = computed.map(toRow)
+  const ctx = leaseContext(db, computed, asOf)
+  const rows = computed.map((c) => toRow(c, ctx))
 
   const holding = computed.filter((c) => c.result.status === 'active' || c.result.status === 'partly_sold')
   const bookValue = holding.reduce((s, c) => s + c.result.summary.book_value_snt, 0)
@@ -257,8 +272,9 @@ export function computeDetail(
   if (!centre) throw new BookError('not_found', 404)
   const { asOf, dataThrough } = resolveAsOf(db, opts.today, opts.asOf)
   const [computed] = computeObjects(db, loaded, [centre], asOf, opts.targetBp)
+  const ctx = leaseContext(db, [computed], asOf)
   return {
-    ...toRow(computed),
+    ...toRow(computed, ctx),
     child_ids: centre.child_ids,
     doc: computed.parsed.doc,
     read_only: computed.parsed.read_only && !computed.parsed.corrupt,
@@ -271,6 +287,9 @@ export function computeDetail(
     years: computed.result.years,
     target: computed.result.target,
     financing: computed.parsed.doc.financing ?? null,
+    leases: (computed.parsed.doc.leases ?? [])
+      .map((lease) => leaseView(lease, asOf, ctx.names, ctx.refs))
+      .sort((a, b) => b.starts.localeCompare(a.starts) || a.key.localeCompare(b.key)),
   }
 }
 
@@ -329,7 +348,23 @@ function checkLinks(db: SqliteDb, id: number, doc: PropertyDoc, loaded: Pick<Loa
       }
     }
   }
-  return { ...doc, eras }
+  const leases = doc.leases ?? []
+  if (!leases.length) return { ...doc, eras }
+  const partners = loadPartnerNames(db, leasePartnerIds(leases))
+  const leaseVouchers = loadVoucherRefs(db, leaseVoucherIds(leases))
+  const posted = (voucherId: number | undefined, path: string) => {
+    if (voucherId != null && !leaseVouchers.get(voucherId)?.posted) throw new PropertyDocError('invalid_field', path)
+  }
+  leases.forEach((lease, i) => {
+    if (lease.tenant_partner_id != null && !partners.has(lease.tenant_partner_id)) {
+      throw new PropertyDocError('invalid_field', `leases[${i}].tenant_partner_id`)
+    }
+    posted(lease.doc_voucher_id, `leases[${i}].doc_voucher_id`)
+    lease.rents.forEach((step, j) => posted(step.voucher_id, `leases[${i}].rents[${j}].voucher_id`))
+  })
+  // A lease's contract and notices are documents of the object too.
+  const docVoucherIds = [...new Set([...(doc.doc_voucher_ids ?? []), ...leaseVoucherIds(leases)])].sort((a, b) => a - b)
+  return { ...doc, eras, doc_voucher_ids: docVoucherIds }
 }
 
 /** Save one object's document. Returns true when the stored value changed. */

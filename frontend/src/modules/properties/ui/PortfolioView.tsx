@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
-import { formatEurInput, parseEurInput } from '../../../shared/money'
+import { formatCents, formatEurInput, parseEurInput } from '../../../shared/money'
 import { formatBp, formatPercentInput, parsePercentInput } from '../../../shared/percent'
 import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
@@ -103,6 +103,16 @@ function nameColumn(t: T, withDates: 'acquired' | 'none'): TableColumn<PropertyR
         {withDates === 'acquired' && (r.kind || r.summary.acquired_on) ? (
           <span className="muted property-sub">
             {[r.kind ? t(`properties.kind.${r.kind}`) : '', r.summary.acquired_on ? t('properties.acquired', { date: formatDate(r.summary.acquired_on) }) : '']
+              .filter(Boolean)
+              .join(' · ')}
+          </span>
+        ) : null}
+        {withDates === 'acquired' && r.lease ? (
+          <span className="muted property-sub" title={r.lease.tenant ?? undefined}>
+            {[
+              r.lease.tenant ?? t('properties.lease.tenantUnknown'),
+              r.lease.rent ? t('properties.lease.perMonth', { amount: formatCents(r.lease.rent.rent_snt) }) : '',
+            ]
               .filter(Boolean)
               .join(' · ')}
           </span>

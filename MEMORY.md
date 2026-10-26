@@ -7,6 +7,20 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-26 - Rental objects phase 2: rental relationships first, in increments
+
+- Owner decisions for phase 2: rental relationships first, built in increments, each demoed
+  locally before a PR. Rent arrears count by object (all rent income on the cost centre), not by
+  tenant. Rent increases are entered as steps; the lease's rule only drives reminders and the
+  forecast. Documents stay type-800 vouchers; Tilari links them by id. The housing-company loan
+  share and the vastike split come last and stay Tilari data: the ledger is not changed for them
+  (an import-time split was considered and rejected).
+- Increment 1a (`feature/property-leases`): `leases[]` in `property/{id}` (DATA_MODEL.md), an editor
+  on the edit page, a "Vuokrasuhteet" panel on the object page (the lease running on the as-of
+  date, then the others), and the tenant and rent under the object's name in the portfolio list.
+  The lease state follows the as-of date, like the figures, so the server parity test stays
+  deterministic. A lease's contract and notices are added to `doc_voucher_ids` on save.
+
 ## 2026-10-26 - Fixed: a month typed in the address did not open on an object's page
 
 - `#/property/{id}/month/{YYYY-MM}` was read only when the page mounted (keyed by id), so changing

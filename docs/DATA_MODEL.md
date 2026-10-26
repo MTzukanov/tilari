@@ -49,6 +49,23 @@ Money in integer cents (`*_snt`), percentages in basis points (`*_bp`, 100 = 1 %
 | `valuations[]` | `{ date, price_snt, debt_free_price_snt?, source? }` - owner's price estimate |
 | `sale_costs` | `{ pct_bp, fixed_snt }` - overrides `portfolio.sale_costs` |
 | `target_return_bp`, `note` | Target annual return; free text |
+| `leases[]` | Rental relationships, oldest start first (below) |
+
+`leases[]` - one per tenancy; unknown keys of a lease are kept like the document's own:
+
+| Key | Meaning |
+|-----|---------|
+| `key` | Stable within the document (`l1`, `l2`...); given on save when missing |
+| `tenant_partner_id` / `tenant_name` | The tenant as a Kitsas partner (`Kumppani.id`), or a name when they are not one yet |
+| `starts`, `ends?` | Start; a fixed term's end or the move-out |
+| `due_day?`, `notice_months?` | Rent due day; notice period |
+| `rents[]` | Steps `{ from, rent_snt, charges_snt?, voucher_id? }`: rent and other monthly charges (water) from `from` on, with the contract or notice. A rent increase is a new step |
+| `increase?` | `{ kind: none / fixed / index, pct_bp?, month? }` - reminders and the forecast only; Tilari never changes rent by itself |
+| `doc_voucher_id?` | The contract (a type-800 voucher) |
+| `note?` | Free text |
+
+Saving checks that the partner exists and the vouchers are posted, and adds the lease's vouchers
+to `doc_voucher_ids`. The documents stay Kitsas vouchers, found in Kitsas by title and partner.
 
 `portfolio`: `v`, `rev`, `sale_costs`, `target_return_bp`, `dismissed[]` (setup suggestions
 the owner rejected: `era:{eraid}`, `doc:{voucherId}`).

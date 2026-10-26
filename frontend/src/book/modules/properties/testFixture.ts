@@ -33,6 +33,8 @@ type Line = {
   vatCode?: number
   vatPct?: number
   date?: string
+  /** Partner name; a Kumppani row is created on first use. */
+  partner?: string
 }
 
 export type PropertyFixture = {
@@ -40,6 +42,8 @@ export type PropertyFixture = {
   /** Root line id of each named item. */
   eras: Record<string, number>
   vouchers: Record<string, number>
+  /** Kumppani id by name. */
+  partners: Record<string, number>
 }
 
 export async function buildPropertyFixture(): Promise<PropertyFixture> {
@@ -76,6 +80,9 @@ export async function buildPropertyFixture(): Promise<PropertyFixture> {
 
   const eras: Record<string, number> = {}
   const vouchers: Record<string, number> = {}
+  const partners: Record<string, number> = {}
+  const partner = (name: string): number =>
+    (partners[name] ??= db.run('INSERT INTO Kumppani (nimi, json) VALUES (?, ?)', [name, '{}']).lastInsertRowid)
   const voucher = (
     key: string,
     date: string,
@@ -95,8 +102,8 @@ export async function buildPropertyFixture(): Promise<PropertyFixture> {
     vouchers[key] = id
     lines.forEach((line, i) => {
       const lineId = db.run(
-        `INSERT INTO Vienti (rivi, tosite, pvm, tili, kohdennus, selite, debetsnt, kreditsnt, alvkoodi, alvprosentti)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO Vienti (rivi, tosite, pvm, tili, kohdennus, selite, debetsnt, kreditsnt, alvkoodi, alvprosentti, kumppani)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           i + 1,
           id,
@@ -108,6 +115,7 @@ export async function buildPropertyFixture(): Promise<PropertyFixture> {
           line.credit ?? 0,
           line.vatCode ?? 0,
           line.vatPct ?? 0,
+          line.partner ? partner(line.partner) : null,
         ],
       ).lastInsertRowid
       if (line.era === 'new') {
@@ -205,7 +213,7 @@ export async function buildPropertyFixture(): Promise<PropertyFixture> {
     // Kitsas dates a statement at its period end; the transactions come earlier in the month.
     const date = `${key}-05`
     const lines: Line[] = [
-      { account: 3760, credit: 1_000 * E, allocation: CC.bundle, description: 'Vuokra A 1' },
+      { account: 3760, credit: 1_000 * E, allocation: CC.bundle, description: 'Vuokra A 1', partner: 'Vuokralainen Virtanen' },
       { account: 7300, debit: 300 * E, allocation: CC.bundle, description: 'Vastike A 1' },
     ]
     if (key <= '2025-05') {
@@ -328,5 +336,8 @@ export async function buildPropertyFixture(): Promise<PropertyFixture> {
     "INSERT INTO Liite (tosite, nimi, roolinimi, tyyppi, data) VALUES (?, 'kauppakirja.pdf', NULL, 'application/pdf', ?)",
     [vouchers.buyA, new TextEncoder().encode('%PDF-deed')],
   )
-  return { db, eras, vouchers }
+  // A rent-increase notice for the bundle, and a partner who never paid anything.
+  voucher('rentRise', '2025-01-15', 800, 'Vuokrankorotus Esimerkkikatu 1 A 1 1.3.2025', [])
+  partner('Vuokralainen Lahtinen')
+  return { db, eras, vouchers, partners }
 }

@@ -1098,7 +1098,20 @@
       "source": "Quelle",
       "loanAccounts": "Darlehenskonten",
       "interestAccounts": "Zinskonten",
-      "note": "Notiz"
+      "note": "Notiz",
+      "tenant": "Mieter",
+      "leaseStarts": "Beginn",
+      "leaseEnds": "Ende",
+      "dueDay": "Fälligkeitstag",
+      "noticeMonths": "Kündigungsfrist, Monate",
+      "rentFrom": "Ab",
+      "rent": "Miete €/Monat",
+      "charges": "Weitere Kosten €/Monat",
+      "stepDoc": "Mitteilung",
+      "contract": "Vertrag",
+      "increaseKind": "Erhöhungsregel",
+      "increasePct": "Erhöhung % / Jahr",
+      "increaseMonth": "Erhöhungsmonat"
     },
     "breakEven": {
       "title": "Break-even-Preis: der Preis, der das Geld zurückbringt",
@@ -1172,6 +1185,37 @@
       },
       "showAll": "Alle anzeigen ({n})"
     },
+    "lease": {
+      "title": "Mietverhältnisse",
+      "none": "Keine Mietverträge.",
+      "noCurrent": "Kein gültiger Mietvertrag am {date}.",
+      "since": "ab {date}",
+      "period": "{from}–{to}",
+      "perMonth": "{amount}/Monat",
+      "charges": "+ Nebenkosten {amount}/Monat",
+      "due": "fällig am {day}.",
+      "notice": "Kündigungsfrist {n} Monate",
+      "increase": {
+        "fixed": "Erhöhung {pct} pro Jahr",
+        "fixedMonth": "Erhöhung {pct} pro Jahr ({month})",
+        "index": "Indexerhöhung",
+        "indexMonth": "Indexerhöhung ({month})"
+      },
+      "contract": "Vertrag",
+      "steps": "Mieten",
+      "others": "Weitere Mietverträge",
+      "state": {
+        "upcoming": "Beginnt",
+        "current": "Gültig",
+        "ended": "Beendet"
+      },
+      "tenantUnknown": "Mieter unbekannt",
+      "kind": {
+        "none": "Keine Regel",
+        "fixed": "Fester Satz",
+        "index": "Index"
+      }
+    },
     "edit": {
       "title": "Bearbeiten: {name}",
       "basics": "Grunddaten",
@@ -1191,7 +1235,12 @@
       "addCapital": "Zeile hinzufügen",
       "delete": "Objektdaten löschen",
       "deleteConfirm": "Tilaris Daten zu diesem Objekt löschen? Die Buchhaltung bleibt unverändert.",
-      "readOnly": "Die Daten wurden mit einem neueren Tilari gespeichert; diese Version kann sie nur anzeigen."
+      "readOnly": "Die Daten wurden mit einem neueren Tilari gespeichert; diese Version kann sie nur anzeigen.",
+      "leases": "Mietverträge",
+      "leasesLead": "Mieter, Bedingungen und Miete in Stufen. Eine Mieterhöhung wird als neue Stufe erfasst; die Erhöhungsregel dient nur Erinnerungen und der Prognose. Vertrag und Mitteilungen sind Liitetieto-Belege und daher auch in Kitsas auffindbar.",
+      "addLease": "Mietvertrag hinzufügen",
+      "removeLease": "Mietvertrag entfernen",
+      "addStep": "Mietstufe hinzufügen"
     },
     "setup": {
       "title": "Mietobjekte einrichten",

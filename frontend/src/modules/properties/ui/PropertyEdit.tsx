@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { fetchPartners } from '../../../api'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
@@ -16,6 +17,8 @@ import {
   type SetupResponse,
 } from '../api'
 import { saveErrorText } from './format'
+import { buildLeases, leaseDrafts, type Partner } from './leaseDrafts'
+import { LeasesEditor } from './LeasesEditor'
 
 type ValuationDraft = { date: string; price: string; debtFree: string; source: string }
 type CapitalDraft = { date: string; amount: string; note: string }
@@ -26,10 +29,21 @@ function accountList(raw: string): number[] | null {
   return parts.map(Number)
 }
 
-function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: SetupResponse; onDone: () => void }) {
+function EditForm({
+  detail,
+  setup,
+  partners,
+  onDone,
+}: {
+  detail: PropertyDetail
+  setup: SetupResponse
+  partners: Partner[]
+  onDone: () => void
+}) {
   const { t } = useI18n()
   const doc = detail.doc
   const [kind, setKind] = useState<PropertyKind | ''>(doc.kind ?? '')
+  const [leases, setLeases] = useState(() => leaseDrafts(doc.leases, partners))
   const [excluded, setExcluded] = useState(Boolean(doc.excluded))
   const [eras, setEras] = useState<number[]>(doc.eras.map((e) => e.eraid))
   const [docs, setDocs] = useState<number[]>(doc.doc_voucher_ids ?? [])
@@ -77,7 +91,10 @@ function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: Se
     const loans = accountList(loanAccounts)
     const interests = accountList(interestAccounts)
     if (!loans || !interests) return t('properties.error.accounts')
+    const builtLeases = buildLeases(t, leases, partners)
+    if (typeof builtLeases === 'string') return builtLeases
     const next: PropertyDoc = { ...doc, eras: eras.map((eraid) => ({ eraid, account: eraById.get(eraid)?.account ?? 1 })) }
+    next.leases = builtLeases
     if (kind) next.kind = kind
     else delete next.kind
     if (excluded) next.excluded = true
@@ -155,6 +172,12 @@ function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: Se
             {t('properties.field.excluded')}
           </label>
         </div>
+      </section>
+
+      <section className="property-section">
+        <h3>{t('properties.edit.leases')}</h3>
+        <p className="muted">{t('properties.edit.leasesLead')}</p>
+        <LeasesEditor drafts={leases} onChange={setLeases} partners={partners} docs={setup.docs} linkedDocs={docs} />
       </section>
 
       <section className="property-section">
@@ -336,13 +359,13 @@ function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: Se
 
 export function PropertyEdit({ id, onDone }: { id: number; onDone: () => void }) {
   const { t } = useI18n()
-  const [state, setState] = useState<{ detail: PropertyDetail; setup: SetupResponse } | null>(null)
+  const [state, setState] = useState<{ detail: PropertyDetail; setup: SetupResponse; partners: Partner[] } | null>(null)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     let cancelled = false
-    Promise.all([fetchProperty(id), fetchPropertySetup()]).then(
-      ([detail, setup]) => {
-        if (!cancelled) setState({ detail, setup })
+    Promise.all([fetchProperty(id), fetchPropertySetup(), fetchPartners()]).then(
+      ([detail, setup, { partners }]) => {
+        if (!cancelled) setState({ detail, setup, partners: partners.map((p) => ({ id: p.id, name: p.name })) })
       },
       (err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err))
@@ -361,7 +384,7 @@ export function PropertyEdit({ id, onDone }: { id: number; onDone: () => void })
         <h2 className="ledger-page-title">{state ? t('properties.edit.title', { name: state.detail.name }) : '...'}</h2>
       </div>
       {error ? <p className="error">{error}</p> : null}
-      {state ? <EditForm detail={state.detail} setup={state.setup} onDone={onDone} /> : null}
+      {state ? <EditForm detail={state.detail} setup={state.setup} partners={state.partners} onDone={onDone} /> : null}
     </div>
   )
 }

@@ -1098,7 +1098,20 @@
       "source": "Lähde",
       "loanAccounts": "Lainatilit",
       "interestAccounts": "Korkotilit",
-      "note": "Muistiinpano"
+      "note": "Muistiinpano",
+      "tenant": "Vuokralainen",
+      "leaseStarts": "Alkaa",
+      "leaseEnds": "Päättyy",
+      "dueDay": "Eräpäivä",
+      "noticeMonths": "Irtisanomisaika, kk",
+      "rentFrom": "Alkaen",
+      "rent": "Vuokra €/kk",
+      "charges": "Muut maksut €/kk",
+      "stepDoc": "Ilmoitus",
+      "contract": "Sopimus",
+      "increaseKind": "Korotussääntö",
+      "increasePct": "Korotus % / v",
+      "increaseMonth": "Korotuskuukausi"
     },
     "breakEven": {
       "title": "Nollahinta: millä hinnalla rahat tulevat takaisin",
@@ -1172,6 +1185,37 @@
       },
       "showAll": "Näytä kaikki ({n})"
     },
+    "lease": {
+      "title": "Vuokrasuhteet",
+      "none": "Ei vuokrasopimuksia.",
+      "noCurrent": "Ei voimassa olevaa vuokrasopimusta {date}.",
+      "since": "{date} alkaen",
+      "period": "{from}–{to}",
+      "perMonth": "{amount}/kk",
+      "charges": "+ maksut {amount}/kk",
+      "due": "eräpäivä {day}.",
+      "notice": "irtisanomisaika {n} kk",
+      "increase": {
+        "fixed": "korotus {pct} vuodessa",
+        "fixedMonth": "korotus {pct} vuodessa ({month})",
+        "index": "indeksikorotus",
+        "indexMonth": "indeksikorotus ({month})"
+      },
+      "contract": "Sopimus",
+      "steps": "Vuokrat",
+      "others": "Muut vuokrasopimukset",
+      "state": {
+        "upcoming": "Alkaa",
+        "current": "Voimassa",
+        "ended": "Päättynyt"
+      },
+      "tenantUnknown": "Vuokralainen ei tiedossa",
+      "kind": {
+        "none": "Ei sääntöä",
+        "fixed": "Kiinteä %",
+        "index": "Indeksi"
+      }
+    },
     "edit": {
       "title": "Muokkaa: {name}",
       "basics": "Perustiedot",
@@ -1191,7 +1235,12 @@
       "addCapital": "Lisää rivi",
       "delete": "Poista kohteen tiedot",
       "deleteConfirm": "Poistetaanko Tilarin tiedot tästä kohteesta? Kirjanpitoon ei kosketa.",
-      "readOnly": "Tiedot on tallennettu uudemmalla Tilarilla; tämä versio voi vain näyttää ne."
+      "readOnly": "Tiedot on tallennettu uudemmalla Tilarilla; tämä versio voi vain näyttää ne.",
+      "leases": "Vuokrasopimukset",
+      "leasesLead": "Vuokralainen, ehdot ja vuokra portaittain. Vuokrankorotus lisätään uutena portaana; korotussääntö on vain muistutuksia ja ennustetta varten. Sopimus ja ilmoitukset ovat Liitetieto-tositteita, joten ne löytyvät myös Kitsasista.",
+      "addLease": "Lisää vuokrasopimus",
+      "removeLease": "Poista vuokrasopimus",
+      "addStep": "Lisää vuokraporras"
     },
     "setup": {
       "title": "Vuokrakohteiden määritys",

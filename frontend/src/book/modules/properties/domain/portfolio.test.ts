@@ -249,6 +249,60 @@ describe('rental objects: figures', () => {
     expect(y2024.kitsas_result_snt).toBe(12_240 * E)
   })
 
+  it('a lease is stored with its tenant and documents and shown on the object and in the list', async () => {
+    const { db, vouchers, partners } = await setUp()
+    const before = computeDetail(db, CC.bundle, { today: TODAY })
+    const tenant = partners['Vuokralainen Virtanen']
+    saveProperty(
+      db,
+      CC.bundle,
+      {
+        ...before.doc,
+        doc_voucher_ids: [],
+        leases: [
+          {
+            tenant_partner_id: tenant,
+            starts: '2023-03-01',
+            rents: [
+              { from: '2023-03-01', rent_snt: 1_000 * E },
+              { from: '2025-03-01', rent_snt: 1_000 * E, charges_snt: 20 * E, voucher_id: vouchers.rentRise },
+            ],
+            doc_voucher_id: vouchers.lease,
+          },
+        ],
+      },
+      'now',
+    )
+    const after = computeDetail(db, CC.bundle, { today: TODAY })
+    // The lease's documents stay linked to the object even when the list drops them.
+    expect(after.doc.doc_voucher_ids).toEqual([vouchers.lease, vouchers.rentRise])
+    expect(after.doc.leases?.[0].key).toBe('l1')
+    expect(after.leases).toHaveLength(1)
+    expect(after.leases[0]).toMatchObject({
+      tenant: 'Vuokralainen Virtanen',
+      state: 'current',
+      rent: { from: '2025-03-01', charges_snt: 20 * E },
+      contract: { voucher_id: vouchers.lease, title: 'Vuokrasopimus As Oy Esimerkkikatu 1 A 1 1.3.2023-' },
+    })
+    expect(after.lease?.key).toBe('l1')
+    const row = computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.bundle)
+    expect(row?.lease).toMatchObject({ tenant: 'Vuokralainen Virtanen', rent: { rent_snt: 1_000 * E } })
+    expect(computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.garage)?.lease).toBeNull()
+  })
+
+  it('a lease must name an existing partner and posted vouchers', async () => {
+    const { db, vouchers } = await setUp()
+    const doc = computeDetail(db, CC.bundle, { today: TODAY }).doc
+    const save = (lease: Record<string, unknown>) => () =>
+      saveProperty(db, CC.bundle, { ...doc, leases: [{ starts: '2024-01-01', rents: [], ...lease }] }, 'now')
+    expect(save({ tenant_partner_id: 999_999 })).toThrow('invalid_field:leases[0].tenant_partner_id')
+    expect(save({ doc_voucher_id: vouchers.leaseOld })).toThrow('invalid_field:leases[0].doc_voucher_id')
+    expect(save({ rents: [{ from: '2024-01-01', rent_snt: 1, voucher_id: vouchers.draft }] })).toThrow(
+      'invalid_field:leases[0].rents[0].voucher_id',
+    )
+    expect(save({ tenant_name: 'Ei vielä kumppani' })()).toBe(true)
+  })
+
   it('interest counts once financing accounts are linked', async () => {
     const { db } = await setUp()
     const before = computeDetail(db, CC.bundle, { today: TODAY })
@@ -360,8 +414,8 @@ describe('rental objects: documents', () => {
       includeBank: false,
     })
     const group = (kind: string) => docs.groups.find((g) => g.kind === kind)?.vouchers ?? []
-    expect(group('linked').map((v) => v.voucher_id)).toEqual([vouchers.lease])
-    expect(group('linked')[0].attachments.map((a) => a.name)).toEqual(['vuokrasopimus.pdf'])
+    expect(group('linked').map((v) => v.voucher_id)).toEqual([vouchers.rentRise, vouchers.lease])
+    expect(group('linked')[1].attachments.map((a) => a.name)).toEqual(['vuokrasopimus.pdf'])
     expect(group('acquisition').map((v) => v.voucher_id)).toContain(vouchers.buyA)
     expect(group('acquisition').find((v) => v.voucher_id === vouchers.buyA)?.attachments).toHaveLength(1)
     expect(group('bank')).toEqual([])
