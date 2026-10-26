@@ -58,10 +58,12 @@ test.describe('rental object leases', () => {
     await lease.getByLabel('Vesi €/kk').first().fill('20')
     await lease.getByLabel('Eräpäivä').fill('2')
     // The owner's own contract, uploaded as a Liitetieto voucher named after the object.
-    await lease
-      .locator('label', { hasText: 'Lataa sopimus' })
-      .locator('input[type=file]')
-      .setInputFiles({ name: 'sopimus.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 sopimus') })
+    // Through the real button: the system's chooser opens and the page's scroll box is left alone.
+    const chooser = page.waitForEvent('filechooser')
+    await lease.locator('label', { hasText: 'Lataa sopimus' }).click()
+    const files = await chooser
+    await expect(page.locator('.is-native-picker-open')).toHaveCount(0)
+    await files.setFiles({ name: 'sopimus.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 sopimus') })
     await expect(lease.getByRole('textbox', { name: 'Sopimus' })).toHaveValue(/Vuokrasopimus Asunto Testi Vuokralainen 1\.1\.2025-/)
     await lease.getByLabel('Korotussääntö').selectOption({ label: 'Euroa vuodessa' })
     await lease.getByLabel('Korotus € / v').fill('15')
