@@ -8,6 +8,7 @@ import { SearchSelect } from '../../../shared/SearchSelect'
 import { LEASE_INCREASE_KINDS, type DocCandidate, type Lease, type LeaseIncreaseKind, type LeaseSuggestionView } from '../api'
 import { DocPicker } from './DocPicker'
 import { leasePeriod, leaseRentText } from './format'
+import { SuggestionSource } from './LeasesPanel'
 import {
   draftTotal,
   leaseDrafts,
@@ -144,6 +145,7 @@ export function LeasesEditor({
                 <span>{s.view.tenant ?? t('properties.lease.tenantUnknown')}</span>
                 <span className="muted">{leasePeriod(t, s.view)}</span>
                 <span>{leaseRentText(t, s.view.rent)}</span>
+                {s.view.suggested ? <SuggestionSource source={s.view.suggested} /> : null}
                 {s.view.contract ? <span className="muted">{s.view.contract.title}</span> : null}
                 <button type="button" className="btn-small" onClick={() => addSuggestions([i])}>
                   {t('properties.edit.addSuggestion')}

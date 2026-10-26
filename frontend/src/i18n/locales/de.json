@@ -1223,8 +1223,8 @@
       "suggestionsLead": "Aus den verknüpften Mietverträgen und Mietzahlungen. Nichts ist gespeichert: auf der Bearbeitungsseite prüfen und speichern.",
       "review": "Prüfen und speichern",
       "source": {
-        "contract": "aus Vertrag",
-        "payments": "aus Zahlungen"
+        "contract": "Quelle: Mietvertrag",
+        "payments": "Quelle: Mietzahlungen"
       },
       "suggestedNote": "★ = Mietverhältnis aus der Buchhaltung vorgeschlagen, noch nicht gespeichert.",
       "initial": "Anfangsmiete",
@@ -1232,7 +1232,11 @@
       "water": "Wasser {amount}",
       "parking": "Stellplatz {amount}",
       "rentPart": "Miete {amount}",
-      "extras": "Extras:"
+      "extras": "Extras:",
+      "sourceHint": {
+        "contract": "Ein mit dem Objekt verknüpfter Mietvertrag: Beginn, Ende und Mieter aus seinem Titel, die Miete aus den Mietzahlungen des Objekts.",
+        "payments": "Nur Mietzahlungen: Der Zahler hat in diesen Monaten Miete gezahlt, aber kein mit dem Objekt verknüpfter Mietvertrag deckt den Zeitraum. Verknüpfen Sie den Vertrag mit dem Objekt, um den Vorschlag zu schärfen."
+      }
     },
     "edit": {
       "title": "Bearbeiten: {name}",

@@ -1223,8 +1223,8 @@
       "suggestionsLead": "Från de länkade hyresavtalen och hyresbetalningarna. Inget har sparats: granska och spara på redigeringssidan.",
       "review": "Granska och spara",
       "source": {
-        "contract": "från avtal",
-        "payments": "från betalningar"
+        "contract": "källa: hyresavtal",
+        "payments": "källa: hyresbetalningar"
       },
       "suggestedNote": "★ = hyresförhållande föreslaget från bokföringen, inte sparat än.",
       "initial": "Hyra i början",
@@ -1232,7 +1232,11 @@
       "water": "vatten {amount}",
       "parking": "bilplats {amount}",
       "rentPart": "hyra {amount}",
-      "extras": "Tillägg:"
+      "extras": "Tillägg:",
+      "sourceHint": {
+        "contract": "Ett hyresavtal länkat till objektet: start, slut och hyresgäst från dess rubrik, hyran från objektets hyresbetalningar.",
+        "payments": "Enbart hyresbetalningar: betalaren har betalat hyra dessa månader, men inget hyresavtal länkat till objektet täcker perioden. Länka avtalet till objektet så blir förslaget exaktare."
+      }
     },
     "edit": {
       "title": "Redigera: {name}",

@@ -4,6 +4,16 @@ import { formatVoucherId } from '../../../shared/formatVoucherId'
 import type { LeaseView, LeaseVoucher } from '../api'
 import { increaseText, leasePeriod, leaseRentText } from './format'
 
+/** Where a suggested lease comes from: a linked contract, or rent payments alone (hover explains). */
+export function SuggestionSource({ source }: { source: 'contract' | 'payments' }) {
+  const { t } = useI18n()
+  return (
+    <span className="muted property-lease-source" title={t(`properties.lease.sourceHint.${source}`)}>
+      {t(`properties.lease.source.${source}`)}
+    </span>
+  )
+}
+
 function VoucherLink({ voucher, onOpen }: { voucher: LeaseVoucher; onOpen: (voucherId: number) => void }) {
   return (
     <button type="button" className="btn-link" onClick={() => onOpen(voucher.voucher_id)}>
@@ -113,7 +123,7 @@ function LeaseList({ leases, onOpenVoucher }: { leases: LeaseView[]; onOpenVouch
           <span>{lease.tenant ?? t('properties.lease.tenantUnknown')}</span>
           <span className="muted">{leasePeriod(t, lease)}</span>
           <span>{leaseRentText(t, lease.rent)}</span>
-          {lease.suggested ? <span className="muted">({t(`properties.lease.source.${lease.suggested}`)})</span> : null}
+          {lease.suggested ? <SuggestionSource source={lease.suggested} /> : null}
           {lease.contract ? <VoucherLink voucher={lease.contract} onOpen={onOpenVoucher} /> : null}
         </li>
       ))}

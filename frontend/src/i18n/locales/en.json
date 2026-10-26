@@ -1223,8 +1223,8 @@
       "suggestionsLead": "From the linked lease contracts and rent payments. Nothing is saved: review and save on the edit page.",
       "review": "Review and save",
       "source": {
-        "contract": "from a contract",
-        "payments": "from payments"
+        "contract": "source: lease contract",
+        "payments": "source: rent payments"
       },
       "suggestedNote": "★ = a tenancy suggested from the books, not saved yet.",
       "initial": "Starting rent",
@@ -1232,7 +1232,11 @@
       "water": "water {amount}",
       "parking": "parking {amount}",
       "rentPart": "rent {amount}",
-      "extras": "Extras:"
+      "extras": "Extras:",
+      "sourceHint": {
+        "contract": "A lease contract linked to the object: start, end and tenant from its title, the rent from the object's rent payments.",
+        "payments": "Rent payments alone: the payer paid rent in these months, but no lease contract linked to the object covers the period. Link the contract to the object to sharpen the suggestion."
+      }
     },
     "edit": {
       "title": "Edit: {name}",

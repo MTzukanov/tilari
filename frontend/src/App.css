@@ -5442,6 +5442,13 @@ tr.tax-total td {
   font-size: 0.88rem;
 }
 
+/* A suggestion's source: hover tells what it was built from. */
+.property-lease-source {
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
 .property-lease-others {
   margin: 1rem 0 0.25rem;
   font-size: 0.85rem;

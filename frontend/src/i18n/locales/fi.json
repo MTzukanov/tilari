@@ -1223,8 +1223,8 @@
       "suggestionsLead": "Linkitetyistä vuokrasopimuksista ja vuokrasuorituksista. Mitään ei ole tallennettu: tarkista ja tallenna muokkaussivulla.",
       "review": "Tarkista ja tallenna",
       "source": {
-        "contract": "sopimuksesta",
-        "payments": "suorituksista"
+        "contract": "lähde: vuokrasopimus",
+        "payments": "lähde: vuokrasuoritukset"
       },
       "suggestedNote": "★ = vuokrasuhde-ehdotus kirjanpidosta, ei vielä tallennettu.",
       "initial": "Vuokra alussa",
@@ -1232,7 +1232,11 @@
       "water": "vesi {amount}",
       "parking": "autopaikka {amount}",
       "rentPart": "vuokra {amount}",
-      "extras": "Lisät:"
+      "extras": "Lisät:",
+      "sourceHint": {
+        "contract": "Kohteeseen linkitetty vuokrasopimus: alkamis- ja päättymispäivä ja vuokralainen sen otsikosta, vuokra kohteen vuokrasuorituksista.",
+        "payments": "Pelkät vuokrasuoritukset: maksaja on maksanut vuokraa näinä kuukausina, mutta mikään kohteeseen linkitetty vuokrasopimus ei kata jaksoa. Linkitä sopimus kohteeseen, niin ehdotus tarkentuu."
+      }
     },
     "edit": {
       "title": "Muokkaa: {name}",
