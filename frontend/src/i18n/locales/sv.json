@@ -1262,7 +1262,8 @@
       "exceptions": "Avvikande hyra",
       "exceptionNow": "Nu avvikande hyra",
       "normal": "normalt {amount}",
-      "exceptionNormal": "Normal hyra då {amount}/mån"
+      "exceptionNormal": "Normal hyra då {amount}/mån",
+      "editTerms": "Lägg till en höjning eller avvikande hyra (rabatt, överenskommen hyra)…"
     },
     "edit": {
       "title": "Redigera: {name}",

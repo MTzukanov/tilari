@@ -1262,7 +1262,8 @@
       "exceptions": "Poikkeava vuokra",
       "exceptionNow": "Nyt poikkeava vuokra",
       "normal": "normaali {amount}",
-      "exceptionNormal": "Normaali vuokra tällöin {amount}/kk"
+      "exceptionNormal": "Normaali vuokra tällöin {amount}/kk",
+      "editTerms": "Lisää korotus tai poikkeava vuokra (alennus, sovittu vuokra)…"
     },
     "edit": {
       "title": "Muokkaa: {name}",

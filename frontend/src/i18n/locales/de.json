@@ -1262,7 +1262,8 @@
       "exceptions": "Abweichende Miete",
       "exceptionNow": "Derzeit abweichende Miete",
       "normal": "regulär {amount}",
-      "exceptionNormal": "Reguläre Miete dann {amount}/Monat"
+      "exceptionNormal": "Reguläre Miete dann {amount}/Monat",
+      "editTerms": "Erhöhung oder abweichende Miete (Nachlass, vereinbarte Miete) hinzufügen…"
     },
     "edit": {
       "title": "Bearbeiten: {name}",

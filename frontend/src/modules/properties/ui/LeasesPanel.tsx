@@ -38,11 +38,14 @@ function LeaseCard({
   lease,
   account,
   asOf,
+  onEdit,
   onOpenVoucher,
 }: {
   lease: LeaseView
   account: LeaseRentAccount | undefined
   asOf: string
+  /** Opens the edit page, where the lease's increases and exceptions are entered. */
+  onEdit: () => void
   onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
@@ -108,6 +111,11 @@ function LeaseCard({
           </ul>
         </details>
       ) : null}
+      <p className="property-lease-terms">
+        <button type="button" className="btn-link" onClick={onEdit}>
+          {t('properties.lease.editTerms')}
+        </button>
+      </p>
     </div>
   )
 }
@@ -150,7 +158,13 @@ export function LeasesPanel({
       ) : null}
       {leases.length > 0 && !stored ? <p className="muted">{t('properties.lease.noCurrent', { date: formatDate(asOf) })}</p> : null}
       {stored ? (
-        <LeaseCard lease={stored} account={accounts.find((a) => a.lease_key === stored.key)} asOf={asOf} onOpenVoucher={onOpenVoucher} />
+        <LeaseCard
+          lease={stored}
+          account={accounts.find((a) => a.lease_key === stored.key)}
+          asOf={asOf}
+          onEdit={onEdit}
+          onOpenVoucher={onOpenVoucher}
+        />
       ) : null}
       {others.length ? (
         <>

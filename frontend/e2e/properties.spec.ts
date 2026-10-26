@@ -172,6 +172,10 @@ test.describe('rental object rent exceptions', () => {
     const may = card.locator('.property-rent-table tr', { hasText: 'toukokuu 2025' })
     await expect(may.locator('.property-rent-exception')).toHaveText(/470,00\s€\*/)
     await expect(may.locator('.property-rent-exception')).toHaveAttribute('title', /ilman poikkeusta 670,00\s€ · Remonttihyvitys/)
+    // The card leads to where exceptions are entered.
+    await card.getByRole('button', { name: /^Lisää korotus tai poikkeava vuokra/ }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/edit$/)
+    await expect(page.locator('.property-lease-exception')).toHaveCount(1)
   })
 })
 

@@ -1262,7 +1262,8 @@
       "exceptions": "Agreed exceptions",
       "exceptionNow": "Exception now",
       "normal": "normally {amount}",
-      "exceptionNormal": "Normal rent then {amount}/month"
+      "exceptionNormal": "Normal rent then {amount}/month",
+      "editTerms": "Add an increase or an agreed exception (discount, agreed rent)…"
     },
     "edit": {
       "title": "Edit: {name}",

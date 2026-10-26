@@ -49,6 +49,12 @@ export type EraRow = {
   signed_snt: number
   allocation: number
   description: string
+  /**
+   * Set when the line moved an amount already on the account into the item (a technical
+   * re-booking): the booking's own date and voucher. `date` and `voucher_id` are then the
+   * original booking's (see `loadEraRows`).
+   */
+  rebooked?: { date: string; voucher_id: number }
 }
 
 export type EraRoot = {
@@ -255,17 +261,48 @@ export function loadEraRows(db: SqliteDb, eraids: Iterable<number>): EraRow[] {
   )
   return rows
     .filter((row) => row.root_account == null || Number(row.root_account) === Number(row.account))
-    .map((row) => ({
-      id: Number(row.id),
-      eraid: Number(row.eraid),
-      account: Number(row.account),
-      date: String(row.date),
-      voucher_id: Number(row.voucher_id),
-      voucher_type: Number(row.voucher_type),
-      signed_snt: asCents(row.ds) - asCents(row.ks),
-      allocation: Number(row.allocation),
-      description: String(row.description || ''),
-    }))
+    .map((row) => {
+      const out: EraRow = {
+        id: Number(row.id),
+        eraid: Number(row.eraid),
+        account: Number(row.account),
+        date: String(row.date),
+        voucher_id: Number(row.voucher_id),
+        voucher_type: Number(row.voucher_type),
+        signed_snt: asCents(row.ds) - asCents(row.ks),
+        allocation: Number(row.allocation),
+        description: String(row.description || ''),
+      }
+      const original = out.signed_snt > 0 ? originalBooking(db, out) : null
+      if (!original) return out
+      return { ...out, ...original, rebooked: { date: out.date, voucher_id: out.voucher_id } }
+    })
+}
+
+/**
+ * The booking an item line moved onto the item, when the line is a technical re-booking: its
+ * voucher also credits the same account by the same amount without an item, so nothing came in;
+ * the amount was booked on the account before. That earlier debit (the latest one) is when the
+ * capital went in - e.g. a purchase booked on the account, moved onto its own item later.
+ */
+function originalBooking(db: SqliteDb, row: EraRow): { date: string; voucher_id: number; voucher_type: number } | null {
+  const moved = db.get<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM Vienti
+     WHERE tosite = ? AND tili = ? AND COALESCE(eraid, 0) = 0
+       AND COALESCE(kreditsnt, 0) = ? AND COALESCE(debetsnt, 0) = 0`,
+    [row.voucher_id, row.account, row.signed_snt],
+  )
+  if (!moved?.n) return null
+  const before = db.get<{ date: string; voucher_id: number; voucher_type: number }>(
+    `SELECT Vienti.pvm AS date, Vienti.tosite AS voucher_id, Tosite.tyyppi AS voucher_type
+     FROM Vienti JOIN Tosite ON Vienti.tosite = Tosite.id
+     WHERE ${SQL_POSTED} AND Vienti.tili = ? AND COALESCE(Vienti.eraid, 0) = 0
+       AND COALESCE(Vienti.debetsnt, 0) = ? AND COALESCE(Vienti.kreditsnt, 0) = 0
+       AND Vienti.pvm <= ? AND Vienti.tosite <> ?
+     ORDER BY Vienti.pvm DESC, Vienti.id DESC LIMIT 1`,
+    [row.account, row.signed_snt, row.date, row.voucher_id],
+  )
+  return before ? { date: String(before.date), voucher_id: Number(before.voucher_id), voucher_type: Number(before.voucher_type) } : null
 }
 
 const ROOT_SELECT = `SELECT

@@ -495,3 +495,20 @@ correction would change the open year's income statement lines. The rental-objec
 - Why not edit the steps: a temporary change entered as two steps (down, then back up) reads as
   two rent changes, loses the reason, and would make the increase clause prefill from the
   discounted rent.
+
+## ADR-028 A purchase re-booked onto its item counts from the purchase (2026-10-26)
+
+**Status:** accepted. Read from the ledger; nothing is stored.
+
+- An object's capital comes from its linked items (tase-erät): each debit is capital in, dated
+  as booked, and the first is the acquisition date. A purchase is sometimes booked on the shares
+  account without an item and moved onto an item later by a technical voucher, which debits the
+  item and credits the same account by the same amount without one. That voucher brings no
+  capital in: its item lines are dated at the original booking - the latest earlier debit of
+  the same amount on the account without an item - and so are the acquisition date, the holding
+  time, the cash flows behind the returns and the rent account's start.
+- Matching by account and amount picks the line; when two earlier debits have the same amount,
+  the later one is taken. The voucher's own date stays on the line (`EraRow.rebooked`).
+- Why not a manual acquisition date: the purchase is in the ledger, and one stored date could
+  disagree with the cash flows the returns are computed from. Capital spent before the books
+  began is entered as "Muu sijoitettu pääoma" with its date, as before.

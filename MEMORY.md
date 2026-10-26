@@ -19,6 +19,13 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   received before the acquisition's date (`rentCountedFrom`, ADR-026). Only that object of the
   book had rent before its acquisition date.
 - `<p>` around the "income without a lease" sources held a `<details>`; now a `<div>`.
+- Fixed the acquisition date of such an object too (ADR-028): its purchase was booked on the
+  shares account without an item and moved onto an item by a technical voucher on 1 January. The
+  item lines of a re-booking are now dated at the original purchase lines, so the acquisition
+  date, holding time and returns follow the purchase. On the real book only that object changed.
+- Owner could not find where exceptions are entered: the lease card now links to the edit page
+  ("Lisää korotus tai poikkeava vuokra..."); the demo has to run from the worktree, not the main
+  checkout.
 - Fixed: on a narrow page the rent account's month table overflowed. Firefox drew a month over the
   next row (cells on the baseline of a payment link that wrapped to two lines), wrapped links were
   centred and indented, and the table ran past the page edge. Cells are now top-aligned, links
