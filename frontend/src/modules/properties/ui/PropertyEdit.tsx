@@ -177,7 +177,14 @@ function EditForm({
       <section className="property-section">
         <h3>{t('properties.edit.leases')}</h3>
         <p className="muted">{t('properties.edit.leasesLead')}</p>
-        <LeasesEditor drafts={leases} onChange={setLeases} partners={partners} docs={setup.docs} linkedDocs={docs} />
+        <LeasesEditor
+          drafts={leases}
+          onChange={setLeases}
+          partners={partners}
+          docs={setup.docs}
+          linkedDocs={docs}
+          suggestions={[...detail.lease_suggestions].reverse()}
+        />
       </section>
 
       <section className="property-section">

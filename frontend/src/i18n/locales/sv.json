@@ -1214,7 +1214,15 @@
         "none": "Ingen regel",
         "fixed": "Fast %",
         "index": "Index"
-      }
+      },
+      "suggestions": "Förslag från bokföringen ({n})",
+      "suggestionsLead": "Från de länkade hyresavtalen och hyresbetalningarna. Inget har sparats: granska och spara på redigeringssidan.",
+      "review": "Granska och spara",
+      "source": {
+        "contract": "från avtal",
+        "payments": "från betalningar"
+      },
+      "suggestedNote": "★ = hyresförhållande föreslaget från bokföringen, inte sparat än."
     },
     "edit": {
       "title": "Redigera: {name}",
@@ -1240,7 +1248,10 @@
       "leasesLead": "Hyresgäst, villkor och hyra i steg. En hyreshöjning läggs till som ett nytt steg; höjningsregeln används bara för påminnelser och prognosen. Avtalet och meddelandena är Liitetieto-verifikat, så de hittas även i Kitsas.",
       "addLease": "Lägg till hyresavtal",
       "removeLease": "Ta bort hyresavtal",
-      "addStep": "Lägg till hyressteg"
+      "addStep": "Lägg till hyressteg",
+      "suggestions": "Bokföringen föreslår {n} hyresförhållanden. Lägg till dem i formuläret, granska och spara.",
+      "addSuggestion": "Lägg till",
+      "addAllSuggestions": "Lägg till alla"
     },
     "setup": {
       "title": "Inställning av hyresobjekt",

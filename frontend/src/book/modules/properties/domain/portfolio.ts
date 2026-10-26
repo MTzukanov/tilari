@@ -41,9 +41,10 @@ import {
   type PnlRow,
   type VoucherRef,
 } from './ledger'
+import { representedBy, suggestLeases, type LeaseSuggestion, type SuggestIncome } from './leaseSuggest'
 import { currentLease, leasePartnerIds, leaseVoucherIds, leaseView } from './rent'
 import { saleNet, toBp, xirr, yieldBp, type Flow } from './returns'
-import { defaultAsOf } from './series'
+import { defaultAsOf, isIncome } from './series'
 import { allocationSet, computeObject, resolveSaleCosts, type CountedLine, type ObjectResult } from './summary'
 import { pickBest, suggestEra, textScorer } from './suggest'
 import {
@@ -51,6 +52,7 @@ import {
   PROPERTY_KEY_PREFIX,
   type Disposal,
   type Lease,
+  type LeaseView,
   type PortfolioResponse,
   type MonthLine,
   type PortfolioSettings,
@@ -170,12 +172,57 @@ function byDate(a: { date: string; id: number }, b: { date: string; id: number }
   return a.date.localeCompare(b.date) || a.id - b.id
 }
 
-/** Tenant names and voucher labels for the leases on the page, loaded once. */
-type LeaseContext = { asOf: string; names: Map<number, string>; refs: Map<number, VoucherRef> }
+/** Tenant names, voucher labels and the book's lease suggestions for the objects on the page, loaded once. */
+type LeaseContext = {
+  asOf: string
+  names: Map<number, string>
+  refs: Map<number, VoucherRef>
+  /** Per cost centre: suggestions that no stored lease stands for. */
+  suggestions: Map<number, LeaseSuggestion[]>
+}
+
+function incomeOf(c: Computed): SuggestIncome[] {
+  return c.result.classified.operating
+    .filter(isIncome)
+    .map((r) => ({ date: r.date, partner_id: r.partner_id, amount_snt: r.net_snt }))
+}
 
 function leaseContext(db: SqliteDb, computed: Computed[], asOf: string): LeaseContext {
   const leases: Lease[] = computed.flatMap((c) => c.parsed.doc.leases ?? [])
-  return { asOf, names: loadPartnerNames(db, leasePartnerIds(leases)), refs: loadVoucherRefs(db, leaseVoucherIds(leases)) }
+  const docIds = computed.flatMap((c) => c.parsed.doc.doc_voucher_ids ?? [])
+  const refs = loadVoucherRefs(db, new Set([...leaseVoucherIds(leases), ...docIds]))
+  const incomes = new Map(computed.map((c) => [c.centre.id, incomeOf(c)]))
+  const payers = [...incomes.values()].flat().flatMap((r) => (r.partner_id != null ? [r.partner_id] : []))
+  const names = loadPartnerNames(db, new Set([...leasePartnerIds(leases), ...payers]))
+  const suggestions = new Map<number, LeaseSuggestion[]>()
+  for (const c of computed) {
+    const docs = (c.parsed.doc.doc_voucher_ids ?? []).flatMap((id) => {
+      const ref = refs.get(id)
+      return ref?.posted ? [{ voucher_id: id, date: ref.date, title: ref.title }] : []
+    })
+    const stored = c.parsed.doc.leases ?? []
+    const found = suggestLeases({ docs, income: incomes.get(c.centre.id) ?? [], names, centreName: c.centre.name, asOf })
+    suggestions.set(c.centre.id, found.filter((s) => !representedBy(stored, s.lease)))
+  }
+  return { asOf, names, refs, suggestions }
+}
+
+function suggestionView(s: LeaseSuggestion, ctx: LeaseContext): LeaseView {
+  return { ...leaseView(s.lease, ctx.asOf, ctx.names, ctx.refs), suggested: s.source }
+}
+
+/** The stored lease running on the as-of date; with no stored leases at all, the suggested one. */
+function rowLease(c: Computed, ctx: LeaseContext): LeaseView | null {
+  const stored = c.parsed.doc.leases ?? []
+  const running = currentLease(stored, ctx.asOf)
+  if (running) return leaseView(running, ctx.asOf, ctx.names, ctx.refs)
+  if (stored.length) return null
+  const suggestions = ctx.suggestions.get(c.centre.id) ?? []
+  // A suggestion naming a tenant before one without.
+  const withTenant = suggestions.map((s) => s.lease).filter((l) => l.tenant_partner_id != null)
+  const suggested = currentLease(withTenant, ctx.asOf) ?? currentLease(suggestions.map((s) => s.lease), ctx.asOf)
+  const match = suggestions.find((s) => s.lease === suggested)
+  return match ? suggestionView(match, ctx) : null
 }
 
 function toRow(c: Computed, ctx: LeaseContext): PropertyRow {
@@ -183,7 +230,6 @@ function toRow(c: Computed, ctx: LeaseContext): PropertyRow {
   const warnings = [...result.warnings]
   if (parsed.corrupt) warnings.unshift({ code: 'doc_corrupt' })
   else if (parsed.read_only) warnings.unshift({ code: 'doc_newer' })
-  const lease = currentLease(parsed.doc.leases ?? [], ctx.asOf)
   return {
     id: centre.id,
     name: centre.name,
@@ -198,7 +244,7 @@ function toRow(c: Computed, ctx: LeaseContext): PropertyRow {
     break_even: result.break_even,
     valuation: result.valuation,
     cash_years: result.cash_years,
-    lease: lease ? leaseView(lease, ctx.asOf, ctx.names, ctx.refs) : null,
+    lease: rowLease(c, ctx),
     warnings,
   }
 }
@@ -290,6 +336,9 @@ export function computeDetail(
     leases: (computed.parsed.doc.leases ?? [])
       .map((lease) => leaseView(lease, asOf, ctx.names, ctx.refs))
       .sort((a, b) => b.starts.localeCompare(a.starts) || a.key.localeCompare(b.key)),
+    lease_suggestions: (ctx.suggestions.get(id) ?? [])
+      .map((s) => ({ lease: s.lease, view: suggestionView(s, ctx) }))
+      .sort((a, b) => b.lease.starts.localeCompare(a.lease.starts)),
   }
 }
 

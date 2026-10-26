@@ -1,5 +1,7 @@
 import { getBcp47 } from '../../../i18n'
-import type { MonthLine, PropertyStatus, Warning } from '../api'
+import { formatDate } from '../../../shared/dates'
+import { formatCents } from '../../../shared/money'
+import type { LeaseView, MonthLine, PropertyStatus, Warning } from '../api'
 
 const wholeEuro = new Map<string, Intl.NumberFormat>()
 
@@ -65,4 +67,18 @@ export function lineText(line: MonthLine): string {
   const text = line.entry.description
   if (partner && text && partner !== text) return `${partner} - ${text}`
   return partner || text || line.entry.account_name
+}
+
+/** "1.3.2025 alkaen" or "1.3.2025–28.2.2026". */
+export function leasePeriod(t: T, lease: LeaseView): string {
+  return lease.ends
+    ? t('properties.lease.period', { from: formatDate(lease.starts), to: formatDate(lease.ends) })
+    : t('properties.lease.since', { date: formatDate(lease.starts) })
+}
+
+/** "680,00 €/kk + maksut 20,00 €/kk" for the step in effect. */
+export function leaseRentText(t: T, rent: { rent_snt: number; charges_snt?: number } | null): string {
+  if (!rent) return ''
+  const base = t('properties.lease.perMonth', { amount: formatCents(rent.rent_snt) })
+  return rent.charges_snt ? `${base} ${t('properties.lease.charges', { amount: formatCents(rent.charges_snt) })}` : base
 }

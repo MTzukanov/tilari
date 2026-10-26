@@ -1214,7 +1214,15 @@
         "none": "Keine Regel",
         "fixed": "Fester Satz",
         "index": "Index"
-      }
+      },
+      "suggestions": "Vorschläge aus der Buchhaltung ({n})",
+      "suggestionsLead": "Aus den verknüpften Mietverträgen und Mietzahlungen. Nichts ist gespeichert: auf der Bearbeitungsseite prüfen und speichern.",
+      "review": "Prüfen und speichern",
+      "source": {
+        "contract": "aus Vertrag",
+        "payments": "aus Zahlungen"
+      },
+      "suggestedNote": "★ = Mietverhältnis aus der Buchhaltung vorgeschlagen, noch nicht gespeichert."
     },
     "edit": {
       "title": "Bearbeiten: {name}",
@@ -1240,7 +1248,10 @@
       "leasesLead": "Mieter, Bedingungen und Miete in Stufen. Eine Mieterhöhung wird als neue Stufe erfasst; die Erhöhungsregel dient nur Erinnerungen und der Prognose. Vertrag und Mitteilungen sind Liitetieto-Belege und daher auch in Kitsas auffindbar.",
       "addLease": "Mietvertrag hinzufügen",
       "removeLease": "Mietvertrag entfernen",
-      "addStep": "Mietstufe hinzufügen"
+      "addStep": "Mietstufe hinzufügen",
+      "suggestions": "Die Buchhaltung schlägt {n} Mietverhältnisse vor. Ins Formular übernehmen, prüfen und speichern.",
+      "addSuggestion": "Hinzufügen",
+      "addAllSuggestions": "Alle hinzufügen"
     },
     "setup": {
       "title": "Mietobjekte einrichten",

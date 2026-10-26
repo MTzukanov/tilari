@@ -20,6 +20,16 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   date, then the others), and the tenant and rent under the object's name in the portfolio list.
   The lease state follows the as-of date, like the figures, so the server parity test stays
   deterministic. A lease's contract and notices are added to `doc_voucher_ids` on save.
+- Owner review: the leases should come from what the book already has. `domain/leaseSuggest.ts`
+  suggests them (never stored until the owner adds them on the edit page and saves): linked
+  documents titled vuokrasopimus (also the typo "vuorkasopimus"; not "huolenpitosopimus") give a
+  lease each, with the period from the title (d.m.yyyy, d.m.yy, m.yyyy; 31.11. reads as 30.11.);
+  the tenant is a payer named in the title (also two words written together), else the payer with
+  the most months who started with the contract; KELA/FPA is never the tenant. Rent steps are the
+  object's monthly income repeated two months in a row (by object, like arrears). Payments outside
+  every contract with a tenant become their own suggestions. On a real book the current tenant came
+  out right for every flat whose contracts name the tenant; agencies and parking documents on a
+  flat's cost centre need the owner's look.
 
 ## 2026-10-26 - Fixed: a month typed in the address did not open on an object's page
 

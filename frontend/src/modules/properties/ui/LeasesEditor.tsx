@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { getBcp47, useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
 import { SearchSelect } from '../../../shared/SearchSelect'
-import { LEASE_INCREASE_KINDS, type DocCandidate, type LeaseIncreaseKind } from '../api'
-import { emptyRent, newLease, type LeaseDraft, type Partner, type RentDraft } from './leaseDrafts'
+import { LEASE_INCREASE_KINDS, type DocCandidate, type LeaseIncreaseKind, type LeaseSuggestionView } from '../api'
+import { leasePeriod, leaseRentText } from './format'
+import { emptyRent, leaseDrafts, newLease, type LeaseDraft, type Partner, type RentDraft } from './leaseDrafts'
 
 function monthNames(): string[] {
   const fmt = new Intl.DateTimeFormat(getBcp47(), { month: 'long' })
@@ -16,6 +18,7 @@ export function LeasesEditor({
   partners,
   docs,
   linkedDocs,
+  suggestions,
 }: {
   drafts: LeaseDraft[]
   onChange: (drafts: LeaseDraft[]) => void
@@ -24,8 +27,16 @@ export function LeasesEditor({
   docs: DocCandidate[]
   /** This object's linked documents, listed first. */
   linkedDocs: number[]
+  /** Leases the book suggests, oldest start first. */
+  suggestions: LeaseSuggestionView[]
 }) {
   const { t } = useI18n()
+  const [added, setAdded] = useState<Set<number>>(new Set())
+  const pending = suggestions.flatMap((s, i) => (added.has(i) ? [] : [{ s, i }]))
+  const addSuggestions = (indices: number[]) => {
+    onChange([...drafts, ...leaseDrafts(indices.map((i) => suggestions[i].lease), partners)])
+    setAdded(new Set([...added, ...indices]))
+  }
   const partnerItems = partners.map((p) => ({ value: p.name, label: p.name }))
   const docOptions = [...docs].sort((a, b) => {
     const la = linkedDocs.includes(a.voucher_id) ? 0 : 1
@@ -53,8 +64,29 @@ export function LeasesEditor({
 
   return (
     <>
+      {pending.length ? (
+        <div className="property-lease-suggestions">
+          <p className="muted">{t('properties.edit.suggestions', { n: pending.length })}</p>
+          <ul className="property-doc-list">
+            {pending.map(({ s, i }) => (
+              <li key={i}>
+                <span>{s.view.tenant ?? t('properties.lease.tenantUnknown')}</span>
+                <span className="muted">{leasePeriod(t, s.view)}</span>
+                <span>{leaseRentText(t, s.view.rent)}</span>
+                {s.view.contract ? <span className="muted">{s.view.contract.title}</span> : null}
+                <button type="button" className="btn-small" onClick={() => addSuggestions([i])}>
+                  {t('properties.edit.addSuggestion')}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button type="button" className="btn-secondary" onClick={() => addSuggestions(pending.map((p) => p.i))}>
+            {t('properties.edit.addAllSuggestions')}
+          </button>
+        </div>
+      ) : null}
       {drafts.map((d, i) => (
-        <div key={d.base?.key ?? `new-${i}`} className="property-lease-edit">
+        <div key={d.base?.key || `new-${i}`} className="property-lease-edit">
           <div className="property-form-grid">
             <label>
               {t('properties.field.tenant')}

@@ -403,8 +403,15 @@ export function PropertyView({
             />
           </div>
 
-          {d.status !== 'sold' || d.leases.length ? (
-            <LeasesPanel leases={d.leases} current={d.lease} asOf={d.as_of} onEdit={onEdit} onOpenVoucher={(v) => openVoucher(v)} />
+          {d.status !== 'sold' || d.leases.length || d.lease_suggestions.length ? (
+            <LeasesPanel
+              leases={d.leases}
+              current={d.lease}
+              suggestions={d.lease_suggestions.map((s) => s.view)}
+              asOf={d.as_of}
+              onEdit={onEdit}
+              onOpenVoucher={(v) => openVoucher(v)}
+            />
           ) : null}
 
           <BreakEvenPanel key={d.target?.rate_bp ?? 'none'} d={d} onTarget={setTargetBp} />

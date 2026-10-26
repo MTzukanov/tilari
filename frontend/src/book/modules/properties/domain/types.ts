@@ -243,7 +243,7 @@ export type PropertyRow = {
   valuation: Valuation | null
   /** Operating cash flow per fiscal year with activity. */
   cash_years: YearCashFlow[]
-  /** The lease running on the as-of date (the latest started when several run). */
+  /** The lease running on the as-of date (the latest started when several run); a suggested one when none is stored. */
   lease: LeaseView | null
   warnings: Warning[]
 }
@@ -270,7 +270,12 @@ export type LeaseView = {
   contract: LeaseVoucher | null
   steps: (LeaseRent & { voucher: LeaseVoucher | null })[]
   note: string | null
+  /** Suggested from the book (not stored): from a contract document, or from payments alone. */
+  suggested?: 'contract' | 'payments'
 }
+
+/** A lease the book suggests: the lease to add on the edit page, and how the page shows it. */
+export type LeaseSuggestionView = { lease: Lease; view: LeaseView }
 
 export type PortfolioResponse = {
   as_of: string
@@ -312,6 +317,8 @@ export type PropertyDetail = PropertyRow & {
   financing: Financing | null
   /** Every stored lease, newest start first. */
   leases: LeaseView[]
+  /** Leases the book suggests that no stored lease stands for yet, newest start first. */
+  lease_suggestions: LeaseSuggestionView[]
 }
 
 export type MonthLineKind = 'income' | 'expense' | 'interest'

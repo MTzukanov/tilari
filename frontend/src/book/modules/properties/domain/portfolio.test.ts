@@ -253,6 +253,14 @@ describe('rental objects: figures', () => {
     const { db, vouchers, partners } = await setUp()
     const before = computeDetail(db, CC.bundle, { today: TODAY })
     const tenant = partners['Vuokralainen Virtanen']
+    // Before anything is stored, the contract and the payments suggest the lease.
+    expect(before.lease_suggestions.map((s) => s.lease)).toEqual([
+      { key: '', starts: '2023-03-01', tenant_partner_id: tenant, doc_voucher_id: vouchers.lease, rents: [{ from: '2023-03-01', rent_snt: 1_000 * E }] },
+    ])
+    expect(computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.bundle)?.lease).toMatchObject({
+      suggested: 'contract',
+      tenant: 'Vuokralainen Virtanen',
+    })
     saveProperty(
       db,
       CC.bundle,
@@ -285,9 +293,16 @@ describe('rental objects: figures', () => {
       contract: { voucher_id: vouchers.lease, title: 'Vuokrasopimus As Oy Esimerkkikatu 1 A 1 1.3.2023-' },
     })
     expect(after.lease?.key).toBe('l1')
+    // The stored lease stands for the suggestion now.
+    expect(after.lease_suggestions).toEqual([])
     const row = computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.bundle)
     expect(row?.lease).toMatchObject({ tenant: 'Vuokralainen Virtanen', rent: { rent_snt: 1_000 * E } })
-    expect(computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.garage)?.lease).toBeNull()
+    expect(row?.lease?.suggested).toBeUndefined()
+    // The garage's contract names no tenant and its rent has no payer: a suggestion without a tenant.
+    expect(computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.garage)?.lease).toMatchObject({
+      suggested: 'contract',
+      tenant: null,
+    })
   })
 
   it('a lease must name an existing partner and posted vouchers', async () => {

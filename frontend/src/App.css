@@ -5257,6 +5257,14 @@ tr.tax-total td {
   margin: 0.75rem 0;
 }
 
+.property-lease-edit select {
+  max-width: 22rem;
+}
+
+.property-lease-suggestions {
+  margin-top: 0.75rem;
+}
+
 .property-lease-card {
   border-left: 3px solid color-mix(in srgb, #2f8f5b 55%, var(--line));
   padding: 0.1rem 0 0.1rem 0.8rem;

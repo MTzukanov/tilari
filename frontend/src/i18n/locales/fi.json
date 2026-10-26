@@ -1214,7 +1214,15 @@
         "none": "Ei sääntöä",
         "fixed": "Kiinteä %",
         "index": "Indeksi"
-      }
+      },
+      "suggestions": "Ehdotukset kirjanpidosta ({n})",
+      "suggestionsLead": "Linkitetyistä vuokrasopimuksista ja vuokrasuorituksista. Mitään ei ole tallennettu: tarkista ja tallenna muokkaussivulla.",
+      "review": "Tarkista ja tallenna",
+      "source": {
+        "contract": "sopimuksesta",
+        "payments": "suorituksista"
+      },
+      "suggestedNote": "★ = vuokrasuhde-ehdotus kirjanpidosta, ei vielä tallennettu."
     },
     "edit": {
       "title": "Muokkaa: {name}",
@@ -1240,7 +1248,10 @@
       "leasesLead": "Vuokralainen, ehdot ja vuokra portaittain. Vuokrankorotus lisätään uutena portaana; korotussääntö on vain muistutuksia ja ennustetta varten. Sopimus ja ilmoitukset ovat Liitetieto-tositteita, joten ne löytyvät myös Kitsasista.",
       "addLease": "Lisää vuokrasopimus",
       "removeLease": "Poista vuokrasopimus",
-      "addStep": "Lisää vuokraporras"
+      "addStep": "Lisää vuokraporras",
+      "suggestions": "Kirjanpidosta löytyi {n} vuokrasuhde-ehdotusta. Lisää ne lomakkeelle, tarkista ja tallenna.",
+      "addSuggestion": "Lisää",
+      "addAllSuggestions": "Lisää kaikki"
     },
     "setup": {
       "title": "Vuokrakohteiden määritys",

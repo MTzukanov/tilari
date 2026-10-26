@@ -1214,7 +1214,15 @@
         "none": "No rule",
         "fixed": "Fixed %",
         "index": "Index"
-      }
+      },
+      "suggestions": "Suggestions from the books ({n})",
+      "suggestionsLead": "From the linked lease contracts and rent payments. Nothing is saved: review and save on the edit page.",
+      "review": "Review and save",
+      "source": {
+        "contract": "from a contract",
+        "payments": "from payments"
+      },
+      "suggestedNote": "★ = a tenancy suggested from the books, not saved yet."
     },
     "edit": {
       "title": "Edit: {name}",
@@ -1240,7 +1248,10 @@
       "leasesLead": "Tenant, terms and rent in steps. Add a rent increase as a new step; the increase rule only drives reminders and the forecast. The contract and notices are Liitetieto vouchers, so Kitsas finds them too.",
       "addLease": "Add lease",
       "removeLease": "Remove lease",
-      "addStep": "Add rent step"
+      "addStep": "Add rent step",
+      "suggestions": "The books suggest {n} tenancies. Add them to the form, review and save.",
+      "addSuggestion": "Add",
+      "addAllSuggestions": "Add all"
     },
     "setup": {
       "title": "Set up rental objects",

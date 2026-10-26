@@ -108,9 +108,9 @@ function nameColumn(t: T, withDates: 'acquired' | 'none'): TableColumn<PropertyR
           </span>
         ) : null}
         {withDates === 'acquired' && r.lease ? (
-          <span className="muted property-sub" title={r.lease.tenant ?? undefined}>
+          <span className="muted property-sub" title={r.lease.suggested ? t('properties.lease.suggestedNote') : (r.lease.tenant ?? undefined)}>
             {[
-              r.lease.tenant ?? t('properties.lease.tenantUnknown'),
+              `${r.lease.suggested ? '★ ' : ''}${r.lease.tenant ?? t('properties.lease.tenantUnknown')}`,
               r.lease.rent ? t('properties.lease.perMonth', { amount: formatCents(r.lease.rent.rent_snt) }) : '',
             ]
               .filter(Boolean)
@@ -410,7 +410,10 @@ export function PortfolioView({ onOpen, onSetup }: { onOpen: (id: number) => voi
                 className="property-table"
               />
             )}
-            <p className="muted property-footnote">{t('properties.footnote')}</p>
+            <p className="muted property-footnote">
+              {t('properties.footnote')}
+              {data.rows.some((r) => r.lease?.suggested) ? ` ${t('properties.lease.suggestedNote')}` : ''}
+            </p>
           </section>
 
           {all.length ? (

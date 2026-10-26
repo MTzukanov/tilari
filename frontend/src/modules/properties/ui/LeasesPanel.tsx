@@ -1,17 +1,11 @@
 import { getBcp47, useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { formatVoucherId } from '../../../shared/formatVoucherId'
-import { formatCents } from '../../../shared/money'
 import { formatBp } from '../../../shared/percent'
 import type { LeaseView, LeaseVoucher } from '../api'
+import { leasePeriod, leaseRentText } from './format'
 
 type T = (key: string, vars?: Record<string, string | number>) => string
-
-function period(t: T, lease: LeaseView): string {
-  return lease.ends
-    ? t('properties.lease.period', { from: formatDate(lease.starts), to: formatDate(lease.ends) })
-    : t('properties.lease.since', { date: formatDate(lease.starts) })
-}
 
 function monthName(month: number): string {
   return new Intl.DateTimeFormat(getBcp47(), { month: 'long' }).format(new Date(2024, month - 1, 1))
@@ -26,13 +20,6 @@ function increaseText(t: T, lease: LeaseView): string {
   return t(month ? 'properties.lease.increase.fixedMonth' : 'properties.lease.increase.fixed', { pct, month })
 }
 
-/** "680,00 €/kk + maksut 20,00 €/kk" for the step in effect. */
-function rentText(t: T, rent: { rent_snt: number; charges_snt?: number } | null): string {
-  if (!rent) return ''
-  const base = t('properties.lease.perMonth', { amount: formatCents(rent.rent_snt) })
-  return rent.charges_snt ? `${base} ${t('properties.lease.charges', { amount: formatCents(rent.charges_snt) })}` : base
-}
-
 function VoucherLink({ voucher, onOpen }: { voucher: LeaseVoucher; onOpen: (voucherId: number) => void }) {
   return (
     <button type="button" className="btn-link" onClick={() => onOpen(voucher.voucher_id)}>
@@ -44,7 +31,7 @@ function VoucherLink({ voucher, onOpen }: { voucher: LeaseVoucher; onOpen: (vouc
 function LeaseCard({ lease, onOpenVoucher }: { lease: LeaseView; onOpenVoucher: (voucherId: number) => void }) {
   const { t } = useI18n()
   const terms = [
-    rentText(t, lease.rent),
+    leaseRentText(t, lease.rent),
     lease.due_day != null ? t('properties.lease.due', { day: lease.due_day }) : '',
     lease.notice_months != null ? t('properties.lease.notice', { n: lease.notice_months }) : '',
     increaseText(t, lease),
@@ -53,7 +40,7 @@ function LeaseCard({ lease, onOpenVoucher }: { lease: LeaseView; onOpenVoucher: 
     <div className="property-lease-card">
       <p className="property-lease-head">
         <strong>{lease.tenant ?? t('properties.lease.tenantUnknown')}</strong>
-        <span className="muted">{period(t, lease)}</span>
+        <span className="muted">{leasePeriod(t, lease)}</span>
       </p>
       {terms.length ? <p className="property-lease-terms">{terms.join(' · ')}</p> : null}
       {lease.contract ? (
@@ -69,7 +56,7 @@ function LeaseCard({ lease, onOpenVoucher }: { lease: LeaseView; onOpenVoucher: 
           <ul className="property-doc-list">
             {lease.steps.map((step) => (
               <li key={step.from}>
-                {formatDate(step.from)} · {rentText(t, step)}
+                {formatDate(step.from)} · {leaseRentText(t, step)}
                 {step.voucher ? <VoucherLink voucher={step.voucher} onOpen={onOpenVoucher} /> : null}
               </li>
             ))}
@@ -85,21 +72,25 @@ export function LeasesPanel({
   leases,
   current,
   asOf,
+  suggestions,
   onEdit,
   onOpenVoucher,
 }: {
   leases: LeaseView[]
   current: LeaseView | null
+  /** Leases the book suggests, newest start first. */
+  suggestions: LeaseView[]
   asOf: string
   onEdit: () => void
   onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
-  const others = leases.filter((l) => l.key !== current?.key)
+  const stored = current && !current.suggested ? current : null
+  const others = leases.filter((l) => l.key !== stored?.key)
   return (
     <section className="overview-panel property-leases">
       <h3>{t('properties.lease.title')}</h3>
-      {!leases.length ? (
+      {!leases.length && !suggestions.length ? (
         <p className="muted">
           {t('properties.lease.none')}{' '}
           <button type="button" className="btn-link" onClick={onEdit}>
@@ -107,24 +98,42 @@ export function LeasesPanel({
           </button>
         </p>
       ) : null}
-      {leases.length > 0 && !current ? <p className="muted">{t('properties.lease.noCurrent', { date: formatDate(asOf) })}</p> : null}
-      {current ? <LeaseCard lease={current} onOpenVoucher={onOpenVoucher} /> : null}
+      {leases.length > 0 && !stored ? <p className="muted">{t('properties.lease.noCurrent', { date: formatDate(asOf) })}</p> : null}
+      {stored ? <LeaseCard lease={stored} onOpenVoucher={onOpenVoucher} /> : null}
       {others.length ? (
         <>
           <h4 className="property-lease-others">{t('properties.lease.others')}</h4>
-          <ul className="property-doc-list">
-            {others.map((lease) => (
-              <li key={lease.key}>
-                <span>{t(`properties.lease.state.${lease.state}`)}</span>
-                <span>{lease.tenant ?? t('properties.lease.tenantUnknown')}</span>
-                <span className="muted">{period(t, lease)}</span>
-                <span>{rentText(t, lease.rent)}</span>
-                {lease.contract ? <VoucherLink voucher={lease.contract} onOpen={onOpenVoucher} /> : null}
-              </li>
-            ))}
-          </ul>
+          <LeaseList leases={others} onOpenVoucher={onOpenVoucher} />
         </>
       ) : null}
+      {suggestions.length ? (
+        <div className="property-lease-suggestions">
+          <h4 className="property-lease-others">{t('properties.lease.suggestions', { n: suggestions.length })}</h4>
+          <p className="muted">{t('properties.lease.suggestionsLead')}</p>
+          <LeaseList leases={suggestions} onOpenVoucher={onOpenVoucher} />
+          <button type="button" className="btn-secondary" onClick={onEdit}>
+            {t('properties.lease.review')}
+          </button>
+        </div>
+      ) : null}
     </section>
+  )
+}
+
+function LeaseList({ leases, onOpenVoucher }: { leases: LeaseView[]; onOpenVoucher: (voucherId: number) => void }) {
+  const { t } = useI18n()
+  return (
+    <ul className="property-doc-list">
+      {leases.map((lease, i) => (
+        <li key={`${lease.key}-${lease.starts}-${i}`}>
+          <span>{t(`properties.lease.state.${lease.state}`)}</span>
+          <span>{lease.tenant ?? t('properties.lease.tenantUnknown')}</span>
+          <span className="muted">{leasePeriod(t, lease)}</span>
+          <span>{leaseRentText(t, lease.rent)}</span>
+          {lease.suggested ? <span className="muted">({t(`properties.lease.source.${lease.suggested}`)})</span> : null}
+          {lease.contract ? <VoucherLink voucher={lease.contract} onOpen={onOpenVoucher} /> : null}
+        </li>
+      ))}
+    </ul>
   )
 }
