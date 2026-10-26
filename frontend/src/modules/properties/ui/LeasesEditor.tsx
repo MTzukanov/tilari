@@ -10,7 +10,7 @@ import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
 import { Shown } from './FormParts'
 import { leasePeriod, leaseRentText } from './format'
-import { SuggestionSource } from './LeasesPanel'
+import { LeaseSources, SuggestionSource } from './LeasesPanel'
 import {
   draftTotal,
   leaseDrafts,
@@ -72,6 +72,7 @@ export function LeasesEditor({
   onUpload,
   isCreated,
   onDeleteDocs,
+  onOpenVoucher,
 }: {
   drafts: LeaseDraft[]
   onChange: (drafts: LeaseDraft[]) => void
@@ -89,6 +90,8 @@ export function LeasesEditor({
   isCreated: (voucherId: number) => boolean
   /** Deletes such documents after asking, clears what pointed at them, then applies `edit`. */
   onDeleteDocs: (voucherIds: number[], edit?: DocEdit) => Promise<void>
+  /** Opens a suggestion's source; the unsaved form waits for the way back. */
+  onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
   const [creating, setCreating] = useState<string | null>(null)
@@ -140,7 +143,7 @@ export function LeasesEditor({
                 <span className="muted">{leasePeriod(t, s.view)}</span>
                 <span>{leaseRentText(t, s.view.rent)}</span>
                 {s.view.suggested ? <SuggestionSource source={s.view.suggested} /> : null}
-                {s.view.contract ? <span className="muted">{s.view.contract.title}</span> : null}
+                <LeaseSources lease={s.view} onOpen={onOpenVoucher} />
                 <button type="button" className="btn-small" onClick={() => addSuggestions([i])}>
                   {t('properties.edit.addSuggestion')}
                 </button>

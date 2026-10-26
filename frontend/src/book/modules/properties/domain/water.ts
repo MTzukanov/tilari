@@ -10,9 +10,9 @@ import { isWaterSettlementText, mentionsRent, titlePeriod } from './leaseSuggest
 import { leaseState, rentAt, rentTotal } from './rent'
 import { isIncome } from './series'
 import type {
+  BookedLine,
   Lease,
   LeaseVoucher,
-  WaterMovement,
   WaterSettlement,
   WaterSettlementView,
   WaterShareStatus,
@@ -216,6 +216,8 @@ export function shareStatus(balance: number, settled: number): WaterShareStatus 
 
 export type WaterViewContext = {
   tenantName: (lease: Lease) => string | null
+  partnerName: (partnerId: number | null) => string | null
+  /** Labels of the lines' vouchers and of the linked documents. */
   refs: Map<number, VoucherRef>
 }
 
@@ -224,14 +226,20 @@ function voucherOf(refs: Map<number, VoucherRef>, id: number | undefined): Lease
   return ref ? { voucher_id: ref.id, date: ref.date, doc_number: ref.doc_number, series: ref.series, title: ref.title } : null
 }
 
-function movement(line: WaterLine, amount: number, refs: Map<number, VoucherRef>): WaterMovement {
+/** A line to show and open: `amount` is the part that counts. */
+export function bookedLine(
+  line: Pick<WaterLine, 'id' | 'date' | 'voucher_id' | 'net_snt' | 'partner_id'> & { text?: string },
+  amount: number,
+  ctx: Pick<WaterViewContext, 'partnerName' | 'refs'>,
+): BookedLine {
   return {
     line_id: line.id,
     date: line.date,
     amount_snt: amount,
     line_snt: line.net_snt,
-    text: line.text,
-    voucher: voucherOf(refs, line.voucher_id) ?? { voucher_id: line.voucher_id, date: line.date, doc_number: null, series: null, title: '' },
+    text: line.text ?? '',
+    partner: ctx.partnerName(line.partner_id),
+    voucher: voucherOf(ctx.refs, line.voucher_id) ?? { voucher_id: line.voucher_id, date: line.date, doc_number: null, series: null, title: '' },
   }
 }
 
@@ -244,14 +252,14 @@ export function settlementView(
 ): WaterSettlementView {
   const { company, tenant } = splitLines(settlement.difference_snt, lines)
   const shares = settlementShares(settlement, leases)
-  const moves = new Map<ShareResult, WaterMovement[]>(shares.map((s) => [s, []]))
-  const other: WaterMovement[] = []
+  const moves = new Map<ShareResult, BookedLine[]>(shares.map((s) => [s, []]))
+  const other: BookedLine[] = []
   for (const line of tenant) {
     const part = tenantPart(line, leases)
     if (!part) continue
     const share = leaseOf(line, shares)
-    if (share) moves.get(share)!.push(movement(line, part, ctx.refs))
-    else other.push(movement(line, part, ctx.refs))
+    if (share) moves.get(share)!.push(bookedLine(line, part, ctx))
+    else other.push(bookedLine(line, part, ctx))
   }
   const views: WaterShareView[] = shares.map((s) => {
     const movements = moves.get(s)!
@@ -284,7 +292,7 @@ export function settlementView(
     usage_snt: usage,
     advance_snt: usage != null ? usage - settlement.difference_snt : null,
     statement: voucherOf(ctx.refs, settlement.voucher_id),
-    booked: company.map((l) => movement(l, l.net_snt, ctx.refs)),
+    booked: company.map((l) => bookedLine(l, l.net_snt, ctx)),
     shares: views,
     owner_snt: views.reduce((sum, v) => sum + v.balance_snt, 0) - settlement.difference_snt,
     other,

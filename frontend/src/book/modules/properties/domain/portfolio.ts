@@ -42,10 +42,10 @@ import {
   type PartnerInfo,
   type VoucherRef,
 } from './ledger'
-import { representedBy, suggestLeases, type LeaseSuggestion, type SuggestIncome } from './leaseSuggest'
+import { isWaterSettlementText, representedBy, suggestLeases, type LeaseSuggestion, type SuggestIncome } from './leaseSuggest'
 import { currentLease, leasePartnerIds, leaseVoucherIds, leaseView } from './rent'
 import { saleNet, toBp, xirr, yieldBp, type Flow } from './returns'
-import { settlementFor, settlementView, suggestSettlements, waterLines, waterVoucherIds, type WaterViewContext } from './water'
+import { bookedLine, settlementFor, settlementView, suggestSettlements, waterLines, waterVoucherIds, type WaterViewContext } from './water'
 import { defaultAsOf, isIncome } from './series'
 import { allocationSet, computeObject, resolveSaleCosts, type CountedLine, type ObjectResult } from './summary'
 import { pickBest, suggestEra, textScorer } from './suggest'
@@ -63,6 +63,7 @@ import {
   type PropertyRow,
   type SetupApplyInput,
   type SetupResponse,
+  type BookedLine,
   type WaterDetail,
 } from './types'
 
@@ -187,7 +188,7 @@ type LeaseContext = {
 function incomeOf(c: Computed): SuggestIncome[] {
   return c.result.classified.operating
     .filter(isIncome)
-    .map((r) => ({ date: r.date, partner_id: r.partner_id, amount_snt: r.net_snt, text: r.text }))
+    .map((r) => ({ date: r.date, partner_id: r.partner_id, amount_snt: r.net_snt, text: r.text, id: r.id, voucher_id: r.voucher_id }))
 }
 
 function leaseContext(db: SqliteDb, computed: Computed[], asOf: string): LeaseContext {
@@ -325,6 +326,8 @@ export function computeDetail(
   const [computed] = computeObjects(db, loaded, [centre], asOf, opts.targetBp)
   const ctx = leaseContext(db, [computed], asOf)
   const { water, latest } = waterDetail(db, computed, ctx)
+  const suggestions = ctx.suggestions.get(id) ?? []
+  const sources = leaseSources(db, computed, suggestions, ctx)
   const row = toRow(computed, ctx)
   if (row.lease && !row.lease.suggested) row.lease = { ...row.lease, water_latest: latest.get(row.lease.key) ?? null }
   return {
@@ -344,11 +347,36 @@ export function computeDetail(
     leases: (computed.parsed.doc.leases ?? [])
       .map((lease) => ({ ...leaseView(lease, asOf, ctx.partners, ctx.refs), water_latest: latest.get(lease.key) ?? null }))
       .sort((a, b) => b.starts.localeCompare(a.starts) || a.key.localeCompare(b.key)),
-    lease_suggestions: (ctx.suggestions.get(id) ?? [])
-      .map((s) => ({ lease: s.lease, view: suggestionView(s, ctx) }))
+    lease_suggestions: suggestions
+      .map((s) => ({ lease: s.lease, view: { ...suggestionView(s, ctx), sources: sources.get(s) ?? [] } }))
       .sort((a, b) => b.lease.starts.localeCompare(a.lease.starts)),
     water,
   }
+}
+
+const partnerName = (ctx: LeaseContext) => (id: number | null) => (id != null ? (ctx.partners.get(id)?.name ?? null) : null)
+
+/**
+ * The rent payments each suggested lease was read from: the object's income in its period (for
+ * one from payments alone, its payer's), less water settlements.
+ */
+function leaseSources(db: SqliteDb, c: Computed, suggestions: LeaseSuggestion[], ctx: LeaseContext): Map<LeaseSuggestion, BookedLine[]> {
+  const income = incomeOf(c).filter((r) => r.id != null && r.voucher_id != null && !isWaterSettlementText(r.text))
+  const rows = new Map(
+    suggestions.map((s) => {
+      const ends = s.lease.ends ?? ctx.asOf
+      const own = (r: SuggestIncome) => s.source === 'contract' || r.partner_id === s.lease.tenant_partner_id
+      return [s, income.filter((r) => r.date >= s.lease.starts && r.date <= ends && own(r))] as const
+    }),
+  )
+  const refs = loadVoucherRefs(db, new Set([...rows.values()].flat().map((r) => r.voucher_id!)))
+  const lineCtx = { partnerName: partnerName(ctx), refs }
+  return new Map(
+    [...rows].map(([s, list]) => [
+      s,
+      list.map((r) => bookedLine({ id: r.id!, date: r.date, voucher_id: r.voucher_id!, net_snt: r.amount_snt, partner_id: r.partner_id, text: r.text }, r.amount_snt, lineCtx)),
+    ]),
+  )
 }
 
 type WaterLatest = NonNullable<LeaseView['water_latest']>
@@ -365,6 +393,7 @@ function waterDetail(db: SqliteDb, c: Computed, ctx: LeaseContext): { water: Wat
   const refs = loadVoucherRefs(db, new Set([...waterVoucherIds(settlements), ...lines.map((l) => l.voucher_id)]))
   const wctx: WaterViewContext = {
     tenantName: (lease) => (lease.tenant_partner_id != null ? ctx.partners.get(lease.tenant_partner_id)?.name : undefined) ?? lease.tenant_name ?? null,
+    partnerName: partnerName(ctx),
     refs,
   }
   const owner = new Map(lines.map((l) => [l.id, settlementFor(l, settlements)]))
@@ -378,6 +407,7 @@ function waterDetail(db: SqliteDb, c: Computed, ctx: LeaseContext): { water: Wat
     settlement: s.settlement,
     view: settlementView(s.settlement, s.lines, shareLeases, wctx),
     source: s.source,
+    lines: s.lines.map((l) => bookedLine(l, l.net_snt, wctx)),
   }))
   const newestFirst = <T extends { to: string }>(a: T, b: T) => b.to.localeCompare(a.to)
   return {

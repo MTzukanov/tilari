@@ -312,20 +312,24 @@ export type LeaseView = {
   water_latest?: { from: string; to: string; balance_snt: number; settled_snt: number; status: WaterShareStatus } | null
   /** Suggested from the book (not stored): from a contract document, or from payments alone. */
   suggested?: 'contract' | 'payments'
+  /** A suggestion's rent payments: the lines its rent was read from (object page only). */
+  sources?: BookedLine[]
 }
 
 /** A lease the book suggests: the lease to add on the edit page, and how the page shows it. */
 export type LeaseSuggestionView = { lease: Lease; view: LeaseView }
 
-/** A booked line about a water settlement, and what of it counts for the settlement. */
-export type WaterMovement = {
+/** A booked line a figure is read from, to open from the page. */
+export type BookedLine = {
   line_id: number
   date: string
-  /** The part that settles water: the whole line, or what a rent payment had on top of the rent. */
+  /** The part that counts: for a water settlement the whole line, or what a rent payment had on top of the rent. */
   amount_snt: number
   /** credit - debit of the whole line. */
   line_snt: number
   text: string
+  /** The line's partner (the payer), when it has one. */
+  partner: string | null
   voucher: LeaseVoucher
 }
 
@@ -350,7 +354,7 @@ export type WaterShareView = {
   balance_snt: number
   own: boolean
   letter: LeaseVoucher | null
-  movements: WaterMovement[]
+  movements: BookedLine[]
   /** What the movements settled so far (same sign as the balance when paid). */
   settled_snt: number
   status: WaterShareStatus
@@ -367,16 +371,19 @@ export type WaterSettlementView = {
   advance_snt: number | null
   statement: LeaseVoucher | null
   /** The company's settlement as booked on the object (vastike account). */
-  booked: WaterMovement[]
+  booked: BookedLine[]
   shares: WaterShareView[]
   /** What the owner keeps (+) or bears (-): the tenants' balances less the company's difference. */
   owner_snt: number
   /** Tenants' lines with no share to go to (no lease with water advances in the period). */
-  other: WaterMovement[]
+  other: BookedLine[]
 }
 
-/** A settlement the book suggests from booked lines: from the company's line, or the tenant's alone. */
-export type WaterSuggestionView = { settlement: WaterSettlement; view: WaterSettlementView; source: 'company' | 'tenant' }
+/**
+ * A settlement the book suggests from booked lines: from the company's line, or the tenant's
+ * alone; `lines` are every line it was read from.
+ */
+export type WaterSuggestionView = { settlement: WaterSettlement; view: WaterSettlementView; source: 'company' | 'tenant'; lines: BookedLine[] }
 
 export type WaterDetail = {
   /** Newest period first. */

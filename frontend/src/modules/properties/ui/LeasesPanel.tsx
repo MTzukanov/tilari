@@ -2,7 +2,7 @@ import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import type { LeaseView } from '../api'
 import { increaseText, leasePeriod, leaseRentText, periodText, waterBalanceText, waterStatusText } from './format'
-import { VoucherLink } from './FormParts'
+import { LineSources, VoucherLink } from './FormParts'
 
 /**
  * Where a suggestion comes from (hover explains): a lease from a linked contract or from rent
@@ -14,6 +14,22 @@ export function SuggestionSource({ source }: { source: 'contract' | 'payments' |
     <span className="muted property-lease-source" title={t(`properties.lease.sourceHint.${source}`)}>
       {t(`properties.lease.source.${source}`)}
     </span>
+  )
+}
+
+/** What a suggested lease was read from, each to open: the contract, the increase notices, the rent payments. */
+export function LeaseSources({ lease, onOpen }: { lease: LeaseView; onOpen: (voucherId: number) => void }) {
+  const { t } = useI18n()
+  const notices = lease.steps.flatMap((step) => (step.voucher ? [step.voucher] : []))
+  const payments = lease.sources ?? []
+  return (
+    <>
+      {lease.contract ? <VoucherLink voucher={lease.contract} onOpen={onOpen} /> : null}
+      {notices.map((voucher) => (
+        <VoucherLink key={voucher.voucher_id} voucher={voucher} onOpen={onOpen} />
+      ))}
+      <LineSources label={t('properties.lease.payments', { n: payments.length })} lines={payments} onOpen={onOpen} />
+    </>
   )
 }
 
@@ -127,7 +143,11 @@ function LeaseList({ leases, onOpenVoucher }: { leases: LeaseView[]; onOpenVouch
           <span className="muted">{leasePeriod(t, lease)}</span>
           <span>{leaseRentText(t, lease.rent)}</span>
           {lease.suggested ? <SuggestionSource source={lease.suggested} /> : null}
-          {lease.contract ? <VoucherLink voucher={lease.contract} onOpen={onOpenVoucher} /> : null}
+          {lease.suggested ? (
+            <LeaseSources lease={lease} onOpen={onOpenVoucher} />
+          ) : lease.contract ? (
+            <VoucherLink voucher={lease.contract} onOpen={onOpenVoucher} />
+          ) : null}
         </li>
       ))}
     </ul>

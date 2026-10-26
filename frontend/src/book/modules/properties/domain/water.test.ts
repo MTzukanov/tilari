@@ -29,6 +29,7 @@ function line(id: number, date: string, net: number, text: string, opts: Partial
 }
 
 const ctx = {
+  partnerName: (id: number | null) => (id != null ? `Maksaja ${id}` : null),
   tenantName: (l: Lease) => (l.tenant_partner_id != null ? `Vuokralainen ${l.tenant_partner_id}` : (l.tenant_name ?? null)),
   refs: new Map<number, VoucherRef>([[101, { id: 101, date: '2023-11-30', type: 400, title: 'Tiliote 11/2023', posted: true, doc_number: 12, series: null }]]),
 }

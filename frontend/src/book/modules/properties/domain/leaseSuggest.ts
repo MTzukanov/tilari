@@ -7,8 +7,8 @@ import { monthEnd } from '../../../months'
 import type { Lease, LeaseRent } from './types'
 
 export type SuggestDoc = { voucher_id: number; date: string; title: string }
-/** One income line on the object (corrections already on their booking's date). */
-export type SuggestIncome = { date: string; partner_id: number | null; amount_snt: number; text?: string }
+/** One income line on the object (corrections already on their booking's date); the ids open it from the page. */
+export type SuggestIncome = { date: string; partner_id: number | null; amount_snt: number; text?: string; id?: number; voucher_id?: number }
 
 export type LeaseSuggestion = {
   lease: Lease

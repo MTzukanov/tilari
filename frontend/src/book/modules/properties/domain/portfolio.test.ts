@@ -257,6 +257,11 @@ describe('rental objects: figures', () => {
     expect(before.lease_suggestions.map((s) => s.lease)).toEqual([
       { key: '', starts: '2023-03-01', due_day: 5, tenant_partner_id: tenant, doc_voucher_id: vouchers.lease, rents: [{ from: '2023-03-01', rent_snt: 1_000 * E }] },
     ])
+    // Its sources open from the page: the contract, and the rent payments it was read from.
+    const sources = before.lease_suggestions[0].view.sources ?? []
+    expect(sources[0]).toMatchObject({ date: '2023-03-05', amount_snt: 1_000 * E, partner: 'Vuokralainen Virtanen', text: 'Vuokra A 1' })
+    expect(sources[0].voucher.voucher_id).toBe(vouchers['statement2023-03'])
+    expect(sources.every((l) => l.amount_snt === 1_000 * E)).toBe(true)
     expect(computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.bundle)?.lease).toMatchObject({
       suggested: 'contract',
       tenant: 'Vuokralainen Virtanen',
@@ -323,6 +328,11 @@ describe('rental objects: figures', () => {
     expect(before.water.settlements).toEqual([])
     expect(before.water.suggestions.map((s) => [s.source, s.settlement])).toEqual([
       ['company', { key: '', from: '2023-11-01', to: '2024-10-31', difference_snt: -120 * E }],
+    ])
+    // Every line it was read from opens from the page.
+    expect(before.water.suggestions[0].lines.map((l) => [l.date, l.amount_snt, l.partner])).toEqual([
+      ['2024-11-20', 120 * E, null],
+      ['2024-12-05', -120 * E, 'Vuokralainen Virtanen'],
     ])
     // Shared by the suggested lease while none is stored; the refund paid settles it.
     expect(before.water.suggestions[0].view.shares).toMatchObject([

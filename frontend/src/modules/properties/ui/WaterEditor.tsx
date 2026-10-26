@@ -8,7 +8,7 @@ import type { DocCandidate, Lease, WaterSuggestionView } from '../api'
 import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
 import { companyResultText, periodText, waterBalanceText } from './format'
-import { Shown } from './FormParts'
+import { LineLink, Shown } from './FormParts'
 import { SuggestionSource } from './LeasesPanel'
 import {
   draftDifference,
@@ -38,6 +38,7 @@ export function WaterEditor({
   onUpload,
   isCreated,
   onDeleteDocs,
+  onOpenVoucher,
 }: {
   drafts: SettlementDraft[]
   onChange: (drafts: SettlementDraft[]) => void
@@ -53,6 +54,8 @@ export function WaterEditor({
   onUpload: (settlement: number, leaseKey: string | null, files: File[]) => Promise<void>
   isCreated: (voucherId: number) => boolean
   onDeleteDocs: (voucherIds: number[], edit?: DocEdit) => Promise<void>
+  /** Opens a suggestion's booked line; the unsaved form waits for the way back. */
+  onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
   const [creating, setCreating] = useState<string | null>(null)
@@ -85,6 +88,9 @@ export function WaterEditor({
                 <span>{periodText(t, s.settlement.from, s.settlement.to)}</span>
                 <span>{companyResultText(t, s.settlement.difference_snt)}</span>
                 <SuggestionSource source={s.source === 'company' ? 'waterCompany' : 'waterTenant'} />
+                {s.lines.map((line) => (
+                  <LineLink key={line.line_id} line={line} onOpen={onOpenVoucher} />
+                ))}
                 <button type="button" className="btn-small" onClick={() => onChange([...drafts, ...settlementDrafts([s.settlement])])}>
                   {t('properties.edit.addSuggestion')}
                 </button>

@@ -3,6 +3,7 @@ import type { PropertyQuery } from '../../book/modules/properties/service'
 import type { PortfolioSettings, PropertyDoc, SetupApplyInput } from '../../book/modules/properties/domain/types'
 
 export type {
+  BookedLine,
   BreakEven,
   Disposal,
   DocumentVoucher,
@@ -32,7 +33,6 @@ export type {
   Valuation,
   Warning,
   WaterDetail,
-  WaterMovement,
   WaterSettlement,
   WaterSettlementView,
   WaterShare,

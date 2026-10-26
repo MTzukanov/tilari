@@ -1253,7 +1253,8 @@
         "payments": "Pelkät vuokrasuoritukset: maksaja on maksanut vuokraa näinä kuukausina, mutta mikään kohteeseen linkitetty vuokrasopimus ei kata jaksoa. Linkitä sopimus kohteeseen, niin ehdotus tarkentuu.",
         "waterCompany": "Kohteen vastiketilille kirjattu taloyhtiön vesitasaus: jakso tekstistä tai kirjausta edeltävä vuosi, summa kirjauksesta. Tarkista taloyhtiön tasauslaskelmasta.",
         "waterTenant": "Vain vuokralaisen kanssa kirjattu tasaus (palautus tai lisämaksu): taloyhtiön tasausta ei löytynyt, joten sen oletetaan olleen sama. Tarkista taloyhtiön tasauslaskelmasta."
-      }
+      },
+      "payments": "Vuokrasuoritukset ({n})"
     },
     "edit": {
       "title": "Muokkaa: {name}",

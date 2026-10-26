@@ -1253,7 +1253,8 @@
         "payments": "Enbart hyresbetalningar: betalaren har betalat hyra dessa månader, men inget hyresavtal länkat till objektet täcker perioden. Länka avtalet till objektet så blir förslaget exaktare.",
         "waterCompany": "Bostadsbolagets vattenutjämning bokförd på objektets vederlagskonto: perioden ur texten eller året före bokningen, beloppet ur bokningen. Kontrollera mot bolagets kalkyl.",
         "waterTenant": "Endast en utjämning med hyresgästen (återbetalning eller tilläggsavgift) är bokförd: ingen utjämning från bolaget hittades, så den antas vara densamma. Kontrollera mot bolagets kalkyl."
-      }
+      },
+      "payments": "Hyresbetalningar ({n})"
     },
     "edit": {
       "title": "Redigera: {name}",

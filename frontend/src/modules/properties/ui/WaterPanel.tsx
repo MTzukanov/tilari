@@ -2,7 +2,7 @@ import { useI18n } from '../../../i18n'
 import { formatCents } from '../../../shared/money'
 import type { WaterDetail, WaterSettlementView } from '../api'
 import { companyResultText, periodText, waterBalanceText, waterStatusText } from './format'
-import { MovementLink, VoucherLink } from './FormParts'
+import { LineLink, VoucherLink } from './FormParts'
 import { SuggestionSource } from './LeasesPanel'
 
 function SettlementCard({
@@ -37,7 +37,7 @@ function SettlementCard({
           <>
             {t('properties.water.booked')}:{' '}
             {s.booked.map((m) => (
-              <MovementLink key={m.line_id} movement={m} onOpen={onOpenVoucher} />
+              <LineLink key={m.line_id} line={m} onOpen={onOpenVoucher} />
             ))}
           </>
         ) : (
@@ -60,7 +60,7 @@ function SettlementCard({
               ) : null}
               {share.letter ? <VoucherLink voucher={share.letter} onOpen={onOpenVoucher} /> : null}
               {share.movements.map((m) => (
-                <MovementLink key={m.line_id} movement={m} onOpen={onOpenVoucher} />
+                <LineLink key={m.line_id} line={m} onOpen={onOpenVoucher} />
               ))}
             </li>
           ))}
@@ -72,7 +72,7 @@ function SettlementCard({
         <p className="property-lease-terms">
           {t('properties.water.other')}:{' '}
           {s.other.map((m) => (
-            <MovementLink key={m.line_id} movement={m} onOpen={onOpenVoucher} />
+            <LineLink key={m.line_id} line={m} onOpen={onOpenVoucher} />
           ))}
         </p>
       ) : null}

@@ -1253,7 +1253,8 @@
         "payments": "Rent payments alone: the payer paid rent in these months, but no lease contract linked to the object covers the period. Link the contract to the object to sharpen the suggestion.",
         "waterCompany": "The housing company's water settlement booked on the object's charges account: the period from the text or the year before the booking, the amount from the booking. Check against the company's statement.",
         "waterTenant": "Only a settlement with the tenant (refund or extra charge) is booked: no company settlement was found, so it is assumed to be the same. Check against the company's statement."
-      }
+      },
+      "payments": "Rent payments ({n})"
     },
     "edit": {
       "title": "Edit: {name}",

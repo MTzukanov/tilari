@@ -532,6 +532,7 @@ function EditForm({
           onUpload={upload}
           isCreated={isCreated}
           onDeleteDocs={deleteDocs}
+          onOpenVoucher={openVoucher}
         />
       </section>
 
@@ -549,6 +550,7 @@ function EditForm({
           onUpload={uploadWater}
           isCreated={isCreated}
           onDeleteDocs={deleteDocs}
+          onOpenVoucher={openVoucher}
         />
       </section>
 

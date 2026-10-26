@@ -1253,7 +1253,8 @@
         "payments": "Nur Mietzahlungen: Der Zahler hat in diesen Monaten Miete gezahlt, aber kein mit dem Objekt verknüpfter Mietvertrag deckt den Zeitraum. Verknüpfen Sie den Vertrag mit dem Objekt, um den Vorschlag zu schärfen.",
         "waterCompany": "Die auf dem Hausgeldkonto des Objekts gebuchte Wasserabrechnung der Gesellschaft: Zeitraum aus dem Text oder das Jahr vor der Buchung, Betrag aus der Buchung. Mit der Abrechnung der Gesellschaft prüfen.",
         "waterTenant": "Nur eine Abrechnung mit dem Mieter (Erstattung oder Nachzahlung) ist gebucht: keine Abrechnung der Gesellschaft gefunden, daher wird dieselbe angenommen. Mit der Abrechnung der Gesellschaft prüfen."
-      }
+      },
+      "payments": "Mietzahlungen ({n})"
     },
     "edit": {
       "title": "Bearbeiten: {name}",
