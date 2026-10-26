@@ -1103,15 +1103,17 @@
       "leaseStarts": "Börjar",
       "leaseEnds": "Slutar",
       "dueDay": "Förfallodag",
-      "noticeMonths": "Uppsägningstid, mån",
-      "rentFrom": "Från",
       "rent": "Hyra €/mån",
-      "charges": "Övriga avgifter €/mån",
-      "stepDoc": "Meddelande",
       "contract": "Avtal",
-      "increaseKind": "Höjningsregel",
+      "increaseKind": "Höjningsklausul",
       "increasePct": "Höjning % / år",
-      "increaseMonth": "Höjningsmånad"
+      "increaseMonth": "Höjningsmånad",
+      "water": "Vatten €/mån",
+      "parking": "Bilplats €/mån",
+      "total": "Totalt",
+      "increaseEur": "Höjning € / år",
+      "increaseFrom": "Från",
+      "increaseNotice": "Höjningsmeddelande"
     },
     "breakEven": {
       "title": "Nollpris: priset som ger pengarna tillbaka",
@@ -1192,17 +1194,16 @@
       "since": "från {date}",
       "period": "{from}–{to}",
       "perMonth": "{amount}/mån",
-      "charges": "+ avgifter {amount}/mån",
       "due": "förfallodag {day}.",
-      "notice": "uppsägningstid {n} mån",
       "increase": {
-        "fixed": "höjning {pct} per år",
-        "fixedMonth": "höjning {pct} per år ({month})",
+        "percent": "höjning {pct} per år",
+        "percentMonth": "höjning {pct} per år ({month})",
+        "amount": "höjning {amount} per år",
+        "amountMonth": "höjning {amount} per år ({month})",
         "index": "indexhöjning",
         "indexMonth": "indexhöjning ({month})"
       },
       "contract": "Avtal",
-      "steps": "Hyror",
       "others": "Andra hyresavtal",
       "state": {
         "upcoming": "Börjar",
@@ -1211,8 +1212,9 @@
       },
       "tenantUnknown": "Hyresgäst okänd",
       "kind": {
-        "none": "Ingen regel",
-        "fixed": "Fast %",
+        "none": "Ingen höjningsklausul",
+        "percent": "Procent per år",
+        "amount": "Euro per år",
         "index": "Index"
       },
       "suggestions": "Förslag från bokföringen ({n})",
@@ -1222,7 +1224,12 @@
         "contract": "från avtal",
         "payments": "från betalningar"
       },
-      "suggestedNote": "★ = hyresförhållande föreslaget från bokföringen, inte sparat än."
+      "suggestedNote": "★ = hyresförhållande föreslaget från bokföringen, inte sparat än.",
+      "initial": "Hyra i början",
+      "increases": "Höjningar",
+      "water": "vatten {amount}",
+      "parking": "bilplats {amount}",
+      "rentPart": "hyra {amount}"
     },
     "edit": {
       "title": "Redigera: {name}",
@@ -1245,13 +1252,14 @@
       "deleteConfirm": "Radera Tilaris uppgifter om detta objekt? Bokföringen påverkas inte.",
       "readOnly": "Uppgifterna sparades med en nyare Tilari; denna version kan bara visa dem.",
       "leases": "Hyresavtal",
-      "leasesLead": "Hyresgäst, villkor och hyra i steg. En hyreshöjning läggs till som ett nytt steg; höjningsregeln används bara för påminnelser och prognosen. Avtalet och meddelandena är Liitetieto-verifikat, så de hittas även i Kitsas.",
+      "leasesLead": "Hyresgäst, villkor, hyra i början och höjningar. Höjningsregeln fyller i nästa höjning; Tilari ändrar aldrig hyran själv. Avtalet och höjningsmeddelandena är Liitetieto-verifikat, så de hittas även i Kitsas.",
       "addLease": "Lägg till hyresavtal",
       "removeLease": "Ta bort hyresavtal",
-      "addStep": "Lägg till hyressteg",
       "suggestions": "Bokföringen föreslår {n} hyresförhållanden. Lägg till dem i formuläret, granska och spara.",
       "addSuggestion": "Lägg till",
-      "addAllSuggestions": "Lägg till alla"
+      "addAllSuggestions": "Lägg till alla",
+      "addIncrease": "Lägg till höjning",
+      "createNotice": "Skapa höjningsmeddelande"
     },
     "setup": {
       "title": "Inställning av hyresobjekt",
@@ -1334,6 +1342,30 @@
       "interest": "lånets ränta",
       "recounted": "räknas på konto {account}",
       "recountedHint": "Bokförd på {booked}. Enligt anteckningarna i ett rättelseverifikat lämnades raden orättad eftersom räkenskapsperioden är stängd; Tilari räknar den på {account}. Kostnadsställesrapporten visar den som bokförd."
+    },
+    "notice": {
+      "voucherTitle": "Meddelande om hyreshöjning {object} {date}",
+      "fileName": "hyreshojning",
+      "businessId": "FO-nummer {id}",
+      "heading": "MEDDELANDE OM HYRESHÖJNING",
+      "object": "Hyresobjekt: {object}",
+      "contract": "Hyresavtal: {contract}",
+      "contractSince": "Hyresavtal från {date}",
+      "changes": "Er hyra ändras från {date} enligt följande.",
+      "changesClause": "Er hyra ändras från {date} enligt hyresavtalets höjningsklausul ({clause}).",
+      "current": "Nuvarande",
+      "newFrom": "Från {date}",
+      "rent": "Hyra",
+      "water": "Vattenavgift",
+      "parking": "Bilplats",
+      "total": "Totalt per månad",
+      "due": "Hyran betalas fortfarande senast den {day} i månaden till samma konto och med samma referens som tidigare.",
+      "regards": "Med vänliga hälsningar",
+      "clause": {
+        "percent": "{pct} per år",
+        "amount": "{amount} per år",
+        "index": "indexbunden"
+      }
     }
   }
 }

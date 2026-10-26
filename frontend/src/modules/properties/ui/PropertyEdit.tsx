@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { fetchPartners } from '../../../api'
+import { fetchPartners, fetchSettings, saveVoucher, uploadAttachment } from '../../../api'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
+import { downloadFile, localToday } from '../../../shared/downloadFile'
 import { EuroInput } from '../../../shared/EuroInput'
 import { formatCents, formatEurInput, parseEurInput } from '../../../shared/money'
 import { formatPercentInput, parsePercentInput } from '../../../shared/percent'
@@ -11,13 +12,15 @@ import {
   fetchPropertySetup,
   PROPERTY_KINDS,
   saveProperty,
+  type DocCandidate,
   type PropertyDetail,
   type PropertyDoc,
   type PropertyKind,
   type SetupResponse,
 } from '../api'
-import { saveErrorText } from './format'
-import { buildLeases, leaseDrafts, type Partner } from './leaseDrafts'
+import { clauseText, saveErrorText } from './format'
+import { increaseNoticePdf, noticeTitle, type NoticeAmounts } from './increaseNotice'
+import { buildLeases, leaseDrafts, type AmountsDraft, type Partner } from './leaseDrafts'
 import { LeasesEditor } from './LeasesEditor'
 
 type ValuationDraft = { date: string; price: string; debtFree: string; source: string }
@@ -29,21 +32,45 @@ function accountList(raw: string): number[] | null {
   return parts.map(Number)
 }
 
+const cents = (a: AmountsDraft): NoticeAmounts => ({
+  rent: parseEurInput(a.rent),
+  water: parseEurInput(a.water),
+  parking: parseEurInput(a.parking),
+})
+
+/** A file name from free text: letters, digits and dashes. */
+function fileSlug(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase()
+}
+
 function EditForm({
   detail,
   setup,
   partners,
+  company,
+  today,
   onDone,
 }: {
   detail: PropertyDetail
   setup: SetupResponse
   partners: Partner[]
+  /** The book's company details (Asetus), for letters. */
+  company: Record<string, string>
+  /** The book's date (a practice book's simulated day): letters and their vouchers carry it. */
+  today: string
   onDone: () => void
 }) {
   const { t } = useI18n()
   const doc = detail.doc
   const [kind, setKind] = useState<PropertyKind | ''>(doc.kind ?? '')
   const [leases, setLeases] = useState(() => leaseDrafts(doc.leases, partners))
+  /** Increase notices written on this page: pickable before the page is saved. */
+  const [newDocs, setNewDocs] = useState<DocCandidate[]>([])
   const [excluded, setExcluded] = useState(Boolean(doc.excluded))
   const [eras, setEras] = useState<number[]>(doc.eras.map((e) => e.eraid))
   const [docs, setDocs] = useState<number[]>(doc.doc_voucher_ids ?? [])
@@ -83,6 +110,67 @@ function EditForm({
       const sb = b.suggestion?.candidates.includes(detail.id) ? 0 : 1
       return sa - sb || b.date.localeCompare(a.date)
     })
+
+  const addresses = new Map(
+    [...detail.leases, ...detail.lease_suggestions.map((s) => s.view)].flatMap((v) =>
+      v.tenant_partner_id != null ? [[v.tenant_partner_id, v.tenant_address] as const] : [],
+    ),
+  )
+
+  /** Writes the notice for increase `k` of lease `i`: a PDF on a new Liitetieto voucher, linked and downloaded. */
+  async function createNotice(i: number, k: number) {
+    setError(null)
+    const lease = leases[i]
+    const increase = lease.increases[k]
+    const before = k === 0 ? lease.initial : lease.increases[k - 1]
+    const partner = partners.find((p) => p.name.trim().toLowerCase() === lease.tenant.trim().toLowerCase())
+    const contract = [...setup.docs, ...newDocs].find((d) => String(d.voucher_id) === lease.contractId)
+    const built = buildLeases(t, [lease], partners)
+    const rule = typeof built === 'string' ? undefined : built[0]?.increase
+    const pdf = increaseNoticePdf(t, {
+      company: {
+        name: company.Nimi ?? '',
+        business_id: company.Ytunnus ?? '',
+        street: company.Katuosoite ?? '',
+        postcode: company.Postinumero ?? '',
+        city: company.Kaupunki ?? '',
+        email: company.Email ?? '',
+        phone: company.Puhelin ?? '',
+      },
+      tenant: { name: lease.tenant.trim(), address: (partner && addresses.get(partner.id)) || [] },
+      object: detail.name,
+      contract: contract?.title ?? null,
+      lease_starts: lease.starts,
+      due_day: Number(lease.dueDay) || null,
+      clause: clauseText(t, rule),
+      date: today,
+      from: increase.from,
+      before: cents(before),
+      after: cents(increase),
+    })
+    const title = noticeTitle(t, detail.name, increase.from)
+    try {
+      const saved = await saveVoucher({
+        date: today,
+        type: 800,
+        status: 100,
+        title,
+        partner: partner ? partner.id : lease.tenant.trim() || null,
+        entries: [],
+      })
+      const name = `${fileSlug(t('properties.notice.fileName'))}-${fileSlug(detail.name)}-${increase.from}.pdf`
+      await uploadAttachment(saved.id, new File([pdf as BlobPart], name, { type: 'application/pdf' }))
+      setNewDocs([...newDocs, { voucher_id: saved.id, date: today, title, doc_number: null, attachments: 1, linked_to: [], suggestion: null }])
+      setLeases(
+        leases.map((l, li) =>
+          li === i ? { ...l, increases: l.increases.map((r, ri) => (ri === k ? { ...r, voucherId: String(saved.id) } : r)) } : l,
+        ),
+      )
+      downloadFile(pdf, name, 'application/pdf')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    }
+  }
 
   function build(): PropertyDoc | string {
     const pct = parsePercentInput(salePct)
@@ -181,9 +269,11 @@ function EditForm({
           drafts={leases}
           onChange={setLeases}
           partners={partners}
-          docs={setup.docs}
+          docs={[...setup.docs, ...newDocs]}
           linkedDocs={docs}
           suggestions={[...detail.lease_suggestions].reverse()}
+          today={today}
+          onCreateNotice={createNotice}
         />
       </section>
 
@@ -364,15 +454,22 @@ function EditForm({
   )
 }
 
-export function PropertyEdit({ id, onDone }: { id: number; onDone: () => void }) {
+export function PropertyEdit({ id, today, onDone }: { id: number; today?: string; onDone: () => void }) {
   const { t } = useI18n()
-  const [state, setState] = useState<{ detail: PropertyDetail; setup: SetupResponse; partners: Partner[] } | null>(null)
+  const [state, setState] = useState<{
+    detail: PropertyDetail
+    setup: SetupResponse
+    partners: Partner[]
+    company: Record<string, string>
+  } | null>(null)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     let cancelled = false
-    Promise.all([fetchProperty(id), fetchPropertySetup(), fetchPartners()]).then(
-      ([detail, setup, { partners }]) => {
-        if (!cancelled) setState({ detail, setup, partners: partners.map((p) => ({ id: p.id, name: p.name })) })
+    Promise.all([fetchProperty(id), fetchPropertySetup(), fetchPartners(), fetchSettings()]).then(
+      ([detail, setup, { partners }, settings]) => {
+        if (!cancelled) {
+          setState({ detail, setup, partners: partners.map((p) => ({ id: p.id, name: p.name })), company: settings.company })
+        }
       },
       (err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err))
@@ -391,7 +488,16 @@ export function PropertyEdit({ id, onDone }: { id: number; onDone: () => void })
         <h2 className="ledger-page-title">{state ? t('properties.edit.title', { name: state.detail.name }) : '...'}</h2>
       </div>
       {error ? <p className="error">{error}</p> : null}
-      {state ? <EditForm detail={state.detail} setup={state.setup} partners={state.partners} onDone={onDone} /> : null}
+      {state ? (
+        <EditForm
+          detail={state.detail}
+          setup={state.setup}
+          partners={state.partners}
+          company={state.company}
+          today={today || localToday()}
+          onDone={onDone}
+        />
+      ) : null}
     </div>
   )
 }

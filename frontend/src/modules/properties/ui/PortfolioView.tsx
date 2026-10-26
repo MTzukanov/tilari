@@ -7,6 +7,7 @@ import { formatBp, formatPercentInput, parsePercentInput } from '../../../shared
 import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import { fetchPortfolio, savePortfolioSettings, type PortfolioResponse, type PortfolioSettings, type PropertyRow } from '../api'
+import { rentTotal } from '../../../book/modules/properties/domain/rent'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
 import { formatEuro, holdingText, periodLabel, saveErrorText, statusClass } from './format'
 
@@ -111,7 +112,7 @@ function nameColumn(t: T, withDates: 'acquired' | 'none'): TableColumn<PropertyR
           <span className="muted property-sub" title={r.lease.suggested ? t('properties.lease.suggestedNote') : (r.lease.tenant ?? undefined)}>
             {[
               `${r.lease.suggested ? '★ ' : ''}${r.lease.tenant ?? t('properties.lease.tenantUnknown')}`,
-              r.lease.rent ? t('properties.lease.perMonth', { amount: formatCents(r.lease.rent.rent_snt) }) : '',
+              r.lease.rent ? t('properties.lease.perMonth', { amount: formatCents(rentTotal(r.lease.rent)) }) : '',
             ]
               .filter(Boolean)
               .join(' · ')}

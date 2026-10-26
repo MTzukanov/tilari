@@ -1103,15 +1103,17 @@
       "leaseStarts": "Starts",
       "leaseEnds": "Ends",
       "dueDay": "Due day",
-      "noticeMonths": "Notice period, months",
-      "rentFrom": "From",
       "rent": "Rent €/mo",
-      "charges": "Other charges €/mo",
-      "stepDoc": "Notice",
       "contract": "Contract",
-      "increaseKind": "Increase rule",
+      "increaseKind": "Increase clause",
       "increasePct": "Increase % / yr",
-      "increaseMonth": "Increase month"
+      "increaseMonth": "Increase month",
+      "water": "Water €/mo",
+      "parking": "Parking €/mo",
+      "total": "Total",
+      "increaseEur": "Increase € / yr",
+      "increaseFrom": "From",
+      "increaseNotice": "Increase notice"
     },
     "breakEven": {
       "title": "Break-even price: the price that returns the money",
@@ -1192,17 +1194,16 @@
       "since": "from {date}",
       "period": "{from}–{to}",
       "perMonth": "{amount}/mo",
-      "charges": "+ charges {amount}/mo",
       "due": "due on day {day}",
-      "notice": "notice {n} mo",
       "increase": {
-        "fixed": "rise {pct} a year",
-        "fixedMonth": "rise {pct} a year ({month})",
-        "index": "index-linked rise",
-        "indexMonth": "index-linked rise ({month})"
+        "percent": "increase {pct} a year",
+        "percentMonth": "increase {pct} a year ({month})",
+        "amount": "increase {amount} a year",
+        "amountMonth": "increase {amount} a year ({month})",
+        "index": "index-linked increase",
+        "indexMonth": "index-linked increase ({month})"
       },
       "contract": "Contract",
-      "steps": "Rent",
       "others": "Other leases",
       "state": {
         "upcoming": "Starts",
@@ -1211,8 +1212,9 @@
       },
       "tenantUnknown": "Tenant unknown",
       "kind": {
-        "none": "No rule",
-        "fixed": "Fixed %",
+        "none": "No increase clause",
+        "percent": "Percent a year",
+        "amount": "Euros a year",
         "index": "Index"
       },
       "suggestions": "Suggestions from the books ({n})",
@@ -1222,7 +1224,12 @@
         "contract": "from a contract",
         "payments": "from payments"
       },
-      "suggestedNote": "★ = a tenancy suggested from the books, not saved yet."
+      "suggestedNote": "★ = a tenancy suggested from the books, not saved yet.",
+      "initial": "Starting rent",
+      "increases": "Increases",
+      "water": "water {amount}",
+      "parking": "parking {amount}",
+      "rentPart": "rent {amount}"
     },
     "edit": {
       "title": "Edit: {name}",
@@ -1245,13 +1252,14 @@
       "deleteConfirm": "Delete Tilari's data for this object? The books are not touched.",
       "readOnly": "The data was saved by a newer Tilari; this version can only show it.",
       "leases": "Leases",
-      "leasesLead": "Tenant, terms and rent in steps. Add a rent increase as a new step; the increase rule only drives reminders and the forecast. The contract and notices are Liitetieto vouchers, so Kitsas finds them too.",
+      "leasesLead": "Tenant, terms, starting rent and increases. The increase clause prefills the next increase; Tilari never changes rent by itself. The contract and increase notices are Liitetieto vouchers, so Kitsas finds them too.",
       "addLease": "Add lease",
       "removeLease": "Remove lease",
-      "addStep": "Add rent step",
       "suggestions": "The books suggest {n} tenancies. Add them to the form, review and save.",
       "addSuggestion": "Add",
-      "addAllSuggestions": "Add all"
+      "addAllSuggestions": "Add all",
+      "addIncrease": "Add increase",
+      "createNotice": "Create increase notice"
     },
     "setup": {
       "title": "Set up rental objects",
@@ -1334,6 +1342,30 @@
       "interest": "loan interest",
       "recounted": "counted as {account}",
       "recountedHint": "Booked on {booked}. A correction voucher's notes list this line as left uncorrected because the year is closed; Tilari counts it on {account}. The cost-centre report shows it as booked."
+    },
+    "notice": {
+      "voucherTitle": "Rent increase notice {object} {date}",
+      "fileName": "rent-increase-notice",
+      "businessId": "Business ID {id}",
+      "heading": "RENT INCREASE NOTICE",
+      "object": "Rented property: {object}",
+      "contract": "Lease: {contract}",
+      "contractSince": "Lease from {date}",
+      "changes": "Your rent changes from {date} as follows.",
+      "changesClause": "Your rent changes from {date} under the lease's increase clause ({clause}).",
+      "current": "Current",
+      "newFrom": "From {date}",
+      "rent": "Rent",
+      "water": "Water",
+      "parking": "Parking space",
+      "total": "Total a month",
+      "due": "The rent is still due by day {day} of the month, to the same account and with the same reference as before.",
+      "regards": "Kind regards",
+      "clause": {
+        "percent": "{pct} a year",
+        "amount": "{amount} a year",
+        "index": "index-linked"
+      }
     }
   }
 }

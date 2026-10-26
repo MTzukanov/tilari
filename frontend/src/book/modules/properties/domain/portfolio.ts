@@ -29,7 +29,7 @@ import {
   loadEntries,
   loadEraRows,
   loadInterestRows,
-  loadPartnerNames,
+  loadPartners,
   loadPnlRows,
   loadRecountedLines,
   loadVoucherPnlRows,
@@ -39,6 +39,7 @@ import {
   type EraRow,
   recountLines,
   type PnlRow,
+  type PartnerInfo,
   type VoucherRef,
 } from './ledger'
 import { representedBy, suggestLeases, type LeaseSuggestion, type SuggestIncome } from './leaseSuggest'
@@ -175,7 +176,7 @@ function byDate(a: { date: string; id: number }, b: { date: string; id: number }
 /** Tenant names, voucher labels and the book's lease suggestions for the objects on the page, loaded once. */
 type LeaseContext = {
   asOf: string
-  names: Map<number, string>
+  partners: Map<number, PartnerInfo>
   refs: Map<number, VoucherRef>
   /** Per cost centre: suggestions that no stored lease stands for. */
   suggestions: Map<number, LeaseSuggestion[]>
@@ -184,7 +185,7 @@ type LeaseContext = {
 function incomeOf(c: Computed): SuggestIncome[] {
   return c.result.classified.operating
     .filter(isIncome)
-    .map((r) => ({ date: r.date, partner_id: r.partner_id, amount_snt: r.net_snt }))
+    .map((r) => ({ date: r.date, partner_id: r.partner_id, amount_snt: r.net_snt, text: r.text }))
 }
 
 function leaseContext(db: SqliteDb, computed: Computed[], asOf: string): LeaseContext {
@@ -193,7 +194,8 @@ function leaseContext(db: SqliteDb, computed: Computed[], asOf: string): LeaseCo
   const refs = loadVoucherRefs(db, new Set([...leaseVoucherIds(leases), ...docIds]))
   const incomes = new Map(computed.map((c) => [c.centre.id, incomeOf(c)]))
   const payers = [...incomes.values()].flat().flatMap((r) => (r.partner_id != null ? [r.partner_id] : []))
-  const names = loadPartnerNames(db, new Set([...leasePartnerIds(leases), ...payers]))
+  const partners = loadPartners(db, new Set([...leasePartnerIds(leases), ...payers]))
+  const names = new Map([...partners].map(([id, p]) => [id, p.name]))
   const suggestions = new Map<number, LeaseSuggestion[]>()
   for (const c of computed) {
     const docs = (c.parsed.doc.doc_voucher_ids ?? []).flatMap((id) => {
@@ -201,21 +203,22 @@ function leaseContext(db: SqliteDb, computed: Computed[], asOf: string): LeaseCo
       return ref?.posted ? [{ voucher_id: id, date: ref.date, title: ref.title }] : []
     })
     const stored = c.parsed.doc.leases ?? []
-    const found = suggestLeases({ docs, income: incomes.get(c.centre.id) ?? [], names, centreName: c.centre.name, asOf })
+    const parkingObject = c.parsed.doc.kind === 'parking' || c.parsed.doc.kind === 'garage'
+    const found = suggestLeases({ docs, income: incomes.get(c.centre.id) ?? [], names, centreName: c.centre.name, parkingObject, asOf })
     suggestions.set(c.centre.id, found.filter((s) => !representedBy(stored, s.lease)))
   }
-  return { asOf, names, refs, suggestions }
+  return { asOf, partners, refs, suggestions }
 }
 
 function suggestionView(s: LeaseSuggestion, ctx: LeaseContext): LeaseView {
-  return { ...leaseView(s.lease, ctx.asOf, ctx.names, ctx.refs), suggested: s.source }
+  return { ...leaseView(s.lease, ctx.asOf, ctx.partners, ctx.refs), suggested: s.source }
 }
 
 /** The stored lease running on the as-of date; with no stored leases at all, the suggested one. */
 function rowLease(c: Computed, ctx: LeaseContext): LeaseView | null {
   const stored = c.parsed.doc.leases ?? []
   const running = currentLease(stored, ctx.asOf)
-  if (running) return leaseView(running, ctx.asOf, ctx.names, ctx.refs)
+  if (running) return leaseView(running, ctx.asOf, ctx.partners, ctx.refs)
   if (stored.length) return null
   const suggestions = ctx.suggestions.get(c.centre.id) ?? []
   // A suggestion naming a tenant before one without.
@@ -334,7 +337,7 @@ export function computeDetail(
     target: computed.result.target,
     financing: computed.parsed.doc.financing ?? null,
     leases: (computed.parsed.doc.leases ?? [])
-      .map((lease) => leaseView(lease, asOf, ctx.names, ctx.refs))
+      .map((lease) => leaseView(lease, asOf, ctx.partners, ctx.refs))
       .sort((a, b) => b.starts.localeCompare(a.starts) || a.key.localeCompare(b.key)),
     lease_suggestions: (ctx.suggestions.get(id) ?? [])
       .map((s) => ({ lease: s.lease, view: suggestionView(s, ctx) }))
@@ -399,7 +402,7 @@ function checkLinks(db: SqliteDb, id: number, doc: PropertyDoc, loaded: Pick<Loa
   }
   const leases = doc.leases ?? []
   if (!leases.length) return { ...doc, eras }
-  const partners = loadPartnerNames(db, leasePartnerIds(leases))
+  const partners = loadPartners(db, leasePartnerIds(leases))
   const leaseVouchers = loadVoucherRefs(db, leaseVoucherIds(leases))
   const posted = (voucherId: number | undefined, path: string) => {
     if (voucherId != null && !leaseVouchers.get(voucherId)?.posted) throw new PropertyDocError('invalid_field', path)

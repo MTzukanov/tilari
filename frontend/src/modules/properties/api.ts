@@ -9,6 +9,7 @@ export type {
   EraCandidate,
   DocCandidate,
   Lease,
+  LeaseIncrease,
   LeaseIncreaseKind,
   LeaseRent,
   LeaseSuggestionView,

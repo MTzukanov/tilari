@@ -58,14 +58,15 @@ Money in integer cents (`*_snt`), percentages in basis points (`*_bp`, 100 = 1 %
 | `key` | Stable within the document (`l1`, `l2`...); given on save when missing |
 | `tenant_partner_id` / `tenant_name` | The tenant as a Kitsas partner (`Kumppani.id`), or a name when they are not one yet |
 | `starts`, `ends?` | Start; a fixed term's end or the move-out |
-| `due_day?`, `notice_months?` | Rent due day; notice period |
-| `rents[]` | Steps `{ from, rent_snt, charges_snt?, voucher_id? }`: rent and other monthly charges (water) from `from` on, with the contract or notice. A rent increase is a new step |
-| `increase?` | `{ kind: none / fixed / index, pct_bp?, month? }` - reminders and the forecast only; Tilari never changes rent by itself |
+| `due_day?` | Rent due day (the form starts at 5) |
+| `rents[]` | `{ from, rent_snt, water_snt?, parking_snt?, voucher_id? }`: what the tenant pays a month from `from` on. The first is the starting rent (from `starts`); each later one is an increase (korotus) with its increase notice voucher |
+| `increase?` | The contract's increase clause `{ kind: none / percent / amount / index, pct_bp?, amount_snt?, month? }`: prefills the next increase and drives reminders; Tilari never changes rent by itself |
 | `doc_voucher_id?` | The contract (a type-800 voucher) |
-| `note?` | Free text |
 
 Saving checks that the partner exists and the vouchers are posted, and adds the lease's vouchers
-to `doc_voucher_ids`. The documents stay Kitsas vouchers, found in Kitsas by title and partner.
+to `doc_voucher_ids`. The documents stay Kitsas vouchers, found in Kitsas by title and partner. An
+increase notice written in Tilari is a posted type-800 voucher titled after the object, with the
+tenant as partner and the letter as a PDF attachment (`modules/properties/ui/increaseNotice.ts`).
 
 `portfolio`: `v`, `rev`, `sale_costs`, `target_return_bp`, `dismissed[]` (setup suggestions
 the owner rejected: `era:{eraid}`, `doc:{voucherId}`).

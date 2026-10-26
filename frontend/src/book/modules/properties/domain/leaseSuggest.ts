@@ -8,7 +8,7 @@ import type { Lease, LeaseRent } from './types'
 
 export type SuggestDoc = { voucher_id: number; date: string; title: string }
 /** One income line on the object (corrections already on their booking's date). */
-export type SuggestIncome = { date: string; partner_id: number | null; amount_snt: number }
+export type SuggestIncome = { date: string; partner_id: number | null; amount_snt: number; text?: string }
 
 export type LeaseSuggestion = {
   lease: Lease
@@ -23,8 +23,13 @@ export type SuggestInput = {
   names: Map<number, string>
   /** The cost centre's name: its words never identify a tenant. */
   centreName: string
+  /** A parking space or garage: what it earns is its rent, whatever the line says. */
+  parkingObject: boolean
   asOf: string
 }
+
+/** Suggested leases expect the rent on the 5th unless the owner says otherwise. */
+export const DEFAULT_DUE_DAY = 5
 
 type DateToken = { at: number; end: number; iso: string; monthOnly: boolean }
 
@@ -115,32 +120,69 @@ function nameScore(partnerName: string, titleWords: Set<string>, titleJoined: st
 const monthKey = (date: string) => date.slice(0, 7)
 const firstOfMonth = (key: string) => `${key}-01`
 
-/** Monthly totals, oldest first. */
-function monthlyTotals(rows: SuggestIncome[]): [string, number][] {
-  const totals = new Map<string, number>()
-  for (const row of rows) totals.set(monthKey(row.date), (totals.get(monthKey(row.date)) ?? 0) + row.amount_snt)
+type Part = 'rent' | 'water' | 'parking'
+type Parts = Record<Part, number>
+
+const WATER = /vesi|water|vatten/
+const RENT = /vuokra|\brent\b|hyra|miete/
+const PARKING = /autopaik|parking|pysäköin|\bap ?\d/
+
+/**
+ * Which part of the payment a line is. Most tenants pay one line ("vuokra + vesi"), which is
+ * rent; a line about water only is water, about parking only is parking.
+ */
+function partOf(row: SuggestIncome, parkingObject: boolean): Part {
+  const text = (row.text ?? '').toLowerCase()
+  if (WATER.test(text) && !RENT.test(text)) return 'water'
+  if (!parkingObject && PARKING.test(text) && !RENT.test(text)) return 'parking'
+  return 'rent'
+}
+
+/** Monthly totals per part, oldest first. */
+function monthlyTotals(rows: SuggestIncome[], parkingObject: boolean): [string, Parts][] {
+  const totals = new Map<string, Parts>()
+  for (const row of rows) {
+    const key = monthKey(row.date)
+    const parts = totals.get(key) ?? { rent: 0, water: 0, parking: 0 }
+    parts[partOf(row, parkingObject)] += row.amount_snt
+    totals.set(key, parts)
+  }
   return [...totals.entries()].sort((a, b) => a[0].localeCompare(b[0]))
 }
 
+const partsKey = (p: Parts) => `${p.rent}/${p.water}/${p.parking}`
+
+function stepOf(from: string, p: Parts): LeaseRent {
+  const step: LeaseRent = { from, rent_snt: p.rent }
+  if (p.water) step.water_snt = p.water
+  if (p.parking) step.parking_snt = p.parking
+  return step
+}
+
 /**
- * Rent steps from monthly totals: an amount paid two months in a row starts a step. The first
- * step starts with the lease; with no repeat, the most common amount is the one step.
+ * Rent steps from monthly totals: the same payment two months in a row starts a step. The first
+ * step starts with the lease; with no repeat, the most common payment is the one step.
  */
-function rentSteps(totals: [string, number][], starts: string): LeaseRent[] {
-  const steps: LeaseRent[] = []
+function rentSteps(totals: [string, Parts][], starts: string): LeaseRent[] {
+  const steps: { key: string; step: LeaseRent }[] = []
   for (let i = 0; i + 1 < totals.length; i++) {
-    const [key, amount] = totals[i]
-    if (amount <= 0 || totals[i + 1][1] !== amount) continue
-    if (steps.length && steps[steps.length - 1].rent_snt === amount) continue
-    steps.push({ from: steps.length ? firstOfMonth(key) : starts, rent_snt: amount })
+    const [month, parts] = totals[i]
+    const key = partsKey(parts)
+    if (parts.rent + parts.water + parts.parking <= 0 || partsKey(totals[i + 1][1]) !== key) continue
+    if (steps.length && steps[steps.length - 1].key === key) continue
+    steps.push({ key, step: stepOf(steps.length ? firstOfMonth(month) : starts, parts) })
   }
   if (!steps.length) {
-    const counts = new Map<number, number>()
-    for (const [, amount] of totals) if (amount > 0) counts.set(amount, (counts.get(amount) ?? 0) + 1)
-    const common = [...counts.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]
-    if (common) steps.push({ from: starts, rent_snt: common[0] })
+    const counts = new Map<string, { n: number; parts: Parts }>()
+    for (const [, parts] of totals) {
+      if (parts.rent + parts.water + parts.parking <= 0) continue
+      const key = partsKey(parts)
+      counts.set(key, { n: (counts.get(key)?.n ?? 0) + 1, parts })
+    }
+    const common = [...counts.values()].sort((a, b) => b.n - a.n || b.parts.rent - a.parts.rent)[0]
+    if (common) return [stepOf(starts, common.parts)]
   }
-  return steps.filter((s, i) => i === 0 || s.from > starts)
+  return steps.map((s) => s.step).filter((s, i) => i === 0 || s.from > starts)
 }
 
 const within = (date: string, starts: string, ends: string | undefined) => date >= starts && (!ends || date <= ends)
@@ -226,7 +268,7 @@ export function suggestLeases(input: SuggestInput): LeaseSuggestion[] {
       if (takenOver) ends = monthEnd(last)
     }
     const inPeriod = income.filter((r) => within(r.date, draft.starts, ends))
-    const lease: Lease = { key: '', starts: draft.starts, rents: rentSteps(monthlyTotals(inPeriod), draft.starts) }
+    const lease: Lease = { key: '', starts: draft.starts, due_day: DEFAULT_DUE_DAY, rents: rentSteps(monthlyTotals(inPeriod, input.parkingObject), draft.starts) }
     if (ends && ends >= draft.starts) lease.ends = ends
     if (tenant != null) {
       lease.tenant_partner_id = tenant
@@ -258,7 +300,7 @@ export function suggestLeases(input: SuggestInput): LeaseSuggestion[] {
       if (new Set(run.map((r) => monthKey(r.date))).size >= 2) {
         const starts = firstOfMonth(monthKey(run[0].date))
         const lastKey = monthKey(run[run.length - 1].date)
-        const lease: Lease = { key: '', tenant_partner_id: id, starts, rents: rentSteps(monthlyTotals(run), starts) }
+        const lease: Lease = { key: '', tenant_partner_id: id, starts, due_day: DEFAULT_DUE_DAY, rents: rentSteps(monthlyTotals(run, input.parkingObject), starts) }
         const nextContract = withTenant.find((d) => d.starts > starts)
         if (nextContract && monthKey(nextContract.starts) > lastKey) lease.ends = dayBefore(nextContract.starts)
         else if (lastKey < monthKey(asOf)) lease.ends = monthEnd(lastKey)

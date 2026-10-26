@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { VoucherRef } from './ledger'
-import { currentLease, leaseState, leaseView, rentAt } from './rent'
+import { currentLease, leaseState, leaseView, rentAt, rentTotal } from './rent'
 import type { Lease } from './types'
 
 const lease: Lease = {
@@ -10,7 +10,7 @@ const lease: Lease = {
   ends: '2026-02-28',
   rents: [
     { from: '2025-03-10', rent_snt: 68_000 },
-    { from: '2026-01-01', rent_snt: 70_000, charges_snt: 2_000, voucher_id: 31 },
+    { from: '2026-01-01', rent_snt: 70_000, water_snt: 2_000, voucher_id: 31 },
   ],
 }
 
@@ -39,8 +39,16 @@ describe('rent', () => {
     const refs = new Map<number, VoucherRef>([
       [31, { id: 31, date: '2025-11-15', type: 800, title: 'Vuokrankorotus', posted: true, doc_number: 4, series: null }],
     ])
-    const ended = leaseView(lease, '2026-06-30', new Map([[7, 'Vuokralainen Virtanen']]), refs)
-    expect(ended).toMatchObject({ tenant: 'Vuokralainen Virtanen', state: 'ended', rent: { rent_snt: 70_000 }, contract: null })
+    const partners = new Map([[7, { name: 'Vuokralainen Virtanen', address: ['Mallikatu 1 A 2', '00100 Helsinki'] }]])
+    const ended = leaseView(lease, '2026-06-30', partners, refs)
+    expect(ended).toMatchObject({
+      tenant: 'Vuokralainen Virtanen',
+      tenant_address: ['Mallikatu 1 A 2', '00100 Helsinki'],
+      state: 'ended',
+      rent: { rent_snt: 70_000 },
+      contract: null,
+    })
+    expect(rentTotal(ended.rent!)).toBe(72_000)
     expect(ended.steps[1].voucher).toEqual({ voucher_id: 31, date: '2025-11-15', doc_number: 4, series: null, title: 'Vuokrankorotus' })
     const upcoming = leaseView(lease, '2025-01-01', new Map(), refs)
     expect(upcoming).toMatchObject({ tenant: null, state: 'upcoming', rent: { rent_snt: 68_000 } })

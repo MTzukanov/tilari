@@ -30,6 +30,15 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   every contract with a tenant become their own suggestions. On a real book the current tenant came
   out right for every flat whose contracts name the tenant; agencies and parking documents on a
   flat's cost centre need the owner's look.
+- Owner review of the form: the payment is split into vuokra, vesi and autopaikka (suggestions
+  split by line text: a line about water only is water; on a parking object the fee is rent); the
+  due day starts at 5; no notice period or notes. Steps stay as the starting rent plus increases
+  (korotus), each with its increase notice (korotusilmoitus). The increase clause (percent, euros
+  or index) sits with the starting details and prefills the next increase. "Luo korotusilmoitus"
+  writes a PDF letter (`shared/textPdf.ts`: Helvetica, WinAnsi, no dependency) to a new posted
+  type-800 voucher titled after the object with the tenant as partner, links it to the increase
+  and downloads it. The voucher is dated on the book's day, so a year must be open for it (Kitsas
+  refuses the same).
 
 ## 2026-10-26 - Fixed: a month typed in the address did not open on an object's page
 

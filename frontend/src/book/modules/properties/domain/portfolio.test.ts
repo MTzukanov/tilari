@@ -255,7 +255,7 @@ describe('rental objects: figures', () => {
     const tenant = partners['Vuokralainen Virtanen']
     // Before anything is stored, the contract and the payments suggest the lease.
     expect(before.lease_suggestions.map((s) => s.lease)).toEqual([
-      { key: '', starts: '2023-03-01', tenant_partner_id: tenant, doc_voucher_id: vouchers.lease, rents: [{ from: '2023-03-01', rent_snt: 1_000 * E }] },
+      { key: '', starts: '2023-03-01', due_day: 5, tenant_partner_id: tenant, doc_voucher_id: vouchers.lease, rents: [{ from: '2023-03-01', rent_snt: 1_000 * E }] },
     ])
     expect(computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.bundle)?.lease).toMatchObject({
       suggested: 'contract',
@@ -273,7 +273,7 @@ describe('rental objects: figures', () => {
             starts: '2023-03-01',
             rents: [
               { from: '2023-03-01', rent_snt: 1_000 * E },
-              { from: '2025-03-01', rent_snt: 1_000 * E, charges_snt: 20 * E, voucher_id: vouchers.rentRise },
+              { from: '2025-03-01', rent_snt: 1_000 * E, water_snt: 20 * E, voucher_id: vouchers.rentRise },
             ],
             doc_voucher_id: vouchers.lease,
           },
@@ -289,7 +289,7 @@ describe('rental objects: figures', () => {
     expect(after.leases[0]).toMatchObject({
       tenant: 'Vuokralainen Virtanen',
       state: 'current',
-      rent: { from: '2025-03-01', charges_snt: 20 * E },
+      rent: { from: '2025-03-01', water_snt: 20 * E },
       contract: { voucher_id: vouchers.lease, title: 'Vuokrasopimus As Oy Esimerkkikatu 1 A 1 1.3.2023-' },
     })
     expect(after.lease?.key).toBe('l1')

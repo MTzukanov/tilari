@@ -1,5 +1,5 @@
 /** Leases (vuokrasuhteet): which one runs on a date and the rent in effect. Pure. */
-import type { VoucherRef } from './ledger'
+import type { PartnerInfo, VoucherRef } from './ledger'
 import type { Lease, LeaseRent, LeaseState, LeaseView, LeaseVoucher } from './types'
 
 export function leaseState(lease: Lease, date: string): LeaseState {
@@ -14,6 +14,11 @@ export function rentAt(lease: Lease, date: string): LeaseRent | null {
   let found: LeaseRent | null = null
   for (const step of lease.rents) if (step.from <= date) found = step
   return found
+}
+
+/** What the tenant pays a month at a step: rent, water and parking together. */
+export function rentTotal(rent: Pick<LeaseRent, 'rent_snt' | 'water_snt' | 'parking_snt'>): number {
+  return rent.rent_snt + (rent.water_snt ?? 0) + (rent.parking_snt ?? 0)
 }
 
 /** The lease running on `date`; the latest started when several run (a handover). */
@@ -49,9 +54,10 @@ function voucherOf(refs: Map<number, VoucherRef>, id: number | undefined): Lease
 export function leaseView(
   lease: Lease,
   asOf: string,
-  names: Map<number, string>,
+  partners: Map<number, PartnerInfo>,
   refs: Map<number, VoucherRef>,
 ): LeaseView {
+  const partner = lease.tenant_partner_id != null ? partners.get(lease.tenant_partner_id) : undefined
   const state = leaseState(lease, asOf)
   const rent =
     state === 'current'
@@ -61,17 +67,16 @@ export function leaseView(
         : (lease.rents[lease.rents.length - 1] ?? null)
   return {
     key: lease.key,
-    tenant: (lease.tenant_partner_id != null ? names.get(lease.tenant_partner_id) : undefined) ?? lease.tenant_name ?? null,
+    tenant: partner?.name ?? lease.tenant_name ?? null,
     tenant_partner_id: lease.tenant_partner_id ?? null,
+    tenant_address: partner?.address ?? [],
     starts: lease.starts,
     ends: lease.ends ?? null,
     state,
     rent,
     due_day: lease.due_day ?? null,
-    notice_months: lease.notice_months ?? null,
     increase: lease.increase ?? null,
     contract: voucherOf(refs, lease.doc_voucher_id),
     steps: lease.rents.map((step) => ({ ...step, voucher: voucherOf(refs, step.voucher_id) })),
-    note: lease.note ?? null,
   }
 }

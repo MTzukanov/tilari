@@ -23,7 +23,7 @@ function PropertiesScreen({ route, goTo, meta }: BookViewCtx) {
     )
   }
   if (route.view === 'propertyEdit') {
-    return <PropertyEdit key={route.id} id={route.id} onDone={() => goTo(`#/property/${route.id}`)} />
+    return <PropertyEdit key={route.id} id={route.id} today={meta?.book_date} onDone={() => goTo(`#/property/${route.id}`)} />
   }
   if (route.view === 'propertiesSetup') {
     return (

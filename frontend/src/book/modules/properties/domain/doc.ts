@@ -137,11 +137,9 @@ const LEASE_KEYS = new Set([
   'starts',
   'ends',
   'due_day',
-  'notice_months',
   'rents',
   'increase',
   'doc_voucher_id',
-  'note',
 ])
 const LEASE_KEY = /^[A-Za-z0-9_-]{1,16}$/
 const MAX_ID = Number.MAX_SAFE_INTEGER
@@ -157,8 +155,10 @@ function leaseIncrease(value: unknown, path: string): LeaseIncrease | undefined 
   if (!LEASE_INCREASE_KINDS.includes(kind as LeaseIncreaseKind)) fail(`${path}.kind`)
   const out: LeaseIncrease = { kind: kind as LeaseIncreaseKind }
   if (value.pct_bp != null) out.pct_bp = int(value.pct_bp, `${path}.pct_bp`, 0, 10000)
+  if (value.amount_snt != null) out.amount_snt = snt(value.amount_snt, `${path}.amount_snt`, 0)
   if (value.month != null) out.month = int(value.month, `${path}.month`, 1, 12)
-  return out.kind === 'none' && out.pct_bp == null && out.month == null ? undefined : out
+  const empty = out.pct_bp == null && out.amount_snt == null && out.month == null
+  return out.kind === 'none' && empty ? undefined : out
 }
 
 function lease(item: unknown, path: string): Lease {
@@ -181,7 +181,6 @@ function lease(item: unknown, path: string): Lease {
     if (out.ends < out.starts) fail(`${path}.ends`)
   }
   if (item.due_day != null) out.due_day = int(item.due_day, `${path}.due_day`, 1, 31)
-  if (item.notice_months != null) out.notice_months = int(item.notice_months, `${path}.notice_months`, 0, 36)
   const seen = new Set<string>()
   out.rents = array(item.rents, `${path}.rents`, 120)
     .map((raw, i): LeaseRent => {
@@ -191,9 +190,9 @@ function lease(item: unknown, path: string): Lease {
       if (seen.has(from) || from < out.starts || (out.ends && from > out.ends)) fail(`${at}.from`)
       seen.add(from)
       const rent: LeaseRent = { from, rent_snt: snt(raw.rent_snt, `${at}.rent_snt`, 0) }
-      if (raw.charges_snt != null) {
-        const charges = snt(raw.charges_snt, `${at}.charges_snt`, 0)
-        if (charges) rent.charges_snt = charges
+      for (const key of ['water_snt', 'parking_snt'] as const) {
+        const amount = raw[key] == null ? 0 : snt(raw[key], `${at}.${key}`, 0)
+        if (amount) rent[key] = amount
       }
       const voucher = optionalId(raw.voucher_id, `${at}.voucher_id`)
       if (voucher != null) rent.voucher_id = voucher
@@ -204,8 +203,6 @@ function lease(item: unknown, path: string): Lease {
   if (increase) out.increase = increase
   const contract = optionalId(item.doc_voucher_id, `${path}.doc_voucher_id`)
   if (contract != null) out.doc_voucher_id = contract
-  const note = text(item.note, `${path}.note`, MAX_TEXT)
-  if (note) out.note = note
   return out
 }
 

@@ -1,33 +1,44 @@
 /** Lease form drafts: strings while editing, the stored leases on save. */
+import { DEFAULT_DUE_DAY } from '../../../book/modules/properties/domain/leaseSuggest'
 import { formatEurInput, parseEurInput } from '../../../shared/money'
 import { formatPercentInput, parsePercentInput } from '../../../shared/percent'
-import type { Lease, LeaseIncreaseKind } from '../api'
+import type { Lease, LeaseIncreaseKind, LeaseRent } from '../api'
 import { saveErrorText } from './format'
 
 export type Partner = { id: number; name: string }
-export type RentDraft = { from: string; rent: string; charges: string; voucherId: string }
 
-/** A lease being edited: strings until save; `base` keeps the stored lease and its unknown keys. */
+/** What the tenant pays a month, as typed. */
+export type AmountsDraft = { rent: string; water: string; parking: string }
+
+/** An increase (korotus): its date, the new amounts and the increase notice voucher. */
+export type IncreaseDraft = AmountsDraft & { from: string; voucherId: string }
+
+/** A lease being edited; `base` keeps the stored lease and its unknown keys. */
 export type LeaseDraft = {
   base: Lease | null
   tenant: string
   starts: string
   ends: string
   dueDay: string
-  notice: string
-  rents: RentDraft[]
-  increaseKind: LeaseIncreaseKind
-  increasePct: string
-  increaseMonth: string
   contractId: string
-  note: string
+  /** The starting rent, from the lease's start. */
+  initial: AmountsDraft
+  increaseKind: LeaseIncreaseKind
+  /** Percent for `percent`, euros for `amount`. */
+  increaseValue: string
+  increaseMonth: string
+  increases: IncreaseDraft[]
 }
 
 type T = (key: string, vars?: Record<string, string | number>) => string
 
-const OPTIONAL_KEYS = ['tenant_partner_id', 'tenant_name', 'ends', 'due_day', 'notice_months', 'increase', 'doc_voucher_id', 'note']
+const OPTIONAL_KEYS = ['tenant_partner_id', 'tenant_name', 'ends', 'due_day', 'increase', 'doc_voucher_id']
 
-export const emptyRent = (from = ''): RentDraft => ({ from, rent: '', charges: '', voucherId: '' })
+const eur = (snt: number | undefined) => (snt ? formatEurInput(snt) : '')
+
+function amounts(step: LeaseRent | undefined): AmountsDraft {
+  return { rent: step ? formatEurInput(step.rent_snt) : '', water: eur(step?.water_snt), parking: eur(step?.parking_snt) }
+}
 
 export function leaseDrafts(leases: Lease[] | undefined, partners: Partner[]): LeaseDraft[] {
   const names = new Map(partners.map((p) => [p.id, p.name]))
@@ -36,19 +47,14 @@ export function leaseDrafts(leases: Lease[] | undefined, partners: Partner[]): L
     tenant: (l.tenant_partner_id != null ? names.get(l.tenant_partner_id) : undefined) ?? l.tenant_name ?? '',
     starts: l.starts,
     ends: l.ends ?? '',
-    dueDay: l.due_day != null ? String(l.due_day) : '',
-    notice: l.notice_months != null ? String(l.notice_months) : '',
-    rents: l.rents.map((r) => ({
-      from: r.from,
-      rent: formatEurInput(r.rent_snt),
-      charges: r.charges_snt ? formatEurInput(r.charges_snt) : '',
-      voucherId: r.voucher_id != null ? String(r.voucher_id) : '',
-    })),
-    increaseKind: l.increase?.kind ?? 'none',
-    increasePct: formatPercentInput(l.increase?.pct_bp),
-    increaseMonth: l.increase?.month != null ? String(l.increase.month) : '',
+    dueDay: String(l.due_day ?? DEFAULT_DUE_DAY),
     contractId: l.doc_voucher_id != null ? String(l.doc_voucher_id) : '',
-    note: l.note ?? '',
+    initial: amounts(l.rents[0]),
+    increaseKind: l.increase?.kind ?? 'none',
+    increaseValue:
+      l.increase?.kind === 'percent' ? formatPercentInput(l.increase.pct_bp) : l.increase?.kind === 'amount' ? eur(l.increase.amount_snt) : '',
+    increaseMonth: l.increase?.month != null ? String(l.increase.month) : '',
+    increases: l.rents.slice(1).map((r) => ({ ...amounts(r), from: r.from, voucherId: r.voucher_id != null ? String(r.voucher_id) : '' })),
   }))
 }
 
@@ -58,16 +64,27 @@ export function newLease(): LeaseDraft {
     tenant: '',
     starts: '',
     ends: '',
-    dueDay: '',
-    notice: '',
-    rents: [emptyRent()],
-    increaseKind: 'none',
-    increasePct: '',
-    increaseMonth: '',
+    dueDay: String(DEFAULT_DUE_DAY),
     contractId: '',
-    note: '',
+    initial: { rent: '', water: '', parking: '' },
+    increaseKind: 'none',
+    increaseValue: '',
+    increaseMonth: '',
+    increases: [],
   }
 }
+
+function step(from: string, a: AmountsDraft, voucherId = ''): LeaseRent {
+  const out: LeaseRent = { from, rent_snt: parseEurInput(a.rent) }
+  const water = parseEurInput(a.water)
+  const parking = parseEurInput(a.parking)
+  if (water) out.water_snt = water
+  if (parking) out.parking_snt = parking
+  if (voucherId) out.voucher_id = Number(voucherId)
+  return out
+}
+
+const typed = (a: AmountsDraft) => Boolean(a.rent || a.water || a.parking)
 
 /** The stored leases, or an error text naming the first bad field. Rows without a start or tenant are dropped. */
 export function buildLeases(t: T, drafts: LeaseDraft[], partners: Partner[]): Lease[] | string {
@@ -83,31 +100,54 @@ export function buildLeases(t: T, drafts: LeaseDraft[], partners: Partner[]): Le
     if (partnerId != null) lease.tenant_partner_id = partnerId
     else if (tenant) lease.tenant_name = tenant
     if (d.ends) lease.ends = d.ends
-    for (const [field, raw] of [['due_day', d.dueDay], ['notice_months', d.notice]] as const) {
-      if (!raw.trim()) continue
-      if (!/^\d+$/.test(raw.trim())) return bad(field)
-      lease[field] = Number(raw.trim())
+    if (d.dueDay.trim()) {
+      if (!/^\d+$/.test(d.dueDay.trim())) return bad('due_day')
+      lease.due_day = Number(d.dueDay.trim())
     }
-    lease.rents = d.rents
-      .filter((r) => r.from || r.rent)
-      .map((r) => ({
-        from: r.from,
-        rent_snt: parseEurInput(r.rent),
-        ...(r.charges ? { charges_snt: parseEurInput(r.charges) } : {}),
-        ...(r.voucherId ? { voucher_id: Number(r.voucherId) } : {}),
-      }))
-    const pct = parsePercentInput(d.increasePct)
-    if (Number.isNaN(pct)) return bad('increase.pct_bp')
-    if (d.increaseKind !== 'none' || pct != null || d.increaseMonth) {
-      lease.increase = {
-        kind: d.increaseKind,
-        ...(pct != null ? { pct_bp: pct } : {}),
-        ...(d.increaseMonth ? { month: Number(d.increaseMonth) } : {}),
+    lease.rents = [
+      ...(typed(d.initial) ? [step(d.starts, d.initial)] : []),
+      ...d.increases.filter((r) => r.from || typed(r)).map((r) => step(r.from, r, r.voucherId)),
+    ]
+    if (d.increaseKind !== 'none' || d.increaseMonth) {
+      const increase: Lease['increase'] = { kind: d.increaseKind }
+      if (d.increaseKind === 'percent' && d.increaseValue) {
+        const pct = parsePercentInput(d.increaseValue)
+        if (pct == null || Number.isNaN(pct)) return bad('increase.pct_bp')
+        increase.pct_bp = pct
       }
+      if (d.increaseKind === 'amount' && d.increaseValue) increase.amount_snt = parseEurInput(d.increaseValue)
+      if (d.increaseMonth) increase.month = Number(d.increaseMonth)
+      lease.increase = increase
     }
     if (d.contractId) lease.doc_voucher_id = Number(d.contractId)
-    if (d.note.trim()) lease.note = d.note.trim()
     out.push(lease)
   }
   return out
+}
+
+/** What the tenant pays a month at a draft step, in cents. */
+export function draftTotal(a: AmountsDraft): number {
+  return parseEurInput(a.rent) + parseEurInput(a.water) + parseEurInput(a.parking)
+}
+
+/**
+ * The next increase, prefilled from the clause: on the first of the clause's month (else the
+ * lease's start month) after today and after the latest step; the rent raised by the percent or
+ * the euros. Water and parking stay; an index increase keeps the rent for the owner to type.
+ */
+export function nextIncrease(d: LeaseDraft, today: string): IncreaseDraft {
+  const last = d.increases[d.increases.length - 1] ?? { ...d.initial, from: d.starts, voucherId: '' }
+  const month = Number(d.increaseMonth) || Number(d.starts.slice(5, 7)) || Number(today.slice(5, 7))
+  let year = Number(today.slice(0, 4))
+  const at = (y: number) => `${y}-${String(month).padStart(2, '0')}-01`
+  while (at(year) <= today || at(year) <= last.from) year += 1
+  const rent = parseEurInput(last.rent)
+  let next = rent
+  if (d.increaseKind === 'percent') {
+    const pct = parsePercentInput(d.increaseValue)
+    if (pct != null && !Number.isNaN(pct)) next = Math.round((rent * (10_000 + pct)) / 10_000)
+  } else if (d.increaseKind === 'amount') {
+    next = rent + parseEurInput(d.increaseValue)
+  }
+  return { from: at(year), rent: formatEurInput(next), water: last.water, parking: last.parking, voucherId: '' }
 }

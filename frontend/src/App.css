@@ -3166,6 +3166,8 @@ tr.is-ended td {
 
 .editor input:not([type='checkbox']):not([type='radio']),
 .editor select,
+.property-edit input:not([type='checkbox']):not([type='radio']),
+.property-edit select,
 .filters input:not([type='checkbox']):not([type='radio']),
 .filters select,
 .search-select input,
@@ -3185,14 +3187,17 @@ tr.is-ended td {
 }
 
 .editor input[type='date']::-webkit-datetime-edit,
-.editor input[type='date']::-webkit-datetime-edit-fields-wrapper {
+.editor input[type='date']::-webkit-datetime-edit-fields-wrapper,
+.property-edit input[type='date']::-webkit-datetime-edit,
+.property-edit input[type='date']::-webkit-datetime-edit-fields-wrapper {
   display: inline-flex;
   align-items: center;
   height: 100%;
   padding: 0;
 }
 
-.editor input[type='date']::-webkit-calendar-picker-indicator {
+.editor input[type='date']::-webkit-calendar-picker-indicator,
+.property-edit input[type='date']::-webkit-calendar-picker-indicator {
   margin: 0;
   align-self: center;
 }
@@ -5252,17 +5257,86 @@ tr.tax-total td {
 
 .property-lease-edit {
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 0.5rem 0.9rem 0.75rem;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
   margin: 0.75rem 0;
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
 }
 
-.property-lease-edit select {
-  max-width: 22rem;
+.property-lease-edit h4 {
+  margin: 1rem 0 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* Four equal columns: every field the same width, every row aligned. */
+.property-lease-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem 1rem;
+  align-items: end;
+  margin: 0.4rem 0;
+}
+
+.property-lease-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.property-lease-grid .span-2 {
+  grid-column: span 2;
+}
+
+.property-lease-grid .span-3 {
+  grid-column: span 3;
+}
+
+.property-lease-total {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 2.15rem;
+}
+
+.property-lease-total strong {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.property-lease-increase {
+  padding-top: 0.5rem;
+  border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+}
+
+.property-lease-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.property-lease-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.75rem;
 }
 
 .property-lease-suggestions {
   margin-top: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .property-lease-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .property-lease-grid .span-3 {
+    grid-column: span 2;
+  }
 }
 
 .property-lease-card {

@@ -1103,15 +1103,17 @@
       "leaseStarts": "Alkaa",
       "leaseEnds": "Päättyy",
       "dueDay": "Eräpäivä",
-      "noticeMonths": "Irtisanomisaika, kk",
-      "rentFrom": "Alkaen",
       "rent": "Vuokra €/kk",
-      "charges": "Muut maksut €/kk",
-      "stepDoc": "Ilmoitus",
       "contract": "Sopimus",
       "increaseKind": "Korotussääntö",
       "increasePct": "Korotus % / v",
-      "increaseMonth": "Korotuskuukausi"
+      "increaseMonth": "Korotuskuukausi",
+      "water": "Vesi €/kk",
+      "parking": "Autopaikka €/kk",
+      "total": "Yhteensä",
+      "increaseEur": "Korotus € / v",
+      "increaseFrom": "Alkaen",
+      "increaseNotice": "Korotusilmoitus"
     },
     "breakEven": {
       "title": "Nollahinta: millä hinnalla rahat tulevat takaisin",
@@ -1192,17 +1194,16 @@
       "since": "{date} alkaen",
       "period": "{from}–{to}",
       "perMonth": "{amount}/kk",
-      "charges": "+ maksut {amount}/kk",
       "due": "eräpäivä {day}.",
-      "notice": "irtisanomisaika {n} kk",
       "increase": {
-        "fixed": "korotus {pct} vuodessa",
-        "fixedMonth": "korotus {pct} vuodessa ({month})",
+        "percent": "korotus {pct} vuodessa",
+        "percentMonth": "korotus {pct} vuodessa ({month})",
+        "amount": "korotus {amount} vuodessa",
+        "amountMonth": "korotus {amount} vuodessa ({month})",
         "index": "indeksikorotus",
         "indexMonth": "indeksikorotus ({month})"
       },
       "contract": "Sopimus",
-      "steps": "Vuokrat",
       "others": "Muut vuokrasopimukset",
       "state": {
         "upcoming": "Alkaa",
@@ -1211,8 +1212,9 @@
       },
       "tenantUnknown": "Vuokralainen ei tiedossa",
       "kind": {
-        "none": "Ei sääntöä",
-        "fixed": "Kiinteä %",
+        "none": "Ei korotussääntöä",
+        "percent": "Prosenttia vuodessa",
+        "amount": "Euroa vuodessa",
         "index": "Indeksi"
       },
       "suggestions": "Ehdotukset kirjanpidosta ({n})",
@@ -1222,7 +1224,12 @@
         "contract": "sopimuksesta",
         "payments": "suorituksista"
       },
-      "suggestedNote": "★ = vuokrasuhde-ehdotus kirjanpidosta, ei vielä tallennettu."
+      "suggestedNote": "★ = vuokrasuhde-ehdotus kirjanpidosta, ei vielä tallennettu.",
+      "initial": "Vuokra alussa",
+      "increases": "Korotukset",
+      "water": "vesi {amount}",
+      "parking": "autopaikka {amount}",
+      "rentPart": "vuokra {amount}"
     },
     "edit": {
       "title": "Muokkaa: {name}",
@@ -1245,13 +1252,14 @@
       "deleteConfirm": "Poistetaanko Tilarin tiedot tästä kohteesta? Kirjanpitoon ei kosketa.",
       "readOnly": "Tiedot on tallennettu uudemmalla Tilarilla; tämä versio voi vain näyttää ne.",
       "leases": "Vuokrasopimukset",
-      "leasesLead": "Vuokralainen, ehdot ja vuokra portaittain. Vuokrankorotus lisätään uutena portaana; korotussääntö on vain muistutuksia ja ennustetta varten. Sopimus ja ilmoitukset ovat Liitetieto-tositteita, joten ne löytyvät myös Kitsasista.",
+      "leasesLead": "Vuokralainen, ehdot, vuokra alussa ja korotukset. Korotussääntö esitäyttää seuraavan korotuksen; Tilari ei muuta vuokraa itse. Sopimus ja korotusilmoitukset ovat Liitetieto-tositteita, joten ne löytyvät myös Kitsasista.",
       "addLease": "Lisää vuokrasopimus",
       "removeLease": "Poista vuokrasopimus",
-      "addStep": "Lisää vuokraporras",
       "suggestions": "Kirjanpidosta löytyi {n} vuokrasuhde-ehdotusta. Lisää ne lomakkeelle, tarkista ja tallenna.",
       "addSuggestion": "Lisää",
-      "addAllSuggestions": "Lisää kaikki"
+      "addAllSuggestions": "Lisää kaikki",
+      "addIncrease": "Lisää korotus",
+      "createNotice": "Luo korotusilmoitus"
     },
     "setup": {
       "title": "Vuokrakohteiden määritys",
@@ -1334,6 +1342,30 @@
       "interest": "lainan korko",
       "recounted": "lasketaan tilille {account}",
       "recountedHint": "Kirjattu tilille {booked}. Oikaisutositteen lisätiedoissa rivi on jätetty oikaisematta, koska tilikausi on suljettu; Tilari laskee sen tilille {account}. Kustannuspaikan raportissa se näkyy kirjatulla tilillä."
+    },
+    "notice": {
+      "voucherTitle": "Vuokrankorotusilmoitus {object} {date}",
+      "fileName": "vuokrankorotusilmoitus",
+      "businessId": "Y-tunnus {id}",
+      "heading": "VUOKRANKOROTUSILMOITUS",
+      "object": "Vuokrakohde: {object}",
+      "contract": "Vuokrasopimus: {contract}",
+      "contractSince": "Vuokrasopimus {date} alkaen",
+      "changes": "Vuokranne muuttuu {date} alkaen seuraavasti.",
+      "changesClause": "Vuokranne muuttuu {date} alkaen vuokrasopimuksen korotusehdon mukaisesti ({clause}).",
+      "current": "Nykyinen",
+      "newFrom": "{date} alkaen",
+      "rent": "Vuokra",
+      "water": "Vesimaksu",
+      "parking": "Autopaikka",
+      "total": "Yhteensä kuukaudessa",
+      "due": "Vuokra maksetaan edelleen kuukauden {day}. päivään mennessä samalle tilille ja samalla viitteellä kuin ennenkin.",
+      "regards": "Ystävällisin terveisin",
+      "clause": {
+        "percent": "{pct} vuodessa",
+        "amount": "{amount} vuodessa",
+        "index": "indeksiin sidottu"
+      }
     }
   }
 }

@@ -1,24 +1,8 @@
-import { getBcp47, useI18n } from '../../../i18n'
+import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { formatVoucherId } from '../../../shared/formatVoucherId'
-import { formatBp } from '../../../shared/percent'
 import type { LeaseView, LeaseVoucher } from '../api'
-import { leasePeriod, leaseRentText } from './format'
-
-type T = (key: string, vars?: Record<string, string | number>) => string
-
-function monthName(month: number): string {
-  return new Intl.DateTimeFormat(getBcp47(), { month: 'long' }).format(new Date(2024, month - 1, 1))
-}
-
-function increaseText(t: T, lease: LeaseView): string {
-  const rule = lease.increase
-  if (!rule || rule.kind === 'none') return ''
-  const month = rule.month ? monthName(rule.month) : ''
-  if (rule.kind === 'index') return t(month ? 'properties.lease.increase.indexMonth' : 'properties.lease.increase.index', { month })
-  const pct = formatBp(rule.pct_bp ?? 0)
-  return t(month ? 'properties.lease.increase.fixedMonth' : 'properties.lease.increase.fixed', { pct, month })
-}
+import { increaseText, leasePeriod, leaseRentText } from './format'
 
 function VoucherLink({ voucher, onOpen }: { voucher: LeaseVoucher; onOpen: (voucherId: number) => void }) {
   return (
@@ -33,8 +17,7 @@ function LeaseCard({ lease, onOpenVoucher }: { lease: LeaseView; onOpenVoucher: 
   const terms = [
     leaseRentText(t, lease.rent),
     lease.due_day != null ? t('properties.lease.due', { day: lease.due_day }) : '',
-    lease.notice_months != null ? t('properties.lease.notice', { n: lease.notice_months }) : '',
-    increaseText(t, lease),
+    increaseText(t, lease.increase),
   ].filter(Boolean)
   return (
     <div className="property-lease-card">
@@ -51,10 +34,10 @@ function LeaseCard({ lease, onOpenVoucher }: { lease: LeaseView; onOpenVoucher: 
       {lease.steps.length > 1 ? (
         <details>
           <summary>
-            {t('properties.lease.steps')} ({lease.steps.length})
+            {t('properties.lease.increases')} ({lease.steps.length - 1})
           </summary>
           <ul className="property-doc-list">
-            {lease.steps.map((step) => (
+            {lease.steps.slice(1).map((step) => (
               <li key={step.from}>
                 {formatDate(step.from)} · {leaseRentText(t, step)}
                 {step.voucher ? <VoucherLink voucher={step.voucher} onOpen={onOpenVoucher} /> : null}

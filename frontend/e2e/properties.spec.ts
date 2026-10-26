@@ -39,6 +39,8 @@ test.describe('rental objects', () => {
 test.describe('rental object leases', () => {
   test('a lease added on the edit page shows on the object page and in the list', async ({ page }) => {
     await openBook(page)
+    // The notice voucher is dated on the book's day: inside the test book's last fiscal year.
+    await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
     await page.goto('/#/property/4')
     await expect(page.getByRole('heading', { name: 'Vuokrasuhteet' })).toBeVisible()
     await expect(page.getByText('Ei vuokrasopimuksia.', { exact: false })).toBeVisible()
@@ -51,18 +53,35 @@ test.describe('rental object leases', () => {
     await tenant.first().fill('Testi Vuokralainen')
     await tenant.first().press('Escape')
     await lease.getByLabel('Alkaa', { exact: true }).fill('2025-01-01')
-    await lease.getByLabel('Vuokra €/kk').fill('650')
+    await expect(lease.getByLabel('Eräpäivä')).toHaveValue('5')
+    await lease.getByLabel('Vuokra €/kk').first().fill('650')
+    await lease.getByLabel('Vesi €/kk').first().fill('20')
     await lease.getByLabel('Eräpäivä').fill('2')
+    await lease.getByLabel('Korotussääntö').selectOption({ label: 'Euroa vuodessa' })
+    await lease.getByLabel('Korotus € / v').fill('15')
+
+    // An increase prefilled from the clause, and its notice written as a Liitetieto voucher with a PDF.
+    await lease.getByRole('button', { name: 'Lisää korotus' }).click()
+    const increase = lease.locator('.property-lease-increase').first()
+    await expect(increase.getByLabel('Vuokra €/kk')).toHaveValue('665,00')
+    await increase.getByLabel('Alkaen').fill('2026-01-01')
+    const download = page.waitForEvent('download')
+    await increase.getByRole('button', { name: 'Luo korotusilmoitus' }).click()
+    expect((await download).suggestedFilename()).toMatch(/^vuokrankorotusilmoitus-.*-2026-01-01\.pdf$/)
+    await expect(increase.getByLabel('Korotusilmoitus')).toHaveValue(/\d+/)
     await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
 
     await expect(page).toHaveURL(/#\/property\/4$/)
     const card = page.locator('.property-lease-card')
     await expect(card).toContainText('Testi Vuokralainen')
     await expect(card).toContainText('1.1.2025 alkaen')
-    await expect(card).toContainText('650,00 €/kk · eräpäivä 2.')
+    // On the as-of date (31.12.2025) the starting rent is in force; the increase comes in January.
+    await expect(card).toContainText('670,00 €/kk (vuokra 650,00 €, vesi 20,00 €) · eräpäivä 2. · korotus 15,00 € vuodessa')
+    await card.getByText('Korotukset (1)').click()
+    await expect(card.getByRole('button', { name: /Vuokrankorotusilmoitus .* 1\.1\.2026/ })).toBeVisible()
 
     await page.goto('/#/properties')
-    await expect(page.locator('.property-table').first()).toContainText('Testi Vuokralainen · 650,00 €/kk')
+    await expect(page.locator('.property-table').first()).toContainText('Testi Vuokralainen · 670,00 €/kk')
   })
 })
 

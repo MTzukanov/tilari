@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { docKind, representedBy, suggestLeases, titlePeriod, type SuggestIncome } from './leaseSuggest'
 
 /** Monthly payments by one payer: `n` months from `from` (YYYY-MM), paid on the 5th. */
-function monthly(partner: number | null, from: string, n: number, amount: number): SuggestIncome[] {
+function monthly(partner: number | null, from: string, n: number, amount: number, text = 'Vuokra'): SuggestIncome[] {
   const [y, m] = from.split('-').map(Number)
   return Array.from({ length: n }, (_, i) => {
     const d = new Date(Date.UTC(y, m - 1 + i, 5))
-    return { date: d.toISOString().slice(0, 10), partner_id: partner, amount_snt: amount }
+    return { date: d.toISOString().slice(0, 10), partner_id: partner, amount_snt: amount, text }
   })
 }
 
@@ -52,12 +52,12 @@ describe('lease suggestions', () => {
       { voucher_id: 13, date: '2023-05-01', title: 'Mallitalo vastikelasku 2023' },
       { voucher_id: 14, date: '2023-05-01', title: 'Vuokrasopimus Mallikatu 1 A 2 1.1.2019-31.12.2020' },
     ]
-    const out = suggestLeases({ docs, income, names, centreName, asOf: '2025-09-30' })
+    const out = suggestLeases({ docs, income, names, centreName, parkingObject: false, asOf: '2025-09-30' })
     expect(out).toEqual([
       // Payments before the first contract, by an agency: their own suggestion, ending as the contract starts.
       {
         source: 'payments',
-        lease: { key: '', tenant_partner_id: 4, starts: '2023-10-01', ends: '2024-01-31', rents: [{ from: '2023-10-01', rent_snt: 55_000 }] },
+        lease: { key: '', tenant_partner_id: 4, starts: '2023-10-01', ends: '2024-01-31', due_day: 5, rents: [{ from: '2023-10-01', rent_snt: 55_000 }] },
       },
       {
         source: 'contract',
@@ -65,6 +65,7 @@ describe('lease suggestions', () => {
           key: '',
           starts: '2024-02-01',
           ends: '2025-02-28',
+          due_day: 5,
           tenant_partner_id: 1,
           doc_voucher_id: 10,
           // Rent by object: the tenant's part and the housing allowance together; the notice marks its step.
@@ -76,7 +77,7 @@ describe('lease suggestions', () => {
       },
       {
         source: 'contract',
-        lease: { key: '', starts: '2025-03-01', tenant_partner_id: 2, doc_voucher_id: 11, rents: [{ from: '2025-03-01', rent_snt: 65_000 }] },
+        lease: { key: '', starts: '2025-03-01', due_day: 5, tenant_partner_id: 2, doc_voucher_id: 11, rents: [{ from: '2025-03-01', rent_snt: 65_000 }] },
       },
     ])
   })
@@ -88,7 +89,7 @@ describe('lease suggestions', () => {
       // An extra document with no tenant in sight (e.g. a parking space on the flat's cost centre).
       { voucher_id: 11, date: '2024-11-20', title: 'Autopaikan vuokrasopimus' },
     ]
-    const out = suggestLeases({ docs, income, names, centreName, asOf: '2025-01-31' })
+    const out = suggestLeases({ docs, income, names, centreName, parkingObject: false, asOf: '2025-01-31' })
     expect(out.map((s) => [s.source, s.lease.tenant_partner_id ?? null, s.lease.starts, s.lease.ends ?? null])).toEqual([
       ['contract', 1, '2024-01-01', '2024-06-30'],
       ['payments', 2, '2024-08-01', null],
@@ -99,9 +100,23 @@ describe('lease suggestions', () => {
   it('a payer named after the address is not taken for the tenant the title names', () => {
     const income = [...monthly(5, '2024-10', 5, 59_000), ...monthly(1, '2024-10', 1, 30_000)]
     const docs = [{ voucher_id: 10, date: '2024-09-20', title: 'Vuorkasopimus Matti Meikäläinen Mallikatu 1 A 2, 10.2024-' }]
-    const [lease] = suggestLeases({ docs, income, names, centreName, asOf: '2025-02-28' })
+    const [lease] = suggestLeases({ docs, income, names, centreName, parkingObject: false, asOf: '2025-02-28' })
     expect(lease.lease).toMatchObject({ tenant_partner_id: 1, starts: '2024-10-01' })
     expect(lease.lease.ends).toBeUndefined()
+  })
+
+  it('splits the payment into rent, water and parking by the lines\' texts', () => {
+    const income = [
+      ...monthly(2, '2025-01', 3, 60_000, 'VUOKRA + VESI'),
+      ...monthly(2, '2025-01', 3, 2_000, 'Vesimaksu tammikuu'),
+      ...monthly(2, '2025-01', 3, 1_500, 'AUTOPAIKKA'),
+    ]
+    const docs = [{ voucher_id: 10, date: '2024-12-20', title: 'Vuokrasopimus Virtanen 1.1.2025-' }]
+    const flat = suggestLeases({ docs, income, names, centreName, parkingObject: false, asOf: '2025-03-31' })
+    expect(flat[0].lease.rents).toEqual([{ from: '2025-01-01', rent_snt: 60_000, water_snt: 2_000, parking_snt: 1_500 }])
+    // On a parking space the parking fee is the rent.
+    const space = suggestLeases({ docs, income, names, centreName, parkingObject: true, asOf: '2025-03-31' })
+    expect(space[0].lease.rents).toEqual([{ from: '2025-01-01', rent_snt: 61_500, water_snt: 2_000 }])
   })
 
   it('a stored lease stands for a suggestion with the same contract, or the same tenant starting near it', () => {
