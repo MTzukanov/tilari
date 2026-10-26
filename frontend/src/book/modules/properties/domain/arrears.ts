@@ -5,8 +5,8 @@
  * at zero, and an ended lease keeps what it left. Pure.
  */
 import { addDays, addMonths, dayCount, monthEnd, monthKeys } from '../../../months'
-import { leaseState, rentSegments, rentTotal } from './rent'
-import type { Lease, LeaseRentAccount, RentAccount, RentBalance, RentMonth, WaterSettlement } from './types'
+import { leaseState, rentSegments, rentTotal, termsAt } from './rent'
+import type { Lease, LeaseException, LeaseRentAccount, RentAccount, RentBalance, RentMonth, WaterSettlement } from './types'
 import { bookedLine, settlementShares } from './water'
 
 /** A booked line paid for rent (income) or a water refund passed on; `lease_key` when already known. */
@@ -54,6 +54,38 @@ function exceptionsIn(lease: Lease, key: string, from: string, until: string) {
   const first = `${key}-01` > from ? `${key}-01` : from
   const last = monthEnd(key) < until ? monthEnd(key) : until
   return (lease.exceptions ?? []).filter((e) => e.from <= last && e.to >= first)
+}
+
+/**
+ * An exception for month `key` that makes it expect `target` exactly (what was paid, less any
+ * water settlement due then): the lease's counted days in the month at one monthly total, kept
+ * water and parking, the difference taken from the rent (then the water, then the parking when
+ * less was paid than those). Null when the month has no counted lease days, is not over yet, already
+ * has an exception, or no monthly total gives `target` to the cent on a part month.
+ */
+export function exceptionPrefill(lease: Lease, key: string, target: number, window: RentWindow): LeaseException | null {
+  if (target < 0) return null
+  const first = `${key}-01`
+  const last = monthEnd(key)
+  const from = [first, lease.starts, window.from].reduce((a, b) => (a > b ? a : b))
+  const to = lease.ends && lease.ends < last ? lease.ends : last
+  if (from > to || window.until < to) return null
+  if ((lease.exceptions ?? []).some((e) => e.from <= to && e.to >= from)) return null
+  const days = dayCount(from, to)
+  const monthDays = dayCount(first, last)
+  let total: number | null = target
+  if (days !== monthDays) {
+    const guess = Math.round((target * monthDays) / days)
+    total = [0, -1, 1, -2, 2].map((d) => guess + d).find((t) => t >= 0 && Math.round((t * days) / monthDays) === target) ?? null
+  }
+  if (total == null) return null
+  const step = termsAt({ ...lease, exceptions: [] }, from)
+  const parking = Math.min(step?.parking_snt ?? 0, total)
+  const water = Math.min(step?.water_snt ?? 0, total - parking)
+  const out: LeaseException = { from, to, rent_snt: total - parking - water }
+  if (water) out.water_snt = water
+  if (parking) out.parking_snt = parking
+  return out
 }
 
 /**
@@ -145,6 +177,8 @@ function leaseAccount(lease: Lease, lines: RentLine[], charges: WaterCharge[], w
         balance_snt: balance,
         lines: monthLines.map((l) => bookedLine(l, l.net_snt, ctx)),
       })
+      const prefill = monthRent + monthWater !== monthPaid ? exceptionPrefill(lease, key, monthPaid - monthWater, window) : null
+      if (prefill) months[months.length - 1].exception_prefill = prefill
     }
   }
   return {

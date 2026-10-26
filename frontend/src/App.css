@@ -3167,6 +3167,7 @@ tr.is-ended td {
 .editor select,
 .property-edit input:not([type='checkbox']):not([type='radio']),
 .property-edit select,
+.property-rent-exception-form input:not([type='checkbox']):not([type='radio']),
 .filters input:not([type='checkbox']):not([type='radio']),
 .filters select,
 .search-select input,
@@ -3188,7 +3189,9 @@ tr.is-ended td {
 .editor input[type='date']::-webkit-datetime-edit,
 .editor input[type='date']::-webkit-datetime-edit-fields-wrapper,
 .property-edit input[type='date']::-webkit-datetime-edit,
-.property-edit input[type='date']::-webkit-datetime-edit-fields-wrapper {
+.property-edit input[type='date']::-webkit-datetime-edit-fields-wrapper,
+.property-rent-exception-form input[type='date']::-webkit-datetime-edit,
+.property-rent-exception-form input[type='date']::-webkit-datetime-edit-fields-wrapper {
   display: inline-flex;
   align-items: center;
   height: 100%;
@@ -3196,7 +3199,8 @@ tr.is-ended td {
 }
 
 .editor input[type='date']::-webkit-calendar-picker-indicator,
-.property-edit input[type='date']::-webkit-calendar-picker-indicator {
+.property-edit input[type='date']::-webkit-calendar-picker-indicator,
+.property-rent-exception-form input[type='date']::-webkit-calendar-picker-indicator {
   margin: 0;
   align-self: center;
 }
@@ -5524,6 +5528,11 @@ tr.tax-total td {
 
 .property-rent-lines .btn-link:not(:last-child) {
   margin-right: 0.6rem;
+}
+
+/* The exception form under a month: the table's compact cells do not squeeze it. */
+.property-rent-exception-form {
+  padding: 0.3rem 0 0.6rem;
 }
 
 /* A month with an agreed exception: the normal rent and the reason on hover. */

@@ -325,6 +325,8 @@ export type RentMonth = {
   /** At the month's end: + the tenant owes, - paid ahead. */
   balance_snt: number
   lines: BookedLine[]
+  /** When the month moved the balance: an exception that would make it expect what was paid, for the owner to confirm. */
+  exception_prefill?: LeaseException
 }
 
 /** A lease's own rent account (ADR-026): a new tenant starts at zero, an ended lease keeps what it left. */

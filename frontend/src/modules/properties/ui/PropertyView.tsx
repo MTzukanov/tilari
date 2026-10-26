@@ -15,7 +15,9 @@ import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import {
   fetchProperty,
   fetchPropertyDocuments,
+  saveProperty,
   type Disposal,
+  type LeaseException,
   type PropertyDetail,
   type PropertyDocuments,
   type RentBalance,
@@ -283,11 +285,17 @@ export function PropertyView({
   /** The month the address asked for (a new object each time, so the same month shows again). */
   const [asked, setAsked] = useState<{ month: string } | null>(month ? { month } : null)
   const panelRef = useRef<HTMLDivElement>(null)
-  const { data: d, error, loading } = usePeriodQuery(
+  const { data: d, error, loading, setData } = usePeriodQuery(
     () => fetchProperty(id, targetBp != null ? { targetBp } : {}),
     [id, targetBp],
   )
   const loaded = Boolean(d)
+
+  /** Saves an agreed exception to a stored lease and shows the object as saved (ADR-027). */
+  async function addException(detail: PropertyDetail, leaseKey: string, exception: LeaseException) {
+    const leases = (detail.doc.leases ?? []).map((l) => (l.key === leaseKey ? { ...l, exceptions: [...(l.exceptions ?? []), exception] } : l))
+    setData(await saveProperty(id, { ...detail.doc, leases }, targetBp != null ? { targetBp } : {}))
+  }
 
   // A month typed or linked in the address while this page is open. Read the address itself:
   // a bar click changes it without a route change, so the `month` prop can be stale.
@@ -432,6 +440,7 @@ export function PropertyView({
               asOf={d.as_of}
               onEdit={onEdit}
               onOpenVoucher={(v) => openVoucher(v)}
+              onAddException={d.read_only ? undefined : (leaseKey, exception) => addException(d, leaseKey, exception)}
             />
           ) : null}
 

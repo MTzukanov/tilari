@@ -172,10 +172,25 @@ test.describe('rental object rent exceptions', () => {
     const may = card.locator('.property-rent-table tr', { hasText: 'toukokuu 2025' })
     await expect(may.locator('.property-rent-exception')).toHaveText(/470,00\s€\*/)
     await expect(may.locator('.property-rent-exception')).toHaveAttribute('title', /ilman poikkeusta 670,00\s€ · Remonttihyvitys/)
+    // A month that moved the balance offers an exception prefilled with what was paid (nothing here).
+    const october = card.locator('.property-rent-table tr', { hasText: 'lokakuu 2025' })
+    await october.getByRole('button', { name: 'Lisää poikkeus' }).click()
+    const form = card.locator('.property-rent-exception-form')
+    await expect(form.getByLabel('Alkaen')).toHaveValue('2025-10-01')
+    await expect(form.getByLabel('Päättyen')).toHaveValue('2025-10-31')
+    await expect(form.getByLabel('Vuokra €/kk')).toHaveValue('0,00')
+    await form.getByLabel('Syy').fill('Vuokravapaa kuukausi')
+    await form.getByRole('button', { name: 'Tallenna poikkeus' }).click()
+    await expect(form).toHaveCount(0)
+    await expect(card).toContainText(/Vuokrasaldo 30\.11\.2025: vuokrarästi 5\s160,00\s€/)
+    await expect(october.locator('.property-rent-exception')).toHaveText(/0,00\s€\*/)
+    await expect(october.getByRole('button', { name: 'Lisää poikkeus' })).toHaveCount(0)
+    await expect(card.getByText('Poikkeava vuokra (2)')).toBeVisible()
+
     // The card leads to where exceptions are entered.
     await card.getByRole('button', { name: /^Lisää korotus tai poikkeava vuokra/ }).click()
     await expect(page).toHaveURL(/#\/property\/4\/edit$/)
-    await expect(page.locator('.property-lease-exception')).toHaveCount(1)
+    await expect(page.locator('.property-lease-exception')).toHaveCount(2)
   })
 })
 

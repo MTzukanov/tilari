@@ -28,5 +28,6 @@ export function usePeriodQuery<T>(fetcher: () => Promise<T>, deps: readonly unkn
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)
 
-  return { data, error, loading }
+  // `setData` shows a result the caller already has, e.g. what a save returned.
+  return { data, error, loading, setData }
 }

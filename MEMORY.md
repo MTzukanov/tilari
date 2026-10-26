@@ -23,6 +23,10 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   shares account without an item and moved onto an item by a technical voucher on 1 January. The
   item lines of a re-booking are now dated at the original purchase lines, so the acquisition
   date, holding time and returns follow the purchase. On the real book only that object changed.
+- Owner asked for an easy entry: every month of the rent account that moved the balance has a
+  "Lisää poikkeus" button with a prefilled exception (`exceptionPrefill`), saved from the object
+  page. With the acquisition dated at the purchase, the purchase month expects rent by days
+  although the seller usually got it; that month now offers an exception at 0 for those days.
 - Owner could not find where exceptions are entered: the lease card now links to the edit page
   ("Lisää korotus tai poikkeava vuokra..."); the demo has to run from the worktree, not the main
   checkout.

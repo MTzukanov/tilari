@@ -1514,7 +1514,10 @@
       "kpiHint": "gällande hyresförhållande",
       "othersHint": "övriga hyresförhållanden: {amount}",
       "exceptionHint": "Avvikande hyra, utan undantaget {amount}",
-      "exceptionLegend": "* avvikande hyra: det överenskomna beloppet. Normal hyra och orsak visas när du håller musen över beloppet."
+      "exceptionLegend": "* avvikande hyra: det överenskomna beloppet. Normal hyra och orsak visas när du håller musen över beloppet.",
+      "addException": "Lägg till undantag",
+      "saveException": "Spara undantaget",
+      "prefillLead": "Förifyllt så att {month} väntar det som betalades ({paid}). Den normala hyran och höjningarna ändras inte. Kontrollera dagar och belopp och skriv orsaken; avtalet kan bifogas på redigeringssidan."
     }
   }
 }

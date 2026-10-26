@@ -492,6 +492,13 @@ correction would change the open year's income statement lines. The rental-objec
   and rounded once per stretch; a month with one shows what the steps alone would expect and the
   owner's reason. Water advances in the settlements (ADR-025) follow the exception's water too:
   "as agreed" includes the agreement.
+- **Entered where the difference shows.** A month of the rent account whose payments differ
+  from what it expects offers "Lisää poikkeus": an exception prefilled for the lease's counted
+  days in that month, at the monthly total that makes the month expect what was paid (less any
+  water settlement due then), exact to the cent also on a part month. Water and parking stay;
+  the difference comes off the rent. The owner checks it, gives the reason and saves it on the
+  object page; the agreement is attached on the edit page. None is offered where an exception
+  already lies in the month.
 - Why not edit the steps: a temporary change entered as two steps (down, then back up) reads as
   two rent changes, loses the reason, and would make the increase clause prefill from the
   discounted rent.

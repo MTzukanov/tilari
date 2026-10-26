@@ -1514,7 +1514,10 @@
       "kpiHint": "the running lease",
       "othersHint": "other leases: {amount}",
       "exceptionHint": "Agreed exception, without it {amount}",
-      "exceptionLegend": "* agreed exception: the agreed amount. Hover it for the normal rent and the reason."
+      "exceptionLegend": "* agreed exception: the agreed amount. Hover it for the normal rent and the reason.",
+      "addException": "Add exception",
+      "saveException": "Save exception",
+      "prefillLead": "Prefilled so that {month} expects what was paid ({paid}). The normal rent and its increases do not change. Check the days and amounts and give the reason; the agreement can be attached on the edit page."
     }
   }
 }

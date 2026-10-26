@@ -1514,7 +1514,10 @@
       "kpiHint": "laufendes Mietverhältnis",
       "othersHint": "andere Mietverhältnisse: {amount}",
       "exceptionHint": "Abweichende Miete, ohne die Ausnahme {amount}",
-      "exceptionLegend": "* abweichende Miete: der vereinbarte Betrag. Die reguläre Miete und der Grund erscheinen, wenn der Mauszeiger darauf zeigt."
+      "exceptionLegend": "* abweichende Miete: der vereinbarte Betrag. Die reguläre Miete und der Grund erscheinen, wenn der Mauszeiger darauf zeigt.",
+      "addException": "Ausnahme hinzufügen",
+      "saveException": "Ausnahme speichern",
+      "prefillLead": "Vorausgefüllt, sodass {month} das Gezahlte erwartet ({paid}). Die reguläre Miete und ihre Erhöhungen bleiben. Tage und Beträge prüfen und den Grund angeben; die Vereinbarung lässt sich auf der Bearbeitungsseite anhängen."
     }
   }
 }

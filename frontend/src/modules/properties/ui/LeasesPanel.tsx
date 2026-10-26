@@ -1,6 +1,6 @@
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
-import type { BookedLine, LeaseRentAccount, LeaseView } from '../api'
+import type { BookedLine, LeaseException, LeaseRentAccount, LeaseView } from '../api'
 import { exceptionText, increaseText, leasePeriod, leaseRentText, periodText, waterBalanceText, waterStatusText } from './format'
 import { LineSources, VoucherLink } from './FormParts'
 import { RentAccountView } from './RentAccount'
@@ -40,6 +40,7 @@ function LeaseCard({
   asOf,
   onEdit,
   onOpenVoucher,
+  onAddException,
 }: {
   lease: LeaseView
   account: LeaseRentAccount | undefined
@@ -47,6 +48,7 @@ function LeaseCard({
   /** Opens the edit page, where the lease's increases and exceptions are entered. */
   onEdit: () => void
   onOpenVoucher: (voucherId: number) => void
+  onAddException?: (leaseKey: string, exception: LeaseException) => Promise<void>
 }) {
   const { t } = useI18n()
   const terms = [
@@ -74,7 +76,15 @@ function LeaseCard({
           {t('properties.lease.contract')}: <VoucherLink voucher={lease.contract} onOpen={onOpenVoucher} />
         </p>
       ) : null}
-      {account ? <RentAccountView account={account} asOf={asOf} leaseStarts={lease.starts} onOpen={onOpenVoucher} /> : null}
+      {account ? (
+        <RentAccountView
+          account={account}
+          asOf={asOf}
+          leaseStarts={lease.starts}
+          onOpen={onOpenVoucher}
+          onAddException={onAddException ? (e) => onAddException(lease.key, e) : undefined}
+        />
+      ) : null}
       {latest ? (
         <p className="property-lease-terms">
           {t('properties.water.latest', { period: periodText(t, latest.from, latest.to) })}: {waterBalanceText(t, latest.balance_snt)}
@@ -130,6 +140,7 @@ export function LeasesPanel({
   unassigned = [],
   onEdit,
   onOpenVoucher,
+  onAddException,
 }: {
   leases: LeaseView[]
   current: LeaseView | null
@@ -141,6 +152,8 @@ export function LeasesPanel({
   asOf: string
   onEdit: () => void
   onOpenVoucher: (voucherId: number) => void
+  /** Saves an agreed exception to a stored lease from its month table; none when the document is read-only. */
+  onAddException?: (leaseKey: string, exception: LeaseException) => Promise<void>
 }) {
   const { t } = useI18n()
   const stored = current && !current.suggested ? current : null
@@ -164,12 +177,13 @@ export function LeasesPanel({
           asOf={asOf}
           onEdit={onEdit}
           onOpenVoucher={onOpenVoucher}
+          onAddException={onAddException}
         />
       ) : null}
       {others.length ? (
         <>
           <h4 className="property-lease-others">{t('properties.lease.others')}</h4>
-          <LeaseList leases={others} accounts={accounts} asOf={asOf} onOpenVoucher={onOpenVoucher} />
+          <LeaseList leases={others} accounts={accounts} asOf={asOf} onOpenVoucher={onOpenVoucher} onAddException={onAddException} />
         </>
       ) : null}
       {unassigned.length ? (
@@ -196,11 +210,13 @@ function LeaseList({
   accounts = [],
   asOf = '',
   onOpenVoucher,
+  onAddException,
 }: {
   leases: LeaseView[]
   accounts?: LeaseRentAccount[]
   asOf?: string
   onOpenVoucher: (voucherId: number) => void
+  onAddException?: (leaseKey: string, exception: LeaseException) => Promise<void>
 }) {
   const { t } = useI18n()
   return (
@@ -223,6 +239,7 @@ function LeaseList({
               asOf={asOf}
               leaseStarts={lease.starts}
               onOpen={onOpenVoucher}
+              onAddException={onAddException ? (e) => onAddException(lease.key, e) : undefined}
             />
           ) : null}
         </li>

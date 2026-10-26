@@ -1514,7 +1514,10 @@
       "kpiHint": "voimassa oleva vuokrasuhde",
       "othersHint": "muut vuokrasuhteet: {amount}",
       "exceptionHint": "Poikkeava vuokra, ilman poikkeusta {amount}",
-      "exceptionLegend": "* poikkeava vuokra: sovittu summa. Normaali vuokra ja syy näkyvät, kun viet hiiren summan päälle."
+      "exceptionLegend": "* poikkeava vuokra: sovittu summa. Normaali vuokra ja syy näkyvät, kun viet hiiren summan päälle.",
+      "addException": "Lisää poikkeus",
+      "saveException": "Tallenna poikkeus",
+      "prefillLead": "Esitäytetty niin, että {month} odottaa sen, mitä maksettiin ({paid}). Normaali vuokra ja korotukset eivät muutu. Tarkista päivät ja summat ja kirjoita syy; sopimuksen voi liittää muokkaussivulla."
     }
   }
 }
