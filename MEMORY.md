@@ -19,6 +19,10 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   received before the acquisition's date (`rentCountedFrom`, ADR-026). Only that object of the
   book had rent before its acquisition date.
 - `<p>` around the "income without a lease" sources held a `<details>`; now a `<div>`.
+- Fixed: on a narrow page the rent account's month table overflowed. Firefox drew a month over the
+  next row (cells on the baseline of a payment link that wrapped to two lines), wrapped links were
+  centred and indented, and the table ran past the page edge. Cells are now top-aligned, links
+  wrap flush left, and a table still too wide scrolls sideways (checked in Firefox and Chromium).
 
 ## 2026-10-26 - Rental objects 1d: rent arrears per lease, exact (`feature/property-arrears`)
 

@@ -5497,17 +5497,33 @@ tr.tax-total td {
   margin: 0.3rem 0 0.2rem;
 }
 
-/* A lease's rent account: on a list row it takes the row's width; payments sit in the last column. */
+/* A lease's rent account: on a list row it takes the row's width; payments sit in the last column.
+   A table wider than the page scrolls sideways instead of running past its edge. */
+.property-rent {
+  overflow-x: auto;
+}
+
 .property-doc-list li > .property-rent {
   flex-basis: 100%;
+  min-width: 0;
 }
 
 .property-rent-table {
   margin: 0.4rem 0 0.2rem;
 }
 
-.property-rent-lines .btn-link + .btn-link {
-  margin-left: 0.6rem;
+/* Top-aligned: on the baseline of a wrapped payment, Firefox drew a month over the next row. */
+.property-rent-table td {
+  vertical-align: top;
+}
+
+/* A month's payments wrap flush left; a narrow page puts a payment's amount under its date. */
+.property-rent-lines .btn-link {
+  text-align: left;
+}
+
+.property-rent-lines .btn-link:not(:last-child) {
+  margin-right: 0.6rem;
 }
 
 /* A month with an agreed exception: the normal rent and the reason on hover. */
