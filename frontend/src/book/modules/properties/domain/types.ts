@@ -50,6 +50,21 @@ export type LeaseRent = { from: string; rent_snt: number; water_snt?: number; pa
 export type LeaseIncrease = { kind: LeaseIncreaseKind; pct_bp?: number; amount_snt?: number; month?: number }
 
 /**
+ * An agreed exception to the rent (poikkeava vuokra) from `from` to `to`: a discount, a free
+ * month, a temporary rent. Its amounts stand for the steps' on those days; the steps stay as they
+ * are. `note` is the owner's reason, `voucher_id` the agreement (a type-800 voucher).
+ */
+export type LeaseException = {
+  from: string
+  to: string
+  rent_snt: number
+  water_snt?: number
+  parking_snt?: number
+  note?: string
+  voucher_id?: number
+}
+
+/**
  * The lease's water: an advance (vesimaksuennakko) settled against actual use, the default and
  * not stored, or a flat fee that is never settled.
  */
@@ -71,6 +86,8 @@ export type Lease = {
   due_day?: number
   /** The starting rent, then each increase, oldest first. */
   rents: LeaseRent[]
+  /** Agreed exceptions to the rent, oldest first, never overlapping. */
+  exceptions?: LeaseException[]
   increase?: LeaseIncrease
   /** The contract (a type-800 voucher). */
   doc_voucher_id?: number
@@ -298,14 +315,18 @@ export type RentBalance = {
 /** One month of a lease's rent account, exact to the cent. */
 export type RentMonth = {
   key: string
-  /** Rent, water advance and parking for the lease's days in the month. */
+  /** Rent, water advance and parking for the lease's days in the month, agreed exceptions included. */
   rent_snt: number
+  /** When an agreed exception falls in the month: what the steps alone would expect, and its reasons. */
+  exception?: { normal_snt: number; notes: string[] }
   /** Water settlement shares due in the month: + the tenant pays, - refunded. */
   water_snt: number
   received_snt: number
   /** At the month's end: + the tenant owes, - paid ahead. */
   balance_snt: number
   lines: BookedLine[]
+  /** When the month moved the balance: an exception that would make it expect what was paid, for the owner to confirm. */
+  exception_prefill?: LeaseException
 }
 
 /** A lease's own rent account (ADR-026): a new tenant starts at zero, an ended lease keeps what it left. */
@@ -348,6 +369,8 @@ export type LeaseView = {
   increase: LeaseIncrease | null
   contract: LeaseVoucher | null
   steps: (LeaseRent & { voucher: LeaseVoucher | null })[]
+  /** Agreed exceptions, oldest first; `normal_snt` is the step's total on the exception's first day. */
+  exceptions: (LeaseException & { voucher: LeaseVoucher | null; normal_snt: number })[]
   water: LeaseWaterKind
   /** The latest water settlement with a share for this lease (object page only). */
   water_latest?: { from: string; to: string; balance_snt: number; settled_snt: number; status: WaterShareStatus } | null

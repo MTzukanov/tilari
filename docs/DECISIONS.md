@@ -466,7 +466,9 @@ correction would change the open year's income statement lines. The rental-objec
 - **Expected:** the lease's step totals (rent, water advance, parking) for its days; a full month
   is the total exactly, a part month the total by days. Counted from the later of the lease's
   start and the object's acquisition (else the books' first fiscal year), until the end, a sale
-  or the as-of date. Each water settlement share (ADR-025) is due on the letter's date, else in
+  or the as-of date. Rent received on the object before the acquisition's date (an asset
+  re-booked as a balance item later, say) moves the start back to that payment's month: the
+  owner had the object then, and the payment would otherwise show as paid ahead for good. Each water settlement share (ADR-025) is due on the letter's date, else in
   the month after the period's end; a refund is negative.
 - **Received:** the object's income lines (without VAT, as booked), each given to one lease: the
   lease whose tenant paid it (from 31 days before its start, also after its end); else the lease
@@ -475,3 +477,45 @@ correction would change the open year's income statement lines. The rental-objec
 - Why per lease and not one running balance per object: an old unresolved difference would
   otherwise follow every later tenant.
 
+## ADR-027 Agreed rent exceptions stand over the steps (2026-10-26)
+
+**Status:** accepted. Extends ADR-025's leases with `exceptions[]`; the ledger is not changed.
+
+- **An exception is a stretch of days with its own amounts** (rent, water advance, parking): a
+  discount, a rent-free month, a temporary rent the owner agreed. On its days it stands for the
+  steps, also across a step; the steps (the rent level and its increases) stay as they are, so
+  the next increase and its notice still start from the normal rent.
+- A discount is typed as the lower rent, not as a minus amount: the form prefills the amounts in
+  force and shows the difference. Exceptions lie within the lease and never overlap, so each day
+  has one set of amounts.
+- The rent account (ADR-026) expects the exception's amounts on its days, part months by days
+  and rounded once per stretch; a month with one shows what the steps alone would expect and the
+  owner's reason. Water advances in the settlements (ADR-025) follow the exception's water too:
+  "as agreed" includes the agreement.
+- **Entered where the difference shows.** A month of the rent account whose payments differ
+  from what it expects offers "Lisää poikkeus": an exception prefilled for the lease's counted
+  days in that month, at the monthly total that makes the month expect what was paid (less any
+  water settlement due then), exact to the cent also on a part month. Water and parking stay;
+  the difference comes off the rent. The owner checks it, gives the reason and saves it on the
+  object page; the agreement is attached on the edit page. None is offered where an exception
+  already lies in the month.
+- Why not edit the steps: a temporary change entered as two steps (down, then back up) reads as
+  two rent changes, loses the reason, and would make the increase clause prefill from the
+  discounted rent.
+
+## ADR-028 A purchase re-booked onto its item counts from the purchase (2026-10-26)
+
+**Status:** accepted. Read from the ledger; nothing is stored.
+
+- An object's capital comes from its linked items (tase-erät): each debit is capital in, dated
+  as booked, and the first is the acquisition date. A purchase is sometimes booked on the shares
+  account without an item and moved onto an item later by a technical voucher, which debits the
+  item and credits the same account by the same amount without one. That voucher brings no
+  capital in: its item lines are dated at the original booking - the latest earlier debit of
+  the same amount on the account without an item - and so are the acquisition date, the holding
+  time, the cash flows behind the returns and the rent account's start.
+- Matching by account and amount picks the line; when two earlier debits have the same amount,
+  the later one is taken. The voucher's own date stays on the line (`EraRow.rebooked`).
+- Why not a manual acquisition date: the purchase is in the ledger, and one stored date could
+  disagree with the cash flows the returns are computed from. Capital spent before the books
+  began is entered as "Muu sijoitettu pääoma" with its date, as before.

@@ -120,6 +120,25 @@ describe('rental objects: setup suggestions', () => {
 })
 
 describe('rental objects: figures', () => {
+  it('a purchase moved onto its item later (a technical re-booking) counts from the purchase', async () => {
+    const fx = await buildPropertyFixture()
+    const { db, voucher, eras } = fx
+    db.run('INSERT INTO Kohdennus (id, tyyppi, kuuluu, json) VALUES (?, ?, ?, ?)', [90, 1, null, JSON.stringify({ nimi: { fi: 'As Oy Siirtotie 9 D 4' } })])
+    voucher('movedBuy', '2023-05-10', 0, 'Kauppahinta Siirtotie 9 D 4', [
+      { account: 1441, debit: 40_000 * E },
+      { account: 1910, credit: 40_000 * E },
+    ])
+    voucher('moved', '2023-07-01', 0, 'Tekninen kirjaus Siirtotie 9 D 4 tase-erä', [
+      { account: 1441, debit: 40_000 * E, era: 'new' },
+      { account: 1441, credit: 40_000 * E },
+    ])
+    saveProperty(db, 90, { v: 1, rev: 0, kind: 'apartment', eras: [{ account: 1441, eraid: eras['moved:0'] }] }, 'now')
+    const d = computeDetail(db, 90, { today: TODAY })
+    expect(d.summary.acquired_on).toBe('2023-05-10')
+    expect(d.summary.invested_snt).toBe(40_000 * E)
+    expect(d.summary.book_value_snt).toBe(40_000 * E)
+  })
+
   it('bundle: invested, book value, cash-basis operating result and break-even', async () => {
     const { db } = await setUp()
     const d = computeDetail(db, CC.bundle, { today: TODAY })

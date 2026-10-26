@@ -19,7 +19,7 @@ document). This page uses English.
 ### Calculation
 
 - Payable tax uses **realized** codes only. Parked cash-basis **`418` / `428`** appear in the itemization / parked totals and **do not** enter VAT payable.
-- Codes covered (as used in MICT-style cash-basis books):
+- Codes covered (as used in cash-basis company books):
 
 | Codes | Meaning |
 |-------|---------|

@@ -80,7 +80,7 @@ export function leasePeriod(t: T, lease: LeaseView): string {
     : t('properties.lease.since', { date: formatDate(lease.starts) })
 }
 
-/** "715,00 €/kk (vuokra 680,00 €, vesi 20,00 €, autopaikka 15,00 €)" for a step. */
+/** "690,00 €/kk (vuokra 655,00 €, vesi 20,00 €, autopaikka 15,00 €)" for a step. */
 export function leaseRentText(t: T, rent: { rent_snt: number; water_snt?: number; parking_snt?: number } | null): string {
   if (!rent) return ''
   const total = rent.rent_snt + (rent.water_snt ?? 0) + (rent.parking_snt ?? 0)
@@ -90,6 +90,13 @@ export function leaseRentText(t: T, rent: { rent_snt: number; water_snt?: number
   ].filter(Boolean)
   const base = t('properties.lease.perMonth', { amount: formatCents(total) })
   return parts.length ? `${base} (${t('properties.lease.rentPart', { amount: formatCents(rent.rent_snt) })}, ${parts.join(', ')})` : base
+}
+
+/** An exception as the lease card lists it: "1.3.2025–31.3.2025 · 470,00 €/kk, normaali 670,00 € · Remonttihyvitys". */
+export function exceptionText(t: T, e: { from: string; to: string; rent_snt: number; water_snt?: number; parking_snt?: number; normal_snt: number; note?: string }): string {
+  return [periodText(t, e.from, e.to), `${leaseRentText(t, e)}, ${t('properties.lease.normal', { amount: formatCents(e.normal_snt) })}`, e.note ?? '']
+    .filter(Boolean)
+    .join(' · ')
 }
 
 function longMonth(month: number): string {

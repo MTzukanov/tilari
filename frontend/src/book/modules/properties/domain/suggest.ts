@@ -11,7 +11,7 @@ const STOP_WORDS = new Set(['as', 'oy', 'koy', 'asoy', 'ab', 'bostads', 'fastigh
 
 /**
  * Dates in titles would match unit numbers: "Tiliote 01.01.2023 - 31.12.2023",
- * "1.10.24-30.6.25", "7.2024-6.2025" (month.year), "2024-05-01".
+ * "1.4.24-31.12.24", "9.2023-8.2024" (month.year), "2024-05-01".
  */
 const DATE_PATTERN = /\b\d{1,2}\.\d{1,2}\.(?:\d{4}|\d{2})?|\b\d{1,2}\.\d{4}\b|\b\d{4}-\d{2}-\d{2}\b/g
 

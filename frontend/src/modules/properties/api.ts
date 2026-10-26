@@ -10,6 +10,7 @@ export type {
   EraCandidate,
   DocCandidate,
   Lease,
+  LeaseException,
   LeaseIncrease,
   LeaseIncreaseKind,
   LeaseRent,

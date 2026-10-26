@@ -34,3 +34,16 @@ export function addMonths(key: string, delta: number): string {
   const month = ((m % 12) + 12) % 12
   return `${year}-${String(month + 1).padStart(2, '0')}`
 }
+
+const DAY = 86_400_000
+const ms = (date: string) => Date.parse(`${date}T00:00:00Z`)
+
+/** Days from `from` to `to`, both counted. */
+export function dayCount(from: string, to: string): number {
+  return Math.round((ms(to) - ms(from)) / DAY) + 1
+}
+
+/** An ISO date `days` later (earlier when negative). */
+export function addDays(date: string, days: number): string {
+  return new Date(ms(date) + days * DAY).toISOString().slice(0, 10)
+}

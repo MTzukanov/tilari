@@ -62,6 +62,7 @@ Money in integer cents (`*_snt`), percentages in basis points (`*_bp`, 100 = 1 %
 | `starts`, `ends?` | Start; a fixed term's end or the move-out |
 | `due_day?` | Rent due day (the form starts at 5) |
 | `rents[]` | `{ from, rent_snt, water_snt?, parking_snt?, voucher_id? }`: what the tenant pays a month from `from` on. The first is the starting rent (from `starts`); each later one is an increase (korotus) with its increase notice voucher |
+| `exceptions[]?` | `{ from, to, rent_snt, water_snt?, parking_snt?, note?, voucher_id? }`: an agreed exception (poikkeava vuokra) - a discount, a rent-free stretch, a temporary rent. On its days its amounts stand for the steps'; the steps stay. Within the lease, never overlapping; `note` is the owner's reason, `voucher_id` the agreement (ADR-027) |
 | `increase?` | The contract's increase clause `{ kind: none / percent / amount / index, pct_bp?, amount_snt?, month? }`: prefills the next increase and drives reminders; Tilari never changes rent by itself |
 | `doc_voucher_id?` | The contract (a type-800 voucher) |
 | `water?` | `flat` when water is a flat fee that is never settled; missing means an advance settled against use (ADR-025) |

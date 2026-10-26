@@ -246,6 +246,12 @@ function EditForm({
       ),
     )
 
+  /** Points exception `k` of lease `i` at its agreement voucher. */
+  const setExceptionRef = (i: number, k: number, voucherId: string) =>
+    setLeases((prev) =>
+      prev.map((l, li) => (li !== i ? l : { ...l, exceptions: l.exceptions.map((e, ei) => (ei === k ? { ...e, voucherId } : e)) })),
+    )
+
   /** Writes the notice for increase `k` of lease `i`: a PDF on a new Liitetieto voucher, linked and downloaded. */
   async function createNotice(i: number, k: number) {
     setError(null)
@@ -297,6 +303,27 @@ function EditForm({
         : noticeTitle(t, detail.name, lease.increases[k].from)
     try {
       setRef(i, k, String(await createDoc(title, lease.tenant, files)))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  /** Uploads the agreement on exception `k` of lease `i` as a new Liitetieto voucher and picks it. */
+  async function uploadException(i: number, k: number, files: File[]) {
+    if (!files.length) return
+    setError(null)
+    const lease = leases[i]
+    const e = lease.exceptions[k]
+    const title = t('properties.upload.exceptionTitle', {
+      object: detail.name,
+      tenant: lease.tenant.trim(),
+      from: e.from ? formatDate(e.from) : '',
+      to: e.to ? formatDate(e.to) : '',
+    })
+      .replace(/\s+/g, ' ')
+      .trim()
+    try {
+      setExceptionRef(i, k, String(await createDoc(title, lease.tenant, files)))
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     }
@@ -389,6 +416,7 @@ function EditForm({
           ...l,
           contractId: gone.has(l.contractId) ? '' : l.contractId,
           increases: l.increases.map((r) => (gone.has(r.voucherId) ? { ...r, voucherId: '' } : r)),
+          exceptions: l.exceptions.map((e) => (gone.has(e.voucherId) ? { ...e, voucherId: '' } : e)),
         })),
       ),
     )
@@ -530,6 +558,7 @@ function EditForm({
           today={today}
           onCreateNotice={createNotice}
           onUpload={upload}
+          onUploadException={uploadException}
           isCreated={isCreated}
           onDeleteDocs={deleteDocs}
           onOpenVoucher={openVoucher}

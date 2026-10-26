@@ -12,11 +12,14 @@ import { Shown } from './FormParts'
 import { leasePeriod, leaseRentText } from './format'
 import { LeaseSources, SuggestionSource } from './LeasesPanel'
 import {
+  draftStepAt,
   draftTotal,
   leaseDrafts,
+  newException,
   newLease,
   nextIncrease,
   type AmountsDraft,
+  type ExceptionDraft,
   type IncreaseDraft,
   type LeaseDraft,
   type Partner,
@@ -61,6 +64,14 @@ function Amounts({
 /** The amounts rows: Alkaen, rent, water, (parking), total; four columns without parking. */
 const amountsClass = (d: LeaseDraft) => `property-lease-grid property-lease-amounts${d.parking ? '' : ' no-parking'}`
 
+/** An exception's total and how far it is from the step it stands for: "470,00 € (−150,00 €)". */
+function exceptionTotal(e: ExceptionDraft, d: LeaseDraft): { text: string; normal: number } {
+  const total = draftTotal(e, d.parking)
+  const normal = draftTotal(draftStepAt(d, e.from), d.parking)
+  const diff = total - normal
+  return { text: diff ? `${formatCents(total)} (${diff > 0 ? '+' : ''}${formatCents(diff)})` : formatCents(total), normal }
+}
+
 export function LeasesEditor({
   drafts,
   onChange,
@@ -70,6 +81,7 @@ export function LeasesEditor({
   today,
   onCreateNotice,
   onUpload,
+  onUploadException,
   isCreated,
   onDeleteDocs,
   onOpenVoucher,
@@ -86,6 +98,8 @@ export function LeasesEditor({
   onCreateNotice: (lease: number, increase: number) => Promise<void>
   /** Uploads the owner's own contract (`increase` null) or increase notice as a Liitetieto voucher. */
   onUpload: (lease: number, increase: number | null, files: File[]) => Promise<void>
+  /** Uploads the agreement on an exception as a Liitetieto voucher. */
+  onUploadException: (lease: number, exception: number, files: File[]) => Promise<void>
   /** A document written from this form (deletable from here). */
   isCreated: (voucherId: number) => boolean
   /** Deletes such documents after asking, clears what pointed at them, then applies `edit`. */
@@ -112,13 +126,20 @@ export function LeasesEditor({
   const setIncrease = (i: number, k: number, patch: Partial<IncreaseDraft>) =>
     set(i, { increases: drafts[i].increases.map((r, j) => (j === k ? { ...r, ...patch } : r)) })
 
+  const setException = (i: number, k: number, patch: Partial<ExceptionDraft>) =>
+    set(i, { exceptions: drafts[i].exceptions.map((e, j) => (j === k ? { ...e, ...patch } : e)) })
+
   const created = (ids: string[]) => ids.filter((id) => id && isCreated(Number(id))).map(Number)
+  const removeException = (i: number, k: number) =>
+    onDeleteDocs(created([drafts[i].exceptions[k].voucherId]), {
+      leases: (l) => l.map((d, j) => (j === i ? { ...d, exceptions: d.exceptions.filter((_, kk) => kk !== k) } : d)),
+    })
   const removeIncrease = (i: number, k: number) =>
     onDeleteDocs(created([drafts[i].increases[k].voucherId]), {
       leases: (l) => l.map((d, j) => (j === i ? { ...d, increases: d.increases.filter((_, kk) => kk !== k) } : d)),
     })
   const removeLease = (i: number) =>
-    onDeleteDocs(created([drafts[i].contractId, ...drafts[i].increases.map((r) => r.voucherId)]), {
+    onDeleteDocs(created([drafts[i].contractId, ...drafts[i].increases.map((r) => r.voucherId), ...drafts[i].exceptions.map((e) => e.voucherId)]), {
       leases: (l) => l.filter((_, j) => j !== i),
     })
 
@@ -283,9 +304,60 @@ export function LeasesEditor({
               </div>
             </div>
           ))}
-          <div className="property-lease-foot">
+          <div className="property-lease-add">
             <button type="button" className="btn-secondary" onClick={() => set(i, { increases: [...d.increases, nextIncrease(d, today)] })}>
               {t('properties.edit.addIncrease')}
+            </button>
+          </div>
+
+          <h4>{t('properties.lease.exceptions')}</h4>
+          <p className="muted property-lease-hint">{t('properties.edit.exceptionsLead')}</p>
+          {d.exceptions.map((e, k) => {
+            const total = exceptionTotal(e, d)
+            return (
+              <div key={k} className={`${amountsClass(d)} property-lease-exception property-lease-increase`}>
+                <label>
+                  {t('properties.field.exceptionFrom')}
+                  <input type="date" value={e.from} onChange={(ev) => setException(i, k, { from: ev.target.value })} />
+                </label>
+                <label>
+                  {t('properties.field.exceptionTo')}
+                  <input type="date" value={e.to} onChange={(ev) => setException(i, k, { to: ev.target.value })} />
+                </label>
+                <Amounts value={e} parking={d.parking} onChange={(patch) => setException(i, k, patch)} />
+                <Shown
+                  label={t('properties.field.total')}
+                  value={total.text}
+                  title={t('properties.lease.exceptionNormal', { amount: formatCents(total.normal) })}
+                  strong
+                />
+                <div className="property-lease-notice">
+                  <label>
+                    {t('properties.field.exceptionNote')}
+                    <input type="text" maxLength={500} value={e.note} onChange={(ev) => setException(i, k, { note: ev.target.value })} />
+                  </label>
+                  <DocPicker
+                    label={t('properties.field.exceptionDoc')}
+                    docs={docs}
+                    value={e.voucherId}
+                    onChange={(voucherId) => setException(i, k, { voucherId })}
+                  />
+                  {e.voucherId && isCreated(Number(e.voucherId)) ? (
+                    <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(e.voucherId)])}>
+                      {t('properties.edit.deleteDoc')}
+                    </button>
+                  ) : null}
+                  <FileButton onFiles={(files) => void onUploadException(i, k, files)}>{t('properties.edit.uploadException')}</FileButton>
+                  <button type="button" className="btn-secondary" onClick={() => void removeException(i, k)}>
+                    {t('properties.edit.remove')}
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+          <div className="property-lease-foot">
+            <button type="button" className="btn-secondary" onClick={() => set(i, { exceptions: [...d.exceptions, newException(d, today)] })}>
+              {t('properties.edit.addException')}
             </button>
             <button type="button" className="btn-link property-delete" onClick={() => void removeLease(i)}>
               {t('properties.edit.removeLease')}

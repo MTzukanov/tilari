@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { dayCount } from '../../../months'
 import type { VoucherRef } from './ledger'
 import type { Lease, WaterSettlement } from './types'
 import {
   advanceBetween,
-  dayCount,
   settlementFor,
   settlementShares,
   settlementView,
@@ -188,5 +188,13 @@ describe('water settlements', () => {
     // Once the first is stored, its lines are taken.
     const taken: WaterSettlement[] = [{ key: 'w1', from: '2022-11-01', to: '2023-10-31', difference_snt: -12_345 }]
     expect(suggestSettlements(lines, taken, leases).map((s) => s.settlement.to)).toEqual(['2024-08-31'])
+  })
+
+  it('counts the water an agreed exception sets on its days', () => {
+    const l = lease('l1', '2024-01-01', null, 3_000, {
+      exceptions: [{ from: '2024-02-01', to: '2024-02-29', rent_snt: 0 }],
+    })
+    expect(advanceBetween(l, '2024-01-01', '2024-03-31')).toBe(6_000)
+    expect(advanceBetween({ ...l, exceptions: [{ from: '2024-02-01', to: '2024-02-29', rent_snt: 0, water_snt: 3_000 }] }, '2024-01-01', '2024-03-31')).toBe(9_000)
   })
 })

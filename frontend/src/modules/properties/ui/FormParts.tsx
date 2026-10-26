@@ -4,9 +4,9 @@ import { formatCents } from '../../../shared/money'
 import type { BookedLine, LeaseVoucher } from '../api'
 
 /** A read-only cell lined up with the inputs: a label and its value. */
-export function Shown({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
+export function Shown({ label, value, strong = false, title }: { label: string; value: string; strong?: boolean; title?: string }) {
   return (
-    <div className="property-lease-shown">
+    <div className="property-lease-shown" title={title}>
       <span>{label}</span>
       {strong ? <strong>{value}</strong> : <span className="property-lease-value">{value}</span>}
     </div>

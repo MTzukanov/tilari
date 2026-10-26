@@ -1128,7 +1128,11 @@
       "waterComputed": "Berechnete Abrechnung",
       "waterBalance": "Abrechnung mit dem Mieter",
       "waterLetter": "Wasserabrechnung",
-      "waterSettled": "Wasser nach Verbrauch abrechnen"
+      "waterSettled": "Wasser nach Verbrauch abrechnen",
+      "exceptionFrom": "Ab",
+      "exceptionTo": "Bis",
+      "exceptionNote": "Grund",
+      "exceptionDoc": "Vereinbarung"
     },
     "breakEven": {
       "title": "Break-even-Preis: der Preis, der das Geld zurückbringt",
@@ -1254,7 +1258,12 @@
         "waterCompany": "Die auf dem Hausgeldkonto des Objekts gebuchte Wasserabrechnung der Gesellschaft: Zeitraum aus dem Text oder das Jahr vor der Buchung, Betrag aus der Buchung. Mit der Abrechnung der Gesellschaft prüfen.",
         "waterTenant": "Nur eine Abrechnung mit dem Mieter (Erstattung oder Nachzahlung) ist gebucht: keine Abrechnung der Gesellschaft gefunden, daher wird dieselbe angenommen. Mit der Abrechnung der Gesellschaft prüfen."
       },
-      "payments": "Mietzahlungen ({n})"
+      "payments": "Mietzahlungen ({n})",
+      "exceptions": "Abweichende Miete",
+      "exceptionNow": "Derzeit abweichende Miete",
+      "normal": "regulär {amount}",
+      "exceptionNormal": "Reguläre Miete dann {amount}/Monat",
+      "editTerms": "Erhöhung oder abweichende Miete (Nachlass, vereinbarte Miete) hinzufügen…"
     },
     "edit": {
       "title": "Bearbeiten: {name}",
@@ -1292,7 +1301,10 @@
       "deleteNotice": "Erhöhungsmitteilung löschen",
       "uploadContract": "Vertrag hochladen",
       "uploadNotice": "Mitteilung hochladen",
-      "confirmDeleteDoc": "Den Beleg aus der Buchhaltung löschen: {titles}? Ein bei diesem Besuch erstellter wird sofort gelöscht, ein früherer beim Speichern."
+      "confirmDeleteDoc": "Den Beleg aus der Buchhaltung löschen: {titles}? Ein bei diesem Besuch erstellter wird sofort gelöscht, ein früherer beim Speichern.",
+      "exceptionsLead": "Ein vereinbarter Nachlass, eine mietfreie Zeit oder eine andere Ausnahme: an ihren Tagen zahlt der Mieter diese Beträge statt der Miete und ihrer Erhöhungen, und der Mietsaldo rechnet damit. Einen Nachlass als die niedrigere Miete eingeben.",
+      "addException": "Abweichende Miete hinzufügen",
+      "uploadException": "Dokument hochladen"
     },
     "setup": {
       "title": "Mietobjekte einrichten",
@@ -1404,7 +1416,8 @@
       }
     },
     "upload": {
-      "contractTitle": "Mietvertrag {object} {tenant} {date}-"
+      "contractTitle": "Mietvertrag {object} {tenant} {date}-",
+      "exceptionTitle": "Abweichende Miete {object} {tenant} {from}-{to}"
     },
     "water": {
       "title": "Wasserkosten und Abrechnungen",
@@ -1482,7 +1495,7 @@
       "arrears": "Mietrückstand {amount}",
       "ahead": "im Voraus bezahlt {amount}",
       "even": "ausgeglichen, 0,00 €",
-      "countedFrom": "gezählt ab {date} (Erwerb des Objekts oder Beginn der Buchhaltung)",
+      "countedFrom": "gezählt ab {date} (Erwerb des Objekts, davor erhaltene Miete oder Beginn der Buchhaltung)",
       "months": "Monatlich ({n})",
       "col": {
         "month": "Monat",
@@ -1502,7 +1515,12 @@
       "kpiArrears": "Mietrückstand",
       "kpiAhead": "Im Voraus bezahlt",
       "kpiHint": "laufendes Mietverhältnis",
-      "othersHint": "andere Mietverhältnisse: {amount}"
+      "othersHint": "andere Mietverhältnisse: {amount}",
+      "exceptionHint": "Abweichende Miete, ohne die Ausnahme {amount}",
+      "exceptionLegend": "* abweichende Miete: der vereinbarte Betrag. Die reguläre Miete und der Grund erscheinen, wenn der Mauszeiger darauf zeigt.",
+      "addException": "Ausnahme hinzufügen",
+      "saveException": "Ausnahme speichern",
+      "prefillLead": "Vorausgefüllt, sodass {month} das Gezahlte erwartet ({paid}). Die reguläre Miete und ihre Erhöhungen bleiben. Tage und Beträge prüfen und den Grund angeben; die Vereinbarung lässt sich auf der Bearbeitungsseite anhängen."
     }
   }
 }

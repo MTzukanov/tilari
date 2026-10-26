@@ -78,17 +78,21 @@ describe('normalizePropertyDoc', () => {
     )
   })
 
-  it('validates leases: steps sorted, keys given, unknown keys kept', () => {
+  it('validates leases: steps and exceptions sorted, keys given, unknown keys kept', () => {
     const doc = normalizePropertyDoc({
       eras: [],
       leases: [
         {
           tenant_partner_id: 5,
-          starts: '2025-03-10',
+          starts: '2025-04-14',
           due_day: 5,
           rents: [
             { from: '2026-01-01', rent_snt: 70_000, water_snt: 2_000, parking_snt: 1_500, voucher_id: 9 },
-            { from: '2025-03-10', rent_snt: 68_000, water_snt: 0 },
+            { from: '2025-04-14', rent_snt: 65_500, water_snt: 0 },
+          ],
+          exceptions: [
+            { from: '2025-08-01', to: '2025-08-31', rent_snt: 34_000, water_snt: 2_000, note: '  Remonttihyvitys ', voucher_id: 10 },
+            { from: '2025-05-01', to: '2025-05-15', rent_snt: 0, parking_snt: 0 },
           ],
           increase: { kind: 'amount', amount_snt: 2_000, month: 1 },
           doc_voucher_id: 8,
@@ -105,11 +109,15 @@ describe('normalizePropertyDoc', () => {
       {
         key: 'l2',
         tenant_partner_id: 5,
-        starts: '2025-03-10',
+        starts: '2025-04-14',
         due_day: 5,
         rents: [
-          { from: '2025-03-10', rent_snt: 68_000 },
+          { from: '2025-04-14', rent_snt: 65_500 },
           { from: '2026-01-01', rent_snt: 70_000, water_snt: 2_000, parking_snt: 1_500, voucher_id: 9 },
+        ],
+        exceptions: [
+          { from: '2025-05-01', to: '2025-05-15', rent_snt: 0 },
+          { from: '2025-08-01', to: '2025-08-31', rent_snt: 34_000, water_snt: 2_000, note: 'Remonttihyvitys', voucher_id: 10 },
         ],
         increase: { kind: 'amount', amount_snt: 2_000, month: 1 },
         doc_voucher_id: 8,
@@ -136,6 +144,27 @@ describe('normalizePropertyDoc', () => {
     expect(bad({ rents: [{ from: '2025-01-01', rent_snt: 500, water_snt: -5 }] })).toThrow(
       'invalid_field:leases[0].rents[0].water_snt',
     )
+    expect(bad({ exceptions: [{ from: '2024-12-01', to: '2025-01-31', rent_snt: 0 }] })).toThrow(
+      'invalid_field:leases[0].exceptions[0].from',
+    )
+    expect(bad({ exceptions: [{ from: '2025-03-01', to: '2025-02-28', rent_snt: 0 }] })).toThrow(
+      'invalid_field:leases[0].exceptions[0].to',
+    )
+    expect(bad({ ends: '2025-06-30', exceptions: [{ from: '2025-06-01', to: '2025-07-31', rent_snt: 0 }] })).toThrow(
+      'invalid_field:leases[0].exceptions[0].to',
+    )
+    expect(bad({ exceptions: [{ from: '2025-03-01', to: '2025-03-31', rent_snt: -1 }] })).toThrow(
+      'invalid_field:leases[0].exceptions[0].rent_snt',
+    )
+    // Two exceptions may not cover the same day; the later one in the list is named.
+    expect(
+      bad({
+        exceptions: [
+          { from: '2025-04-01', to: '2025-04-30', rent_snt: 0 },
+          { from: '2025-03-01', to: '2025-04-01', rent_snt: 0 },
+        ],
+      }),
+    ).toThrow('invalid_field:leases[0].exceptions[0].from')
     expect(bad({ due_day: 0 })).toThrow('invalid_field:leases[0].due_day')
     expect(bad({ key: 'has space' })).toThrow('invalid_field:leases[0].key')
     expect(() =>

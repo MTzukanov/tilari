@@ -32,55 +32,55 @@ describe('textScorer and pickBest', () => {
 
 describe('inflected names and unit numbers', () => {
   const names = [
-    { id: 44, name: 'As Oy Kuopion Koivikkotie 7 F 44' },
-    { id: 48, name: 'As Oy Kuopion Koivikkotie 7 F 48' },
-    { id: 6, name: 'As Oy Kajaanin Orvokki, Kanervakuja 7 as 6' },
-    { id: 21, name: 'As Oy Kajaanin Orvokki, Kanervakuja 7 as 21' },
-    { id: 45, name: 'As Oy Kajaanin Orvokki, Kanervakuja 7 AP45' },
-    { id: 32, name: 'As Oy Oulun Rehtori 3, Rehtorintie 15 C 32, 90100 Oulu' },
-    { id: 2, name: 'As Oy Oulun Rehtori 3, Rehtorintie 15 C 2, 90100 Oulu' },
+    { id: 17, name: 'As Oy Kuopion Koivikkotie 3 F 17' },
+    { id: 19, name: 'As Oy Kuopion Koivikkotie 3 F 19' },
+    { id: 4, name: 'As Oy Kajaanin Orvokki, Kanervakuja 9 as 4' },
+    { id: 13, name: 'As Oy Kajaanin Orvokki, Kanervakuja 9 as 13' },
+    { id: 28, name: 'As Oy Kajaanin Orvokki, Kanervakuja 9 AP28' },
+    { id: 26, name: 'As Oy Oulun Rehtori 5, Rehtorintie 4 B 26, 90100 Oulu' },
+    { id: 9, name: 'As Oy Oulun Rehtori 5, Rehtorintie 4 B 9, 90100 Oulu' },
   ]
   const score = textScorer(names)
 
   it('picks the unit whose number the text names', () => {
-    expect(pickBest(score('Vuokrankorotus Koivikkotie 7 F 44, Kuopio 1.1.2024-')).id).toBe(44)
-    expect(pickBest(score('Vuokrasopimus Koivikkotie 7 F 48 Kuopio')).id).toBe(48)
-    expect(pickBest(score('Kajaani Orvokki A21 vastikelasku 1.11.2023-')).id).toBe(21)
-    expect(pickBest(score('Kajaani Orvokki A6 vastikelasku 1.11.2023-')).id).toBe(6)
-    expect(pickBest(score('Kauppahinta - Tekninen kirjaus - Rehtorintie 15 C 32 tase-erä')).id).toBe(32)
+    expect(pickBest(score('Vuokrankorotus Koivikkotie 3 F 17, Kuopio 1.1.2024-')).id).toBe(17)
+    expect(pickBest(score('Vuokrasopimus Koivikkotie 3 F 19 Kuopio')).id).toBe(19)
+    expect(pickBest(score('Kajaani Orvokki A13 vastikelasku 1.3.2023-')).id).toBe(13)
+    expect(pickBest(score('Kajaani Orvokki A4 vastikelasku 1.3.2023-')).id).toBe(4)
+    expect(pickBest(score('Kauppahinta - Tekninen kirjaus - Rehtorintie 4 B 26 tase-erä')).id).toBe(26)
   })
 
   it('stays undecided when the text fits two units equally', () => {
-    const r = pickBest(score('KAUPPAKIRJA AS OY OULUN REHTORI 3 OSAKKEET 59-97'))
+    const r = pickBest(score('KAUPPAKIRJA AS OY OULUN REHTORI 5 OSAKKEET 140-171'))
     expect(r.id).toBeNull()
-    expect(r.candidates.sort((a, b) => a - b)).toEqual([2, 32])
+    expect(r.candidates.sort((a, b) => a - b)).toEqual([9, 26])
   })
 })
 
 describe('words before numbers', () => {
   const names = [
-    { id: 24, name: 'As Oy Oulun Tammipuisto, Kirkkokatu 11A12' },
-    { id: 3, name: 'As Oy Oulun Etelän Puutarha, Puutarhantie 1 AP6' },
-    { id: 4, name: 'As Oy Oulun Etelän Puutarha, Puutarhantie 1 AP5' },
-    { id: 1, name: 'As Oy Oulun Rehtori 3, Rehtorintie 15 C 32, 90100 Oulu' },
-    { id: 5, name: 'As Oy Oulun Tehtaan Flora, Vaunukatu 8 AH250' },
-    { id: 9, name: 'As Oy Kangasalan Tuulimylly, Tuulimyllynkatu 6 A 22' },
+    { id: 24, name: 'As Oy Oulun Tammipuisto, Kirkkokatu 6B15' },
+    { id: 3, name: 'As Oy Oulun Etelän Puutarha, Puutarhantie 3 AP8' },
+    { id: 4, name: 'As Oy Oulun Etelän Puutarha, Puutarhantie 3 AP7' },
+    { id: 1, name: 'As Oy Oulun Rehtori 5, Rehtorintie 4 B 26, 90100 Oulu' },
+    { id: 5, name: 'As Oy Oulun Tehtaan Flora, Vaunukatu 2 AH117' },
+    { id: 9, name: 'As Oy Kangasalan Tuulimylly, Tuulimyllynkatu 9 A 31' },
   ]
   const score = textScorer(names)
 
   it('a housing-company name beats a city plus a stray number', () => {
-    expect(pickBest(score('As Oy Oulun Tammipuisto 7.2024-6.2025')).id).toBe(24)
-    expect(pickBest(score('Vastikelasku Tammipuisto 1.10.24-30.6.25')).id).toBe(24)
+    expect(pickBest(score('As Oy Oulun Tammipuisto 9.2023-8.2024')).id).toBe(24)
+    expect(pickBest(score('Vastikelasku Tammipuisto 1.4.24-31.12.24')).id).toBe(24)
   })
 
   it('a city alone never picks, even with a matching number', () => {
-    const r = pickBest(score('Oulun vuokrasopimus 6 kk'))
+    const r = pickBest(score('Oulun vuokrasopimus 8 kk'))
     expect(r.id).toBeNull()
     expect(r.candidates.length).toBeGreaterThan(1)
   })
 
   it('month.year dates are not unit numbers', () => {
-    expect(tokenize('As Oy Oulun Tammipuisto 7.2024-6.2025')).toEqual(['oulun', 'tammipuisto'])
+    expect(tokenize('As Oy Oulun Tammipuisto 9.2023-8.2024')).toEqual(['oulun', 'tammipuisto'])
   })
 })
 

@@ -1,7 +1,7 @@
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
-import type { BookedLine, LeaseRentAccount, LeaseView } from '../api'
-import { increaseText, leasePeriod, leaseRentText, periodText, waterBalanceText, waterStatusText } from './format'
+import type { BookedLine, LeaseException, LeaseRentAccount, LeaseView } from '../api'
+import { exceptionText, increaseText, leasePeriod, leaseRentText, periodText, waterBalanceText, waterStatusText } from './format'
 import { LineSources, VoucherLink } from './FormParts'
 import { RentAccountView } from './RentAccount'
 
@@ -38,12 +38,17 @@ function LeaseCard({
   lease,
   account,
   asOf,
+  onEdit,
   onOpenVoucher,
+  onAddException,
 }: {
   lease: LeaseView
   account: LeaseRentAccount | undefined
   asOf: string
+  /** Opens the edit page, where the lease's increases and exceptions are entered. */
+  onEdit: () => void
   onOpenVoucher: (voucherId: number) => void
+  onAddException?: (leaseKey: string, exception: LeaseException) => Promise<void>
 }) {
   const { t } = useI18n()
   const terms = [
@@ -53,6 +58,7 @@ function LeaseCard({
     t(lease.water === 'flat' ? 'properties.water.flat' : 'properties.water.advance'),
   ].filter(Boolean)
   const latest = lease.water_latest
+  const exceptionNow = lease.exceptions.find((e) => e.from <= asOf && asOf <= e.to)
   return (
     <div className="property-lease-card">
       <p className="property-lease-head">
@@ -60,12 +66,25 @@ function LeaseCard({
         <span className="muted">{leasePeriod(t, lease)}</span>
       </p>
       {terms.length ? <p className="property-lease-terms">{terms.join(' · ')}</p> : null}
+      {exceptionNow ? (
+        <p className="property-lease-terms">
+          {t('properties.lease.exceptionNow')}: {exceptionText(t, exceptionNow)}
+        </p>
+      ) : null}
       {lease.contract ? (
         <p className="property-lease-terms">
           {t('properties.lease.contract')}: <VoucherLink voucher={lease.contract} onOpen={onOpenVoucher} />
         </p>
       ) : null}
-      {account ? <RentAccountView account={account} asOf={asOf} leaseStarts={lease.starts} onOpen={onOpenVoucher} /> : null}
+      {account ? (
+        <RentAccountView
+          account={account}
+          asOf={asOf}
+          leaseStarts={lease.starts}
+          onOpen={onOpenVoucher}
+          onAddException={onAddException ? (e) => onAddException(lease.key, e) : undefined}
+        />
+      ) : null}
       {latest ? (
         <p className="property-lease-terms">
           {t('properties.water.latest', { period: periodText(t, latest.from, latest.to) })}: {waterBalanceText(t, latest.balance_snt)}
@@ -87,6 +106,26 @@ function LeaseCard({
           </ul>
         </details>
       ) : null}
+      {lease.exceptions.length ? (
+        <details>
+          <summary>
+            {t('properties.lease.exceptions')} ({lease.exceptions.length})
+          </summary>
+          <ul className="property-doc-list">
+            {lease.exceptions.map((e) => (
+              <li key={e.from}>
+                {exceptionText(t, e)}
+                {e.voucher ? <VoucherLink voucher={e.voucher} onOpen={onOpenVoucher} /> : null}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+      <p className="property-lease-terms">
+        <button type="button" className="btn-link" onClick={onEdit}>
+          {t('properties.lease.editTerms')}
+        </button>
+      </p>
     </div>
   )
 }
@@ -101,6 +140,7 @@ export function LeasesPanel({
   unassigned = [],
   onEdit,
   onOpenVoucher,
+  onAddException,
 }: {
   leases: LeaseView[]
   current: LeaseView | null
@@ -112,6 +152,8 @@ export function LeasesPanel({
   asOf: string
   onEdit: () => void
   onOpenVoucher: (voucherId: number) => void
+  /** Saves an agreed exception to a stored lease from its month table; none when the document is read-only. */
+  onAddException?: (leaseKey: string, exception: LeaseException) => Promise<void>
 }) {
   const { t } = useI18n()
   const stored = current && !current.suggested ? current : null
@@ -129,18 +171,25 @@ export function LeasesPanel({
       ) : null}
       {leases.length > 0 && !stored ? <p className="muted">{t('properties.lease.noCurrent', { date: formatDate(asOf) })}</p> : null}
       {stored ? (
-        <LeaseCard lease={stored} account={accounts.find((a) => a.lease_key === stored.key)} asOf={asOf} onOpenVoucher={onOpenVoucher} />
+        <LeaseCard
+          lease={stored}
+          account={accounts.find((a) => a.lease_key === stored.key)}
+          asOf={asOf}
+          onEdit={onEdit}
+          onOpenVoucher={onOpenVoucher}
+          onAddException={onAddException}
+        />
       ) : null}
       {others.length ? (
         <>
           <h4 className="property-lease-others">{t('properties.lease.others')}</h4>
-          <LeaseList leases={others} accounts={accounts} asOf={asOf} onOpenVoucher={onOpenVoucher} />
+          <LeaseList leases={others} accounts={accounts} asOf={asOf} onOpenVoucher={onOpenVoucher} onAddException={onAddException} />
         </>
       ) : null}
       {unassigned.length ? (
-        <p className="property-lease-terms">
+        <div className="property-lease-terms">
           <LineSources label={t('properties.rent.unassigned', { n: unassigned.length })} lines={unassigned} onOpen={onOpenVoucher} />
-        </p>
+        </div>
       ) : null}
       {suggestions.length ? (
         <div className="property-lease-suggestions">
@@ -161,11 +210,13 @@ function LeaseList({
   accounts = [],
   asOf = '',
   onOpenVoucher,
+  onAddException,
 }: {
   leases: LeaseView[]
   accounts?: LeaseRentAccount[]
   asOf?: string
   onOpenVoucher: (voucherId: number) => void
+  onAddException?: (leaseKey: string, exception: LeaseException) => Promise<void>
 }) {
   const { t } = useI18n()
   return (
@@ -188,6 +239,7 @@ function LeaseList({
               asOf={asOf}
               leaseStarts={lease.starts}
               onOpen={onOpenVoucher}
+              onAddException={onAddException ? (e) => onAddException(lease.key, e) : undefined}
             />
           ) : null}
         </li>

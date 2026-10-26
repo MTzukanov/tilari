@@ -1128,7 +1128,11 @@
       "waterComputed": "Laskettu tasaus",
       "waterBalance": "Tasaus vuokralaiselle",
       "waterLetter": "Vesitasauslaskelma",
-      "waterSettled": "Vesimaksu tasataan kulutuksen mukaan"
+      "waterSettled": "Vesimaksu tasataan kulutuksen mukaan",
+      "exceptionFrom": "Alkaen",
+      "exceptionTo": "Päättyen",
+      "exceptionNote": "Syy",
+      "exceptionDoc": "Sopimus poikkeuksesta"
     },
     "breakEven": {
       "title": "Nollahinta: millä hinnalla rahat tulevat takaisin",
@@ -1254,7 +1258,12 @@
         "waterCompany": "Kohteen vastiketilille kirjattu taloyhtiön vesitasaus: jakso tekstistä tai kirjausta edeltävä vuosi, summa kirjauksesta. Tarkista taloyhtiön tasauslaskelmasta.",
         "waterTenant": "Vain vuokralaisen kanssa kirjattu tasaus (palautus tai lisämaksu): taloyhtiön tasausta ei löytynyt, joten sen oletetaan olleen sama. Tarkista taloyhtiön tasauslaskelmasta."
       },
-      "payments": "Vuokrasuoritukset ({n})"
+      "payments": "Vuokrasuoritukset ({n})",
+      "exceptions": "Poikkeava vuokra",
+      "exceptionNow": "Nyt poikkeava vuokra",
+      "normal": "normaali {amount}",
+      "exceptionNormal": "Normaali vuokra tällöin {amount}/kk",
+      "editTerms": "Lisää korotus tai poikkeava vuokra (alennus, sovittu vuokra)…"
     },
     "edit": {
       "title": "Muokkaa: {name}",
@@ -1292,7 +1301,10 @@
       "deleteNotice": "Poista korotusilmoitus",
       "uploadContract": "Lataa sopimus",
       "uploadNotice": "Lataa ilmoitus",
-      "confirmDeleteDoc": "Poistetaanko tosite kirjanpidosta: {titles}? Tällä käynnillä luotu poistetaan heti, aiemmin luotu kun tallennat."
+      "confirmDeleteDoc": "Poistetaanko tosite kirjanpidosta: {titles}? Tällä käynnillä luotu poistetaan heti, aiemmin luotu kun tallennat.",
+      "exceptionsLead": "Sovittu alennus, vuokravapaa jakso tai muu poikkeus: jakson päivinä vuokralainen maksaa nämä summat vuokran ja korotusten sijaan, ja vuokrasaldo laskee niillä. Alennus kirjoitetaan alempana vuokrana.",
+      "addException": "Lisää poikkeava vuokra",
+      "uploadException": "Lataa liite"
     },
     "setup": {
       "title": "Vuokrakohteiden määritys",
@@ -1404,7 +1416,8 @@
       }
     },
     "upload": {
-      "contractTitle": "Vuokrasopimus {object} {tenant} {date}-"
+      "contractTitle": "Vuokrasopimus {object} {tenant} {date}-",
+      "exceptionTitle": "Poikkeava vuokra {object} {tenant} {from}-{to}"
     },
     "water": {
       "title": "Vesimaksut ja vesitasaukset",
@@ -1482,7 +1495,7 @@
       "arrears": "vuokrarästi {amount}",
       "ahead": "maksettu ennakkoon {amount}",
       "even": "täsmää, 0,00 €",
-      "countedFrom": "laskettu {date} alkaen (kohteen hankinnasta tai kirjanpidon alusta)",
+      "countedFrom": "laskettu {date} alkaen (kohteen hankinnasta, sitä aiemmin saadusta vuokrasta tai kirjanpidon alusta)",
       "months": "Kuukausittain ({n})",
       "col": {
         "month": "Kuukausi",
@@ -1502,7 +1515,12 @@
       "kpiArrears": "Vuokrarästi",
       "kpiAhead": "Maksettu ennakkoon",
       "kpiHint": "voimassa oleva vuokrasuhde",
-      "othersHint": "muut vuokrasuhteet: {amount}"
+      "othersHint": "muut vuokrasuhteet: {amount}",
+      "exceptionHint": "Poikkeava vuokra, ilman poikkeusta {amount}",
+      "exceptionLegend": "* poikkeava vuokra: sovittu summa. Normaali vuokra ja syy näkyvät, kun viet hiiren summan päälle.",
+      "addException": "Lisää poikkeus",
+      "saveException": "Tallenna poikkeus",
+      "prefillLead": "Esitäytetty niin, että {month} odottaa sen, mitä maksettiin ({paid}). Normaali vuokra ja korotukset eivät muutu. Tarkista päivät ja summat ja kirjoita syy; sopimuksen voi liittää muokkaussivulla."
     }
   }
 }

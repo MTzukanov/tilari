@@ -174,6 +174,7 @@ not this.
 | Vuokravakuus | Hyresdeposition | Rent deposit | Mietkaution |
 | Vuokrasaldo | Hyressaldo | Rent balance | Mietsaldo |
 | Vuokrarästi | Hyresskuld | Rent arrears | Mietrückstand |
+| Poikkeava vuokra | Avvikande hyra | Agreed rent exception | Abweichende Miete |
 | Maksettu ennakkoon | Betalt i förskott | Paid ahead | Im Voraus bezahlt |
 | Vesimaksuennakko | Vattenavgiftsförskott | Water advance | Wasservorauszahlung |
 | Vesitasaus | Vattenutjämning | Water settlement | Wasserabrechnung |

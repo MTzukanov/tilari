@@ -1,6 +1,6 @@
 /** Loads ledger + stored documents and assembles the portfolio, one object, or the setup view. */
 import { getPeriods } from '../../../access'
-import { rentAccount, rentBalance, waterCharges, type RentLine } from './arrears'
+import { rentAccount, rentBalance, rentCountedFrom, waterCharges, type RentLine } from './arrears'
 import { BookError } from '../../../errors'
 import { readTilariData, readTilariDataPrefix, writeTilariData } from '../../../kernel/tilariData'
 import type { SqliteDb } from '../../../sqlite'
@@ -268,11 +268,13 @@ function rentAccountOf(c: Computed, ctx: LeaseContext, refs: Map<number, Voucher
   const leases = c.parsed.doc.leases ?? []
   if (!leases.length) return null
   const charges = waterCharges(c.parsed.doc.water_settlements ?? [], leases, (id) => refs.get(id)?.date ?? null)
-  // Rent is the owner's from the acquisition (else the books' start) until a sale.
+  const lines = rentLines(c)
+  // Rent is the owner's from the acquisition (else the books' start, or rent received before it) until a sale.
   const { acquired_on, sold_on } = c.result.summary
-  const from = acquired_on && acquired_on > ctx.booksStart ? acquired_on : ctx.booksStart
+  const owned = acquired_on && acquired_on > ctx.booksStart ? acquired_on : ctx.booksStart
+  const from = rentCountedFrom(owned, lines.filter((l) => l.net_snt > 0))
   const until = c.result.status === 'sold' && sold_on && sold_on < ctx.asOf ? sold_on : ctx.asOf
-  return rentAccount({ leases, lines: rentLines(c), charges, window: { from, until, asOf: ctx.asOf }, ctx: { partnerName: partnerName(ctx), refs } })
+  return rentAccount({ leases, lines, charges, window: { from, until, asOf: ctx.asOf }, ctx: { partnerName: partnerName(ctx), refs } })
 }
 
 function toRow(c: Computed, ctx: LeaseContext, account: RentAccount | null = rentAccountOf(c, ctx, ctx.refs)): PropertyRow {

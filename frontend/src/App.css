@@ -3171,6 +3171,7 @@ tr.is-ended td {
 .editor select,
 .property-edit input:not([type='checkbox']):not([type='radio']),
 .property-edit select,
+.property-rent-exception-form input:not([type='checkbox']):not([type='radio']),
 .filters input:not([type='checkbox']):not([type='radio']),
 .filters select,
 .search-select input,
@@ -3192,7 +3193,9 @@ tr.is-ended td {
 .editor input[type='date']::-webkit-datetime-edit,
 .editor input[type='date']::-webkit-datetime-edit-fields-wrapper,
 .property-edit input[type='date']::-webkit-datetime-edit,
-.property-edit input[type='date']::-webkit-datetime-edit-fields-wrapper {
+.property-edit input[type='date']::-webkit-datetime-edit-fields-wrapper,
+.property-rent-exception-form input[type='date']::-webkit-datetime-edit,
+.property-rent-exception-form input[type='date']::-webkit-datetime-edit-fields-wrapper {
   display: inline-flex;
   align-items: center;
   height: 100%;
@@ -3200,7 +3203,8 @@ tr.is-ended td {
 }
 
 .editor input[type='date']::-webkit-calendar-picker-indicator,
-.property-edit input[type='date']::-webkit-calendar-picker-indicator {
+.property-edit input[type='date']::-webkit-calendar-picker-indicator,
+.property-rent-exception-form input[type='date']::-webkit-calendar-picker-indicator {
   margin: 0;
   align-self: center;
 }
@@ -5331,6 +5335,15 @@ tr.tax-total td {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+/* An exception has a second date: Alkaen, Päättyen, rent, water, (parking), total. */
+.property-lease-grid.property-lease-amounts.property-lease-exception {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.property-lease-grid.property-lease-amounts.property-lease-exception.no-parking {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 /* A read-only value lined up with the inputs beside it. */
 .property-lease-shown {
   display: flex;
@@ -5403,6 +5416,10 @@ tr.tax-total td {
   border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
 }
 
+.property-lease-add {
+  margin: 0.5rem 0 0.25rem;
+}
+
 .property-lease-foot {
   display: flex;
   justify-content: space-between;
@@ -5424,7 +5441,9 @@ tr.tax-total td {
 @media (max-width: 640px) {
   .property-lease-grid,
   .property-lease-grid.property-lease-amounts,
-  .property-lease-grid.property-lease-amounts.no-parking {
+  .property-lease-grid.property-lease-amounts.no-parking,
+  .property-lease-grid.property-lease-amounts.property-lease-exception,
+  .property-lease-grid.property-lease-amounts.property-lease-exception.no-parking {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -5486,17 +5505,43 @@ tr.tax-total td {
   margin: 0.3rem 0 0.2rem;
 }
 
-/* A lease's rent account: on a list row it takes the row's width; payments sit in the last column. */
+/* A lease's rent account: on a list row it takes the row's width; payments sit in the last column.
+   A table wider than the page scrolls sideways instead of running past its edge. */
+.property-rent {
+  overflow-x: auto;
+}
+
 .property-doc-list li > .property-rent {
   flex-basis: 100%;
+  min-width: 0;
 }
 
 .property-rent-table {
   margin: 0.4rem 0 0.2rem;
 }
 
-.property-rent-lines .btn-link + .btn-link {
-  margin-left: 0.6rem;
+/* Top-aligned: on the baseline of a wrapped payment, Firefox drew a month over the next row. */
+.property-rent-table td {
+  vertical-align: top;
+}
+
+/* A month's payments wrap flush left; a narrow page puts a payment's amount under its date. */
+.property-rent-lines .btn-link {
+  text-align: left;
+}
+
+.property-rent-lines .btn-link:not(:last-child) {
+  margin-right: 0.6rem;
+}
+
+/* The exception form under a month: the table's compact cells do not squeeze it. */
+.property-rent-exception-form {
+  padding: 0.3rem 0 0.6rem;
+}
+
+/* A month with an agreed exception: the normal rent and the reason on hover. */
+.property-rent-exception {
+  cursor: help;
 }
 
 /* Water settlements: one card per period, a tenant's status as a small badge. */

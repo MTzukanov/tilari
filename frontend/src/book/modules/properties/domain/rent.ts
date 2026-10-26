@@ -1,6 +1,7 @@
 /** Leases (vuokrasuhteet): which one runs on a date and the rent in effect. Pure. */
+import { addDays } from '../../../months'
 import type { PartnerInfo, VoucherRef } from './ledger'
-import type { Lease, LeaseRent, LeaseState, LeaseView, LeaseVoucher } from './types'
+import type { Lease, LeaseException, LeaseRent, LeaseState, LeaseView, LeaseVoucher } from './types'
 
 export function leaseState(lease: Lease, date: string): LeaseState {
   if (date < lease.starts) return 'upcoming'
@@ -14,6 +15,50 @@ export function rentAt(lease: Lease, date: string): LeaseRent | null {
   let found: LeaseRent | null = null
   for (const step of lease.rents) if (step.from <= date) found = step
   return found
+}
+
+/** The agreed exception covering `date`, if any. */
+export function exceptionAt(lease: Lease, date: string): LeaseException | null {
+  return (lease.exceptions ?? []).find((e) => e.from <= date && date <= e.to) ?? null
+}
+
+/** The amounts agreed for `date`: an exception covering it, else the step in effect; none before the first step. */
+export function termsAt(lease: Lease, date: string): LeaseRent | LeaseException | null {
+  const exception = exceptionAt(lease, date)
+  if (exception) return exception
+  let found: LeaseRent | null = null
+  for (const step of lease.rents) if (step.from <= date) found = step
+  return found
+}
+
+/** Days with one set of amounts: a step's, or an agreed exception's over it. */
+export type RentSegment = { from: string; to: string; terms: LeaseRent | LeaseException; exception: LeaseException | null }
+
+/**
+ * The lease's amounts from `from` to `to` (already within the lease) in stretches: its steps,
+ * with the agreed exceptions standing over them. Days before the first step are left out.
+ */
+export function rentSegments(lease: Lease, from: string, to: string): RentSegment[] {
+  const cuts = new Set([from])
+  const cut = (date: string) => {
+    if (date > from && date <= to) cuts.add(date)
+  }
+  for (const step of lease.rents) cut(step.from)
+  for (const e of lease.exceptions ?? []) {
+    cut(e.from)
+    cut(addDays(e.to, 1))
+  }
+  const starts = [...cuts].sort()
+  const out: RentSegment[] = []
+  starts.forEach((start, i) => {
+    const terms = termsAt(lease, start)
+    const end = i + 1 < starts.length ? addDays(starts[i + 1], -1) : to
+    const last = out[out.length - 1]
+    // A step from inside an exception does not split it: the same amounts stay one stretch.
+    if (last && last.terms === terms) last.to = end
+    else if (terms) out.push({ from: start, to: end, terms, exception: exceptionAt(lease, start) })
+  })
+  return out
 }
 
 /** What the tenant pays a month at a step: rent, water and parking together. */
@@ -30,12 +75,13 @@ export function currentLease(leases: Lease[], date: string): Lease | null {
   return found
 }
 
-/** Every voucher id a lease links to: the contract and the rent steps' notices. */
+/** Every voucher id a lease links to: the contract, the rent steps' notices and the exceptions' agreements. */
 export function leaseVoucherIds(leases: Lease[]): number[] {
   const ids = new Set<number>()
   for (const lease of leases) {
     if (lease.doc_voucher_id != null) ids.add(lease.doc_voucher_id)
     for (const step of lease.rents) if (step.voucher_id != null) ids.add(step.voucher_id)
+    for (const e of lease.exceptions ?? []) if (e.voucher_id != null) ids.add(e.voucher_id)
   }
   return [...ids]
 }
@@ -78,6 +124,10 @@ export function leaseView(
     increase: lease.increase ?? null,
     contract: voucherOf(refs, lease.doc_voucher_id),
     steps: lease.rents.map((step) => ({ ...step, voucher: voucherOf(refs, step.voucher_id) })),
+    exceptions: (lease.exceptions ?? []).map((e) => {
+      const step = lease.rents.filter((r) => r.from <= e.from).pop()
+      return { ...e, voucher: voucherOf(refs, e.voucher_id), normal_snt: step ? rentTotal(step) : 0 }
+    }),
     water: lease.water ?? 'advance',
   }
 }

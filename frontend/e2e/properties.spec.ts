@@ -137,6 +137,63 @@ test.describe('rental object leases', () => {
   })
 })
 
+test.describe('rental object rent exceptions', () => {
+  test('an agreed exception lowers the expected rent on its days and shows on the card and in the months', async ({ page }) => {
+    await openBook(page)
+    await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
+    await page.goto('/#/property/4/edit')
+    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
+    const lease = page.locator('.property-lease-edit').first()
+    const tenant = lease.getByLabel('Vuokralainen').first()
+    await tenant.fill('Testi Vuokralainen')
+    await tenant.press('Escape')
+    await lease.getByLabel('Alkaa', { exact: true }).fill('2025-03-01')
+    await lease.getByLabel('Vuokra €/kk').first().fill('650')
+    await lease.getByLabel('Vesi €/kk').first().fill('20')
+
+    await lease.getByRole('button', { name: 'Lisää poikkeava vuokra' }).click()
+    const exception = lease.locator('.property-lease-exception').first()
+    // Prefilled with the amounts in force; a discount is typed as the lower rent.
+    await expect(exception.getByLabel('Vesi €/kk')).toHaveValue('20,00')
+    await exception.getByLabel('Alkaen').fill('2025-05-01')
+    await exception.getByLabel('Päättyen').fill('2025-05-31')
+    await exception.getByLabel('Vuokra €/kk').fill('450')
+    await exception.getByLabel('Syy').fill('Remonttihyvitys')
+    await expect(exception).toContainText(/470,00\s€ \(−200,00\s€\)/)
+    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+
+    await expect(page).toHaveURL(/#\/property\/4$/)
+    const card = page.locator('.property-lease-card').first()
+    // No rent is booked on the object: nine months of 670,00 €, May 200,00 € less.
+    await expect(card).toContainText(/Vuokrasaldo 30\.11\.2025: vuokrarästi 5\s830,00\s€/)
+    await card.getByText('Poikkeava vuokra (1)').click()
+    await expect(card).toContainText(/1\.5\.2025–31\.5\.2025 · 470,00\s€\/kk \(vuokra 450,00\s€, vesi 20,00\s€\), normaali 670,00\s€ · Remonttihyvitys/)
+    await card.getByText(/^Kuukausittain \(\d+\)$/).click()
+    const may = card.locator('.property-rent-table tr', { hasText: 'toukokuu 2025' })
+    await expect(may.locator('.property-rent-exception')).toHaveText(/470,00\s€\*/)
+    await expect(may.locator('.property-rent-exception')).toHaveAttribute('title', /ilman poikkeusta 670,00\s€ · Remonttihyvitys/)
+    // A month that moved the balance offers an exception prefilled with what was paid (nothing here).
+    const october = card.locator('.property-rent-table tr', { hasText: 'lokakuu 2025' })
+    await october.getByRole('button', { name: 'Lisää poikkeus' }).click()
+    const form = card.locator('.property-rent-exception-form')
+    await expect(form.getByLabel('Alkaen')).toHaveValue('2025-10-01')
+    await expect(form.getByLabel('Päättyen')).toHaveValue('2025-10-31')
+    await expect(form.getByLabel('Vuokra €/kk')).toHaveValue('0,00')
+    await form.getByLabel('Syy').fill('Vuokravapaa kuukausi')
+    await form.getByRole('button', { name: 'Tallenna poikkeus' }).click()
+    await expect(form).toHaveCount(0)
+    await expect(card).toContainText(/Vuokrasaldo 30\.11\.2025: vuokrarästi 5\s160,00\s€/)
+    await expect(october.locator('.property-rent-exception')).toHaveText(/0,00\s€\*/)
+    await expect(october.getByRole('button', { name: 'Lisää poikkeus' })).toHaveCount(0)
+    await expect(card.getByText('Poikkeava vuokra (2)')).toBeVisible()
+
+    // The card leads to where exceptions are entered.
+    await card.getByRole('button', { name: /^Lisää korotus tai poikkeava vuokra/ }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/edit$/)
+    await expect(page.locator('.property-lease-exception')).toHaveCount(2)
+  })
+})
+
 test.describe('rental object water settlements', () => {
   test('a settlement is shared by days with the tenant, writes the letter and shows on the object page', async ({ page }) => {
     await openBook(page)

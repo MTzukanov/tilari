@@ -1128,7 +1128,11 @@
       "waterComputed": "Beräknad utjämning",
       "waterBalance": "Utjämning med hyresgästen",
       "waterLetter": "Utjämningskalkyl",
-      "waterSettled": "Vattenavgiften utjämnas enligt förbrukning"
+      "waterSettled": "Vattenavgiften utjämnas enligt förbrukning",
+      "exceptionFrom": "Från",
+      "exceptionTo": "Till och med",
+      "exceptionNote": "Orsak",
+      "exceptionDoc": "Avtal om undantaget"
     },
     "breakEven": {
       "title": "Nollpris: priset som ger pengarna tillbaka",
@@ -1254,7 +1258,12 @@
         "waterCompany": "Bostadsbolagets vattenutjämning bokförd på objektets vederlagskonto: perioden ur texten eller året före bokningen, beloppet ur bokningen. Kontrollera mot bolagets kalkyl.",
         "waterTenant": "Endast en utjämning med hyresgästen (återbetalning eller tilläggsavgift) är bokförd: ingen utjämning från bolaget hittades, så den antas vara densamma. Kontrollera mot bolagets kalkyl."
       },
-      "payments": "Hyresbetalningar ({n})"
+      "payments": "Hyresbetalningar ({n})",
+      "exceptions": "Avvikande hyra",
+      "exceptionNow": "Nu avvikande hyra",
+      "normal": "normalt {amount}",
+      "exceptionNormal": "Normal hyra då {amount}/mån",
+      "editTerms": "Lägg till en höjning eller avvikande hyra (rabatt, överenskommen hyra)…"
     },
     "edit": {
       "title": "Redigera: {name}",
@@ -1292,7 +1301,10 @@
       "deleteNotice": "Ta bort höjningsmeddelande",
       "uploadContract": "Ladda upp avtal",
       "uploadNotice": "Ladda upp meddelande",
-      "confirmDeleteDoc": "Ta bort verifikatet ur bokföringen: {titles}? Ett som skapats under detta besök tas bort genast, ett tidigare när du sparar."
+      "confirmDeleteDoc": "Ta bort verifikatet ur bokföringen: {titles}? Ett som skapats under detta besök tas bort genast, ett tidigare när du sparar.",
+      "exceptionsLead": "En överenskommen rabatt, en hyresfri period eller annat undantag: under periodens dagar betalar hyresgästen dessa belopp i stället för hyran och höjningarna, och hyressaldot räknar med dem. Skriv en rabatt som den lägre hyran.",
+      "addException": "Lägg till avvikande hyra",
+      "uploadException": "Ladda upp bilaga"
     },
     "setup": {
       "title": "Inställning av hyresobjekt",
@@ -1404,7 +1416,8 @@
       }
     },
     "upload": {
-      "contractTitle": "Hyresavtal {object} {tenant} {date}-"
+      "contractTitle": "Hyresavtal {object} {tenant} {date}-",
+      "exceptionTitle": "Avvikande hyra {object} {tenant} {from}-{to}"
     },
     "water": {
       "title": "Vattenavgifter och utjämningar",
@@ -1482,7 +1495,7 @@
       "arrears": "hyresskuld {amount}",
       "ahead": "betalt i förskott {amount}",
       "even": "stämmer, 0,00 €",
-      "countedFrom": "räknat från {date} (objektets förvärv eller bokföringens början)",
+      "countedFrom": "räknat från {date} (objektets förvärv, hyra som kom in före det eller bokföringens början)",
       "months": "Per månad ({n})",
       "col": {
         "month": "Månad",
@@ -1502,7 +1515,12 @@
       "kpiArrears": "Hyresskuld",
       "kpiAhead": "Betalt i förskott",
       "kpiHint": "gällande hyresförhållande",
-      "othersHint": "övriga hyresförhållanden: {amount}"
+      "othersHint": "övriga hyresförhållanden: {amount}",
+      "exceptionHint": "Avvikande hyra, utan undantaget {amount}",
+      "exceptionLegend": "* avvikande hyra: det överenskomna beloppet. Normal hyra och orsak visas när du håller musen över beloppet.",
+      "addException": "Lägg till undantag",
+      "saveException": "Spara undantaget",
+      "prefillLead": "Förifyllt så att {month} väntar det som betalades ({paid}). Den normala hyran och höjningarna ändras inte. Kontrollera dagar och belopp och skriv orsaken; avtalet kan bifogas på redigeringssidan."
     }
   }
 }
