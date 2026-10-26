@@ -2,7 +2,7 @@ import { getBcp47 } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { formatCents } from '../../../shared/money'
 import { formatBp } from '../../../shared/percent'
-import type { LeaseIncrease, LeaseView, MonthLine, PropertyStatus, Warning } from '../api'
+import type { LeaseIncrease, LeaseView, MonthLine, PropertyStatus, Warning, WaterShareStatus } from '../api'
 
 const wholeEuro = new Map<string, Intl.NumberFormat>()
 
@@ -109,4 +109,29 @@ export function clauseText(t: T, rule: LeaseIncrease | null | undefined): string
   if (rule.kind === 'index') return t('properties.notice.clause.index')
   if (rule.kind === 'amount') return t('properties.notice.clause.amount', { amount: formatCents(rule.amount_snt ?? 0) })
   return t('properties.notice.clause.percent', { pct: formatBp(rule.pct_bp ?? 0) })
+}
+
+/** "1.11.2023–31.10.2024". */
+export function periodText(t: T, from: string, to: string): string {
+  return t('properties.lease.period', { from: formatDate(from), to: formatDate(to) })
+}
+
+/** A tenant's water balance: "palautetaan 12,30 €", "peritään 88,00 €", "ei tasattavaa". */
+export function waterBalanceText(t: T, balance: number): string {
+  if (balance === 0) return t('properties.water.nothing')
+  return t(balance < 0 ? 'properties.water.refund' : 'properties.water.charge', { amount: formatCents(Math.abs(balance)) })
+}
+
+/** The company's result for the owner: "hyvitys 123,45 €" or "lisälasku 42,10 €". */
+export function companyResultText(t: T, difference: number): string {
+  if (!difference) return t('properties.water.noDifference')
+  return t(difference < 0 ? 'properties.water.companyRefund' : 'properties.water.companyCharge', { amount: formatCents(Math.abs(difference)) })
+}
+
+/** Whether a share is settled: "palautettu", "maksettu", "avoin", "osittain, 50,00 € jäljellä", "36,77 € yli osuuden". */
+export function waterStatusText(t: T, status: WaterShareStatus, balance: number, settled: number): string {
+  if (status === 'settled') return t(balance < 0 ? 'properties.water.status.refunded' : 'properties.water.status.paid')
+  if (status === 'partial') return t('properties.water.status.partial', { amount: formatCents(Math.abs(balance - settled)) })
+  if (status === 'over') return t('properties.water.status.over', { amount: formatCents(Math.abs(settled - balance)) })
+  return t(`properties.water.status.${status}`)
 }

@@ -172,6 +172,10 @@ not this.
 | Varainsiirtovero | Överlåtelseskatt | Transfer tax | Grunderwerbsteuer (FI) |
 | Vuokrasopimus | Hyresavtal | Lease | Mietvertrag |
 | Vuokravakuus | Hyresdeposition | Rent deposit | Mietkaution |
+| Vesimaksuennakko | Vattenavgiftsförskott | Water advance | Wasservorauszahlung |
+| Vesitasaus | Vattenutjämning | Water settlement | Wasserabrechnung |
+| Vesitasauslaskelma | Utjämningskalkyl | Water settlement letter / statement | Wasserabrechnung (Schreiben) |
+| Hyvitys / lisälasku | Gottgörelse / tilläggsfaktura | Refund / extra charge | Gutschrift / Nachzahlung |
 | Nettotuotto | Nettoavkastning | Net yield | Nettorendite |
 | Vuosituotto (IRR) | Årsavkastning (IRR) | Annual return (IRR) | Jahresrendite (IRR) |
 | Palauttamatta | Ej återfått | Not yet recovered | Noch nicht zurück |

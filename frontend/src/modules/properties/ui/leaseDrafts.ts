@@ -16,6 +16,8 @@ export type IncreaseDraft = AmountsDraft & { from: string; voucherId: string }
 /** A lease being edited; `base` keeps the stored lease and its unknown keys. */
 export type LeaseDraft = {
   base: Lease | null
+  /** The lease's key: water settlement shares point at it. A new lease gets one in the form (`withKeys`). */
+  key: string
   tenant: string
   starts: string
   ends: string
@@ -25,6 +27,8 @@ export type LeaseDraft = {
   initial: AmountsDraft
   /** Extras the tenant pays for: a parking space. Off hides its amounts and drops them on save. */
   parking: boolean
+  /** Water is a flat fee, never settled; off (the default) means an advance settled against use. */
+  waterFlat: boolean
   increaseKind: LeaseIncreaseKind
   /** Percent for `percent`, euros for `amount`. */
   increaseValue: string
@@ -34,7 +38,7 @@ export type LeaseDraft = {
 
 type T = (key: string, vars?: Record<string, string | number>) => string
 
-const OPTIONAL_KEYS = ['tenant_partner_id', 'tenant_name', 'ends', 'due_day', 'increase', 'doc_voucher_id']
+const OPTIONAL_KEYS = ['tenant_partner_id', 'tenant_name', 'ends', 'due_day', 'increase', 'doc_voucher_id', 'water']
 
 const eur = (snt: number | undefined) => (snt ? formatEurInput(snt) : '')
 
@@ -46,6 +50,7 @@ export function leaseDrafts(leases: Lease[] | undefined, partners: Partner[]): L
   const names = new Map(partners.map((p) => [p.id, p.name]))
   return (leases ?? []).map((l) => ({
     base: l,
+    key: l.key,
     tenant: (l.tenant_partner_id != null ? names.get(l.tenant_partner_id) : undefined) ?? l.tenant_name ?? '',
     starts: l.starts,
     ends: l.ends ?? '',
@@ -53,6 +58,7 @@ export function leaseDrafts(leases: Lease[] | undefined, partners: Partner[]): L
     contractId: l.doc_voucher_id != null ? String(l.doc_voucher_id) : '',
     initial: amounts(l.rents[0]),
     parking: l.rents.some((r) => Boolean(r.parking_snt)),
+    waterFlat: l.water === 'flat',
     increaseKind: l.increase?.kind ?? 'none',
     increaseValue:
       l.increase?.kind === 'percent' ? formatPercentInput(l.increase.pct_bp) : l.increase?.kind === 'amount' ? eur(l.increase.amount_snt) : '',
@@ -64,6 +70,7 @@ export function leaseDrafts(leases: Lease[] | undefined, partners: Partner[]): L
 export function newLease(): LeaseDraft {
   return {
     base: null,
+    key: '',
     tenant: '',
     starts: '',
     ends: '',
@@ -71,11 +78,24 @@ export function newLease(): LeaseDraft {
     contractId: '',
     initial: { rent: '', water: '', parking: '' },
     parking: false,
+    waterFlat: false,
     increaseKind: 'none',
     increaseValue: '',
     increaseMonth: '',
     increases: [],
   }
+}
+
+/** Gives leases without a key the first free `l{n}`, as the stored document would. */
+export function withKeys(drafts: LeaseDraft[]): LeaseDraft[] {
+  const used = new Set(drafts.map((d) => d.key).filter(Boolean))
+  let n = 1
+  return drafts.map((d) => {
+    if (d.key) return d
+    while (used.has(`l${n}`)) n += 1
+    used.add(`l${n}`)
+    return { ...d, key: `l${n}` }
+  })
 }
 
 function step(from: string, a: AmountsDraft, withParking: boolean, voucherId = ''): LeaseRent {
@@ -98,7 +118,7 @@ export function buildLeases(t: T, drafts: LeaseDraft[], partners: Partner[]): Le
     const tenant = d.tenant.trim()
     if (!d.starts && !tenant) continue
     const bad = (field: string) => saveErrorText(t, `invalid_field:leases[${i}].${field}`)
-    const lease: Lease = { ...(d.base ?? {}), key: d.base?.key ?? '', starts: d.starts, rents: [] }
+    const lease: Lease = { ...(d.base ?? {}), key: d.key || d.base?.key || '', starts: d.starts, rents: [] }
     for (const key of OPTIONAL_KEYS) delete lease[key]
     const partnerId = byName.get(tenant.toLowerCase())
     if (partnerId != null) lease.tenant_partner_id = partnerId
@@ -124,6 +144,7 @@ export function buildLeases(t: T, drafts: LeaseDraft[], partners: Partner[]): Le
       lease.increase = increase
     }
     if (d.contractId) lease.doc_voucher_id = Number(d.contractId)
+    if (d.waterFlat) lease.water = 'flat'
     out.push(lease)
   }
   return out

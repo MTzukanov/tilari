@@ -137,6 +137,65 @@ test.describe('rental object leases', () => {
   })
 })
 
+test.describe('rental object water settlements', () => {
+  test('a settlement is shared by days with the tenant, writes the letter and shows on the object page', async ({ page }) => {
+    await openBook(page)
+    // The letter's voucher is dated on the book's day: inside the test book's last fiscal year.
+    await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
+    await page.goto('/#/property/4')
+    const panel = page.locator('.property-water')
+    await expect(panel.getByRole('heading', { name: 'Vesimaksut ja vesitasaukset' })).toBeVisible()
+    await expect(panel).toContainText('Ei vesitasauksia.')
+
+    await page.goto('/#/property/4/edit')
+    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
+    const lease = page.locator('.property-lease-edit').first()
+    const tenant = lease.getByLabel('Vuokralainen').first()
+    await tenant.fill('Testi Vuokralainen')
+    await tenant.press('Escape')
+    await lease.getByLabel('Alkaa', { exact: true }).fill('2025-03-01')
+    await lease.getByLabel('Vuokra €/kk').first().fill('650')
+    await lease.getByLabel('Vesi €/kk').first().fill('20')
+    await expect(lease.getByLabel('Vesimaksu tasataan kulutuksen mukaan')).toBeChecked()
+
+    await page.getByRole('button', { name: 'Lisää vesitasaus' }).click()
+    const water = page.locator('.property-water-edit').first()
+    await water.getByLabel('Jakso alkaa').fill('2025-01-01')
+    await water.getByLabel('Jakso päättyy').fill('2025-06-30')
+    await expect(water.getByRole('combobox', { name: /^Taloyhtiön tasaus/ })).toHaveValue('refund')
+    await water.getByLabel('Summa €').first().fill('36,20')
+    // No use given: the company's refund by days, 122 of the period's 181 days.
+    const share = water.locator('.property-water-share').first()
+    await expect(share).toContainText('Testi Vuokralainen')
+    await expect(share).toContainText('1.3.2025–30.6.2025, 122 pv')
+    await expect(share).toContainText('80,00 €')
+    await expect(share).toContainText('palautetaan 24,40 €')
+    // With the actual use: 60,00 € by days is 40,44 €, less 80,00 € of advances.
+    await water.getByLabel('Toteutunut kulutus €').fill('60')
+    await expect(share).toContainText('palautetaan 39,56 €')
+    await expect(water).toContainText('96,20 €')
+
+    const download = page.waitForEvent('download')
+    await share.getByRole('button', { name: 'Luo vesitasauslaskelma' }).click()
+    expect((await download).suggestedFilename()).toMatch(/^vesitasaus-.*-2025-06-30\.pdf$/)
+    await expect(share.getByRole('textbox', { name: 'Vesitasauslaskelma' })).toHaveValue(/Vesitasaus Asunto 1\.1\.2025–30\.6\.2025/)
+    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+
+    await expect(page).toHaveURL(/#\/property\/4$/)
+    await expect(panel).toContainText('Tasausjakso 1.1.2025–30.6.2025')
+    await expect(panel).toContainText('taloyhtiö: hyvitys 36,20 €, kulutus 60,00 €, ennakot 96,20 €')
+    await expect(panel).toContainText('Taloyhtiön tasausta ei löydy kirjanpidosta.')
+    const row = panel.locator('.property-water-shares li').first()
+    await expect(row).toContainText('Testi Vuokralainen')
+    await expect(row).toContainText('palautetaan 39,56 €')
+    await expect(row.locator('.property-water-status')).toHaveText('avoin')
+    await expect(row.getByRole('button', { name: /Vesitasaus Asunto/ })).toBeVisible()
+    const card = page.locator('.property-lease-card').first()
+    await expect(card).toContainText('vesimaksu tasataan kulutuksen mukaan')
+    await expect(card).toContainText('Vesitasaus 1.1.2025–30.6.2025: palautetaan 39,56 € · avoin')
+  })
+})
+
 test.describe('rental objects setup keeps unsaved choices', () => {
   test('a row opens its voucher; back returns with choices and scroll intact', async ({ page }) => {
     await openBook(page)

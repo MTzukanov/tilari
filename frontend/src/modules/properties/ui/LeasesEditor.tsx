@@ -7,8 +7,10 @@ import { formatCents } from '../../../shared/money'
 import { SearchSelect } from '../../../shared/SearchSelect'
 import { LEASE_INCREASE_KINDS, type DocCandidate, type Lease, type LeaseIncreaseKind, type LeaseSuggestionView } from '../api'
 import { DocPicker } from './DocPicker'
+import type { DocEdit } from './editDraft'
+import { Shown } from './FormParts'
 import { leasePeriod, leaseRentText } from './format'
-import { SuggestionSource } from './LeasesPanel'
+import { LeaseSources, SuggestionSource } from './LeasesPanel'
 import {
   draftTotal,
   leaseDrafts,
@@ -56,16 +58,6 @@ function Amounts({
   )
 }
 
-/** A read-only cell lined up with the inputs: a label and its value. */
-function Shown({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
-  return (
-    <div className="property-lease-shown">
-      <span>{label}</span>
-      {strong ? <strong>{value}</strong> : <span className="property-lease-value">{value}</span>}
-    </div>
-  )
-}
-
 /** The amounts rows: Alkaen, rent, water, (parking), total; four columns without parking. */
 const amountsClass = (d: LeaseDraft) => `property-lease-grid property-lease-amounts${d.parking ? '' : ' no-parking'}`
 
@@ -80,6 +72,7 @@ export function LeasesEditor({
   onUpload,
   isCreated,
   onDeleteDocs,
+  onOpenVoucher,
 }: {
   drafts: LeaseDraft[]
   onChange: (drafts: LeaseDraft[]) => void
@@ -96,7 +89,9 @@ export function LeasesEditor({
   /** A document written from this form (deletable from here). */
   isCreated: (voucherId: number) => boolean
   /** Deletes such documents after asking, clears what pointed at them, then applies `edit`. */
-  onDeleteDocs: (voucherIds: number[], edit?: (drafts: LeaseDraft[]) => LeaseDraft[]) => Promise<void>
+  onDeleteDocs: (voucherIds: number[], edit?: DocEdit) => Promise<void>
+  /** Opens a suggestion's source; the unsaved form waits for the way back. */
+  onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
   const [creating, setCreating] = useState<string | null>(null)
@@ -119,11 +114,13 @@ export function LeasesEditor({
 
   const created = (ids: string[]) => ids.filter((id) => id && isCreated(Number(id))).map(Number)
   const removeIncrease = (i: number, k: number) =>
-    onDeleteDocs(created([drafts[i].increases[k].voucherId]), (l) =>
-      l.map((d, j) => (j === i ? { ...d, increases: d.increases.filter((_, kk) => kk !== k) } : d)),
-    )
+    onDeleteDocs(created([drafts[i].increases[k].voucherId]), {
+      leases: (l) => l.map((d, j) => (j === i ? { ...d, increases: d.increases.filter((_, kk) => kk !== k) } : d)),
+    })
   const removeLease = (i: number) =>
-    onDeleteDocs(created([drafts[i].contractId, ...drafts[i].increases.map((r) => r.voucherId)]), (l) => l.filter((_, j) => j !== i))
+    onDeleteDocs(created([drafts[i].contractId, ...drafts[i].increases.map((r) => r.voucherId)]), {
+      leases: (l) => l.filter((_, j) => j !== i),
+    })
 
   async function createNotice(i: number, k: number) {
     setCreating(`${i}-${k}`)
@@ -146,7 +143,7 @@ export function LeasesEditor({
                 <span className="muted">{leasePeriod(t, s.view)}</span>
                 <span>{leaseRentText(t, s.view.rent)}</span>
                 {s.view.suggested ? <SuggestionSource source={s.view.suggested} /> : null}
-                {s.view.contract ? <span className="muted">{s.view.contract.title}</span> : null}
+                <LeaseSources lease={s.view} onOpen={onOpenVoucher} />
                 <button type="button" className="btn-small" onClick={() => addSuggestions([i])}>
                   {t('properties.edit.addSuggestion')}
                 </button>
@@ -204,6 +201,10 @@ export function LeasesEditor({
                 {t('properties.field.parkingExtra')}
               </label>
             </span>
+            <label className="allocation-check property-lease-extras">
+              <input type="checkbox" checked={!d.waterFlat} onChange={() => set(i, { waterFlat: !d.waterFlat })} />
+              {t('properties.field.waterSettled')}
+            </label>
           </div>
           <div className={amountsClass(d)}>
             <Shown label={t('properties.field.increaseFrom')} value={d.starts ? formatDate(d.starts) : '–'} />

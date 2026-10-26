@@ -119,6 +119,18 @@ describe('lease suggestions', () => {
     expect(space[0].lease.rents).toEqual([{ from: '2025-01-01', rent_snt: 61_500, water_snt: 2_000 }])
   })
 
+  it('water settlements make no rent step, also when paid with the rent', () => {
+    const income = [
+      ...monthly(2, '2025-01', 4, 63_000),
+      ...monthly(2, '2025-05', 3, 67_000, 'Vuokra 630e / 40e puuttuvaa vesimaksua'),
+      ...monthly(2, '2025-08', 2, 63_000),
+      { date: '2025-09-16', partner_id: 2, amount_snt: -15_310, text: 'VEDENTASAUS MALLIKATU' },
+    ]
+    const docs = [{ voucher_id: 10, date: '2024-12-20', title: 'Vuokrasopimus Virtanen 1.1.2025-' }]
+    const [lease] = suggestLeases({ docs, income, names, centreName, parkingObject: false, asOf: '2025-09-30' })
+    expect(lease.lease.rents).toEqual([{ from: '2025-01-01', rent_snt: 63_000 }])
+  })
+
   it('a stored lease stands for a suggestion with the same contract, or the same tenant starting near it', () => {
     const suggestion = { key: '', tenant_partner_id: 1, starts: '2024-02-01', rents: [], doc_voucher_id: 10 }
     expect(representedBy([{ key: 'l1', starts: '2023-01-01', rents: [], doc_voucher_id: 10 }], suggestion)).toBe(true)

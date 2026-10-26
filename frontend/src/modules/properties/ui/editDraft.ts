@@ -3,9 +3,16 @@
  * back. Only for the book, object and stored revision it was made on; cleared on save or cancel.
  */
 import type { DocCandidate, PropertyDoc, PropertyKind } from '../api'
-import { leaseDrafts, type LeaseDraft, type Partner } from './leaseDrafts'
+import { leaseDrafts, withKeys, type LeaseDraft, type Partner } from './leaseDrafts'
+import { settlementDrafts, type SettlementDraft } from './waterDrafts'
 import { formatEurInput } from '../../../shared/money'
 import { formatPercentInput } from '../../../shared/percent'
+
+/** What deleting documents does to the form besides clearing the links to them: e.g. remove a row. */
+export type DocEdit = {
+  leases?: (drafts: LeaseDraft[]) => LeaseDraft[]
+  water?: (drafts: SettlementDraft[]) => SettlementDraft[]
+}
 
 export type ValuationDraft = { date: string; price: string; debtFree: string; source: string }
 export type CapitalDraft = { date: string; amount: string; note: string }
@@ -15,7 +22,8 @@ export type EditState = {
   kind: PropertyKind | ''
   excluded: boolean
   leases: LeaseDraft[]
-  /** Increase notices written on the page (vouchers already in the book). */
+  water: SettlementDraft[]
+  /** Documents written on the page (vouchers already in the book). */
   newDocs: DocCandidate[]
   eras: number[]
   docs: number[]
@@ -40,7 +48,8 @@ export function stateFromDoc(doc: PropertyDoc, partners: Partner[]): EditState {
   return {
     kind: doc.kind ?? '',
     excluded: Boolean(doc.excluded),
-    leases: leaseDrafts(doc.leases, partners),
+    leases: withKeys(leaseDrafts(doc.leases, partners)),
+    water: settlementDrafts(doc.water_settlements),
     newDocs: [],
     eras: doc.eras.map((e) => e.eraid),
     docs: doc.doc_voucher_ids ?? [],

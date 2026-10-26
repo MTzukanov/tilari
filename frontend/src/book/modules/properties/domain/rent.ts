@@ -78,5 +78,6 @@ export function leaseView(
     increase: lease.increase ?? null,
     contract: voucherOf(refs, lease.doc_voucher_id),
     steps: lease.rents.map((step) => ({ ...step, voucher: voucherOf(refs, step.voucher_id) })),
+    water: lease.water ?? 'advance',
   }
 }

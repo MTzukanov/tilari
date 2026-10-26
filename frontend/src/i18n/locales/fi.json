@@ -1115,7 +1115,20 @@
       "increaseEur": "Korotus € / v",
       "increaseFrom": "Alkaen",
       "increaseNotice": "Korotusilmoitus",
-      "parkingExtra": "Autopaikka"
+      "parkingExtra": "Autopaikka",
+      "waterFrom": "Jakso alkaa",
+      "waterTo": "Jakso päättyy",
+      "waterResult": "Taloyhtiön tasaus",
+      "waterAmount": "Summa €",
+      "waterUsage": "Toteutunut kulutus €",
+      "waterAdvances": "Yhtiön ennakot",
+      "waterStatement": "Taloyhtiön tasauslaskelma",
+      "waterStay": "Asumisaika jaksolla",
+      "waterAdvancesTenant": "Vesimaksuennakot",
+      "waterComputed": "Laskettu tasaus",
+      "waterBalance": "Tasaus vuokralaiselle",
+      "waterLetter": "Vesitasauslaskelma",
+      "waterSettled": "Vesimaksu tasataan kulutuksen mukaan"
     },
     "breakEven": {
       "title": "Nollahinta: millä hinnalla rahat tulevat takaisin",
@@ -1224,7 +1237,9 @@
       "review": "Tarkista ja tallenna",
       "source": {
         "contract": "lähde: vuokrasopimus",
-        "payments": "lähde: vuokrasuoritukset"
+        "payments": "lähde: vuokrasuoritukset",
+        "waterCompany": "lähde: taloyhtiön tasaus",
+        "waterTenant": "lähde: vuokralaisen tasaus"
       },
       "suggestedNote": "★ = vuokrasuhde-ehdotus kirjanpidosta, ei vielä tallennettu.",
       "initial": "Vuokra alussa",
@@ -1235,8 +1250,11 @@
       "extras": "Lisät:",
       "sourceHint": {
         "contract": "Kohteeseen linkitetty vuokrasopimus: alkamis- ja päättymispäivä ja vuokralainen sen otsikosta, vuokra kohteen vuokrasuorituksista.",
-        "payments": "Pelkät vuokrasuoritukset: maksaja on maksanut vuokraa näinä kuukausina, mutta mikään kohteeseen linkitetty vuokrasopimus ei kata jaksoa. Linkitä sopimus kohteeseen, niin ehdotus tarkentuu."
-      }
+        "payments": "Pelkät vuokrasuoritukset: maksaja on maksanut vuokraa näinä kuukausina, mutta mikään kohteeseen linkitetty vuokrasopimus ei kata jaksoa. Linkitä sopimus kohteeseen, niin ehdotus tarkentuu.",
+        "waterCompany": "Kohteen vastiketilille kirjattu taloyhtiön vesitasaus: jakso tekstistä tai kirjausta edeltävä vuosi, summa kirjauksesta. Tarkista taloyhtiön tasauslaskelmasta.",
+        "waterTenant": "Vain vuokralaisen kanssa kirjattu tasaus (palautus tai lisämaksu): taloyhtiön tasausta ei löytynyt, joten sen oletetaan olleen sama. Tarkista taloyhtiön tasauslaskelmasta."
+      },
+      "payments": "Vuokrasuoritukset ({n})"
     },
     "edit": {
       "title": "Muokkaa: {name}",
@@ -1384,6 +1402,77 @@
     },
     "upload": {
       "contractTitle": "Vuokrasopimus {object} {tenant} {date}-"
+    },
+    "water": {
+      "title": "Vesimaksut ja vesitasaukset",
+      "none": "Ei vesitasauksia.",
+      "add": "Lisää vesitasaus",
+      "remove": "Poista vesitasaus",
+      "period": "Tasausjakso {period}",
+      "company": "taloyhtiö: {text}",
+      "usage": "kulutus {amount}",
+      "advances": "ennakot {amount}",
+      "companyRefund": "hyvitys {amount}",
+      "companyCharge": "lisälasku {amount}",
+      "noDifference": "ei erotusta",
+      "statement": "Tasauslaskelma",
+      "booked": "Kirjattu",
+      "notBooked": "Taloyhtiön tasausta ei löydy kirjanpidosta.",
+      "stay": "{period}, {days} pv",
+      "refund": "palautetaan {amount}",
+      "charge": "peritään {amount}",
+      "nothing": "ei tasattavaa",
+      "status": {
+        "paid": "maksettu",
+        "refunded": "palautettu",
+        "open": "avoin",
+        "partial": "osittain, {amount} jäljellä",
+        "none": "ei tasattavaa",
+        "over": "{amount} yli osuuden"
+      },
+      "noShares": "Jaksolla ei ole vuokrasuhteita, joissa vesimaksu tasataan.",
+      "other": "Muut vuokralaisen kirjaukset",
+      "ownerKeeps": "Omistajalle jää {amount}.",
+      "ownerBears": "Omistaja maksaa itse {amount} (esim. tyhjät päivät).",
+      "suggestions": "Ehdotukset kirjanpidosta ({n})",
+      "suggestionsLead": "Kohteelle kirjatuista vesitasauksista. Mitään ei ole tallennettu: tarkista summat taloyhtiön tasauslaskelmasta ja tallenna muokkaussivulla.",
+      "flat": "vesimaksua ei tasata",
+      "advance": "vesimaksu tasataan kulutuksen mukaan",
+      "latest": "Vesitasaus {period}",
+      "editTitle": "Vesitasaukset",
+      "editLead": "Taloyhtiön vesitasaukset jaksoittain. Vuokralaisten osuudet lasketaan vuokrasopimuksista: kulutus asumispäivien mukaan, vähennettynä vesimaksuennakoilla.",
+      "editSuggestions": "Kirjanpidosta löytyi {n} vesitasausta, joita ei ole lomakkeella.",
+      "direction": {
+        "refund": "Hyvitys omistajalle",
+        "charge": "Lisälasku omistajalle"
+      },
+      "shares": "Vuokralaisten osuudet",
+      "sharesByUsage": "Kulutus jaetaan asumispäivien mukaan, ja vuokralaisen vesimaksuennakot vähennetään.",
+      "sharesByDifference": "Kulutusta ei ole annettu: taloyhtiön hyvitys tai lisälasku jaetaan asumispäivien mukaan.",
+      "needPeriod": "Anna jakson alku- ja loppupäivä.",
+      "mode": {
+        "computed": "Laskettu",
+        "refund": "Palautetaan",
+        "charge": "Peritään"
+      },
+      "createLetter": "Luo vesitasauslaskelma",
+      "deleteLetter": "Poista laskelma",
+      "uploadLetter": "Lataa laskelma",
+      "uploadStatement": "Lataa tasauslaskelma",
+      "statementTitle": "Taloyhtiön vesitasaus {object} {from}–{to}",
+      "letter": {
+        "voucherTitle": "Vesitasaus {object} {from}–{to}",
+        "fileName": "vesitasaus",
+        "heading": "VESIMAKSUJEN TASAUSLASKELMA",
+        "period": "Taloyhtiö on tasannut huoneiston vesimaksut toteutuneen kulutuksen mukaan jaksolta {from}–{to}.",
+        "stay": "Asumisaikanne jaksolla: {from}–{to} ({days} päivää).",
+        "advances": "Vesimaksuennakot jaksolla",
+        "actual": "Kulutuksen mukainen vesimaksu",
+        "refund": "Palautamme teille",
+        "charge": "Lisämaksu",
+        "refundText": "Palautamme {amount} tilillenne. Ilmoittakaa tilinumeronne, jos se on muuttunut.",
+        "chargeText": "Pyydämme maksamaan {amount} seuraavan vuokranmaksun yhteydessä samalle tilille ja samalla viitteellä kuin vuokran."
+      }
     }
   }
 }

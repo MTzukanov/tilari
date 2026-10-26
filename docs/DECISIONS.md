@@ -422,3 +422,34 @@ correction would change the open year's income statement lines. The rental-objec
 - Why not `TilariData`: the decision belongs with the books (the correction voucher, also in the
   Kitsas archive), and the importer regenerates it from its rules, so there is no second copy to
   keep in sync. Tilari never writes these keys.
+
+## ADR-025 Leases: manual rent steps; water advances settled per period (2026-10-26)
+
+**Status:** accepted. Extends ADR-023's `property/{id}` document with `leases[]` and
+`water_settlements[]`; the ledger is not changed.
+
+- **Rent increases are manual steps.** A lease stores what the tenant pays from each date on
+  (rent, water, parking) and the increase notice for each step. The contract's increase clause
+  (percent, euros or index, and the month) only prefills the next step and drives reminders and
+  the forecast. Tilari never changes rent on its own: an increase needs the notice the tenant got.
+- **Water is an advance settled against use.** For most apartments the tenant pays a monthly
+  water advance (vesimaksuennakko). The housing company settles the apartment's water against
+  actual use once a year or more often, and the owner settles each tenant's share in turn. A
+  lease's water is an advance unless it is marked flat (`water: 'flat'`, never settled).
+- **A settlement stores the company's statement, not the tenants' results.** Each entry of
+  `water_settlements[]` holds the period, the company's difference (+ the owner pays more,
+  - refunded) and, when known, the actual use. Each tenant's share is computed:
+  - with the use: the use split by the lease's days in the period, less the lease's advances;
+  - without it: the company's difference split by days (passed on).
+  The period's own days count, so vacant days stay the owner's. A share is stored only when the
+  owner sets their own amount or links the letter sent to the tenant.
+- **Booked lines are found by their texts.** Lines on the object about a settlement
+  ("vesitasaus", "vesihyvitys", "puuttuvaa vesimaksua"...) belong to the period their text names,
+  else to the latest period that ended before them (within nine months). On a vastike account,
+  the company's line has the settlement's sign; the other sign is the refund passed on. A rent
+  payment that also pays a settlement counts the euros it names, else what it has on top of the
+  rent. A share is settled only when its lines add up to its balance exactly; any difference,
+  however small, shows to the cent (less is partial, more is over). Lines no stored period
+  takes are suggested as settlements; they make no rent step in the lease suggestions.
+- Why not book the shares: the settlement is already in the ledger as cash. The split between
+  tenants is a calculation over the leases, and storing it would go stale when a lease changes.

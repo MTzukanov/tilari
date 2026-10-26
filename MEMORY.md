@@ -7,6 +7,29 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-26 - Rental objects 1c: water advances and settlements (`feature/property-water`)
+
+- Owner: for most apartments water is a prepayment that the housing company settles against
+  actual use once a year or more often; the tenant then gets part back or pays more. Water
+  settlements must show on the apartment and in its rental relationships, before the arrears
+  (which must count them). Built on `feature/property-water`, on top of the unmerged
+  `feature/property-leases` (ADR-025).
+- `water_settlements[]` in `property/{id}` (DATA_MODEL.md) and `water: 'flat'` on a lease.
+  `domain/water.ts` computes the tenants' shares and finds the booked lines; the object page has
+  a "Vesimaksut ja vesitasaukset" panel and the lease card the latest settlement; the edit page
+  has a "Vesitasaukset" section with settlement letters (PDF on a type-800 voucher, like the
+  increase notice; the letter frame is shared in `ui/letter.ts`).
+- Defaults chosen in the demo: every lease that is not flat shares in a settlement, also with no
+  water amount entered (tenants mostly pay rent and water in one line, so the suggestions cannot
+  split them; the owner types the water advance from the contract). Without the actual use the
+  company's difference is passed on by days.
+- Found on a real book (no amounts here): company settlements on the vastike account in both
+  directions, one refund passed on to the tenant on the same account, a tenant refund as negative
+  rent income, an extra charge paid in monthly instalments with the rent (which the lease
+  suggestions had read as a rent step - fixed: settlement lines make no step), and a settlement
+  deducted from a deposit return. Texts include the typo "Vesitataus" and "puuttuneista
+  vesimaksuista".
+
 ## 2026-10-26 - Rental objects phase 2: rental relationships first, in increments
 
 - Owner decisions for phase 2: rental relationships first, built in increments, each demoed
