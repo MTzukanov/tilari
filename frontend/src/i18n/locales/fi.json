@@ -1264,10 +1264,13 @@
       "addIncrease": "Lisää korotus",
       "createNotice": "Luo korotusilmoitus",
       "viewDoc": "Näytä",
-      "undoNotice": "Kumoa korotusilmoitus",
-      "confirmDeleteNotice": "Poistetaanko tällä sivulla luotu korotusilmoitus kirjanpidosta: {titles}?",
       "confirmDeleteUnsaved": "Tällä sivulla luotiin {n} korotusilmoitusta, joita ei tallennettu kohteelle. Poistetaanko ne kirjanpidosta? Peruuta säilyttää ne (ne on ehkä jo lähetetty).",
-      "restored": "Tallentamattomat muutokset palautettiin."
+      "restored": "Tallentamattomat muutokset palautettiin.",
+      "deleteDoc": "Poista tosite",
+      "deleteNotice": "Poista korotusilmoitus",
+      "uploadContract": "Lataa sopimus",
+      "uploadNotice": "Lataa ilmoitus",
+      "confirmDeleteDoc": "Poistetaanko tosite kirjanpidosta: {titles}? Tällä käynnillä luotu poistetaan heti, aiemmin luotu kun tallennat."
     },
     "setup": {
       "title": "Vuokrakohteiden määritys",
@@ -1374,6 +1377,9 @@
         "amount": "{amount} vuodessa",
         "index": "indeksiin sidottu"
       }
+    },
+    "upload": {
+      "contractTitle": "Vuokrasopimus {object} {tenant} {date}-"
     }
   }
 }

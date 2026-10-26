@@ -128,6 +128,7 @@ const DOC_KEYS = new Set([
   'target_return_bp',
   'note',
   'leases',
+  'created_voucher_ids',
 ])
 
 const LEASE_KEYS = new Set([
@@ -277,6 +278,8 @@ export function normalizePropertyDoc(input: unknown): PropertyDoc {
   if (saleVouchers.length) out.sale_voucher_ids = saleVouchers
   const docVouchers = ids(input.doc_voucher_ids, 'doc_voucher_ids')
   if (docVouchers.length) out.doc_voucher_ids = docVouchers
+  const created = ids(input.created_voucher_ids, 'created_voucher_ids')
+  if (created.length) out.created_voucher_ids = created
 
   if (input.financing != null) {
     if (!isObject(input.financing)) fail('financing')

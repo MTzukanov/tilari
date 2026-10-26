@@ -83,6 +83,8 @@ export type PropertyDoc = {
   sale_voucher_ids?: number[]
   /** Linked document vouchers (usually type 800 Liitetieto). */
   doc_voucher_ids?: number[]
+  /** Document vouchers Tilari created from this object's forms (uploads, increase notices): deletable from there. */
+  created_voucher_ids?: number[]
   financing?: Financing
   valuations?: Valuation[]
   sale_costs?: SaleCosts

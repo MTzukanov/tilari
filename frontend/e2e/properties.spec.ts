@@ -57,6 +57,12 @@ test.describe('rental object leases', () => {
     await lease.getByLabel('Vuokra €/kk').first().fill('650')
     await lease.getByLabel('Vesi €/kk').first().fill('20')
     await lease.getByLabel('Eräpäivä').fill('2')
+    // The owner's own contract, uploaded as a Liitetieto voucher named after the object.
+    await lease
+      .locator('label', { hasText: 'Lataa sopimus' })
+      .locator('input[type=file]')
+      .setInputFiles({ name: 'sopimus.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 sopimus') })
+    await expect(lease.getByRole('textbox', { name: 'Sopimus' })).toHaveValue(/Vuokrasopimus Asunto Testi Vuokralainen 1\.1\.2025-/)
     await lease.getByLabel('Korotussääntö').selectOption({ label: 'Euroa vuodessa' })
     await lease.getByLabel('Korotus € / v').fill('15')
 
@@ -74,7 +80,7 @@ test.describe('rental object leases', () => {
 
     // Undo deletes the voucher again; then write it once more and keep it.
     page.once('dialog', (dialog) => void dialog.accept())
-    await increase.getByRole('button', { name: 'Kumoa korotusilmoitus' }).click()
+    await increase.getByRole('button', { name: 'Poista korotusilmoitus' }).click()
     await expect(notice).toHaveValue('–')
     await expect(increase.getByRole('link', { name: 'Näytä' })).toBeHidden()
     const again = page.waitForEvent('download')
@@ -108,6 +114,20 @@ test.describe('rental object leases', () => {
     await expect(page).toHaveURL(/#\/property\/4\/edit$/)
     await expect(page.getByText('Tallentamattomat muutokset palautettiin.')).toBeVisible()
     await expect(page.getByLabel('Eräpäivä').first()).toHaveValue('9')
+
+    // A notice written on an earlier visit is deleted from the book when the form is saved.
+    const saved = page.locator('.property-lease-increase').first()
+    page.once('dialog', (dialog) => void dialog.accept())
+    await saved.getByRole('button', { name: 'Poista korotusilmoitus' }).click()
+    await expect(saved.getByRole('textbox', { name: 'Korotusilmoitus' })).toHaveValue('–')
+    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(page).toHaveURL(/#\/property\/4$/)
+    await page.goto('/#/property/4/edit')
+    const search = page.locator('.property-lease-edit').first().getByRole('textbox', { name: 'Sopimus' })
+    await search.click()
+    await search.fill('Vuokrankorotusilmoitus')
+    await expect(page.getByRole('option', { name: /Vuokrankorotusilmoitus Asunto/ })).toHaveCount(0)
+    await search.press('Escape')
     await page.locator('.property-actions').getByRole('button', { name: 'Peru' }).click()
 
     await page.goto('/#/properties')

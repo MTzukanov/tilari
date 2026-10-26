@@ -318,6 +318,13 @@ describe('rental objects: figures', () => {
     expect(save({ tenant_name: 'Ei vielä kumppani' })()).toBe(true)
   })
 
+  it('remembers the documents written from the forms; one deleted elsewhere is forgotten', async () => {
+    const { db, vouchers } = await setUp()
+    const doc = computeDetail(db, CC.bundle, { today: TODAY }).doc
+    saveProperty(db, CC.bundle, { ...doc, created_voucher_ids: [vouchers.rentRise, 999_999, vouchers.rentRise] }, 'now')
+    expect(computeDetail(db, CC.bundle, { today: TODAY }).doc.created_voucher_ids).toEqual([vouchers.rentRise])
+  })
+
   it('interest counts once financing accounts are linked', async () => {
     const { db } = await setUp()
     const before = computeDetail(db, CC.bundle, { today: TODAY })

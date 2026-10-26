@@ -27,6 +27,8 @@ export type EditState = {
   interestAccounts: string
   capital: CapitalDraft[]
   note: string
+  /** Earlier created documents the owner deleted; deleted from the book on save. */
+  toDelete: number[]
 }
 
 type EditDraft = { book: string; id: number; rev: number; state: EditState; scrollTop: number }
@@ -55,6 +57,7 @@ export function stateFromDoc(doc: PropertyDoc, partners: Partner[]): EditState {
     interestAccounts: (doc.financing?.interest_accounts ?? []).join(', '),
     capital: (doc.manual_capital ?? []).map((c) => ({ date: c.date, amount: formatEurInput(c.amount_snt), note: c.note ?? '' })),
     note: doc.note ?? '',
+    toDelete: [],
   }
 }
 

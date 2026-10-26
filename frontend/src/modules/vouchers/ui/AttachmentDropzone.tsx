@@ -1,11 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../../i18n'
-import { markNativePickerAncestors } from '../../../shared/nativePicker'
+import { FileButton } from '../../../shared/FileButton'
 import { AttachmentGallery } from './AttachmentGallery'
 import { filesFromClipboardApi, filesFromClipboardData } from './clipboardFiles'
-
-const FILE_ACCEPT =
-  '.pdf,.jpg,.jpeg,.png,.gif,.webp,.csv,.txt,.xml,application/pdf,image/*,text/csv,text/plain,text/xml,application/xml'
 
 function filesFromList(list: FileList | File[] | null | undefined): File[] {
   if (!list) return []
@@ -86,29 +83,7 @@ export function AttachmentDropzone({
           {hint ? <span className="muted">{hint}</span> : null}
         </div>
         <div className="dropzone-actions">
-          <label
-            className="btn-secondary file-btn-label"
-            onPointerDown={(e) => markNativePickerAncestors(e.currentTarget, true)}
-            onFocusCapture={(e) => markNativePickerAncestors(e.currentTarget, true)}
-            onBlurCapture={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                markNativePickerAncestors(e.currentTarget, false)
-              }
-            }}
-          >
-            {t('editor.chooseFile')}
-            <input
-              type="file"
-              accept={FILE_ACCEPT}
-              multiple
-              hidden
-              onChange={(e) => {
-                onAdd(filesFromList(e.target.files))
-                e.target.value = ''
-                markNativePickerAncestors(e.currentTarget, false)
-              }}
-            />
-          </label>
+          <FileButton onFiles={onAdd}>{t('editor.chooseFile')}</FileButton>
           <button type="button" className="btn-secondary" onClick={() => void pasteFromClipboard()}>
             {t('editor.pasteClipboard')}
           </button>

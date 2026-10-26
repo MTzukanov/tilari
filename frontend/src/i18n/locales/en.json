@@ -1264,10 +1264,13 @@
       "addIncrease": "Add increase",
       "createNotice": "Create increase notice",
       "viewDoc": "View",
-      "undoNotice": "Undo increase notice",
-      "confirmDeleteNotice": "Delete the increase notice created on this page from the books: {titles}?",
       "confirmDeleteUnsaved": "{n} increase notices were created on this page but not saved to the object. Delete them from the books? Cancel keeps them (they may have been sent already).",
-      "restored": "Unsaved changes were restored."
+      "restored": "Unsaved changes were restored.",
+      "deleteDoc": "Delete voucher",
+      "deleteNotice": "Delete increase notice",
+      "uploadContract": "Upload contract",
+      "uploadNotice": "Upload notice",
+      "confirmDeleteDoc": "Delete the voucher from the books: {titles}? One created on this visit goes at once, an earlier one when you save."
     },
     "setup": {
       "title": "Set up rental objects",
@@ -1374,6 +1377,9 @@
         "amount": "{amount} a year",
         "index": "index-linked"
       }
+    },
+    "upload": {
+      "contractTitle": "Lease {object} {tenant} {date}-"
     }
   }
 }

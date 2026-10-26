@@ -1264,10 +1264,13 @@
       "addIncrease": "Lägg till höjning",
       "createNotice": "Skapa höjningsmeddelande",
       "viewDoc": "Visa",
-      "undoNotice": "Ångra höjningsmeddelande",
-      "confirmDeleteNotice": "Ta bort höjningsmeddelandet som skapades på den här sidan ur bokföringen: {titles}?",
       "confirmDeleteUnsaved": "{n} höjningsmeddelanden skapades på den här sidan men sparades inte för objektet. Ta bort dem ur bokföringen? Avbryt behåller dem (de kan redan ha skickats).",
-      "restored": "Osparade ändringar återställdes."
+      "restored": "Osparade ändringar återställdes.",
+      "deleteDoc": "Ta bort verifikat",
+      "deleteNotice": "Ta bort höjningsmeddelande",
+      "uploadContract": "Ladda upp avtal",
+      "uploadNotice": "Ladda upp meddelande",
+      "confirmDeleteDoc": "Ta bort verifikatet ur bokföringen: {titles}? Ett som skapats under detta besök tas bort genast, ett tidigare när du sparar."
     },
     "setup": {
       "title": "Inställning av hyresobjekt",
@@ -1374,6 +1377,9 @@
         "amount": "{amount} per år",
         "index": "indexbunden"
       }
+    },
+    "upload": {
+      "contractTitle": "Hyresavtal {object} {tenant} {date}-"
     }
   }
 }

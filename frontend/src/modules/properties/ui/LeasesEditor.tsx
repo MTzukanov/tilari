@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { getBcp47, useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
+import { FileButton } from '../../../shared/FileButton'
 import { formatCents } from '../../../shared/money'
 import { SearchSelect } from '../../../shared/SearchSelect'
 import { LEASE_INCREASE_KINDS, type DocCandidate, type Lease, type LeaseIncreaseKind, type LeaseSuggestionView } from '../api'
@@ -75,8 +76,9 @@ export function LeasesEditor({
   suggestions,
   today,
   onCreateNotice,
-  created,
-  onDeleteCreated,
+  onUpload,
+  isCreated,
+  onDeleteDocs,
 }: {
   drafts: LeaseDraft[]
   onChange: (drafts: LeaseDraft[]) => void
@@ -88,10 +90,12 @@ export function LeasesEditor({
   today: string
   /** Writes the increase notice (PDF on a Liitetieto voucher) for one increase. */
   onCreateNotice: (lease: number, increase: number) => Promise<void>
-  /** Notices written on this page, which can still be undone. */
-  created: Set<number>
-  /** Deletes notices written on this page after asking; false when the owner keeps them. */
-  onDeleteCreated: (voucherIds: number[]) => Promise<boolean>
+  /** Uploads the owner's own contract (`increase` null) or increase notice as a Liitetieto voucher. */
+  onUpload: (lease: number, increase: number | null, files: File[]) => Promise<void>
+  /** A document written from this form (deletable from here). */
+  isCreated: (voucherId: number) => boolean
+  /** Deletes such documents after asking, clears what pointed at them, then applies `edit`. */
+  onDeleteDocs: (voucherIds: number[], edit?: (drafts: LeaseDraft[]) => LeaseDraft[]) => Promise<void>
 }) {
   const { t } = useI18n()
   const [creating, setCreating] = useState<string | null>(null)
@@ -112,22 +116,13 @@ export function LeasesEditor({
   const setIncrease = (i: number, k: number, patch: Partial<IncreaseDraft>) =>
     set(i, { increases: drafts[i].increases.map((r, j) => (j === k ? { ...r, ...patch } : r)) })
 
-  const createdIn = (ids: string[]) => ids.filter((id) => id && created.has(Number(id))).map(Number)
-
-  async function removeIncrease(i: number, k: number) {
-    if (!(await onDeleteCreated(createdIn([drafts[i].increases[k].voucherId])))) return
-    set(i, { increases: drafts[i].increases.filter((_, j) => j !== k) })
-  }
-
-  async function undoNotice(i: number, k: number) {
-    if (!(await onDeleteCreated(createdIn([drafts[i].increases[k].voucherId])))) return
-    setIncrease(i, k, { voucherId: '' })
-  }
-
-  async function removeLease(i: number) {
-    if (!(await onDeleteCreated(createdIn(drafts[i].increases.map((r) => r.voucherId))))) return
-    onChange(drafts.filter((_, j) => j !== i))
-  }
+  const created = (ids: string[]) => ids.filter((id) => id && isCreated(Number(id))).map(Number)
+  const removeIncrease = (i: number, k: number) =>
+    onDeleteDocs(created([drafts[i].increases[k].voucherId]), (l) =>
+      l.map((d, j) => (j === i ? { ...d, increases: d.increases.filter((_, kk) => kk !== k) } : d)),
+    )
+  const removeLease = (i: number) =>
+    onDeleteDocs(created([drafts[i].contractId, ...drafts[i].increases.map((r) => r.voucherId)]), (l) => l.filter((_, j) => j !== i))
 
   async function createNotice(i: number, k: number) {
     setCreating(`${i}-${k}`)
@@ -187,13 +182,15 @@ export function LeasesEditor({
               {t('properties.field.dueDay')}
               <input type="text" inputMode="numeric" value={d.dueDay} onChange={(e) => set(i, { dueDay: e.target.value })} />
             </label>
-            <DocPicker
-              className="span-3"
-              label={t('properties.field.contract')}
-              docs={docs}
-              value={d.contractId}
-              onChange={(contractId) => set(i, { contractId })}
-            />
+            <div className="property-lease-notice span-3">
+              <DocPicker label={t('properties.field.contract')} docs={docs} value={d.contractId} onChange={(contractId) => set(i, { contractId })} />
+              {d.contractId && isCreated(Number(d.contractId)) ? (
+                <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(d.contractId)])}>
+                  {t('properties.edit.deleteDoc')}
+                </button>
+              ) : null}
+              <FileButton onFiles={(files) => void onUpload(i, null, files)}>{t('properties.edit.uploadContract')}</FileButton>
+            </div>
           </div>
 
           <div className="property-lease-head">
@@ -262,9 +259,9 @@ export function LeasesEditor({
                   value={r.voucherId}
                   onChange={(voucherId) => setIncrease(i, k, { voucherId })}
                 />
-                {r.voucherId && created.has(Number(r.voucherId)) ? (
-                  <button type="button" className="btn-secondary" onClick={() => void undoNotice(i, k)}>
-                    {t('properties.edit.undoNotice')}
+                {r.voucherId && isCreated(Number(r.voucherId)) ? (
+                  <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(r.voucherId)])}>
+                    {t('properties.edit.deleteNotice')}
                   </button>
                 ) : (
                   <button
@@ -276,6 +273,7 @@ export function LeasesEditor({
                     {creating === `${i}-${k}` ? t('common.saving') : t('properties.edit.createNotice')}
                   </button>
                 )}
+                <FileButton onFiles={(files) => void onUpload(i, k, files)}>{t('properties.edit.uploadNotice')}</FileButton>
                 <button type="button" className="btn-secondary" onClick={() => void removeIncrease(i, k)}>
                   {t('properties.edit.remove')}
                 </button>

@@ -45,6 +45,7 @@ Money in integer cents (`*_snt`), percentages in basis points (`*_bp`, 100 = 1 %
 | `manual_capital[]` | `{ date, amount_snt, note? }` - capital not on a linked item |
 | `sale_voucher_ids[]` | Vouchers whose lines on the object belong to a sale. No UI yet: stored, checked and counted, but no screen sets it (MEMORY 2026-10-10) |
 | `doc_voucher_ids[]` | Document vouchers (usually type 800 Liitetieto) |
+| `created_voucher_ids[]` | Document vouchers created from this object's forms (an uploaded contract or notice, a written increase notice): the form can delete them again. Ids whose voucher is gone are dropped on save |
 | `financing` | `{ loan_accounts[], interest_accounts[] }` - interest on vouchers touching the loan; a loan account belongs to one object (`loan_linked` on save, `loan_shared` warning for older files) |
 | `valuations[]` | `{ date, price_snt, debt_free_price_snt?, source? }` - owner's price estimate |
 | `sale_costs` | `{ pct_bp, fixed_snt }` - overrides `portfolio.sale_costs` |

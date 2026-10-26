@@ -400,6 +400,14 @@ function checkLinks(db: SqliteDb, id: number, doc: PropertyDoc, loaded: Pick<Loa
       }
     }
   }
+  // Created documents someone deleted elsewhere (Kitsas) are simply forgotten.
+  if (doc.created_voucher_ids?.length) {
+    const refs = loadVoucherRefs(db, doc.created_voucher_ids)
+    const kept = doc.created_voucher_ids.filter((id) => refs.get(id)?.posted)
+    doc = { ...doc }
+    if (kept.length) doc.created_voucher_ids = kept
+    else delete doc.created_voucher_ids
+  }
   const leases = doc.leases ?? []
   if (!leases.length) return { ...doc, eras }
   const partners = loadPartners(db, leasePartnerIds(leases))

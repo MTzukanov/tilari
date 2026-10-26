@@ -1264,10 +1264,13 @@
       "addIncrease": "Erhöhung hinzufügen",
       "createNotice": "Erhöhungsmitteilung erstellen",
       "viewDoc": "Anzeigen",
-      "undoNotice": "Erhöhungsmitteilung rückgängig",
-      "confirmDeleteNotice": "Die auf dieser Seite erstellte Erhöhungsmitteilung aus der Buchhaltung löschen: {titles}?",
       "confirmDeleteUnsaved": "Auf dieser Seite wurden {n} Erhöhungsmitteilungen erstellt, aber nicht beim Objekt gespeichert. Aus der Buchhaltung löschen? Abbrechen behält sie (sie wurden evtl. schon versandt).",
-      "restored": "Ungespeicherte Änderungen wurden wiederhergestellt."
+      "restored": "Ungespeicherte Änderungen wurden wiederhergestellt.",
+      "deleteDoc": "Beleg löschen",
+      "deleteNotice": "Erhöhungsmitteilung löschen",
+      "uploadContract": "Vertrag hochladen",
+      "uploadNotice": "Mitteilung hochladen",
+      "confirmDeleteDoc": "Den Beleg aus der Buchhaltung löschen: {titles}? Ein bei diesem Besuch erstellter wird sofort gelöscht, ein früherer beim Speichern."
     },
     "setup": {
       "title": "Mietobjekte einrichten",
@@ -1374,6 +1377,9 @@
         "amount": "{amount} pro Jahr",
         "index": "indexgebunden"
       }
+    },
+    "upload": {
+      "contractTitle": "Mietvertrag {object} {tenant} {date}-"
     }
   }
 }

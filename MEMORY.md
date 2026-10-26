@@ -39,6 +39,13 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   type-800 voucher titled after the object with the tenant as partner, links it to the increase
   and downloads it. The voucher is dated on the book's day, so a year must be open for it (Kitsas
   refuses the same).
+- Owner review: contracts and the owner's own increase notices are uploaded in the lease form
+  ("Lataa sopimus", "Lataa ilmoitus"; shared `FileButton`, also used by the voucher editor's
+  dropzone). Documents created from the form are remembered in `created_voucher_ids` and can be
+  deleted from it: one made on this visit at once (undo), an earlier one when the form is saved, so
+  Peru leaves the book untouched. Other documents are only unlinked. Linked documents and items
+  open their voucher; the unsaved form waits in sessionStorage (like the setup page). Document
+  picks are the shared `DocPicker` over `SearchSelect`.
 
 ## 2026-10-26 - Fixed: a month typed in the address did not open on an object's page
 

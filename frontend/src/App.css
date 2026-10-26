@@ -5278,7 +5278,7 @@ tr.tax-total td {
   margin: 0.4rem 0;
 }
 
-.property-lease-grid label {
+.property-lease-grid label:not(.file-btn-label) {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -5375,7 +5375,7 @@ tr.tax-total td {
   gap: 0.6rem 1rem;
 }
 
-.property-lease-notice > label {
+.property-lease-notice > label:not(.file-btn-label) {
   flex: 1 1 18rem;
   min-width: 0;
   display: flex;
@@ -5398,7 +5398,14 @@ tr.tax-total td {
 }
 
 .property-lease-suggestions {
-  margin-top: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+/* A button after a list or another button keeps its distance. */
+.property-lease-suggestions > .btn-secondary,
+.property-section > .btn-secondary,
+.property-section > .btn-secondary + .btn-secondary {
+  margin-top: 0.5rem;
 }
 
 @media (max-width: 640px) {
