@@ -1427,7 +1427,8 @@
         "refunded": "refunded",
         "open": "open",
         "partial": "partly, {amount} left",
-        "none": "nothing to settle"
+        "none": "nothing to settle",
+        "over": "{amount} more than the share"
       },
       "noShares": "No leases in the period whose water is settled.",
       "other": "Other tenant bookings",

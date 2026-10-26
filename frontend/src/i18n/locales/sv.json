@@ -1427,7 +1427,8 @@
         "refunded": "återbetalt",
         "open": "öppen",
         "partial": "delvis, {amount} kvar",
-        "none": "inget att utjämna"
+        "none": "inget att utjämna",
+        "over": "{amount} mer än andelen"
       },
       "noShares": "Inga hyresförhållanden under perioden där vattenavgiften utjämnas.",
       "other": "Övriga bokningar med hyresgästen",

@@ -1427,7 +1427,8 @@
         "refunded": "palautettu",
         "open": "avoin",
         "partial": "osittain, {amount} jäljellä",
-        "none": "ei tasattavaa"
+        "none": "ei tasattavaa",
+        "over": "{amount} yli osuuden"
       },
       "noShares": "Jaksolla ei ole vuokrasuhteita, joissa vesimaksu tasataan.",
       "other": "Muut vuokralaisen kirjaukset",

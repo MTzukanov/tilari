@@ -76,7 +76,7 @@ function SettlementCard({
           ))}
         </p>
       ) : null}
-      {s.shares.length && Math.abs(s.owner_snt) >= 100 ? (
+      {s.shares.length && s.owner_snt !== 0 ? (
         <p className="muted">
           {t(s.owner_snt < 0 ? 'properties.water.ownerBears' : 'properties.water.ownerKeeps', { amount: formatCents(Math.abs(s.owner_snt)) })}
         </p>

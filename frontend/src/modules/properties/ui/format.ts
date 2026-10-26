@@ -118,7 +118,7 @@ export function periodText(t: T, from: string, to: string): string {
 
 /** A tenant's water balance: "palautetaan 12,30 €", "peritään 88,00 €", "ei tasattavaa". */
 export function waterBalanceText(t: T, balance: number): string {
-  if (Math.abs(balance) < 100) return t('properties.water.nothing')
+  if (balance === 0) return t('properties.water.nothing')
   return t(balance < 0 ? 'properties.water.refund' : 'properties.water.charge', { amount: formatCents(Math.abs(balance)) })
 }
 
@@ -128,9 +128,10 @@ export function companyResultText(t: T, difference: number): string {
   return t(difference < 0 ? 'properties.water.companyRefund' : 'properties.water.companyCharge', { amount: formatCents(Math.abs(difference)) })
 }
 
-/** Whether a share is settled: "palautettu", "maksettu", "avoin", "osittain, 50,00 € jäljellä". */
+/** Whether a share is settled: "palautettu", "maksettu", "avoin", "osittain, 50,00 € jäljellä", "36,77 € yli osuuden". */
 export function waterStatusText(t: T, status: WaterShareStatus, balance: number, settled: number): string {
   if (status === 'settled') return t(balance < 0 ? 'properties.water.status.refunded' : 'properties.water.status.paid')
   if (status === 'partial') return t('properties.water.status.partial', { amount: formatCents(Math.abs(balance - settled)) })
+  if (status === 'over') return t('properties.water.status.over', { amount: formatCents(Math.abs(settled - balance)) })
   return t(`properties.water.status.${status}`)
 }

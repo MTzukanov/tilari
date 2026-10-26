@@ -197,7 +197,7 @@ export function WaterEditor({
                       <button
                         type="button"
                         className="btn-secondary"
-                        disabled={creating != null || Math.abs(share.balance_snt) < 100}
+                        disabled={creating != null || share.balance_snt === 0}
                         onClick={() => void createLetter(i, key)}
                       >
                         {creating === `${i}-${key}` ? t('common.saving') : t('properties.water.createLetter')}

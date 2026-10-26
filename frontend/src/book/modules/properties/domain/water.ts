@@ -207,11 +207,15 @@ function tenantPart(line: WaterLine, leases: Lease[]): number {
   return step ? Math.max(0, line.net_snt - rentTotal(step)) : 0
 }
 
-/** A balance under 1 € is nothing to settle; a payment within 1 € of it settles it. */
+/**
+ * Exact to the cent, with no tolerance: settled only when the lines add up to the balance; less
+ * of it is partial, anything else (more, or the other way) is `over`.
+ */
 export function shareStatus(balance: number, settled: number): WaterShareStatus {
-  if (Math.abs(balance) < 100) return 'none'
-  if (Math.sign(settled) === Math.sign(balance) && Math.abs(settled) >= Math.abs(balance) - 100) return 'settled'
-  return settled !== 0 ? 'partial' : 'open'
+  if (settled === balance) return balance === 0 ? 'none' : 'settled'
+  if (settled === 0) return 'open'
+  if (Math.sign(settled) === Math.sign(balance) && Math.abs(settled) < Math.abs(balance)) return 'partial'
+  return 'over'
 }
 
 export type WaterViewContext = {

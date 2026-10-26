@@ -161,12 +161,14 @@ describe('water settlements', () => {
     expect(share.status).toBe('partial')
   })
 
-  it('status: nothing under 1 €, settled within 1 €, partial, open', () => {
-    expect(shareStatus(50, 0)).toBe('none')
-    expect(shareStatus(-15_310, -15_250)).toBe('settled')
-    expect(shareStatus(8_800, 4_000)).toBe('partial')
-    expect(shareStatus(8_800, 0)).toBe('open')
-    expect(shareStatus(8_800, -8_800)).toBe('partial')
+  it('status is exact to the cent: settled only when equal; a cent short is partial, a cent more is over', () => {
+    expect(shareStatus(0, 0)).toBe('none')
+    expect(shareStatus(50, 0)).toBe('open')
+    expect(shareStatus(-15_310, -15_310)).toBe('settled')
+    expect(shareStatus(-15_310, -15_309)).toBe('partial')
+    expect(shareStatus(8_800, 8_801)).toBe('over')
+    expect(shareStatus(8_800, -8_800)).toBe('over')
+    expect(shareStatus(0, 500)).toBe('over')
   })
 
   it('suggests settlements from lines no stored one takes: the company\'s difference, or the tenant\'s as if passed on', () => {

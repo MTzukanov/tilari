@@ -1427,7 +1427,8 @@
         "refunded": "erstattet",
         "open": "offen",
         "partial": "teilweise, {amount} offen",
-        "none": "nichts abzurechnen"
+        "none": "nichts abzurechnen",
+        "over": "{amount} mehr als der Anteil"
       },
       "noShares": "Keine Mietverhältnisse im Zeitraum, deren Wasser abgerechnet wird.",
       "other": "Weitere Buchungen mit dem Mieter",

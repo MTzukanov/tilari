@@ -333,8 +333,8 @@ export type BookedLine = {
   voucher: LeaseVoucher
 }
 
-/** `none`: nothing to settle; `partial`: some booked, not all. */
-export type WaterShareStatus = 'none' | 'open' | 'partial' | 'settled'
+/** `none`: nothing to settle; `partial`: some booked, not all; `over`: more booked than the balance, or the other way. */
+export type WaterShareStatus = 'none' | 'open' | 'partial' | 'settled' | 'over'
 
 export type WaterShareView = {
   lease_key: string
@@ -355,7 +355,7 @@ export type WaterShareView = {
   own: boolean
   letter: LeaseVoucher | null
   movements: BookedLine[]
-  /** What the movements settled so far (same sign as the balance when paid). */
+  /** What the movements settled so far (equal to the balance when settled). */
   settled_snt: number
   status: WaterShareStatus
 }

@@ -448,7 +448,8 @@ correction would change the open year's income statement lines. The rental-objec
   else to the latest period that ended before them (within nine months). On a vastike account,
   the company's line has the settlement's sign; the other sign is the refund passed on. A rent
   payment that also pays a settlement counts the euros it names, else what it has on top of the
-  rent. A share is settled when its lines reach its balance within 1 €. Lines no stored period
+  rent. A share is settled only when its lines add up to its balance exactly; any difference,
+  however small, shows to the cent (less is partial, more is over). Lines no stored period
   takes are suggested as settlements; they make no rent step in the lease suggestions.
 - Why not book the shares: the settlement is already in the ledger as cash. The split between
   tenants is a calculation over the leases, and storing it would go stale when a lease changes.
