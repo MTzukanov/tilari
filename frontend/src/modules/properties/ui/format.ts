@@ -80,7 +80,7 @@ export function leasePeriod(t: T, lease: LeaseView): string {
     : t('properties.lease.since', { date: formatDate(lease.starts) })
 }
 
-/** "715,00 €/kk (vuokra 680,00 €, vesi 20,00 €, autopaikka 15,00 €)" for a step. */
+/** "690,00 €/kk (vuokra 655,00 €, vesi 20,00 €, autopaikka 15,00 €)" for a step. */
 export function leaseRentText(t: T, rent: { rent_snt: number; water_snt?: number; parking_snt?: number } | null): string {
   if (!rent) return ''
   const total = rent.rent_snt + (rent.water_snt ?? 0) + (rent.parking_snt ?? 0)

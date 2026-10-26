@@ -56,7 +56,7 @@ describe('groupOwnRows / expandOwnRowToEntries', () => {
       kind: 'own',
       key: 'a',
       date: '2024-10-02',
-      payee: 'VERNERI',
+      payee: 'MALLIKAUPPA',
       description: 'PIN',
       counterAccount: 4000,
       vat_code: 0,

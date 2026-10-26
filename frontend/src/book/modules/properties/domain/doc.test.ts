@@ -84,15 +84,15 @@ describe('normalizePropertyDoc', () => {
       leases: [
         {
           tenant_partner_id: 5,
-          starts: '2025-03-10',
+          starts: '2025-04-14',
           due_day: 5,
           rents: [
             { from: '2026-01-01', rent_snt: 70_000, water_snt: 2_000, parking_snt: 1_500, voucher_id: 9 },
-            { from: '2025-03-10', rent_snt: 68_000, water_snt: 0 },
+            { from: '2025-04-14', rent_snt: 65_500, water_snt: 0 },
           ],
           exceptions: [
             { from: '2025-08-01', to: '2025-08-31', rent_snt: 34_000, water_snt: 2_000, note: '  Remonttihyvitys ', voucher_id: 10 },
-            { from: '2025-04-01', to: '2025-04-15', rent_snt: 0, parking_snt: 0 },
+            { from: '2025-05-01', to: '2025-05-15', rent_snt: 0, parking_snt: 0 },
           ],
           increase: { kind: 'amount', amount_snt: 2_000, month: 1 },
           doc_voucher_id: 8,
@@ -109,14 +109,14 @@ describe('normalizePropertyDoc', () => {
       {
         key: 'l2',
         tenant_partner_id: 5,
-        starts: '2025-03-10',
+        starts: '2025-04-14',
         due_day: 5,
         rents: [
-          { from: '2025-03-10', rent_snt: 68_000 },
+          { from: '2025-04-14', rent_snt: 65_500 },
           { from: '2026-01-01', rent_snt: 70_000, water_snt: 2_000, parking_snt: 1_500, voucher_id: 9 },
         ],
         exceptions: [
-          { from: '2025-04-01', to: '2025-04-15', rent_snt: 0 },
+          { from: '2025-05-01', to: '2025-05-15', rent_snt: 0 },
           { from: '2025-08-01', to: '2025-08-31', rent_snt: 34_000, water_snt: 2_000, note: 'Remonttihyvitys', voucher_id: 10 },
         ],
         increase: { kind: 'amount', amount_snt: 2_000, month: 1 },

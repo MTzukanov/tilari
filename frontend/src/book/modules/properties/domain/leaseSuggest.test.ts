@@ -21,14 +21,14 @@ const centreName = 'As Oy Mallitalo, Mallikatu 1 A 2'
 
 describe('lease suggestions', () => {
   it('reads periods from titles in the shapes owners write them', () => {
-    expect(titlePeriod('Vuokrasopimus Mallikatu 1 A 2 Virtanen 10.3.2025-')).toEqual({ starts: '2025-03-10' })
-    expect(titlePeriod('Mallikatu 1A2 Vuokrasopimus 1.1.2020-31.12.2023 ja vuokrankorotus 1.1.2023-')).toEqual({
-      starts: '2020-01-01',
-      ends: '2023-12-31',
+    expect(titlePeriod('Vuokrasopimus Mallikatu 1 A 2 Virtanen 14.4.2025-')).toEqual({ starts: '2025-04-14' })
+    expect(titlePeriod('Mallikatu 1A2 Vuokrasopimus 1.2.2019-31.1.2022 ja vuokrankorotus 1.2.2021-')).toEqual({
+      starts: '2019-02-01',
+      ends: '2022-01-31',
     })
-    expect(titlePeriod('Virtanen vuokrasopimus 9.2025-1.2026')).toEqual({ starts: '2025-09-01', ends: '2026-01-31' })
-    expect(titlePeriod('vuokrasopimus 16.9.2022-31.11.2023')).toEqual({ starts: '2022-09-16', ends: '2023-11-30' })
-    expect(titlePeriod('vuokrasopimus 24.07.23-31.01.202')).toEqual({ starts: '2023-07-24' })
+    expect(titlePeriod('Virtanen vuokrasopimus 8.2024-2.2025')).toEqual({ starts: '2024-08-01', ends: '2025-02-28' })
+    expect(titlePeriod('vuokrasopimus 12.5.2021-31.4.2022')).toEqual({ starts: '2021-05-12', ends: '2022-04-30' })
+    expect(titlePeriod('vuokrasopimus 18.06.22-30.09.202')).toEqual({ starts: '2022-06-18' })
     expect(titlePeriod('Vuokrasopimus Mallikatu 1A2')).toEqual({})
     expect(docKind('Vuorkasopimus Matti Meikäläinen')).toEqual({ contract: true, increase: false })
     expect(docKind('Vuokrasopimukset 2023')).toEqual({ contract: true, increase: false })

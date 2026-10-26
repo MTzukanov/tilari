@@ -1,7 +1,7 @@
 /** A rental object's kind guessed from its cost-centre name (setup default; the owner decides). */
 import type { PropertyKind } from './types'
 
-/** A letter group standing alone or before a number: "AP 205", "AH250", "AK B 30", "LH 3". */
+/** A letter group standing alone or before a number: "AP 112", "AH131", "AK B 30", "LH 2". */
 function designator(letters: string): RegExp {
   return new RegExp(`(^|[^\\p{L}])${letters}(?=[^\\p{L}]|\\d|$)`, 'iu')
 }
