@@ -137,4 +137,30 @@ test.describe('rental object month lines', () => {
     await expect(panel).toBeHidden()
     await expect(page).toHaveURL(/#\/property\/4$/)
   })
+
+  test('a month changed in the address while the page is open opens that month', async ({ page }) => {
+    await openBook(page)
+    await page.goto('/#/property/4/month/2025-02')
+    const panel = page.locator('.property-month-lines')
+    await expect(panel.getByRole('heading', { name: 'Viennit: helmikuu 2025' })).toBeVisible()
+
+    await page.goto('/#/property/4/month/2025-03')
+    await expect(panel.getByRole('heading', { name: 'Viennit: maaliskuu 2025' })).toBeVisible()
+
+    // A bar click changes the address without a new route; the month typed again still opens.
+    await page.getByRole('button', { name: 'helmikuu 2025' }).click()
+    await expect(panel.getByRole('heading', { name: 'Viennit: helmikuu 2025' })).toBeVisible()
+    await page.goto('/#/property/4/month/2025-03')
+    await expect(panel.getByRole('heading', { name: 'Viennit: maaliskuu 2025' })).toBeVisible()
+
+    await page.goto('/#/property/4')
+    await expect(panel).toBeHidden()
+
+    // The cost-centre page follows a month in the address the same way.
+    await page.goto('/#/allocation/4/month/2025-02')
+    const nav = page.locator('.ledger-head-nav').first()
+    await expect(nav).toHaveAttribute('data-start', '2025-02-01')
+    await page.goto('/#/allocation/4/month/2025-03')
+    await expect(nav).toHaveAttribute('data-start', '2025-03-01')
+  })
 })

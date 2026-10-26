@@ -7,6 +7,15 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-26 - Fixed: a month typed in the address did not open on an object's page
+
+- `#/property/{id}/month/{YYYY-MM}` was read only when the page mounted (keyed by id), so changing
+  the month in the address while the page was open kept the old month's lines. The page now
+  follows `hashchange` and reads the address itself: a bar click changes the address with
+  `replaceState` and no route change, so the `month` prop can be stale. A month outside the
+  last 24 still turns on the whole ownership period.
+- Checked: `#/allocation/{id}/month/...` already follows the address (e2e covers both).
+
 ## 2026-10-10 - Book file menu grouped by where the book lives
 
 - Owner review: the native `<select>` mixed local-file and storage actions under "Toiminnot" and

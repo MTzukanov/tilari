@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { restoreLocationHash } from '../../../app/leaveGuard'
-import { propertyHash } from '../../../app/routing'
+import { parseRoute, propertyHash } from '../../../app/routing'
 import { grossPriceFor } from '../../../book/modules/properties/domain/returns'
 import { getBcp47, useI18n } from '../../../i18n'
 import { AttachmentLink } from '../../../shared/AttachmentLink'
@@ -261,6 +261,8 @@ export function PropertyView({
   const [targetBp, setTargetBp] = useState<number | null>(null)
   const [allMonths, setAllMonths] = useState(false)
   const [selected, setSelected] = useState<string | null>(month ?? null)
+  /** The month the address asked for (a new object each time, so the same month shows again). */
+  const [asked, setAsked] = useState<{ month: string } | null>(month ? { month } : null)
   const panelRef = useRef<HTMLDivElement>(null)
   const { data: d, error, loading } = usePeriodQuery(
     () => fetchProperty(id, targetBp != null ? { targetBp } : {}),
@@ -268,14 +270,27 @@ export function PropertyView({
   )
   const loaded = Boolean(d)
 
-  // Opened on a month (back from one of its vouchers): show its bar and bring the lines into view.
+  // A month typed or linked in the address while this page is open. Read the address itself:
+  // a bar click changes it without a route change, so the `month` prop can be stale.
   useEffect(() => {
-    if (!loaded || !month) return
-    if (d && !d.months.slice(-24).some((m) => m.key === month)) setAllMonths(true)
+    const onHash = () => {
+      const route = parseRoute()
+      if (route.view !== 'property' || route.id !== id) return
+      setSelected(route.month ?? null)
+      setAsked(route.month ? { month: route.month } : null)
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [id])
+
+  // Opened on a month (back from one of its vouchers, or the address): show its bar and bring the lines into view.
+  useEffect(() => {
+    if (!loaded || !asked) return
+    if (d && !d.months.slice(-24).some((m) => m.key === asked.month)) setAllMonths(true)
     panelRef.current?.scrollIntoView({ block: 'nearest' })
-    // Only when the data first arrives.
+    // When the data first arrives or the address asks for a month.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded])
+  }, [loaded, asked])
 
   /** Open or close a month's lines; the URL follows without a new history entry. */
   function selectMonth(key: string | null) {
