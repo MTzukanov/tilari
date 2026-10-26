@@ -11,7 +11,13 @@ function isAbortError(err: unknown): boolean {
 export function mapFileError(err: unknown): string | null {
   if (isAbortError(err)) return null
   if (!(err instanceof Error)) return String(err)
-  switch (err.message) {
+  const text = messageFor(err.message)
+  // Storage errors carry the server's own words (e.g. Supabase's RLS refusal) as `cause`.
+  return typeof err.cause === 'string' && err.cause ? `${text} (${err.cause})` : text
+}
+
+function messageFor(code: string): string {
+  switch (code) {
     case 'etag_mismatch':
       return t('file.lockerConflict')
     case 'no_writable_link':
@@ -42,6 +48,8 @@ export function mapFileError(err: unknown): string | null {
       return t('file.lockerHttpNeedConnect')
     case 'locker_http_unreachable':
       return t('file.lockerHttpUnreachable')
+    case 'locker_forbidden':
+      return t('file.lockerForbidden')
     case 'locker_service_role':
       return t('file.lockerServiceRole')
     case 'locker_bad_secret':
@@ -81,6 +89,6 @@ export function mapFileError(err: unknown): string | null {
     case 'fiscal_year_invalid':
       return t('file.createYearInvalid')
     default:
-      return err.message
+      return code
   }
 }

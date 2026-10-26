@@ -51,6 +51,12 @@ describe('parseSupabaseSettings', () => {
     expect(() =>
       parseSupabaseSettings({ url: settings.url, anonKey: jwt('service_role'), secret: settings.secret }),
     ).toThrow('locker_service_role')
+    expect(() =>
+      parseSupabaseSettings({ url: settings.url, anonKey: 'sb_secret_abc123', secret: settings.secret }),
+    ).toThrow('locker_service_role')
+    expect(
+      parseSupabaseSettings({ url: settings.url, anonKey: 'sb_publishable_abc123', secret: settings.secret }).anonKey,
+    ).toBe('sb_publishable_abc123')
   })
 
   it('requires https URL, anon key, and secret when encrypting', () => {

@@ -194,17 +194,25 @@ export class EncryptedObjectStore implements LockerObjectStore {
   }
 }
 
+async function readVault(
+  store: LockerObjectStore,
+  secret: string,
+  vaultPath: string,
+): Promise<{ vault: VaultFile; key: CryptoKey; created: boolean }> {
+  const vault = parseVault(await store.download(vaultPath))
+  const key = await deriveKey(secret, b64decode(vault.salt), vault.iterations)
+  const check = await decryptBytes(b64decode(vault.check), key)
+  if (new TextDecoder().decode(check) !== 'tilari-vault') throw new Error('locker_bad_secret')
+  return { vault, key, created: false }
+}
+
 async function loadOrCreateVault(
   store: LockerObjectStore,
   secret: string,
   vaultPath: string,
 ): Promise<{ vault: VaultFile; key: CryptoKey; created: boolean }> {
   try {
-    const vault = parseVault(await store.download(vaultPath))
-    const key = await deriveKey(secret, b64decode(vault.salt), vault.iterations)
-    const check = await decryptBytes(b64decode(vault.check), key)
-    if (new TextDecoder().decode(check) !== 'tilari-vault') throw new Error('locker_bad_secret')
-    return { vault, key, created: false }
+    return await readVault(store, secret, vaultPath)
   } catch (err) {
     if (!(err instanceof Error) || err.message !== 'not_found') throw err
   }
@@ -219,7 +227,20 @@ async function loadOrCreateVault(
     check: b64encode(await encryptBytes(CHECK_PLAIN, key)),
   }
   const bytes = new TextEncoder().encode(JSON.stringify(vault))
-  await store.upload(vaultPath, bytes, { upsert: true, contentType: 'application/json' })
+  try {
+    // Create-only: its salt keys every book written under it, so never replace a vault
+    // another tab wrote meanwhile.
+    await store.upload(vaultPath, bytes, { upsert: false, contentType: 'application/json' })
+  } catch (err) {
+    if (!(err instanceof Error) || err.message !== 'duplicate') throw err
+    try {
+      return await readVault(store, secret, vaultPath)
+    } catch (again) {
+      // It exists but reads as missing: the bucket lets anon insert but not select.
+      if (again instanceof Error && again.message === 'not_found') throw new Error('locker_forbidden')
+      throw again
+    }
+  }
   return { vault, key, created: true }
 }
 

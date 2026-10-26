@@ -126,7 +126,9 @@ book only uploads SHAs that are not already present. Each `meta.json` stores
 `attachment_shas` and `attachments_sha256` (list hash). Delete runs GC for
 that prefix. “Clean unused attachments” in the storage panel does the same.
 
-The SPA uses the **anon** key only for Supabase. Create a **private** bucket.
+The SPA uses the **anon** key only for Supabase: the legacy anon JWT (sent as `apikey` and
+bearer token) or a publishable key `sb_publishable_…` (sent as `apikey` only; Storage rejects a
+non-JWT bearer token). `service_role` and `sb_secret_…` keys are refused. Create a **private** bucket.
 Example RLS (adjust the `name like` clause if you use a path prefix):
 
 ```sql
@@ -155,6 +157,7 @@ Supabase storage is **wasm-only**; Node can also open books **On the server**.
 Client-side encryption (ADR-019) when enabled: AES-256-GCM, key from
 PBKDF2-SHA-256 (210k iterations) and `{prefix}vault.json` salt. Envelope is
 `TILARIE1` + IV + ciphertext. Changing the secret requires a new vault.
+`vault.json` is written create-only: a tab that finds one already there uses it.
 Lost secret = lost books. XSS in the tab still sees the secret in
 `sessionStorage`. Encryption is for the host, backups, and a leaked anon JWT —
 not for a compromised browser.

@@ -604,8 +604,10 @@
         <ol>
           <li>Skapa ett projekt på supabase.com och öppna <strong>Project Settings → API</strong>.</li>
           <li>
-            Kopiera <strong>Project URL</strong> och <strong>anon public</strong>-nyckeln. Klistra
-            aldrig in <code>service_role</code>-nyckeln i Tilari — den nyckeln är bara för en backend.
+            Kopiera <strong>Project URL</strong> och <strong>publishable</strong>-nyckeln
+            (<code>sb_publishable_…</code>) eller den äldre <strong>anon public</strong>-nyckeln.
+            Klistra aldrig in en <code>service_role</code>- eller <code>sb_secret_…</code>-nyckel i
+            Tilari — de är bara för en backend.
           </li>
           <li>
             I Storage, skapa en <strong>privat</strong> bucket med namnet <code>tilari</code> (inte en

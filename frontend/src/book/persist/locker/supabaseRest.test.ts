@@ -37,10 +37,19 @@ describe('createSupabaseObjectStore.exists', () => {
   it('throws exists_failed on other errors', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response('', { status: 403 })),
+      vi.fn(async () => new Response('', { status: 500 })),
     )
     const store = createSupabaseObjectStore('https://example.supabase.co', 'anon', 'tilari')
     await expect(store.exists('blobs/abc')).rejects.toThrow('exists_failed')
+  })
+
+  it('throws locker_forbidden on HEAD 403', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('', { status: 403 })),
+    )
+    const store = createSupabaseObjectStore('https://example.supabase.co', 'anon', 'tilari')
+    await expect(store.exists('blobs/abc')).rejects.toThrow('locker_forbidden')
   })
 })
 
@@ -94,5 +103,26 @@ describe('createSupabaseObjectStore.list', () => {
 
     const store = createSupabaseObjectStore('https://example.supabase.co', 'anon', 'tilari')
     await expect(store.list('book1/')).resolves.toEqual([{ name: 'abc/meta.json' }])
+  })
+})
+
+describe('createSupabaseObjectStore auth headers', () => {
+  async function headersFor(key: string): Promise<Headers> {
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => new Response(null, { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    await createSupabaseObjectStore('https://example.supabase.co', key, 'tilari').exists('vault.json')
+    return new Headers(fetchMock.mock.calls[0]![1]!.headers)
+  }
+
+  it('sends a legacy anon JWT as apikey and bearer token', async () => {
+    const h = await headersFor('eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.sig')
+    expect(h.get('apikey')).toBe('eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.sig')
+    expect(h.get('authorization')).toBe('Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.sig')
+  })
+
+  it('sends a publishable key as apikey only (it is not a JWT)', async () => {
+    const h = await headersFor('sb_publishable_abc123')
+    expect(h.get('apikey')).toBe('sb_publishable_abc123')
+    expect(h.has('authorization')).toBe(false)
   })
 })
