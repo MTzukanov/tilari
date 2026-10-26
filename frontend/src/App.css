@@ -5482,6 +5482,19 @@ tr.tax-total td {
   margin: 0.3rem 0 0.2rem;
 }
 
+/* A lease's rent account: on a list row it takes the row's width; payments sit in the last column. */
+.property-doc-list li > .property-rent {
+  flex-basis: 100%;
+}
+
+.property-rent-table {
+  margin: 0.4rem 0 0.2rem;
+}
+
+.property-rent-lines .btn-link + .btn-link {
+  margin-left: 0.6rem;
+}
+
 /* Water settlements: one card per period, a tenant's status as a small badge. */
 .property-water-card + .property-water-card {
   margin-top: 0.9rem;

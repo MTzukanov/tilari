@@ -7,6 +7,21 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-26 - Rental objects 1d: rent arrears per lease, exact (`feature/property-arrears`)
+
+- Owner decisions: figures exact to the cent with no tolerance (also in the water settlements:
+  a share is settled only when its lines equal its balance; more is "over"), and each lease keeps
+  its own balance (a new tenant starts at zero). ADR-026.
+- `domain/arrears.ts`: expected rent per month from the stored leases (part months by days) plus
+  water shares, received income given to one lease each, running balance per lease. Counted from
+  the object's acquisition (else the books' start), not from an older lease start: on a real book
+  a lease taken over with the purchase otherwise showed years of false arrears.
+- Shown: the lease card's balance and its months (payments as links), the other leases' leftovers,
+  income no lease takes, a KPI tile and a portfolio column (both in cents), warnings
+  `rent_arrears`, `former_owes`, `former_paid_ahead`. Only stored leases count: suggestions
+  added with "Lisää kaikki" can overlap (a tenantless contract next to a running lease), which
+  shows as arrears on the wrong lease until the owner fixes the dates.
+
 ## 2026-10-26 - Rental objects 1c: water advances and settlements (`feature/property-water`)
 
 - Owner: for most apartments water is a prepayment that the housing company settles against

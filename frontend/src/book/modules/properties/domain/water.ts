@@ -28,7 +28,7 @@ export function dayCount(from: string, to: string): number {
   return Math.round((ms(to) - ms(from)) / DAY) + 1
 }
 
-function addDays(date: string, days: number): string {
+export function addDays(date: string, days: number): string {
   return isoOf(ms(date) + days * DAY)
 }
 
@@ -349,6 +349,24 @@ export function suggestSettlements(lines: WaterLine[], stored: WaterSettlement[]
       lines: group.lines,
       source: expense ? 'company' : 'tenant',
     })
+  }
+  return out
+}
+
+/**
+ * The stored settlements' tenant lines with the lease each is for, as the shares take them: they
+ * count in that lease's rent account (ADR-026). Those on expense accounts are refunds passed on
+ * through the vastike account.
+ */
+export function tenantSettlementLines(lines: WaterLine[], settlements: WaterSettlement[], leases: Lease[]): { line: WaterLine; lease_key: string }[] {
+  const out: { line: WaterLine; lease_key: string }[] = []
+  for (const settlement of settlements) {
+    const own = lines.filter((l) => settlementFor(l, settlements) === settlement)
+    const shares = settlementShares(settlement, leases)
+    for (const line of splitLines(settlement.difference_snt, own).tenant) {
+      const lease = (leaseOf(line, shares) ?? leaseOf(line, leases.map((l) => ({ lease: l }))))?.lease
+      if (lease) out.push({ line, lease_key: lease.key })
+    }
   }
   return out
 }

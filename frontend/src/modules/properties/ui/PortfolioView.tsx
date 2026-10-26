@@ -123,6 +123,24 @@ function nameColumn(t: T, withDates: 'acquired' | 'none'): TableColumn<PropertyR
   }
 }
 
+/** The running lease's rent balance, exact; † when other leases left a balance. */
+function rentColumn(t: T, rows: PropertyRow[]): TableColumn<PropertyRow> {
+  return {
+    id: 'rent',
+    label: t('properties.rent.col.portfolio'),
+    title: t('properties.rent.col.portfolioHint'),
+    width: 125,
+    align: 'right',
+    sortValue: (r) => r.rent?.current_snt ?? -1e12,
+    cellClass: (r) => ((r.rent?.current_snt ?? 0) > 0 ? 'neg' : ''),
+    render: (r) =>
+      r.rent
+        ? `${r.rent.current_snt != null ? formatCents(r.rent.current_snt) : '–'}${r.rent.others_snt ? '†' : ''}`
+        : '',
+    footer: formatCents(sum(rows, (r) => r.rent?.current_snt ?? 0)),
+  }
+}
+
 function heldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableColumn<PropertyRow>[] {
   const hasValuations = rows.some((r) => r.valuation)
   const cols: TableColumn<PropertyRow>[] = [
@@ -135,6 +153,7 @@ function heldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
       render: (r) => <span className={statusClass(r.status)}>{t(`properties.status.${r.status}`)}</span>,
       footer: t('properties.total'),
     },
+    ...(rows.some((r) => r.rent) ? [rentColumn(t, rows)] : []),
     {
       id: 'bookValue',
       label: t('properties.col.bookValue'),

@@ -1338,7 +1338,10 @@
       "no_capital": "No acquisition cost linked: return and break-even cannot be computed.",
       "doc_corrupt": "The stored data is damaged; saving replaces it.",
       "doc_newer": "The data was saved by a newer Tilari.",
-      "loan_shared": "Loan account {account} is also another object's bank loan, so its interest counts for both. Remove it from one of them."
+      "loan_shared": "Loan account {account} is also another object's bank loan, so its interest counts for both. Remove it from one of them.",
+      "rent_arrears": "Rent arrears {amount}.",
+      "former_owes": "Ended leases still owe {amount}.",
+      "former_paid_ahead": "Ended leases were paid {amount} more than the rent."
     },
     "error": {
       "invalid_field": "Check the field {path}.",
@@ -1473,6 +1476,30 @@
         "refundText": "We will refund {amount} to your account. Please tell us if your account number has changed.",
         "chargeText": "Please pay {amount} with your next rent, to the same account and with the same reference as the rent."
       }
+    },
+    "rent": {
+      "balanceOn": "Rent balance {date}",
+      "arrears": "rent arrears {amount}",
+      "ahead": "paid ahead {amount}",
+      "even": "settled, 0,00 €",
+      "countedFrom": "counted from {date} (the acquisition or the start of the books)",
+      "months": "By month ({n})",
+      "col": {
+        "month": "Month",
+        "rent": "Rent",
+        "water": "Water settlement",
+        "received": "Paid",
+        "balance": "Balance",
+        "lines": "Payments",
+        "portfolio": "Rent balance",
+        "portfolioHint": "The running lease's balance on the as-of date, to the cent: + the tenant owes (arrears), − paid ahead. † Other leases have a balance."
+      },
+      "unassigned": "Income without a lease ({n})",
+      "kpi": "Rent balance",
+      "kpiArrears": "Rent arrears",
+      "kpiAhead": "Paid ahead",
+      "kpiHint": "the running lease",
+      "othersHint": "other leases: {amount}"
     }
   }
 }

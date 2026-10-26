@@ -1,5 +1,6 @@
 /** Loads ledger + stored documents and assembles the portfolio, one object, or the setup view. */
 import { getPeriods } from '../../../access'
+import { rentAccount, rentBalance, waterCharges, type RentLine } from './arrears'
 import { BookError } from '../../../errors'
 import { readTilariData, readTilariDataPrefix, writeTilariData } from '../../../kernel/tilariData'
 import type { SqliteDb } from '../../../sqlite'
@@ -45,7 +46,16 @@ import {
 import { isWaterSettlementText, representedBy, suggestLeases, type LeaseSuggestion, type SuggestIncome } from './leaseSuggest'
 import { currentLease, leasePartnerIds, leaseVoucherIds, leaseView } from './rent'
 import { saleNet, toBp, xirr, yieldBp, type Flow } from './returns'
-import { bookedLine, settlementFor, settlementView, suggestSettlements, waterLines, waterVoucherIds, type WaterViewContext } from './water'
+import {
+  bookedLine,
+  tenantSettlementLines,
+  settlementFor,
+  settlementView,
+  suggestSettlements,
+  waterLines,
+  waterVoucherIds,
+  type WaterViewContext,
+} from './water'
 import { defaultAsOf, isIncome } from './series'
 import { allocationSet, computeObject, resolveSaleCosts, type CountedLine, type ObjectResult } from './summary'
 import { pickBest, suggestEra, textScorer } from './suggest'
@@ -64,6 +74,7 @@ import {
   type SetupApplyInput,
   type SetupResponse,
   type BookedLine,
+  type RentAccount,
   type WaterDetail,
 } from './types'
 
@@ -179,6 +190,8 @@ function byDate(a: { date: string; id: number }, b: { date: string; id: number }
 /** Tenant names, voucher labels and the book's lease suggestions for the objects on the page, loaded once. */
 type LeaseContext = {
   asOf: string
+  /** The first fiscal year's start: rent accounts count from it at the earliest. */
+  booksStart: string
   partners: Map<number, PartnerInfo>
   refs: Map<number, VoucherRef>
   /** Per cost centre: suggestions that no stored lease stands for. */
@@ -210,7 +223,7 @@ function leaseContext(db: SqliteDb, computed: Computed[], asOf: string): LeaseCo
     const found = suggestLeases({ docs, income: incomes.get(c.centre.id) ?? [], names, centreName: c.centre.name, parkingObject, asOf })
     suggestions.set(c.centre.id, found.filter((s) => !representedBy(stored, s.lease)))
   }
-  return { asOf, partners, refs, suggestions }
+  return { asOf, booksStart: getPeriods(db)[0]?.starts ?? asOf, partners, refs, suggestions }
 }
 
 function suggestionView(s: LeaseSuggestion, ctx: LeaseContext): LeaseView {
@@ -231,11 +244,46 @@ function rowLease(c: Computed, ctx: LeaseContext): LeaseView | null {
   return match ? suggestionView(match, ctx) : null
 }
 
-function toRow(c: Computed, ctx: LeaseContext): PropertyRow {
+/**
+ * What was paid for rent on the object: its income lines, and water refunds passed on through
+ * the vastike account. A stored water settlement's lines go to the lease its share gives them.
+ */
+function rentLines(c: Computed): RentLine[] {
+  const operating = c.result.classified.operating
+  const settled = tenantSettlementLines(waterLines(operating), c.parsed.doc.water_settlements ?? [], c.parsed.doc.leases ?? [])
+  const leaseOfLine = new Map(settled.map((s) => [s.line.id, s.lease_key]))
+  const line = (r: { id: number; date: string; voucher_id: number; net_snt: number; partner_id: number | null; text?: string }): RentLine => {
+    const out: RentLine = { id: r.id, date: r.date, voucher_id: r.voucher_id, net_snt: r.net_snt, partner_id: r.partner_id, text: r.text ?? '' }
+    const key = leaseOfLine.get(r.id)
+    if (key) out.lease_key = key
+    return out
+  }
+  const income = operating.filter(isIncome).map(line)
+  const passed = settled.filter((s) => !s.line.income).map((s) => line(s.line))
+  return [...income, ...passed]
+}
+
+/** The stored leases' rent accounts (ADR-026); `refs` label the lines and date the water letters. */
+function rentAccountOf(c: Computed, ctx: LeaseContext, refs: Map<number, VoucherRef>): RentAccount | null {
+  const leases = c.parsed.doc.leases ?? []
+  if (!leases.length) return null
+  const charges = waterCharges(c.parsed.doc.water_settlements ?? [], leases, (id) => refs.get(id)?.date ?? null)
+  // Rent is the owner's from the acquisition (else the books' start) until a sale.
+  const { acquired_on, sold_on } = c.result.summary
+  const from = acquired_on && acquired_on > ctx.booksStart ? acquired_on : ctx.booksStart
+  const until = c.result.status === 'sold' && sold_on && sold_on < ctx.asOf ? sold_on : ctx.asOf
+  return rentAccount({ leases, lines: rentLines(c), charges, window: { from, until, asOf: ctx.asOf }, ctx: { partnerName: partnerName(ctx), refs } })
+}
+
+function toRow(c: Computed, ctx: LeaseContext, account: RentAccount | null = rentAccountOf(c, ctx, ctx.refs)): PropertyRow {
   const { centre, parsed, result } = c
   const warnings = [...result.warnings]
   if (parsed.corrupt) warnings.unshift({ code: 'doc_corrupt' })
   else if (parsed.read_only) warnings.unshift({ code: 'doc_newer' })
+  const rent = account ? rentBalance(account, currentLease(parsed.doc.leases ?? [], ctx.asOf)) : null
+  if (rent?.current_snt && rent.current_snt > 0) warnings.push({ code: 'rent_arrears', params: { amount_snt: rent.current_snt } })
+  if (rent && rent.others_snt > 0) warnings.push({ code: 'former_owes', params: { amount_snt: rent.others_snt } })
+  if (rent && rent.others_snt < 0) warnings.push({ code: 'former_paid_ahead', params: { amount_snt: -rent.others_snt } })
   return {
     id: centre.id,
     name: centre.name,
@@ -251,6 +299,7 @@ function toRow(c: Computed, ctx: LeaseContext): PropertyRow {
     valuation: result.valuation,
     cash_years: result.cash_years,
     lease: rowLease(c, ctx),
+    rent,
     warnings,
   }
 }
@@ -328,7 +377,9 @@ export function computeDetail(
   const { water, latest } = waterDetail(db, computed, ctx)
   const suggestions = ctx.suggestions.get(id) ?? []
   const sources = leaseSources(db, computed, suggestions, ctx)
-  const row = toRow(computed, ctx)
+  const lineRefs = loadVoucherRefs(db, new Set(rentLines(computed).map((l) => l.voucher_id)))
+  const account = rentAccountOf(computed, ctx, new Map([...ctx.refs, ...lineRefs]))
+  const row = toRow(computed, ctx, account)
   if (row.lease && !row.lease.suggested) row.lease = { ...row.lease, water_latest: latest.get(row.lease.key) ?? null }
   return {
     ...row,
@@ -351,6 +402,7 @@ export function computeDetail(
       .map((s) => ({ lease: s.lease, view: { ...suggestionView(s, ctx), sources: sources.get(s) ?? [] } }))
       .sort((a, b) => b.lease.starts.localeCompare(a.lease.starts)),
     water,
+    rent_account: account,
   }
 }
 

@@ -18,6 +18,7 @@ import {
   type Disposal,
   type PropertyDetail,
   type PropertyDocuments,
+  type RentBalance,
   type YearRow,
 } from '../api'
 import { CashFlowChart, PaybackChart } from './Charts'
@@ -33,6 +34,22 @@ function Kpi({ label, value, neg, hint, title }: { label: string; value: string;
       <strong className={neg ? 'neg' : ''}>{value || '–'}</strong>
       {hint ? <span className="muted property-kpi-hint">{hint}</span> : null}
     </div>
+  )
+}
+
+/** The running lease's rent balance, exact; what other leases left in the hint. */
+function RentKpi({ rent }: { rent: RentBalance }) {
+  const { t } = useI18n()
+  const current = rent.current_snt
+  const label =
+    current == null || current === 0 ? 'properties.rent.kpi' : current > 0 ? 'properties.rent.kpiArrears' : 'properties.rent.kpiAhead'
+  return (
+    <Kpi
+      label={t(label)}
+      value={current == null ? '' : formatCents(Math.abs(current))}
+      neg={(current ?? 0) > 0}
+      hint={rent.others_snt ? t('properties.rent.othersHint', { amount: formatCents(rent.others_snt) }) : t('properties.rent.kpiHint')}
+    />
   )
 }
 
@@ -402,6 +419,7 @@ export function PropertyView({
               hint={irrHint}
               title={d.status === 'sold' ? t('properties.col.irrSoldHint') : t('properties.col.irrHint')}
             />
+            {d.rent ? <RentKpi rent={d.rent} /> : null}
           </div>
 
           {d.status !== 'sold' || d.leases.length || d.lease_suggestions.length ? (
@@ -409,6 +427,8 @@ export function PropertyView({
               leases={d.leases}
               current={d.lease}
               suggestions={d.lease_suggestions.map((s) => s.view)}
+              accounts={d.rent_account?.leases}
+              unassigned={d.rent_account?.unassigned}
               asOf={d.as_of}
               onEdit={onEdit}
               onOpenVoucher={(v) => openVoucher(v)}

@@ -1338,7 +1338,10 @@
       "no_capital": "Ingen anskaffningsutgift länkad: avkastning och nollpris kan inte beräknas.",
       "doc_corrupt": "De sparade uppgifterna är skadade; sparande ersätter dem.",
       "doc_newer": "Uppgifterna sparades med en nyare Tilari.",
-      "loan_shared": "Lånekonto {account} är också ett annat objekts banklån, så räntan räknas för båda. Ta bort det från det ena objektet."
+      "loan_shared": "Lånekonto {account} är också ett annat objekts banklån, så räntan räknas för båda. Ta bort det från det ena objektet.",
+      "rent_arrears": "Hyresskuld {amount}.",
+      "former_owes": "Från avslutade hyresförhållanden återstår {amount} att få.",
+      "former_paid_ahead": "I avslutade hyresförhållanden har {amount} betalats utöver hyran."
     },
     "error": {
       "invalid_field": "Kontrollera fältet {path}.",
@@ -1473,6 +1476,30 @@
         "refundText": "Vi återbetalar {amount} till ert konto. Meddela oss om ert kontonummer har ändrats.",
         "chargeText": "Vi ber er betala {amount} tillsammans med nästa hyra, till samma konto och med samma referens som hyran."
       }
+    },
+    "rent": {
+      "balanceOn": "Hyressaldo {date}",
+      "arrears": "hyresskuld {amount}",
+      "ahead": "betalt i förskott {amount}",
+      "even": "stämmer, 0,00 €",
+      "countedFrom": "räknat från {date} (objektets förvärv eller bokföringens början)",
+      "months": "Per månad ({n})",
+      "col": {
+        "month": "Månad",
+        "rent": "Hyra",
+        "water": "Vattenutjämning",
+        "received": "Betalt",
+        "balance": "Saldo",
+        "lines": "Betalningar",
+        "portfolio": "Hyressaldo",
+        "portfolioHint": "Det gällande hyresförhållandets saldo på balansdagen, på centen: + hyresgästen är skyldig (hyresskuld), − betalt i förskott. † Övriga hyresförhållanden har saldo."
+      },
+      "unassigned": "Intäkter utan hyresförhållande ({n})",
+      "kpi": "Hyressaldo",
+      "kpiArrears": "Hyresskuld",
+      "kpiAhead": "Betalt i förskott",
+      "kpiHint": "gällande hyresförhållande",
+      "othersHint": "övriga hyresförhållanden: {amount}"
     }
   }
 }

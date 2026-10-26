@@ -453,3 +453,25 @@ correction would change the open year's income statement lines. The rental-objec
   takes are suggested as settlements; they make no rent step in the lease suggestions.
 - Why not book the shares: the settlement is already in the ledger as cash. The split between
   tenants is a calculation over the leases, and storing it would go stale when a lease changes.
+
+## ADR-026 Rent arrears per lease, exact to the cent (2026-10-26)
+
+**Status:** accepted. Computed from the ledger and the stored leases; nothing is stored.
+
+- **Each stored lease has its own rent account** (owner's choice). A new tenant starts at zero;
+  what an ended lease left (owed or paid ahead) stays on that lease and is shown apart from the
+  running one. No income line is left out: one that no lease takes is listed on its own.
+- **Exact, with no tolerance.** Every difference shows to the cent, also one the owner will not
+  claim. Rounding happens only where a part month is prorated: once per step segment.
+- **Expected:** the lease's step totals (rent, water advance, parking) for its days; a full month
+  is the total exactly, a part month the total by days. Counted from the later of the lease's
+  start and the object's acquisition (else the books' first fiscal year), until the end, a sale
+  or the as-of date. Each water settlement share (ADR-025) is due on the letter's date, else in
+  the month after the period's end; a refund is negative.
+- **Received:** the object's income lines (without VAT, as booked), each given to one lease: the
+  lease whose tenant paid it (from 31 days before its start, also after its end); else the lease
+  running then; else the last that ended before it. A stored water settlement's lines go to the
+  lease its share gives them, and refunds passed on through the vastike account count there too.
+- Why per lease and not one running balance per object: an old unresolved difference would
+  otherwise follow every later tenant.
+

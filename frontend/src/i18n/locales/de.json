@@ -1338,7 +1338,10 @@
       "no_capital": "Keine Anschaffungskosten verknüpft: Rendite und Break-even können nicht berechnet werden.",
       "doc_corrupt": "Die gespeicherten Daten sind beschädigt; Speichern ersetzt sie.",
       "doc_newer": "Die Daten wurden mit einem neueren Tilari gespeichert.",
-      "loan_shared": "Darlehenskonto {account} ist auch das Bankdarlehen eines anderen Objekts, daher zählen die Zinsen für beide. Bei einem Objekt entfernen."
+      "loan_shared": "Darlehenskonto {account} ist auch das Bankdarlehen eines anderen Objekts, daher zählen die Zinsen für beide. Bei einem Objekt entfernen.",
+      "rent_arrears": "Mietrückstand {amount}.",
+      "former_owes": "Aus beendeten Mietverhältnissen stehen {amount} aus.",
+      "former_paid_ahead": "In beendeten Mietverhältnissen wurden {amount} mehr als die Miete gezahlt."
     },
     "error": {
       "invalid_field": "Feld {path} prüfen.",
@@ -1473,6 +1476,30 @@
         "refundText": "Wir überweisen {amount} auf Ihr Konto. Bitte teilen Sie uns mit, falls sich Ihre Kontonummer geändert hat.",
         "chargeText": "Bitte zahlen Sie {amount} mit der nächsten Miete auf dasselbe Konto und mit derselben Referenz wie die Miete."
       }
+    },
+    "rent": {
+      "balanceOn": "Mietsaldo {date}",
+      "arrears": "Mietrückstand {amount}",
+      "ahead": "im Voraus bezahlt {amount}",
+      "even": "ausgeglichen, 0,00 €",
+      "countedFrom": "gezählt ab {date} (Erwerb des Objekts oder Beginn der Buchhaltung)",
+      "months": "Monatlich ({n})",
+      "col": {
+        "month": "Monat",
+        "rent": "Miete",
+        "water": "Wasserabrechnung",
+        "received": "Bezahlt",
+        "balance": "Saldo",
+        "lines": "Zahlungen",
+        "portfolio": "Mietsaldo",
+        "portfolioHint": "Saldo des laufenden Mietverhältnisses am Stichtag, auf den Cent: + der Mieter schuldet (Rückstand), − im Voraus bezahlt. † Andere Mietverhältnisse haben ein Saldo."
+      },
+      "unassigned": "Einnahmen ohne Mietverhältnis ({n})",
+      "kpi": "Mietsaldo",
+      "kpiArrears": "Mietrückstand",
+      "kpiAhead": "Im Voraus bezahlt",
+      "kpiHint": "laufendes Mietverhältnis",
+      "othersHint": "andere Mietverhältnisse: {amount}"
     }
   }
 }
