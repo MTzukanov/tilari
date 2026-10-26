@@ -282,7 +282,48 @@ export type PropertyRow = {
   cash_years: YearCashFlow[]
   /** The lease running on the as-of date (the latest started when several run); a suggested one when none is stored. */
   lease: LeaseView | null
+  /** Rent balances from the stored leases; null without any. */
+  rent: RentBalance | null
   warnings: Warning[]
+}
+
+/** The rent balances on the as-of date, exact: + the tenant owes (vuokrarästi), - paid ahead. */
+export type RentBalance = {
+  /** The running lease's own balance; null when none runs. */
+  current_snt: number | null
+  /** What the other leases (mostly ended ones) left, together. */
+  others_snt: number
+}
+
+/** One month of a lease's rent account, exact to the cent. */
+export type RentMonth = {
+  key: string
+  /** Rent, water advance and parking for the lease's days in the month. */
+  rent_snt: number
+  /** Water settlement shares due in the month: + the tenant pays, - refunded. */
+  water_snt: number
+  received_snt: number
+  /** At the month's end: + the tenant owes, - paid ahead. */
+  balance_snt: number
+  lines: BookedLine[]
+}
+
+/** A lease's own rent account (ADR-026): a new tenant starts at zero, an ended lease keeps what it left. */
+export type LeaseRentAccount = {
+  lease_key: string
+  /** The first day that counts: the lease's start, or a later acquisition (or the books' start). */
+  counted_from: string
+  months: RentMonth[]
+  expected_snt: number
+  received_snt: number
+  /** On the as-of date: + the tenant owes, - paid ahead. */
+  balance_snt: number
+}
+
+export type RentAccount = {
+  leases: LeaseRentAccount[]
+  /** Income on the object that no lease takes (before the first lease, a non-tenant's advance). */
+  unassigned: BookedLine[]
 }
 
 export type LeaseState = 'upcoming' | 'current' | 'ended'
@@ -434,6 +475,8 @@ export type PropertyDetail = PropertyRow & {
   /** Leases the book suggests that no stored lease stands for yet, newest start first. */
   lease_suggestions: LeaseSuggestionView[]
   water: WaterDetail
+  /** Each stored lease's rent account; null without stored leases. */
+  rent_account: RentAccount | null
 }
 
 export type MonthLineKind = 'income' | 'expense' | 'interest'

@@ -558,7 +558,7 @@ function EditForm({
         <h3>{t('properties.eras.title')}</h3>
         <p className="muted">{t('properties.edit.erasLead')}</p>
         <p className="property-legend">{t('properties.setup.starLegendEdit')}</p>
-        <ul className="property-doc-list">
+        <ul className="property-doc-list property-linked-list">
           {eras.map((eraid) => {
             const e = eraById.get(eraid)
             return (
@@ -568,7 +568,7 @@ function EditForm({
                     {e.account} · {formatDate(e.date)} · {e.description} · {formatCents(e.balance_snt)}
                   </button>
                 ) : (
-                  t('properties.eras.missing', { id: eraid })
+                  <span className="muted">{t('properties.eras.missing', { id: eraid })}</span>
                 )}{' '}
                 <button type="button" className="btn-small" onClick={() => setEras(eras.filter((x) => x !== eraid))}>
                   {t('properties.edit.remove')}
@@ -593,7 +593,7 @@ function EditForm({
 
       <section className="property-section">
         <h3>{t('properties.docs.linkedTitle')}</h3>
-        <ul className="property-doc-list">
+        <ul className="property-doc-list property-linked-list">
           {docs.map((voucherId) => {
             const d = docById.get(voucherId)
             return (
@@ -603,7 +603,7 @@ function EditForm({
                     {formatDate(d.date)} · {d.title}
                   </button>
                 ) : (
-                  t('properties.docs.missing', { id: voucherId })
+                  <span className="muted">{t('properties.docs.missing', { id: voucherId })}</span>
                 )}{' '}
                 {isCreated(voucherId) ? (
                   <button type="button" className="btn-small" onClick={() => void deleteDocs([voucherId])}>

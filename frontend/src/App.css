@@ -2323,6 +2323,10 @@ th {
   color: var(--neg);
 }
 
+.amount.pos {
+  color: var(--accent);
+}
+
 tfoot td {
   border-bottom: none;
   border-top: 1px solid var(--ink);
@@ -5482,6 +5486,19 @@ tr.tax-total td {
   margin: 0.3rem 0 0.2rem;
 }
 
+/* A lease's rent account: on a list row it takes the row's width; payments sit in the last column. */
+.property-doc-list li > .property-rent {
+  flex-basis: 100%;
+}
+
+.property-rent-table {
+  margin: 0.4rem 0 0.2rem;
+}
+
+.property-rent-lines .btn-link + .btn-link {
+  margin-left: 0.6rem;
+}
+
 /* Water settlements: one card per period, a tenant's status as a small badge. */
 .property-water-card + .property-water-card {
   margin-top: 0.9rem;
@@ -5533,6 +5550,17 @@ tr.tax-total td {
   flex-wrap: wrap;
   gap: 0.35rem 0.75rem;
   align-items: baseline;
+}
+
+/* A long entry wraps left-aligned instead of centred like a button. */
+.property-doc-list li > .btn-link {
+  text-align: left;
+}
+
+/* Linked items on the edit page: the entry takes the row and wraps, its remove button stays at the end. */
+.property-linked-list li > :first-child {
+  flex: 1;
+  min-width: 0;
 }
 
 .property-attachment {

@@ -381,6 +381,14 @@ describe('rental objects: figures', () => {
     const latest = { from: '2023-11-01', to: '2024-10-31', balance_snt: -120 * E, settled_snt: -120 * E, status: 'settled' }
     expect(after.leases[0].water_latest).toEqual(latest)
     expect(after.lease?.water_latest).toEqual(latest)
+    // The rent account: every month's rent paid; the refund paid in December is the share due
+    // on the letter's date in January, so the balance is exactly zero again.
+    const account = after.rent_account?.leases[0]
+    expect(account).toMatchObject({ lease_key: 'l1', counted_from: '2023-03-01', balance_snt: 0 })
+    const month = (key: string) => account?.months.find((m) => m.key === key)
+    expect(month('2024-12')).toMatchObject({ rent_snt: 1_000 * E, water_snt: 0, received_snt: 880 * E, balance_snt: 120 * E })
+    expect(month('2025-01')).toMatchObject({ rent_snt: 1_000 * E, water_snt: -120 * E, received_snt: 1_000 * E, balance_snt: 0 })
+    expect(after.rent).toEqual({ current_snt: 0, others_snt: 0 })
 
     const save = (settlement: Record<string, unknown>) => () =>
       saveProperty(db, CC.bundle, { ...after.doc, water_settlements: [{ from: '2023-11-01', to: '2024-10-31', difference_snt: 0, ...settlement }] }, 'now')

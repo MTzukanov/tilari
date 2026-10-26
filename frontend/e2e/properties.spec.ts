@@ -193,6 +193,11 @@ test.describe('rental object water settlements', () => {
     const card = page.locator('.property-lease-card').first()
     await expect(card).toContainText('vesimaksu tasataan kulutuksen mukaan')
     await expect(card).toContainText('Vesitasaus 1.1.2025–30.6.2025: palautetaan 39,56 € · avoin')
+    // The lease's own rent account on the as-of date: the test book has no rent on the object,
+    // so all nine months are owed; the letter's refund is due after the as-of date.
+    await expect(card).toContainText(/Vuokrasaldo 30\.11\.2025: vuokrarästi 6\s030,00\s€/)
+    await card.getByText(/^Kuukausittain \(\d+\)$/).click()
+    await expect(card.locator('.property-rent-table')).toContainText('Vesitasaus')
   })
 })
 

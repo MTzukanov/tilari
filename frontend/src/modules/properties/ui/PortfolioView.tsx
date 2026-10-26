@@ -9,7 +9,7 @@ import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import { fetchPortfolio, savePortfolioSettings, type PortfolioResponse, type PortfolioSettings, type PropertyRow } from '../api'
 import { rentTotal } from '../../../book/modules/properties/domain/rent'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
-import { formatEuro, holdingText, periodLabel, saveErrorText, statusClass } from './format'
+import { formatEuro, holdingText, periodLabel, saveErrorText, statusClass, tenantSide } from './format'
 
 function Kpi({ label, value, neg, hint }: { label: string; value: string; neg?: boolean; hint?: string }) {
   return (
@@ -123,6 +123,22 @@ function nameColumn(t: T, withDates: 'acquired' | 'none'): TableColumn<PropertyR
   }
 }
 
+/** The running lease's rent balance, exact, arrears red and minus; † when other leases left a balance. */
+function rentColumn(t: T, rows: PropertyRow[]): TableColumn<PropertyRow> {
+  const current = (r: PropertyRow) => (r.rent?.current_snt != null ? tenantSide(r.rent.current_snt) : null)
+  return {
+    id: 'rent',
+    label: t('properties.rent.col.portfolio'),
+    title: t('properties.rent.col.portfolioHint'),
+    width: 125,
+    align: 'right',
+    sortValue: (r) => current(r) ?? -1e12,
+    cellClass: (r) => negClass(current(r)),
+    render: (r) => (r.rent ? `${r.rent.current_snt != null ? formatCents(current(r)) : '–'}${r.rent.others_snt ? '†' : ''}` : ''),
+    footer: formatCents(tenantSide(sum(rows, (r) => r.rent?.current_snt ?? 0))),
+  }
+}
+
 function heldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableColumn<PropertyRow>[] {
   const hasValuations = rows.some((r) => r.valuation)
   const cols: TableColumn<PropertyRow>[] = [
@@ -135,6 +151,7 @@ function heldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
       render: (r) => <span className={statusClass(r.status)}>{t(`properties.status.${r.status}`)}</span>,
       footer: t('properties.total'),
     },
+    ...(rows.some((r) => r.rent) ? [rentColumn(t, rows)] : []),
     {
       id: 'bookValue',
       label: t('properties.col.bookValue'),

@@ -24,10 +24,13 @@ export function statusClass(status: PropertyStatus): string {
 
 type T = (key: string, vars?: Record<string, string | number>) => string
 
-/** Warning text; unknown codes fall back to the code itself. */
+/** Warning text; unknown codes fall back to the code itself. A `*_snt` param is money, named without the suffix. */
 export function warningText(t: T, w: Warning): string {
   const key = `properties.warn.${w.code}`
-  const text = t(key, w.params ?? {})
+  const params = Object.fromEntries(
+    Object.entries(w.params ?? {}).map(([k, v]) => (k.endsWith('_snt') && typeof v === 'number' ? [k.slice(0, -4), formatCents(v)] : [k, v])),
+  )
+  const text = t(key, params)
   return text === key ? w.code : text
 }
 
@@ -114,6 +117,17 @@ export function clauseText(t: T, rule: LeaseIncrease | null | undefined): string
 /** "1.11.2023–31.10.2024". */
 export function periodText(t: T, from: string, to: string): string {
   return t('properties.lease.period', { from: formatDate(from), to: formatDate(to) })
+}
+
+/** A rent balance as the tenant stands: arrears negative, paid ahead positive (never -0). */
+export function tenantSide(snt: number): number {
+  return snt === 0 ? 0 : -snt
+}
+
+/** A rent account's balance, exact: "vuokrarästi 120,00 €", "maksettu ennakkoon 45,83 €", "täsmää, 0,00 €". */
+export function rentBalanceText(t: T, balance: number): string {
+  if (balance === 0) return t('properties.rent.even')
+  return t(balance > 0 ? 'properties.rent.arrears' : 'properties.rent.ahead', { amount: formatCents(Math.abs(balance)) })
 }
 
 /** A tenant's water balance: "palautetaan 12,30 €", "peritään 88,00 €", "ei tasattavaa". */

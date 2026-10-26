@@ -1,8 +1,9 @@
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
-import type { LeaseView } from '../api'
+import type { BookedLine, LeaseRentAccount, LeaseView } from '../api'
 import { increaseText, leasePeriod, leaseRentText, periodText, waterBalanceText, waterStatusText } from './format'
 import { LineSources, VoucherLink } from './FormParts'
+import { RentAccountView } from './RentAccount'
 
 /**
  * Where a suggestion comes from (hover explains): a lease from a linked contract or from rent
@@ -33,7 +34,17 @@ export function LeaseSources({ lease, onOpen }: { lease: LeaseView; onOpen: (vou
   )
 }
 
-function LeaseCard({ lease, onOpenVoucher }: { lease: LeaseView; onOpenVoucher: (voucherId: number) => void }) {
+function LeaseCard({
+  lease,
+  account,
+  asOf,
+  onOpenVoucher,
+}: {
+  lease: LeaseView
+  account: LeaseRentAccount | undefined
+  asOf: string
+  onOpenVoucher: (voucherId: number) => void
+}) {
   const { t } = useI18n()
   const terms = [
     leaseRentText(t, lease.rent),
@@ -54,6 +65,7 @@ function LeaseCard({ lease, onOpenVoucher }: { lease: LeaseView; onOpenVoucher: 
           {t('properties.lease.contract')}: <VoucherLink voucher={lease.contract} onOpen={onOpenVoucher} />
         </p>
       ) : null}
+      {account ? <RentAccountView account={account} asOf={asOf} leaseStarts={lease.starts} onOpen={onOpenVoucher} /> : null}
       {latest ? (
         <p className="property-lease-terms">
           {t('properties.water.latest', { period: periodText(t, latest.from, latest.to) })}: {waterBalanceText(t, latest.balance_snt)}
@@ -85,6 +97,8 @@ export function LeasesPanel({
   current,
   asOf,
   suggestions,
+  accounts = [],
+  unassigned = [],
   onEdit,
   onOpenVoucher,
 }: {
@@ -92,6 +106,9 @@ export function LeasesPanel({
   current: LeaseView | null
   /** Leases the book suggests, newest start first. */
   suggestions: LeaseView[]
+  /** The stored leases' rent accounts, and the income no lease takes. */
+  accounts?: LeaseRentAccount[]
+  unassigned?: BookedLine[]
   asOf: string
   onEdit: () => void
   onOpenVoucher: (voucherId: number) => void
@@ -111,12 +128,19 @@ export function LeasesPanel({
         </p>
       ) : null}
       {leases.length > 0 && !stored ? <p className="muted">{t('properties.lease.noCurrent', { date: formatDate(asOf) })}</p> : null}
-      {stored ? <LeaseCard lease={stored} onOpenVoucher={onOpenVoucher} /> : null}
+      {stored ? (
+        <LeaseCard lease={stored} account={accounts.find((a) => a.lease_key === stored.key)} asOf={asOf} onOpenVoucher={onOpenVoucher} />
+      ) : null}
       {others.length ? (
         <>
           <h4 className="property-lease-others">{t('properties.lease.others')}</h4>
-          <LeaseList leases={others} onOpenVoucher={onOpenVoucher} />
+          <LeaseList leases={others} accounts={accounts} asOf={asOf} onOpenVoucher={onOpenVoucher} />
         </>
+      ) : null}
+      {unassigned.length ? (
+        <p className="property-lease-terms">
+          <LineSources label={t('properties.rent.unassigned', { n: unassigned.length })} lines={unassigned} onOpen={onOpenVoucher} />
+        </p>
       ) : null}
       {suggestions.length ? (
         <div className="property-lease-suggestions">
@@ -132,7 +156,17 @@ export function LeasesPanel({
   )
 }
 
-function LeaseList({ leases, onOpenVoucher }: { leases: LeaseView[]; onOpenVoucher: (voucherId: number) => void }) {
+function LeaseList({
+  leases,
+  accounts = [],
+  asOf = '',
+  onOpenVoucher,
+}: {
+  leases: LeaseView[]
+  accounts?: LeaseRentAccount[]
+  asOf?: string
+  onOpenVoucher: (voucherId: number) => void
+}) {
   const { t } = useI18n()
   return (
     <ul className="property-doc-list">
@@ -147,6 +181,14 @@ function LeaseList({ leases, onOpenVoucher }: { leases: LeaseView[]; onOpenVouch
             <LeaseSources lease={lease} onOpen={onOpenVoucher} />
           ) : lease.contract ? (
             <VoucherLink voucher={lease.contract} onOpen={onOpenVoucher} />
+          ) : null}
+          {!lease.suggested && accounts.some((a) => a.lease_key === lease.key) ? (
+            <RentAccountView
+              account={accounts.find((a) => a.lease_key === lease.key)!}
+              asOf={asOf}
+              leaseStarts={lease.starts}
+              onOpen={onOpenVoucher}
+            />
           ) : null}
         </li>
       ))}

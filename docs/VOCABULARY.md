@@ -172,6 +172,9 @@ not this.
 | Varainsiirtovero | Överlåtelseskatt | Transfer tax | Grunderwerbsteuer (FI) |
 | Vuokrasopimus | Hyresavtal | Lease | Mietvertrag |
 | Vuokravakuus | Hyresdeposition | Rent deposit | Mietkaution |
+| Vuokrasaldo | Hyressaldo | Rent balance | Mietsaldo |
+| Vuokrarästi | Hyresskuld | Rent arrears | Mietrückstand |
+| Maksettu ennakkoon | Betalt i förskott | Paid ahead | Im Voraus bezahlt |
 | Vesimaksuennakko | Vattenavgiftsförskott | Water advance | Wasservorauszahlung |
 | Vesitasaus | Vattenutjämning | Water settlement | Wasserabrechnung |
 | Vesitasauslaskelma | Utjämningskalkyl | Water settlement letter / statement | Wasserabrechnung (Schreiben) |

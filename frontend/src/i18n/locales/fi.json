@@ -1338,7 +1338,10 @@
       "no_capital": "Hankintamenoa ei ole linkitetty: tuottoa ja nollahintaa ei voi laskea.",
       "doc_corrupt": "Tallennetut tiedot ovat vioittuneet; tallennus korvaa ne.",
       "doc_newer": "Tiedot on tallennettu uudemmalla Tilarilla.",
-      "loan_shared": "Lainatili {account} on myös toisen kohteen pankkilaina, joten sen korot lasketaan molemmille. Poista se toiselta kohteelta."
+      "loan_shared": "Lainatili {account} on myös toisen kohteen pankkilaina, joten sen korot lasketaan molemmille. Poista se toiselta kohteelta.",
+      "rent_arrears": "Vuokrarästiä {amount}.",
+      "former_owes": "Päättyneistä vuokrasuhteista on saamatta {amount}.",
+      "former_paid_ahead": "Päättyneissä vuokrasuhteissa on maksettu {amount} enemmän kuin vuokra."
     },
     "error": {
       "invalid_field": "Tarkista kenttä {path}.",
@@ -1473,6 +1476,33 @@
         "refundText": "Palautamme {amount} tilillenne. Ilmoittakaa tilinumeronne, jos se on muuttunut.",
         "chargeText": "Pyydämme maksamaan {amount} seuraavan vuokranmaksun yhteydessä samalle tilille ja samalla viitteellä kuin vuokran."
       }
+    },
+    "rent": {
+      "balanceOn": "Vuokrasaldo {date}",
+      "arrears": "vuokrarästi {amount}",
+      "ahead": "maksettu ennakkoon {amount}",
+      "even": "täsmää, 0,00 €",
+      "countedFrom": "laskettu {date} alkaen (kohteen hankinnasta tai kirjanpidon alusta)",
+      "months": "Kuukausittain ({n})",
+      "col": {
+        "month": "Kuukausi",
+        "rent": "Vuokra",
+        "water": "Vesitasaus",
+        "received": "Maksettu",
+        "change": "Muutos",
+        "changeHint": "Maksettu − vuokra − vesitasaus: − jäi maksamatta, + maksettiin enemmän.",
+        "balance": "Saldo",
+        "balanceHint": "Kuukauden lopussa: − vuokralainen on velkaa (vuokrarästi), + maksettu ennakkoon.",
+        "lines": "Suoritukset",
+        "portfolio": "Vuokrasaldo",
+        "portfolioHint": "Voimassa olevan vuokrasuhteen saldo tilannepäivänä senttiä myöten: − vuokralainen on velkaa (vuokrarästi), + maksettu ennakkoon. † Muilla vuokrasuhteilla on saldoa."
+      },
+      "unassigned": "Tuloja ilman vuokrasuhdetta ({n})",
+      "kpi": "Vuokrasaldo",
+      "kpiArrears": "Vuokrarästi",
+      "kpiAhead": "Maksettu ennakkoon",
+      "kpiHint": "voimassa oleva vuokrasuhde",
+      "othersHint": "muut vuokrasuhteet: {amount}"
     }
   }
 }
