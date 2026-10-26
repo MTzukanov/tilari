@@ -515,7 +515,8 @@
     "bankStatement": "Zum Kontoauszug",
     "property": "Zum Objekt",
     "properties": "Zu den Mietobjekten",
-    "propertiesSetup": "Zur Einrichtung der Objekte"
+    "propertiesSetup": "Zur Einrichtung der Objekte",
+    "propertyEdit": "Zur Bearbeitung des Objekts"
   },
   "ledger": {
     "empty": "Keine Buchungen auf diesem Konto in der Periode."
@@ -1263,7 +1264,8 @@
       "viewDoc": "Anzeigen",
       "undoNotice": "Erhöhungsmitteilung rückgängig",
       "confirmDeleteNotice": "Die auf dieser Seite erstellte Erhöhungsmitteilung aus der Buchhaltung löschen: {titles}?",
-      "confirmDeleteUnsaved": "Auf dieser Seite wurden {n} Erhöhungsmitteilungen erstellt, aber nicht beim Objekt gespeichert. Aus der Buchhaltung löschen? Abbrechen behält sie (sie wurden evtl. schon versandt)."
+      "confirmDeleteUnsaved": "Auf dieser Seite wurden {n} Erhöhungsmitteilungen erstellt, aber nicht beim Objekt gespeichert. Aus der Buchhaltung löschen? Abbrechen behält sie (sie wurden evtl. schon versandt).",
+      "restored": "Ungespeicherte Änderungen wurden wiederhergestellt."
     },
     "setup": {
       "title": "Mietobjekte einrichten",

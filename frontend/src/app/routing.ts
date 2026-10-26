@@ -6,6 +6,8 @@ export type VoucherVia =
   | { kind: 'property'; id: number; month?: string }
   /** Opened from the rental-object setup (`#/properties/setup`); its unsaved choices are kept. */
   | { kind: 'propertiesSetup' }
+  /** Opened from a rental object's edit page (`#/property/{id}/edit`); its unsaved form is kept. */
+  | { kind: 'propertyEdit'; id: number }
   | { kind: 'balanceSheetItems' }
   | { kind: 'browse' }
   | { kind: 'journal' }
@@ -87,6 +89,8 @@ export function voucherHash(
       return `${propertyHash(via.id, via.month)}${tail}`
     case 'propertiesSetup':
       return `#/properties/setup${tail}`
+    case 'propertyEdit':
+      return `#/property/${via.id}/edit${tail}`
     case 'balanceSheetItems':
       return `#/balance-sheet-items${tail}`
     case 'browse':
@@ -112,6 +116,8 @@ export function voucherParentHash(via: VoucherVia): string {
       return propertyHash(via.id, via.month)
     case 'propertiesSetup':
       return '#/properties/setup'
+    case 'propertyEdit':
+      return `#/property/${via.id}/edit`
     case 'balanceSheetItems':
       return '#/balance-sheet-items'
     case 'browse':
@@ -139,6 +145,8 @@ export function voucherUpI18n(via: VoucherVia): { key: string; vars?: Record<str
       return { key: 'up.property' }
     case 'propertiesSetup':
       return { key: 'up.propertiesSetup' }
+    case 'propertyEdit':
+      return { key: 'up.propertyEdit' }
     case 'balanceSheetItems':
       return { key: 'up.balanceSheetItems' }
     case 'browse':
@@ -222,6 +230,10 @@ export function parseRoute(hash: string = window.location.hash): Route {
     const month = property[2] ? { month: property[2] } : {}
     if (!property[3]) return { view: 'property', id, ...month }
     if (property[3] === 'edit' && !property[2]) return { view: 'propertyEdit', id }
+    if (property[3].startsWith('edit/') && !property[2]) {
+      const edited = parseVoucherSegment(property[3].slice('edit/'.length))
+      if (edited) return voucherRoute({ kind: 'propertyEdit', id }, edited)
+    }
     const ref = parseVoucherSegment(property[3])
     if (ref) return voucherRoute({ kind: 'property', id, ...month }, ref)
   }

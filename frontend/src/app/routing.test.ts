@@ -69,6 +69,18 @@ describe('parseRoute', () => {
     })
     expect(voucherHash(setupVia, 12)).toBe('#/properties/setup/voucher/12/edit')
     expect(voucherParentHash(setupVia)).toBe('#/properties/setup')
+    const editVia = { kind: 'propertyEdit' as const, id: 15 }
+    expect(parseRoute('#/property/15/edit/voucher/12/edit')).toEqual({
+      view: 'edit',
+      voucherId: 12,
+      type: null,
+      via: editVia,
+      entryId: null,
+    })
+    expect(voucherHash(editVia, 12)).toBe('#/property/15/edit/voucher/12/edit')
+    expect(voucherParentHash(editVia)).toBe('#/property/15/edit')
+    expect(voucherUpI18n(editVia)).toEqual({ key: 'up.propertyEdit' })
+    expect(parseRoute('#/property/15/edit')).toEqual({ view: 'propertyEdit', id: 15 })
   })
 
   it('keeps an open month on the object and cost-centre pages through a voucher', () => {

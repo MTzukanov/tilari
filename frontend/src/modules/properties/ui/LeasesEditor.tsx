@@ -5,7 +5,7 @@ import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
 import { formatCents } from '../../../shared/money'
 import { SearchSelect } from '../../../shared/SearchSelect'
-import { LEASE_INCREASE_KINDS, type DocCandidate, type LeaseIncreaseKind, type LeaseSuggestionView } from '../api'
+import { LEASE_INCREASE_KINDS, type DocCandidate, type Lease, type LeaseIncreaseKind, type LeaseSuggestionView } from '../api'
 import { leasePeriod, leaseRentText } from './format'
 import {
   draftTotal,
@@ -108,13 +108,18 @@ export function LeasesEditor({
   onDeleteCreated: (voucherIds: number[]) => Promise<boolean>
 }) {
   const { t } = useI18n()
-  const [added, setAdded] = useState<Set<number>>(new Set())
   const [creating, setCreating] = useState<string | null>(null)
-  const pending = suggestions.flatMap((s, i) => (added.has(i) ? [] : [{ s, i }]))
-  const addSuggestions = (indices: number[]) => {
-    onChange([...drafts, ...leaseDrafts(indices.map((i) => suggestions[i].lease), partners)])
-    setAdded(new Set([...added, ...indices]))
-  }
+  const names = new Map(partners.map((p) => [p.id, p.name.trim().toLowerCase()]))
+  /** A suggestion already in the form: its contract, or its tenant from the same day. */
+  const inForm = (lease: Lease) =>
+    drafts.some(
+      (d) =>
+        (lease.doc_voucher_id != null && d.contractId === String(lease.doc_voucher_id)) ||
+        (d.starts === lease.starts &&
+          d.tenant.trim().toLowerCase() === ((lease.tenant_partner_id != null ? names.get(lease.tenant_partner_id) : lease.tenant_name) ?? '').toLowerCase()),
+    )
+  const pending = suggestions.flatMap((s, i) => (inForm(s.lease) ? [] : [{ s, i }]))
+  const addSuggestions = (indices: number[]) => onChange([...drafts, ...leaseDrafts(indices.map((i) => suggestions[i].lease), partners)])
   const partnerItems = partners.map((p) => ({ value: p.name, label: p.name }))
   const months = monthNames()
   const set = (i: number, patch: Partial<LeaseDraft>) => onChange(drafts.map((d, j) => (j === i ? { ...d, ...patch } : d)))

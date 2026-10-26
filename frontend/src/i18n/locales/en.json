@@ -515,7 +515,8 @@
     "bankStatement": "To bank statement",
     "property": "To the object",
     "properties": "To rental objects",
-    "propertiesSetup": "To object setup"
+    "propertiesSetup": "To object setup",
+    "propertyEdit": "To editing the object"
   },
   "ledger": {
     "empty": "No postings on this account in the period."
@@ -1263,7 +1264,8 @@
       "viewDoc": "View",
       "undoNotice": "Undo increase notice",
       "confirmDeleteNotice": "Delete the increase notice created on this page from the books: {titles}?",
-      "confirmDeleteUnsaved": "{n} increase notices were created on this page but not saved to the object. Delete them from the books? Cancel keeps them (they may have been sent already)."
+      "confirmDeleteUnsaved": "{n} increase notices were created on this page but not saved to the object. Delete them from the books? Cancel keeps them (they may have been sent already).",
+      "restored": "Unsaved changes were restored."
     },
     "setup": {
       "title": "Set up rental objects",

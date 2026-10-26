@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { deleteVoucher, fetchPartners, fetchSettings, saveVoucher, uploadAttachment } from '../../../api'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { downloadFile, localToday } from '../../../shared/downloadFile'
 import { EuroInput } from '../../../shared/EuroInput'
-import { formatCents, formatEurInput, parseEurInput } from '../../../shared/money'
-import { formatPercentInput, parsePercentInput } from '../../../shared/percent'
+import { formatCents, parseEurInput } from '../../../shared/money'
+import { parsePercentInput } from '../../../shared/percent'
 import {
   deleteProperty,
   fetchProperty,
@@ -18,13 +18,12 @@ import {
   type PropertyKind,
   type SetupResponse,
 } from '../api'
+import { clearEditDraft, loadEditDraft, saveEditDraft, stateFromDoc, type CapitalDraft, type EditState, type ValuationDraft } from './editDraft'
 import { clauseText, saveErrorText } from './format'
 import { increaseNoticePdf, noticeTitle, type NoticeAmounts } from './increaseNotice'
-import { buildLeases, leaseDrafts, type AmountsDraft, type Partner } from './leaseDrafts'
+import { buildLeases, type AmountsDraft, type Partner } from './leaseDrafts'
 import { LeasesEditor } from './LeasesEditor'
-
-type ValuationDraft = { date: string; price: string; debtFree: string; source: string }
-type CapitalDraft = { date: string; amount: string; note: string }
+import { scrollContainer } from './setupDraft'
 
 function accountList(raw: string): number[] | null {
   const parts = raw.split(/[\s,;]+/).filter(Boolean)
@@ -54,7 +53,9 @@ function EditForm({
   partners,
   company,
   today,
+  bookKey,
   onDone,
+  onOpenVoucher,
 }: {
   detail: PropertyDetail
   setup: SetupResponse
@@ -63,34 +64,80 @@ function EditForm({
   company: Record<string, string>
   /** The book's date (a practice book's simulated day): letters and their vouchers carry it. */
   today: string
+  /** This book's session: an unsaved form is kept only for it. */
+  bookKey: string
   onDone: () => void
+  onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
   const doc = detail.doc
-  const [kind, setKind] = useState<PropertyKind | ''>(doc.kind ?? '')
-  const [leases, setLeases] = useState(() => leaseDrafts(doc.leases, partners))
+  const [draft] = useState(() => loadEditDraft(bookKey, detail.id, doc.rev))
+  const [init] = useState<EditState>(() => draft?.state ?? stateFromDoc(doc, partners))
+  const [kind, setKind] = useState<PropertyKind | ''>(init.kind)
+  const [leases, setLeases] = useState(init.leases)
   /** Increase notices written on this page: pickable before the page is saved. */
-  const [newDocs, setNewDocs] = useState<DocCandidate[]>([])
-  const [excluded, setExcluded] = useState(Boolean(doc.excluded))
-  const [eras, setEras] = useState<number[]>(doc.eras.map((e) => e.eraid))
-  const [docs, setDocs] = useState<number[]>(doc.doc_voucher_ids ?? [])
-  const [valuations, setValuations] = useState<ValuationDraft[]>(
-    (doc.valuations ?? []).map((v) => ({
-      date: v.date,
-      price: formatEurInput(v.price_snt),
-      debtFree: v.debt_free_price_snt != null ? formatEurInput(v.debt_free_price_snt) : '',
-      source: v.source ?? '',
-    })),
-  )
-  const [salePct, setSalePct] = useState(formatPercentInput(doc.sale_costs?.pct_bp))
-  const [saleFixed, setSaleFixed] = useState(doc.sale_costs ? formatEurInput(doc.sale_costs.fixed_snt) : '')
-  const [target, setTarget] = useState(formatPercentInput(doc.target_return_bp))
-  const [loanAccounts, setLoanAccounts] = useState((doc.financing?.loan_accounts ?? []).join(', '))
-  const [interestAccounts, setInterestAccounts] = useState((doc.financing?.interest_accounts ?? []).join(', '))
-  const [capital, setCapital] = useState<CapitalDraft[]>(
-    (doc.manual_capital ?? []).map((c) => ({ date: c.date, amount: formatEurInput(c.amount_snt), note: c.note ?? '' })),
-  )
-  const [note, setNote] = useState(doc.note ?? '')
+  const [newDocs, setNewDocs] = useState<DocCandidate[]>(init.newDocs)
+  const [excluded, setExcluded] = useState(init.excluded)
+  const [eras, setEras] = useState<number[]>(init.eras)
+  const [docs, setDocs] = useState<number[]>(init.docs)
+  const [valuations, setValuations] = useState<ValuationDraft[]>(init.valuations)
+  const [salePct, setSalePct] = useState(init.salePct)
+  const [saleFixed, setSaleFixed] = useState(init.saleFixed)
+  const [target, setTarget] = useState(init.target)
+  const [loanAccounts, setLoanAccounts] = useState(init.loanAccounts)
+  const [interestAccounts, setInterestAccounts] = useState(init.interestAccounts)
+  const [capital, setCapital] = useState<CapitalDraft[]>(init.capital)
+  const [note, setNote] = useState(init.note)
+
+  // While a voucher is open, the unsaved form and the scroll position wait for the way back (this tab only).
+  const current: EditState = {
+    kind,
+    excluded,
+    leases,
+    newDocs,
+    eras,
+    docs,
+    valuations,
+    salePct,
+    saleFixed,
+    target,
+    loanAccounts,
+    interestAccounts,
+    capital,
+    note,
+  }
+  const stateRef = useRef(current)
+  stateRef.current = current
+  const scrollTop = useRef(draft?.scrollTop ?? 0)
+  const keepDraft = useRef(false)
+
+  useLayoutEffect(() => {
+    const box = scrollContainer()
+    if (!box) return
+    if (draft?.scrollTop) {
+      box.scrollTop = draft.scrollTop
+      requestAnimationFrame(() => {
+        box.scrollTop = draft.scrollTop
+      })
+    }
+    const onScroll = () => {
+      scrollTop.current = box.scrollTop
+    }
+    box.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      box.removeEventListener('scroll', onScroll)
+      if (!keepDraft.current) clearEditDraft()
+    }
+    // Mount/unmount only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const openVoucher = (voucherId: number) => {
+    keepDraft.current = true
+    saveEditDraft({ book: bookKey, id: detail.id, rev: doc.rev, state: stateRef.current, scrollTop: scrollTop.current })
+    onOpenVoucher(voucherId)
+  }
+
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -277,6 +324,7 @@ function EditForm({
   return (
     <div className="property-edit">
       {detail.read_only ? <p className="property-note">{t('properties.edit.readOnly')}</p> : null}
+      {draft ? <p className="property-note">{t('properties.edit.restored')}</p> : null}
 
       <section className="property-section">
         <h3>{t('properties.edit.basics')}</h3>
@@ -358,7 +406,13 @@ function EditForm({
             const d = docById.get(voucherId)
             return (
               <li key={voucherId}>
-                {d ? `${formatDate(d.date)} · ${d.title}` : t('properties.docs.missing', { id: voucherId })}{' '}
+                {d ? (
+                  <button type="button" className="btn-link" onClick={() => openVoucher(voucherId)}>
+                    {formatDate(d.date)} · {d.title}
+                  </button>
+                ) : (
+                  t('properties.docs.missing', { id: voucherId })
+                )}{' '}
                 <button type="button" className="btn-small" onClick={() => setDocs(docs.filter((x) => x !== voucherId))}>
                   {t('properties.edit.remove')}
                 </button>
@@ -492,7 +546,19 @@ function EditForm({
   )
 }
 
-export function PropertyEdit({ id, today, onDone }: { id: number; today?: string; onDone: () => void }) {
+export function PropertyEdit({
+  id,
+  bookKey,
+  today,
+  onDone,
+  onOpenVoucher,
+}: {
+  id: number
+  bookKey: string
+  today?: string
+  onDone: () => void
+  onOpenVoucher: (voucherId: number) => void
+}) {
   const { t } = useI18n()
   const [state, setState] = useState<{
     detail: PropertyDetail
@@ -533,7 +599,9 @@ export function PropertyEdit({ id, today, onDone }: { id: number; today?: string
           partners={state.partners}
           company={state.company}
           today={today || localToday()}
+          bookKey={bookKey}
           onDone={onDone}
+          onOpenVoucher={onOpenVoucher}
         />
       ) : null}
     </div>

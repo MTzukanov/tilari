@@ -99,6 +99,17 @@ test.describe('rental object leases', () => {
     await expect(page.getByRole('option', { name: /Vuokrankorotusilmoitus Asunto/ })).toHaveCount(1)
     await picker.press('Escape')
 
+    // A linked document opens its voucher; the way back restores the unsaved form.
+    await page.getByLabel('Eräpäivä').first().fill('9')
+    await page.locator('.property-doc-list').getByRole('button', { name: /Vuokrankorotusilmoitus Asunto/ }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/edit\/voucher\/\d+\/edit$/)
+    await expect(page.getByRole('textbox', { name: 'Otsikko' })).toHaveValue(/Vuokrankorotusilmoitus Asunto/)
+    await page.getByRole('button', { name: 'Sulje' }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/edit$/)
+    await expect(page.getByText('Tallentamattomat muutokset palautettiin.')).toBeVisible()
+    await expect(page.getByLabel('Eräpäivä').first()).toHaveValue('9')
+    await page.locator('.property-actions').getByRole('button', { name: 'Peru' }).click()
+
     await page.goto('/#/properties')
     await expect(page.locator('.property-table').first()).toContainText('Testi Vuokralainen · 670,00 €/kk')
   })

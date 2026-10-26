@@ -515,7 +515,8 @@
     "bankStatement": "Tiliotteelle",
     "property": "Kohteeseen",
     "properties": "Vuokrakohteisiin",
-    "propertiesSetup": "Kohteiden määritykseen"
+    "propertiesSetup": "Kohteiden määritykseen",
+    "propertyEdit": "Kohteen muokkaukseen"
   },
   "ledger": {
     "empty": "Ei vientejä tällä tilillä jaksolla."
@@ -1263,7 +1264,8 @@
       "viewDoc": "Näytä",
       "undoNotice": "Kumoa korotusilmoitus",
       "confirmDeleteNotice": "Poistetaanko tällä sivulla luotu korotusilmoitus kirjanpidosta: {titles}?",
-      "confirmDeleteUnsaved": "Tällä sivulla luotiin {n} korotusilmoitusta, joita ei tallennettu kohteelle. Poistetaanko ne kirjanpidosta? Peruuta säilyttää ne (ne on ehkä jo lähetetty)."
+      "confirmDeleteUnsaved": "Tällä sivulla luotiin {n} korotusilmoitusta, joita ei tallennettu kohteelle. Poistetaanko ne kirjanpidosta? Peruuta säilyttää ne (ne on ehkä jo lähetetty).",
+      "restored": "Tallentamattomat muutokset palautettiin."
     },
     "setup": {
       "title": "Vuokrakohteiden määritys",

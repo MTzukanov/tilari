@@ -515,7 +515,8 @@
     "bankStatement": "Till kontoutdraget",
     "property": "Till objektet",
     "properties": "Till hyresobjekten",
-    "propertiesSetup": "Till inställningen av objekt"
+    "propertiesSetup": "Till inställningen av objekt",
+    "propertyEdit": "Till redigeringen av objektet"
   },
   "ledger": {
     "empty": "Inga transaktioner på det här kontot under perioden."
@@ -1263,7 +1264,8 @@
       "viewDoc": "Visa",
       "undoNotice": "Ångra höjningsmeddelande",
       "confirmDeleteNotice": "Ta bort höjningsmeddelandet som skapades på den här sidan ur bokföringen: {titles}?",
-      "confirmDeleteUnsaved": "{n} höjningsmeddelanden skapades på den här sidan men sparades inte för objektet. Ta bort dem ur bokföringen? Avbryt behåller dem (de kan redan ha skickats)."
+      "confirmDeleteUnsaved": "{n} höjningsmeddelanden skapades på den här sidan men sparades inte för objektet. Ta bort dem ur bokföringen? Avbryt behåller dem (de kan redan ha skickats).",
+      "restored": "Osparade ändringar återställdes."
     },
     "setup": {
       "title": "Inställning av hyresobjekt",
