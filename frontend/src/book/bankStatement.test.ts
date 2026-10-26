@@ -27,7 +27,7 @@ describe('groupOwnRows / expandOwnRowToEntries', () => {
           description: 'Vuokra',
           debit_cents: 12550,
           credit_cents: null,
-          partner: { id: 1, name: 'ASUNTO ENSIN OY' },
+          partner: { id: 1, name: 'VUOKRAMALLI OY' },
         },
         {
           id: 2,
@@ -46,7 +46,7 @@ describe('groupOwnRows / expandOwnRowToEntries', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0].amountCents).toBe(12550)
     expect(rows[0].counterAccount).toBe(3760)
-    expect(rows[0].payee).toBe('ASUNTO ENSIN OY')
+    expect(rows[0].payee).toBe('VUOKRAMALLI OY')
     expect(rows[0].allocation).toBe(3)
     expect(rows[0].bankEntryId).toBe(1)
   })
