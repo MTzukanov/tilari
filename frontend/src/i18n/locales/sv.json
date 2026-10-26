@@ -1489,10 +1489,13 @@
         "rent": "Hyra",
         "water": "Vattenutjämning",
         "received": "Betalt",
+        "change": "Förändring",
+        "changeHint": "Betalt − hyra − vattenutjämning: − betalt för lite, + betalt mer.",
         "balance": "Saldo",
+        "balanceHint": "Vid månadens slut: − hyresgästen är skyldig (hyresskuld), + betalt i förskott.",
         "lines": "Betalningar",
         "portfolio": "Hyressaldo",
-        "portfolioHint": "Det gällande hyresförhållandets saldo på balansdagen, på centen: + hyresgästen är skyldig (hyresskuld), − betalt i förskott. † Övriga hyresförhållanden har saldo."
+        "portfolioHint": "Det gällande hyresförhållandets saldo på balansdagen, på centen: − hyresgästen är skyldig (hyresskuld), + betalt i förskott. † Övriga hyresförhållanden har saldo."
       },
       "unassigned": "Intäkter utan hyresförhållande ({n})",
       "kpi": "Hyressaldo",

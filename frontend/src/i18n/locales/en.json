@@ -1489,10 +1489,13 @@
         "rent": "Rent",
         "water": "Water settlement",
         "received": "Paid",
+        "change": "Change",
+        "changeHint": "Paid − rent − water settlement: − paid short, + paid more.",
         "balance": "Balance",
+        "balanceHint": "At the month's end: − the tenant owes (arrears), + paid ahead.",
         "lines": "Payments",
         "portfolio": "Rent balance",
-        "portfolioHint": "The running lease's balance on the as-of date, to the cent: + the tenant owes (arrears), − paid ahead. † Other leases have a balance."
+        "portfolioHint": "The running lease's balance on the as-of date, to the cent: − the tenant owes (arrears), + paid ahead. † Other leases have a balance."
       },
       "unassigned": "Income without a lease ({n})",
       "kpi": "Rent balance",

@@ -1489,10 +1489,13 @@
         "rent": "Vuokra",
         "water": "Vesitasaus",
         "received": "Maksettu",
+        "change": "Muutos",
+        "changeHint": "Maksettu − vuokra − vesitasaus: − jäi maksamatta, + maksettiin enemmän.",
         "balance": "Saldo",
+        "balanceHint": "Kuukauden lopussa: − vuokralainen on velkaa (vuokrarästi), + maksettu ennakkoon.",
         "lines": "Suoritukset",
         "portfolio": "Vuokrasaldo",
-        "portfolioHint": "Voimassa olevan vuokrasuhteen saldo tilannepäivänä senttiä myöten: + vuokralainen on velkaa (vuokrarästi), − maksettu ennakkoon. † Muilla vuokrasuhteilla on saldoa."
+        "portfolioHint": "Voimassa olevan vuokrasuhteen saldo tilannepäivänä senttiä myöten: − vuokralainen on velkaa (vuokrarästi), + maksettu ennakkoon. † Muilla vuokrasuhteilla on saldoa."
       },
       "unassigned": "Tuloja ilman vuokrasuhdetta ({n})",
       "kpi": "Vuokrasaldo",
