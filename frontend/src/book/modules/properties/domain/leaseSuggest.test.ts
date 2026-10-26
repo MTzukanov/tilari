@@ -98,7 +98,7 @@ describe('lease suggestions', () => {
   })
 
   it('a payer named after the address is not taken for the tenant the title names', () => {
-    const income = [...monthly(5, '2024-10', 5, 59_000), ...monthly(1, '2024-10', 1, 30_000)]
+    const income = [...monthly(5, '2024-10', 5, 57_500), ...monthly(1, '2024-10', 1, 30_000)]
     const docs = [{ voucher_id: 10, date: '2024-09-20', title: 'Vuorkasopimus Matti Meikäläinen Mallikatu 1 A 2, 10.2024-' }]
     const [lease] = suggestLeases({ docs, income, names, centreName, parkingObject: false, asOf: '2025-02-28' })
     expect(lease.lease).toMatchObject({ tenant_partner_id: 1, starts: '2024-10-01' })
