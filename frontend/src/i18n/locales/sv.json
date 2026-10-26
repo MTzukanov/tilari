@@ -1114,7 +1114,8 @@
       "total": "Totalt",
       "increaseEur": "Höjning € / år",
       "increaseFrom": "Från",
-      "increaseNotice": "Höjningsmeddelande"
+      "increaseNotice": "Höjningsmeddelande",
+      "parkingExtra": "Bilplats"
     },
     "breakEven": {
       "title": "Nollpris: priset som ger pengarna tillbaka",
@@ -1230,7 +1231,8 @@
       "increases": "Höjningar",
       "water": "vatten {amount}",
       "parking": "bilplats {amount}",
-      "rentPart": "hyra {amount}"
+      "rentPart": "hyra {amount}",
+      "extras": "Tillägg:"
     },
     "edit": {
       "title": "Redigera: {name}",

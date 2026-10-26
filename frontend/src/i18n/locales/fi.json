@@ -1114,7 +1114,8 @@
       "total": "Yhteensä",
       "increaseEur": "Korotus € / v",
       "increaseFrom": "Alkaen",
-      "increaseNotice": "Korotusilmoitus"
+      "increaseNotice": "Korotusilmoitus",
+      "parkingExtra": "Autopaikka"
     },
     "breakEven": {
       "title": "Nollahinta: millä hinnalla rahat tulevat takaisin",
@@ -1230,7 +1231,8 @@
       "increases": "Korotukset",
       "water": "vesi {amount}",
       "parking": "autopaikka {amount}",
-      "rentPart": "vuokra {amount}"
+      "rentPart": "vuokra {amount}",
+      "extras": "Lisät:"
     },
     "edit": {
       "title": "Muokkaa: {name}",

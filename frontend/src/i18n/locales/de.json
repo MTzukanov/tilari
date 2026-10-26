@@ -1114,7 +1114,8 @@
       "total": "Summe",
       "increaseEur": "Erhöhung € / Jahr",
       "increaseFrom": "Ab",
-      "increaseNotice": "Erhöhungsmitteilung"
+      "increaseNotice": "Erhöhungsmitteilung",
+      "parkingExtra": "Stellplatz"
     },
     "breakEven": {
       "title": "Break-even-Preis: der Preis, der das Geld zurückbringt",
@@ -1230,7 +1231,8 @@
       "increases": "Erhöhungen",
       "water": "Wasser {amount}",
       "parking": "Stellplatz {amount}",
-      "rentPart": "Miete {amount}"
+      "rentPart": "Miete {amount}",
+      "extras": "Extras:"
     },
     "edit": {
       "title": "Bearbeiten: {name}",

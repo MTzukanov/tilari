@@ -5319,27 +5319,75 @@ tr.tax-total td {
   white-space: nowrap;
 }
 
-.property-lease-total {
-  font-size: 0.85rem;
-  color: var(--muted);
-  line-height: 2.15rem;
+/* Starting rent and increases share columns: Alkaen, rent, water, (parking), total. */
+.property-lease-grid.property-lease-amounts {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-.property-lease-total strong {
+.property-lease-grid.property-lease-amounts.no-parking {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* A read-only value lined up with the inputs beside it. */
+.property-lease-shown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.property-lease-shown strong,
+.property-lease-shown .property-lease-value {
+  line-height: 2.15rem;
+  font-size: 0.92rem;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+}
+
+.property-lease-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1.25rem;
+  margin: 1rem 0 0.25rem;
+}
+
+.property-lease-head h4 {
+  margin: 0;
+}
+
+.property-lease-extras {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* The notice pick takes the room its buttons leave on the row. */
+.property-lease-notice {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.6rem 1rem;
+}
+
+.property-lease-notice > label {
+  flex: 1 1 18rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .property-lease-increase {
   padding-top: 0.5rem;
   border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
-}
-
-.property-lease-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
 }
 
 .property-lease-foot {
@@ -5354,7 +5402,9 @@ tr.tax-total td {
 }
 
 @media (max-width: 640px) {
-  .property-lease-grid {
+  .property-lease-grid,
+  .property-lease-grid.property-lease-amounts,
+  .property-lease-grid.property-lease-amounts.no-parking {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

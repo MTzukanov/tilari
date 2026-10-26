@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getBcp47, useI18n } from '../../../i18n'
+import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
 import { formatCents } from '../../../shared/money'
 import { SearchSelect } from '../../../shared/SearchSelect'
@@ -22,8 +23,16 @@ function monthNames(): string[] {
   return Array.from({ length: 12 }, (_, m) => fmt.format(new Date(2024, m, 1)))
 }
 
-/** Rent, water and parking inputs, three grid cells. */
-function Amounts({ value, onChange }: { value: AmountsDraft; onChange: (patch: Partial<AmountsDraft>) => void }) {
+/** Rent, water and (when the lease has the extra) parking inputs: one grid cell each. */
+function Amounts({
+  value,
+  parking,
+  onChange,
+}: {
+  value: AmountsDraft
+  parking: boolean
+  onChange: (patch: Partial<AmountsDraft>) => void
+}) {
   const { t } = useI18n()
   return (
     <>
@@ -35,13 +44,28 @@ function Amounts({ value, onChange }: { value: AmountsDraft; onChange: (patch: P
         {t('properties.field.water')}
         <EuroInput value={value.water} onChange={(water) => onChange({ water })} />
       </label>
-      <label>
-        {t('properties.field.parking')}
-        <EuroInput value={value.parking} onChange={(parking) => onChange({ parking })} />
-      </label>
+      {parking ? (
+        <label>
+          {t('properties.field.parking')}
+          <EuroInput value={value.parking} onChange={(parking) => onChange({ parking })} />
+        </label>
+      ) : null}
     </>
   )
 }
+
+/** A read-only cell lined up with the inputs: a label and its value. */
+function Shown({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className="property-lease-shown">
+      <span>{label}</span>
+      {strong ? <strong>{value}</strong> : <span className="property-lease-value">{value}</span>}
+    </div>
+  )
+}
+
+/** The amounts rows: Alkaen, rent, water, (parking), total; four columns without parking. */
+const amountsClass = (d: LeaseDraft) => `property-lease-grid property-lease-amounts${d.parking ? '' : ' no-parking'}`
 
 export function LeasesEditor({
   drafts,
@@ -172,12 +196,22 @@ export function LeasesEditor({
             />
           </div>
 
-          <h4>{t('properties.lease.initial')}</h4>
+          <div className="property-lease-head">
+            <h4>{t('properties.lease.initial')}</h4>
+            <span className="property-lease-extras">
+              <span>{t('properties.lease.extras')}</span>
+              <label className="allocation-check">
+                <input type="checkbox" checked={d.parking} onChange={() => set(i, { parking: !d.parking })} />
+                {t('properties.field.parkingExtra')}
+              </label>
+            </span>
+          </div>
+          <div className={amountsClass(d)}>
+            <Shown label={t('properties.field.increaseFrom')} value={d.starts ? formatDate(d.starts) : '–'} />
+            <Amounts value={d.initial} parking={d.parking} onChange={(patch) => set(i, { initial: { ...d.initial, ...patch } })} />
+            <Shown label={t('properties.field.total')} value={formatCents(draftTotal(d.initial, d.parking))} strong />
+          </div>
           <div className="property-lease-grid">
-            <Amounts value={d.initial} onChange={(patch) => set(i, { initial: { ...d.initial, ...patch } })} />
-            <div className="property-lease-total">
-              {t('properties.field.total')} <strong>{formatCents(draftTotal(d.initial))}</strong>
-            </div>
             <label>
               {t('properties.field.increaseKind')}
               <select value={d.increaseKind} onChange={(e) => set(i, { increaseKind: e.target.value as LeaseIncreaseKind })}>
@@ -214,20 +248,20 @@ export function LeasesEditor({
 
           <h4>{t('properties.lease.increases')}</h4>
           {d.increases.map((r, k) => (
-            <div key={k} className="property-lease-grid property-lease-increase">
+            <div key={k} className={`${amountsClass(d)} property-lease-increase`}>
               <label>
                 {t('properties.field.increaseFrom')}
                 <input type="date" value={r.from} onChange={(e) => setIncrease(i, k, { from: e.target.value })} />
               </label>
-              <Amounts value={r} onChange={(patch) => setIncrease(i, k, patch)} />
-              <DocPicker
-                className="span-2"
-                label={t('properties.field.increaseNotice')}
-                docs={docs}
-                value={r.voucherId}
-                onChange={(voucherId) => setIncrease(i, k, { voucherId })}
-              />
-              <div className="property-lease-actions span-2">
+              <Amounts value={r} parking={d.parking} onChange={(patch) => setIncrease(i, k, patch)} />
+              <Shown label={t('properties.field.total')} value={formatCents(draftTotal(r, d.parking))} strong />
+              <div className="property-lease-notice">
+                <DocPicker
+                  label={t('properties.field.increaseNotice')}
+                  docs={docs}
+                  value={r.voucherId}
+                  onChange={(voucherId) => setIncrease(i, k, { voucherId })}
+                />
                 {r.voucherId && created.has(Number(r.voucherId)) ? (
                   <button type="button" className="btn-secondary" onClick={() => void undoNotice(i, k)}>
                     {t('properties.edit.undoNotice')}

@@ -23,6 +23,8 @@ export type LeaseDraft = {
   contractId: string
   /** The starting rent, from the lease's start. */
   initial: AmountsDraft
+  /** Extras the tenant pays for: a parking space. Off hides its amounts and drops them on save. */
+  parking: boolean
   increaseKind: LeaseIncreaseKind
   /** Percent for `percent`, euros for `amount`. */
   increaseValue: string
@@ -50,6 +52,7 @@ export function leaseDrafts(leases: Lease[] | undefined, partners: Partner[]): L
     dueDay: String(l.due_day ?? DEFAULT_DUE_DAY),
     contractId: l.doc_voucher_id != null ? String(l.doc_voucher_id) : '',
     initial: amounts(l.rents[0]),
+    parking: l.rents.some((r) => Boolean(r.parking_snt)),
     increaseKind: l.increase?.kind ?? 'none',
     increaseValue:
       l.increase?.kind === 'percent' ? formatPercentInput(l.increase.pct_bp) : l.increase?.kind === 'amount' ? eur(l.increase.amount_snt) : '',
@@ -67,6 +70,7 @@ export function newLease(): LeaseDraft {
     dueDay: String(DEFAULT_DUE_DAY),
     contractId: '',
     initial: { rent: '', water: '', parking: '' },
+    parking: false,
     increaseKind: 'none',
     increaseValue: '',
     increaseMonth: '',
@@ -74,10 +78,10 @@ export function newLease(): LeaseDraft {
   }
 }
 
-function step(from: string, a: AmountsDraft, voucherId = ''): LeaseRent {
+function step(from: string, a: AmountsDraft, withParking: boolean, voucherId = ''): LeaseRent {
   const out: LeaseRent = { from, rent_snt: parseEurInput(a.rent) }
   const water = parseEurInput(a.water)
-  const parking = parseEurInput(a.parking)
+  const parking = withParking ? parseEurInput(a.parking) : 0
   if (water) out.water_snt = water
   if (parking) out.parking_snt = parking
   if (voucherId) out.voucher_id = Number(voucherId)
@@ -105,8 +109,8 @@ export function buildLeases(t: T, drafts: LeaseDraft[], partners: Partner[]): Le
       lease.due_day = Number(d.dueDay.trim())
     }
     lease.rents = [
-      ...(typed(d.initial) ? [step(d.starts, d.initial)] : []),
-      ...d.increases.filter((r) => r.from || typed(r)).map((r) => step(r.from, r, r.voucherId)),
+      ...(typed(d.initial) ? [step(d.starts, d.initial, d.parking)] : []),
+      ...d.increases.filter((r) => r.from || typed(r)).map((r) => step(r.from, r, d.parking, r.voucherId)),
     ]
     if (d.increaseKind !== 'none' || d.increaseMonth) {
       const increase: Lease['increase'] = { kind: d.increaseKind }
@@ -125,9 +129,9 @@ export function buildLeases(t: T, drafts: LeaseDraft[], partners: Partner[]): Le
   return out
 }
 
-/** What the tenant pays a month at a draft step, in cents. */
-export function draftTotal(a: AmountsDraft): number {
-  return parseEurInput(a.rent) + parseEurInput(a.water) + parseEurInput(a.parking)
+/** What the tenant pays a month at a draft step, in cents; parking only when the lease has it. */
+export function draftTotal(a: AmountsDraft, withParking = true): number {
+  return parseEurInput(a.rent) + parseEurInput(a.water) + (withParking ? parseEurInput(a.parking) : 0)
 }
 
 /**

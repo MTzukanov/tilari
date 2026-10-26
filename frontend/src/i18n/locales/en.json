@@ -1114,7 +1114,8 @@
       "total": "Total",
       "increaseEur": "Increase € / yr",
       "increaseFrom": "From",
-      "increaseNotice": "Increase notice"
+      "increaseNotice": "Increase notice",
+      "parkingExtra": "Parking space"
     },
     "breakEven": {
       "title": "Break-even price: the price that returns the money",
@@ -1230,7 +1231,8 @@
       "increases": "Increases",
       "water": "water {amount}",
       "parking": "parking {amount}",
-      "rentPart": "rent {amount}"
+      "rentPart": "rent {amount}",
+      "extras": "Extras:"
     },
     "edit": {
       "title": "Edit: {name}",

@@ -21,6 +21,7 @@ describe('lease drafts', () => {
       later_field: { deposit: 1 },
     }
     const [draft] = leaseDrafts([stored], partners)
+    expect(draft.parking).toBe(true)
     expect(draft.initial).toEqual({ rent: '680,00', water: '20,00', parking: '' })
     expect(draft.increases).toEqual([{ from: '2026-01-01', rent: '700,50', water: '20,00', parking: '15,00', voucherId: '9' }])
     expect(buildLeases(t, [draft], partners)).toEqual([stored])
@@ -37,6 +38,24 @@ describe('lease drafts', () => {
       { key: '', tenant_name: 'Uusi Vuokralainen', starts: '2025-02-01', due_day: 5, rents: [] },
     ])
     expect(draftTotal({ rent: '600', water: '20', parking: '15,5' })).toBe(63_550)
+    expect(draftTotal({ rent: '600', water: '20', parking: '15,5' }, false)).toBe(62_000)
+    expect(newLease().parking).toBe(false)
+  })
+
+  it('parking amounts count only while the extra is on; off drops them on save', () => {
+    const lease = {
+      ...newLease(),
+      starts: '2025-01-01',
+      initial: { rent: '600', water: '20', parking: '15' },
+      increases: [{ from: '2026-01-01', rent: '620', water: '20', parking: '15', voucherId: '' }],
+    }
+    expect(buildLeases(t, [{ ...lease, parking: true }], partners)).toMatchObject([
+      { rents: [{ rent_snt: 60_000, water_snt: 2_000, parking_snt: 1_500 }, { rent_snt: 62_000, water_snt: 2_000, parking_snt: 1_500 }] },
+    ])
+    expect((buildLeases(t, [lease], partners) as Lease[])[0].rents).toEqual([
+      { from: '2025-01-01', rent_snt: 60_000, water_snt: 2_000 },
+      { from: '2026-01-01', rent_snt: 62_000, water_snt: 2_000 },
+    ])
   })
 
   it('the next increase comes on the clause\'s month after today, raised by the percent or the euros', () => {
