@@ -45,10 +45,29 @@ Money in integer cents (`*_snt`), percentages in basis points (`*_bp`, 100 = 1 %
 | `manual_capital[]` | `{ date, amount_snt, note? }` - capital not on a linked item |
 | `sale_voucher_ids[]` | Vouchers whose lines on the object belong to a sale. No UI yet: stored, checked and counted, but no screen sets it (MEMORY 2026-10-10) |
 | `doc_voucher_ids[]` | Document vouchers (usually type 800 Liitetieto) |
+| `created_voucher_ids[]` | Document vouchers created from this object's forms (an uploaded contract or notice, a written increase notice): the form can delete them again. Ids whose voucher is gone are dropped on save |
 | `financing` | `{ loan_accounts[], interest_accounts[] }` - interest on vouchers touching the loan; a loan account belongs to one object (`loan_linked` on save, `loan_shared` warning for older files) |
 | `valuations[]` | `{ date, price_snt, debt_free_price_snt?, source? }` - owner's price estimate |
 | `sale_costs` | `{ pct_bp, fixed_snt }` - overrides `portfolio.sale_costs` |
 | `target_return_bp`, `note` | Target annual return; free text |
+| `leases[]` | Rental relationships, oldest start first (below) |
+
+`leases[]` - one per tenancy; unknown keys of a lease are kept like the document's own:
+
+| Key | Meaning |
+|-----|---------|
+| `key` | Stable within the document (`l1`, `l2`...); given on save when missing |
+| `tenant_partner_id` / `tenant_name` | The tenant as a Kitsas partner (`Kumppani.id`), or a name when they are not one yet |
+| `starts`, `ends?` | Start; a fixed term's end or the move-out |
+| `due_day?` | Rent due day (the form starts at 5) |
+| `rents[]` | `{ from, rent_snt, water_snt?, parking_snt?, voucher_id? }`: what the tenant pays a month from `from` on. The first is the starting rent (from `starts`); each later one is an increase (korotus) with its increase notice voucher |
+| `increase?` | The contract's increase clause `{ kind: none / percent / amount / index, pct_bp?, amount_snt?, month? }`: prefills the next increase and drives reminders; Tilari never changes rent by itself |
+| `doc_voucher_id?` | The contract (a type-800 voucher) |
+
+Saving checks that the partner exists and the vouchers are posted, and adds the lease's vouchers
+to `doc_voucher_ids`. The documents stay Kitsas vouchers, found in Kitsas by title and partner. An
+increase notice written in Tilari is a posted type-800 voucher titled after the object, with the
+tenant as partner and the letter as a PDF attachment (`modules/properties/ui/increaseNotice.ts`).
 
 `portfolio`: `v`, `rev`, `sale_costs`, `target_return_bp`, `dismissed[]` (setup suggestions
 the owner rejected: `era:{eraid}`, `doc:{voucherId}`).

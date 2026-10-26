@@ -32,6 +32,8 @@ export type PnlRow = {
   /** gross without VAT for brutto-coded lines. */
   net_snt: number
   partner_id: number | null
+  /** The line's text (Vienti.selite). */
+  text?: string
   /** Set when the line counts on another account than booked (see `loadRecountedLines`). */
   recounted?: { booked_account: number; account_name: string }
 }
@@ -106,7 +108,8 @@ const PNL_SELECT = `SELECT
     COALESCE(Vienti.kreditsnt, 0) AS ks,
     Vienti.alvkoodi AS vat_code,
     Vienti.alvprosentti AS vat_pct,
-    Vienti.kumppani AS partner_id
+    Vienti.kumppani AS partner_id,
+    COALESCE(Vienti.selite, '') AS text
   FROM Vienti
   JOIN Tosite ON Vienti.tosite = Tosite.id
   LEFT OUTER JOIN Tili ON Tili.numero = Vienti.tili
@@ -125,6 +128,7 @@ type RawPnl = {
   vat_code: number | null
   vat_pct: number | null
   partner_id: number | null
+  text: string | null
 }
 
 function mapPnl(row: RawPnl): PnlRow {
@@ -142,6 +146,7 @@ function mapPnl(row: RawPnl): PnlRow {
     gross_snt: gross,
     net_snt: netOf(gross, code, pct),
     partner_id: row.partner_id == null ? null : Number(row.partner_id),
+    text: String(row.text || ''),
   }
 }
 
@@ -396,6 +401,22 @@ export function loadVoucherRefs(db: SqliteDb, voucherIds: Iterable<number>): Map
         series: row.sarja || null,
       },
     ]),
+  )
+}
+
+export type PartnerInfo = { name: string; /** Street, then postcode and town; empty when unknown. */ address: string[] }
+
+/** Partners (Kumppani) by id: name and postal address. */
+export function loadPartners(db: SqliteDb, ids: Iterable<number>): Map<number, PartnerInfo> {
+  return new Map(
+    db
+      .all<{ id: number; nimi: string | null; json: unknown }>(`SELECT id, nimi, json FROM Kumppani WHERE id IN (${inList(ids)})`)
+      .map((row) => {
+        const json = parseJson(row.json)
+        const street = String(json.osoite ?? '').trim()
+        const town = [json.postinumero, json.kaupunki].map((v) => String(v ?? '').trim()).filter(Boolean).join(' ')
+        return [Number(row.id), { name: String(row.nimi || ''), address: [street, town].filter(Boolean) }]
+      }),
   )
 }
 

@@ -36,6 +36,107 @@ test.describe('rental objects', () => {
   })
 })
 
+test.describe('rental object leases', () => {
+  test('a lease added on the edit page shows on the object page and in the list', async ({ page }) => {
+    await openBook(page)
+    // The notice voucher is dated on the book's day: inside the test book's last fiscal year.
+    await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
+    await page.goto('/#/property/4')
+    await expect(page.getByRole('heading', { name: 'Vuokrasuhteet' })).toBeVisible()
+    await expect(page.getByText('Ei vuokrasopimuksia.', { exact: false })).toBeVisible()
+    await expect(page.locator('.property-leases').getByRole('button', { name: 'Lisää vuokrasopimus' })).toBeVisible()
+
+    await page.goto('/#/property/4/edit')
+    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
+    const lease = page.locator('.property-lease-edit').first()
+    const tenant = lease.getByRole('combobox', { name: 'Vuokralainen' }).or(lease.getByLabel('Vuokralainen'))
+    await tenant.first().fill('Testi Vuokralainen')
+    await tenant.first().press('Escape')
+    await lease.getByLabel('Alkaa', { exact: true }).fill('2025-01-01')
+    await expect(lease.getByLabel('Eräpäivä')).toHaveValue('5')
+    await lease.getByLabel('Vuokra €/kk').first().fill('650')
+    await lease.getByLabel('Vesi €/kk').first().fill('20')
+    await lease.getByLabel('Eräpäivä').fill('2')
+    // The owner's own contract, uploaded as a Liitetieto voucher named after the object.
+    // Through the real button: the system's chooser opens and the page's scroll box is left alone.
+    const chooser = page.waitForEvent('filechooser')
+    await lease.locator('label', { hasText: 'Lataa sopimus' }).click()
+    const files = await chooser
+    await expect(page.locator('.is-native-picker-open')).toHaveCount(0)
+    await files.setFiles({ name: 'sopimus.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 sopimus') })
+    await expect(lease.getByRole('textbox', { name: 'Sopimus' })).toHaveValue(/Vuokrasopimus Asunto Testi Vuokralainen 1\.1\.2025-/)
+    await lease.getByLabel('Korotussääntö').selectOption({ label: 'Euroa vuodessa' })
+    await lease.getByLabel('Korotus € / v').fill('15')
+
+    // An increase prefilled from the clause, and its notice written as a Liitetieto voucher with a PDF.
+    await lease.getByRole('button', { name: 'Lisää korotus' }).click()
+    const increase = lease.locator('.property-lease-increase').first()
+    await expect(increase.getByLabel('Vuokra €/kk')).toHaveValue('665,00')
+    await increase.getByLabel('Alkaen').fill('2026-01-01')
+    const notice = increase.getByRole('textbox', { name: 'Korotusilmoitus' })
+    const download = page.waitForEvent('download')
+    await increase.getByRole('button', { name: 'Luo korotusilmoitus' }).click()
+    expect((await download).suggestedFilename()).toMatch(/^vuokrankorotusilmoitus-.*-2026-01-01\.pdf$/)
+    await expect(notice).toHaveValue(/Vuokrankorotusilmoitus Asunto 1\.1\.2026/)
+    await expect(increase.getByRole('link', { name: 'Näytä' })).toBeVisible()
+
+    // Undo deletes the voucher again; then write it once more and keep it.
+    page.once('dialog', (dialog) => void dialog.accept())
+    await increase.getByRole('button', { name: 'Poista korotusilmoitus' }).click()
+    await expect(notice).toHaveValue('–')
+    await expect(increase.getByRole('link', { name: 'Näytä' })).toBeHidden()
+    const again = page.waitForEvent('download')
+    await increase.getByRole('button', { name: 'Luo korotusilmoitus' }).click()
+    await again
+    await expect(notice).toHaveValue(/Vuokrankorotusilmoitus Asunto 1\.1\.2026/)
+    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+
+    await expect(page).toHaveURL(/#\/property\/4$/)
+    const card = page.locator('.property-lease-card')
+    await expect(card).toContainText('Testi Vuokralainen')
+    await expect(card).toContainText('1.1.2025 alkaen')
+    // On the as-of date (31.12.2025) the starting rent is in force; the increase comes in January.
+    await expect(card).toContainText('670,00 €/kk (vuokra 650,00 €, vesi 20,00 €) · eräpäivä 2. · korotus 15,00 € vuodessa')
+    await card.getByText('Korotukset (1)').click()
+    await expect(card.getByRole('button', { name: /Vuokrankorotusilmoitus .* 1\.1\.2026/ })).toHaveCount(1)
+    // The undone notice is gone from the book: the pickers offer only the kept one.
+    await page.goto('/#/property/4/edit')
+    const picker = page.locator('.property-lease-edit').first().getByRole('textbox', { name: 'Sopimus' })
+    await picker.click()
+    await picker.fill('Vuokrankorotusilmoitus')
+    await expect(page.getByRole('option', { name: /Vuokrankorotusilmoitus Asunto/ })).toHaveCount(1)
+    await picker.press('Escape')
+
+    // A linked document opens its voucher; the way back restores the unsaved form.
+    await page.getByLabel('Eräpäivä').first().fill('9')
+    await page.locator('.property-doc-list').getByRole('button', { name: /Vuokrankorotusilmoitus Asunto/ }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/edit\/voucher\/\d+\/edit$/)
+    await expect(page.getByRole('textbox', { name: 'Otsikko' })).toHaveValue(/Vuokrankorotusilmoitus Asunto/)
+    await page.getByRole('button', { name: 'Sulje' }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/edit$/)
+    await expect(page.getByText('Tallentamattomat muutokset palautettiin.')).toBeVisible()
+    await expect(page.getByLabel('Eräpäivä').first()).toHaveValue('9')
+
+    // A notice written on an earlier visit is deleted from the book when the form is saved.
+    const saved = page.locator('.property-lease-increase').first()
+    page.once('dialog', (dialog) => void dialog.accept())
+    await saved.getByRole('button', { name: 'Poista korotusilmoitus' }).click()
+    await expect(saved.getByRole('textbox', { name: 'Korotusilmoitus' })).toHaveValue('–')
+    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(page).toHaveURL(/#\/property\/4$/)
+    await page.goto('/#/property/4/edit')
+    const search = page.locator('.property-lease-edit').first().getByRole('textbox', { name: 'Sopimus' })
+    await search.click()
+    await search.fill('Vuokrankorotusilmoitus')
+    await expect(page.getByRole('option', { name: /Vuokrankorotusilmoitus Asunto/ })).toHaveCount(0)
+    await search.press('Escape')
+    await page.locator('.property-actions').getByRole('button', { name: 'Peru' }).click()
+
+    await page.goto('/#/properties')
+    await expect(page.locator('.property-table').first()).toContainText('Testi Vuokralainen · 670,00 €/kk')
+  })
+})
+
 test.describe('rental objects setup keeps unsaved choices', () => {
   test('a row opens its voucher; back returns with choices and scroll intact', async ({ page }) => {
     await openBook(page)

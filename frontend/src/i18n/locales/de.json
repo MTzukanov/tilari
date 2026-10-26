@@ -515,7 +515,8 @@
     "bankStatement": "Zum Kontoauszug",
     "property": "Zum Objekt",
     "properties": "Zu den Mietobjekten",
-    "propertiesSetup": "Zur Einrichtung der Objekte"
+    "propertiesSetup": "Zur Einrichtung der Objekte",
+    "propertyEdit": "Zur Bearbeitung des Objekts"
   },
   "ledger": {
     "empty": "Keine Buchungen auf diesem Konto in der Periode."
@@ -1098,7 +1099,23 @@
       "source": "Quelle",
       "loanAccounts": "Darlehenskonten",
       "interestAccounts": "Zinskonten",
-      "note": "Notiz"
+      "note": "Notiz",
+      "tenant": "Mieter",
+      "leaseStarts": "Beginn",
+      "leaseEnds": "Ende",
+      "dueDay": "Fälligkeitstag",
+      "rent": "Miete €/Monat",
+      "contract": "Vertrag",
+      "increaseKind": "Erhöhungsklausel",
+      "increasePct": "Erhöhung % / Jahr",
+      "increaseMonth": "Erhöhungsmonat",
+      "water": "Wasser €/Monat",
+      "parking": "Stellplatz €/Monat",
+      "total": "Summe",
+      "increaseEur": "Erhöhung € / Jahr",
+      "increaseFrom": "Ab",
+      "increaseNotice": "Erhöhungsmitteilung",
+      "parkingExtra": "Stellplatz"
     },
     "breakEven": {
       "title": "Break-even-Preis: der Preis, der das Geld zurückbringt",
@@ -1172,6 +1189,55 @@
       },
       "showAll": "Alle anzeigen ({n})"
     },
+    "lease": {
+      "title": "Mietverhältnisse",
+      "none": "Keine Mietverträge.",
+      "noCurrent": "Kein gültiger Mietvertrag am {date}.",
+      "since": "ab {date}",
+      "period": "{from}–{to}",
+      "perMonth": "{amount}/Monat",
+      "due": "fällig am {day}.",
+      "increase": {
+        "percent": "Erhöhung {pct} pro Jahr",
+        "percentMonth": "Erhöhung {pct} pro Jahr ({month})",
+        "amount": "Erhöhung {amount} pro Jahr",
+        "amountMonth": "Erhöhung {amount} pro Jahr ({month})",
+        "index": "Indexerhöhung",
+        "indexMonth": "Indexerhöhung ({month})"
+      },
+      "contract": "Vertrag",
+      "others": "Weitere Mietverträge",
+      "state": {
+        "upcoming": "Beginnt",
+        "current": "Gültig",
+        "ended": "Beendet"
+      },
+      "tenantUnknown": "Mieter unbekannt",
+      "kind": {
+        "none": "Keine Erhöhungsklausel",
+        "percent": "Prozent pro Jahr",
+        "amount": "Euro pro Jahr",
+        "index": "Index"
+      },
+      "suggestions": "Vorschläge aus der Buchhaltung ({n})",
+      "suggestionsLead": "Aus den verknüpften Mietverträgen und Mietzahlungen. Nichts ist gespeichert: auf der Bearbeitungsseite prüfen und speichern.",
+      "review": "Prüfen und speichern",
+      "source": {
+        "contract": "Quelle: Mietvertrag",
+        "payments": "Quelle: Mietzahlungen"
+      },
+      "suggestedNote": "★ = Mietverhältnis aus der Buchhaltung vorgeschlagen, noch nicht gespeichert.",
+      "initial": "Anfangsmiete",
+      "increases": "Erhöhungen",
+      "water": "Wasser {amount}",
+      "parking": "Stellplatz {amount}",
+      "rentPart": "Miete {amount}",
+      "extras": "Extras:",
+      "sourceHint": {
+        "contract": "Ein mit dem Objekt verknüpfter Mietvertrag: Beginn, Ende und Mieter aus seinem Titel, die Miete aus den Mietzahlungen des Objekts.",
+        "payments": "Nur Mietzahlungen: Der Zahler hat in diesen Monaten Miete gezahlt, aber kein mit dem Objekt verknüpfter Mietvertrag deckt den Zeitraum. Verknüpfen Sie den Vertrag mit dem Objekt, um den Vorschlag zu schärfen."
+      }
+    },
     "edit": {
       "title": "Bearbeiten: {name}",
       "basics": "Grunddaten",
@@ -1191,7 +1257,24 @@
       "addCapital": "Zeile hinzufügen",
       "delete": "Objektdaten löschen",
       "deleteConfirm": "Tilaris Daten zu diesem Objekt löschen? Die Buchhaltung bleibt unverändert.",
-      "readOnly": "Die Daten wurden mit einem neueren Tilari gespeichert; diese Version kann sie nur anzeigen."
+      "readOnly": "Die Daten wurden mit einem neueren Tilari gespeichert; diese Version kann sie nur anzeigen.",
+      "leases": "Mietverträge",
+      "leasesLead": "Mieter, Bedingungen, Anfangsmiete und Erhöhungen. Die Erhöhungsklausel füllt die nächste Erhöhung vor; Tilari ändert die Miete nie selbst. Vertrag und Erhöhungsmitteilungen sind Liitetieto-Belege und daher auch in Kitsas auffindbar.",
+      "addLease": "Mietvertrag hinzufügen",
+      "removeLease": "Mietvertrag entfernen",
+      "suggestions": "Die Buchhaltung schlägt {n} Mietverhältnisse vor. Ins Formular übernehmen, prüfen und speichern.",
+      "addSuggestion": "Hinzufügen",
+      "addAllSuggestions": "Alle hinzufügen",
+      "addIncrease": "Erhöhung hinzufügen",
+      "createNotice": "Erhöhungsmitteilung erstellen",
+      "viewDoc": "Anzeigen",
+      "confirmDeleteUnsaved": "Auf dieser Seite wurden {n} Erhöhungsmitteilungen erstellt, aber nicht beim Objekt gespeichert. Aus der Buchhaltung löschen? Abbrechen behält sie (sie wurden evtl. schon versandt).",
+      "restored": "Ungespeicherte Änderungen wurden wiederhergestellt.",
+      "deleteDoc": "Beleg löschen",
+      "deleteNotice": "Erhöhungsmitteilung löschen",
+      "uploadContract": "Vertrag hochladen",
+      "uploadNotice": "Mitteilung hochladen",
+      "confirmDeleteDoc": "Den Beleg aus der Buchhaltung löschen: {titles}? Ein bei diesem Besuch erstellter wird sofort gelöscht, ein früherer beim Speichern."
     },
     "setup": {
       "title": "Mietobjekte einrichten",
@@ -1274,6 +1357,33 @@
       "interest": "Darlehenszinsen",
       "recounted": "gezählt auf Konto {account}",
       "recountedHint": "Gebucht auf {booked}. Laut den Notizen eines Korrekturbelegs blieb die Buchung unkorrigiert, weil das Geschäftsjahr abgeschlossen ist; Tilari zählt sie auf {account}. Der Kostenstellenbericht zeigt sie wie gebucht."
+    },
+    "notice": {
+      "voucherTitle": "Mieterhöhungsmitteilung {object} {date}",
+      "fileName": "mieterhoehung",
+      "businessId": "Unternehmens-ID {id}",
+      "heading": "MIETERHÖHUNGSMITTEILUNG",
+      "object": "Mietobjekt: {object}",
+      "contract": "Mietvertrag: {contract}",
+      "contractSince": "Mietvertrag ab {date}",
+      "changes": "Ihre Miete ändert sich ab {date} wie folgt.",
+      "changesClause": "Ihre Miete ändert sich ab {date} gemäß der Erhöhungsklausel des Mietvertrags ({clause}).",
+      "current": "Bisher",
+      "newFrom": "Ab {date}",
+      "rent": "Miete",
+      "water": "Wasser",
+      "parking": "Stellplatz",
+      "total": "Summe pro Monat",
+      "due": "Die Miete ist weiterhin bis zum {day}. des Monats auf dasselbe Konto mit derselben Referenz zu zahlen.",
+      "regards": "Mit freundlichen Grüßen",
+      "clause": {
+        "percent": "{pct} pro Jahr",
+        "amount": "{amount} pro Jahr",
+        "index": "indexgebunden"
+      }
+    },
+    "upload": {
+      "contractTitle": "Mietvertrag {object} {tenant} {date}-"
     }
   }
 }

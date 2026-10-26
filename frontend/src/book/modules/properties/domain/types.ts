@@ -33,6 +33,43 @@ export type Valuation = {
 
 export type Financing = { loan_accounts: number[]; interest_accounts: number[] }
 
+export const LEASE_INCREASE_KINDS = ['none', 'percent', 'amount', 'index'] as const
+export type LeaseIncreaseKind = (typeof LEASE_INCREASE_KINDS)[number]
+
+/**
+ * What the tenant pays a month from `from` on: rent, water and a parking space. The first is the
+ * lease's starting rent; each later one is an increase (korotus), with its notice voucher.
+ */
+export type LeaseRent = { from: string; rent_snt: number; water_snt?: number; parking_snt?: number; voucher_id?: number }
+
+/**
+ * The contract's increase clause: `pct_bp` (percent) or `amount_snt` (euros) a year on the
+ * anniversary `month`, or an index. Prefills the next increase and drives reminders; Tilari
+ * never changes rent on its own (ADR-025).
+ */
+export type LeaseIncrease = { kind: LeaseIncreaseKind; pct_bp?: number; amount_snt?: number; month?: number }
+
+/**
+ * A rental relationship (vuokrasuhde). The tenant is a Kitsas partner; `tenant_name` only when
+ * they are not one yet. `ends` is a fixed term's end or the move-out. Unknown keys are kept.
+ */
+export type Lease = {
+  /** Stable within the document, for form rows and warnings. */
+  key: string
+  tenant_partner_id?: number
+  tenant_name?: string
+  starts: string
+  ends?: string
+  /** Day of the month the rent is due. */
+  due_day?: number
+  /** The starting rent, then each increase, oldest first. */
+  rents: LeaseRent[]
+  increase?: LeaseIncrease
+  /** The contract (a type-800 voucher). */
+  doc_voucher_id?: number
+  [key: string]: unknown
+}
+
 export type PropertyDoc = {
   v: number
   rev: number
@@ -46,11 +83,14 @@ export type PropertyDoc = {
   sale_voucher_ids?: number[]
   /** Linked document vouchers (usually type 800 Liitetieto). */
   doc_voucher_ids?: number[]
+  /** Document vouchers Tilari created from this object's forms (uploads, increase notices): deletable from there. */
+  created_voucher_ids?: number[]
   financing?: Financing
   valuations?: Valuation[]
   sale_costs?: SaleCosts
   target_return_bp?: number
   note?: string
+  leases?: Lease[]
   [key: string]: unknown
 }
 
@@ -207,8 +247,39 @@ export type PropertyRow = {
   valuation: Valuation | null
   /** Operating cash flow per fiscal year with activity. */
   cash_years: YearCashFlow[]
+  /** The lease running on the as-of date (the latest started when several run); a suggested one when none is stored. */
+  lease: LeaseView | null
   warnings: Warning[]
 }
+
+export type LeaseState = 'upcoming' | 'current' | 'ended'
+
+/** A voucher a lease links to, as the object page shows it. */
+export type LeaseVoucher = { voucher_id: number; date: string; doc_number: number | null; series: string | null; title: string }
+
+/** A lease as the object page shows it, on the as-of date. */
+export type LeaseView = {
+  key: string
+  /** The partner's name, or the stored `tenant_name`. */
+  tenant: string | null
+  tenant_partner_id: number | null
+  starts: string
+  ends: string | null
+  state: LeaseState
+  /** The step in effect (the first for an upcoming lease, the last for an ended one). */
+  rent: LeaseRent | null
+  /** The tenant's postal address from the partner, for letters. */
+  tenant_address: string[]
+  due_day: number | null
+  increase: LeaseIncrease | null
+  contract: LeaseVoucher | null
+  steps: (LeaseRent & { voucher: LeaseVoucher | null })[]
+  /** Suggested from the book (not stored): from a contract document, or from payments alone. */
+  suggested?: 'contract' | 'payments'
+}
+
+/** A lease the book suggests: the lease to add on the edit page, and how the page shows it. */
+export type LeaseSuggestionView = { lease: Lease; view: LeaseView }
 
 export type PortfolioResponse = {
   as_of: string
@@ -248,6 +319,10 @@ export type PropertyDetail = PropertyRow & {
   years: YearRow[]
   target: { rate_bp: number; price_snt: number } | null
   financing: Financing | null
+  /** Every stored lease, newest start first. */
+  leases: LeaseView[]
+  /** Leases the book suggests that no stored lease stands for yet, newest start first. */
+  lease_suggestions: LeaseSuggestionView[]
 }
 
 export type MonthLineKind = 'income' | 'expense' | 'interest'
@@ -305,6 +380,8 @@ export type DocCandidate = {
   title: string
   doc_number: number | null
   attachments: number
+  /** The first attachment, to open the document from a form. */
+  first_attachment: number | null
   linked_to: number[]
   suggestion: { cost_centre_id: number | null; candidates: number[] } | null
 }

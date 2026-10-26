@@ -8,6 +8,13 @@ export type {
   DocumentVoucher,
   EraCandidate,
   DocCandidate,
+  Lease,
+  LeaseIncrease,
+  LeaseIncreaseKind,
+  LeaseRent,
+  LeaseSuggestionView,
+  LeaseView,
+  LeaseVoucher,
   MonthLine,
   MonthLineKind,
   MonthPoint,
@@ -26,7 +33,7 @@ export type {
   Warning,
   YearRow,
 } from '../../book/modules/properties/domain/types'
-export { PROPERTY_KINDS } from '../../book/modules/properties/domain/types'
+export { LEASE_INCREASE_KINDS, PROPERTY_KINDS } from '../../book/modules/properties/domain/types'
 
 function service() {
   return getBookService().modules.properties

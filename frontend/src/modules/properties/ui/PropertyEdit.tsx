@@ -1,24 +1,31 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { deleteVoucher, fetchPartners, fetchSettings, saveVoucher, uploadAttachment } from '../../../api'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
+import { downloadFile, localToday } from '../../../shared/downloadFile'
 import { EuroInput } from '../../../shared/EuroInput'
-import { formatCents, formatEurInput, parseEurInput } from '../../../shared/money'
-import { formatPercentInput, parsePercentInput } from '../../../shared/percent'
+import { SearchSelect } from '../../../shared/SearchSelect'
+import { formatCents, parseEurInput } from '../../../shared/money'
+import { parsePercentInput } from '../../../shared/percent'
 import {
   deleteProperty,
   fetchProperty,
   fetchPropertySetup,
   PROPERTY_KINDS,
   saveProperty,
+  type DocCandidate,
   type PropertyDetail,
   type PropertyDoc,
   type PropertyKind,
   type SetupResponse,
 } from '../api'
-import { saveErrorText } from './format'
-
-type ValuationDraft = { date: string; price: string; debtFree: string; source: string }
-type CapitalDraft = { date: string; amount: string; note: string }
+import { DocPicker } from './DocPicker'
+import { clearEditDraft, loadEditDraft, saveEditDraft, stateFromDoc, type CapitalDraft, type EditState, type ValuationDraft } from './editDraft'
+import { clauseText, saveErrorText } from './format'
+import { increaseNoticePdf, noticeTitle, type NoticeAmounts } from './increaseNotice'
+import { buildLeases, type AmountsDraft, type LeaseDraft, type Partner } from './leaseDrafts'
+import { LeasesEditor } from './LeasesEditor'
+import { scrollContainer } from './setupDraft'
 
 function accountList(raw: string): number[] | null {
   const parts = raw.split(/[\s,;]+/).filter(Boolean)
@@ -26,30 +33,116 @@ function accountList(raw: string): number[] | null {
   return parts.map(Number)
 }
 
-function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: SetupResponse; onDone: () => void }) {
+const cents = (a: AmountsDraft, withParking: boolean): NoticeAmounts => ({
+  rent: parseEurInput(a.rent),
+  water: parseEurInput(a.water),
+  parking: withParking ? parseEurInput(a.parking) : 0,
+})
+
+/** A file name from free text: letters, digits and dashes. */
+function fileSlug(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase()
+}
+
+function EditForm({
+  detail,
+  setup,
+  partners,
+  company,
+  today,
+  bookKey,
+  onDone,
+  onOpenVoucher,
+}: {
+  detail: PropertyDetail
+  setup: SetupResponse
+  partners: Partner[]
+  /** The book's company details (Asetus), for letters. */
+  company: Record<string, string>
+  /** The book's date (a practice book's simulated day): letters and their vouchers carry it. */
+  today: string
+  /** This book's session: an unsaved form is kept only for it. */
+  bookKey: string
+  onDone: () => void
+  onOpenVoucher: (voucherId: number) => void
+}) {
   const { t } = useI18n()
   const doc = detail.doc
-  const [kind, setKind] = useState<PropertyKind | ''>(doc.kind ?? '')
-  const [excluded, setExcluded] = useState(Boolean(doc.excluded))
-  const [eras, setEras] = useState<number[]>(doc.eras.map((e) => e.eraid))
-  const [docs, setDocs] = useState<number[]>(doc.doc_voucher_ids ?? [])
-  const [valuations, setValuations] = useState<ValuationDraft[]>(
-    (doc.valuations ?? []).map((v) => ({
-      date: v.date,
-      price: formatEurInput(v.price_snt),
-      debtFree: v.debt_free_price_snt != null ? formatEurInput(v.debt_free_price_snt) : '',
-      source: v.source ?? '',
-    })),
-  )
-  const [salePct, setSalePct] = useState(formatPercentInput(doc.sale_costs?.pct_bp))
-  const [saleFixed, setSaleFixed] = useState(doc.sale_costs ? formatEurInput(doc.sale_costs.fixed_snt) : '')
-  const [target, setTarget] = useState(formatPercentInput(doc.target_return_bp))
-  const [loanAccounts, setLoanAccounts] = useState((doc.financing?.loan_accounts ?? []).join(', '))
-  const [interestAccounts, setInterestAccounts] = useState((doc.financing?.interest_accounts ?? []).join(', '))
-  const [capital, setCapital] = useState<CapitalDraft[]>(
-    (doc.manual_capital ?? []).map((c) => ({ date: c.date, amount: formatEurInput(c.amount_snt), note: c.note ?? '' })),
-  )
-  const [note, setNote] = useState(doc.note ?? '')
+  const [draft] = useState(() => loadEditDraft(bookKey, detail.id, doc.rev))
+  const [init] = useState<EditState>(() => draft?.state ?? stateFromDoc(doc, partners))
+  const [kind, setKind] = useState<PropertyKind | ''>(init.kind)
+  const [leases, setLeases] = useState(init.leases)
+  /** Increase notices written on this page: pickable before the page is saved. */
+  const [newDocs, setNewDocs] = useState<DocCandidate[]>(init.newDocs)
+  /** Earlier documents written from this form that the owner deleted: deleted from the book on save. */
+  const [toDelete, setToDelete] = useState<number[]>(init.toDelete)
+  const [excluded, setExcluded] = useState(init.excluded)
+  const [eras, setEras] = useState<number[]>(init.eras)
+  const [docs, setDocs] = useState<number[]>(init.docs)
+  const [valuations, setValuations] = useState<ValuationDraft[]>(init.valuations)
+  const [salePct, setSalePct] = useState(init.salePct)
+  const [saleFixed, setSaleFixed] = useState(init.saleFixed)
+  const [target, setTarget] = useState(init.target)
+  const [loanAccounts, setLoanAccounts] = useState(init.loanAccounts)
+  const [interestAccounts, setInterestAccounts] = useState(init.interestAccounts)
+  const [capital, setCapital] = useState<CapitalDraft[]>(init.capital)
+  const [note, setNote] = useState(init.note)
+
+  // While a voucher is open, the unsaved form and the scroll position wait for the way back (this tab only).
+  const current: EditState = {
+    kind,
+    excluded,
+    leases,
+    newDocs,
+    eras,
+    docs,
+    valuations,
+    salePct,
+    saleFixed,
+    target,
+    loanAccounts,
+    interestAccounts,
+    capital,
+    note,
+    toDelete,
+  }
+  const stateRef = useRef(current)
+  stateRef.current = current
+  const scrollTop = useRef(draft?.scrollTop ?? 0)
+  const keepDraft = useRef(false)
+
+  useLayoutEffect(() => {
+    const box = scrollContainer()
+    if (!box) return
+    if (draft?.scrollTop) {
+      box.scrollTop = draft.scrollTop
+      requestAnimationFrame(() => {
+        box.scrollTop = draft.scrollTop
+      })
+    }
+    const onScroll = () => {
+      scrollTop.current = box.scrollTop
+    }
+    box.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      box.removeEventListener('scroll', onScroll)
+      if (!keepDraft.current) clearEditDraft()
+    }
+    // Mount/unmount only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const openVoucher = (voucherId: number) => {
+    keepDraft.current = true
+    saveEditDraft({ book: bookKey, id: detail.id, rev: doc.rev, state: stateRef.current, scrollTop: scrollTop.current })
+    onOpenVoucher(voucherId)
+  }
+
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -61,14 +154,170 @@ function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: Se
       const sb = b.suggestion?.candidates.includes(detail.id) ? 0 : 1
       return sa - sb || b.balance_snt - a.balance_snt
     })
-  const docById = new Map(setup.docs.map((d) => [d.voucher_id, d]))
-  const availableDocs = setup.docs
-    .filter((d) => !docs.includes(d.voucher_id))
-    .sort((a, b) => {
-      const sa = a.suggestion?.candidates.includes(detail.id) ? 0 : 1
-      const sb = b.suggestion?.candidates.includes(detail.id) ? 0 : 1
-      return sa - sb || b.date.localeCompare(a.date)
+  /** Documents written from this form, deletable from here: earlier ones (stored) and this visit's. */
+  const storedCreated = new Set(doc.created_voucher_ids ?? [])
+  const isCreated = (id: number) =>
+    !toDelete.includes(id) && (storedCreated.has(id) || newDocs.some((d) => d.voucher_id === id))
+  /** The Liitetieto vouchers to pick from: the book's and this visit's, less those to delete on save. */
+  const allDocs = [...setup.docs, ...newDocs].filter((d) => !toDelete.includes(d.voucher_id))
+  const docById = new Map(allDocs.map((d) => [d.voucher_id, d]))
+  const availableDocs = allDocs.filter((d) => !docs.includes(d.voucher_id))
+
+  const addresses = new Map(
+    [...detail.leases, ...detail.lease_suggestions.map((s) => s.view)].flatMap((v) =>
+      v.tenant_partner_id != null ? [[v.tenant_partner_id, v.tenant_address] as const] : [],
+    ),
+  )
+
+  const partnerOf = (name: string) => partners.find((p) => p.name.trim().toLowerCase() === name.trim().toLowerCase())
+
+  /** A new posted Liitetieto voucher with these files, the tenant as partner; this visit's document. */
+  async function createDoc(title: string, tenant: string, files: File[]): Promise<number> {
+    const partner = partnerOf(tenant)
+    const saved = await saveVoucher({
+      date: today,
+      type: 800,
+      status: 100,
+      title,
+      partner: partner ? partner.id : tenant.trim() || null,
+      entries: [],
     })
+    let first: number | null = null
+    for (const file of files) {
+      const attachment = await uploadAttachment(saved.id, file)
+      first ??= attachment.id
+    }
+    setNewDocs((prev) => [
+      ...prev,
+      { voucher_id: saved.id, date: today, title, doc_number: null, attachments: files.length, first_attachment: first, linked_to: [], suggestion: null },
+    ])
+    return saved.id
+  }
+
+  /** Points lease `i`'s contract (`k` null) or increase `k`'s notice at a voucher. */
+  const setRef = (i: number, k: number | null, voucherId: string) =>
+    setLeases((prev) =>
+      prev.map((l, li) =>
+        li !== i
+          ? l
+          : k == null
+            ? { ...l, contractId: voucherId }
+            : { ...l, increases: l.increases.map((r, ri) => (ri === k ? { ...r, voucherId } : r)) },
+      ),
+    )
+
+  /** Writes the notice for increase `k` of lease `i`: a PDF on a new Liitetieto voucher, linked and downloaded. */
+  async function createNotice(i: number, k: number) {
+    setError(null)
+    const lease = leases[i]
+    const increase = lease.increases[k]
+    const before = k === 0 ? lease.initial : lease.increases[k - 1]
+    const partner = partnerOf(lease.tenant)
+    const contract = docById.get(Number(lease.contractId))
+    const built = buildLeases(t, [lease], partners)
+    const rule = typeof built === 'string' ? undefined : built[0]?.increase
+    const pdf = increaseNoticePdf(t, {
+      company: {
+        name: company.Nimi ?? '',
+        business_id: company.Ytunnus ?? '',
+        street: company.Katuosoite ?? '',
+        postcode: company.Postinumero ?? '',
+        city: company.Kaupunki ?? '',
+        email: company.Email ?? '',
+        phone: company.Puhelin ?? '',
+      },
+      tenant: { name: lease.tenant.trim(), address: (partner && addresses.get(partner.id)) || [] },
+      object: detail.name,
+      contract: contract?.title ?? null,
+      lease_starts: lease.starts,
+      due_day: Number(lease.dueDay) || null,
+      clause: clauseText(t, rule),
+      date: today,
+      from: increase.from,
+      before: cents(before, lease.parking),
+      after: cents(increase, lease.parking),
+    })
+    try {
+      const name = `${fileSlug(t('properties.notice.fileName'))}-${fileSlug(detail.name)}-${increase.from}.pdf`
+      const id = await createDoc(noticeTitle(t, detail.name, increase.from), lease.tenant, [
+        new File([pdf as BlobPart], name, { type: 'application/pdf' }),
+      ])
+      setRef(i, k, String(id))
+      downloadFile(pdf, name, 'application/pdf')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  /** Uploads the owner's own contract (`k` null) or increase notice as a new Liitetieto voucher and picks it. */
+  async function upload(i: number, k: number | null, files: File[]) {
+    if (!files.length) return
+    setError(null)
+    const lease = leases[i]
+    const title =
+      k == null
+        ? t('properties.upload.contractTitle', {
+            object: detail.name,
+            tenant: lease.tenant.trim(),
+            date: lease.starts ? formatDate(lease.starts) : '',
+          })
+            .replace(/\s+/g, ' ')
+            .trim()
+        : noticeTitle(t, detail.name, lease.increases[k].from)
+    try {
+      setRef(i, k, String(await createDoc(title, lease.tenant, files)))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  /**
+   * Deletes documents written from this form, after asking: this visit's at once (an undo),
+   * earlier ones when the form is saved. Clears what pointed at them, then applies `edit` to the
+   * leases. Other documents are never deleted here; the caller's edit only unlinks them.
+   */
+  async function deleteDocs(voucherIds: number[], edit: (drafts: LeaseDraft[]) => LeaseDraft[] = (d) => d) {
+    const own = [...new Set(voucherIds)].filter(isCreated)
+    if (own.length) {
+      const titles = own.map((id) => docById.get(id)?.title ?? `#${id}`)
+      if (!window.confirm(t('properties.edit.confirmDeleteDoc', { titles: titles.join(', ') }))) return
+      const now = own.filter((id) => newDocs.some((d) => d.voucher_id === id))
+      setError(null)
+      try {
+        for (const id of now) await deleteVoucher(id)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err))
+        return
+      }
+      setNewDocs((prev) => prev.filter((d) => !now.includes(d.voucher_id)))
+      setToDelete((prev) => [...prev, ...own.filter((id) => !now.includes(id))])
+      setDocs((prev) => prev.filter((id) => !own.includes(id)))
+    }
+    const gone = new Set(own.map(String))
+    setLeases((prev) =>
+      edit(
+        prev.map((l) => ({
+          ...l,
+          contractId: gone.has(l.contractId) ? '' : l.contractId,
+          increases: l.increases.map((r) => (gone.has(r.voucherId) ? { ...r, voucherId: '' } : r)),
+        })),
+      ),
+    )
+  }
+
+  async function cancel() {
+    // Documents written on this visit and not saved to the object: keep them (a notice may be sent) or delete them.
+    const unsaved = newDocs.map((d) => d.voucher_id)
+    if (unsaved.length && window.confirm(t('properties.edit.confirmDeleteUnsaved', { n: unsaved.length }))) {
+      try {
+        for (const id of unsaved) await deleteVoucher(id)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err))
+        return
+      }
+    }
+    onDone()
+  }
 
   function build(): PropertyDoc | string {
     const pct = parsePercentInput(salePct)
@@ -77,12 +326,20 @@ function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: Se
     const loans = accountList(loanAccounts)
     const interests = accountList(interestAccounts)
     if (!loans || !interests) return t('properties.error.accounts')
+    const builtLeases = buildLeases(t, leases, partners)
+    if (typeof builtLeases === 'string') return builtLeases
     const next: PropertyDoc = { ...doc, eras: eras.map((eraid) => ({ eraid, account: eraById.get(eraid)?.account ?? 1 })) }
+    next.leases = builtLeases
     if (kind) next.kind = kind
     else delete next.kind
     if (excluded) next.excluded = true
     else delete next.excluded
-    next.doc_voucher_ids = docs
+    // This visit's documents are the object's documents, and stay deletable from here.
+    const fresh = newDocs.map((d) => d.voucher_id)
+    next.doc_voucher_ids = [...new Set([...docs, ...fresh])].filter((id) => !toDelete.includes(id))
+    const created = [...new Set([...(doc.created_voucher_ids ?? []), ...fresh])].filter((id) => !toDelete.includes(id))
+    if (created.length) next.created_voucher_ids = created
+    else delete next.created_voucher_ids
     next.valuations = valuations
       .filter((v) => v.date || v.price)
       .map((v) => ({
@@ -114,6 +371,8 @@ function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: Se
     setSaving(true)
     try {
       await saveProperty(detail.id, next)
+      // Earlier documents the owner deleted: gone from the book once nothing points at them.
+      for (const id of toDelete) await deleteVoucher(id)
       onDone()
     } catch (err) {
       setError(saveErrorText(t, err instanceof Error ? err.message : String(err)))
@@ -135,6 +394,7 @@ function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: Se
   return (
     <div className="property-edit">
       {detail.read_only ? <p className="property-note">{t('properties.edit.readOnly')}</p> : null}
+      {draft ? <p className="property-note">{t('properties.edit.restored')}</p> : null}
 
       <section className="property-section">
         <h3>{t('properties.edit.basics')}</h3>
@@ -158,6 +418,23 @@ function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: Se
       </section>
 
       <section className="property-section">
+        <h3>{t('properties.edit.leases')}</h3>
+        <p className="muted">{t('properties.edit.leasesLead')}</p>
+        <LeasesEditor
+          drafts={leases}
+          onChange={setLeases}
+          partners={partners}
+          docs={allDocs}
+          suggestions={[...detail.lease_suggestions].reverse()}
+          today={today}
+          onCreateNotice={createNotice}
+          onUpload={upload}
+          isCreated={isCreated}
+          onDeleteDocs={deleteDocs}
+        />
+      </section>
+
+      <section className="property-section">
         <h3>{t('properties.eras.title')}</h3>
         <p className="muted">{t('properties.edit.erasLead')}</p>
         <p className="property-legend">{t('properties.setup.starLegendEdit')}</p>
@@ -166,7 +443,13 @@ function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: Se
             const e = eraById.get(eraid)
             return (
               <li key={eraid}>
-                {e ? `${e.account} · ${formatDate(e.date)} · ${e.description} · ${formatCents(e.balance_snt)}` : t('properties.eras.missing', { id: eraid })}{' '}
+                {e ? (
+                  <button type="button" className="btn-link" onClick={() => openVoucher(e.voucher_id)}>
+                    {e.account} · {formatDate(e.date)} · {e.description} · {formatCents(e.balance_snt)}
+                  </button>
+                ) : (
+                  t('properties.eras.missing', { id: eraid })
+                )}{' '}
                 <button type="button" className="btn-small" onClick={() => setEras(eras.filter((x) => x !== eraid))}>
                   {t('properties.edit.remove')}
                 </button>
@@ -175,21 +458,16 @@ function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: Se
           })}
         </ul>
         {availableEras.length ? (
-          <select
+          <SearchSelect
+            aria-label={t('properties.edit.addEra')}
+            placeholder={t('properties.edit.addEra')}
+            items={availableEras.map((e) => ({
+              value: String(e.eraid),
+              label: `${e.suggestion?.candidates.includes(detail.id) ? '★ ' : ''}${e.account} · ${formatDate(e.date)} · ${e.description} · ${formatCents(e.balance_snt)}`,
+            }))}
             value=""
-            onChange={(e) => {
-              const id = Number(e.target.value)
-              if (id) setEras([...eras, id])
-            }}
-          >
-            <option value="">{t('properties.edit.addEra')}</option>
-            {availableEras.map((e) => (
-              <option key={e.eraid} value={e.eraid}>
-                {e.suggestion?.candidates.includes(detail.id) ? '★ ' : ''}
-                {e.account} · {formatDate(e.date)} · {e.description} · {formatCents(e.balance_snt)}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => v && setEras([...eras, Number(v)])}
+          />
         ) : null}
       </section>
 
@@ -200,30 +478,34 @@ function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: Se
             const d = docById.get(voucherId)
             return (
               <li key={voucherId}>
-                {d ? `${formatDate(d.date)} · ${d.title}` : t('properties.docs.missing', { id: voucherId })}{' '}
-                <button type="button" className="btn-small" onClick={() => setDocs(docs.filter((x) => x !== voucherId))}>
-                  {t('properties.edit.remove')}
-                </button>
+                {d ? (
+                  <button type="button" className="btn-link" onClick={() => openVoucher(voucherId)}>
+                    {formatDate(d.date)} · {d.title}
+                  </button>
+                ) : (
+                  t('properties.docs.missing', { id: voucherId })
+                )}{' '}
+                {isCreated(voucherId) ? (
+                  <button type="button" className="btn-small" onClick={() => void deleteDocs([voucherId])}>
+                    {t('properties.edit.deleteDoc')}
+                  </button>
+                ) : (
+                  <button type="button" className="btn-small" onClick={() => setDocs(docs.filter((x) => x !== voucherId))}>
+                    {t('properties.edit.remove')}
+                  </button>
+                )}
               </li>
             )
           })}
         </ul>
         {availableDocs.length ? (
-          <select
+          <DocPicker
+            docs={availableDocs}
             value=""
-            onChange={(e) => {
-              const id = Number(e.target.value)
-              if (id) setDocs([...docs, id])
-            }}
-          >
-            <option value="">{t('properties.edit.addDoc')}</option>
-            {availableDocs.map((d) => (
-              <option key={d.voucher_id} value={d.voucher_id}>
-                {d.suggestion?.candidates.includes(detail.id) ? '★ ' : ''}
-                {formatDate(d.date)} · {d.title}
-              </option>
-            ))}
-          </select>
+            placeholder={t('properties.edit.addDoc')}
+            starred={(d) => d.suggestion?.candidates.includes(detail.id) ?? false}
+            onChange={(v) => v && setDocs([...docs, Number(v)])}
+          />
         ) : null}
       </section>
 
@@ -321,7 +603,7 @@ function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: Se
         <button type="button" className="btn-primary" disabled={saving || detail.read_only} onClick={() => void save()}>
           {saving ? t('common.saving') : t('common.save')}
         </button>
-        <button type="button" className="btn-secondary" onClick={onDone}>
+        <button type="button" className="btn-secondary" onClick={() => void cancel()}>
           {t('common.cancel')}
         </button>
         {detail.configured ? (
@@ -334,15 +616,34 @@ function EditForm({ detail, setup, onDone }: { detail: PropertyDetail; setup: Se
   )
 }
 
-export function PropertyEdit({ id, onDone }: { id: number; onDone: () => void }) {
+export function PropertyEdit({
+  id,
+  bookKey,
+  today,
+  onDone,
+  onOpenVoucher,
+}: {
+  id: number
+  bookKey: string
+  today?: string
+  onDone: () => void
+  onOpenVoucher: (voucherId: number) => void
+}) {
   const { t } = useI18n()
-  const [state, setState] = useState<{ detail: PropertyDetail; setup: SetupResponse } | null>(null)
+  const [state, setState] = useState<{
+    detail: PropertyDetail
+    setup: SetupResponse
+    partners: Partner[]
+    company: Record<string, string>
+  } | null>(null)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     let cancelled = false
-    Promise.all([fetchProperty(id), fetchPropertySetup()]).then(
-      ([detail, setup]) => {
-        if (!cancelled) setState({ detail, setup })
+    Promise.all([fetchProperty(id), fetchPropertySetup(), fetchPartners(), fetchSettings()]).then(
+      ([detail, setup, { partners }, settings]) => {
+        if (!cancelled) {
+          setState({ detail, setup, partners: partners.map((p) => ({ id: p.id, name: p.name })), company: settings.company })
+        }
       },
       (err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err))
@@ -361,7 +662,18 @@ export function PropertyEdit({ id, onDone }: { id: number; onDone: () => void })
         <h2 className="ledger-page-title">{state ? t('properties.edit.title', { name: state.detail.name }) : '...'}</h2>
       </div>
       {error ? <p className="error">{error}</p> : null}
-      {state ? <EditForm detail={state.detail} setup={state.setup} onDone={onDone} /> : null}
+      {state ? (
+        <EditForm
+          detail={state.detail}
+          setup={state.setup}
+          partners={state.partners}
+          company={state.company}
+          today={today || localToday()}
+          bookKey={bookKey}
+          onDone={onDone}
+          onOpenVoucher={onOpenVoucher}
+        />
+      ) : null}
     </div>
   )
 }

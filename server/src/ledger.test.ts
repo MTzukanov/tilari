@@ -223,6 +223,7 @@ describe('ledger http', () => {
       kind: 'apartment',
       valuations: [{ date: '2025-06-01', price_snt: 1_000_000 }],
       sale_costs: { pct_bp: 300, fixed_snt: 0 },
+      leases: [{ tenant_name: 'Testi Vuokralainen', starts: '2025-01-01', rents: [{ from: '2025-01-01', rent_snt: 50_000 }] }],
     }
     const putRes = await fetch(`${base}/api/properties/4?as_of=${asOf}`, {
       method: 'PUT',

@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
-import { formatEurInput, parseEurInput } from '../../../shared/money'
+import { formatCents, formatEurInput, parseEurInput } from '../../../shared/money'
 import { formatBp, formatPercentInput, parsePercentInput } from '../../../shared/percent'
 import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import { fetchPortfolio, savePortfolioSettings, type PortfolioResponse, type PortfolioSettings, type PropertyRow } from '../api'
+import { rentTotal } from '../../../book/modules/properties/domain/rent'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
 import { formatEuro, holdingText, periodLabel, saveErrorText, statusClass } from './format'
 
@@ -103,6 +104,16 @@ function nameColumn(t: T, withDates: 'acquired' | 'none'): TableColumn<PropertyR
         {withDates === 'acquired' && (r.kind || r.summary.acquired_on) ? (
           <span className="muted property-sub">
             {[r.kind ? t(`properties.kind.${r.kind}`) : '', r.summary.acquired_on ? t('properties.acquired', { date: formatDate(r.summary.acquired_on) }) : '']
+              .filter(Boolean)
+              .join(' · ')}
+          </span>
+        ) : null}
+        {withDates === 'acquired' && r.lease ? (
+          <span className="muted property-sub" title={r.lease.suggested ? t('properties.lease.suggestedNote') : (r.lease.tenant ?? undefined)}>
+            {[
+              `${r.lease.suggested ? '★ ' : ''}${r.lease.tenant ?? t('properties.lease.tenantUnknown')}`,
+              r.lease.rent ? t('properties.lease.perMonth', { amount: formatCents(rentTotal(r.lease.rent)) }) : '',
+            ]
               .filter(Boolean)
               .join(' · ')}
           </span>
@@ -400,7 +411,10 @@ export function PortfolioView({ onOpen, onSetup }: { onOpen: (id: number) => voi
                 className="property-table"
               />
             )}
-            <p className="muted property-footnote">{t('properties.footnote')}</p>
+            <p className="muted property-footnote">
+              {t('properties.footnote')}
+              {data.rows.some((r) => r.lease?.suggested) ? ` ${t('properties.lease.suggestedNote')}` : ''}
+            </p>
           </section>
 
           {all.length ? (

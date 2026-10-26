@@ -1,5 +1,8 @@
 import { getBcp47 } from '../../../i18n'
-import type { MonthLine, PropertyStatus, Warning } from '../api'
+import { formatDate } from '../../../shared/dates'
+import { formatCents } from '../../../shared/money'
+import { formatBp } from '../../../shared/percent'
+import type { LeaseIncrease, LeaseView, MonthLine, PropertyStatus, Warning } from '../api'
 
 const wholeEuro = new Map<string, Intl.NumberFormat>()
 
@@ -65,4 +68,45 @@ export function lineText(line: MonthLine): string {
   const text = line.entry.description
   if (partner && text && partner !== text) return `${partner} - ${text}`
   return partner || text || line.entry.account_name
+}
+
+/** "1.3.2025 alkaen" or "1.3.2025–28.2.2026". */
+export function leasePeriod(t: T, lease: LeaseView): string {
+  return lease.ends
+    ? t('properties.lease.period', { from: formatDate(lease.starts), to: formatDate(lease.ends) })
+    : t('properties.lease.since', { date: formatDate(lease.starts) })
+}
+
+/** "715,00 €/kk (vuokra 680,00 €, vesi 20,00 €, autopaikka 15,00 €)" for a step. */
+export function leaseRentText(t: T, rent: { rent_snt: number; water_snt?: number; parking_snt?: number } | null): string {
+  if (!rent) return ''
+  const total = rent.rent_snt + (rent.water_snt ?? 0) + (rent.parking_snt ?? 0)
+  const parts = [
+    rent.water_snt ? t('properties.lease.water', { amount: formatCents(rent.water_snt) }) : '',
+    rent.parking_snt ? t('properties.lease.parking', { amount: formatCents(rent.parking_snt) }) : '',
+  ].filter(Boolean)
+  const base = t('properties.lease.perMonth', { amount: formatCents(total) })
+  return parts.length ? `${base} (${t('properties.lease.rentPart', { amount: formatCents(rent.rent_snt) })}, ${parts.join(', ')})` : base
+}
+
+function longMonth(month: number): string {
+  return new Intl.DateTimeFormat(getBcp47(), { month: 'long' }).format(new Date(2024, month - 1, 1))
+}
+
+/** The increase clause in words: "korotus 3 % vuodessa (maaliskuu)", "korotus 20,00 € vuodessa", "indeksikorotus". */
+export function increaseText(t: T, rule: LeaseIncrease | null | undefined): string {
+  if (!rule || rule.kind === 'none') return ''
+  const month = rule.month ? longMonth(rule.month) : ''
+  const key = (base: string) => `properties.lease.increase.${base}${month ? 'Month' : ''}`
+  if (rule.kind === 'index') return t(key('index'), { month })
+  if (rule.kind === 'amount') return t(key('amount'), { amount: formatCents(rule.amount_snt ?? 0), month })
+  return t(key('percent'), { pct: formatBp(rule.pct_bp ?? 0), month })
+}
+
+/** The increase clause for a letter: "3,0 % vuodessa", "15,00 € vuodessa", "indeksiin sidottu". */
+export function clauseText(t: T, rule: LeaseIncrease | null | undefined): string {
+  if (!rule || rule.kind === 'none') return ''
+  if (rule.kind === 'index') return t('properties.notice.clause.index')
+  if (rule.kind === 'amount') return t('properties.notice.clause.amount', { amount: formatCents(rule.amount_snt ?? 0) })
+  return t('properties.notice.clause.percent', { pct: formatBp(rule.pct_bp ?? 0) })
 }

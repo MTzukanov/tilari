@@ -21,6 +21,7 @@ import {
   type YearRow,
 } from '../api'
 import { CashFlowChart, PaybackChart } from './Charts'
+import { LeasesPanel } from './LeasesPanel'
 import { formatEuro, statusClass, warningText } from './format'
 import { MonthLinesPanel } from './MonthLines'
 
@@ -401,6 +402,17 @@ export function PropertyView({
               title={d.status === 'sold' ? t('properties.col.irrSoldHint') : t('properties.col.irrHint')}
             />
           </div>
+
+          {d.status !== 'sold' || d.leases.length || d.lease_suggestions.length ? (
+            <LeasesPanel
+              leases={d.leases}
+              current={d.lease}
+              suggestions={d.lease_suggestions.map((s) => s.view)}
+              asOf={d.as_of}
+              onEdit={onEdit}
+              onOpenVoucher={(v) => openVoucher(v)}
+            />
+          ) : null}
 
           <BreakEvenPanel key={d.target?.rate_bp ?? 'none'} d={d} onTarget={setTargetBp} />
 

@@ -7,9 +7,14 @@ import {
   PROPERTY_DOC_VERSION,
   PROPERTY_KEY_PREFIX,
   PROPERTY_KINDS,
+  LEASE_INCREASE_KINDS,
   type CapitalEntry,
   type EraLink,
   type Financing,
+  type Lease,
+  type LeaseIncrease,
+  type LeaseIncreaseKind,
+  type LeaseRent,
   type PortfolioSettings,
   type PropertyDoc,
   type PropertyKind,
@@ -122,7 +127,104 @@ const DOC_KEYS = new Set([
   'sale_costs',
   'target_return_bp',
   'note',
+  'leases',
+  'created_voucher_ids',
 ])
+
+const LEASE_KEYS = new Set([
+  'key',
+  'tenant_partner_id',
+  'tenant_name',
+  'starts',
+  'ends',
+  'due_day',
+  'rents',
+  'increase',
+  'doc_voucher_id',
+])
+const LEASE_KEY = /^[A-Za-z0-9_-]{1,16}$/
+const MAX_ID = Number.MAX_SAFE_INTEGER
+
+function optionalId(value: unknown, path: string): number | undefined {
+  return value == null ? undefined : int(value, path, 1, MAX_ID)
+}
+
+function leaseIncrease(value: unknown, path: string): LeaseIncrease | undefined {
+  if (value == null) return undefined
+  if (!isObject(value)) fail(path)
+  const kind = value.kind ?? 'none'
+  if (!LEASE_INCREASE_KINDS.includes(kind as LeaseIncreaseKind)) fail(`${path}.kind`)
+  const out: LeaseIncrease = { kind: kind as LeaseIncreaseKind }
+  if (value.pct_bp != null) out.pct_bp = int(value.pct_bp, `${path}.pct_bp`, 0, 10000)
+  if (value.amount_snt != null) out.amount_snt = snt(value.amount_snt, `${path}.amount_snt`, 0)
+  if (value.month != null) out.month = int(value.month, `${path}.month`, 1, 12)
+  const empty = out.pct_bp == null && out.amount_snt == null && out.month == null
+  return out.kind === 'none' && empty ? undefined : out
+}
+
+function lease(item: unknown, path: string): Lease {
+  if (!isObject(item)) fail(path)
+  const out: Lease = { key: '', starts: date(item.starts, `${path}.starts`), rents: [] }
+  for (const [key, value] of Object.entries(item)) {
+    if (!LEASE_KEYS.has(key) && value !== undefined) out[key] = value
+  }
+  // A new lease from a form has no key yet: '' gets one like a missing key.
+  if (item.key != null && item.key !== '') {
+    if (typeof item.key !== 'string' || !LEASE_KEY.test(item.key)) fail(`${path}.key`)
+    out.key = item.key
+  }
+  const partner = optionalId(item.tenant_partner_id, `${path}.tenant_partner_id`)
+  if (partner != null) out.tenant_partner_id = partner
+  const name = text(item.tenant_name, `${path}.tenant_name`, MAX_TEXT)
+  if (name) out.tenant_name = name
+  if (item.ends != null) {
+    out.ends = date(item.ends, `${path}.ends`)
+    if (out.ends < out.starts) fail(`${path}.ends`)
+  }
+  if (item.due_day != null) out.due_day = int(item.due_day, `${path}.due_day`, 1, 31)
+  const seen = new Set<string>()
+  out.rents = array(item.rents, `${path}.rents`, 120)
+    .map((raw, i): LeaseRent => {
+      const at = `${path}.rents[${i}]`
+      if (!isObject(raw)) fail(at)
+      const from = date(raw.from, `${at}.from`)
+      if (seen.has(from) || from < out.starts || (out.ends && from > out.ends)) fail(`${at}.from`)
+      seen.add(from)
+      const rent: LeaseRent = { from, rent_snt: snt(raw.rent_snt, `${at}.rent_snt`, 0) }
+      for (const key of ['water_snt', 'parking_snt'] as const) {
+        const amount = raw[key] == null ? 0 : snt(raw[key], `${at}.${key}`, 0)
+        if (amount) rent[key] = amount
+      }
+      const voucher = optionalId(raw.voucher_id, `${at}.voucher_id`)
+      if (voucher != null) rent.voucher_id = voucher
+      return rent
+    })
+    .sort((a, b) => a.from.localeCompare(b.from))
+  const increase = leaseIncrease(item.increase, `${path}.increase`)
+  if (increase) out.increase = increase
+  const contract = optionalId(item.doc_voucher_id, `${path}.doc_voucher_id`)
+  if (contract != null) out.doc_voucher_id = contract
+  return out
+}
+
+/** Leases oldest start first; a missing key gets the first free `l{n}`, a repeated one fails. */
+function leases(value: unknown): Lease[] {
+  const list = array(value, 'leases', 100).map((item, i) => lease(item, `leases[${i}]`))
+  const used = new Set<string>()
+  list.forEach((l, i) => {
+    if (!l.key) return
+    if (used.has(l.key)) fail(`leases[${i}].key`)
+    used.add(l.key)
+  })
+  let n = 1
+  for (const l of list) {
+    if (l.key) continue
+    while (used.has(`l${n}`)) n += 1
+    l.key = `l${n}`
+    used.add(l.key)
+  }
+  return list.sort((a, b) => a.starts.localeCompare(b.starts) || a.key.localeCompare(b.key))
+}
 
 function checkVersion(value: unknown): void {
   if (value == null) return
@@ -176,6 +278,8 @@ export function normalizePropertyDoc(input: unknown): PropertyDoc {
   if (saleVouchers.length) out.sale_voucher_ids = saleVouchers
   const docVouchers = ids(input.doc_voucher_ids, 'doc_voucher_ids')
   if (docVouchers.length) out.doc_voucher_ids = docVouchers
+  const created = ids(input.created_voucher_ids, 'created_voucher_ids')
+  if (created.length) out.created_voucher_ids = created
 
   if (input.financing != null) {
     if (!isObject(input.financing)) fail('financing')
@@ -208,6 +312,8 @@ export function normalizePropertyDoc(input: unknown): PropertyDoc {
   }
   const note = text(input.note, 'note', MAX_NOTE)
   if (note) out.note = note
+  const leaseList = leases(input.leases)
+  if (leaseList.length) out.leases = leaseList
   checkSize(out)
   return out
 }

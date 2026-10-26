@@ -515,7 +515,8 @@
     "bankStatement": "To bank statement",
     "property": "To the object",
     "properties": "To rental objects",
-    "propertiesSetup": "To object setup"
+    "propertiesSetup": "To object setup",
+    "propertyEdit": "To editing the object"
   },
   "ledger": {
     "empty": "No postings on this account in the period."
@@ -1098,7 +1099,23 @@
       "source": "Source",
       "loanAccounts": "Loan accounts",
       "interestAccounts": "Interest accounts",
-      "note": "Note"
+      "note": "Note",
+      "tenant": "Tenant",
+      "leaseStarts": "Starts",
+      "leaseEnds": "Ends",
+      "dueDay": "Due day",
+      "rent": "Rent €/mo",
+      "contract": "Contract",
+      "increaseKind": "Increase clause",
+      "increasePct": "Increase % / yr",
+      "increaseMonth": "Increase month",
+      "water": "Water €/mo",
+      "parking": "Parking €/mo",
+      "total": "Total",
+      "increaseEur": "Increase € / yr",
+      "increaseFrom": "From",
+      "increaseNotice": "Increase notice",
+      "parkingExtra": "Parking space"
     },
     "breakEven": {
       "title": "Break-even price: the price that returns the money",
@@ -1172,6 +1189,55 @@
       },
       "showAll": "Show all ({n})"
     },
+    "lease": {
+      "title": "Tenancies",
+      "none": "No leases.",
+      "noCurrent": "No lease in force on {date}.",
+      "since": "from {date}",
+      "period": "{from}–{to}",
+      "perMonth": "{amount}/mo",
+      "due": "due on day {day}",
+      "increase": {
+        "percent": "increase {pct} a year",
+        "percentMonth": "increase {pct} a year ({month})",
+        "amount": "increase {amount} a year",
+        "amountMonth": "increase {amount} a year ({month})",
+        "index": "index-linked increase",
+        "indexMonth": "index-linked increase ({month})"
+      },
+      "contract": "Contract",
+      "others": "Other leases",
+      "state": {
+        "upcoming": "Starts",
+        "current": "In force",
+        "ended": "Ended"
+      },
+      "tenantUnknown": "Tenant unknown",
+      "kind": {
+        "none": "No increase clause",
+        "percent": "Percent a year",
+        "amount": "Euros a year",
+        "index": "Index"
+      },
+      "suggestions": "Suggestions from the books ({n})",
+      "suggestionsLead": "From the linked lease contracts and rent payments. Nothing is saved: review and save on the edit page.",
+      "review": "Review and save",
+      "source": {
+        "contract": "source: lease contract",
+        "payments": "source: rent payments"
+      },
+      "suggestedNote": "★ = a tenancy suggested from the books, not saved yet.",
+      "initial": "Starting rent",
+      "increases": "Increases",
+      "water": "water {amount}",
+      "parking": "parking {amount}",
+      "rentPart": "rent {amount}",
+      "extras": "Extras:",
+      "sourceHint": {
+        "contract": "A lease contract linked to the object: start, end and tenant from its title, the rent from the object's rent payments.",
+        "payments": "Rent payments alone: the payer paid rent in these months, but no lease contract linked to the object covers the period. Link the contract to the object to sharpen the suggestion."
+      }
+    },
     "edit": {
       "title": "Edit: {name}",
       "basics": "Basics",
@@ -1191,7 +1257,24 @@
       "addCapital": "Add row",
       "delete": "Delete object data",
       "deleteConfirm": "Delete Tilari's data for this object? The books are not touched.",
-      "readOnly": "The data was saved by a newer Tilari; this version can only show it."
+      "readOnly": "The data was saved by a newer Tilari; this version can only show it.",
+      "leases": "Leases",
+      "leasesLead": "Tenant, terms, starting rent and increases. The increase clause prefills the next increase; Tilari never changes rent by itself. The contract and increase notices are Liitetieto vouchers, so Kitsas finds them too.",
+      "addLease": "Add lease",
+      "removeLease": "Remove lease",
+      "suggestions": "The books suggest {n} tenancies. Add them to the form, review and save.",
+      "addSuggestion": "Add",
+      "addAllSuggestions": "Add all",
+      "addIncrease": "Add increase",
+      "createNotice": "Create increase notice",
+      "viewDoc": "View",
+      "confirmDeleteUnsaved": "{n} increase notices were created on this page but not saved to the object. Delete them from the books? Cancel keeps them (they may have been sent already).",
+      "restored": "Unsaved changes were restored.",
+      "deleteDoc": "Delete voucher",
+      "deleteNotice": "Delete increase notice",
+      "uploadContract": "Upload contract",
+      "uploadNotice": "Upload notice",
+      "confirmDeleteDoc": "Delete the voucher from the books: {titles}? One created on this visit goes at once, an earlier one when you save."
     },
     "setup": {
       "title": "Set up rental objects",
@@ -1274,6 +1357,33 @@
       "interest": "loan interest",
       "recounted": "counted as {account}",
       "recountedHint": "Booked on {booked}. A correction voucher's notes list this line as left uncorrected because the year is closed; Tilari counts it on {account}. The cost-centre report shows it as booked."
+    },
+    "notice": {
+      "voucherTitle": "Rent increase notice {object} {date}",
+      "fileName": "rent-increase-notice",
+      "businessId": "Business ID {id}",
+      "heading": "RENT INCREASE NOTICE",
+      "object": "Rented property: {object}",
+      "contract": "Lease: {contract}",
+      "contractSince": "Lease from {date}",
+      "changes": "Your rent changes from {date} as follows.",
+      "changesClause": "Your rent changes from {date} under the lease's increase clause ({clause}).",
+      "current": "Current",
+      "newFrom": "From {date}",
+      "rent": "Rent",
+      "water": "Water",
+      "parking": "Parking space",
+      "total": "Total a month",
+      "due": "The rent is still due by day {day} of the month, to the same account and with the same reference as before.",
+      "regards": "Kind regards",
+      "clause": {
+        "percent": "{pct} a year",
+        "amount": "{amount} a year",
+        "index": "index-linked"
+      }
+    },
+    "upload": {
+      "contractTitle": "Lease {object} {tenant} {date}-"
     }
   }
 }

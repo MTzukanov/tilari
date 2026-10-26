@@ -7,6 +7,46 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-26 - Rental objects phase 2: rental relationships first, in increments
+
+- Owner decisions for phase 2: rental relationships first, built in increments, each demoed
+  locally before a PR. Rent arrears count by object (all rent income on the cost centre), not by
+  tenant. Rent increases are entered as steps; the lease's rule only drives reminders and the
+  forecast. Documents stay type-800 vouchers; Tilari links them by id. The housing-company loan
+  share and the vastike split come last and stay Tilari data: the ledger is not changed for them
+  (an import-time split was considered and rejected).
+- Increment 1a (`feature/property-leases`): `leases[]` in `property/{id}` (DATA_MODEL.md), an editor
+  on the edit page, a "Vuokrasuhteet" panel on the object page (the lease running on the as-of
+  date, then the others), and the tenant and rent under the object's name in the portfolio list.
+  The lease state follows the as-of date, like the figures, so the server parity test stays
+  deterministic. A lease's contract and notices are added to `doc_voucher_ids` on save.
+- Owner review: the leases should come from what the book already has. `domain/leaseSuggest.ts`
+  suggests them (never stored until the owner adds them on the edit page and saves): linked
+  documents titled vuokrasopimus (also the typo "vuorkasopimus"; not "huolenpitosopimus") give a
+  lease each, with the period from the title (d.m.yyyy, d.m.yy, m.yyyy; 31.11. reads as 30.11.);
+  the tenant is a payer named in the title (also two words written together), else the payer with
+  the most months who started with the contract; KELA/FPA is never the tenant. Rent steps are the
+  object's monthly income repeated two months in a row (by object, like arrears). Payments outside
+  every contract with a tenant become their own suggestions. On a real book the current tenant came
+  out right for every flat whose contracts name the tenant; agencies and parking documents on a
+  flat's cost centre need the owner's look.
+- Owner review of the form: the payment is split into vuokra, vesi and autopaikka (suggestions
+  split by line text: a line about water only is water; on a parking object the fee is rent); the
+  due day starts at 5; no notice period or notes. Steps stay as the starting rent plus increases
+  (korotus), each with its increase notice (korotusilmoitus). The increase clause (percent, euros
+  or index) sits with the starting details and prefills the next increase. "Luo korotusilmoitus"
+  writes a PDF letter (`shared/textPdf.ts`: Helvetica, WinAnsi, no dependency) to a new posted
+  type-800 voucher titled after the object with the tenant as partner, links it to the increase
+  and downloads it. The voucher is dated on the book's day, so a year must be open for it (Kitsas
+  refuses the same).
+- Owner review: contracts and the owner's own increase notices are uploaded in the lease form
+  ("Lataa sopimus", "Lataa ilmoitus"; shared `FileButton`, also used by the voucher editor's
+  dropzone). Documents created from the form are remembered in `created_voucher_ids` and can be
+  deleted from it: one made on this visit at once (undo), an earlier one when the form is saved, so
+  Peru leaves the book untouched. Other documents are only unlinked. Linked documents and items
+  open their voucher; the unsaved form waits in sessionStorage (like the setup page). Document
+  picks are the shared `DocPicker` over `SearchSelect`.
+
 ## 2026-10-26 - Fixed: a month typed in the address did not open on an object's page
 
 - `#/property/{id}/month/{YYYY-MM}` was read only when the page mounted (keyed by id), so changing

@@ -23,7 +23,16 @@ function PropertiesScreen({ route, goTo, meta }: BookViewCtx) {
     )
   }
   if (route.view === 'propertyEdit') {
-    return <PropertyEdit key={route.id} id={route.id} onDone={() => goTo(`#/property/${route.id}`)} />
+    return (
+      <PropertyEdit
+        key={route.id}
+        id={route.id}
+        bookKey={meta?.session_id ?? ''}
+        today={meta?.book_date}
+        onDone={() => goTo(`#/property/${route.id}`)}
+        onOpenVoucher={(voucherId) => goTo(voucherHash({ kind: 'propertyEdit', id: route.id }, voucherId))}
+      />
+    )
   }
   if (route.view === 'propertiesSetup') {
     return (
@@ -48,5 +57,5 @@ export const propertiesUi: UiModule = {
   match: (route) => VIEWS.has(route.view),
   Screen: PropertiesScreen,
   activeNav: (route) =>
-    VIEWS.has(route.view) || viaKind(route) === 'property' || viaKind(route) === 'propertiesSetup' ? 'properties' : null,
+    VIEWS.has(route.view) || ['property', 'propertiesSetup', 'propertyEdit'].includes(viaKind(route) ?? '') ? 'properties' : null,
 }

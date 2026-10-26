@@ -29,6 +29,7 @@ import {
   loadEntries,
   loadEraRows,
   loadInterestRows,
+  loadPartners,
   loadPnlRows,
   loadRecountedLines,
   loadVoucherPnlRows,
@@ -38,15 +39,21 @@ import {
   type EraRow,
   recountLines,
   type PnlRow,
+  type PartnerInfo,
+  type VoucherRef,
 } from './ledger'
+import { representedBy, suggestLeases, type LeaseSuggestion, type SuggestIncome } from './leaseSuggest'
+import { currentLease, leasePartnerIds, leaseVoucherIds, leaseView } from './rent'
 import { saleNet, toBp, xirr, yieldBp, type Flow } from './returns'
-import { defaultAsOf } from './series'
+import { defaultAsOf, isIncome } from './series'
 import { allocationSet, computeObject, resolveSaleCosts, type CountedLine, type ObjectResult } from './summary'
 import { pickBest, suggestEra, textScorer } from './suggest'
 import {
   PORTFOLIO_KEY,
   PROPERTY_KEY_PREFIX,
   type Disposal,
+  type Lease,
+  type LeaseView,
   type PortfolioResponse,
   type MonthLine,
   type PortfolioSettings,
@@ -166,7 +173,62 @@ function byDate(a: { date: string; id: number }, b: { date: string; id: number }
   return a.date.localeCompare(b.date) || a.id - b.id
 }
 
-function toRow(c: Computed): PropertyRow {
+/** Tenant names, voucher labels and the book's lease suggestions for the objects on the page, loaded once. */
+type LeaseContext = {
+  asOf: string
+  partners: Map<number, PartnerInfo>
+  refs: Map<number, VoucherRef>
+  /** Per cost centre: suggestions that no stored lease stands for. */
+  suggestions: Map<number, LeaseSuggestion[]>
+}
+
+function incomeOf(c: Computed): SuggestIncome[] {
+  return c.result.classified.operating
+    .filter(isIncome)
+    .map((r) => ({ date: r.date, partner_id: r.partner_id, amount_snt: r.net_snt, text: r.text }))
+}
+
+function leaseContext(db: SqliteDb, computed: Computed[], asOf: string): LeaseContext {
+  const leases: Lease[] = computed.flatMap((c) => c.parsed.doc.leases ?? [])
+  const docIds = computed.flatMap((c) => c.parsed.doc.doc_voucher_ids ?? [])
+  const refs = loadVoucherRefs(db, new Set([...leaseVoucherIds(leases), ...docIds]))
+  const incomes = new Map(computed.map((c) => [c.centre.id, incomeOf(c)]))
+  const payers = [...incomes.values()].flat().flatMap((r) => (r.partner_id != null ? [r.partner_id] : []))
+  const partners = loadPartners(db, new Set([...leasePartnerIds(leases), ...payers]))
+  const names = new Map([...partners].map(([id, p]) => [id, p.name]))
+  const suggestions = new Map<number, LeaseSuggestion[]>()
+  for (const c of computed) {
+    const docs = (c.parsed.doc.doc_voucher_ids ?? []).flatMap((id) => {
+      const ref = refs.get(id)
+      return ref?.posted ? [{ voucher_id: id, date: ref.date, title: ref.title }] : []
+    })
+    const stored = c.parsed.doc.leases ?? []
+    const parkingObject = c.parsed.doc.kind === 'parking' || c.parsed.doc.kind === 'garage'
+    const found = suggestLeases({ docs, income: incomes.get(c.centre.id) ?? [], names, centreName: c.centre.name, parkingObject, asOf })
+    suggestions.set(c.centre.id, found.filter((s) => !representedBy(stored, s.lease)))
+  }
+  return { asOf, partners, refs, suggestions }
+}
+
+function suggestionView(s: LeaseSuggestion, ctx: LeaseContext): LeaseView {
+  return { ...leaseView(s.lease, ctx.asOf, ctx.partners, ctx.refs), suggested: s.source }
+}
+
+/** The stored lease running on the as-of date; with no stored leases at all, the suggested one. */
+function rowLease(c: Computed, ctx: LeaseContext): LeaseView | null {
+  const stored = c.parsed.doc.leases ?? []
+  const running = currentLease(stored, ctx.asOf)
+  if (running) return leaseView(running, ctx.asOf, ctx.partners, ctx.refs)
+  if (stored.length) return null
+  const suggestions = ctx.suggestions.get(c.centre.id) ?? []
+  // A suggestion naming a tenant before one without.
+  const withTenant = suggestions.map((s) => s.lease).filter((l) => l.tenant_partner_id != null)
+  const suggested = currentLease(withTenant, ctx.asOf) ?? currentLease(suggestions.map((s) => s.lease), ctx.asOf)
+  const match = suggestions.find((s) => s.lease === suggested)
+  return match ? suggestionView(match, ctx) : null
+}
+
+function toRow(c: Computed, ctx: LeaseContext): PropertyRow {
   const { centre, parsed, result } = c
   const warnings = [...result.warnings]
   if (parsed.corrupt) warnings.unshift({ code: 'doc_corrupt' })
@@ -185,6 +247,7 @@ function toRow(c: Computed): PropertyRow {
     break_even: result.break_even,
     valuation: result.valuation,
     cash_years: result.cash_years,
+    lease: rowLease(c, ctx),
     warnings,
   }
 }
@@ -199,7 +262,8 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
   const { asOf, dataThrough } = resolveAsOf(db, opts.today, opts.asOf)
   const centres = loaded.centres.filter((c) => !docFor(loaded, c.id).doc.excluded)
   const computed = computeObjects(db, loaded, centres, asOf)
-  const rows = computed.map(toRow)
+  const ctx = leaseContext(db, computed, asOf)
+  const rows = computed.map((c) => toRow(c, ctx))
 
   const holding = computed.filter((c) => c.result.status === 'active' || c.result.status === 'partly_sold')
   const bookValue = holding.reduce((s, c) => s + c.result.summary.book_value_snt, 0)
@@ -257,8 +321,9 @@ export function computeDetail(
   if (!centre) throw new BookError('not_found', 404)
   const { asOf, dataThrough } = resolveAsOf(db, opts.today, opts.asOf)
   const [computed] = computeObjects(db, loaded, [centre], asOf, opts.targetBp)
+  const ctx = leaseContext(db, [computed], asOf)
   return {
-    ...toRow(computed),
+    ...toRow(computed, ctx),
     child_ids: centre.child_ids,
     doc: computed.parsed.doc,
     read_only: computed.parsed.read_only && !computed.parsed.corrupt,
@@ -271,6 +336,12 @@ export function computeDetail(
     years: computed.result.years,
     target: computed.result.target,
     financing: computed.parsed.doc.financing ?? null,
+    leases: (computed.parsed.doc.leases ?? [])
+      .map((lease) => leaseView(lease, asOf, ctx.partners, ctx.refs))
+      .sort((a, b) => b.starts.localeCompare(a.starts) || a.key.localeCompare(b.key)),
+    lease_suggestions: (ctx.suggestions.get(id) ?? [])
+      .map((s) => ({ lease: s.lease, view: suggestionView(s, ctx) }))
+      .sort((a, b) => b.lease.starts.localeCompare(a.lease.starts)),
   }
 }
 
@@ -329,7 +400,31 @@ function checkLinks(db: SqliteDb, id: number, doc: PropertyDoc, loaded: Pick<Loa
       }
     }
   }
-  return { ...doc, eras }
+  // Created documents someone deleted elsewhere (Kitsas) are simply forgotten.
+  if (doc.created_voucher_ids?.length) {
+    const refs = loadVoucherRefs(db, doc.created_voucher_ids)
+    const kept = doc.created_voucher_ids.filter((id) => refs.get(id)?.posted)
+    doc = { ...doc }
+    if (kept.length) doc.created_voucher_ids = kept
+    else delete doc.created_voucher_ids
+  }
+  const leases = doc.leases ?? []
+  if (!leases.length) return { ...doc, eras }
+  const partners = loadPartners(db, leasePartnerIds(leases))
+  const leaseVouchers = loadVoucherRefs(db, leaseVoucherIds(leases))
+  const posted = (voucherId: number | undefined, path: string) => {
+    if (voucherId != null && !leaseVouchers.get(voucherId)?.posted) throw new PropertyDocError('invalid_field', path)
+  }
+  leases.forEach((lease, i) => {
+    if (lease.tenant_partner_id != null && !partners.has(lease.tenant_partner_id)) {
+      throw new PropertyDocError('invalid_field', `leases[${i}].tenant_partner_id`)
+    }
+    posted(lease.doc_voucher_id, `leases[${i}].doc_voucher_id`)
+    lease.rents.forEach((step, j) => posted(step.voucher_id, `leases[${i}].rents[${j}].voucher_id`))
+  })
+  // A lease's contract and notices are documents of the object too.
+  const docVoucherIds = [...new Set([...(doc.doc_voucher_ids ?? []), ...leaseVoucherIds(leases)])].sort((a, b) => a - b)
+  return { ...doc, eras, doc_voucher_ids: docVoucherIds }
 }
 
 /** Save one object's document. Returns true when the stored value changed. */

@@ -119,11 +119,13 @@ export function listNoteVouchers(db: SqliteDb): {
   title: string
   doc_number: number | null
   attachments: number
+  first_attachment: number | null
 }[] {
   return db
-    .all<{ id: number; pvm: string; otsikko: string | null; tunniste: number | null; n: number }>(
+    .all<{ id: number; pvm: string; otsikko: string | null; tunniste: number | null; n: number; first: number | null }>(
       `SELECT Tosite.id AS id, Tosite.pvm AS pvm, Tosite.otsikko AS otsikko, Tosite.tunniste AS tunniste,
-              (SELECT COUNT(*) FROM Liite WHERE Liite.tosite = Tosite.id) AS n
+              (SELECT COUNT(*) FROM Liite WHERE Liite.tosite = Tosite.id) AS n,
+              (SELECT MIN(Liite.id) FROM Liite WHERE Liite.tosite = Tosite.id) AS first
        FROM Tosite WHERE ${SQL_POSTED} AND Tosite.tyyppi = ${TYPE_ATTACHMENT_NOTE}
        ORDER BY Tosite.pvm DESC, Tosite.id DESC`,
     )
@@ -133,5 +135,6 @@ export function listNoteVouchers(db: SqliteDb): {
       title: String(row.otsikko || ''),
       doc_number: row.tunniste == null || Number(row.tunniste) === 0 ? null : Number(row.tunniste),
       attachments: Number(row.n || 0),
+      first_attachment: row.first == null ? null : Number(row.first),
     }))
 }

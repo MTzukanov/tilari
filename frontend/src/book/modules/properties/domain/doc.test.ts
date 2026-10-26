@@ -18,7 +18,8 @@ describe('normalizePropertyDoc', () => {
       sale_voucher_ids: [],
       financing: { loan_accounts: [], interest_accounts: [] },
       note: '  ',
-      leases: [{ id: 'x', rent_snt: 100 }],
+      leases: [],
+      future_field: [{ id: 'x', rent_snt: 100 }],
     })
     expect(doc).toEqual({
       v: 1,
@@ -26,8 +27,73 @@ describe('normalizePropertyDoc', () => {
       kind: 'garage',
       eras: [{ eraid: 4, account: 1441 }, { eraid: 9, account: 1453 }],
       doc_voucher_ids: [3, 7],
-      leases: [{ id: 'x', rent_snt: 100 }],
+      future_field: [{ id: 'x', rent_snt: 100 }],
     })
+  })
+
+  it('validates leases: steps sorted, keys given, unknown keys kept', () => {
+    const doc = normalizePropertyDoc({
+      eras: [],
+      leases: [
+        {
+          tenant_partner_id: 5,
+          starts: '2025-03-10',
+          due_day: 5,
+          rents: [
+            { from: '2026-01-01', rent_snt: 70_000, water_snt: 2_000, parking_snt: 1_500, voucher_id: 9 },
+            { from: '2025-03-10', rent_snt: 68_000, water_snt: 0 },
+          ],
+          increase: { kind: 'amount', amount_snt: 2_000, month: 1 },
+          doc_voucher_id: 8,
+          later_field: { deposit: 1 },
+        },
+        { key: 'l1', tenant_name: '  Previous tenant  ', starts: '2024-01-01', ends: '2025-02-28', rents: [], increase: { kind: 'none' } },
+        { key: '', starts: '2026-05-01', rents: [], increase: { kind: 'percent', pct_bp: 300 } },
+      ],
+    })
+    expect(doc.leases?.[2]).toEqual({ key: 'l3', starts: '2026-05-01', rents: [], increase: { kind: 'percent', pct_bp: 300 } })
+    doc.leases?.pop()
+    expect(doc.leases).toEqual([
+      { key: 'l1', tenant_name: 'Previous tenant', starts: '2024-01-01', ends: '2025-02-28', rents: [] },
+      {
+        key: 'l2',
+        tenant_partner_id: 5,
+        starts: '2025-03-10',
+        due_day: 5,
+        rents: [
+          { from: '2025-03-10', rent_snt: 68_000 },
+          { from: '2026-01-01', rent_snt: 70_000, water_snt: 2_000, parking_snt: 1_500, voucher_id: 9 },
+        ],
+        increase: { kind: 'amount', amount_snt: 2_000, month: 1 },
+        doc_voucher_id: 8,
+        later_field: { deposit: 1 },
+      },
+    ])
+  })
+
+  it('names the bad lease field', () => {
+    const lease = { starts: '2025-01-01', rents: [{ from: '2025-01-01', rent_snt: 500 }] }
+    const bad = (patch: Record<string, unknown>) => () => normalizePropertyDoc({ eras: [], leases: [{ ...lease, ...patch }] })
+    expect(bad({ starts: '1.1.2025' })).toThrow('invalid_field:leases[0].starts')
+    expect(bad({ ends: '2024-12-31' })).toThrow('invalid_field:leases[0].ends')
+    expect(bad({ rents: [{ from: '2024-12-01', rent_snt: 500 }] })).toThrow('invalid_field:leases[0].rents[0].from')
+    expect(bad({ ends: '2025-06-30', rents: [{ from: '2025-07-01', rent_snt: 500 }] })).toThrow(
+      'invalid_field:leases[0].rents[0].from',
+    )
+    expect(
+      bad({ rents: [{ from: '2025-02-01', rent_snt: 500 }, { from: '2025-02-01', rent_snt: 600 }] }),
+    ).toThrow('invalid_field:leases[0].rents[1].from')
+    expect(bad({ rents: [{ from: '2025-01-01', rent_snt: -1 }] })).toThrow('invalid_field:leases[0].rents[0].rent_snt')
+    expect(bad({ increase: { kind: 'yearly' } })).toThrow('invalid_field:leases[0].increase.kind')
+    expect(bad({ increase: { kind: 'amount', amount_snt: -1 } })).toThrow('invalid_field:leases[0].increase.amount_snt')
+    expect(bad({ rents: [{ from: '2025-01-01', rent_snt: 500, water_snt: -5 }] })).toThrow(
+      'invalid_field:leases[0].rents[0].water_snt',
+    )
+    expect(bad({ due_day: 0 })).toThrow('invalid_field:leases[0].due_day')
+    expect(bad({ key: 'has space' })).toThrow('invalid_field:leases[0].key')
+    expect(() =>
+      normalizePropertyDoc({ eras: [], leases: [{ ...lease, key: 'a' }, { ...lease, key: 'a' }] }),
+    ).toThrow('invalid_field:leases[1].key')
   })
 
   it('names the bad field', () => {
