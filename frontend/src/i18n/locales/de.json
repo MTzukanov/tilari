@@ -1502,10 +1502,13 @@
         "rent": "Miete",
         "water": "Wasserabrechnung",
         "received": "Bezahlt",
+        "change": "Veränderung",
+        "changeHint": "Bezahlt − Miete − Wasserabrechnung: − zu wenig bezahlt, + mehr bezahlt.",
         "balance": "Saldo",
+        "balanceHint": "Am Monatsende: − der Mieter schuldet (Rückstand), + im Voraus bezahlt.",
         "lines": "Zahlungen",
         "portfolio": "Mietsaldo",
-        "portfolioHint": "Saldo des laufenden Mietverhältnisses am Stichtag, auf den Cent: + der Mieter schuldet (Rückstand), − im Voraus bezahlt. † Andere Mietverhältnisse haben ein Saldo."
+        "portfolioHint": "Saldo des laufenden Mietverhältnisses am Stichtag, auf den Cent: − der Mieter schuldet (Rückstand), + im Voraus bezahlt. † Andere Mietverhältnisse haben ein Saldo."
       },
       "unassigned": "Einnahmen ohne Mietverhältnis ({n})",
       "kpi": "Mietsaldo",

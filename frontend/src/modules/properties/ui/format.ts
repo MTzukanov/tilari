@@ -126,6 +126,11 @@ export function periodText(t: T, from: string, to: string): string {
   return t('properties.lease.period', { from: formatDate(from), to: formatDate(to) })
 }
 
+/** A rent balance as the tenant stands: arrears negative, paid ahead positive (never -0). */
+export function tenantSide(snt: number): number {
+  return snt === 0 ? 0 : -snt
+}
+
 /** A rent account's balance, exact: "vuokrarästi 120,00 €", "maksettu ennakkoon 45,83 €", "täsmää, 0,00 €". */
 export function rentBalanceText(t: T, balance: number): string {
   if (balance === 0) return t('properties.rent.even')

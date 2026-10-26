@@ -2323,6 +2323,10 @@ th {
   color: var(--neg);
 }
 
+.amount.pos {
+  color: var(--accent);
+}
+
 tfoot td {
   border-bottom: none;
   border-top: 1px solid var(--ink);
@@ -5591,6 +5595,17 @@ tr.tax-total td {
   flex-wrap: wrap;
   gap: 0.35rem 0.75rem;
   align-items: baseline;
+}
+
+/* A long entry wraps left-aligned instead of centred like a button. */
+.property-doc-list li > .btn-link {
+  text-align: left;
+}
+
+/* Linked items on the edit page: the entry takes the row and wraps, its remove button stays at the end. */
+.property-linked-list li > :first-child {
+  flex: 1;
+  min-width: 0;
 }
 
 .property-attachment {
