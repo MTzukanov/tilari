@@ -7,7 +7,6 @@ import { formatBp, formatPercentInput, parsePercentInput } from '../../../shared
 import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import { fetchPortfolio, savePortfolioSettings, type PortfolioResponse, type PortfolioSettings, type PropertyRow } from '../api'
-import { rentTotal } from '../../../book/modules/properties/domain/rent'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
 import { formatEuro, holdingText, periodLabel, saveErrorText, statusClass, tenantSide } from './format'
 
@@ -112,7 +111,7 @@ function nameColumn(t: T, withDates: 'acquired' | 'none'): TableColumn<PropertyR
           <span className="muted property-sub" title={r.lease.suggested ? t('properties.lease.suggestedNote') : (r.lease.tenant ?? undefined)}>
             {[
               `${r.lease.suggested ? '★ ' : ''}${r.lease.tenant ?? t('properties.lease.tenantUnknown')}`,
-              r.lease.rent ? t('properties.lease.perMonth', { amount: formatCents(rentTotal(r.lease.rent)) }) : '',
+              r.lease.rent ? t('properties.lease.perMonth', { amount: formatCents(rentWithoutWater(r.lease.rent)) }) : '',
             ]
               .filter(Boolean)
               .join(' · ')}
@@ -121,6 +120,11 @@ function nameColumn(t: T, withDates: 'acquired' | 'none'): TableColumn<PropertyR
       </>
     ),
   }
+}
+
+/** The list's rent: the water advance is settled against use, so it is left out; parking stays. */
+function rentWithoutWater(rent: { rent_snt: number; parking_snt?: number }): number {
+  return rent.rent_snt + (rent.parking_snt ?? 0)
 }
 
 /** The running lease's rent balance, exact, arrears red and minus; † when other leases left a balance. */
