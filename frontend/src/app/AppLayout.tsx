@@ -17,6 +17,7 @@ import type { Route } from './routing'
 import { canLinkWritableFile } from '../api'
 import { PracticeBanner } from './PracticeBanner'
 import { DisplayMenu } from '../shared/DisplayMenu'
+import { UI_MODULES } from '../modules/registry'
 
 export type BusyState = {
   title: string
@@ -195,6 +196,11 @@ export function AppLayout({
             />
             <div className="topbar-tools-row">
               <DisplayMenu />
+              {meta && !blocked
+                ? UI_MODULES.map((mod) =>
+                    mod.TopbarItem ? <mod.TopbarItem key={mod.id} meta={meta} refreshKey={sessionChanges} goTo={onNavigate} /> : null,
+                  )
+                : null}
               {meta ? (
                 <SessionChangesPanel
                   changes={sessionChanges}

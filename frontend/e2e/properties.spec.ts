@@ -303,6 +303,101 @@ test.describe('rental object lease dates', () => {
   })
 })
 
+test.describe('rental object reminders', () => {
+  test('a lease ending soon, an increase due and no water settlement show on the object and mark the list', async ({ page }) => {
+    await openBook(page)
+    await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
+    await page.goto('/#/property/4/edit')
+    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
+    const lease = page.locator('.property-lease-edit').first()
+    const tenant = lease.getByLabel('Vuokralainen').first()
+    await tenant.fill('Testi Vuokralainen')
+    await tenant.press('Escape')
+    await lease.getByLabel('Alkaa', { exact: true }).fill('2024-01-01')
+    await lease.getByLabel('Päättyy').fill('2026-02-28')
+    await lease.getByLabel('Vuokra €/kk').first().fill('650')
+    await lease.getByLabel('Vesi €/kk').first().fill('20')
+    await lease.getByLabel('Korotussääntö').selectOption({ label: 'Euroa vuodessa' })
+    await lease.getByLabel('Korotus € / v').fill('15')
+    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+
+    // On the as-of date (31.12.2025).
+    await expect(page).toHaveURL(/#\/property\/4$/)
+    const warnings = page.locator('.property-warnings')
+    await expect(warnings).toContainText('Vuokrasopimus (Testi Vuokralainen) päättyy 28.2.2026, eikä seuraavaa ole kirjattu.')
+    await expect(warnings).toContainText('Vuokrankorotusta 1.1.2026 (Testi Vuokralainen) ei ole kirjattu.')
+    await expect(warnings).toContainText('Vesitasauksia ei ole lisätty, vaikka vuokralainen maksaa vesiennakkoa (1.1.2024 alkaen).')
+    await expect(warnings).toContainText('Vuokrasopimus puuttuu (Testi Vuokralainen, 1.1.2024 alkaen): liitä sopimus vuokrasuhteeseen.')
+
+    await page.goto('/#/properties')
+    const row = page.locator('.property-table').first().locator('tr', { hasText: 'Testi Vuokralainen' })
+    const mark = row.locator('.property-warn-mark')
+    await expect(mark).toHaveText(/^⚠ \d+$/)
+    await expect(mark).toHaveAttribute('title', /^• .*\n• .*päättyy 28\.2\.2026/s)
+
+    // Every object's warnings in one list after the figures, each object opening its page.
+    const alerts = page.locator('.property-alerts')
+    await expect(alerts).toContainText('Vuokrankorotusta 1.1.2026 (Testi Vuokralainen) ei ole kirjattu.')
+    await expect(alerts.getByRole('button', { name: 'Asunto', exact: true })).toBeVisible()
+
+    // The header's ⚠ counts them and opens the list from anywhere.
+    await page.goto('/#/browse')
+    const header = page.locator('.topbar-alerts')
+    await expect(header).toHaveText(/^⚠ \d+$/)
+    await header.click()
+    await expect(page).toHaveURL(/#\/properties\/alerts$/)
+    await expect(page.locator('.property-alerts')).toBeInViewport()
+    await page.locator('.property-alerts').getByRole('button', { name: 'Asunto', exact: true }).click()
+    await expect(page).toHaveURL(/#\/property\/4$/)
+  })
+})
+
+test.describe('rental object missing documents', () => {
+  test('a missing notice can be skipped from the reminder and taken back on the edit page; the contract cannot', async ({ page }) => {
+    await openBook(page)
+    await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
+    await page.goto('/#/property/4/edit')
+    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
+    const lease = page.locator('.property-lease-edit').first()
+    const tenant = lease.getByLabel('Vuokralainen').first()
+    await tenant.fill('Testi Vuokralainen')
+    await tenant.press('Escape')
+    await lease.getByLabel('Alkaa', { exact: true }).fill('2024-01-01')
+    await lease.getByLabel('Vuokra €/kk').first().fill('650')
+    await lease.getByRole('button', { name: 'Lisää korotus' }).click()
+    const increase = lease.locator('.property-lease-increase').first()
+    await increase.getByLabel('Alkaen').fill('2025-01-01')
+    await increase.getByLabel('Vuokra €/kk').fill('660')
+    const save = page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true })
+    await save.click()
+
+    await expect(page).toHaveURL(/#\/property\/4$/)
+    const notice = page.locator('.property-warnings li', { hasText: 'Vuokrankorotuksen 1.1.2025 korotusilmoitus puuttuu (Testi Vuokralainen).' })
+    const contract = page.locator('.property-warnings li', { hasText: 'Vuokrasopimus puuttuu (Testi Vuokralainen, 1.1.2024 alkaen)' })
+    await expect(contract).toBeVisible()
+    await expect(contract.getByRole('button', { name: 'Ohita' })).toHaveCount(0)
+    await notice.getByRole('button', { name: 'Ohita' }).click()
+    await expect(notice).toHaveCount(0)
+    await expect(contract).toBeVisible()
+
+    // The edit page shows the owner's word; taking it back brings the reminder back.
+    await page.goto('/#/property/4/edit')
+    const noDoc = page.locator('.property-lease-increase').first().getByLabel('Ei asiakirjaa')
+    await expect(noDoc).toBeChecked()
+    await noDoc.uncheck()
+    await save.click()
+    await expect(page).toHaveURL(/#\/property\/4$/)
+    await expect(notice).toBeVisible()
+
+    // The portfolio's list skips it too.
+    await page.goto('/#/properties')
+    const listed = page.locator('.property-alerts li', { hasText: 'Vuokrankorotuksen 1.1.2025 korotusilmoitus puuttuu' })
+    await listed.getByRole('button', { name: 'Ohita' }).click()
+    await expect(listed).toHaveCount(0)
+    await expect(page.locator('.property-alerts')).toContainText('Vuokrasopimus puuttuu (Testi Vuokralainen, 1.1.2024 alkaen)')
+  })
+})
+
 test.describe('rental object water settlements', () => {
   test('a settlement is shared by days with the tenant, writes the letter and shows on the object page', async ({ page }) => {
     await openBook(page)

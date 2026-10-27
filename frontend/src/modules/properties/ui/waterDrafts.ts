@@ -28,6 +28,8 @@ export type SettlementDraft = {
   usage: string
   /** The company's statement. */
   voucherId: string
+  /** The owner's word that there is no statement (ADR-030). */
+  noDocument: boolean
   shares: ShareDraft[]
 }
 
@@ -59,12 +61,13 @@ export function settlementDrafts(list: WaterSettlement[] | undefined): Settlemen
     amount: formatEurInput(Math.abs(s.difference_snt)),
     usage: s.usage_snt != null ? formatEurInput(s.usage_snt) : '',
     voucherId: idText(s.voucher_id),
+    noDocument: Boolean(s.no_document),
     shares: (s.shares ?? []).map((share) => shareDraft(share.lease_key, share)),
   }))
 }
 
 export function newSettlement(): SettlementDraft {
-  return { base: null, from: '', to: '', direction: 'refund', amount: '', usage: '', voucherId: '', shares: [] }
+  return { base: null, from: '', to: '', direction: 'refund', amount: '', usage: '', voucherId: '', noDocument: false, shares: [] }
 }
 
 /** The company's difference: + an extra charge to the owner, - a refund. */
@@ -111,8 +114,12 @@ export function buildSettlements(t: T, drafts: SettlementDraft[], leaseKeys: Set
     if (!d.to || d.to < d.from) return bad('to')
     const settlement: WaterSettlement = { ...(d.base ?? {}), ...draftSettlement(d)! }
     if (!d.usage.trim()) delete settlement.usage_snt
+    delete settlement.no_document
     if (d.voucherId) settlement.voucher_id = Number(d.voucherId)
-    else delete settlement.voucher_id
+    else {
+      delete settlement.voucher_id
+      if (d.noDocument) settlement.no_document = true
+    }
     const shares = d.shares.filter((s) => leaseKeys.has(s.leaseKey)).flatMap((s) => buildShare(s) ?? [])
     if (shares.length) settlement.shares = shares
     else delete settlement.shares

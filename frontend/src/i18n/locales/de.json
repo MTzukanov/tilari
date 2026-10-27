@@ -1288,6 +1288,8 @@
       "returnedOn": "zurückgezahlt {date}"
     },
     "edit": {
+      "noDocument": "Kein Dokument",
+      "noDocumentHint": "Dafür gibt es kein Dokument: keine Erinnerung.",
       "title": "Bearbeiten: {name}",
       "basics": "Grunddaten",
       "erasLead": "Bilanzposten mit den Anschaffungskosten des Objekts (Kaufpreis, Grunderwerbsteuer, Kosten).",
@@ -1379,7 +1381,31 @@
       "deposit_open": "Ein beendetes Mietverhältnis hält noch eine Kaution von {amount}.",
       "deposit_over": "Es wurde {amount} mehr Kaution zurückgezahlt als erhalten: ist der Eingang mit dem Mietverhältnis verknüpft?",
       "lease_overlap": "Ab {from} laufen zwei Mietverträge gleichzeitig, daher wird die Miete doppelt erwartet. Den früheren Vertrag vor Beginn des nächsten beenden.",
-      "water_overlap": "Die Zeiträume zweier Wasserabrechnungen überschneiden sich ab {from}, dieselben Tage werden doppelt abgerechnet. Zeiträume korrigieren."
+      "water_overlap": "Die Zeiträume zweier Wasserabrechnungen überschneiden sich ab {from}, dieselben Tage werden doppelt abgerechnet. Zeiträume korrigieren.",
+      "vacant": "Leer seit {from}: kein Mietvertrag läuft.",
+      "vacant_until": "Leer: der nächste Mietvertrag beginnt am {starts}.",
+      "lease_ending": "Der Mietvertrag ({tenant}) endet am {ends}, ein folgender ist nicht erfasst.",
+      "increase_due": "Die Mieterhöhung zum {from} ({tenant}) ist nicht erfasst. Im Mietvertrag ergänzen und die Erhöhungsmitteilung erstellen.",
+      "water_settlement_missing": "Keine neuere Wasserabrechnung: der letzte Abrechnungszeitraum endete am {to}. Die neueste Abrechnung der Wohnungsgesellschaft ergänzen.",
+      "water_settlement_none": "Keine Wasserabrechnungen erfasst, obwohl der Mieter Wasservorauszahlungen leistet (seit {from}). Die Abrechnungen der Wohnungsgesellschaft ergänzen.",
+      "water_letter_missing": "Wasserabrechnung {from}-{to}: das Abrechnungsschreiben an den Mieter ({tenant}) fehlt.",
+      "water_tenant_owes": "Wasserabrechnung {from}-{to}: {amount} noch einzuziehen ({tenant}).",
+      "water_refund_due": "Wasserabrechnung {from}-{to}: {amount} noch zu erstatten ({tenant}).",
+      "lease_suggestions": "In der Buchhaltung gefundene Mietverhältnisse, nicht erfasst: {count}. Beim Objekt ergänzen, damit Mieten, Kautionen und Wasserabrechnungen für sie gerechnet werden.",
+      "water_suggestions": "In der Buchhaltung gefundene Wasserabrechnungen, nicht erfasst: {count}. Beim Objekt ergänzen.",
+      "deposits_unlinked": "Mietkautionen ohne Mietverhältnis: {count}, insgesamt {amount}.",
+      "lease_contract_missing": "Der Mietvertrag fehlt ({tenant}, ab {starts}): dem Mietverhältnis beifügen.",
+      "increase_notice_missing": "Die Erhöhungsmitteilung zur Mieterhöhung zum {from} fehlt ({tenant}).",
+      "exception_agreement_missing": "Die Vereinbarung zur abweichenden Miete {from}-{to} fehlt ({tenant}).",
+      "water_statement_missing": "Die Abrechnung zur Wasserabrechnung {from}-{to} fehlt."
+    },
+    "warnCount": "Hinweise: {count}",
+    "alerts": {
+      "title": "Zu beachten",
+      "summary": "Hinweise {count} · Objekte {objects}",
+      "header": "Hinweise zu Mietobjekten ({count}): Liste öffnen",
+      "skip": "Überspringen",
+      "skipHint": "Dafür gibt es kein Dokument: nicht erinnern. Beim Bearbeiten des Objekts rückgängig zu machen (Kein Dokument)."
     },
     "error": {
       "invalid_field": "Feld {path} prüfen.",

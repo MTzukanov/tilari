@@ -2,7 +2,7 @@ import type { ModuleRouteCtx } from '../types'
 import type { SetupApplyInput } from './domain/types'
 import type { PropertyQuery } from './service'
 
-const ROUTE = /^\/api\/properties(?:\/(setup|settings|\d+)(?:\/(documents))?)?$/
+const ROUTE = /^\/api\/properties(?:\/(setup|settings|alerts|\d+)(?:\/(documents))?)?$/
 
 function propertyQuery(query: URLSearchParams): PropertyQuery {
   const target = query.get('target_bp')
@@ -29,6 +29,11 @@ export async function handlePropertiesRoutes(ctx: ModuleRouteCtx): Promise<boole
     if (method === 'GET') ctx.sendJson(200, await props.fetchSetup())
     else if (method === 'POST') ctx.sendJson(200, await props.applySetup(await ctx.readJson<SetupApplyInput>()))
     else return false
+    return true
+  }
+  if (segment === 'alerts' && !sub) {
+    if (method !== 'GET') return false
+    ctx.sendJson(200, await props.fetchAlerts(propertyQuery(query)))
     return true
   }
   if (segment === 'settings' && !sub) {

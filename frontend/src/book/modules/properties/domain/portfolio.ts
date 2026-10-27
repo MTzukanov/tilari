@@ -60,6 +60,7 @@ import {
 } from './ledger'
 import { isWaterSettlementText, representedBy, suggestLeases, type LeaseSuggestion, type SuggestIncome } from './leaseSuggest'
 import { leaseOverlaps, settlementOverlaps } from './ranges'
+import { openSuggestions, reminders, rowAlerts, type Pending } from './reminders'
 import { currentLease, leasePartnerIds, leaseVoucherIds, leaseView } from './rent'
 import { saleNet, toBp, xirr, yieldBp, type Flow } from './returns'
 import {
@@ -75,13 +76,14 @@ import {
 } from './water'
 import { defaultAsOf, isIncome } from './series'
 import { allocationSet, computeObject, resolveSaleCosts, type CountedLine, type ObjectResult } from './summary'
-import { pickBest, suggestEra, textScorer } from './suggest'
+import { pickBest, suggestEra, textScorer, type TextScorer } from './suggest'
 import {
   PORTFOLIO_KEY,
   PROPERTY_KEY_PREFIX,
   type Disposal,
   type Lease,
   type LeaseView,
+  type PortfolioAlerts,
   type PortfolioResponse,
   type MonthLine,
   type PortfolioSettings,
@@ -91,6 +93,7 @@ import {
   type RentEnd,
   type RentStart,
   type SetupApplyInput,
+  type Warning,
   type SetupResponse,
   type BookedLine,
   type DepositCandidate,
@@ -226,6 +229,28 @@ type LeaseContext = {
   /** The stored leases' deposit lines, and each return's deductions by return line id (ADR-029). */
   depositLines: DepositLine[]
   deductions: Map<number, DeductionLine[]>
+  /** Every deposit the book could hold, for the candidates and the unlinked ones (ADR-029). */
+  pool: DepositPool
+}
+
+/** Item roots and loose lines on liability accounts, their items' lines, and the roots' partners. */
+type DepositPool = {
+  roots: DepositLine[]
+  items: DepositLine[]
+  names: Map<number, PartnerInfo>
+  scorer: TextScorer
+  owner: Loaded['depositOwner']
+}
+
+function depositPool(db: SqliteDb, loaded: Loaded): DepositPool {
+  const roots = loadLiabilityRoots(db)
+  return {
+    roots,
+    items: loadDepositLines(db, roots.filter((r) => r.eraid === r.id).map((r) => r.id), []),
+    names: loadPartners(db, new Set(roots.flatMap((r) => (r.partner_id != null ? [r.partner_id] : [])))),
+    scorer: textScorer(loaded.centres.map((centre) => ({ id: centre.id, name: centre.name }))),
+    owner: loaded.depositOwner,
+  }
 }
 
 function incomeOf(c: Computed): SuggestIncome[] {
@@ -234,7 +259,7 @@ function incomeOf(c: Computed): SuggestIncome[] {
     .map((r) => ({ date: r.date, partner_id: r.partner_id, amount_snt: r.net_snt, text: r.text, id: r.id, voucher_id: r.voucher_id }))
 }
 
-function leaseContext(db: SqliteDb, computed: Computed[], asOf: string): LeaseContext {
+function leaseContext(db: SqliteDb, loaded: Loaded, computed: Computed[], asOf: string): LeaseContext {
   const leases: Lease[] = computed.flatMap((c) => c.parsed.doc.leases ?? [])
   const docIds = computed.flatMap((c) => c.parsed.doc.doc_voucher_ids ?? [])
   const linked = depositIds(leases)
@@ -244,7 +269,8 @@ function leaseContext(db: SqliteDb, computed: Computed[], asOf: string): LeaseCo
     deductions.set(d.return_id, [...(deductions.get(d.return_id) ?? []), d])
   }
   const depositVouchers = [...depositLines, ...[...deductions.values()].flat()].map((l) => l.voucher_id)
-  const refs = loadVoucherRefs(db, new Set([...leaseVoucherIds(leases), ...docIds, ...depositVouchers]))
+  const waterDocs = computed.flatMap((c) => waterVoucherIds(c.parsed.doc.water_settlements ?? []))
+  const refs = loadVoucherRefs(db, new Set([...leaseVoucherIds(leases), ...docIds, ...depositVouchers, ...waterDocs]))
   const incomes = new Map(computed.map((c) => [c.centre.id, incomeOf(c)]))
   const payers = [...incomes.values()].flat().flatMap((r) => (r.partner_id != null ? [r.partner_id] : []))
   const depositPartners = [...depositLines, ...[...deductions.values()].flat()].flatMap((l) => (l.partner_id != null ? [l.partner_id] : []))
@@ -261,7 +287,7 @@ function leaseContext(db: SqliteDb, computed: Computed[], asOf: string): LeaseCo
     const found = suggestLeases({ docs, income: incomes.get(c.centre.id) ?? [], names, centreName: c.centre.name, parkingObject, asOf })
     suggestions.set(c.centre.id, found.filter((s) => !representedBy(stored, s.lease)))
   }
-  return { asOf, booksStart: getPeriods(db)[0]?.starts ?? asOf, partners, refs, suggestions, depositLines, deductions }
+  return { asOf, booksStart: getPeriods(db)[0]?.starts ?? asOf, partners, refs, suggestions, depositLines, deductions, pool: depositPool(db, loaded) }
 }
 
 /** A stored lease's deposit on the as-of date; null when it links none. */
@@ -350,6 +376,7 @@ function toRow(c: Computed, ctx: LeaseContext, account: RentAccount | null = ren
     const deposit = depositOf(lease, ctx)
     if (deposit) warnings.push(...depositWarnings(lease, deposit, ctx.asOf))
   }
+  warnings.push(...remindersOf(c, ctx))
   return {
     id: centre.id,
     name: centre.name,
@@ -370,6 +397,38 @@ function toRow(c: Computed, ctx: LeaseContext, account: RentAccount | null = ren
   }
 }
 
+/**
+ * Lease reminders (ADR-030); water shares count what was booked up to the as-of date. Also what
+ * the book has and the owner has not defined: suggested leases and water settlements on objects
+ * still held, and deposits still held on any.
+ */
+function remindersOf(c: Computed, ctx: LeaseContext): Warning[] {
+  // Cost centres not set up as objects remind of nothing.
+  if (c.result.status === 'excluded' || !c.parsed.exists) return []
+  const leases = c.parsed.doc.leases ?? []
+  const settlements = c.parsed.doc.water_settlements ?? []
+  const held = c.result.status !== 'sold'
+  const lines = waterLines(c.result.classified.operating.filter((r) => r.date <= ctx.asOf))
+  const views = settlementViews(settlements, lines, leases, { tenantName: tenantName(ctx), partnerName: partnerName(ctx), refs: ctx.refs })
+  const suggested = (ctx.suggestions.get(c.centre.id) ?? []).map((s, i) => ({ ...s.lease, key: `s${i + 1}` }))
+  const deposits = depositCandidatesOf(c, ctx).filter((d) => d.related && !d.linked_to && d.kind === 'item' && d.balance_snt > 0)
+  const pending: Pending = {
+    leases: held ? openSuggestions(suggested, leases, ctx.asOf) : 0,
+    water: held ? suggestSettlements(lines, settlements, leases.length ? leases : suggested).length : 0,
+    deposits: { count: deposits.length, amount_snt: deposits.reduce((sum, d) => sum + d.balance_snt, 0) },
+  }
+  return reminders({
+    leases,
+    settlements,
+    views,
+    asOf: ctx.asOf,
+    held,
+    rentFrom: rentStartOf(c, ctx, rentLines(c), true).from,
+    tenant: (lease) => tenantName(ctx)(lease) ?? '',
+    pending,
+  })
+}
+
 function resolveAsOf(db: SqliteDb, today: string, asOf?: string | null): { asOf: string; dataThrough: string | null } {
   const dataThrough = loadDataThrough(db)
   return { asOf: asOf || defaultAsOf(today, dataThrough), dataThrough }
@@ -380,7 +439,7 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
   const { asOf, dataThrough } = resolveAsOf(db, opts.today, opts.asOf)
   const centres = loaded.centres.filter((c) => !docFor(loaded, c.id).doc.excluded)
   const computed = computeObjects(db, loaded, centres, asOf)
-  const ctx = leaseContext(db, computed, asOf)
+  const ctx = leaseContext(db, loaded, computed, asOf)
   const rows = computed.map((c) => toRow(c, ctx))
 
   const holding = computed.filter((c) => c.result.status === 'active' || c.result.status === 'partly_sold')
@@ -429,6 +488,16 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
   }
 }
 
+/**
+ * What the header counts (ADR-030): the warnings to act on over every object, and the objects
+ * with any. A book without stored objects pays nothing for it.
+ */
+export function computeAlerts(db: SqliteDb, opts: { today: string; asOf?: string | null }): PortfolioAlerts {
+  if (!readTilariDataPrefix(db, PROPERTY_KEY_PREFIX).length) return { warnings: 0, objects: 0 }
+  const rows = computePortfolio(db, opts).rows.map((r) => rowAlerts(r).length).filter((n) => n > 0)
+  return { warnings: rows.reduce((s, n) => s + n, 0), objects: rows.length }
+}
+
 export function computeDetail(
   db: SqliteDb,
   id: number,
@@ -439,7 +508,7 @@ export function computeDetail(
   if (!centre) throw new BookError('not_found', 404)
   const { asOf, dataThrough } = resolveAsOf(db, opts.today, opts.asOf)
   const [computed] = computeObjects(db, loaded, [centre], asOf, opts.targetBp)
-  const ctx = leaseContext(db, [computed], asOf)
+  const ctx = leaseContext(db, loaded, [computed], asOf)
   const { water, latest } = waterDetail(db, computed, ctx)
   const suggestions = ctx.suggestions.get(id) ?? []
   const sources = leaseSources(db, computed, suggestions, ctx)
@@ -452,7 +521,7 @@ export function computeDetail(
   if (row.lease && !row.lease.suggested) {
     row.lease = { ...row.lease, water_latest: latest.get(row.lease.key) ?? null, deposit: deposits.get(row.lease.key) ?? null }
   }
-  const candidates = depositCandidatesOf(db, loaded, computed, ctx)
+  const candidates = depositCandidatesOf(computed, ctx)
   const taken = new Set<string>()
   return {
     ...row,
@@ -499,24 +568,26 @@ export function computeDetail(
  * account or the text, or linked already; related to this object by its cost centre, a rent
  * payer or tenant, or its name in the text.
  */
-function depositCandidatesOf(db: SqliteDb, loaded: Loaded, c: Computed, ctx: LeaseContext): DepositCandidate[] {
-  const roots = loadLiabilityRoots(db)
-  const items = loadDepositLines(db, roots.filter((r) => r.eraid === r.id).map((r) => r.id), [])
+function depositCandidatesOf(c: Computed, ctx: LeaseContext): DepositCandidate[] {
+  const { roots, items, names, scorer, owner } = ctx.pool
   const payers = incomeOf(c).flatMap((r) => (r.partner_id != null ? [r.partner_id] : []))
   const partners = new Set([...payers, ...leasePartnerIds(c.parsed.doc.leases ?? [])])
-  const names = loadPartners(db, new Set(roots.flatMap((r) => (r.partner_id != null ? [r.partner_id] : []))))
   return depositCandidates(roots, items, {
     objectId: c.centre.id,
     allocations: allocationSet(c.centre),
     partners,
-    scorer: textScorer(loaded.centres.map((centre) => ({ id: centre.id, name: centre.name }))),
-    owner: loaded.depositOwner,
+    scorer,
+    owner,
     partnerName: (id) => (id != null ? (names.get(id)?.name ?? ctx.partners.get(id)?.name ?? null) : null),
     asOf: ctx.asOf,
   })
 }
 
 const partnerName = (ctx: LeaseContext) => (id: number | null) => (id != null ? (ctx.partners.get(id)?.name ?? null) : null)
+
+/** The tenant's partner name, else the stored name. */
+const tenantName = (ctx: LeaseContext) => (lease: Lease) =>
+  (lease.tenant_partner_id != null ? ctx.partners.get(lease.tenant_partner_id)?.name : undefined) ?? lease.tenant_name ?? null
 
 /**
  * The rent payments each suggested lease was read from: the object's income in its period (for
@@ -554,7 +625,7 @@ function waterDetail(db: SqliteDb, c: Computed, ctx: LeaseContext): { water: Wat
   const suggested = (ctx.suggestions.get(c.centre.id) ?? []).map((s, i) => ({ ...s.lease, key: `s${i + 1}` }))
   const refs = loadVoucherRefs(db, new Set([...waterVoucherIds(settlements), ...lines.map((l) => l.voucher_id)]))
   const wctx: WaterViewContext = {
-    tenantName: (lease) => (lease.tenant_partner_id != null ? ctx.partners.get(lease.tenant_partner_id)?.name : undefined) ?? lease.tenant_name ?? null,
+    tenantName: tenantName(ctx),
     partnerName: partnerName(ctx),
     refs,
   }

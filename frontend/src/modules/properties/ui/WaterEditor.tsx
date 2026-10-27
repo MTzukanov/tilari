@@ -8,7 +8,7 @@ import type { DocCandidate, Lease, WaterBookedLine, WaterSettlement, WaterSugges
 import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
 import { companyResultText, periodText, waterBalanceText, waterStatusText } from './format'
-import { LineLink, Shown } from './FormParts'
+import { LineLink, NoDocumentCheck, Shown } from './FormParts'
 import { SuggestionSource } from './LeasesPanel'
 import {
   draftDifference,
@@ -151,6 +151,7 @@ export function WaterEditor({
               />
               <div className="property-lease-notice">
                 <DocPicker label={t('properties.field.waterStatement')} docs={docs} value={d.voucherId} onChange={(voucherId) => set(i, { voucherId })} />
+                {!d.voucherId ? <NoDocumentCheck checked={d.noDocument} onChange={(noDocument) => set(i, { noDocument })} /> : null}
                 {d.voucherId && isCreated(Number(d.voucherId)) ? (
                   <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(d.voucherId)])}>
                     {t('properties.edit.deleteDoc')}

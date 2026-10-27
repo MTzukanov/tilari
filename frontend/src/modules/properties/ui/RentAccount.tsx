@@ -51,7 +51,9 @@ function ExceptionForm({
     if (water) exception.water_snt = water
     if (parkingSnt) exception.parking_snt = parkingSnt
     if (draft.note.trim()) exception.note = draft.note.trim()
+    // The agreement, or the owner's word that there is none (ADR-030), stays with the exception.
     if (prefill.voucher_id != null) exception.voucher_id = prefill.voucher_id
+    else if (prefill.no_document) exception.no_document = true
     await run(() => onSave(exception))
   }
 

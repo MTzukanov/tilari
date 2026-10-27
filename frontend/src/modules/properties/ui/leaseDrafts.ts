@@ -14,11 +14,14 @@ export type Partner = { id: number; name: string }
 /** What the tenant pays a month, as typed. */
 export type AmountsDraft = { rent: string; water: string; parking: string }
 
-/** An increase (korotus): its date, the new amounts and the increase notice voucher. */
-export type IncreaseDraft = AmountsDraft & { from: string; voucherId: string }
+/**
+ * An increase (korotus): its date, the new amounts and the increase notice voucher; `noDocument`,
+ * the owner's word that there is no notice (ADR-030).
+ */
+export type IncreaseDraft = AmountsDraft & { from: string; voucherId: string; noDocument: boolean }
 
-/** An agreed exception (poikkeava vuokra): its days, the amounts then, the reason and the agreement voucher. */
-export type ExceptionDraft = AmountsDraft & { from: string; to: string; note: string; voucherId: string }
+/** An agreed exception (poikkeava vuokra): its days, the amounts then, the reason and the agreement voucher, or `noDocument`. */
+export type ExceptionDraft = AmountsDraft & { from: string; to: string; note: string; voucherId: string; noDocument: boolean }
 
 /** A lease being edited; `base` keeps the stored lease and its unknown keys. */
 export type LeaseDraft = {
@@ -73,13 +76,19 @@ export function leaseDrafts(leases: Lease[] | undefined, partners: Partner[]): L
     increaseValue:
       l.increase?.kind === 'percent' ? formatPercentInput(l.increase.pct_bp) : l.increase?.kind === 'amount' ? eur(l.increase.amount_snt) : '',
     increaseMonth: l.increase?.month != null ? String(l.increase.month) : '',
-    increases: l.rents.slice(1).map((r) => ({ ...amounts(r), from: r.from, voucherId: r.voucher_id != null ? String(r.voucher_id) : '' })),
+    increases: l.rents.slice(1).map((r) => ({
+      ...amounts(r),
+      from: r.from,
+      voucherId: r.voucher_id != null ? String(r.voucher_id) : '',
+      noDocument: Boolean(r.no_document),
+    })),
     exceptions: (l.exceptions ?? []).map((e) => ({
       ...amounts(e),
       from: e.from,
       to: e.to,
       note: e.note ?? '',
       voucherId: e.voucher_id != null ? String(e.voucher_id) : '',
+      noDocument: Boolean(e.no_document),
     })),
     deposits: depositKeys(l.deposit),
   }))
@@ -118,20 +127,21 @@ export function withKeys(drafts: LeaseDraft[]): LeaseDraft[] {
   })
 }
 
-function step(from: string, a: AmountsDraft, withParking: boolean, voucherId = ''): LeaseRent {
+function step(from: string, a: AmountsDraft, withParking: boolean, voucherId = '', noDocument = false): LeaseRent {
   const out: LeaseRent = { from, rent_snt: parseEurInput(a.rent) }
   const water = parseEurInput(a.water)
   const parking = withParking ? parseEurInput(a.parking) : 0
   if (water) out.water_snt = water
   if (parking) out.parking_snt = parking
   if (voucherId) out.voucher_id = Number(voucherId)
+  else if (noDocument) out.no_document = true
   return out
 }
 
 const typed = (a: AmountsDraft) => Boolean(a.rent || a.water || a.parking)
 
 function exception(e: ExceptionDraft, withParking: boolean): LeaseException {
-  const { from, ...amounts } = step(e.from, e, withParking, e.voucherId)
+  const { from, ...amounts } = step(e.from, e, withParking, e.voucherId, e.noDocument)
   const out: LeaseException = { from, to: e.to, ...amounts }
   if (e.note.trim()) out.note = e.note.trim()
   return out
@@ -204,7 +214,7 @@ export function buildLeases(t: T, drafts: LeaseDraft[], partners: Partner[]): Le
     }
     lease.rents = [
       ...(typed(d.initial) ? [step(d.starts, d.initial, d.parking)] : []),
-      ...d.increases.filter((r) => r.from || typed(r)).map((r) => step(r.from, r, d.parking, r.voucherId)),
+      ...d.increases.filter((r) => r.from || typed(r)).map((r) => step(r.from, r, d.parking, r.voucherId, r.noDocument)),
     ]
     const exceptions = d.exceptions.filter((e) => e.from || e.to || typed(e) || e.note.trim() || e.voucherId)
     if (exceptions.length) lease.exceptions = exceptions.map((e) => exception(e, d.parking))
@@ -257,7 +267,7 @@ export function newException(d: LeaseDraft, today: string): ExceptionDraft {
   const from = d.starts && d.starts > first ? d.starts : first
   const to = d.ends && d.ends < last ? d.ends : last
   const { rent, water, parking } = draftStepAt(d, from)
-  return { from, to, rent, water, parking, note: '', voucherId: '' }
+  return { from, to, rent, water, parking, note: '', voucherId: '', noDocument: false }
 }
 
 /**
@@ -266,7 +276,7 @@ export function newException(d: LeaseDraft, today: string): ExceptionDraft {
  * the euros. Water and parking stay; an index increase keeps the rent for the owner to type.
  */
 export function nextIncrease(d: LeaseDraft, today: string): IncreaseDraft {
-  const last = d.increases[d.increases.length - 1] ?? { ...d.initial, from: d.starts, voucherId: '' }
+  const last = d.increases[d.increases.length - 1] ?? { ...d.initial, from: d.starts, voucherId: '', noDocument: false }
   const month = Number(d.increaseMonth) || Number(d.starts.slice(5, 7)) || Number(today.slice(5, 7))
   let year = Number(today.slice(0, 4))
   const at = (y: number) => `${y}-${String(month).padStart(2, '0')}-01`
@@ -279,5 +289,5 @@ export function nextIncrease(d: LeaseDraft, today: string): IncreaseDraft {
   } else if (d.increaseKind === 'amount') {
     next = rent + parseEurInput(d.increaseValue)
   }
-  return { from: at(year), rent: formatEurInput(next), water: last.water, parking: last.parking, voucherId: '' }
+  return { from: at(year), rent: formatEurInput(next), water: last.water, parking: last.parking, voucherId: '', noDocument: false }
 }

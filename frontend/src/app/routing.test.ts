@@ -45,6 +45,7 @@ describe('parseRoute', () => {
 
   it('parses rental-object routes and returns to the object from a voucher', () => {
     expect(parseRoute('#/properties')).toEqual({ view: 'properties' })
+    expect(parseRoute('#/properties/alerts')).toEqual({ view: 'properties', section: 'alerts' })
     expect(parseRoute('#/properties/setup')).toEqual({ view: 'propertiesSetup' })
     expect(parseRoute('#/property/15')).toEqual({ view: 'property', id: 15 })
     expect(parseRoute('#/property/15/edit')).toEqual({ view: 'propertyEdit', id: 15 })

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { restoreLocationHash } from '../../../app/leaveGuard'
 import { parseRoute, propertyHash } from '../../../app/routing'
+import { skipDocument } from '../../../book/modules/properties/domain/reminders'
 import { grossPriceFor } from '../../../book/modules/properties/domain/returns'
 import { getBcp47, useI18n } from '../../../i18n'
 import { AttachmentLink } from '../../../shared/AttachmentLink'
@@ -17,6 +18,7 @@ import {
   fetchPropertyDocuments,
   saveProperty,
   type Disposal,
+  type DocumentSkip,
   type LeaseException,
   type PropertyDetail,
   type PropertyDocuments,
@@ -24,6 +26,7 @@ import {
   type YearRow,
 } from '../api'
 import { CashFlowChart, PaybackChart } from './Charts'
+import { SkipDocumentButton } from './FormParts'
 import { LeasesPanel } from './LeasesPanel'
 import { formatEuro, statusClass, tenantSide, warningText } from './format'
 import { MonthLinesPanel } from './MonthLines'
@@ -292,6 +295,11 @@ export function PropertyView({
   )
   const loaded = Boolean(d)
 
+  /** Saves the owner's word that a missing document has none (ADR-030) and shows the object as saved. */
+  async function skipDoc(detail: PropertyDetail, skip: DocumentSkip) {
+    setData(await saveProperty(id, skipDocument(detail.doc, skip), targetBp != null ? { targetBp } : {}))
+  }
+
   /**
    * Saves an agreed exception to a stored lease, new or in place of `replaces` (found by its first
    * day: a lease's exceptions never overlap; null removes it), and shows the object as saved
@@ -377,7 +385,10 @@ export function PropertyView({
           {d.warnings.length ? (
             <ul className="property-warnings">
               {d.warnings.map((w, i) => (
-                <li key={`${w.code}-${i}`}>{warningText(t, w)}</li>
+                <li key={`${w.code}-${i}`}>
+                  {warningText(t, w)}
+                  {w.skip && !d.read_only ? <SkipDocumentButton onSkip={() => skipDoc(d, w.skip!)} /> : null}
+                </li>
               ))}
             </ul>
           ) : null}

@@ -1,6 +1,7 @@
 import { getJson } from '../../http'
 import type { WriteJson } from '../types'
 import type {
+  PortfolioAlerts,
   PortfolioResponse,
   PortfolioSettings,
   PropertyDetail,
@@ -22,6 +23,9 @@ export function createPropertiesHttp(writeJson: WriteJson, _afterMutate: () => v
   return {
     listProperties(query?: PropertyQuery) {
       return getJson<PortfolioResponse>(`/api/properties${queryString(query)}`)
+    },
+    fetchAlerts(query?: PropertyQuery) {
+      return getJson<PortfolioAlerts>(`/api/properties/alerts${queryString(query)}`)
     },
     fetchProperty(id: number, query?: PropertyQuery) {
       return getJson<PropertyDetail>(`/api/properties/${id}${queryString(query)}`)

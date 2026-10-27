@@ -39,8 +39,16 @@ export type LeaseIncreaseKind = (typeof LEASE_INCREASE_KINDS)[number]
 /**
  * What the tenant pays a month from `from` on: rent, water and a parking space. The first is the
  * lease's starting rent; each later one is an increase (korotus), with its notice voucher.
+ * `no_document`: the owner says the increase has no notice, so none is asked for (ADR-030).
  */
-export type LeaseRent = { from: string; rent_snt: number; water_snt?: number; parking_snt?: number; voucher_id?: number }
+export type LeaseRent = {
+  from: string
+  rent_snt: number
+  water_snt?: number
+  parking_snt?: number
+  voucher_id?: number
+  no_document?: true
+}
 
 /**
  * The contract's increase clause: `pct_bp` (percent) or `amount_snt` (euros) a year on the
@@ -52,7 +60,8 @@ export type LeaseIncrease = { kind: LeaseIncreaseKind; pct_bp?: number; amount_s
 /**
  * An agreed exception to the rent (poikkeava vuokra) from `from` to `to`: a discount, a free
  * month, a temporary rent. Its amounts stand for the steps' on those days; the steps stay as they
- * are. `note` is the owner's reason, `voucher_id` the agreement (a type-800 voucher).
+ * are. `note` is the owner's reason, `voucher_id` the agreement (a type-800 voucher);
+ * `no_document` the owner's word that there is none to ask for (ADR-030).
  */
 export type LeaseException = {
   from: string
@@ -62,6 +71,7 @@ export type LeaseException = {
   parking_snt?: number
   note?: string
   voucher_id?: number
+  no_document?: true
 }
 
 /**
@@ -124,6 +134,8 @@ export type WaterSettlement = {
   usage_snt?: number
   /** The company's statement (a type-800 voucher). */
   voucher_id?: number
+  /** The owner's word that there is no statement to ask for (ADR-030). */
+  no_document?: true
   shares?: WaterShare[]
   [key: string]: unknown
 }
@@ -175,7 +187,14 @@ export type PortfolioSettings = {
 
 export type PropertyStatus = 'active' | 'partly_sold' | 'sold' | 'unlinked' | 'excluded'
 
-export type Warning = { code: string; params?: Record<string, string | number> }
+/** A missing document the owner may say there is none of (ADR-030); never the lease's contract. */
+export type DocumentSkip =
+  | { kind: 'increase_notice'; lease_key: string; from: string }
+  | { kind: 'exception_agreement'; lease_key: string; from: string }
+  | { kind: 'water_statement'; key: string }
+
+/** `skip`: a missing document's reminder the owner can end by saying there is none. */
+export type Warning = { code: string; params?: Record<string, string | number>; skip?: DocumentSkip }
 
 export type OperatingTotals = { income_snt: number; expense_snt: number; net_snt: number }
 
@@ -564,6 +583,9 @@ export type PortfolioResponse = {
     sold_irr_bp: number | null
   }
 }
+
+/** The header's count of warnings to act on (ADR-030). */
+export type PortfolioAlerts = { warnings: number; objects: number }
 
 export type PropertyDetail = PropertyRow & {
   child_ids: number[]

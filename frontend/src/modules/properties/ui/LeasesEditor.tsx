@@ -9,7 +9,7 @@ import { SearchSelect } from '../../../shared/SearchSelect'
 import { LEASE_INCREASE_KINDS, type DepositCandidate, type DocCandidate, type Lease, type LeaseIncreaseKind, type LeaseSuggestionView } from '../api'
 import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
-import { Shown } from './FormParts'
+import { NoDocumentCheck, Shown } from './FormParts'
 import { depositOptionText, leasePeriod, leaseRentText } from './format'
 import { LeaseSources, SuggestionSource } from './LeasesPanel'
 import {
@@ -376,6 +376,7 @@ export function LeasesEditor({
                   value={r.voucherId}
                   onChange={(voucherId) => setIncrease(i, k, { voucherId })}
                 />
+                {!r.voucherId ? <NoDocumentCheck checked={r.noDocument} onChange={(noDocument) => setIncrease(i, k, { noDocument })} /> : null}
                 {r.voucherId && isCreated(Number(r.voucherId)) ? (
                   <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(r.voucherId)])}>
                     {t('properties.edit.deleteNotice')}
@@ -435,6 +436,7 @@ export function LeasesEditor({
                     value={e.voucherId}
                     onChange={(voucherId) => setException(i, k, { voucherId })}
                   />
+                  {!e.voucherId ? <NoDocumentCheck checked={e.noDocument} onChange={(noDocument) => setException(i, k, { noDocument })} /> : null}
                   {e.voucherId && isCreated(Number(e.voucherId)) ? (
                     <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(e.voucherId)])}>
                       {t('properties.edit.deleteDoc')}

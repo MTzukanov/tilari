@@ -2,6 +2,7 @@ import { listPropertyDocuments } from './domain/documents'
 import {
   applySetup,
   buildSetup,
+  computeAlerts,
   computeDetail,
   computePortfolio,
   deleteProperty,
@@ -13,6 +14,7 @@ import {
 import { parsePropertyDoc, propertyKey } from './domain/doc'
 import { readTilariData } from '../../kernel/tilariData'
 import type {
+  PortfolioAlerts,
   PortfolioResponse,
   PortfolioSettings,
   PropertyDetail,
@@ -38,6 +40,11 @@ export class PropertiesService {
 
   async listProperties(query: PropertyQuery = {}): Promise<PortfolioResponse> {
     return computePortfolio(this.kernel.requireDb(), { today: this.kernel.today(), asOf: query.asOf })
+  }
+
+  /** The header's count of warnings to act on (ADR-030). */
+  async fetchAlerts(query: PropertyQuery = {}): Promise<PortfolioAlerts> {
+    return computeAlerts(this.kernel.requireDb(), { today: this.kernel.today(), asOf: query.asOf })
   }
 
   async fetchProperty(id: number, query: PropertyQuery = {}): Promise<PropertyDetail> {

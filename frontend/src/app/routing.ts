@@ -22,7 +22,8 @@ export type Route =
   | { view: 'balanceSheetItems' }
   | { view: 'allocations' }
   | { view: 'allocation'; id: number; month?: string }
-  | { view: 'properties' }
+  /** `section: 'alerts'` (`#/properties/alerts`): opened on the list of warnings. */
+  | { view: 'properties'; section?: 'alerts' }
   | { view: 'propertiesSetup' }
   | { view: 'property'; id: number; month?: string }
   | { view: 'propertyEdit'; id: number }
@@ -293,6 +294,7 @@ export function parseRoute(hash: string = window.location.hash): Route {
   if (hash === '#/overview') return { view: 'overview' }
   if (hash === '#/allocations') return { view: 'allocations' }
   if (hash === '#/properties') return { view: 'properties' }
+  if (hash === '#/properties/alerts') return { view: 'properties', section: 'alerts' }
   if (hash === '#/settings/storage') return { view: 'settings', page: 'storage' }
   if (hash === '#/settings') return { view: 'settings' }
   if (hash === '#/fiscal-periods') return { view: 'fiscalPeriods' }
