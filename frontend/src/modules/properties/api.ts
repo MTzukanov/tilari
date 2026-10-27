@@ -35,6 +35,7 @@ export type {
   RentBalance,
   LeaseRentAccount,
   RentMonth,
+  RentStart,
   SaleCosts,
   SetupApplyInput,
   SetupResponse,

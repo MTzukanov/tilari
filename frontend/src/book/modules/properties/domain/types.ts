@@ -79,7 +79,8 @@ export type LeaseDeposit = { eraids?: number[]; line_ids?: number[] }
 
 /**
  * A rental relationship (vuokrasuhde). The tenant is a Kitsas partner; `tenant_name` only when
- * they are not one yet. `ends` is a fixed term's end or the move-out. Unknown keys are kept.
+ * they are not one yet. `ends` is a fixed term's end or the move-out. An object's leases never
+ * share days (saving checks it). Unknown keys are kept.
  */
 export type Lease = {
   /** Stable within the document, for form rows and warnings. */
@@ -113,6 +114,7 @@ export type WaterShare = { lease_key: string; balance_snt?: number; voucher_id?:
  * The housing company's water settlement (vesitasaus) for one period, as on its statement:
  * `difference_snt` + when the owner pays more, - for a refund; `usage_snt` the apartment's
  * actual water cost, when known. Each tenant's share is computed from the leases (ADR-025).
+ * Settlements of an object never share days (saving checks it).
  */
 export type WaterSettlement = {
   key: string
@@ -147,6 +149,11 @@ export type PropertyDoc = {
   target_return_bp?: number
   note?: string
   leases?: Lease[]
+  /**
+   * The first day the owner's rent counts, when agreed otherwise than the default (ADR-026): e.g.
+   * a purchase that gave the buyer the month's rent. Missing: the first whole month owned.
+   */
+  rent_from?: string
   water_settlements?: WaterSettlement[]
   [key: string]: unknown
 }
@@ -347,6 +354,11 @@ export type LeaseRentAccount = {
   /** On the as-of date: + the tenant owes, - paid ahead. */
   balance_snt: number
 }
+
+/** Why the owner's rent counts from a day: their own date, the purchase, rent received before it, or the books' start. */
+export type RentStartSource = 'own' | 'purchase' | 'payment' | 'books'
+
+export type RentStart = { from: string; source: RentStartSource }
 
 export type RentAccount = {
   leases: LeaseRentAccount[]
@@ -554,6 +566,10 @@ export type PropertyDetail = PropertyRow & {
   water: WaterDetail
   /** Each stored lease's rent account; null without stored leases. */
   rent_account: RentAccount | null
+  /** The first day the owner's rent counts on the object, and why. */
+  rent_start: RentStart
+  /** Where it would count from without the owner's own date (`rent_from`), for the edit page. */
+  rent_start_default: RentStart
   /** Deposits to link to the leases: the object's first, then every other on a deposit account. */
   deposit_candidates: DepositCandidate[]
 }

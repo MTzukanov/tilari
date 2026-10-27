@@ -139,6 +139,63 @@ describe('rental objects: figures', () => {
     expect(d.summary.book_value_snt).toBe(40_000 * E)
   })
 
+  it('a running lease\'s rent counts from the first whole month after the purchase, or from the owner\'s date', async () => {
+    const { db, voucher, eras } = await buildPropertyFixture()
+    db.run('INSERT INTO Kohdennus (id, tyyppi, kuuluu, json) VALUES (?, ?, ?, ?)', [91, 1, null, JSON.stringify({ nimi: { fi: 'As Oy Ostotie 3 B 8' } })])
+    voucher('buy', '2024-03-12', 0, 'Kauppahinta Ostotie 3 B 8', [
+      { account: 1441, debit: 50_000 * E, era: 'new' },
+      { account: 1910, credit: 50_000 * E },
+    ])
+    // The seller's tenant pays the buyer from April on, April's rent ahead in March.
+    for (const date of ['2024-03-28', '2024-05-05', '2024-06-05']) {
+      voucher(`rent ${date}`, date, 0, 'Vuokra B 8', [
+        { account: 1910, debit: 700 * E },
+        { account: 3760, credit: 700 * E, allocation: 91, partner: 'Vuokralainen Ostola' },
+      ])
+    }
+    const tenant = db.get<{ id: number }>("SELECT id FROM Kumppani WHERE nimi = 'Vuokralainen Ostola'")!.id
+    const lease = { key: 'l1', tenant_partner_id: tenant, starts: '2022-09-01', rents: [{ from: '2022-09-01', rent_snt: 700 * E }] }
+    const base = { v: 1, rev: 0, kind: 'apartment', eras: [{ account: 1441, eraid: eras['buy:0'] }], leases: [lease] }
+    saveProperty(db, 91, base, 'now')
+    const asOf = '2024-06-30'
+    let d = computeDetail(db, 91, { today: TODAY, asOf })
+    expect(d.summary.acquired_on).toBe('2024-03-12')
+    expect(d.rent_start).toEqual({ from: '2024-04-01', source: 'purchase' })
+    expect(d.rent_account?.leases[0]).toMatchObject({ counted_from: '2024-04-01', expected_snt: 2_100 * E, balance_snt: 0 })
+    expect(d.rent).toEqual({ current_snt: 0, others_snt: 0 })
+
+    // Agreed in the sale: March's rent is the buyer's too.
+    saveProperty(db, 91, { ...d.doc, rent_from: '2024-03-01' }, 'now')
+    d = computeDetail(db, 91, { today: TODAY, asOf })
+    expect(d.rent_start).toEqual({ from: '2024-03-01', source: 'own' })
+    expect(d.rent_start_default).toEqual({ from: '2024-04-01', source: 'purchase' })
+    expect(d.rent_account?.leases[0]).toMatchObject({ counted_from: '2024-03-01', expected_snt: 2_800 * E, balance_snt: 700 * E })
+
+    // A second lease while the first runs on would expect the rent twice: saving refuses it.
+    const next = { key: 'l2', tenant_name: 'Uusi Vuokralainen', starts: '2024-06-01', rents: [{ from: '2024-06-01', rent_snt: 750 * E }] }
+    expect(() => saveProperty(db, 91, { ...d.doc, leases: [lease, next] }, 'now')).toThrow('overlap:leases[1].starts')
+    expect(() =>
+      saveProperty(
+        db,
+        91,
+        {
+          ...d.doc,
+          water_settlements: [
+            { from: '2023-07-01', to: '2024-06-30', difference_snt: 0 },
+            { from: '2024-06-01', to: '2025-05-31', difference_snt: 0 },
+          ],
+        },
+        'now',
+      ),
+    ).toThrow('overlap:water_settlements[1].from')
+    saveProperty(db, 91, { ...d.doc, leases: [{ ...lease, ends: '2024-05-31' }, next] }, 'now')
+    // One saved before the check: shown as it is, with a warning.
+    writeTilariData(db, propertyKey(91), serializeDoc({ ...d.doc, rev: d.doc.rev + 2, leases: [lease, next] }), 'now')
+    d = computeDetail(db, 91, { today: TODAY, asOf })
+    expect(d.doc.leases).toHaveLength(2)
+    expect(d.warnings).toContainEqual({ code: 'lease_overlap', params: { from_date: '2024-06-01' } })
+  })
+
   it('bundle: invested, book value, cash-basis operating result and break-even', async () => {
     const { db } = await setUp()
     const d = computeDetail(db, CC.bundle, { today: TODAY })

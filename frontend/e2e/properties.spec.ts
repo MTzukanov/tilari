@@ -241,6 +241,41 @@ test.describe('rental object rent exceptions', () => {
   })
 })
 
+test.describe('rental object lease dates', () => {
+  test('leases on the same days are refused with both named; an own first day of rent shows as the reason', async ({ page }) => {
+    await openBook(page)
+    await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
+    await page.goto('/#/property/4/edit')
+    // The golden book links no purchase: without an own day the rent counts from the books' start.
+    await expect(page.locator('.property-section', { hasText: 'Vuokrasopimukset' })).toContainText(/Tyhjänä \d+\.\d+\.\d{4} \(kirjanpidon alku\)/)
+    for (const [name, starts] of [
+      ['Testi Vuokralainen', '2025-01-01'],
+      ['Toinen Vuokralainen', '2025-06-01'],
+    ]) {
+      await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
+      const lease = page.locator('.property-lease-edit').last()
+      const tenant = lease.getByLabel('Vuokralainen').first()
+      await tenant.fill(name)
+      await tenant.press('Escape')
+      await lease.getByLabel('Alkaa', { exact: true }).fill(starts)
+      await lease.getByLabel('Vuokra €/kk').first().fill('650')
+    }
+    const save = page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true })
+    await save.click()
+    await expect(page.locator('.property-edit .error')).toContainText(
+      'Vuokrasopimukset Testi Vuokralainen 1.1.2025 alkaen ja Toinen Vuokralainen 1.6.2025 alkaen menevät päällekkäin.',
+    )
+    await expect(page).toHaveURL(/#\/property\/4\/edit$/)
+
+    await page.locator('.property-lease-edit').first().getByLabel('Päättyy').fill('2025-05-31')
+    await page.getByLabel('Vuokra omistajalle alkaen').fill('2025-02-01')
+    await save.click()
+    await expect(page).toHaveURL(/#\/property\/4$/)
+    // The ended lease's account starts after the lease: on the owner's day.
+    await expect(page.locator('.property-leases')).toContainText('laskettu 1.2.2025 alkaen: omistajan antama päivä')
+  })
+})
+
 test.describe('rental object water settlements', () => {
   test('a settlement is shared by days with the tenant, writes the letter and shows on the object page', async ({ page }) => {
     await openBook(page)

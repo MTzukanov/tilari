@@ -7,6 +7,19 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-27 - Rental objects: no overlapping leases or water periods; rent from the month after a purchase
+
+- Owner reported that overlapping date ranges could be saved. Exceptions within a lease were
+  already refused, but two leases of an object (e.g. an open-ended one and the next tenant's) or
+  two water settlement periods on the same days were not: those days expected rent, or settled
+  water, twice. Saving now refuses them (`checkRanges`, domain `ranges.ts`), the form names both
+  with their days, and it gives readable texts for an increase or exception outside the lease
+  too. Documents already saved with overlaps still read (no corrupt flag) and warn.
+- Owner asked: after a purchase the rent counts from the first whole month owned (ADR-026), as
+  the seller keeps the month of the sale; before, every object bought with a tenant needed an
+  exception at 0 for the rest of the purchase month. `rent_from` on the object overrides it when
+  the sale agreed otherwise. Exceptions entered for that purpose are now redundant, not harmful.
+
 ## 2026-10-26 - Rental objects 1e: rent deposits per lease (`feature/property-deposits`)
 
 - A lease's `deposit` links the deposit's items and loose lines on a liability account (ADR-029);
@@ -47,7 +60,7 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 - Fixed: a lease taken over with an object whose acquisition is booked later than the first rent
   (on a real book: the asset re-booked as a balance item on 1 January, after December's rent came
   in) showed that month's rent as paid ahead for good. Counting now starts from the month of rent
-  received before the acquisition's date (`rentCountedFrom`, ADR-026). Only that object of the
+  received before the acquisition's date (`rentCountedFrom`, now `rentStart`, ADR-026). Only that object of the
   book had rent before its acquisition date.
 - `<p>` around the "income without a lease" sources held a `<details>`; now a `<div>`.
 - Fixed the acquisition date of such an object too (ADR-028): its purchase was booked on the

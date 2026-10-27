@@ -37,10 +37,16 @@ describe('lease drafts', () => {
 
   it('a new lease is due on the 5th; a typed tenant matches a partner by name, else stays a name', () => {
     expect(newLease().dueDay).toBe('5')
-    const named = { ...newLease(), tenant: ' vuokralainen virtanen ', starts: '2025-01-01', initial: { rent: '600', water: '', parking: '' } }
+    const named = {
+      ...newLease(),
+      tenant: ' vuokralainen virtanen ',
+      starts: '2025-01-01',
+      ends: '2025-01-31',
+      initial: { rent: '600', water: '', parking: '' },
+    }
     const unknown = { ...newLease(), tenant: 'Uusi Vuokralainen', starts: '2025-02-01' }
     expect(buildLeases(t, [named, newLease(), unknown], partners)).toEqual([
-      { key: '', tenant_partner_id: 5, starts: '2025-01-01', due_day: 5, rents: [{ from: '2025-01-01', rent_snt: 60_000 }] },
+      { key: '', tenant_partner_id: 5, starts: '2025-01-01', ends: '2025-01-31', due_day: 5, rents: [{ from: '2025-01-01', rent_snt: 60_000 }] },
       { key: '', tenant_name: 'Uusi Vuokralainen', starts: '2025-02-01', due_day: 5, rents: [] },
     ])
     expect(draftTotal({ rent: '600', water: '20', parking: '15,5' })).toBe(63_550)
@@ -99,6 +105,44 @@ describe('lease drafts', () => {
     expect(buildLeases(t, [lease], partners)).toBe('properties.error.invalid_field{"path":"leases[0].due_day"}')
     const pct = { ...newLease(), starts: '2025-01-01', increaseKind: 'percent' as const, increaseValue: 'kolme' }
     expect(buildLeases(t, [pct], partners)).toBe('properties.error.invalid_field{"path":"leases[0].increase.pct_bp"}')
+  })
+
+  it('dates that do not fit name the lease and the days: overlapping leases or exceptions, a step or exception outside', () => {
+    // Texts as "leaseOverlap(a, b)", to read the names and days.
+    const say = (key: string, vars?: Record<string, string | number>) => `${key.split('.').pop()}${vars ? `(${Object.values(vars).join(', ')})` : ''}`
+    const old = { ...newLease(), tenant: 'Vuokralainen Virtanen', starts: '2024-01-01', initial: { rent: '640', water: '', parking: '' } }
+    const next = { ...newLease(), tenant: 'Uusi Vuokralainen', starts: '2025-03-01', ends: '2026-02-28' }
+    // An open lease runs on: the next one would expect its rent twice.
+    expect(buildLeases(say, [next, old], partners)).toBe(
+      'leaseOverlap(Vuokralainen Virtanen since(1.1.2024), Uusi Vuokralainen period(1.3.2025, 28.2.2026))',
+    )
+    // One shared day is an overlap too; the day after is not.
+    expect(buildLeases(say, [{ ...old, ends: '2025-03-01' }, next], partners)).toMatch(/^leaseOverlap/)
+    expect(buildLeases(say, [{ ...old, ends: '2025-02-28' }, next], partners)).toHaveLength(2)
+    // A lease inside a longer one.
+    expect(buildLeases(say, [{ ...old, ends: '2026-12-31' }, { ...next, ends: '2025-03-31' }], partners)).toMatch(/^leaseOverlap/)
+
+    const lease = { ...old, ends: '2024-12-31' }
+    const exception = (from: string, to: string) => ({ from, to, rent: '0', water: '', parking: '', note: '', voucherId: '' })
+    const march = exception('2024-03-01', '2024-03-31')
+    expect(buildLeases(say, [{ ...lease, exceptions: [march, exception('2024-03-15', '2024-04-15')] }], partners)).toBe(
+      'exceptionOverlap(period(1.3.2024, 31.3.2024), period(15.3.2024, 15.4.2024), Vuokralainen Virtanen period(1.1.2024, 31.12.2024))',
+    )
+    expect(buildLeases(say, [{ ...lease, exceptions: [march, exception('2024-04-01', '2024-04-30')] }], partners)).toHaveLength(1)
+    expect(buildLeases(say, [{ ...lease, exceptions: [exception('2024-12-01', '2025-01-31')] }], partners)).toBe(
+      'exceptionOutside(period(1.12.2024, 31.1.2025), Vuokralainen Virtanen period(1.1.2024, 31.12.2024))',
+    )
+    expect(buildLeases(say, [{ ...lease, exceptions: [exception('2024-05-31', '2024-05-01')] }], partners)).toBe(
+      'exceptionDates(period(31.5.2024, 1.5.2024))',
+    )
+    const step = (from: string) => ({ from, rent: '650', water: '', parking: '', voucherId: '' })
+    expect(buildLeases(say, [{ ...lease, increases: [step('2025-01-01')] }], partners)).toBe(
+      'increaseOutside(1.1.2025, Vuokralainen Virtanen period(1.1.2024, 31.12.2024))',
+    )
+    expect(buildLeases(say, [{ ...lease, increases: [step('2024-01-01')] }], partners)).toBe(
+      'increaseTwice(1.1.2024, Vuokralainen Virtanen period(1.1.2024, 31.12.2024))',
+    )
+    expect(buildLeases(say, [{ ...lease, ends: '2023-11-30' }], partners)).toBe('leaseEnds(Vuokralainen Virtanen period(1.1.2024, 30.11.2023))')
   })
 
   it('a new exception covers this month within the lease, at the amounts in force; removing all drops the key', () => {

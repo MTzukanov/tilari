@@ -3,7 +3,7 @@ import { getBcp47, useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
 import { formatCents, formatEurInput, parseEurInput } from '../../../shared/money'
-import type { LeaseException, LeaseRentAccount, RentMonth } from '../api'
+import type { LeaseException, LeaseRentAccount, RentMonth, RentStart } from '../api'
 import { monthName, rentBalanceText, saveErrorText, tenantSide } from './format'
 import { LineLink, Shown } from './FormParts'
 
@@ -113,12 +113,15 @@ export function RentAccountView({
   account,
   asOf,
   leaseStarts,
+  start,
   onOpen,
   onAddException,
 }: {
   account: LeaseRentAccount
   asOf: string
   leaseStarts: string
+  /** Where the owner's rent counts from on the object: why a lease's account starts after the lease. */
+  start: RentStart
   onOpen: (voucherId: number) => void
   /** Saves an exception to this lease; the page then shows the account again. */
   onAddException?: (exception: LeaseException) => Promise<void>
@@ -133,7 +136,10 @@ export function RentAccountView({
         {t('properties.rent.balanceOn', { date: formatDate(asOf) })}:{' '}
         <strong className={account.balance_snt > 0 ? 'neg' : ''}>{rentBalanceText(t, account.balance_snt)}</strong>
         {account.counted_from > leaseStarts ? (
-          <span className="muted"> · {t('properties.rent.countedFrom', { date: formatDate(account.counted_from) })}</span>
+          <span className="muted">
+            {' '}
+            · {t('properties.rent.countedFrom', { date: formatDate(account.counted_from), reason: t(`properties.rent.start.${start.source}`) })}
+          </span>
         ) : null}
       </p>
       {account.months.length ? (

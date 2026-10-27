@@ -50,8 +50,9 @@ Money in integer cents (`*_snt`), percentages in basis points (`*_bp`, 100 = 1 %
 | `valuations[]` | `{ date, price_snt, debt_free_price_snt?, source? }` - owner's price estimate |
 | `sale_costs` | `{ pct_bp, fixed_snt }` - overrides `portfolio.sale_costs` |
 | `target_return_bp`, `note` | Target annual return; free text |
-| `leases[]` | Rental relationships, oldest start first (below) |
-| `water_settlements[]` | The housing company's water settlements, oldest period first (below) |
+| `leases[]` | Rental relationships, oldest start first, never sharing a day (below) |
+| `rent_from` | The owner's first day of rent when the sale agreed otherwise; missing: the first whole month after the purchase (ADR-026) |
+| `water_settlements[]` | The housing company's water settlements, oldest period first, never sharing a day (below) |
 
 `leases[]` - one per tenancy; unknown keys of a lease are kept like the document's own:
 
@@ -68,9 +69,10 @@ Money in integer cents (`*_snt`), percentages in basis points (`*_bp`, 100 = 1 %
 | `water?` | `flat` when water is a flat fee that is never settled; missing means an advance settled against use (ADR-025) |
 | `deposit?` | `{ eraids?, line_ids? }`: the rent deposit (vuokravakuus) as booked on a liability account - its items (tase-erät, by root line id) and lines booked without an item (ADR-029) |
 
-Saving checks that the partner exists and the vouchers are posted, and adds the lease's vouchers
-to `doc_voucher_ids`. A deposit must be an item root or a line without an item, posted, on a
-liability account, and belong to one lease only across every object (`deposit_linked`). The documents stay Kitsas vouchers, found in Kitsas by title and partner. An
+Saving checks that the partner exists, the vouchers are posted and no two leases share a day
+(`overlap`), and adds the lease's vouchers to `doc_voucher_ids`. A deposit must be an item root or
+a line without an item, posted, on a liability account, and belong to one lease only across every
+object (`deposit_linked`). The documents stay Kitsas vouchers, found in Kitsas by title and partner. An
 increase notice written in Tilari is a posted type-800 voucher titled after the object, with the
 tenant as partner and the letter as a PDF attachment (`modules/properties/ui/increaseNotice.ts`).
 
@@ -86,8 +88,8 @@ tenant as partner and the letter as a PDF attachment (`modules/properties/ui/inc
 | `shares[]?` | `{ lease_key, balance_snt?, voucher_id? }`: a tenant's own amount (+ the tenant pays, - refunded) instead of the computed one, and the letter sent. Only shares that carry something are stored |
 
 Each lease in the period whose water is an advance has a share: the use by its days less its
-advances, or without the use the difference by days. Saving checks that `lease_key` names a lease
-and the vouchers are posted, and adds the statement and letters to `doc_voucher_ids`. A letter
+advances, or without the use the difference by days. Saving checks that `lease_key` names a lease,
+the vouchers are posted and no two periods share a day (`overlap`), and adds the statement and letters to `doc_voucher_ids`. A letter
 written in Tilari is a posted type-800 voucher titled after the object and the period, with the
 tenant as partner and the letter as a PDF (`modules/properties/ui/waterLetter.ts`).
 

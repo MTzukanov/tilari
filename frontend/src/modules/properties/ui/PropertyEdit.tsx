@@ -105,6 +105,7 @@ function EditForm({
   const [init] = useState<EditState>(() => draft?.state ?? stateFromDoc(doc, partners))
   const [kind, setKind] = useState<PropertyKind | ''>(init.kind)
   const [leases, setLeases] = useState(() => withKeys(init.leases))
+  const [rentFrom, setRentFrom] = useState(init.rentFrom)
   // A draft kept before water settlements existed has none.
   const [water, setWater] = useState<SettlementDraft[]>(init.water ?? [])
   /** Increase notices written on this page: pickable before the page is saved. */
@@ -128,6 +129,7 @@ function EditForm({
     kind,
     excluded,
     leases,
+    rentFrom,
     water,
     newDocs,
     eras,
@@ -457,6 +459,8 @@ function EditForm({
     if (typeof settlements === 'string') return settlements
     const next: PropertyDoc = { ...doc, eras: eras.map((eraid) => ({ eraid, account: eraById.get(eraid)?.account ?? 1 })) }
     next.leases = builtLeases
+    if (rentFrom) next.rent_from = rentFrom
+    else delete next.rent_from
     if (settlements.length) next.water_settlements = settlements
     else delete next.water_settlements
     if (kind) next.kind = kind
@@ -549,6 +553,18 @@ function EditForm({
       <section className="property-section">
         <h3>{t('properties.edit.leases')}</h3>
         <p className="muted">{t('properties.edit.leasesLead')}</p>
+        <div className="property-form-grid">
+          <label>
+            {t('properties.field.rentFrom')}
+            <input type="date" value={rentFrom} onChange={(e) => setRentFrom(e.target.value)} />
+          </label>
+        </div>
+        <p className="muted property-lease-hint">
+          {t('properties.edit.rentFromHint', {
+            date: formatDate(detail.rent_start_default.from),
+            reason: t(`properties.rent.start.${detail.rent_start_default.source}`),
+          })}
+        </p>
         <LeasesEditor
           drafts={leases}
           onChange={(next) => setLeases(withKeys(next))}
