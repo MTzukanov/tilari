@@ -52,6 +52,7 @@ Money in integer cents (`*_snt`), percentages in basis points (`*_bp`, 100 = 1 %
 | `target_return_bp`, `note` | Target annual return; free text |
 | `leases[]` | Rental relationships, oldest start first, never sharing a day (below) |
 | `rent_from` | The owner's first day of rent when the sale agreed otherwise; missing: the first whole month after the purchase (ADR-026) |
+| `rent_until` | The owner's last day of rent when the sale agreed otherwise; missing: the end of the month of the sale, or none while held (ADR-026) |
 | `water_settlements[]` | The housing company's water settlements, oldest period first, never sharing a day (below) |
 
 `leases[]` - one per tenancy; unknown keys of a lease are kept like the document's own:

@@ -1133,7 +1133,8 @@
       "exceptionTo": "Until",
       "exceptionNote": "Reason",
       "exceptionDoc": "Agreement",
-      "rentFrom": "Rent to the owner from"
+      "rentFrom": "Rent to the owner from",
+      "rentUntil": "Rent to the owner until"
     },
     "breakEven": {
       "title": "Break-even price: the price that returns the money",
@@ -1326,7 +1327,9 @@
       "exceptionsLead": "An agreed discount, a rent-free period or another exception: on its days the tenant pays these amounts instead of the rent and its increases, and the rent balance counts them. Type a discount as the lower rent.",
       "addException": "Add an exception",
       "uploadException": "Upload document",
-      "rentFromHint": "Empty: {date} ({reason}). After a purchase, rent counts from the first whole month owned, as the rent of the month of sale usually goes to the seller. Give a date if the sale agreed otherwise, for example that the rent of the month of sale goes to the buyer."
+      "rentDatesHint": "Empty, rent counts from {from} ({fromReason}) until {until} ({untilReason}).",
+      "rentDatesHintHeld": "Empty, rent counts from {from} ({fromReason}) for as long as the object is owned.",
+      "rentDatesRule": "The rent of the month of a sale usually goes to the seller: after a purchase rent counts from the first whole month owned, after a sale until the end of the month of sale. Give a date if the sale agreed otherwise, for example that the rent of the month of sale goes to the buyer."
     },
     "setup": {
       "title": "Set up rental objects",
@@ -1399,7 +1402,8 @@
       "exceptionDates": "The exception {period} ends before it starts.",
       "exceptionOutside": "The exception {period} is not within the lease {lease}.",
       "exceptionOverlap": "The exceptions {a} and {b} overlap ({lease}). A day can have one exception only.",
-      "waterOverlap": "The water settlement periods {a} and {b} overlap, so the same days would be settled twice."
+      "waterOverlap": "The water settlement periods {a} and {b} overlap, so the same days would be settled twice.",
+      "rentDates": "The last day of rent is before the first."
     },
     "total": "Total",
     "holding": "{years} y {months} mo",
@@ -1537,6 +1541,11 @@
         "purchase": "the first whole month owned",
         "payment": "rent received before the booked purchase",
         "books": "the start of the books"
+      },
+      "countedUntil": "counted until {date}: {reason}",
+      "end": {
+        "own": "the owner's date",
+        "sale": "the end of the month of sale"
       },
       "months": "By month ({n})",
       "col": {

@@ -37,6 +37,13 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   as the period changes (`settlementViews`, as the object page): the company's lines under the
   statement, each tenant's lines with the status under their share, others below.
 
+## 2026-10-27 - Rental objects: the seller keeps the rent of the month of the sale
+
+- Owner asked: after a sale the rent counts to the end of the sale month by default (ADR-026),
+  as the seller usually keeps it; before, the count ended on the sale day and the month's rent
+  showed as paid ahead. `rent_until` on the object overrides it, next to `rent_from`; the edit
+  page shows both defaults in one hint, and the rent account says why it ends where it does.
+
 ## 2026-10-27 - Rental objects: no overlapping leases or water periods; rent from the month after a purchase
 
 - Owner reported that overlapping date ranges could be saved. Exceptions within a lease were

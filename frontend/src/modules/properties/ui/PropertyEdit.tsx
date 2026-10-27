@@ -106,6 +106,7 @@ function EditForm({
   const [kind, setKind] = useState<PropertyKind | ''>(init.kind)
   const [leases, setLeases] = useState(() => withKeys(init.leases))
   const [rentFrom, setRentFrom] = useState(init.rentFrom)
+  const [rentUntil, setRentUntil] = useState(init.rentUntil)
   // A draft kept before water settlements existed has none.
   const [water, setWater] = useState<SettlementDraft[]>(init.water ?? [])
   /** Increase notices written on this page: pickable before the page is saved. */
@@ -130,6 +131,7 @@ function EditForm({
     excluded,
     leases,
     rentFrom,
+    rentUntil,
     water,
     newDocs,
     eras,
@@ -459,8 +461,11 @@ function EditForm({
     if (typeof settlements === 'string') return settlements
     const next: PropertyDoc = { ...doc, eras: eras.map((eraid) => ({ eraid, account: eraById.get(eraid)?.account ?? 1 })) }
     next.leases = builtLeases
+    if (rentFrom && rentUntil && rentUntil < rentFrom) return t('properties.error.rentDates')
     if (rentFrom) next.rent_from = rentFrom
     else delete next.rent_from
+    if (rentUntil) next.rent_until = rentUntil
+    else delete next.rent_until
     if (settlements.length) next.water_settlements = settlements
     else delete next.water_settlements
     if (kind) next.kind = kind
@@ -558,12 +563,24 @@ function EditForm({
             {t('properties.field.rentFrom')}
             <input type="date" value={rentFrom} onChange={(e) => setRentFrom(e.target.value)} />
           </label>
+          <label>
+            {t('properties.field.rentUntil')}
+            <input type="date" value={rentUntil} onChange={(e) => setRentUntil(e.target.value)} />
+          </label>
         </div>
         <p className="muted property-lease-hint">
-          {t('properties.edit.rentFromHint', {
-            date: formatDate(detail.rent_start_default.from),
-            reason: t(`properties.rent.start.${detail.rent_start_default.source}`),
-          })}
+          {detail.rent_end_default
+            ? t('properties.edit.rentDatesHint', {
+                from: formatDate(detail.rent_start_default.from),
+                fromReason: t(`properties.rent.start.${detail.rent_start_default.source}`),
+                until: formatDate(detail.rent_end_default.until),
+                untilReason: t(`properties.rent.end.${detail.rent_end_default.source}`),
+              })
+            : t('properties.edit.rentDatesHintHeld', {
+                from: formatDate(detail.rent_start_default.from),
+                fromReason: t(`properties.rent.start.${detail.rent_start_default.source}`),
+              })}{' '}
+          {t('properties.edit.rentDatesRule')}
         </p>
         <LeasesEditor
           drafts={leases}

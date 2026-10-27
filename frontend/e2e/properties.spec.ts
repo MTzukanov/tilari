@@ -247,7 +247,9 @@ test.describe('rental object lease dates', () => {
     await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
     await page.goto('/#/property/4/edit')
     // The golden book links no purchase: without an own day the rent counts from the books' start.
-    await expect(page.locator('.property-section', { hasText: 'Vuokrasopimukset' })).toContainText(/Tyhjänä \d+\.\d+\.\d{4} \(kirjanpidon alku\)/)
+    await expect(page.locator('.property-section', { hasText: 'Vuokrasopimukset' })).toContainText(
+      /Tyhjinä vuokra lasketaan \d+\.\d+\.\d{4} alkaen \(kirjanpidon alku\) niin kauan kuin kohde on omistuksessa\./,
+    )
     for (const [name, starts] of [
       ['Testi Vuokralainen', '2025-01-01'],
       ['Toinen Vuokralainen', '2025-06-01'],

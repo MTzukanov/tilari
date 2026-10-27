@@ -438,7 +438,7 @@ export function PropertyView({
               suggestions={d.lease_suggestions.map((s) => s.view)}
               accounts={d.rent_account?.leases}
               unassigned={d.rent_account?.unassigned}
-              start={d.rent_start}
+              period={{ start: d.rent_start, end: d.rent_end }}
               asOf={d.as_of}
               onEdit={onEdit}
               onOpenVoucher={(v) => openVoucher(v)}

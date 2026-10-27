@@ -1133,7 +1133,8 @@
       "exceptionTo": "Päättyen",
       "exceptionNote": "Syy",
       "exceptionDoc": "Sopimus poikkeuksesta",
-      "rentFrom": "Vuokra omistajalle alkaen"
+      "rentFrom": "Vuokra omistajalle alkaen",
+      "rentUntil": "Vuokra omistajalle päättyen"
     },
     "breakEven": {
       "title": "Nollahinta: millä hinnalla rahat tulevat takaisin",
@@ -1326,7 +1327,9 @@
       "exceptionsLead": "Sovittu alennus, vuokravapaa jakso tai muu poikkeus: jakson päivinä vuokralainen maksaa nämä summat vuokran ja korotusten sijaan, ja vuokrasaldo laskee niillä. Alennus kirjoitetaan alempana vuokrana.",
       "addException": "Lisää poikkeava vuokra",
       "uploadException": "Lataa liite",
-      "rentFromHint": "Tyhjänä {date} ({reason}). Kaupan jälkeen vuokra lasketaan ensimmäisestä kokonaan omistetusta kuukaudesta, koska kaupantekokuun vuokra kuuluu yleensä myyjälle. Anna päivä, jos kaupassa sovittiin toisin, esimerkiksi että kaupantekokuun vuokra kuuluu ostajalle."
+      "rentDatesHint": "Tyhjinä vuokra lasketaan {from} alkaen ({fromReason}) {until} asti ({untilReason}).",
+      "rentDatesHintHeld": "Tyhjinä vuokra lasketaan {from} alkaen ({fromReason}) niin kauan kuin kohde on omistuksessa.",
+      "rentDatesRule": "Kaupantekokuun vuokra kuuluu yleensä myyjälle: ostettaessa vuokra lasketaan ensimmäisestä kokonaan omistetusta kuukaudesta ja myytäessä myyntikuun loppuun. Anna päivä, jos kaupassa sovittiin toisin, esimerkiksi että kaupantekokuun vuokra kuuluu ostajalle."
     },
     "setup": {
       "title": "Vuokrakohteiden määritys",
@@ -1399,7 +1402,8 @@
       "exceptionDates": "Poikkeava vuokra {period} päättyy ennen alkuaan.",
       "exceptionOutside": "Poikkeava vuokra {period} ei osu vuokrasopimuksen {lease} ajalle.",
       "exceptionOverlap": "Poikkeavat vuokrat {a} ja {b} menevät päällekkäin ({lease}). Päivälle voi sopia vain yhden poikkeuksen.",
-      "waterOverlap": "Vesitasausten jaksot {a} ja {b} menevät päällekkäin, jolloin samat päivät tasattaisiin kahdesti."
+      "waterOverlap": "Vesitasausten jaksot {a} ja {b} menevät päällekkäin, jolloin samat päivät tasattaisiin kahdesti.",
+      "rentDates": "Vuokran päättymispäivä on ennen alkamispäivää."
     },
     "total": "Yhteensä",
     "holding": "{years} v {months} kk",
@@ -1537,6 +1541,11 @@
         "purchase": "ensimmäinen kokonaan omistettu kuukausi",
         "payment": "ennen kirjattua hankintaa saatu vuokra",
         "books": "kirjanpidon alku"
+      },
+      "countedUntil": "laskettu {date} asti: {reason}",
+      "end": {
+        "own": "omistajan antama päivä",
+        "sale": "myyntikuun loppu"
       },
       "months": "Kuukausittain ({n})",
       "col": {

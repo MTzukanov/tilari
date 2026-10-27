@@ -1133,7 +1133,8 @@
       "exceptionTo": "Till och med",
       "exceptionNote": "Orsak",
       "exceptionDoc": "Avtal om undantaget",
-      "rentFrom": "Hyran till ägaren från"
+      "rentFrom": "Hyran till ägaren från",
+      "rentUntil": "Hyran till ägaren till och med"
     },
     "breakEven": {
       "title": "Nollpris: priset som ger pengarna tillbaka",
@@ -1326,7 +1327,9 @@
       "exceptionsLead": "En överenskommen rabatt, en hyresfri period eller annat undantag: under periodens dagar betalar hyresgästen dessa belopp i stället för hyran och höjningarna, och hyressaldot räknar med dem. Skriv en rabatt som den lägre hyran.",
       "addException": "Lägg till avvikande hyra",
       "uploadException": "Ladda upp bilaga",
-      "rentFromHint": "Tomt: {date} ({reason}). Efter ett köp räknas hyran från första hela månaden i ägo, eftersom hyran för köpmånaden oftast går till säljaren. Ange ett datum om annat avtalades vid köpet, till exempel att köpmånadens hyra går till köparen."
+      "rentDatesHint": "Tomma räknas hyran från {from} ({fromReason}) till och med {until} ({untilReason}).",
+      "rentDatesHintHeld": "Tomma räknas hyran från {from} ({fromReason}) så länge objektet ägs.",
+      "rentDatesRule": "Hyran för affärsmånaden går oftast till säljaren: efter ett köp räknas hyran från första hela månaden i ägo, efter en försäljning till slutet av försäljningsmånaden. Ange ett datum om annat avtalades vid affären, till exempel att affärsmånadens hyra går till köparen."
     },
     "setup": {
       "title": "Inställning av hyresobjekt",
@@ -1399,7 +1402,8 @@
       "exceptionDates": "Den avvikande hyran {period} slutar innan den börjar.",
       "exceptionOutside": "Den avvikande hyran {period} ligger inte inom hyresavtalet {lease}.",
       "exceptionOverlap": "De avvikande hyrorna {a} och {b} överlappar ({lease}). En dag kan ha bara ett undantag.",
-      "waterOverlap": "Vattenutjämningarnas perioder {a} och {b} överlappar, så samma dagar skulle utjämnas två gånger."
+      "waterOverlap": "Vattenutjämningarnas perioder {a} och {b} överlappar, så samma dagar skulle utjämnas två gånger.",
+      "rentDates": "Hyrans sista dag ligger före den första."
     },
     "total": "Totalt",
     "holding": "{years} år {months} mån",
@@ -1537,6 +1541,11 @@
         "purchase": "första hela månaden i ägo",
         "payment": "hyra som kom in före det bokförda förvärvet",
         "books": "bokföringens början"
+      },
+      "countedUntil": "räknat till och med {date}: {reason}",
+      "end": {
+        "own": "ägarens datum",
+        "sale": "försäljningsmånadens slut"
       },
       "months": "Per månad ({n})",
       "col": {

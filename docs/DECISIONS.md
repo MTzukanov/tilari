@@ -465,7 +465,8 @@ correction would change the open year's income statement lines. The rental-objec
   claim. Rounding happens only where a part month is prorated: once per step segment.
 - **Expected:** the lease's step totals (rent, water advance, parking) for its days; a full month
   is the total exactly, a part month the total by days. Counted from the later of the lease's
-  start and the owner's first day of rent, until the end, a sale or the as-of date. Each water
+  start and the owner's first day of rent, until the first of its end, the owner's last day of
+  rent or the as-of date. Each water
   settlement share (ADR-025) is due on the letter's date, else in the month after the period's
   end; a refund is negative.
 - **The owner's first day of rent** (changed 2026-10-27, owner's choice): after a purchase in the
@@ -478,6 +479,10 @@ correction would change the open year's income statement lines. The rental-objec
   owner gives the day on the edit page (`rent_from`), and it stands for all of these. Before, the
   count started on the purchase day and the owner had to enter an exception at 0 for the rest of
   that month on every object bought with a tenant.
+- **The owner's last day of rent** (2026-10-27, owner's choice): after a sale, the end of the month
+  of the sale - the seller usually keeps that month's rent. Before, the count ended on the sale day
+  and the month's rent, paid in full, showed as paid ahead. A held object runs on to the as-of
+  date. When the sale agreed otherwise, the owner gives the day on the edit page (`rent_until`).
 - **Received:** the object's income lines (without VAT, as booked), each given to one lease: the
   lease whose tenant paid it (from 31 days before its start, also after its end); else the lease
   running then; else the last that ended before it. A stored water settlement's lines go to the

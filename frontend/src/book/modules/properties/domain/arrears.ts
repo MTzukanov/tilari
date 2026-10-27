@@ -6,7 +6,7 @@
  */
 import { addDays, addMonths, dayCount, monthEnd, monthKeys } from '../../../months'
 import { leaseState, rentSegments, rentTotal, termsAt } from './rent'
-import type { Lease, LeaseException, LeaseRentAccount, RentAccount, RentBalance, RentMonth, RentStart, WaterSettlement } from './types'
+import type { Lease, LeaseException, LeaseRentAccount, RentAccount, RentBalance, RentEnd, RentMonth, RentStart, WaterSettlement } from './types'
 import { bookedLine, settlementShares } from './water'
 
 /** A booked line paid for rent (income) or a water refund passed on; `lease_key` when already known. */
@@ -105,6 +105,16 @@ export function rentStart(acquired: string | null, booksStart: string, payments:
 }
 
 /**
+ * The last day the owner's rent counts (ADR-026): after a sale the end of its month, as the seller
+ * keeps the rent of the month of the sale; none while the object is held. The owner's own date
+ * (`rent_until`, agreed otherwise) stands for it.
+ */
+export function rentEnd(sold: string | null, own?: string): RentEnd | null {
+  if (own) return { until: own, source: 'own' }
+  return sold ? { until: monthEnd(sold), source: 'sale' } : null
+}
+
+/**
  * Each tenant's water settlement share as a charge on their lease: due on the letter's date,
  * else in the month after the period's end.
  */
@@ -190,6 +200,7 @@ function leaseAccount(lease: Lease, lines: RentLine[], charges: WaterCharge[], w
   return {
     lease_key: lease.key,
     counted_from: lease.starts > window.from ? lease.starts : window.from,
+    counted_until: lease.ends && lease.ends < window.until ? lease.ends : window.until,
     months,
     expected_snt: expected,
     received_snt: received,
