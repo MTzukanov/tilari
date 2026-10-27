@@ -7,6 +7,16 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-27 - Rental objects: the water form keeps a suggestion's booked lines
+
+- Owner reported: a water settlement the book suggested listed its booked lines, but once added
+  to the edit form ("Lisää") the lines were gone, and the statement and letter boxes stayed
+  empty. Those boxes pick Liitetieto documents, and the lines sit on bank vouchers, so they
+  cannot be filled from them. The form now gets the object's water lines
+  (`WaterDetail.lines`) and gives each settlement in it the lines `settlementFor` gives it, live
+  as the period changes (`settlementViews`, as the object page): the company's lines under the
+  statement, each tenant's lines with the status under their share, others below.
+
 ## 2026-10-26 - Rental objects: the list's rent leaves out the water advance
 
 - Owner asked: the object list (`#/properties`) showed the tenant's rent with the water advance

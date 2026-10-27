@@ -13,6 +13,7 @@ import type {
   BookedLine,
   Lease,
   LeaseVoucher,
+  WaterBookedLine,
   WaterSettlement,
   WaterSettlementView,
   WaterShareStatus,
@@ -208,14 +209,17 @@ export function shareStatus(balance: number, settled: number): WaterShareStatus 
   return 'over'
 }
 
+/** What a voucher shows as. */
+type VoucherLabel = Pick<VoucherRef, 'id' | 'date' | 'doc_number' | 'series' | 'title'>
+
 export type WaterViewContext = {
   tenantName: (lease: Lease) => string | null
   partnerName: (partnerId: number | null) => string | null
   /** Labels of the lines' vouchers and of the linked documents. */
-  refs: Map<number, VoucherRef>
+  refs: Map<number, VoucherLabel>
 }
 
-function voucherOf(refs: Map<number, VoucherRef>, id: number | undefined): LeaseVoucher | null {
+function voucherOf(refs: Map<number, VoucherLabel>, id: number | undefined): LeaseVoucher | null {
   const ref = id != null ? refs.get(id) : undefined
   return ref ? { voucher_id: ref.id, date: ref.date, doc_number: ref.doc_number, series: ref.series, title: ref.title } : null
 }
@@ -290,6 +294,38 @@ export function settlementView(
     shares: views,
     owner_snt: views.reduce((sum, v) => sum + v.balance_snt, 0) - settlement.difference_snt,
     other,
+  }
+}
+
+/**
+ * Every settlement with the lines `settlementFor` gives it: the object page's settlements, and
+ * the edit form's as the owner changes them.
+ */
+export function settlementViews(settlements: WaterSettlement[], lines: WaterLine[], leases: Lease[], ctx: WaterViewContext): WaterSettlementView[] {
+  const owner = new Map(lines.map((l) => [l.id, settlementFor(l, settlements)]))
+  return settlements.map((s) => settlementView(s, lines.filter((l) => owner.get(l.id) === s), leases, ctx))
+}
+
+/** A line as the edit form gets it: shown as booked, and enough to share it out again (`fromBookedLines`). */
+export function waterBookedLine(line: WaterLine, ctx: Pick<WaterViewContext, 'partnerName' | 'refs'>): WaterBookedLine {
+  return { ...bookedLine(line, line.net_snt, ctx), income: line.income, partner_id: line.partner_id }
+}
+
+/** The lines back from `waterBookedLine`, with their payers' names and their vouchers' labels. */
+export function fromBookedLines(booked: WaterBookedLine[]): { lines: WaterLine[]; ctx: Pick<WaterViewContext, 'partnerName' | 'refs'> } {
+  const partners = new Map(booked.map((b) => [b.partner_id, b.partner]))
+  const refs = new Map(booked.map(({ voucher: v }) => [v.voucher_id, { id: v.voucher_id, date: v.date, doc_number: v.doc_number, series: v.series, title: v.title }]))
+  return {
+    lines: booked.map((b) => ({
+      id: b.line_id,
+      date: b.date,
+      voucher_id: b.voucher.voucher_id,
+      net_snt: b.line_snt,
+      income: b.income,
+      text: b.text,
+      partner_id: b.partner_id,
+    })),
+    ctx: { partnerName: (id) => (id != null ? (partners.get(id) ?? null) : null), refs },
   }
 }
 

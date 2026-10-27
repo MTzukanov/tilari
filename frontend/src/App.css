@@ -5549,6 +5549,15 @@ tr.tax-total td {
   margin-top: 0.9rem;
 }
 
+/* In the form: a share's booked lines and status, on their own row under its figures. */
+.property-water-booked {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+
 .property-water-status {
   display: inline-block;
   font-size: 0.75rem;

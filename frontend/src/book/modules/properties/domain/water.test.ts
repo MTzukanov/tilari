@@ -4,11 +4,14 @@ import type { VoucherRef } from './ledger'
 import type { Lease, WaterSettlement } from './types'
 import {
   advanceBetween,
+  fromBookedLines,
   settlementFor,
   settlementShares,
   settlementView,
+  settlementViews,
   shareStatus,
   suggestSettlements,
+  waterBookedLine,
   waterLines,
   yearBefore,
   type WaterLine,
@@ -188,6 +191,29 @@ describe('water settlements', () => {
     // Once the first is stored, its lines are taken.
     const taken: WaterSettlement[] = [{ key: 'w1', from: '2022-11-01', to: '2023-10-31', difference_snt: -12_345 }]
     expect(suggestSettlements(lines, taken, leases).map((s) => s.settlement.to)).toEqual(['2024-08-31'])
+  })
+
+  it('the edit form gets the lines back and gives each settlement its own as the period changes', () => {
+    const leases = [lease('l1', '2022-01-01', null, 2_000, { tenant_partner_id: 7 })]
+    const lines = [
+      line(1, '2023-11-20', 9_870, 'Vesitasaus 31.10.2023 A 1'),
+      line(2, '2023-12-04', -9_870, 'vesitasaus 1.11.2022-31.10.2023', { partner_id: 7 }),
+    ]
+    const back = fromBookedLines(lines.map((l) => waterBookedLine(l, ctx)))
+    expect(back.lines).toEqual(lines)
+    const formCtx = { ...back.ctx, tenantName: ctx.tenantName }
+    // A suggestion just added to the form: not saved, no key yet.
+    const added: WaterSettlement = { key: '', from: '2022-11-01', to: '2023-10-31', difference_snt: -9_870 }
+    const [view] = settlementViews([added], back.lines, leases, formCtx)
+    expect(view).toEqual(settlementViews([added], lines, leases, ctx)[0])
+    expect(view.booked.map((m) => [m.line_id, m.amount_snt, m.voucher.title])).toEqual([[1, 9_870, 'Tiliote 11/2023']])
+    expect(view.shares.map((s) => [s.lease_key, s.movements.map((m) => [m.line_id, m.amount_snt, m.partner]), s.status])).toEqual([
+      ['l1', [[2, -9_870, 'Maksaja 7']], 'settled'],
+    ])
+    // Moved a year back, the lines name another period: nothing booked, the share is open.
+    const [moved] = settlementViews([{ ...added, from: '2021-11-01', to: '2022-10-31' }], back.lines, leases, formCtx)
+    expect(moved.booked).toEqual([])
+    expect(moved.shares.map((s) => [s.movements.length, s.status])).toEqual([[0, 'open']])
   })
 
   it('counts the water an agreed exception sets on its days', () => {

@@ -449,10 +449,15 @@ export type WaterSettlementView = {
  */
 export type WaterSuggestionView = { settlement: WaterSettlement; view: WaterSettlementView; source: 'company' | 'tenant'; lines: BookedLine[] }
 
+/** A booked line about a water settlement, with what the edit form needs to share it out again. */
+export type WaterBookedLine = BookedLine & { income: boolean; partner_id: number | null }
+
 export type WaterDetail = {
   /** Newest period first. */
   settlements: WaterSettlementView[]
   suggestions: WaterSuggestionView[]
+  /** Every water settlement line on the object, oldest first: the edit form gives them to its settlements. */
+  lines: WaterBookedLine[]
 }
 
 export type PortfolioResponse = {
