@@ -180,9 +180,9 @@ describe('rent accounts', () => {
     const account = rentAccount({ leases: [l], lines: [paid('2025-03-05', 47_000)], charges: [], window: window('2025-07-31'), ctx })
     const months = new Map(account.leases[0].months.map((m) => [m.key, m]))
     expect(months.get('2025-02')?.exception).toBeUndefined()
-    expect(months.get('2025-03')?.exception).toEqual({ normal_snt: 63_000, notes: ['Remonttihyvitys'] })
-    expect(months.get('2025-05')?.exception).toEqual({ normal_snt: 63_000, notes: [] })
-    expect(months.get('2025-06')?.exception).toEqual({ normal_snt: 65_000, notes: [] })
+    expect(months.get('2025-03')?.exception).toEqual({ normal_snt: 63_000, agreed: [l.exceptions![0]] })
+    expect(months.get('2025-05')?.exception).toEqual({ normal_snt: 63_000, agreed: [l.exceptions![1]] })
+    expect(months.get('2025-06')?.exception).toEqual({ normal_snt: 65_000, agreed: [l.exceptions![1]] })
   })
 
   it('prefills an exception for a month that moved the balance, so the month expects what was paid', () => {

@@ -1568,6 +1568,11 @@
       "exceptionLegend": "* agreed exception: the agreed amount. Hover it for the normal rent and the reason.",
       "addException": "Add exception",
       "saveException": "Save exception",
+      "editException": "Edit exception",
+      "editExceptionOf": "Edit exception {period}",
+      "editLead": "The change applies to the whole exception, all its days. The normal rent and its increases do not change; an attached agreement stays.",
+      "removeException": "Remove exception",
+      "removeExceptionConfirm": "Remove the exception {period}? Its days expect the normal rent again.",
       "prefillLead": "Prefilled so that {month} expects what was paid ({paid}). The normal rent and its increases do not change. Check the days and amounts and give the reason; the agreement can be attached on the edit page."
     }
   }
