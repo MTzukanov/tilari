@@ -1,6 +1,6 @@
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
-import type { BookedLine, LeaseException, LeaseRentAccount, LeaseView } from '../api'
+import type { BookedLine, LeaseException, LeaseRentAccount, LeaseView, RentStart } from '../api'
 import { exceptionText, increaseText, leasePeriod, leaseRentText, periodText, waterBalanceText, waterStatusText } from './format'
 import { LineSources, VoucherLink } from './FormParts'
 import { RentAccountView } from './RentAccount'
@@ -37,6 +37,7 @@ export function LeaseSources({ lease, onOpen }: { lease: LeaseView; onOpen: (vou
 function LeaseCard({
   lease,
   account,
+  start,
   asOf,
   onEdit,
   onOpenVoucher,
@@ -44,6 +45,7 @@ function LeaseCard({
 }: {
   lease: LeaseView
   account: LeaseRentAccount | undefined
+  start: RentStart
   asOf: string
   /** Opens the edit page, where the lease's increases and exceptions are entered. */
   onEdit: () => void
@@ -81,6 +83,7 @@ function LeaseCard({
           account={account}
           asOf={asOf}
           leaseStarts={lease.starts}
+          start={start}
           onOpen={onOpenVoucher}
           onAddException={onAddException ? (e) => onAddException(lease.key, e) : undefined}
         />
@@ -138,6 +141,7 @@ export function LeasesPanel({
   suggestions,
   accounts = [],
   unassigned = [],
+  start,
   onEdit,
   onOpenVoucher,
   onAddException,
@@ -149,6 +153,8 @@ export function LeasesPanel({
   /** The stored leases' rent accounts, and the income no lease takes. */
   accounts?: LeaseRentAccount[]
   unassigned?: BookedLine[]
+  /** Where the owner's rent counts from on the object. */
+  start: RentStart
   asOf: string
   onEdit: () => void
   onOpenVoucher: (voucherId: number) => void
@@ -174,6 +180,7 @@ export function LeasesPanel({
         <LeaseCard
           lease={stored}
           account={accounts.find((a) => a.lease_key === stored.key)}
+          start={start}
           asOf={asOf}
           onEdit={onEdit}
           onOpenVoucher={onOpenVoucher}
@@ -183,7 +190,14 @@ export function LeasesPanel({
       {others.length ? (
         <>
           <h4 className="property-lease-others">{t('properties.lease.others')}</h4>
-          <LeaseList leases={others} accounts={accounts} asOf={asOf} onOpenVoucher={onOpenVoucher} onAddException={onAddException} />
+          <LeaseList
+            leases={others}
+            accounts={accounts}
+            start={start}
+            asOf={asOf}
+            onOpenVoucher={onOpenVoucher}
+            onAddException={onAddException}
+          />
         </>
       ) : null}
       {unassigned.length ? (
@@ -208,12 +222,15 @@ export function LeasesPanel({
 function LeaseList({
   leases,
   accounts = [],
+  start,
   asOf = '',
   onOpenVoucher,
   onAddException,
 }: {
   leases: LeaseView[]
   accounts?: LeaseRentAccount[]
+  /** With the accounts: where the owner's rent counts from. */
+  start?: RentStart
   asOf?: string
   onOpenVoucher: (voucherId: number) => void
   onAddException?: (leaseKey: string, exception: LeaseException) => Promise<void>
@@ -233,11 +250,12 @@ function LeaseList({
           ) : lease.contract ? (
             <VoucherLink voucher={lease.contract} onOpen={onOpenVoucher} />
           ) : null}
-          {!lease.suggested && accounts.some((a) => a.lease_key === lease.key) ? (
+          {start && !lease.suggested && accounts.some((a) => a.lease_key === lease.key) ? (
             <RentAccountView
               account={accounts.find((a) => a.lease_key === lease.key)!}
               asOf={asOf}
               leaseStarts={lease.starts}
+              start={start}
               onOpen={onOpenVoucher}
               onAddException={onAddException ? (e) => onAddException(lease.key, e) : undefined}
             />

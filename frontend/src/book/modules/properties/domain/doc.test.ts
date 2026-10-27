@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  checkRanges,
   mergePropertyDoc,
   normalizePortfolioSettings,
   normalizePropertyDoc,
@@ -172,6 +173,12 @@ describe('normalizePropertyDoc', () => {
     ).toThrow('invalid_field:leases[1].key')
   })
 
+  it('keeps the owner\'s own first day of rent, a date', () => {
+    expect(normalizePropertyDoc({ eras: [], rent_from: '2024-03-01' }).rent_from).toBe('2024-03-01')
+    expect(normalizePropertyDoc({ eras: [] }).rent_from).toBeUndefined()
+    expect(() => normalizePropertyDoc({ eras: [], rent_from: '1.3.2024' })).toThrow('invalid_field:rent_from')
+  })
+
   it('names the bad field', () => {
     expect(() => normalizePropertyDoc({ eras: [{ eraid: 1.5, account: 1 }] })).toThrow('invalid_field:eras[0].eraid')
     expect(() => normalizePropertyDoc({ eras: [], kind: 'castle' })).toThrow('invalid_field:kind')
@@ -181,6 +188,29 @@ describe('normalizePropertyDoc', () => {
     expect(() => normalizePropertyDoc({ eras: [], v: 2 })).toThrow('newer_version')
     expect(() => normalizePropertyDoc({ eras: [], note: 'x'.repeat(70_000) })).toThrow('invalid_field:note')
     expect(() => normalizePortfolioSettings({ target_return_bp: 20_000 })).toThrow('invalid_field:target_return_bp')
+  })
+})
+
+describe('checkRanges', () => {
+  const lease = (key: string, starts: string, ends?: string) => ({ key, starts, ...(ends ? { ends } : {}), rents: [] })
+  const water = (key: string, from: string, to: string) => ({ key, from, to, difference_snt: 0 })
+
+  it('refuses leases or water settlement periods on the same days, naming the later one', () => {
+    const doc = (leases: unknown[], water_settlements: unknown[] = []) => normalizePropertyDoc({ eras: [], leases, water_settlements })
+    expect(() => checkRanges(doc([lease('l1', '2024-01-01', '2024-12-31'), lease('l2', '2025-01-01')]))).not.toThrow()
+    // The earlier lease is open, so it runs on into the later one.
+    expect(() => checkRanges(doc([lease('l2', '2025-01-01'), lease('l1', '2024-01-01')]))).toThrow('overlap:leases[1].starts')
+    expect(() => checkRanges(doc([lease('l1', '2024-01-01', '2025-01-01'), lease('l2', '2025-01-01')]))).toThrow('overlap:leases[1].starts')
+    const settlements = [water('w1', '2023-07-01', '2024-06-30'), water('w2', '2024-06-01', '2025-06-30')]
+    expect(() => checkRanges(doc([], settlements))).toThrow('overlap:water_settlements[1].from')
+    expect(() => checkRanges(doc([], [settlements[0], water('w2', '2024-07-01', '2025-06-30')]))).not.toThrow()
+  })
+
+  it('a stored document with overlaps still reads as it is', () => {
+    const raw = JSON.stringify({ v: 1, rev: 3, eras: [], leases: [lease('l1', '2024-01-01'), lease('l2', '2024-06-01')] })
+    const parsed = parsePropertyDoc(raw)
+    expect(parsed).toMatchObject({ corrupt: false, read_only: false })
+    expect(parsed.doc.leases?.map((l) => l.key)).toEqual(['l1', 'l2'])
   })
 })
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { exceptionPrefill, expectedRent, leaseForLine, rentAccount, rentBalance, rentCountedFrom, waterCharges, type RentLine } from './arrears'
+import { exceptionPrefill, expectedRent, leaseForLine, rentAccount, rentBalance, rentStart, waterCharges, type RentLine } from './arrears'
 import type { Lease, WaterSettlement } from './types'
 
 const ctx = { partnerName: (id: number | null) => (id != null ? `Maksaja ${id}` : null), refs: new Map() }
@@ -104,18 +104,36 @@ describe('rent accounts', () => {
     expect(account.leases[0]).toMatchObject({ counted_from: '2024-03-16', expected_snt: 30_968 + 60_000, balance_snt: 30_968 + 60_000 - 120_000 })
   })
 
+  it('a purchase counts from the first whole month owned; the owner\'s own date stands for it', () => {
+    const books = '2021-01-01'
+    // The seller keeps the month of the sale: bought on the 12th, the rent counts from the 1st of the next month.
+    expect(rentStart('2023-06-12', books, [])).toEqual({ from: '2023-07-01', source: 'purchase' })
+    expect(rentStart('2023-12-29', books, [{ date: '2024-01-05' }])).toEqual({ from: '2024-01-01', source: 'purchase' })
+    // Bought on the 1st: that month is owned whole.
+    expect(rentStart('2023-06-01', books, [])).toEqual({ from: '2023-06-01', source: 'purchase' })
+    // Rent paid after the purchase within its month (the next month's, ahead) changes nothing.
+    expect(rentStart('2023-06-12', books, [{ date: '2023-06-28' }])).toEqual({ from: '2023-07-01', source: 'purchase' })
+    // No purchase in the books: from their start.
+    expect(rentStart(null, books, [])).toEqual({ from: books, source: 'books' })
+    expect(rentStart('2020-05-10', books, [])).toEqual({ from: books, source: 'books' })
+    // Agreed otherwise (the month of the sale to the buyer): the owner's date, as given.
+    expect(rentStart('2023-06-12', books, [], '2023-06-01')).toEqual({ from: '2023-06-01', source: 'own' })
+    expect(rentStart(null, books, [{ date: '2021-12-05' }], '2021-03-15')).toEqual({ from: '2021-03-15', source: 'own' })
+  })
+
   it('starts counting from rent received before a later-dated acquisition, at that payment\'s month', () => {
-    expect(rentCountedFrom('2023-01-01', [{ date: '2023-01-05' }, { date: '2022-12-05' }])).toBe('2022-12-01')
+    const books = '2021-01-01'
+    expect(rentStart('2023-01-01', books, [{ date: '2023-01-05' }, { date: '2022-12-05' }])).toEqual({ from: '2022-12-01', source: 'payment' })
     // A first payment after the acquisition changes nothing, nor do no payments.
-    expect(rentCountedFrom('2023-06-15', [{ date: '2023-06-20' }])).toBe('2023-06-15')
-    expect(rentCountedFrom('2023-06-15', [])).toBe('2023-06-15')
+    expect(rentStart('2023-06-15', books, [{ date: '2023-06-20' }]).from).toBe('2023-07-01')
+    expect(rentStart('2023-06-15', books, []).from).toBe('2023-07-01')
     // The asset re-booked on 1.1. after December's rent came in: December counts, nothing is paid ahead.
     const l = lease('l1', 7, '2020-01-01', null, [
       { from: '2020-01-01', rent_snt: 50_000, water_snt: 2_500 },
       { from: '2023-01-01', rent_snt: 53_000, water_snt: 2_500 },
     ])
     const lines = [paid('2022-12-05', 52_500), paid('2023-01-05', 55_500)]
-    const from = rentCountedFrom('2023-01-01', lines)
+    const { from } = rentStart('2023-01-01', books, lines)
     const account = rentAccount({ leases: [l], lines, charges: [], window: { from, until: '2023-01-31', asOf: '2023-01-31' }, ctx })
     expect(account.leases[0].months.map((m) => [m.key, m.rent_snt, m.received_snt, m.balance_snt])).toEqual([
       ['2022-12', 52_500, 52_500, 0],
