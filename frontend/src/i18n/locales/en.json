@@ -1133,7 +1133,8 @@
       "exceptionTo": "Until",
       "exceptionNote": "Reason",
       "exceptionDoc": "Agreement",
-      "rentFrom": "Rent to the owner from"
+      "rentFrom": "Rent to the owner from",
+      "rentUntil": "Rent to the owner until"
     },
     "breakEven": {
       "title": "Break-even price: the price that returns the money",
@@ -1398,7 +1399,8 @@
       "exceptionDates": "The exception {period} ends before it starts.",
       "exceptionOutside": "The exception {period} is not within the lease {lease}.",
       "exceptionOverlap": "The exceptions {a} and {b} overlap ({lease}). A day can have one exception only.",
-      "waterOverlap": "The water settlement periods {a} and {b} overlap, so the same days would be settled twice."
+      "waterOverlap": "The water settlement periods {a} and {b} overlap, so the same days would be settled twice.",
+      "rentDates": "The last day of rent is before the first."
     },
     "total": "Total",
     "holding": "{years} y {months} mo",
@@ -1536,6 +1538,11 @@
         "purchase": "the first whole month owned",
         "payment": "rent received before the booked purchase",
         "books": "the start of the books"
+      },
+      "countedUntil": "counted until {date}: {reason}",
+      "end": {
+        "own": "the owner's date",
+        "sale": "the end of the month of sale"
       },
       "months": "By month ({n})",
       "col": {

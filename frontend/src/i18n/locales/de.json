@@ -1133,7 +1133,8 @@
       "exceptionTo": "Bis",
       "exceptionNote": "Grund",
       "exceptionDoc": "Vereinbarung",
-      "rentFrom": "Miete an den Eigentümer ab"
+      "rentFrom": "Miete an den Eigentümer ab",
+      "rentUntil": "Miete an den Eigentümer bis"
     },
     "breakEven": {
       "title": "Break-even-Preis: der Preis, der das Geld zurückbringt",
@@ -1398,7 +1399,8 @@
       "exceptionDates": "Die abweichende Miete {period} endet vor ihrem Beginn.",
       "exceptionOutside": "Die abweichende Miete {period} liegt nicht innerhalb des Mietvertrags {lease}.",
       "exceptionOverlap": "Die abweichenden Mieten {a} und {b} überschneiden sich ({lease}). Ein Tag kann nur eine Ausnahme haben.",
-      "waterOverlap": "Die Zeiträume der Wasserabrechnungen {a} und {b} überschneiden sich, dieselben Tage würden doppelt abgerechnet."
+      "waterOverlap": "Die Zeiträume der Wasserabrechnungen {a} und {b} überschneiden sich, dieselben Tage würden doppelt abgerechnet.",
+      "rentDates": "Der letzte Miettag liegt vor dem ersten."
     },
     "total": "Summe",
     "holding": "{years} J. {months} Mon.",
@@ -1536,6 +1538,11 @@
         "purchase": "erster voller Monat im Eigentum",
         "payment": "vor dem gebuchten Erwerb erhaltene Miete",
         "books": "Beginn der Buchhaltung"
+      },
+      "countedUntil": "gezählt bis {date}: {reason}",
+      "end": {
+        "own": "Datum des Eigentümers",
+        "sale": "Ende des Verkaufsmonats"
       },
       "months": "Monatlich ({n})",
       "col": {

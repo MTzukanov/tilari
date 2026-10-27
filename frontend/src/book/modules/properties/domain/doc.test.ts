@@ -189,10 +189,12 @@ describe('normalizePropertyDoc', () => {
     ).toThrow('invalid_field:leases[1].key')
   })
 
-  it('keeps the owner\'s own first day of rent, a date', () => {
+  it('keeps the owner\'s own first and last day of rent, dates in order', () => {
     expect(normalizePropertyDoc({ eras: [], rent_from: '2024-03-01' }).rent_from).toBe('2024-03-01')
     expect(normalizePropertyDoc({ eras: [] }).rent_from).toBeUndefined()
     expect(() => normalizePropertyDoc({ eras: [], rent_from: '1.3.2024' })).toThrow('invalid_field:rent_from')
+    expect(normalizePropertyDoc({ eras: [], rent_until: '2025-06-14' }).rent_until).toBe('2025-06-14')
+    expect(() => normalizePropertyDoc({ eras: [], rent_from: '2025-07-01', rent_until: '2025-06-30' })).toThrow('invalid_field:rent_until')
   })
 
   it('names the bad field', () => {

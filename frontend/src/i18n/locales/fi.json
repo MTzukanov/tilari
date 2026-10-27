@@ -1133,7 +1133,8 @@
       "exceptionTo": "Päättyen",
       "exceptionNote": "Syy",
       "exceptionDoc": "Sopimus poikkeuksesta",
-      "rentFrom": "Vuokra omistajalle alkaen"
+      "rentFrom": "Vuokra omistajalle alkaen",
+      "rentUntil": "Vuokra omistajalle päättyen"
     },
     "breakEven": {
       "title": "Nollahinta: millä hinnalla rahat tulevat takaisin",
@@ -1398,7 +1399,8 @@
       "exceptionDates": "Poikkeava vuokra {period} päättyy ennen alkuaan.",
       "exceptionOutside": "Poikkeava vuokra {period} ei osu vuokrasopimuksen {lease} ajalle.",
       "exceptionOverlap": "Poikkeavat vuokrat {a} ja {b} menevät päällekkäin ({lease}). Päivälle voi sopia vain yhden poikkeuksen.",
-      "waterOverlap": "Vesitasausten jaksot {a} ja {b} menevät päällekkäin, jolloin samat päivät tasattaisiin kahdesti."
+      "waterOverlap": "Vesitasausten jaksot {a} ja {b} menevät päällekkäin, jolloin samat päivät tasattaisiin kahdesti.",
+      "rentDates": "Vuokran päättymispäivä on ennen alkamispäivää."
     },
     "total": "Yhteensä",
     "holding": "{years} v {months} kk",
@@ -1536,6 +1538,11 @@
         "purchase": "ensimmäinen kokonaan omistettu kuukausi",
         "payment": "ennen kirjattua hankintaa saatu vuokra",
         "books": "kirjanpidon alku"
+      },
+      "countedUntil": "laskettu {date} asti: {reason}",
+      "end": {
+        "own": "omistajan antama päivä",
+        "sale": "myyntikuun loppu"
       },
       "months": "Kuukausittain ({n})",
       "col": {

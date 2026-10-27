@@ -1,6 +1,6 @@
 /** Loads ledger + stored documents and assembles the portfolio, one object, or the setup view. */
 import { getPeriods } from '../../../access'
-import { rentAccount, rentBalance, rentStart, waterCharges, type RentLine } from './arrears'
+import { rentAccount, rentBalance, rentEnd, rentStart, waterCharges, type RentLine } from './arrears'
 import { BookError } from '../../../errors'
 import { readTilariData, readTilariDataPrefix, writeTilariData } from '../../../kernel/tilariData'
 import type { SqliteDb } from '../../../sqlite'
@@ -88,6 +88,7 @@ import {
   type PropertyDetail,
   type PropertyDoc,
   type PropertyRow,
+  type RentEnd,
   type RentStart,
   type SetupApplyInput,
   type SetupResponse,
@@ -312,16 +313,22 @@ function rentStartOf(c: Computed, ctx: LeaseContext, lines: RentLine[], own: boo
   return rentStart(c.result.summary.acquired_on, ctx.booksStart, payments, own ? c.parsed.doc.rent_from : undefined)
 }
 
+/** Where the owner's rent ends (ADR-026): after a sale; without `own`, where it would without their agreed date. */
+function rentEndOf(c: Computed, own: boolean): RentEnd | null {
+  const sold = c.result.status === 'sold' ? c.result.summary.sold_on : null
+  return rentEnd(sold, own ? c.parsed.doc.rent_until : undefined)
+}
+
 /** The stored leases' rent accounts (ADR-026); `refs` label the lines and date the water letters. */
 function rentAccountOf(c: Computed, ctx: LeaseContext, refs: Map<number, VoucherRef>): RentAccount | null {
   const leases = c.parsed.doc.leases ?? []
   if (!leases.length) return null
   const charges = waterCharges(c.parsed.doc.water_settlements ?? [], leases, (id) => refs.get(id)?.date ?? null)
   const lines = rentLines(c)
-  // Rent is the owner's from `rentStartOf` until a sale.
+  // Rent is the owner's from `rentStartOf` to `rentEndOf`.
   const { from } = rentStartOf(c, ctx, lines, true)
-  const { sold_on } = c.result.summary
-  const until = c.result.status === 'sold' && sold_on && sold_on < ctx.asOf ? sold_on : ctx.asOf
+  const end = rentEndOf(c, true)
+  const until = end && end.until < ctx.asOf ? end.until : ctx.asOf
   return rentAccount({ leases, lines, charges, window: { from, until, asOf: ctx.asOf }, ctx: { partnerName: partnerName(ctx), refs } })
 }
 
@@ -482,6 +489,8 @@ export function computeDetail(
     deposit_candidates: candidates,
     rent_start: rentStartOf(computed, ctx, lines, true),
     rent_start_default: rentStartOf(computed, ctx, lines, false),
+    rent_end: rentEndOf(computed, true),
+    rent_end_default: rentEndOf(computed, false),
   }
 }
 

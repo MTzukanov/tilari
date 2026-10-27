@@ -7,12 +7,14 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
-## 2026-10-27 - Rental objects: the first day of rent box shows the default
+## 2026-10-27 - Rental objects: the rent day boxes show the defaults
 
-- Owner asked: instead of an empty "Vuokra omistajalle alkaen" box with a paragraph explaining
-  the default, the box shows the default day (`rent_start_default`) and the paragraph is gone.
-  Only a day other than the default is stored as `rent_from`, so an untouched box keeps
-  following the purchase date; a stored own day equal to the default is dropped on save.
+- Owner asked: instead of empty "Vuokra omistajalle alkaen / päättyen" boxes with a paragraph
+  explaining the defaults, the boxes show the default days (`rent_start_default`,
+  `rent_end_default`; the end stays empty while the object is held) and the paragraph is gone.
+  Only a day other than the default is stored as `rent_from` / `rent_until`, so untouched boxes
+  keep following the purchase and sale dates; a stored own day equal to the default is dropped
+  on save.
 
 ## 2026-10-27 - PR previews as a non-zipped artifact, not under tilari.fi
 
@@ -43,6 +45,13 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   (`WaterDetail.lines`) and gives each settlement in it the lines `settlementFor` gives it, live
   as the period changes (`settlementViews`, as the object page): the company's lines under the
   statement, each tenant's lines with the status under their share, others below.
+
+## 2026-10-27 - Rental objects: the seller keeps the rent of the month of the sale
+
+- Owner asked: after a sale the rent counts to the end of the sale month by default (ADR-026),
+  as the seller usually keeps it; before, the count ended on the sale day and the month's rent
+  showed as paid ahead. `rent_until` on the object overrides it, next to `rent_from`; the edit
+  page shows both defaults in one hint, and the rent account says why it ends where it does.
 
 ## 2026-10-27 - Rental objects: no overlapping leases or water periods; rent from the month after a purchase
 

@@ -154,6 +154,11 @@ export type PropertyDoc = {
    * a purchase that gave the buyer the month's rent. Missing: the first whole month owned.
    */
   rent_from?: string
+  /**
+   * The last day the owner's rent counts, when agreed otherwise than the default (ADR-026): e.g.
+   * a sale that gave the buyer the month's rent. Missing: to the end of the month of the sale.
+   */
+  rent_until?: string
   water_settlements?: WaterSettlement[]
   [key: string]: unknown
 }
@@ -348,6 +353,8 @@ export type LeaseRentAccount = {
   lease_key: string
   /** The first day that counts: the lease's start, or a later acquisition (or the books' start). */
   counted_from: string
+  /** The last day that counts: the lease's end, the owner's last day of rent (a sale), or the as-of date. */
+  counted_until: string
   months: RentMonth[]
   expected_snt: number
   received_snt: number
@@ -359,6 +366,14 @@ export type LeaseRentAccount = {
 export type RentStartSource = 'own' | 'purchase' | 'payment' | 'books'
 
 export type RentStart = { from: string; source: RentStartSource }
+
+/** Why the owner's rent counts until a day: their own date, or the end of the month of the sale. */
+export type RentEndSource = 'own' | 'sale'
+
+export type RentEnd = { until: string; source: RentEndSource }
+
+/** The owner's rent days on the object: from `start`, until `end` (none while held). */
+export type RentPeriod = { start: RentStart; end: RentEnd | null }
 
 export type RentAccount = {
   leases: LeaseRentAccount[]
@@ -575,6 +590,10 @@ export type PropertyDetail = PropertyRow & {
   rent_start: RentStart
   /** Where it would count from without the owner's own date (`rent_from`), for the edit page. */
   rent_start_default: RentStart
+  /** The last day the owner's rent counts, and why; null while the object is held. */
+  rent_end: RentEnd | null
+  /** Where it would end without the owner's own date (`rent_until`). */
+  rent_end_default: RentEnd | null
   /** Deposits to link to the leases: the object's first, then every other on a deposit account. */
   deposit_candidates: DepositCandidate[]
 }

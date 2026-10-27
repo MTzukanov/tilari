@@ -1133,7 +1133,8 @@
       "exceptionTo": "Till och med",
       "exceptionNote": "Orsak",
       "exceptionDoc": "Avtal om undantaget",
-      "rentFrom": "Hyran till ägaren från"
+      "rentFrom": "Hyran till ägaren från",
+      "rentUntil": "Hyran till ägaren till och med"
     },
     "breakEven": {
       "title": "Nollpris: priset som ger pengarna tillbaka",
@@ -1398,7 +1399,8 @@
       "exceptionDates": "Den avvikande hyran {period} slutar innan den börjar.",
       "exceptionOutside": "Den avvikande hyran {period} ligger inte inom hyresavtalet {lease}.",
       "exceptionOverlap": "De avvikande hyrorna {a} och {b} överlappar ({lease}). En dag kan ha bara ett undantag.",
-      "waterOverlap": "Vattenutjämningarnas perioder {a} och {b} överlappar, så samma dagar skulle utjämnas två gånger."
+      "waterOverlap": "Vattenutjämningarnas perioder {a} och {b} överlappar, så samma dagar skulle utjämnas två gånger.",
+      "rentDates": "Hyrans sista dag ligger före den första."
     },
     "total": "Totalt",
     "holding": "{years} år {months} mån",
@@ -1536,6 +1538,11 @@
         "purchase": "första hela månaden i ägo",
         "payment": "hyra som kom in före det bokförda förvärvet",
         "books": "bokföringens början"
+      },
+      "countedUntil": "räknat till och med {date}: {reason}",
+      "end": {
+        "own": "ägarens datum",
+        "sale": "försäljningsmånadens slut"
       },
       "months": "Per månad ({n})",
       "col": {
