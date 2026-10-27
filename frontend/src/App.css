@@ -537,14 +537,6 @@ body {
   flex-shrink: 0;
 }
 
-.status-storage-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 500;
-  color: color-mix(in srgb, var(--ink) 80%, var(--muted));
-}
-
 .status-storage-locker {
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 35%, var(--line));

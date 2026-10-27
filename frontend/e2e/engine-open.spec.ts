@@ -35,6 +35,8 @@ test.describe('engine open (wasm)', () => {
       timeout: 60_000,
     })
     await expect(page.locator('.status-storage-kind')).toHaveText('Selaimessa')
+    // The file name is in the book picker; the storage chip does not repeat it.
+    await expect(page.locator('.status-storage')).toHaveText('Selaimessa')
 
     await page.reload()
     await expect(page.getByRole('heading', { name: 'Testikirja Oy' })).toBeVisible({
