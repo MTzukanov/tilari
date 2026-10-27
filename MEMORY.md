@@ -7,6 +7,12 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-27 - The storage chip shows only where the book lives, not its file name
+
+- The chip ("Selaimessa", "Levyllä", ...) also printed `source_name`, which the book picker right
+  below always shows for an open book (both read `meta.source_name`). Owner asked to drop the
+  repeat; the chip's tooltip still names the file.
+
 ## 2026-10-27 - Rental objects: the rent day boxes show the defaults
 
 - Owner asked: instead of empty "Vuokra omistajalle alkaen / päättyen" boxes with a paragraph

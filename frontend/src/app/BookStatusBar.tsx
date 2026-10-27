@@ -189,15 +189,13 @@ export function BookStatusBar({
 
   return (
     <div className="book-status" aria-label={t('file.statusLabel')}>
+      {/* The file name is in the book picker next to this chip; the title still names it. */}
       {showBookChips && displayKind ? (
         <span
           className={`status-chip status-storage status-storage-${displayKind}`}
           title={storageTitle}
         >
           <span className="status-storage-kind">{storageLabel}</span>
-          {sourceName ? (
-            <span className="status-storage-name">{sourceName}</span>
-          ) : null}
         </span>
       ) : null}
       {showBookChips ? (
