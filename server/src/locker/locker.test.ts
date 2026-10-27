@@ -54,13 +54,13 @@ describe('locker', () => {
     assert.equal(res.headers.get('access-control-allow-origin'), null)
   })
 
-  it('allows the Pages origin cross-origin, incl. private network', async () => {
-    const res = await fetch(`${base}/api/health`, {
-      headers: { Origin: 'https://mtzukanov.github.io' },
-    })
-    assert.equal(res.status, 200)
-    assert.equal(res.headers.get('access-control-allow-origin'), 'https://mtzukanov.github.io')
-    assert.equal(res.headers.get('access-control-allow-private-network'), 'true')
+  it('allows the Pages origins cross-origin, incl. private network', async () => {
+    for (const origin of ['https://tilari.fi', 'https://mtzukanov.github.io']) {
+      const res = await fetch(`${base}/api/health`, { headers: { Origin: origin } })
+      assert.equal(res.status, 200, origin)
+      assert.equal(res.headers.get('access-control-allow-origin'), origin)
+      assert.equal(res.headers.get('access-control-allow-private-network'), 'true')
+    }
   })
 
   it('round-trips lean book with etags', async () => {

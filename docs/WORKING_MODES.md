@@ -123,7 +123,7 @@ Use this for a quick offline trial or emailing a self-contained demo. Details:
 [PACKAGING.md](PACKAGING.md).
 
 GitHub Pages publishes the **same build** as
-[tilari.html](https://mtzukanov.github.io/tilari/tilari.html) over **https**
+[tilari.html](https://tilari.fi/tilari.html) over **https**
 ([PAGES.md](PAGES.md)). That host is a secure context, so it behaves like
 [mode 2](#2-static-html-website) (OPFS, Chromium in-place save) while remaining
 one file. There is no Tilari-hosted locker: connect **your** Supabase or a Tilari server you run

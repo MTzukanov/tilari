@@ -7,6 +7,14 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-27 - Server: the live app's origin `https://tilari.fi` is allowed by default
+
+- Since Pages moved to its custom domain, browsers load the app from `https://tilari.fi` (github.io
+  redirects there), but `DEFAULT_ALLOWED_ORIGINS` held only `https://mtzukanov.github.io`, so a
+  self-hosted server with default settings refused the live app. The default is now both origins;
+  github.io stays for the case the custom domain is removed. Doc links point at `tilari.fi`.
+  No server is run by the owner, so nothing deployed was affected.
+
 ## 2026-10-27 - Rental objects: the water form keeps a suggestion's booked lines
 
 - Owner reported: a water settlement the book suggested listed its booked lines, but once added

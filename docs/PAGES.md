@@ -2,7 +2,7 @@
 
 Operator-facing HTML lives in [`site/`](../site/), not in this `docs/` folder.
 The single-file app is **built in CI** (`frontend` `build:singlefile`) and
-published as [`tilari.html`](https://mtzukanov.github.io/tilari/tilari.html)
+published as [`tilari.html`](https://tilari.fi/tilari.html)
 next to the guides. Do not commit that generated file.
 
 | Path | Audience | Language |

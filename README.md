@@ -24,7 +24,7 @@ User guide: [site/index.html](site/index.html) (Finnish), [site/en/](site/en/) (
 
 Fastest: one HTML file in the browser. On start you create a new book (or open an existing `.kitsas`).
 
-Live: [tilari.html](https://mtzukanov.github.io/tilari/tilari.html)
+Live: [tilari.html](https://tilari.fi/tilari.html)
 
 ```bash
 cd frontend && npm install && npm run build:singlefile
@@ -132,7 +132,7 @@ Full table: [docs/SCOPE.md](docs/SCOPE.md). Working modes: [docs/WORKING_MODES.m
 | [site/en/](site/en/) | User guide, English (GitHub Pages) |
 | [site/sv/](site/sv/) | User guide, Swedish (GitHub Pages) |
 | [site/de/](site/de/) | User guide, German (GitHub Pages) |
-| [tilari.html](https://mtzukanov.github.io/tilari/tilari.html) | Single-file app on Pages (built in CI, not in git) |
+| [tilari.html](https://tilari.fi/tilari.html) | Single-file app on Pages (built in CI, not in git) |
 | [docs/PAGES.md](docs/PAGES.md) | Pages publish + custom domain |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | ADRs (license, cents, posting, storage) |
 | [docs/SCOPE.md](docs/SCOPE.md) | In / partial / not yet, plus what Tilari adds |
