@@ -14,6 +14,18 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   Only a day other than the default is stored as `rent_from`, so an untouched box keeps
   following the purchase date; a stored own day equal to the default is dropped on save.
 
+## 2026-10-27 - PR previews as a non-zipped artifact, not under tilari.fi
+
+- Owner asked for a preview of each PR, cleaned up after merge. `tilari.fi/PRs/<N>/` was rejected:
+  one origin with the live app means a preview's code reads and writes its OPFS working copies,
+  attachment blobs (with their GC), IndexedDB file handles and remembered locker credentials. A
+  hosted preview on a separate origin (Cloudflare Pages) was weighed too; the owner chose the
+  GitHub artifact: one HTML file, no hosting, no secrets.
+- `upload-artifact` v7 with `archive: false` serves the file inline as `text/html` from
+  `productionresultssa<N>.blob.core.windows.net` with no CSP (checked on an upstream artifact),
+  so the inlined app runs. That host's storage is shared with every repo's HTML artifacts: test
+  with copies. Details: [docs/PAGES.md](docs/PAGES.md#pr-previews).
+
 ## 2026-10-27 - Server: the live app's origin `https://tilari.fi` is allowed by default
 
 - Since Pages moved to its custom domain, browsers load the app from `https://tilari.fi` (github.io
