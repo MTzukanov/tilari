@@ -1,0 +1,106 @@
+# PR preview: the single-file app as a non-zipped artifact (upload-artifact v7, `archive: false`),
+# which GitHub opens straight in the browser for a signed-in user. Nothing is deployed and no secret
+# is used. Only PRs from this repo's own branches get a preview (forks still get the Test workflow);
+# closing or merging the PR deletes its previews. See docs/PAGES.md#pr-previews.
+name: PR preview
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - closed
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  npm_config_audit: "false"
+  npm_config_fund: "false"
+
+jobs:
+  build:
+    if: >-
+      github.event.action != 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          # npm ci runs the PR's install scripts; keep the token out of .git/config.
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build single-file Tilari
+        working-directory: frontend
+        run: npm run build:singlefile
+
+      # With archive: false the file name is the artifact name; cleanup finds it by that name.
+      - name: Name the preview
+        run: cp frontend/dist-single/index.html "tilari-pr-${{ github.event.pull_request.number }}.html"
+
+      - name: Upload preview
+        id: upload
+        uses: actions/upload-artifact@v7
+        with:
+          path: tilari-pr-${{ github.event.pull_request.number }}.html
+          archive: false
+          retention-days: 30
+
+      - name: Link the preview from the PR checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          URL: ${{ steps.upload.outputs.artifact-url }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$REPO/statuses/$SHA" \
+            -f state=success \
+            -f context="PR preview" \
+            -f description="Open tilari.html built from this commit" \
+            -f target_url="$URL" > /dev/null
+          echo "Preview of ${SHA:0:7}: [tilari.html]($URL)" >> "$GITHUB_STEP_SUMMARY"
+
+  cleanup:
+    if: >-
+      github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Delete this PR's previews
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NAME: tilari-pr-${{ github.event.pull_request.number }}.html
+        run: |
+          set -euo pipefail
+          ids=$(gh api --paginate "repos/$REPO/actions/artifacts?name=$NAME&per_page=100" --jq '.artifacts[].id')
+          for id in $ids; do
+            gh api -X DELETE "repos/$REPO/actions/artifacts/$id"
+            echo "Deleted $NAME ($id)"
+          done

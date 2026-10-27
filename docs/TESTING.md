@@ -84,6 +84,8 @@ requests, and when the VPS deploy workflow calls it.
 Pages ([`pages.yml`](../.github/workflows/pages.yml)) deploys after that Test
 run succeeds on `main`. VPS ([`build-and-deploy.yml`](../.github/workflows/build-and-deploy.yml))
 `needs` the reusable job on `v*` tags. A given commit is not tested twice.
+PRs from this repo's branches also get a browser preview of `tilari.html`
+([`pr-preview.yml`](../.github/workflows/pr-preview.yml), [PAGES.md](PAGES.md#pr-previews)).
 
 | File | Asserts |
 |------|---------|
