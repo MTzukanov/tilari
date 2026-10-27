@@ -5,6 +5,15 @@ import { buildSettlements, draftSettlement, newSettlement, settlementDrafts, wit
 const t = (key: string, vars?: Record<string, string | number>) => `${key}${vars ? JSON.stringify(vars) : ''}`
 
 describe('water settlement drafts', () => {
+  it('two periods on the same days are refused: those days would be settled twice', () => {
+    const draft = (from: string, to: string) => ({ ...newSettlement(), from, to, amount: '10' })
+    const say = (key: string, vars?: Record<string, string | number>) => `${key.split('.').pop()}${vars ? `(${Object.values(vars).join(', ')})` : ''}`
+    expect(buildSettlements(say, [draft('2024-06-01', '2025-05-31'), draft('2023-06-01', '2024-06-01')], new Set())).toBe(
+      'waterOverlap(period(1.6.2023, 1.6.2024), period(1.6.2024, 31.5.2025))',
+    )
+    expect(buildSettlements(say, [draft('2024-06-02', '2025-05-31'), draft('2023-06-01', '2024-06-01')], new Set())).toHaveLength(2)
+  })
+
   it('a stored settlement round-trips unchanged: refund, use, statement, own shares and unknown keys', () => {
     const stored: WaterSettlement = {
       key: 'w1',

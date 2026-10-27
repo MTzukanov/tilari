@@ -1132,7 +1132,8 @@
       "exceptionFrom": "From",
       "exceptionTo": "Until",
       "exceptionNote": "Reason",
-      "exceptionDoc": "Agreement"
+      "exceptionDoc": "Agreement",
+      "rentFrom": "Rent to the owner from"
     },
     "breakEven": {
       "title": "Break-even price: the price that returns the money",
@@ -1304,7 +1305,8 @@
       "confirmDeleteDoc": "Delete the voucher from the books: {titles}? One created on this visit goes at once, an earlier one when you save.",
       "exceptionsLead": "An agreed discount, a rent-free period or another exception: on its days the tenant pays these amounts instead of the rent and its increases, and the rent balance counts them. Type a discount as the lower rent.",
       "addException": "Add an exception",
-      "uploadException": "Upload document"
+      "uploadException": "Upload document",
+      "rentFromHint": "Empty: {date} ({reason}). After a purchase, rent counts from the first whole month owned, as the rent of the month of sale usually goes to the seller. Give a date if the sale agreed otherwise, for example that the rent of the month of sale goes to the buyer."
     },
     "setup": {
       "title": "Set up rental objects",
@@ -1353,7 +1355,9 @@
       "loan_shared": "Loan account {account} is also another object's bank loan, so its interest counts for both. Remove it from one of them.",
       "rent_arrears": "Rent arrears {amount}.",
       "former_owes": "Ended leases still owe {amount}.",
-      "former_paid_ahead": "Ended leases were paid {amount} more than the rent."
+      "former_paid_ahead": "Ended leases were paid {amount} more than the rent.",
+      "lease_overlap": "Two leases run at the same time from {from}, so rent is expected twice. End the earlier lease before the next starts.",
+      "water_overlap": "Two water settlement periods overlap from {from}, so the same days are settled twice. Correct the periods."
     },
     "error": {
       "invalid_field": "Check the field {path}.",
@@ -1363,7 +1367,16 @@
       "not_found": "Cost centre not found.",
       "percent": "Percent like 3,5.",
       "accounts": "Account numbers separated by commas.",
-      "loan_linked": "Loan account {path} is already another object's bank loan. A loan can belong to one object only; otherwise its interest would count twice."
+      "loan_linked": "Loan account {path} is already another object's bank loan. A loan can belong to one object only; otherwise its interest would count twice.",
+      "overlap": "Periods overlap: check the field {path}.",
+      "leaseOverlap": "The leases {a} and {b} overlap. A day can belong to one lease only, or its rent is expected twice: end the earlier one before the next starts.",
+      "leaseEnds": "The lease {lease} ends before it starts.",
+      "increaseOutside": "The rent from {date} is not within the lease {lease}.",
+      "increaseTwice": "The lease {lease} has two rents from {date}.",
+      "exceptionDates": "The exception {period} ends before it starts.",
+      "exceptionOutside": "The exception {period} is not within the lease {lease}.",
+      "exceptionOverlap": "The exceptions {a} and {b} overlap ({lease}). A day can have one exception only.",
+      "waterOverlap": "The water settlement periods {a} and {b} overlap, so the same days would be settled twice."
     },
     "total": "Total",
     "holding": "{years} y {months} mo",
@@ -1495,7 +1508,13 @@
       "arrears": "rent arrears {amount}",
       "ahead": "paid ahead {amount}",
       "even": "settled, 0,00 €",
-      "countedFrom": "counted from {date} (the acquisition, rent received before it, or the start of the books)",
+      "countedFrom": "counted from {date}: {reason}",
+      "start": {
+        "own": "the owner's date",
+        "purchase": "the first whole month owned",
+        "payment": "rent received before the booked purchase",
+        "books": "the start of the books"
+      },
       "months": "By month ({n})",
       "col": {
         "month": "Month",

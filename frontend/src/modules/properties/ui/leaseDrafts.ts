@@ -1,10 +1,12 @@
 /** Lease form drafts: strings while editing, the stored leases on save. */
 import { DEFAULT_DUE_DAY } from '../../../book/modules/properties/domain/leaseSuggest'
+import { leaseOverlaps, overlaps } from '../../../book/modules/properties/domain/ranges'
 import { monthEnd } from '../../../book/months'
+import { formatDate } from '../../../shared/dates'
 import { formatEurInput, parseEurInput } from '../../../shared/money'
 import { formatPercentInput, parsePercentInput } from '../../../shared/percent'
 import type { Lease, LeaseException, LeaseIncreaseKind, LeaseRent } from '../api'
-import { saveErrorText } from './format'
+import { periodText, saveErrorText } from './format'
 
 export type Partner = { id: number; name: string }
 
@@ -130,10 +132,57 @@ function exception(e: ExceptionDraft, withParking: boolean): LeaseException {
   return out
 }
 
-/** The stored leases, or an error text naming the first bad field. Rows without a start or tenant are dropped. */
+/** "Virtanen 1.3.2025–28.2.2026" or "Virtanen 1.3.2025 alkaen". */
+function leaseLabel(t: T, tenant: string, lease: Lease): string {
+  const period = lease.ends ? periodText(t, lease.starts, lease.ends) : t('properties.lease.since', { date: formatDate(lease.starts) })
+  return tenant ? `${tenant} ${period}` : period
+}
+
+/**
+ * The first date that does not fit, as a sentence, or null: a lease ending before it starts, a
+ * rent step or an exception outside its lease, two steps from one day, an exception ending before
+ * it starts, two exceptions on the same days, or two leases on the same days (a day in two would
+ * expect its rent twice). Empty dates are left to the field check.
+ */
+function rangeError(t: T, leases: Lease[], tenants: string[]): string | null {
+  for (const [i, lease] of leases.entries()) {
+    if (!lease.starts) continue
+    const label = leaseLabel(t, tenants[i], lease)
+    if (lease.ends && lease.ends < lease.starts) return t('properties.error.leaseEnds', { lease: label })
+    const outside = (date: string) => date < lease.starts || (lease.ends != null && date > lease.ends)
+    const seen = new Set<string>()
+    for (const step of lease.rents) {
+      if (!step.from) continue
+      if (outside(step.from)) return t('properties.error.increaseOutside', { date: formatDate(step.from), lease: label })
+      if (seen.has(step.from)) return t('properties.error.increaseTwice', { date: formatDate(step.from), lease: label })
+      seen.add(step.from)
+    }
+    const exceptions = (lease.exceptions ?? []).filter((e) => e.from && e.to)
+    for (const e of exceptions) {
+      const period = periodText(t, e.from, e.to)
+      if (e.to < e.from) return t('properties.error.exceptionDates', { period })
+      if (outside(e.from) || outside(e.to)) return t('properties.error.exceptionOutside', { period, lease: label })
+    }
+    const [same] = overlaps(exceptions, (e) => ({ from: e.from, to: e.to }))
+    if (same) {
+      const [a, b] = same
+      return t('properties.error.exceptionOverlap', { a: periodText(t, a.from, a.to), b: periodText(t, b.from, b.to), lease: label })
+    }
+  }
+  const [both] = leaseOverlaps(leases.filter((l) => l.starts))
+  if (!both) return null
+  const [a, b] = both.map((l) => leaseLabel(t, tenants[leases.indexOf(l)], l))
+  return t('properties.error.leaseOverlap', { a, b })
+}
+
+/**
+ * The stored leases, or an error text naming the first bad field or date (`rangeError`). Rows
+ * without a start or tenant are dropped.
+ */
 export function buildLeases(t: T, drafts: LeaseDraft[], partners: Partner[]): Lease[] | string {
   const byName = new Map(partners.map((p) => [p.name.trim().toLowerCase(), p.id]))
   const out: Lease[] = []
+  const tenants: string[] = []
   for (const [i, d] of drafts.entries()) {
     const tenant = d.tenant.trim()
     if (!d.starts && !tenant) continue
@@ -168,8 +217,9 @@ export function buildLeases(t: T, drafts: LeaseDraft[], partners: Partner[]): Le
     if (d.contractId) lease.doc_voucher_id = Number(d.contractId)
     if (d.waterFlat) lease.water = 'flat'
     out.push(lease)
+    tenants.push(tenant)
   }
-  return out
+  return rangeError(t, out, tenants) ?? out
 }
 
 /** What the tenant pays a month at a draft step, in cents; parking only when the lease has it. */

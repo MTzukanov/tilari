@@ -1132,7 +1132,8 @@
       "exceptionFrom": "Alkaen",
       "exceptionTo": "Päättyen",
       "exceptionNote": "Syy",
-      "exceptionDoc": "Sopimus poikkeuksesta"
+      "exceptionDoc": "Sopimus poikkeuksesta",
+      "rentFrom": "Vuokra omistajalle alkaen"
     },
     "breakEven": {
       "title": "Nollahinta: millä hinnalla rahat tulevat takaisin",
@@ -1304,7 +1305,8 @@
       "confirmDeleteDoc": "Poistetaanko tosite kirjanpidosta: {titles}? Tällä käynnillä luotu poistetaan heti, aiemmin luotu kun tallennat.",
       "exceptionsLead": "Sovittu alennus, vuokravapaa jakso tai muu poikkeus: jakson päivinä vuokralainen maksaa nämä summat vuokran ja korotusten sijaan, ja vuokrasaldo laskee niillä. Alennus kirjoitetaan alempana vuokrana.",
       "addException": "Lisää poikkeava vuokra",
-      "uploadException": "Lataa liite"
+      "uploadException": "Lataa liite",
+      "rentFromHint": "Tyhjänä {date} ({reason}). Kaupan jälkeen vuokra lasketaan ensimmäisestä kokonaan omistetusta kuukaudesta, koska kaupantekokuun vuokra kuuluu yleensä myyjälle. Anna päivä, jos kaupassa sovittiin toisin, esimerkiksi että kaupantekokuun vuokra kuuluu ostajalle."
     },
     "setup": {
       "title": "Vuokrakohteiden määritys",
@@ -1353,7 +1355,9 @@
       "loan_shared": "Lainatili {account} on myös toisen kohteen pankkilaina, joten sen korot lasketaan molemmille. Poista se toiselta kohteelta.",
       "rent_arrears": "Vuokrarästiä {amount}.",
       "former_owes": "Päättyneistä vuokrasuhteista on saamatta {amount}.",
-      "former_paid_ahead": "Päättyneissä vuokrasuhteissa on maksettu {amount} enemmän kuin vuokra."
+      "former_paid_ahead": "Päättyneissä vuokrasuhteissa on maksettu {amount} enemmän kuin vuokra.",
+      "lease_overlap": "Kaksi vuokrasopimusta on voimassa yhtä aikaa {from} alkaen, joten vuokraa odotetaan kahdesti. Päätä aiempi sopimus ennen seuraavan alkua.",
+      "water_overlap": "Kahden vesitasauksen jaksot menevät päällekkäin {from} alkaen, joten samat päivät tasataan kahdesti. Korjaa jaksot."
     },
     "error": {
       "invalid_field": "Tarkista kenttä {path}.",
@@ -1363,7 +1367,16 @@
       "not_found": "Kustannuspaikkaa ei löydy.",
       "percent": "Prosentti muodossa 3,5.",
       "accounts": "Tilinumerot pilkuilla eroteltuina.",
-      "loan_linked": "Lainatili {path} on jo toisen kohteen pankkilaina. Laina voi kuulua vain yhdelle kohteelle, muuten sen korot laskettaisiin kahdesti."
+      "loan_linked": "Lainatili {path} on jo toisen kohteen pankkilaina. Laina voi kuulua vain yhdelle kohteelle, muuten sen korot laskettaisiin kahdesti.",
+      "overlap": "Ajanjaksot menevät päällekkäin: tarkista kenttä {path}.",
+      "leaseOverlap": "Vuokrasopimukset {a} ja {b} menevät päällekkäin. Päivä voi kuulua vain yhteen sopimukseen, muuten sen vuokraa odotetaan kahdesti: päätä aiempi ennen seuraavan alkua.",
+      "leaseEnds": "Vuokrasopimus {lease} päättyy ennen alkuaan.",
+      "increaseOutside": "Vuokra {date} alkaen ei osu vuokrasopimuksen {lease} ajalle.",
+      "increaseTwice": "Vuokrasopimuksessa {lease} on kaksi vuokraa {date} alkaen.",
+      "exceptionDates": "Poikkeava vuokra {period} päättyy ennen alkuaan.",
+      "exceptionOutside": "Poikkeava vuokra {period} ei osu vuokrasopimuksen {lease} ajalle.",
+      "exceptionOverlap": "Poikkeavat vuokrat {a} ja {b} menevät päällekkäin ({lease}). Päivälle voi sopia vain yhden poikkeuksen.",
+      "waterOverlap": "Vesitasausten jaksot {a} ja {b} menevät päällekkäin, jolloin samat päivät tasattaisiin kahdesti."
     },
     "total": "Yhteensä",
     "holding": "{years} v {months} kk",
@@ -1495,7 +1508,13 @@
       "arrears": "vuokrarästi {amount}",
       "ahead": "maksettu ennakkoon {amount}",
       "even": "täsmää, 0,00 €",
-      "countedFrom": "laskettu {date} alkaen (kohteen hankinnasta, sitä aiemmin saadusta vuokrasta tai kirjanpidon alusta)",
+      "countedFrom": "laskettu {date} alkaen: {reason}",
+      "start": {
+        "own": "omistajan antama päivä",
+        "purchase": "ensimmäinen kokonaan omistettu kuukausi",
+        "payment": "ennen kirjattua hankintaa saatu vuokra",
+        "books": "kirjanpidon alku"
+      },
       "months": "Kuukausittain ({n})",
       "col": {
         "month": "Kuukausi",

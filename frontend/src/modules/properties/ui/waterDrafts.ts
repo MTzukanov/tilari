@@ -1,7 +1,8 @@
 /** Water settlement form drafts: strings while editing, the stored settlements on save. */
+import { settlementOverlaps } from '../../../book/modules/properties/domain/ranges'
 import { formatEurInput, parseEurInput } from '../../../shared/money'
 import type { WaterSettlement, WaterShare } from '../api'
-import { saveErrorText } from './format'
+import { periodText, saveErrorText } from './format'
 
 type T = (key: string, vars?: Record<string, string | number>) => string
 
@@ -97,8 +98,9 @@ export function draftSettlement(d: SettlementDraft): WaterSettlement | null {
 }
 
 /**
- * The stored settlements, or an error text naming the first bad field. Empty rows are dropped,
- * and so are shares of leases no longer in the form.
+ * The stored settlements, or an error text naming the first bad field or two periods on the same
+ * days (they would settle those days twice). Empty rows are dropped, and so are shares of leases
+ * no longer in the form.
  */
 export function buildSettlements(t: T, drafts: SettlementDraft[], leaseKeys: Set<string>): WaterSettlement[] | string {
   const out: WaterSettlement[] = []
@@ -116,5 +118,8 @@ export function buildSettlements(t: T, drafts: SettlementDraft[], leaseKeys: Set
     else delete settlement.shares
     out.push(settlement)
   }
-  return out
+  const [both] = settlementOverlaps(out)
+  if (!both) return out
+  const [a, b] = both.map((s) => periodText(t, s.from, s.to))
+  return t('properties.error.waterOverlap', { a, b })
 }
