@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { settlementShares } from '../../../book/modules/properties/domain/water'
+import { fromBookedLines, settlementViews } from '../../../book/modules/properties/domain/water'
 import { useI18n } from '../../../i18n'
 import { EuroInput } from '../../../shared/EuroInput'
 import { FileButton } from '../../../shared/FileButton'
 import { formatCents, parseEurInput } from '../../../shared/money'
-import type { DocCandidate, Lease, WaterSuggestionView } from '../api'
+import type { DocCandidate, Lease, WaterBookedLine, WaterSettlement, WaterSuggestionView } from '../api'
 import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
-import { companyResultText, periodText, waterBalanceText } from './format'
+import { companyResultText, periodText, waterBalanceText, waterStatusText } from './format'
 import { LineLink, Shown } from './FormParts'
 import { SuggestionSource } from './LeasesPanel'
 import {
@@ -34,6 +34,7 @@ export function WaterEditor({
   tenantName,
   docs,
   suggestions,
+  lines,
   onCreateLetter,
   onUpload,
   isCreated,
@@ -48,6 +49,8 @@ export function WaterEditor({
   docs: DocCandidate[]
   /** Settlements the book suggests, newest first. */
   suggestions: WaterSuggestionView[]
+  /** The object's water settlement lines: each settlement shows those it takes, as the page will. */
+  lines: WaterBookedLine[]
   /** Writes the letter to the tenant of `leaseKey` (PDF on a Liitetieto voucher). */
   onCreateLetter: (settlement: number, leaseKey: string) => Promise<void>
   /** Uploads the company's statement (`leaseKey` null) or a tenant's letter as a Liitetieto voucher. */
@@ -60,6 +63,10 @@ export function WaterEditor({
   const { t } = useI18n()
   const [creating, setCreating] = useState<string | null>(null)
   const pending = suggestions.filter((s) => !inForm(drafts, s.settlement.to))
+  const settlements = drafts.map(draftSettlement)
+  const dated = settlements.filter((s): s is WaterSettlement => s != null)
+  const booked = fromBookedLines(lines)
+  const views = settlementViews(dated, booked.lines, leases, { ...booked.ctx, tenantName })
   const set = (i: number, patch: Partial<SettlementDraft>) => onChange(drafts.map((d, j) => (j === i ? { ...d, ...patch } : d)))
   const setShare = (i: number, leaseKey: string, patch: Partial<ShareDraft>) => set(i, { shares: withShare(drafts[i].shares, leaseKey, patch) })
   const created = (ids: string[]) => ids.filter((id) => id && isCreated(Number(id))).map(Number)
@@ -108,8 +115,9 @@ export function WaterEditor({
       ) : null}
 
       {drafts.map((d, i) => {
-        const settlement = draftSettlement(d)
-        const shares = settlement ? settlementShares(settlement, leases) : []
+        const settlement = settlements[i]
+        const view = settlement ? views[dated.indexOf(settlement)] : null
+        const shares = view?.shares ?? []
         const usage = d.usage.trim() ? Math.abs(parseEurInput(d.usage)) : null
         return (
           <div key={d.base?.key || `new-${i}`} className="property-lease-edit property-water-edit">
@@ -151,23 +159,54 @@ export function WaterEditor({
                 <FileButton onFiles={(files) => void onUpload(i, null, files)}>{t('properties.water.uploadStatement')}</FileButton>
               </div>
             </div>
+            {view ? (
+              <p className="property-lease-terms">
+                {view.booked.length ? (
+                  <>
+                    {t('properties.water.booked')}:{' '}
+                    {view.booked.map((m) => (
+                      <LineLink key={m.line_id} line={m} onOpen={onOpenVoucher} />
+                    ))}
+                  </>
+                ) : (
+                  <span className="muted">{t('properties.water.notBooked')}</span>
+                )}
+              </p>
+            ) : null}
 
             <h4>{t('properties.water.shares')}</h4>
             <p className="muted property-lease-hint">{t(d.usage.trim() ? 'properties.water.sharesByUsage' : 'properties.water.sharesByDifference')}</p>
             {!settlement ? <p className="muted property-lease-hint">{t('properties.water.needPeriod')}</p> : null}
             {settlement && !shares.length ? <p className="muted property-lease-hint">{t('properties.water.noShares')}</p> : null}
             {shares.map((share) => {
-              const key = share.lease.key
+              const key = share.lease_key
               const own = d.shares.find((s) => s.leaseKey === key) ?? shareDraft(key)
               return (
                 <div key={key} className="property-lease-grid property-lease-increase property-water-share">
-                  <Shown label={t('properties.field.tenant')} value={tenantName(share.lease)} />
+                  <Shown label={t('properties.field.tenant')} value={share.tenant ?? t('properties.lease.tenantUnknown')} />
                   <Shown
                     label={t('properties.field.waterStay')}
                     value={t('properties.water.stay', { period: periodText(t, share.from, share.to), days: share.days })}
                   />
                   <Shown label={t('properties.field.waterAdvancesTenant')} value={formatCents(share.advance_snt)} />
                   <Shown label={t('properties.field.waterComputed')} value={waterBalanceText(t, share.computed_snt)} strong />
+                  {share.movements.length || share.status !== 'none' ? (
+                    <p className="property-lease-terms property-water-booked">
+                      {share.movements.length ? (
+                        <span>
+                          {t('properties.water.booked')}:{' '}
+                          {share.movements.map((m) => (
+                            <LineLink key={m.line_id} line={m} onOpen={onOpenVoucher} />
+                          ))}
+                        </span>
+                      ) : null}
+                      {share.status !== 'none' ? (
+                        <span className={`property-water-status property-water-status-${share.status}`}>
+                          {waterStatusText(t, share.status, share.balance_snt, share.settled_snt)}
+                        </span>
+                      ) : null}
+                    </p>
+                  ) : null}
                   <div className="property-lease-notice">
                     <label className="property-water-mode">
                       {t('properties.field.waterBalance')}
@@ -208,6 +247,14 @@ export function WaterEditor({
                 </div>
               )
             })}
+            {view?.other.length ? (
+              <p className="property-lease-terms">
+                {t('properties.water.other')}:{' '}
+                {view.other.map((m) => (
+                  <LineLink key={m.line_id} line={m} onOpen={onOpenVoucher} />
+                ))}
+              </p>
+            ) : null}
             <div className="property-lease-foot">
               <span />
               <button type="button" className="btn-link property-delete" onClick={() => void removeSettlement(i)}>

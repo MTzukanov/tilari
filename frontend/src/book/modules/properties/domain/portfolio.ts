@@ -51,9 +51,10 @@ import { saleNet, toBp, xirr, yieldBp, type Flow } from './returns'
 import {
   bookedLine,
   tenantSettlementLines,
-  settlementFor,
   settlementView,
+  settlementViews,
   suggestSettlements,
+  waterBookedLine,
   waterLines,
   waterVoucherIds,
   type WaterViewContext,
@@ -466,8 +467,7 @@ function waterDetail(db: SqliteDb, c: Computed, ctx: LeaseContext): { water: Wat
     partnerName: partnerName(ctx),
     refs,
   }
-  const owner = new Map(lines.map((l) => [l.id, settlementFor(l, settlements)]))
-  const views = settlements.map((s) => settlementView(s, lines.filter((l) => owner.get(l.id) === s), leases, wctx))
+  const views = settlementViews(settlements, lines, leases, wctx)
   const latest = new Map<string, WaterLatest>()
   for (const v of [...views].sort((a, b) => a.to.localeCompare(b.to))) {
     for (const share of v.shares) latest.set(share.lease_key, { from: v.from, to: v.to, balance_snt: share.balance_snt, settled_snt: share.settled_snt, status: share.status })
@@ -484,6 +484,7 @@ function waterDetail(db: SqliteDb, c: Computed, ctx: LeaseContext): { water: Wat
     water: {
       settlements: views.sort(newestFirst),
       suggestions: suggestions.sort((a, b) => newestFirst(a.settlement, b.settlement)),
+      lines: lines.map((l) => waterBookedLine(l, wctx)),
     },
     latest,
   }

@@ -262,6 +262,9 @@ test.describe('rental object water settlements', () => {
     await expect(share).toContainText('1.3.2025–30.6.2025, 122 pv')
     await expect(share).toContainText('80,00 €')
     await expect(share).toContainText('palautetaan 24,40 €')
+    // The form shows what the book has for the period, as the page will: nothing yet.
+    await expect(water).toContainText('Taloyhtiön tasausta ei löydy kirjanpidosta.')
+    await expect(share.locator('.property-water-status')).toHaveText('avoin')
     // With the actual use: 60,00 € by days is 40,44 €, less 80,00 € of advances.
     await water.getByLabel('Toteutunut kulutus €').fill('60')
     await expect(share).toContainText('palautetaan 39,56 €')

@@ -591,6 +591,7 @@ function EditForm({
           tenantName={(lease) => leaseTenant(lease) || t('properties.lease.tenantUnknown')}
           docs={allDocs}
           suggestions={detail.water.suggestions}
+          lines={detail.water.lines}
           onCreateLetter={createLetter}
           onUpload={uploadWater}
           isCreated={isCreated}

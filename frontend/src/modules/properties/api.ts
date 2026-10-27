@@ -38,6 +38,7 @@ export type {
   SetupResponse,
   Valuation,
   Warning,
+  WaterBookedLine,
   WaterDetail,
   WaterSettlement,
   WaterSettlementView,
