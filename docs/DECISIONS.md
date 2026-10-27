@@ -476,13 +476,15 @@ correction would change the open year's income statement lines. The rental-objec
   say) moves the start back to that payment's month: the owner had the object then, and the
   payment would otherwise show as paid ahead for good. Without a purchase in the books, the books'
   first fiscal year. When the sale agreed otherwise (the month of the sale to the buyer, say), the
-  owner gives the day on the edit page (`rent_from`), and it stands for all of these. Before, the
+  owner gives the day on the edit page (`rent_from`), and it stands for all of these. The box
+  there shows the default day; only another day is stored as `rent_from`. Before, the
   count started on the purchase day and the owner had to enter an exception at 0 for the rest of
   that month on every object bought with a tenant.
 - **The owner's last day of rent** (2026-10-27, owner's choice): after a sale, the end of the month
   of the sale - the seller usually keeps that month's rent. Before, the count ended on the sale day
   and the month's rent, paid in full, showed as paid ahead. A held object runs on to the as-of
-  date. When the sale agreed otherwise, the owner gives the day on the edit page (`rent_until`).
+  date. When the sale agreed otherwise, the owner gives the day on the edit page (`rent_until`);
+  as with `rent_from`, the box shows the default day (empty while held) and only another is stored.
 - **Received:** the object's income lines (without VAT, as booked), each given to one lease: the
   lease whose tenant paid it (from 31 days before its start, also after its end); else the lease
   running then; else the last that ended before it. A stored water settlement's lines go to the

@@ -13,6 +13,15 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   below always shows for an open book (both read `meta.source_name`). Owner asked to drop the
   repeat; the chip's tooltip still names the file.
 
+## 2026-10-27 - Rental objects: the rent day boxes show the defaults
+
+- Owner asked: instead of empty "Vuokra omistajalle alkaen / päättyen" boxes with a paragraph
+  explaining the defaults, the boxes show the default days (`rent_start_default`,
+  `rent_end_default`; the end stays empty while the object is held) and the paragraph is gone.
+  Only a day other than the default is stored as `rent_from` / `rent_until`, so untouched boxes
+  keep following the purchase and sale dates; a stored own day equal to the default is dropped
+  on save.
+
 ## 2026-10-27 - PR previews as a non-zipped artifact, not under tilari.fi
 
 - Owner asked for a preview of each PR, cleaned up after merge. `tilari.fi/PRs/<N>/` was rejected:

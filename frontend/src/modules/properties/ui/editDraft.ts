@@ -22,9 +22,9 @@ export type EditState = {
   kind: PropertyKind | ''
   excluded: boolean
   leases: LeaseDraft[]
-  /** The owner's own first day of rent (`rent_from`); empty for the default. */
+  /** The first day of rent as typed; empty from a doc without `rent_from` (the form shows the default). */
   rentFrom: string
-  /** The owner's own last day of rent (`rent_until`); empty for the default. */
+  /** The last day of rent as typed; empty from a doc without `rent_until` (the form shows the default, if any). */
   rentUntil: string
   water: SettlementDraft[]
   /** Documents written on the page (vouchers already in the book). */

@@ -1326,10 +1326,7 @@
       "confirmDeleteDoc": "Delete the voucher from the books: {titles}? One created on this visit goes at once, an earlier one when you save.",
       "exceptionsLead": "An agreed discount, a rent-free period or another exception: on its days the tenant pays these amounts instead of the rent and its increases, and the rent balance counts them. Type a discount as the lower rent.",
       "addException": "Add an exception",
-      "uploadException": "Upload document",
-      "rentDatesHint": "Empty, rent counts from {from} ({fromReason}) until {until} ({untilReason}).",
-      "rentDatesHintHeld": "Empty, rent counts from {from} ({fromReason}) for as long as the object is owned.",
-      "rentDatesRule": "The rent of the month of a sale usually goes to the seller: after a purchase rent counts from the first whole month owned, after a sale until the end of the month of sale. Give a date if the sale agreed otherwise, for example that the rent of the month of sale goes to the buyer."
+      "uploadException": "Upload document"
     },
     "setup": {
       "title": "Set up rental objects",
