@@ -63,8 +63,8 @@ Money in integer cents (`*_snt`), percentages in basis points (`*_bp`, 100 = 1 %
 | `tenant_partner_id` / `tenant_name` | The tenant as a Kitsas partner (`Kumppani.id`), or a name when they are not one yet |
 | `starts`, `ends?` | Start; a fixed term's end or the move-out |
 | `due_day?` | Rent due day (the form starts at 5) |
-| `rents[]` | `{ from, rent_snt, water_snt?, parking_snt?, voucher_id? }`: what the tenant pays a month from `from` on. The first is the starting rent (from `starts`); each later one is an increase (korotus) with its increase notice voucher |
-| `exceptions[]?` | `{ from, to, rent_snt, water_snt?, parking_snt?, note?, voucher_id? }`: an agreed exception (poikkeava vuokra) - a discount, a rent-free stretch, a temporary rent. On its days its amounts stand for the steps'; the steps stay. Within the lease, never overlapping; `note` is the owner's reason, `voucher_id` the agreement (ADR-027) |
+| `rents[]` | `{ from, rent_snt, water_snt?, parking_snt?, voucher_id?, no_document? }`: what the tenant pays a month from `from` on. The first is the starting rent (from `starts`); each later one is an increase (korotus) with its increase notice voucher, or `no_document: true` when the owner says there is none (ADR-030) |
+| `exceptions[]?` | `{ from, to, rent_snt, water_snt?, parking_snt?, note?, voucher_id?, no_document? }`: an agreed exception (poikkeava vuokra) - a discount, a rent-free stretch, a temporary rent. On its days its amounts stand for the steps'; the steps stay. Within the lease, never overlapping; `note` is the owner's reason, `voucher_id` the agreement (ADR-027), `no_document: true` the owner's word that there is none (ADR-030) |
 | `increase?` | The contract's increase clause `{ kind: none / percent / amount / index, pct_bp?, amount_snt?, month? }`: prefills the next increase and drives reminders; Tilari never changes rent by itself |
 | `doc_voucher_id?` | The contract (a type-800 voucher) |
 | `water?` | `flat` when water is a flat fee that is never settled; missing means an advance settled against use (ADR-025) |
@@ -86,6 +86,7 @@ tenant as partner and the letter as a PDF attachment (`modules/properties/ui/inc
 | `difference_snt` | The company's result: + the owner pays more, - a refund |
 | `usage_snt?` | The apartment's actual water cost for the period, when the statement gives it |
 | `voucher_id?` | The company's statement (a type-800 voucher) |
+| `no_document?` | `true`: the owner says there is no statement, so none is asked for (ADR-030); never stored beside `voucher_id` |
 | `shares[]?` | `{ lease_key, balance_snt?, voucher_id? }`: a tenant's own amount (+ the tenant pays, - refunded) instead of the computed one, and the letter sent. Only shares that carry something are stored |
 
 Each lease in the period whose water is an advance has a share: the use by its days less its

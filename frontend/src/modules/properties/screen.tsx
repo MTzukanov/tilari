@@ -1,6 +1,7 @@
 import { allocationHash, voucherHash } from '../../app/routing'
 import type { BookViewCtx, UiModule } from '../ui'
 import { viaKind } from '../ui'
+import { AlertsButton } from './ui/AlertsButton'
 import { PortfolioView } from './ui/PortfolioView'
 import { PropertyEdit } from './ui/PropertyEdit'
 import { PropertySetup } from './ui/PropertySetup'
@@ -44,7 +45,13 @@ function PropertiesScreen({ route, goTo, meta }: BookViewCtx) {
     )
   }
   if (route.view === 'properties') {
-    return <PortfolioView onOpen={(id) => goTo(`#/property/${id}`)} onSetup={() => goTo('#/properties/setup')} />
+    return (
+      <PortfolioView
+        onOpen={(id) => goTo(`#/property/${id}`)}
+        onSetup={() => goTo('#/properties/setup')}
+        focusAlerts={route.section === 'alerts'}
+      />
+    )
   }
   return null
 }
@@ -56,6 +63,7 @@ export const propertiesUi: UiModule = {
   navItems: [{ id: 'properties', href: '#/properties', icon: 'home', labelKey: 'nav.properties' }],
   match: (route) => VIEWS.has(route.view),
   Screen: PropertiesScreen,
+  TopbarItem: AlertsButton,
   activeNav: (route) =>
     VIEWS.has(route.view) || ['property', 'propertiesSetup', 'propertyEdit'].includes(viaKind(route) ?? '') ? 'properties' : null,
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
@@ -6,9 +6,11 @@ import { formatCents, formatEurInput, parseEurInput } from '../../../shared/mone
 import { formatBp, formatPercentInput, parsePercentInput } from '../../../shared/percent'
 import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
-import { fetchPortfolio, savePortfolioSettings, type PortfolioResponse, type PortfolioSettings, type PropertyRow } from '../api'
+import { fetchPortfolio, savePortfolioSettings, skipPropertyDocument, type DocumentSkip, type PortfolioResponse, type PortfolioSettings, type PropertyRow } from '../api'
+import { rowAlerts } from '../../../book/modules/properties/domain/reminders'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
-import { formatEuro, holdingText, periodLabel, saveErrorText, statusClass, tenantSide } from './format'
+import { formatEuro, holdingText, periodLabel, saveErrorText, statusClass, tenantSide, warningText } from './format'
+import { SkipDocumentButton } from './FormParts'
 
 function Kpi({ label, value, neg, hint }: { label: string; value: string; neg?: boolean; hint?: string }) {
   return (
@@ -88,6 +90,97 @@ function negClass(n: number | null | undefined): string {
   return (n ?? 0) < 0 ? 'neg' : ''
 }
 
+/** ⚠ before the name when the object has warnings or reminders to act on (ADR-030); they show on hover, one bullet each. */
+function WarnMark({ t, row }: { t: T; row: PropertyRow }) {
+  const shown = rowAlerts(row)
+  if (!shown.length) return null
+  return (
+    <span
+      className="property-warn-mark"
+      role="img"
+      title={shown.map((w) => `• ${warningText(t, w)}`).join('\n')}
+      aria-label={t('properties.warnCount', { count: shown.length })}
+    >
+      {shown.length > 1 ? `⚠ ${shown.length}` : '⚠'}
+    </span>
+  )
+}
+
+const ALERTS_OPEN_KEY = 'tilari.properties.alerts.open'
+
+function readAlertsOpen(): boolean {
+  try {
+    return localStorage.getItem(ALERTS_OPEN_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+
+/**
+ * Every object's warnings to act on in one list, after the figures (ADR-030). The header's ⚠
+ * opens the page here (`focus`); whether it is folded is remembered in this browser.
+ */
+function AlertsList({
+  t,
+  rows,
+  focus,
+  onOpen,
+  onSkip,
+}: {
+  t: T
+  rows: PropertyRow[]
+  focus: boolean
+  onOpen: (id: number) => void
+  onSkip: (id: number, skip: DocumentSkip) => Promise<unknown>
+}) {
+  const ref = useRef<HTMLDetailsElement>(null)
+  const [open, setOpen] = useState(() => focus || readAlertsOpen())
+  const items = rows.map((row) => ({ row, warnings: rowAlerts(row) })).filter((i) => i.warnings.length)
+
+  useEffect(() => {
+    if (!focus || !ref.current) return
+    setOpen(true)
+    ref.current.scrollIntoView({ block: 'start' })
+  }, [focus, items.length])
+
+  if (!items.length) return null
+  const toggle = (next: boolean) => {
+    setOpen(next)
+    try {
+      localStorage.setItem(ALERTS_OPEN_KEY, next ? '1' : '0')
+    } catch {
+      // Not remembered; the list still folds.
+    }
+  }
+  return (
+    <details ref={ref} className="property-section property-alerts" open={open} onToggle={(e) => toggle(e.currentTarget.open)}>
+      <summary>
+        <h3>{t('properties.alerts.title')}</h3>
+        <span className="muted">
+          {t('properties.alerts.summary', { count: items.reduce((s, i) => s + i.warnings.length, 0), objects: items.length })}
+        </span>
+      </summary>
+      <ul className="property-alerts-list">
+        {items.map(({ row, warnings }) => (
+          <li key={row.id}>
+            <button type="button" className="btn-link property-alerts-object" onClick={() => onOpen(row.id)}>
+              {row.name}
+            </button>
+            <ul>
+              {warnings.map((w, i) => (
+                <li key={`${w.code}-${i}`}>
+                  {warningText(t, w)}
+                  {w.skip ? <SkipDocumentButton onSkip={() => onSkip(row.id, w.skip!)} /> : null}
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
+    </details>
+  )
+}
+
 function nameColumn(t: T, withDates: 'acquired' | 'none'): TableColumn<PropertyRow> {
   return {
     id: 'object',
@@ -97,8 +190,11 @@ function nameColumn(t: T, withDates: 'acquired' | 'none'): TableColumn<PropertyR
     sortValue: (r) => r.name,
     render: (r) => (
       <>
-        <span className="property-name" title={r.name}>
-          {r.name}
+        <span className="property-name-row">
+          <WarnMark t={t} row={r} />
+          <span className="property-name" title={r.name}>
+            {r.name}
+          </span>
         </span>
         {withDates === 'acquired' && (r.kind || r.summary.acquired_on) ? (
           <span className="muted property-sub">
@@ -358,7 +454,7 @@ function soldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
   ]
 }
 
-export function PortfolioView({ onOpen, onSetup }: { onOpen: (id: number) => void; onSetup: () => void }) {
+export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen: (id: number) => void; onSetup: () => void; focusAlerts?: boolean }) {
   const { t } = useI18n()
   const [reload, setReload] = useState(0)
   const { data, error, loading } = usePeriodQuery(() => fetchPortfolio(), [reload])
@@ -418,6 +514,17 @@ export function PortfolioView({ onOpen, onSetup }: { onOpen: (id: number) => voi
 
       {data ? (
         <>
+          <AlertsList
+            t={t}
+            rows={[...held, ...sold]}
+            focus={focusAlerts}
+            onOpen={onOpen}
+            onSkip={async (id, skip) => {
+              await skipPropertyDocument(id, skip)
+              setReload((n) => n + 1)
+            }}
+          />
+
           <section className="property-section">
             <h3>{t('properties.held.title', { n: held.length })}</h3>
             {held.length === 0 ? (

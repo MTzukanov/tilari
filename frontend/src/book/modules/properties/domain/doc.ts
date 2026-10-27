@@ -162,6 +162,13 @@ function optionalId(value: unknown, path: string): number | undefined {
   return value == null ? undefined : int(value, path, 1, MAX_ID)
 }
 
+/** The owner's word that an item has no document (ADR-030): only `true` is stored, and not beside a document. */
+function noDocument(raw: Record<string, unknown>, out: { voucher_id?: number; no_document?: true }, path: string): void {
+  if (raw.no_document == null || raw.no_document === false) return
+  if (raw.no_document !== true) fail(path)
+  if (out.voucher_id == null) out.no_document = true
+}
+
 function leaseIncrease(value: unknown, path: string): LeaseIncrease | undefined {
   if (value == null) return undefined
   if (!isObject(value)) fail(path)
@@ -205,6 +212,7 @@ function leaseExceptions(value: unknown, lease: Lease, path: string): LeaseExcep
     if (note) out.note = note
     const voucher = optionalId(raw.voucher_id, `${at}.voucher_id`)
     if (voucher != null) out.voucher_id = voucher
+    noDocument(raw, out, `${at}.no_document`)
     return out
   })
   const sorted = list.map((e, i) => ({ e, i })).sort((a, b) => a.e.from.localeCompare(b.e.from))
@@ -249,6 +257,7 @@ function lease(item: unknown, path: string): Lease {
       }
       const voucher = optionalId(raw.voucher_id, `${at}.voucher_id`)
       if (voucher != null) rent.voucher_id = voucher
+      noDocument(raw, rent, `${at}.no_document`)
       return rent
     })
     .sort((a, b) => a.from.localeCompare(b.from))
@@ -292,7 +301,7 @@ function assignKeys(list: { key: string }[], prefix: string, path: string): void
   }
 }
 
-const SETTLEMENT_KEYS = new Set(['key', 'from', 'to', 'difference_snt', 'usage_snt', 'voucher_id', 'shares'])
+const SETTLEMENT_KEYS = new Set(['key', 'from', 'to', 'difference_snt', 'usage_snt', 'voucher_id', 'no_document', 'shares'])
 const SHARE_KEYS = new Set(['lease_key', 'balance_snt', 'voucher_id'])
 
 function keep(out: Record<string, unknown>, item: Record<string, unknown>, known: Set<string>): void {
@@ -327,6 +336,7 @@ function waterSettlement(item: unknown, path: string): WaterSettlement {
   if (item.usage_snt != null) out.usage_snt = snt(item.usage_snt, `${path}.usage_snt`, 0)
   const voucher = optionalId(item.voucher_id, `${path}.voucher_id`)
   if (voucher != null) out.voucher_id = voucher
+  noDocument(item, out, `${path}.no_document`)
   const seen = new Set<string>()
   const shares = array(item.shares, `${path}.shares`, 50).map((raw, i) => {
     const share = waterShare(raw, `${path}.shares[${i}]`)

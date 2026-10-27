@@ -37,6 +37,16 @@ describe('water settlement drafts', () => {
     expect(buildSettlements(t, [draft], new Set(['l1', 'l2']))).toEqual([stored])
   })
 
+  it("the owner's word that there is no statement round-trips; picking one drops it", () => {
+    const stored: WaterSettlement = { key: 'w1', from: '2023-11-01', to: '2024-10-31', difference_snt: -1_000, no_document: true }
+    const [draft] = settlementDrafts([stored])
+    expect(draft.noDocument).toBe(true)
+    expect(buildSettlements(t, [draft], new Set())).toEqual([stored])
+    const plain = { key: 'w1', from: '2023-11-01', to: '2024-10-31', difference_snt: -1_000 }
+    expect(buildSettlements(t, [{ ...draft, voucherId: '40' }], new Set())).toEqual([{ ...plain, voucher_id: 40 }])
+    expect(buildSettlements(t, [{ ...draft, noDocument: false }], new Set())).toEqual([plain])
+  })
+
   it('an extra charge is positive; a computed share without a letter is not stored; a removed lease\'s share goes', () => {
     const draft = {
       ...newSettlement(),

@@ -331,6 +331,18 @@ body {
   gap: 0.35rem;
 }
 
+.topbar-alerts {
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid color-mix(in srgb, #c98a00 40%, var(--line));
+  border-radius: 6px;
+  background: color-mix(in srgb, #f6e7c4 45%, var(--surface));
+  color: #7a5200;
+  cursor: pointer;
+}
+
 .session-changes-toggle:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -5049,6 +5061,65 @@ tr.tax-total td {
   font-size: 0.78rem;
 }
 
+.property-alerts {
+  border: 1px solid color-mix(in srgb, #c98a00 40%, var(--line));
+  background: color-mix(in srgb, #f6e7c4 30%, var(--surface));
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  scroll-margin-top: 1rem;
+}
+
+.property-alerts > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.property-alerts > summary h3 {
+  display: inline;
+  margin: 0;
+}
+
+.property-alerts-list {
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.88rem;
+}
+
+.property-alerts-list > li + li {
+  margin-top: 0.6rem;
+}
+
+.property-alerts-list ul {
+  margin: 0.2rem 0 0;
+  padding-left: 1.4rem;
+}
+
+.property-alerts-object {
+  font-weight: 600;
+}
+
+.property-name-row {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.property-name-row .property-name {
+  min-width: 0;
+}
+
+.property-warn-mark {
+  flex: none;
+  margin-right: 0.3rem;
+  color: #a36d00;
+  font-weight: 600;
+  cursor: help;
+}
+
 .property-status {
   display: inline-block;
   font-size: 0.75rem;
@@ -5402,6 +5473,20 @@ tr.tax-total td {
   gap: 0.25rem;
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+/* "Ei asiakirjaa" beside a document pick: a checkbox on one line, at the inputs' height. */
+.property-lease-notice > label.property-no-doc {
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  padding-bottom: 0.5rem;
+}
+
+.property-skip-doc {
+  margin-left: 0.25rem;
+  font-size: 0.82rem;
 }
 
 /* A fixed-width choice before the document pick on the same row. */

@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 import { startServer } from './app.ts'
 import { SqliteDb } from '../../frontend/src/book/sqlite.ts'
 import {
+  computeAlerts,
   computeDetail,
   computePortfolio,
   saveProperty,
@@ -247,6 +248,9 @@ describe('ledger http', () => {
     expected.doc.updated_at = remote.doc.updated_at
     assert.deepEqual(remote, expected)
     assert.equal(remote.doc.rev, 1)
+    const alerts = await fetch(`${base}/api/properties/alerts?as_of=${asOf}`).then((r) => r.json())
+    assert.deepEqual(alerts, computeAlerts(local, { today: asOf, asOf }))
+    assert.ok((alerts as { warnings: number }).warnings > 0)
 
     const stale = await fetch(`${base}/api/properties/4`, {
       method: 'PUT',

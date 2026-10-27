@@ -25,14 +25,35 @@ describe('lease drafts', () => {
     const [draft] = leaseDrafts([stored], partners)
     expect(draft.deposits).toEqual(['e:31', 'l:44'])
     expect(draft.exceptions).toEqual([
-      { from: '2025-07-01', to: '2025-07-31', rent: '340,00', water: '20,00', parking: '', note: 'Remonttihyvitys', voucherId: '12' },
+      { from: '2025-07-01', to: '2025-07-31', rent: '340,00', water: '20,00', parking: '', note: 'Remonttihyvitys', voucherId: '12', noDocument: false },
     ])
     expect(draft.parking).toBe(true)
     expect(draft.initial).toEqual({ rent: '655,00', water: '20,00', parking: '' })
-    expect(draft.increases).toEqual([{ from: '2026-01-01', rent: '700,50', water: '20,00', parking: '15,00', voucherId: '9' }])
+    expect(draft.increases).toEqual([{ from: '2026-01-01', rent: '700,50', water: '20,00', parking: '15,00', voucherId: '9', noDocument: false }])
     expect(buildLeases(t, [draft], partners)).toEqual([stored])
     const euros: Lease = { ...stored, increase: { kind: 'amount', amount_snt: 2_000 } }
     expect(buildLeases(t, leaseDrafts([euros], partners), partners)).toEqual([euros])
+  })
+
+  it("the owner's word that an increase or exception has no document round-trips; picking one drops it", () => {
+    const stored: Lease = {
+      key: 'l1',
+      tenant_partner_id: 5,
+      starts: '2025-01-01',
+      due_day: 5,
+      rents: [
+        { from: '2025-01-01', rent_snt: 60_000 },
+        { from: '2026-01-01', rent_snt: 62_000, no_document: true },
+      ],
+      exceptions: [{ from: '2025-06-01', to: '2025-06-30', rent_snt: 0, no_document: true }],
+    }
+    const [draft] = leaseDrafts([stored], partners)
+    expect([draft.increases[0].noDocument, draft.exceptions[0].noDocument]).toEqual([true, true])
+    expect(buildLeases(t, [draft], partners)).toEqual([stored])
+    const picked = { ...draft, increases: [{ ...draft.increases[0], voucherId: '9' }], exceptions: [{ ...draft.exceptions[0], noDocument: false }] }
+    const [saved] = buildLeases(t, [picked], partners) as Lease[]
+    expect(saved.rents[1]).toEqual({ from: '2026-01-01', rent_snt: 62_000, voucher_id: 9 })
+    expect(saved.exceptions?.[0]).toEqual({ from: '2025-06-01', to: '2025-06-30', rent_snt: 0 })
   })
 
   it('a new lease is due on the 5th; a typed tenant matches a partner by name, else stays a name', () => {
@@ -59,7 +80,7 @@ describe('lease drafts', () => {
       ...newLease(),
       starts: '2025-01-01',
       initial: { rent: '600', water: '20', parking: '15' },
-      increases: [{ from: '2026-01-01', rent: '620', water: '20', parking: '15', voucherId: '' }],
+      increases: [{ from: '2026-01-01', rent: '620', water: '20', parking: '15', voucherId: '', noDocument: false }],
     }
     expect(buildLeases(t, [{ ...lease, parking: true }], partners)).toMatchObject([
       { rents: [{ rent_snt: 60_000, water_snt: 2_000, parking_snt: 1_500 }, { rent_snt: 62_000, water_snt: 2_000, parking_snt: 1_500 }] },
@@ -79,8 +100,8 @@ describe('lease drafts', () => {
       increaseValue: '3',
       increaseMonth: '3',
     }
-    expect(nextIncrease(lease, '2026-10-26')).toEqual({ from: '2027-03-01', rent: '618,00', water: '20,00', parking: '', voucherId: '' })
-    const raised = { ...lease, increases: [{ from: '2027-03-01', rent: '618,00', water: '20,00', parking: '', voucherId: '' }] }
+    expect(nextIncrease(lease, '2026-10-26')).toEqual({ from: '2027-03-01', rent: '618,00', water: '20,00', parking: '', voucherId: '', noDocument: false })
+    const raised = { ...lease, increases: [{ from: '2027-03-01', rent: '618,00', water: '20,00', parking: '', voucherId: '', noDocument: false }] }
     expect(nextIncrease({ ...raised, increaseKind: 'amount', increaseValue: '15' }, '2026-10-26')).toMatchObject({
       from: '2028-03-01',
       rent: '633,00',
@@ -123,7 +144,7 @@ describe('lease drafts', () => {
     expect(buildLeases(say, [{ ...old, ends: '2026-12-31' }, { ...next, ends: '2025-03-31' }], partners)).toMatch(/^leaseOverlap/)
 
     const lease = { ...old, ends: '2024-12-31' }
-    const exception = (from: string, to: string) => ({ from, to, rent: '0', water: '', parking: '', note: '', voucherId: '' })
+    const exception = (from: string, to: string) => ({ from, to, rent: '0', water: '', parking: '', note: '', voucherId: '', noDocument: false })
     const march = exception('2024-03-01', '2024-03-31')
     expect(buildLeases(say, [{ ...lease, exceptions: [march, exception('2024-03-15', '2024-04-15')] }], partners)).toBe(
       'exceptionOverlap(period(1.3.2024, 31.3.2024), period(15.3.2024, 15.4.2024), Vuokralainen Virtanen period(1.1.2024, 31.12.2024))',
@@ -135,7 +156,7 @@ describe('lease drafts', () => {
     expect(buildLeases(say, [{ ...lease, exceptions: [exception('2024-05-31', '2024-05-01')] }], partners)).toBe(
       'exceptionDates(period(31.5.2024, 1.5.2024))',
     )
-    const step = (from: string) => ({ from, rent: '650', water: '', parking: '', voucherId: '' })
+    const step = (from: string) => ({ from, rent: '650', water: '', parking: '', voucherId: '', noDocument: false })
     expect(buildLeases(say, [{ ...lease, increases: [step('2025-01-01')] }], partners)).toBe(
       'increaseOutside(1.1.2025, Vuokralainen Virtanen period(1.1.2024, 31.12.2024))',
     )
@@ -152,9 +173,9 @@ describe('lease drafts', () => {
       starts: '2025-04-14',
       ends: '2026-02-28',
       initial: { rent: '655', water: '20', parking: '' },
-      increases: [{ from: '2026-01-01', rent: '700', water: '20', parking: '', voucherId: '' }],
+      increases: [{ from: '2026-01-01', rent: '700', water: '20', parking: '', voucherId: '', noDocument: false }],
     }
-    expect(newException(d, '2025-11-12')).toEqual({ from: '2025-11-01', to: '2025-11-30', rent: '655', water: '20', parking: '', note: '', voucherId: '' })
+    expect(newException(d, '2025-11-12')).toEqual({ from: '2025-11-01', to: '2025-11-30', rent: '655', water: '20', parking: '', note: '', voucherId: '', noDocument: false })
     expect(newException(d, '2026-02-03')).toMatchObject({ from: '2026-02-01', to: '2026-02-28', rent: '700' })
     // Before the start or after the end: the lease's first or last month, within the lease.
     expect(newException(d, '2025-01-05')).toMatchObject({ from: '2025-04-14', to: '2025-04-30', rent: '655' })

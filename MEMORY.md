@@ -7,6 +7,29 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-27 - Rental objects 1f: lease reminders (`feature/property-reminders`)
+
+- Phase 2 increment 1f (ADR-030): reminders are warnings computed on the as-of date - vacancy,
+  a lease ending within 90 days, an increase due, water settlements missing (15 months), and
+  tenant water shares with no letter (30 days) or not settled to the cent (60 days). Nothing is
+  stored and nothing can be dismissed: the data answers each one.
+- The portfolio's name column shows ⚠ (with the count) before the name, outside `.property-name`
+  so the name's text stays as it was (an e2e matches it exactly). Notes do not mark rows
+  (`NOTE_CODES`): `sale_costs_unset` would sit on every held row until the owner sets sale costs,
+  and `sale_carried` / `sale_line_split` explain a shared sale.
+- An increase whose anniversary month passed without a step shows only through that month; the
+  next one comes 60 days before the next anniversary.
+- Owner's demo review: what the book suggests must remind too (suggested leases, water
+  settlements, deposits not linked), not only stored leases; a list of every object's warnings
+  after the portfolio's figures, and a ⚠ count in the header that opens it. One count takes
+  about 90 ms on a real book, so the header waits 0.8 s after the last change.
+- Owner: missing documents remind too - a lease's contract, an increase's notice, an agreed
+  exception's agreement, a water settlement's statement (objects still held).
+- Owner: a single document check can be skipped ("Ohita" / "Ei asiakirjaa", `no_document: true` on
+  the step, exception or settlement); the lease contract cannot.
+- The book cannot tell "no increase" from an unset clause (`increase` with `kind: 'none'` is not
+  stored), so a missing increase clause is no reminder.
+
 ## 2026-10-27 - The storage chip shows only where the book lives, not its file name
 
 - The chip ("Selaimessa", "Levyllä", ...) also printed `source_name`, which the book picker right

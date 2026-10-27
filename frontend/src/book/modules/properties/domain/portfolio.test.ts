@@ -11,11 +11,13 @@ import { listPropertyDocuments } from './documents'
 import {
   applySetup,
   buildSetup,
+  computeAlerts,
   computeDetail,
   computePortfolio,
   deleteProperty,
   saveProperty,
 } from './portfolio'
+import { rowAlerts } from './reminders'
 import type { SetupApplyInput, SetupResponse } from './types'
 
 const E = 100
@@ -498,6 +500,86 @@ describe('rental objects: figures', () => {
     expect(save({ shares: [{ lease_key: 'l1', voucher_id: vouchers.draft }] })).toThrow(
       'invalid_field:water_settlements[0].shares[0].voucher_id',
     )
+  })
+
+  it('reminders: a water share to settle, then the lease ending, the increase and the next settlement', async () => {
+    const fx = await setUp()
+    const { db, partners } = fx
+    // The company charges more; the tenant pays their share in February.
+    fx.voucher('waterCompany', '2024-11-30', 400, 'Tiliote 2024-11', [
+      { account: 7300, debit: 60 * E, allocation: CC.bundle, description: 'Vesitasaus 31.10.2024 A 1', date: '2024-11-20' },
+      { account: 1910, credit: 60 * E, date: '2024-11-20' },
+    ])
+    fx.voucher('waterTenant', '2025-02-28', 400, 'Tiliote 2025-02', [
+      { account: 3760, credit: 60 * E, allocation: CC.bundle, description: 'Vesitasaus A 1', partner: 'Vuokralainen Virtanen', date: '2025-02-10' },
+      { account: 1910, debit: 60 * E, date: '2025-02-10' },
+    ])
+    const doc = computeDetail(db, CC.bundle, { today: TODAY }).doc
+    const lease = {
+      key: 'l1',
+      tenant_partner_id: partners['Vuokralainen Virtanen'],
+      starts: '2023-03-01',
+      ends: '2026-12-31',
+      rents: [{ from: '2023-03-01', rent_snt: 980 * E, water_snt: 20 * E }],
+      increase: { kind: 'percent', pct_bp: 300, month: 12 },
+    }
+    saveProperty(db, CC.bundle, { ...doc, leases: [lease], water_settlements: [{ from: '2023-11-01', to: '2024-10-31', difference_snt: 60 * E }] }, 'now')
+    const codes = ['vacant', 'lease_ending', 'increase_due', 'water_settlement_missing', 'water_letter_missing', 'water_tenant_owes']
+    const reminders = (asOf: string) => computeDetail(db, CC.bundle, { today: TODAY, asOf }).warnings.filter((w) => codes.includes(w.code))
+    const period = { from_date: '2023-11-01', to_date: '2024-10-31' }
+    const tenant = 'Vuokralainen Virtanen'
+
+    // December's anniversary passed with no increase entered; the company's charge is a month old.
+    expect(reminders('2024-12-20')).toEqual([{ code: 'increase_due', params: { tenant, from_date: '2024-12-01' } }])
+    expect(reminders('2025-01-05')).toEqual([{ code: 'water_letter_missing', params: { tenant, ...period } }])
+    // The payment after the as-of date does not count yet.
+    expect(reminders('2025-02-01')).toEqual([{ code: 'water_tenant_owes', params: { tenant, ...period, amount_snt: 60 * E } }])
+    expect(reminders('2025-03-01')).toEqual([])
+
+    const autumn = [
+      { code: 'lease_ending', params: { tenant, ends_date: '2026-12-31' } },
+      { code: 'increase_due', params: { tenant, from_date: '2026-12-01' } },
+      { code: 'water_settlement_missing', params: { to_date: '2024-10-31' } },
+    ]
+    expect(reminders('2026-10-15')).toEqual(autumn)
+    const row = computePortfolio(db, { today: TODAY, asOf: '2026-10-15' }).rows.find((r) => r.id === CC.bundle)
+    expect(row?.warnings.filter((w) => codes.includes(w.code))).toEqual(autumn)
+    expect(reminders('2027-01-10')).toEqual([{ code: 'vacant', params: { from_date: '2027-01-01' } }])
+  })
+
+  it('reminders: what the book has and the owner has not defined; the header counts what to act on', async () => {
+    const empty = await buildPropertyFixture()
+    expect(computeAlerts(empty.db, { today: TODAY })).toEqual({ warnings: 0, objects: 0 })
+
+    const fx = await setUp()
+    const { db } = fx
+    fx.voucher('depositIn', '2023-02-28', 400, 'Tiliote 2023-02', [
+      { account: 1910, debit: 2_000 * E, date: '2023-02-25', partner: 'Vuokralainen Virtanen', description: 'Vuokravakuus A 1' },
+      { account: 2741, credit: 2_000 * E, era: 'new', date: '2023-02-25', partner: 'Vuokralainen Virtanen', description: 'Vuokravakuus A 1' },
+    ])
+    fx.voucher('waterCompany', '2024-11-30', 400, 'Tiliote 2024-11', [
+      { account: 7300, credit: 120 * E, allocation: CC.bundle, description: 'Vesitasaus 31.10.2024 A 1', date: '2024-11-20' },
+      { account: 1910, debit: 120 * E, date: '2024-11-20' },
+    ])
+    const codes = ['lease_suggestions', 'water_suggestions', 'deposits_unlinked']
+    const pending = () => computeDetail(db, CC.bundle, { today: TODAY }).warnings.filter((w) => codes.includes(w.code))
+    expect(pending()).toEqual([
+      { code: 'lease_suggestions', params: { count: 1 } },
+      { code: 'water_suggestions', params: { count: 1 } },
+      { code: 'deposits_unlinked', params: { count: 1, amount_snt: 2_000 * E } },
+    ])
+    const counted = () => {
+      const rows = computePortfolio(db, { today: TODAY }).rows.map((r) => rowAlerts(r).length).filter((n) => n > 0)
+      return { warnings: rows.reduce((s, n) => s + n, 0), objects: rows.length }
+    }
+    expect(computeAlerts(db, { today: TODAY })).toEqual(counted())
+    expect(computeAlerts(db, { today: TODAY }).objects).toBeGreaterThan(0)
+
+    // The suggested lease brings its deposit; the suggested settlement is stored with it.
+    const d = computeDetail(db, CC.bundle, { today: TODAY })
+    saveProperty(db, CC.bundle, { ...d.doc, leases: [d.lease_suggestions[0].lease], water_settlements: [d.water.suggestions[0].settlement] }, 'now')
+    expect(pending()).toEqual([])
+    expect(computeAlerts(db, { today: TODAY })).toEqual(counted())
   })
 
   it('deposits: the tenant own receipt is suggested; stored, its return and deduction show; ended and held, it warns', async () => {

@@ -26,7 +26,7 @@ type T = (key: string, vars?: Record<string, string | number>) => string
 
 /**
  * Warning text; unknown codes fall back to the code itself. A `*_snt` param is money and a `*_date`
- * param a date, each named without the suffix.
+ * param a date, each named without the suffix; an empty `tenant` is an unknown tenant.
  */
 export function warningText(t: T, w: Warning): string {
   const key = `properties.warn.${w.code}`
@@ -36,7 +36,9 @@ export function warningText(t: T, w: Warning): string {
         ? [k.slice(0, -4), formatCents(v)]
         : k.endsWith('_date') && typeof v === 'string'
           ? [k.slice(0, -5), formatDate(v)]
-          : [k, v],
+          : k === 'tenant' && v === ''
+            ? [k, t('properties.lease.tenantUnknown')]
+            : [k, v],
     ),
   )
   const text = t(key, params)

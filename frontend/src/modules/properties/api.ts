@@ -1,6 +1,7 @@
 import { getBookService } from '../../book/engine'
 import type { PropertyQuery } from '../../book/modules/properties/service'
-import type { PortfolioSettings, PropertyDoc, SetupApplyInput } from '../../book/modules/properties/domain/types'
+import { skipDocument } from '../../book/modules/properties/domain/reminders'
+import type { DocumentSkip, PortfolioSettings, PropertyDoc, SetupApplyInput } from '../../book/modules/properties/domain/types'
 
 export type {
   BookedLine,
@@ -8,6 +9,7 @@ export type {
   DepositCandidate,
   DepositMovement,
   DepositView,
+  DocumentSkip,
   Disposal,
   DocumentVoucher,
   EraCandidate,
@@ -23,6 +25,7 @@ export type {
   MonthLine,
   MonthLineKind,
   MonthPoint,
+  PortfolioAlerts,
   PortfolioResponse,
   PortfolioSettings,
   PropertyDetail,
@@ -62,6 +65,9 @@ function service() {
 export function fetchPortfolio(query?: PropertyQuery) {
   return service().listProperties(query)
 }
+export function fetchPropertyAlerts() {
+  return service().fetchAlerts()
+}
 export function fetchProperty(id: number, query?: PropertyQuery) {
   return service().fetchProperty(id, query)
 }
@@ -76,6 +82,11 @@ export function applyPropertySetup(input: SetupApplyInput) {
 }
 export function saveProperty(id: number, doc: PropertyDoc, query?: PropertyQuery) {
   return service().saveProperty(id, doc, query)
+}
+/** The owner's word that a missing document has none (ADR-030), saved on the object's stored document. */
+export async function skipPropertyDocument(id: number, skip: DocumentSkip, query?: PropertyQuery) {
+  const { doc } = await fetchProperty(id, query)
+  return saveProperty(id, skipDocument(doc, skip), query)
 }
 export function deleteProperty(id: number) {
   return service().deleteProperty(id)

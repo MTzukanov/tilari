@@ -1288,6 +1288,8 @@
       "returnedOn": "återbetald {date}"
     },
     "edit": {
+      "noDocument": "Inget dokument",
+      "noDocumentHint": "Det finns inget dokument för detta: ingen påminnelse.",
       "title": "Redigera: {name}",
       "basics": "Grunduppgifter",
       "erasLead": "Balansposter där objektets anskaffningsutgift (köpesumma, överlåtelseskatt, kostnader) är bokförd.",
@@ -1379,7 +1381,31 @@
       "deposit_open": "Ett avslutat hyresförhållande har kvar en deposition på {amount}.",
       "deposit_over": "Det har återbetalats {amount} mer deposition än mottagits: är mottagningen kopplad till hyresförhållandet?",
       "lease_overlap": "Två hyresavtal gäller samtidigt från {from}, så hyran väntas två gånger. Avsluta det tidigare avtalet innan nästa börjar.",
-      "water_overlap": "Två vattenutjämningars perioder överlappar från {from}, så samma dagar utjämnas två gånger. Rätta perioderna."
+      "water_overlap": "Två vattenutjämningars perioder överlappar från {from}, så samma dagar utjämnas två gånger. Rätta perioderna.",
+      "vacant": "Tom sedan {from}: inget hyresavtal löper.",
+      "vacant_until": "Tom: nästa hyresavtal börjar {starts}.",
+      "lease_ending": "Hyresavtalet ({tenant}) upphör {ends} och inget nytt avtal är inlagt.",
+      "increase_due": "Hyreshöjningen {from} ({tenant}) är inte inlagd. Lägg till den i hyresavtalet och skapa höjningsmeddelandet.",
+      "water_settlement_missing": "Ingen nyare vattenutjämning: den senaste utjämningsperioden slutade {to}. Lägg till bostadsbolagets senaste utjämning.",
+      "water_settlement_none": "Inga vattenutjämningar är inlagda fast hyresgästen betalar vattenförskott (sedan {from}). Lägg till bostadsbolagets utjämningar.",
+      "water_letter_missing": "Vattenutjämning {from}-{to}: utjämningskalkylen till hyresgästen ({tenant}) saknas.",
+      "water_tenant_owes": "Vattenutjämning {from}-{to}: {amount} återstår att få ({tenant}).",
+      "water_refund_due": "Vattenutjämning {from}-{to}: {amount} återstår att återbetala ({tenant}).",
+      "lease_suggestions": "Hyresförhållanden i bokföringen som inte lagts till: {count}. Lägg till dem i objektet så räknas hyror, depositioner och vattenutjämningar för dem.",
+      "water_suggestions": "Vattenutjämningar i bokföringen som inte lagts till: {count}. Lägg till dem i objektet.",
+      "deposits_unlinked": "Hyresdepositioner som inte kopplats till ett hyresförhållande: {count}, sammanlagt {amount}.",
+      "lease_contract_missing": "Hyresavtalet saknas ({tenant}, från {starts}): bifoga avtalet till hyresförhållandet.",
+      "increase_notice_missing": "Höjningsmeddelandet för hyreshöjningen {from} saknas ({tenant}).",
+      "exception_agreement_missing": "Avtalet om avvikande hyra {from}-{to} saknas ({tenant}).",
+      "water_statement_missing": "Utjämningskalkylen för vattenutjämningen {from}-{to} saknas."
+    },
+    "warnCount": "Anmärkningar: {count}",
+    "alerts": {
+      "title": "Att observera",
+      "summary": "Anmärkningar {count} · objekt {objects}",
+      "header": "Anmärkningar om hyresobjekt ({count}): öppna listan",
+      "skip": "Hoppa över",
+      "skipHint": "Det finns inget dokument för detta: påminn inte. Du kan ångra det när du redigerar objektet (Inget dokument)."
     },
     "error": {
       "invalid_field": "Kontrollera fältet {path}.",

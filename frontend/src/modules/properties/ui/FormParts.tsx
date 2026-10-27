@@ -1,7 +1,49 @@
+import { useState } from 'react'
+import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { formatVoucherId } from '../../../shared/formatVoucherId'
 import { formatCents } from '../../../shared/money'
 import type { BookedLine, LeaseVoucher } from '../api'
+import { saveErrorText } from './format'
+
+/** The owner's word that a document slot stays empty, so no reminder asks for it (ADR-030); shown while none is picked. */
+export function NoDocumentCheck({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) {
+  const { t } = useI18n()
+  return (
+    <label className="allocation-check property-no-doc" title={t('properties.edit.noDocumentHint')}>
+      <input type="checkbox" checked={checked} onChange={() => onChange(!checked)} />
+      {t('properties.edit.noDocument')}
+    </label>
+  )
+}
+
+/**
+ * "Ohita" on a missing document's reminder: the owner's word that there is none (ADR-030). The
+ * edit page's "Ei asiakirjaa" takes it back.
+ */
+export function SkipDocumentButton({ onSkip }: { onSkip: () => Promise<unknown> }) {
+  const { t } = useI18n()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  async function skip() {
+    setBusy(true)
+    try {
+      await onSkip()
+    } catch (err) {
+      setError(saveErrorText(t, err instanceof Error ? err.message : String(err)))
+      setBusy(false)
+    }
+  }
+  return (
+    <>
+      {' '}
+      <button type="button" className="btn-link property-skip-doc" title={t('properties.alerts.skipHint')} disabled={busy} onClick={() => void skip()}>
+        {t('properties.alerts.skip')}
+      </button>
+      {error ? <span className="error"> {error}</span> : null}
+    </>
+  )
+}
 
 /** A read-only cell lined up with the inputs: a label and its value. */
 export function Shown({ label, value, strong = false, title }: { label: string; value: string; strong?: boolean; title?: string }) {

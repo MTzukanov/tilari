@@ -1288,6 +1288,8 @@
       "returnedOn": "palautettu {date}"
     },
     "edit": {
+      "noDocument": "Ei asiakirjaa",
+      "noDocumentHint": "Tälle ei ole asiakirjaa: siitä ei muistuteta.",
       "title": "Muokkaa: {name}",
       "basics": "Perustiedot",
       "erasLead": "Tase-erät, joille kohteen hankintameno (kauppahinta, varainsiirtovero, kulut) on kirjattu.",
@@ -1379,7 +1381,31 @@
       "deposit_open": "Päättyneen vuokrasuhteen vakuutta on palauttamatta {amount}.",
       "deposit_over": "Vakuutta on palautettu {amount} enemmän kuin saatu: onko vastaanotto linkitetty vuokrasuhteeseen?",
       "lease_overlap": "Kaksi vuokrasopimusta on voimassa yhtä aikaa {from} alkaen, joten vuokraa odotetaan kahdesti. Päätä aiempi sopimus ennen seuraavan alkua.",
-      "water_overlap": "Kahden vesitasauksen jaksot menevät päällekkäin {from} alkaen, joten samat päivät tasataan kahdesti. Korjaa jaksot."
+      "water_overlap": "Kahden vesitasauksen jaksot menevät päällekkäin {from} alkaen, joten samat päivät tasataan kahdesti. Korjaa jaksot.",
+      "vacant": "Tyhjillään {from} alkaen: voimassa olevaa vuokrasopimusta ei ole.",
+      "vacant_until": "Tyhjillään: seuraava vuokrasopimus alkaa {starts}.",
+      "lease_ending": "Vuokrasopimus ({tenant}) päättyy {ends}, eikä seuraavaa ole kirjattu.",
+      "increase_due": "Vuokrankorotusta {from} ({tenant}) ei ole kirjattu. Lisää se vuokrasopimukseen ja luo korotusilmoitus.",
+      "water_settlement_missing": "Uudempaa vesitasausta ei ole: edellinen tasausjakso päättyi {to}. Lisää taloyhtiön uusin tasaus.",
+      "water_settlement_none": "Vesitasauksia ei ole lisätty, vaikka vuokralainen maksaa vesiennakkoa ({from} alkaen). Lisää taloyhtiön tasaukset.",
+      "water_letter_missing": "Vesitasaus {from}-{to}: vesitasauslaskelma vuokralaiselle ({tenant}) puuttuu.",
+      "water_tenant_owes": "Vesitasaus {from}-{to}: saamatta {amount} ({tenant}).",
+      "water_refund_due": "Vesitasaus {from}-{to}: palauttamatta {amount} ({tenant}).",
+      "lease_suggestions": "Kirjanpidosta löytyneitä vuokrasuhteita lisäämättä: {count}. Lisää ne kohteen tietoihin, niin vuokrat, vakuudet ja vesitasaukset lasketaan niille.",
+      "water_suggestions": "Kirjanpidosta löytyneitä vesitasauksia lisäämättä: {count}. Lisää ne kohteen tietoihin.",
+      "deposits_unlinked": "Vuokravakuuksia linkittämättä vuokrasuhteeseen: {count}, yhteensä {amount}.",
+      "lease_contract_missing": "Vuokrasopimus puuttuu ({tenant}, {starts} alkaen): liitä sopimus vuokrasuhteeseen.",
+      "increase_notice_missing": "Vuokrankorotuksen {from} korotusilmoitus puuttuu ({tenant}).",
+      "exception_agreement_missing": "Poikkeavan vuokran {from}-{to} sopimus puuttuu ({tenant}).",
+      "water_statement_missing": "Vesitasauksen {from}-{to} tasauslaskelma puuttuu."
+    },
+    "warnCount": "Huomautuksia: {count}",
+    "alerts": {
+      "title": "Huomioitavaa",
+      "summary": "Huomautuksia {count} · kohteita {objects}",
+      "header": "Vuokrakohteiden huomautukset ({count}): avaa lista",
+      "skip": "Ohita",
+      "skipHint": "Tälle ei ole asiakirjaa: älä muistuta. Voit perua sen kohteen muokkauksessa (Ei asiakirjaa)."
     },
     "error": {
       "invalid_field": "Tarkista kenttä {path}.",

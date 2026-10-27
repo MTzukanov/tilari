@@ -566,3 +566,55 @@ correction would change the open year's income statement lines. The rental-objec
 - Why not a stored amount: the ledger already has the receipt and the return, and the
   balance follows them when a return is booked later; a typed amount would drift.
 
+
+## ADR-030 Lease reminders are computed warnings (2026-10-27)
+
+**Status:** accepted. Builds on ADR-025, ADR-026 and ADR-029; nothing new is stored.
+
+- **What reminds:** each is a warning on the object, read from the stored leases and water
+  settlements on the as-of date, with thresholds as constants in `domain/reminders.ts`:
+  - `vacant` / `vacant_until`: an object still held with stored leases, none running - since the
+    last one ended, or until the next one starts. Without stored leases the book's suggestions show
+    instead, so no reminder.
+  - `lease_ending`: the running lease ends within 90 days and no later lease is stored.
+  - `increase_due`: the increase clause is set (not `none`); its anniversary (the first of the
+    clause's month, else the start month) is within 60 days or in the current month; the lease
+    still runs then; the rent last changed (a step, or the start) at least 11 months before it.
+    An entered step for the anniversary ends it. Tilari still never raises the rent itself.
+  - `water_settlement_missing` / `water_settlement_none`: the running lease pays a water advance,
+    and no stored settlement period ended in the last 15 months - with none at all, counted from
+    the owner's first advance (not before the rent start, ADR-026).
+  - `water_letter_missing`, then `water_tenant_owes` / `water_refund_due`: a tenant share of a
+    stored settlement not settled to the cent has no letter 30 days after the company settled
+    (its first booked line, else its statement, else the period's end), or is still open after
+    60 days. The amount left is exact: + the tenant still owes, - still to refund (also when
+    the tenant paid too much). Lines after the as-of date do not count.
+- **What the book has and the owner has not defined** (owner, 2026-10-27: suggestions should
+  remind, not wait): `lease_suggestions` - suggested leases no stored lease shares a day with (one
+  a stored lease covers is answered, though its payer differs, e.g. a care company);
+  `water_suggestions` - settlements the booked water lines suggest; `deposits_unlinked` - deposit
+  items still held, booked on the object, linked to no lease.
+- **Missing documents** (owner, 2026-10-27): every place the stored data has for a document but
+  no voucher in - a lease's contract (`lease_contract_missing`), an increase step's notice
+  (`increase_notice_missing`), an agreed exception's agreement (`exception_agreement_missing`)
+  and a water settlement's statement (`water_statement_missing`). The water letter stays
+  `water_letter_missing`, only while the share is open.
+- **A sold object** keeps only its open water shares and unlinked deposits still held; the other
+  reminders are about objects still held. Cost centres not set up as objects remind of nothing.
+- **Where they show:** the object page's warnings; on the portfolio, a ⚠ before the name (with the
+  count when more than one; hovering lists them, one bullet each) and a list of every object's
+  warnings after the figures (foldable, remembered per browser); in the header, a ⚠ with the
+  count that opens that list (`#/properties/alerts`, `GET /api/properties/alerts`). The header
+  counts 0.8 s after the last change, so a run of saves counts once; a book without stored objects
+  pays nothing. Notes count nowhere: unset sale costs (`sale_costs_unset`) and how a sale shared
+  with another object was counted (`sale_carried`, `sale_line_split`); nor do cost centres not set
+  up yet, which the setup banner asks about.
+- **No dismissing:** a reminder ends when the data answers it - the next lease, the increase
+  step, the settlement, the letter, the payment, or the owner's own share amount (ADR-025) for a
+  difference they will not claim. Storing dismissals would be a second truth to keep in step.
+- **Except a missing document** (owner, 2026-10-27): an increase notice, an exception agreement
+  or a water statement may not exist (an increase agreed by email, a statement never sent). The
+  owner says so with "Ohita" on the reminder or "Ei asiakirjaa" on the edit page, stored as
+  `no_document: true` on that step, exception or settlement - an input on the item, not a list of
+  dismissals - and taken back by unticking it. Never stored beside a document. The lease's
+  contract cannot be skipped: every lease needs one.

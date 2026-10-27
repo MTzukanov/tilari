@@ -18,9 +18,18 @@ export type BookViewCtx = {
   onWipeBrowserStorage: () => Promise<void>
 }
 
+/** What a module's item in the header gets: the open book, a key that changes with every change to it, and navigation. */
+export type TopbarCtx = {
+  meta: Meta
+  refreshKey: unknown
+  goTo: (hash: string) => void
+}
+
 export type UiModule = {
   id: string
   navItems?: ModuleNavItem[]
+  /** Shown in the header while a book is open. */
+  TopbarItem?: (ctx: TopbarCtx) => ReactNode
   match: (route: Route) => boolean
   Screen: (ctx: BookViewCtx) => ReactNode
   activeNav?: (route: Route) => string | null

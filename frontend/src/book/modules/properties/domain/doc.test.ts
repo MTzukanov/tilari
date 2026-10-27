@@ -143,6 +143,32 @@ describe('normalizePropertyDoc', () => {
     expect(bad({ line_ids: ['7'] })).toThrow('invalid_field:leases[0].deposit.line_ids[0]')
   })
 
+  it("keeps the owner's word that an increase, exception or settlement has no document; not beside one", () => {
+    const doc = normalizePropertyDoc({
+      eras: [],
+      leases: [
+        {
+          starts: '2025-01-01',
+          rents: [
+            { from: '2025-01-01', rent_snt: 500 },
+            { from: '2026-01-01', rent_snt: 520, no_document: true },
+            { from: '2027-01-01', rent_snt: 540, voucher_id: 7, no_document: true },
+          ],
+          exceptions: [{ from: '2025-06-01', to: '2025-06-30', rent_snt: 0, no_document: true }],
+        },
+      ],
+      water_settlements: [
+        { from: '2024-01-01', to: '2024-12-31', difference_snt: 0, no_document: true },
+        { from: '2025-01-01', to: '2025-12-31', difference_snt: 0, no_document: false },
+      ],
+    })
+    expect(doc.leases?.[0].rents.map((r) => r.no_document)).toEqual([undefined, true, undefined])
+    expect(doc.leases?.[0].exceptions?.[0].no_document).toBe(true)
+    expect(doc.water_settlements?.map((s) => s.no_document)).toEqual([true, undefined])
+    const lease = { starts: '2025-01-01', rents: [{ from: '2025-01-01', rent_snt: 500 }, { from: '2026-01-01', rent_snt: 520, no_document: 'yes' }] }
+    expect(() => normalizePropertyDoc({ eras: [], leases: [lease] })).toThrow('invalid_field:leases[0].rents[1].no_document')
+  })
+
   it('names the bad lease field', () => {
     const lease = { starts: '2025-01-01', rents: [{ from: '2025-01-01', rent_snt: 500 }] }
     const bad = (patch: Record<string, unknown>) => () => normalizePropertyDoc({ eras: [], leases: [{ ...lease, ...patch }] })

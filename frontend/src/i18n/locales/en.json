@@ -1288,6 +1288,8 @@
       "returnedOn": "returned {date}"
     },
     "edit": {
+      "noDocument": "No document",
+      "noDocumentHint": "There is no document for this: no reminder asks for it.",
       "title": "Edit: {name}",
       "basics": "Basics",
       "erasLead": "Balance-sheet items holding the acquisition cost (price, transfer tax, fees).",
@@ -1379,7 +1381,31 @@
       "deposit_open": "An ended lease still holds a deposit of {amount}.",
       "deposit_over": "{amount} more deposit was returned than received: is the receipt linked to the lease?",
       "lease_overlap": "Two leases run at the same time from {from}, so rent is expected twice. End the earlier lease before the next starts.",
-      "water_overlap": "Two water settlement periods overlap from {from}, so the same days are settled twice. Correct the periods."
+      "water_overlap": "Two water settlement periods overlap from {from}, so the same days are settled twice. Correct the periods.",
+      "vacant": "Vacant since {from}: no lease runs.",
+      "vacant_until": "Vacant: the next lease starts on {starts}.",
+      "lease_ending": "The lease ({tenant}) ends on {ends} and no next lease is entered.",
+      "increase_due": "The rent increase on {from} ({tenant}) is not entered. Add it to the lease and create the increase notice.",
+      "water_settlement_missing": "No newer water settlement: the last settlement period ended on {to}. Add the housing company's latest settlement.",
+      "water_settlement_none": "No water settlements are entered although the tenant pays a water advance (since {from}). Add the housing company's settlements.",
+      "water_letter_missing": "Water settlement {from}-{to}: the settlement letter to the tenant ({tenant}) is missing.",
+      "water_tenant_owes": "Water settlement {from}-{to}: {amount} still to collect ({tenant}).",
+      "water_refund_due": "Water settlement {from}-{to}: {amount} still to refund ({tenant}).",
+      "lease_suggestions": "Leases found in the books but not added: {count}. Add them to the object so rent, deposits and water settlements are counted for them.",
+      "water_suggestions": "Water settlements found in the books but not added: {count}. Add them to the object.",
+      "deposits_unlinked": "Rent deposits not linked to a lease: {count}, {amount} in total.",
+      "lease_contract_missing": "The lease agreement is missing ({tenant}, from {starts}): attach it to the lease.",
+      "increase_notice_missing": "The increase notice for the rent increase on {from} is missing ({tenant}).",
+      "exception_agreement_missing": "The agreement for the exceptional rent {from}-{to} is missing ({tenant}).",
+      "water_statement_missing": "The statement for the water settlement {from}-{to} is missing."
+    },
+    "warnCount": "Notes: {count}",
+    "alerts": {
+      "title": "To see to",
+      "summary": "Notes {count} · objects {objects}",
+      "header": "Rental object notes ({count}): open the list",
+      "skip": "Skip",
+      "skipHint": "There is no document for this: do not remind. You can undo it when editing the object (No document)."
     },
     "error": {
       "invalid_field": "Check the field {path}.",

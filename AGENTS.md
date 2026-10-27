@@ -165,7 +165,8 @@ Rules already encoded:
   row tooltips such as "Avaa tosite" there - the full text is more useful.
 - **Always write source files as UTF-8.** Never introduce Windows-1252 bytes (especially `0x97` en-dash). Prefer ASCII `-`.
 - No react-router in v1; hashes: `#/browse`, `#/journal`, `#/vat`, `#/settings`, `#/voucher/new/100`, `#/account/{n}`, `#/allocation/{id}`,
-  `#/properties`, `#/properties/setup`, `#/property/{id}`, `#/property/{id}/edit`; a
+  `#/properties`, `#/properties/alerts` (opened on its list of warnings), `#/properties/setup`,
+  `#/property/{id}`, `#/property/{id}/edit`; a
   `/month/{YYYY-MM}` after `#/property/{id}` or `#/allocation/{id}` opens that month (and stays on the
   way back from a voucher).
   `#/settings` (and `#/settings/storage`) work without an open book for app prefs; book/company fields appear once a book is open.
