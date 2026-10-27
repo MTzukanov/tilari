@@ -1266,6 +1266,26 @@
       "exceptionNormal": "Normal hyra då {amount}/mån",
       "editTerms": "Lägg till en höjning eller avvikande hyra (rabatt, överenskommen hyra)…"
     },
+    "deposit": {
+      "title": "Hyresdeposition",
+      "field": "Hyresdeposition",
+      "add": "Lägg till deposition…",
+      "lead": "Depositionens balanspost eller en kontering på ett skuldkonto, som bokförd i Kitsas. ★ = bokförd på detta objekt och mottagen från hyresgästen eller inom 60 dagar från hyresförhållandets början.",
+      "missing": "Konteringen {id} finns inte längre.",
+      "received": "mottagen {amount}",
+      "returned": "återbetald {amount}",
+      "deducted": "varav innehållen {amount}",
+      "paidOnTop": "betalt därtill {amount}",
+      "balance": "saldo {amount}",
+      "movements": "Depositionens konteringar ({n})",
+      "kind": {
+        "received": "Mottagen",
+        "returned": "Återbetald"
+      },
+      "deductionsHint": "Intäkter och kostnader bokförda med samma betalning: innehållen hyra, vattenutjämning eller kostnader.",
+      "missingCount": "{n} kopplade konteringar finns inte längre",
+      "returnedOn": "återbetald {date}"
+    },
     "edit": {
       "title": "Redigera: {name}",
       "basics": "Grunduppgifter",
@@ -1356,6 +1376,8 @@
       "rent_arrears": "Hyresskuld {amount}.",
       "former_owes": "Från avslutade hyresförhållanden återstår {amount} att få.",
       "former_paid_ahead": "I avslutade hyresförhållanden har {amount} betalats utöver hyran.",
+      "deposit_open": "Ett avslutat hyresförhållande har kvar en deposition på {amount}.",
+      "deposit_over": "Det har återbetalats {amount} mer deposition än mottagits: är mottagningen kopplad till hyresförhållandet?",
       "lease_overlap": "Två hyresavtal gäller samtidigt från {from}, så hyran väntas två gånger. Avsluta det tidigare avtalet innan nästa börjar.",
       "water_overlap": "Två vattenutjämningars perioder överlappar från {from}, så samma dagar utjämnas två gånger. Rätta perioderna."
     },
@@ -1368,6 +1390,7 @@
       "percent": "Procent som 3,5.",
       "accounts": "Kontonummer åtskilda med kommatecken.",
       "loan_linked": "Lånekonto {path} är redan ett annat objekts banklån. Ett lån kan höra till bara ett objekt, annars räknas räntan två gånger.",
+      "deposit_linked": "Depositionen hör redan till ett annat hyresförhållande.",
       "overlap": "Perioder överlappar: kontrollera fältet {path}.",
       "leaseOverlap": "Hyresavtalen {a} och {b} överlappar. En dag kan höra till bara ett avtal, annars väntas dess hyra två gånger: avsluta det tidigare innan nästa börjar.",
       "leaseEnds": "Hyresavtalet {lease} slutar innan det börjar.",

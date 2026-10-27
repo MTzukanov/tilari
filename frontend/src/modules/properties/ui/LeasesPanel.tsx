@@ -1,8 +1,18 @@
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
-import type { BookedLine, LeaseException, LeaseRentAccount, LeaseView, RentStart } from '../api'
-import { exceptionText, increaseText, leasePeriod, leaseRentText, periodText, waterBalanceText, waterStatusText } from './format'
-import { LineSources, VoucherLink } from './FormParts'
+import type { BookedLine, DepositView, LeaseException, LeaseRentAccount, LeaseView, RentStart } from '../api'
+import {
+  deductedText,
+  depositText,
+  exceptionText,
+  increaseText,
+  leasePeriod,
+  leaseRentText,
+  periodText,
+  waterBalanceText,
+  waterStatusText,
+} from './format'
+import { LineLink, LineSources, VoucherLink } from './FormParts'
 import { RentAccountView } from './RentAccount'
 
 /**
@@ -31,6 +41,43 @@ export function LeaseSources({ lease, onOpen }: { lease: LeaseView; onOpen: (vou
       ))}
       <LineSources label={t('properties.lease.payments', { n: payments.length })} lines={payments} onOpen={onOpen} />
     </>
+  )
+}
+
+/**
+ * A lease's deposit (ADR-029): received, returned and kept, and the balance on the as-of date;
+ * each booking folded below, a return with the income or costs booked in the same payment.
+ */
+function DepositSummary({ deposit, onOpen }: { deposit: DepositView; onOpen: (voucherId: number) => void }) {
+  const { t } = useI18n()
+  return (
+    <div className="property-lease-terms property-deposit">
+      <p>
+        {t('properties.deposit.title')}: {depositText(t, deposit)}
+        {deposit.missing ? <span className="muted"> · {t('properties.deposit.missingCount', { n: deposit.missing })}</span> : null}
+      </p>
+      {deposit.movements.length ? (
+        <details className="property-sources">
+          <summary>{t('properties.deposit.movements', { n: deposit.movements.length })}</summary>
+          <ul className="property-doc-list">
+            {deposit.movements.map((m) => (
+              <li key={m.line_id}>
+                <span>{t(`properties.deposit.kind.${m.kind}`)}</span>
+                <LineLink line={m} onOpen={onOpen} />
+                {m.deductions.length ? (
+                  <span title={t('properties.deposit.deductionsHint')}>
+                    {deductedText(t, m.deducted_snt)}:{' '}
+                    {m.deductions.map((d) => (
+                      <LineLink key={d.line_id} line={d} onOpen={onOpen} />
+                    ))}
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+    </div>
   )
 }
 
@@ -94,6 +141,7 @@ function LeaseCard({
           {latest.status !== 'none' ? ` · ${waterStatusText(t, latest.status, latest.balance_snt, latest.settled_snt)}` : ''}
         </p>
       ) : null}
+      {lease.deposit ? <DepositSummary deposit={lease.deposit} onOpen={onOpenVoucher} /> : null}
       {lease.steps.length > 1 ? (
         <details>
           <summary>
@@ -260,6 +308,7 @@ function LeaseList({
               onAddException={onAddException ? (e) => onAddException(lease.key, e) : undefined}
             />
           ) : null}
+          {!lease.suggested && lease.deposit ? <DepositSummary deposit={lease.deposit} onOpen={onOpenVoucher} /> : null}
         </li>
       ))}
     </ul>

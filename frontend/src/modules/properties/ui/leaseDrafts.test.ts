@@ -19,9 +19,11 @@ describe('lease drafts', () => {
       exceptions: [{ from: '2025-07-01', to: '2025-07-31', rent_snt: 34_000, water_snt: 2_000, note: 'Remonttihyvitys', voucher_id: 12 }],
       increase: { kind: 'percent', pct_bp: 350, month: 1 },
       doc_voucher_id: 8,
+      deposit: { eraids: [31], line_ids: [44] },
       later_field: { deposit: 1 },
     }
     const [draft] = leaseDrafts([stored], partners)
+    expect(draft.deposits).toEqual(['e:31', 'l:44'])
     expect(draft.exceptions).toEqual([
       { from: '2025-07-01', to: '2025-07-31', rent: '340,00', water: '20,00', parking: '', note: 'Remonttihyvitys', voucherId: '12' },
     ])

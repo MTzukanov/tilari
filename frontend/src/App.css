@@ -5362,7 +5362,8 @@ tr.tax-total td {
   font-variant-numeric: tabular-nums;
 }
 
-.property-lease-head {
+/* The form's "Vuokra alussa" row; scoped so the lease card's head (below) does not take its margin away. */
+.property-lease-edit .property-lease-head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -5380,6 +5381,16 @@ tr.tax-total td {
   gap: 0.5rem;
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+/* A checkbox standing alone in the row lines up by its text, like "Lisät:" beside it; on its
+   own the checkbox's bottom edge would be the baseline and lift it. */
+.property-lease-head > .allocation-check {
+  align-items: baseline;
+}
+
+.property-lease-head > .allocation-check > input {
+  align-self: center;
 }
 
 /* The notice pick takes the room its buttons leave on the row. */
@@ -5503,6 +5514,21 @@ tr.tax-total td {
   flex-wrap: wrap;
   gap: 0.2rem 0.9rem;
   margin: 0.3rem 0 0.2rem;
+}
+
+/* A deposit linked on the edit page: its line, and below it each booking as a link. */
+.property-deposit-linked {
+  display: flex;
+  flex-direction: column;
+}
+
+/* A lease's deposit: its line, and its bookings folded below; on a list row it takes the row's width. */
+.property-deposit p {
+  margin: 0;
+}
+
+.property-doc-list li > .property-deposit {
+  flex-basis: 100%;
 }
 
 /* A lease's rent account: on a list row it takes the row's width; payments sit in the last column.

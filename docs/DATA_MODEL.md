@@ -67,9 +67,12 @@ Money in integer cents (`*_snt`), percentages in basis points (`*_bp`, 100 = 1 %
 | `increase?` | The contract's increase clause `{ kind: none / percent / amount / index, pct_bp?, amount_snt?, month? }`: prefills the next increase and drives reminders; Tilari never changes rent by itself |
 | `doc_voucher_id?` | The contract (a type-800 voucher) |
 | `water?` | `flat` when water is a flat fee that is never settled; missing means an advance settled against use (ADR-025) |
+| `deposit?` | `{ eraids?, line_ids? }`: the rent deposit (vuokravakuus) as booked on a liability account - its items (tase-erät, by root line id) and lines booked without an item (ADR-029) |
 
 Saving checks that the partner exists, the vouchers are posted and no two leases share a day
-(`overlap`), and adds the lease's vouchers to `doc_voucher_ids`. The documents stay Kitsas vouchers, found in Kitsas by title and partner. An
+(`overlap`), and adds the lease's vouchers to `doc_voucher_ids`. A deposit must be an item root or
+a line without an item, posted, on a liability account, and belong to one lease only across every
+object (`deposit_linked`). The documents stay Kitsas vouchers, found in Kitsas by title and partner. An
 increase notice written in Tilari is a posted type-800 voucher titled after the object, with the
 tenant as partner and the letter as a PDF attachment (`modules/properties/ui/increaseNotice.ts`).
 

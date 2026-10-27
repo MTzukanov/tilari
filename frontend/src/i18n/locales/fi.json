@@ -1266,6 +1266,26 @@
       "exceptionNormal": "Normaali vuokra tällöin {amount}/kk",
       "editTerms": "Lisää korotus tai poikkeava vuokra (alennus, sovittu vuokra)…"
     },
+    "deposit": {
+      "title": "Vuokravakuus",
+      "field": "Vuokravakuus",
+      "add": "Lisää vakuus…",
+      "lead": "Vakuuden tase-erä tai vienti velkatililtä, kuten Kitsasissa kirjattu. ★ = kirjattu tälle kohteelle ja saatu vuokralaiselta tai 60 päivän sisällä vuokrasuhteen alusta.",
+      "missing": "Vientiä {id} ei enää löydy.",
+      "received": "saatu {amount}",
+      "returned": "palautettu {amount}",
+      "deducted": "josta pidätetty {amount}",
+      "paidOnTop": "lisäksi maksettu {amount}",
+      "balance": "saldo {amount}",
+      "movements": "Vakuuden kirjaukset ({n})",
+      "kind": {
+        "received": "Saatu",
+        "returned": "Palautettu"
+      },
+      "deductionsHint": "Samalla maksulla kirjatut tuotot ja kulut: pidätetty vuokra, vesitasaus tai kulut.",
+      "missingCount": "{n} linkitettyä vientiä puuttuu kirjanpidosta",
+      "returnedOn": "palautettu {date}"
+    },
     "edit": {
       "title": "Muokkaa: {name}",
       "basics": "Perustiedot",
@@ -1356,6 +1376,8 @@
       "rent_arrears": "Vuokrarästiä {amount}.",
       "former_owes": "Päättyneistä vuokrasuhteista on saamatta {amount}.",
       "former_paid_ahead": "Päättyneissä vuokrasuhteissa on maksettu {amount} enemmän kuin vuokra.",
+      "deposit_open": "Päättyneen vuokrasuhteen vakuutta on palauttamatta {amount}.",
+      "deposit_over": "Vakuutta on palautettu {amount} enemmän kuin saatu: onko vastaanotto linkitetty vuokrasuhteeseen?",
       "lease_overlap": "Kaksi vuokrasopimusta on voimassa yhtä aikaa {from} alkaen, joten vuokraa odotetaan kahdesti. Päätä aiempi sopimus ennen seuraavan alkua.",
       "water_overlap": "Kahden vesitasauksen jaksot menevät päällekkäin {from} alkaen, joten samat päivät tasataan kahdesti. Korjaa jaksot."
     },
@@ -1368,6 +1390,7 @@
       "percent": "Prosentti muodossa 3,5.",
       "accounts": "Tilinumerot pilkuilla eroteltuina.",
       "loan_linked": "Lainatili {path} on jo toisen kohteen pankkilaina. Laina voi kuulua vain yhdelle kohteelle, muuten sen korot laskettaisiin kahdesti.",
+      "deposit_linked": "Vakuus kuuluu jo toiseen vuokrasuhteeseen.",
       "overlap": "Ajanjaksot menevät päällekkäin: tarkista kenttä {path}.",
       "leaseOverlap": "Vuokrasopimukset {a} ja {b} menevät päällekkäin. Päivä voi kuulua vain yhteen sopimukseen, muuten sen vuokraa odotetaan kahdesti: päätä aiempi ennen seuraavan alkua.",
       "leaseEnds": "Vuokrasopimus {lease} päättyy ennen alkuaan.",

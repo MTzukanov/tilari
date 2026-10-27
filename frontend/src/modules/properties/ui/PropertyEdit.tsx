@@ -571,6 +571,8 @@ function EditForm({
           partners={partners}
           docs={allDocs}
           suggestions={[...detail.lease_suggestions].reverse()}
+          deposits={detail.deposit_candidates}
+          objectId={detail.id}
           today={today}
           onCreateNotice={createNotice}
           onUpload={upload}

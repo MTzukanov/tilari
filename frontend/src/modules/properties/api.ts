@@ -5,6 +5,9 @@ import type { PortfolioSettings, PropertyDoc, SetupApplyInput } from '../../book
 export type {
   BookedLine,
   BreakEven,
+  DepositCandidate,
+  DepositMovement,
+  DepositView,
   Disposal,
   DocumentVoucher,
   EraCandidate,

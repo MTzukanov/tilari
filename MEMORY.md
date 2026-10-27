@@ -30,6 +30,31 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   exception at 0 for the rest of the purchase month. `rent_from` on the object overrides it when
   the sale agreed otherwise. Exceptions entered for that purpose are now redundant, not harmful.
 
+## 2026-10-26 - Rental objects 1e: rent deposits per lease (`feature/property-deposits`)
+
+- A lease's `deposit` links the deposit's items and loose lines on a liability account (ADR-029);
+  the lease card shows received, returned, the deduction kept from a return (the same payment's
+  income or cost lines) and the balance on the as-of date. Warnings `deposit_open` (ended over
+  60 days ago, still held) and `deposit_over` (more returned than received).
+- Real-book check on a copy: deposits are on a liability account named for rent deposits, most as
+  items without a cost centre; some returns were booked without the item, so loose lines can be
+  linked too. A return can be reduced by a key or a water settlement booked as rent in the same
+  voucher. Portfolio 92 ms, one object at most 64 ms.
+- Candidates match the account name or the line's text; the voucher's title only stands in for
+  an empty text - otherwise a VAT line on a voucher titled for a deposit was offered (found in
+  the e2e).
+- Two receipts near one lease start (two parking spaces bought the same day), neither from the
+  tenant: no suggestion; the owner picks.
+- Owner's review (demo): the item's return was hard to find in the picker; the linked deposit now
+  lists its bookings (received, returned) as links, an item's label names its return dates, and
+  the picker is newest first (★ on top). "vakuu" also matched insurance (sairausvakuutusmaksu on a
+  liability account); insurance forms are left out now.
+- The lease form's water checkbox sat ~1.5 px above the parking one (Chromium and Firefox): a flex
+  row aligned by baseline took the checkbox's bottom edge as the label's baseline.
+- That row also had no space above it: the lease card's `.property-lease-head` rule (later in
+  App.css) took the form row's 1rem top margin away. The form's rule is scoped to
+  `.property-lease-edit` now; the card and the water panel keep theirs.
+
 ## 2026-10-26 - Rental objects: the list's rent leaves out the water advance
 
 - Owner asked: the object list (`#/properties`) showed the tenant's rent with the water advance

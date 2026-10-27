@@ -14,6 +14,7 @@ import {
   type EraLink,
   type Financing,
   type Lease,
+  type LeaseDeposit,
   type LeaseException,
   type LeaseIncrease,
   type LeaseIncreaseKind,
@@ -151,6 +152,7 @@ const LEASE_KEYS = new Set([
   'increase',
   'doc_voucher_id',
   'water',
+  'deposit',
 ])
 const LEASE_KEY = /^[A-Za-z0-9_-]{1,16}$/
 const MAX_ID = Number.MAX_SAFE_INTEGER
@@ -170,6 +172,18 @@ function leaseIncrease(value: unknown, path: string): LeaseIncrease | undefined 
   if (value.month != null) out.month = int(value.month, `${path}.month`, 1, 12)
   const empty = out.pct_bp == null && out.amount_snt == null && out.month == null
   return out.kind === 'none' && empty ? undefined : out
+}
+
+/** The deposit's items and loose lines (ADR-029); none when both lists are empty. */
+function leaseDeposit(value: unknown, path: string): LeaseDeposit | undefined {
+  if (value == null) return undefined
+  if (!isObject(value)) fail(path)
+  const out: LeaseDeposit = {}
+  const eraids = ids(value.eraids, `${path}.eraids`)
+  const lines = ids(value.line_ids, `${path}.line_ids`)
+  if (eraids.length) out.eraids = eraids
+  if (lines.length) out.line_ids = lines
+  return eraids.length || lines.length ? out : undefined
 }
 
 /** Agreed exceptions within the lease, oldest first; they may not overlap each other. */
@@ -248,6 +262,8 @@ function lease(item: unknown, path: string): Lease {
     // An advance is the default and not stored.
     if (item.water === 'flat') out.water = 'flat'
   }
+  const deposit = leaseDeposit(item.deposit, `${path}.deposit`)
+  if (deposit) out.deposit = deposit
   return out
 }
 

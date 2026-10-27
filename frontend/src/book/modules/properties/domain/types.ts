@@ -72,6 +72,12 @@ export const LEASE_WATER_KINDS = ['advance', 'flat'] as const
 export type LeaseWaterKind = (typeof LEASE_WATER_KINDS)[number]
 
 /**
+ * The lease's rent deposit (vuokravakuus) as booked on a liability account: its items (tase-erät,
+ * by root line id) and lines booked without an item (ADR-029).
+ */
+export type LeaseDeposit = { eraids?: number[]; line_ids?: number[] }
+
+/**
  * A rental relationship (vuokrasuhde). The tenant is a Kitsas partner; `tenant_name` only when
  * they are not one yet. `ends` is a fixed term's end or the move-out. An object's leases never
  * share days (saving checks it). Unknown keys are kept.
@@ -94,6 +100,7 @@ export type Lease = {
   doc_voucher_id?: number
   /** Only `flat` is stored; missing means an advance. */
   water?: LeaseWaterKind
+  deposit?: LeaseDeposit
   [key: string]: unknown
 }
 
@@ -386,6 +393,8 @@ export type LeaseView = {
   water: LeaseWaterKind
   /** The latest water settlement with a share for this lease (object page only). */
   water_latest?: { from: string; to: string; balance_snt: number; settled_snt: number; status: WaterShareStatus } | null
+  /** The deposit's movements and balance on the as-of date (object page, stored leases with a deposit). */
+  deposit?: DepositView | null
   /** Suggested from the book (not stored): from a contract document, or from payments alone. */
   suggested?: 'contract' | 'payments'
   /** A suggestion's rent payments: the lines its rent was read from (object page only). */
@@ -407,6 +416,51 @@ export type BookedLine = {
   /** The line's partner (the payer), when it has one. */
   partner: string | null
   voucher: LeaseVoucher
+}
+
+/** A deposit's booked line: received (credit) or returned (debit). */
+export type DepositMovement = BookedLine & {
+  kind: 'received' | 'returned'
+  /** On a return: income or cost booked in the same payment (+ kept from the deposit, - paid on top). */
+  deducted_snt: number
+  deductions: BookedLine[]
+}
+
+/** A lease's deposit up to the as-of date, exact (ADR-029). */
+export type DepositView = {
+  received_snt: number
+  returned_snt: number
+  /** Kept from the returns: rent, water or costs booked in the same payments. */
+  deducted_snt: number
+  /** On the as-of date: + still held, - more returned than received. */
+  balance_snt: number
+  movements: DepositMovement[]
+  /** Linked items or lines the book no longer has. */
+  missing: number
+}
+
+/** A deposit the edit page offers: an item on a liability account, or a line booked without one. */
+export type DepositCandidate = {
+  kind: 'item' | 'line'
+  /** The item's root line id, or the line's id. */
+  id: number
+  account: number
+  account_name: string
+  date: string
+  voucher_id: number
+  text: string
+  partner_id: number | null
+  partner: string | null
+  /** The root line's or the line's own amount: + received, - returned. */
+  amount_snt: number
+  /** On the as-of date: the item's balance, or the line's amount. */
+  balance_snt: number
+  /** The item's bookings up to the as-of date, oldest first (the line itself for a loose line): + received, - returned. */
+  movements: { line_id: number; date: string; amount_snt: number; voucher_id: number }[]
+  /** The lease it belongs to, on this object or another. */
+  linked_to: { object_id: number; lease_key: string } | null
+  /** Booked on this object: its cost centre, a rent payer or tenant of it, or its name in the text. */
+  related: boolean
 }
 
 /** `none`: nothing to settle; `partial`: some booked, not all; `over`: more booked than the balance, or the other way. */
@@ -521,6 +575,8 @@ export type PropertyDetail = PropertyRow & {
   rent_start: RentStart
   /** Where it would count from without the owner's own date (`rent_from`), for the edit page. */
   rent_start_default: RentStart
+  /** Deposits to link to the leases: the object's first, then every other on a deposit account. */
+  deposit_candidates: DepositCandidate[]
 }
 
 export type MonthLineKind = 'income' | 'expense' | 'interest'

@@ -530,3 +530,32 @@ correction would change the open year's income statement lines. The rental-objec
 - Why not a manual acquisition date: the purchase is in the ledger, and one stored date could
   disagree with the cash flows the returns are computed from. Capital spent before the books
   began is entered as "Muu sijoitettu pääoma" with its date, as before.
+
+## ADR-029 Rent deposits linked per lease, read from the ledger (2026-10-26)
+
+**Status:** accepted. Extends ADR-025's leases with `deposit`; the ledger is not changed.
+
+- **A lease links what was booked:** the deposit's items (tase-erät) on a liability account, and
+  lines booked without an item - real books have returns booked without the item they return.
+  An item brings every line booked on it, later returns too; a loose line counts alone.
+  Saving accepts only posted item roots and loose lines on liability accounts, each on one
+  lease across every object.
+- **Shown exact on the lease:** received (credits), returned (debits) and the balance on the
+  as-of date. A return's **deduction** is what the same payment booked as income or cost - the
+  statement row's other lines, matched by voucher, date, partner and text: rent kept, a water
+  settlement, a key. A negative deduction is money paid on top. The rent account already counts
+  such income lines, so nothing is counted twice.
+- **Warnings:** `deposit_open` when a lease ended more than 60 days before the as-of date and
+  still holds a deposit; `deposit_over` when more was returned than received (a receipt not
+  linked, or booked elsewhere). Exact, no tolerance.
+- **Offered and suggested:** the edit page offers item roots and loose lines on liability
+  accounts whose account name or text (else the voucher's title) names a deposit
+  (vakuus in any form but not vakuutus - insurance, `takuu`, `pantti`, `deposit`, `säkerhet`,
+  `kaution`), the object's own first: its
+  cost centre on a line, a rent payer or tenant of it, or its name in the text. ★ marks one that
+  fits the lease: received from its tenant, or within 60 days of its start. A suggested lease
+  takes the tenant's own receipt nearest its start, else the one receipt near it; with two near
+  it and neither the tenant's, the book leaves it to the owner.
+- Why not a stored amount: the ledger already has the receipt and the return, and the
+  balance follows them when a return is booked later; a typed amount would drift.
+

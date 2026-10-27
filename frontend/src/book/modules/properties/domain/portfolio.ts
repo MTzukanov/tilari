@@ -19,6 +19,15 @@ import {
   serializeDoc,
   type ParsedDoc,
 } from './doc'
+import {
+  depositCandidates,
+  depositIds,
+  depositKeys,
+  depositLinesOf,
+  depositView,
+  depositWarnings,
+  suggestDeposit,
+} from './deposits'
 import { listNoteVouchers } from './documents'
 import { kindFromName } from './kind'
 import {
@@ -27,16 +36,21 @@ import {
   loadCorrectionDates,
   loadCostCentres,
   loadDataThrough,
+  loadDeductionLines,
+  loadDepositLines,
   loadEraRoots,
   loadEntries,
   loadEraRows,
   loadInterestRows,
+  loadLiabilityRoots,
   loadPartners,
   loadPnlRows,
   loadRecountedLines,
   loadVoucherPnlRows,
   loadVoucherRefs,
   type CostCentre,
+  type DeductionLine,
+  type DepositLine,
   type EraRoot,
   type EraRow,
   recountLines,
@@ -78,6 +92,8 @@ import {
   type SetupApplyInput,
   type SetupResponse,
   type BookedLine,
+  type DepositCandidate,
+  type DepositView,
   type RentAccount,
   type WaterDetail,
 } from './types'
@@ -90,6 +106,8 @@ type Loaded = {
   owner: Map<number, number>
   /** Loan account -> cost centres whose bank loan it is (Pankkilaina); one, unless saved before the guard. */
   loanOwners: Map<number, number[]>
+  /** Deposit key (`depositKeys`) -> the lease linking it, over every stored document. */
+  depositOwner: Map<string, { object_id: number; lease_key: string }>
 }
 
 function loadStored(db: SqliteDb): Loaded {
@@ -101,13 +119,17 @@ function loadStored(db: SqliteDb): Loaded {
   }
   const owner = new Map<number, number>()
   const loanOwners = new Map<number, number[]>()
+  const depositOwner = new Map<string, { object_id: number; lease_key: string }>()
   for (const [id, parsed] of docs) {
     for (const era of parsed.doc.eras) owner.set(era.eraid, id)
     for (const account of parsed.doc.financing?.loan_accounts ?? []) {
       loanOwners.set(account, [...(loanOwners.get(account) ?? []), id])
     }
+    for (const lease of parsed.doc.leases ?? []) {
+      for (const key of depositKeys(lease.deposit)) depositOwner.set(key, { object_id: id, lease_key: lease.key })
+    }
   }
-  return { centres, docs, settings: parsePortfolioSettings(readTilariData(db, PORTFOLIO_KEY)), owner, loanOwners }
+  return { centres, docs, settings: parsePortfolioSettings(readTilariData(db, PORTFOLIO_KEY)), owner, loanOwners, depositOwner }
 }
 
 function docFor(loaded: Loaded, id: number): ParsedDoc<PropertyDoc> {
@@ -200,6 +222,9 @@ type LeaseContext = {
   refs: Map<number, VoucherRef>
   /** Per cost centre: suggestions that no stored lease stands for. */
   suggestions: Map<number, LeaseSuggestion[]>
+  /** The stored leases' deposit lines, and each return's deductions by return line id (ADR-029). */
+  depositLines: DepositLine[]
+  deductions: Map<number, DeductionLine[]>
 }
 
 function incomeOf(c: Computed): SuggestIncome[] {
@@ -211,10 +236,18 @@ function incomeOf(c: Computed): SuggestIncome[] {
 function leaseContext(db: SqliteDb, computed: Computed[], asOf: string): LeaseContext {
   const leases: Lease[] = computed.flatMap((c) => c.parsed.doc.leases ?? [])
   const docIds = computed.flatMap((c) => c.parsed.doc.doc_voucher_ids ?? [])
-  const refs = loadVoucherRefs(db, new Set([...leaseVoucherIds(leases), ...docIds]))
+  const linked = depositIds(leases)
+  const depositLines = loadDepositLines(db, linked.eraids, linked.lineIds)
+  const deductions = new Map<number, DeductionLine[]>()
+  for (const d of loadDeductionLines(db, depositLines.filter((l) => l.signed_snt < 0).map((l) => l.id))) {
+    deductions.set(d.return_id, [...(deductions.get(d.return_id) ?? []), d])
+  }
+  const depositVouchers = [...depositLines, ...[...deductions.values()].flat()].map((l) => l.voucher_id)
+  const refs = loadVoucherRefs(db, new Set([...leaseVoucherIds(leases), ...docIds, ...depositVouchers]))
   const incomes = new Map(computed.map((c) => [c.centre.id, incomeOf(c)]))
   const payers = [...incomes.values()].flat().flatMap((r) => (r.partner_id != null ? [r.partner_id] : []))
-  const partners = loadPartners(db, new Set([...leasePartnerIds(leases), ...payers]))
+  const depositPartners = [...depositLines, ...[...deductions.values()].flat()].flatMap((l) => (l.partner_id != null ? [l.partner_id] : []))
+  const partners = loadPartners(db, new Set([...leasePartnerIds(leases), ...payers, ...depositPartners]))
   const names = new Map([...partners].map(([id, p]) => [id, p.name]))
   const suggestions = new Map<number, LeaseSuggestion[]>()
   for (const c of computed) {
@@ -227,7 +260,13 @@ function leaseContext(db: SqliteDb, computed: Computed[], asOf: string): LeaseCo
     const found = suggestLeases({ docs, income: incomes.get(c.centre.id) ?? [], names, centreName: c.centre.name, parkingObject, asOf })
     suggestions.set(c.centre.id, found.filter((s) => !representedBy(stored, s.lease)))
   }
-  return { asOf, booksStart: getPeriods(db)[0]?.starts ?? asOf, partners, refs, suggestions }
+  return { asOf, booksStart: getPeriods(db)[0]?.starts ?? asOf, partners, refs, suggestions, depositLines, deductions }
+}
+
+/** A stored lease's deposit on the as-of date; null when it links none. */
+function depositOf(lease: Lease, ctx: LeaseContext): DepositView | null {
+  if (!lease.deposit) return null
+  return depositView(depositLinesOf(lease.deposit, ctx.depositLines), ctx.deductions, ctx.asOf, { partnerName: partnerName(ctx), refs: ctx.refs })
 }
 
 function suggestionView(s: LeaseSuggestion, ctx: LeaseContext): LeaseView {
@@ -300,6 +339,10 @@ function toRow(c: Computed, ctx: LeaseContext, account: RentAccount | null = ren
   if (leases) warnings.push({ code: 'lease_overlap', params: { from_date: leases[1].starts } })
   const [settlements] = settlementOverlaps(parsed.doc.water_settlements ?? [])
   if (settlements) warnings.push({ code: 'water_overlap', params: { from_date: settlements[1].from } })
+  for (const lease of parsed.doc.leases ?? []) {
+    const deposit = depositOf(lease, ctx)
+    if (deposit) warnings.push(...depositWarnings(lease, deposit, ctx.asOf))
+  }
   return {
     id: centre.id,
     name: centre.name,
@@ -397,7 +440,13 @@ export function computeDetail(
   const lineRefs = loadVoucherRefs(db, new Set(lines.map((l) => l.voucher_id)))
   const account = rentAccountOf(computed, ctx, new Map([...ctx.refs, ...lineRefs]))
   const row = toRow(computed, ctx, account)
-  if (row.lease && !row.lease.suggested) row.lease = { ...row.lease, water_latest: latest.get(row.lease.key) ?? null }
+  const stored = computed.parsed.doc.leases ?? []
+  const deposits = new Map(stored.map((lease) => [lease.key, depositOf(lease, ctx)]))
+  if (row.lease && !row.lease.suggested) {
+    row.lease = { ...row.lease, water_latest: latest.get(row.lease.key) ?? null, deposit: deposits.get(row.lease.key) ?? null }
+  }
+  const candidates = depositCandidatesOf(db, loaded, computed, ctx)
+  const taken = new Set<string>()
   return {
     ...row,
     child_ids: centre.child_ids,
@@ -412,17 +461,50 @@ export function computeDetail(
     years: computed.result.years,
     target: computed.result.target,
     financing: computed.parsed.doc.financing ?? null,
-    leases: (computed.parsed.doc.leases ?? [])
-      .map((lease) => ({ ...leaseView(lease, asOf, ctx.partners, ctx.refs), water_latest: latest.get(lease.key) ?? null }))
+    leases: stored
+      .map((lease) => ({
+        ...leaseView(lease, asOf, ctx.partners, ctx.refs),
+        water_latest: latest.get(lease.key) ?? null,
+        deposit: deposits.get(lease.key) ?? null,
+      }))
       .sort((a, b) => b.starts.localeCompare(a.starts) || a.key.localeCompare(b.key)),
-    lease_suggestions: suggestions
-      .map((s) => ({ lease: s.lease, view: { ...suggestionView(s, ctx), sources: sources.get(s) ?? [] } }))
-      .sort((a, b) => b.lease.starts.localeCompare(a.lease.starts)),
+    lease_suggestions: [...suggestions]
+      .sort((a, b) => b.lease.starts.localeCompare(a.lease.starts))
+      .map((s) => {
+        // Each suggested lease takes the deposit the book points to, once.
+        const deposit = suggestDeposit(s.lease, candidates, taken)
+        for (const key of depositKeys(deposit)) taken.add(key)
+        const lease = deposit ? { ...s.lease, deposit } : s.lease
+        return { lease, view: { ...suggestionView(s, ctx), sources: sources.get(s) ?? [] } }
+      }),
     water,
     rent_account: account,
+    deposit_candidates: candidates,
     rent_start: rentStartOf(computed, ctx, lines, true),
     rent_start_default: rentStartOf(computed, ctx, lines, false),
   }
+}
+
+/**
+ * Deposits the edit page offers (ADR-029): on liability accounts, named a deposit by the
+ * account or the text, or linked already; related to this object by its cost centre, a rent
+ * payer or tenant, or its name in the text.
+ */
+function depositCandidatesOf(db: SqliteDb, loaded: Loaded, c: Computed, ctx: LeaseContext): DepositCandidate[] {
+  const roots = loadLiabilityRoots(db)
+  const items = loadDepositLines(db, roots.filter((r) => r.eraid === r.id).map((r) => r.id), [])
+  const payers = incomeOf(c).flatMap((r) => (r.partner_id != null ? [r.partner_id] : []))
+  const partners = new Set([...payers, ...leasePartnerIds(c.parsed.doc.leases ?? [])])
+  const names = loadPartners(db, new Set(roots.flatMap((r) => (r.partner_id != null ? [r.partner_id] : []))))
+  return depositCandidates(roots, items, {
+    objectId: c.centre.id,
+    allocations: allocationSet(c.centre),
+    partners,
+    scorer: textScorer(loaded.centres.map((centre) => ({ id: centre.id, name: centre.name }))),
+    owner: loaded.depositOwner,
+    partnerName: (id) => (id != null ? (names.get(id)?.name ?? ctx.partners.get(id)?.name ?? null) : null),
+    asOf: ctx.asOf,
+  })
 }
 
 const partnerName = (ctx: LeaseContext) => (id: number | null) => (id != null ? (ctx.partners.get(id)?.name ?? null) : null)
@@ -515,7 +597,12 @@ export function requireCostCentre(db: SqliteDb, id: number): CostCentre {
 }
 
 /** Write-side checks against the ledger; fills each item's account from its root line. */
-function checkLinks(db: SqliteDb, id: number, doc: PropertyDoc, loaded: Pick<Loaded, 'owner' | 'loanOwners'>): PropertyDoc {
+function checkLinks(
+  db: SqliteDb,
+  id: number,
+  doc: PropertyDoc,
+  loaded: Pick<Loaded, 'owner' | 'loanOwners' | 'depositOwner'>,
+): PropertyDoc {
   const { owner, loanOwners } = loaded
   const roots = new Map(loadEraRoots(db, doc.eras.map((e) => e.eraid)).map((r) => [r.eraid, r]))
   const eras = doc.eras.map((link, i) => {
@@ -569,6 +656,7 @@ function checkLinks(db: SqliteDb, id: number, doc: PropertyDoc, loaded: Pick<Loa
     posted(lease.doc_voucher_id, `leases[${i}].doc_voucher_id`)
     lease.rents.forEach((step, j) => posted(step.voucher_id, `leases[${i}].rents[${j}].voucher_id`))
   })
+  checkDeposits(db, id, leases, loaded.depositOwner)
   const leaseKeys = new Set(leases.map((l) => l.key))
   settlements.forEach((settlement, i) => {
     posted(settlement.voucher_id, `water_settlements[${i}].voucher_id`)
@@ -581,6 +669,39 @@ function checkLinks(db: SqliteDb, id: number, doc: PropertyDoc, loaded: Pick<Loa
   // A lease's contract and notices, and the water statements and letters, are documents of the object too.
   const docVoucherIds = [...new Set([...(doc.doc_voucher_ids ?? []), ...linked])].sort((a, b) => a - b)
   return { ...doc, eras, doc_voucher_ids: docVoucherIds }
+}
+
+/**
+ * A deposit is an item root or a line without an item, posted, on a liability account, and
+ * belongs to one lease only, across every object (ADR-029).
+ */
+function checkDeposits(db: SqliteDb, id: number, leases: Lease[], depositOwner: Loaded['depositOwner']): void {
+  const { eraids, lineIds } = depositIds(leases)
+  if (!eraids.length && !lineIds.length) return
+  const lines = new Map(loadDepositLines(db, eraids, lineIds).map((l) => [l.id, l]))
+  const liability = (l: DepositLine | undefined): l is DepositLine => l != null && l.account_type.startsWith('B') && String(l.account) < '3'
+  const claimed = new Map<string, string>()
+  const claim = (key: string, leaseKey: string, path: string) => {
+    const other = depositOwner.get(key)
+    const mine = claimed.get(key)
+    if ((other && other.object_id !== id) || (mine != null && mine !== leaseKey)) throw new PropertyDocError('deposit_linked', path, 400)
+    claimed.set(key, leaseKey)
+  }
+  leases.forEach((lease, i) => {
+    ;(lease.deposit?.eraids ?? []).forEach((eraid, j) => {
+      const path = `leases[${i}].deposit.eraids[${j}]`
+      const root = lines.get(eraid)
+      if (!liability(root) || root.eraid !== eraid) throw new PropertyDocError('invalid_field', path)
+      claim(`e:${eraid}`, lease.key, path)
+    })
+    ;(lease.deposit?.line_ids ?? []).forEach((lineId, j) => {
+      const path = `leases[${i}].deposit.line_ids[${j}]`
+      const line = lines.get(lineId)
+      // A line of an item is linked through its item.
+      if (!liability(line) || line.eraid != null) throw new PropertyDocError('invalid_field', path)
+      claim(`l:${lineId}`, lease.key, path)
+    })
+  })
 }
 
 /** Save one object's document. Returns true when the stored value changed. */
@@ -724,7 +845,7 @@ export function applySetup(db: SqliteDb, input: SetupApplyInput, now: string): n
   let changed = 0
   for (const [id, doc] of next) {
     // Setup never changes a bank loan, so an older double link does not block it.
-    const checked = checkLinks(db, id, normalizePropertyDoc(doc), { owner, loanOwners: new Map() })
+    const checked = checkLinks(db, id, normalizePropertyDoc(doc), { owner, loanOwners: new Map(), depositOwner: loaded.depositOwner })
     const merged = mergePropertyDoc(docFor(loaded, id), checked, now)
     if (merged && writeTilariData(db, propertyKey(id), serializeDoc(merged), now)) changed += 1
   }
