@@ -1594,6 +1594,11 @@
       "exceptionLegend": "* avvikande hyra: det överenskomna beloppet. Normal hyra och orsak visas när du håller musen över beloppet.",
       "addException": "Lägg till undantag",
       "saveException": "Spara undantaget",
+      "editException": "Redigera undantaget",
+      "editExceptionOf": "Redigera undantaget {period}",
+      "editLead": "Ändringen gäller hela undantaget, alla dess dagar. Den normala hyran och höjningarna ändras inte; ett bifogat avtal finns kvar.",
+      "removeException": "Ta bort undantaget",
+      "removeExceptionConfirm": "Ta bort undantaget {period}? Dess dagar väntar åter den normala hyran.",
       "prefillLead": "Förifyllt så att {month} väntar det som betalades ({paid}). Den normala hyran och höjningarna ändras inte. Kontrollera dagar och belopp och skriv orsaken; avtalet kan bifogas på redigeringssidan."
     }
   }

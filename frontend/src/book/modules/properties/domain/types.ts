@@ -355,8 +355,8 @@ export type RentMonth = {
   key: string
   /** Rent, water advance and parking for the lease's days in the month, agreed exceptions included. */
   rent_snt: number
-  /** When an agreed exception falls in the month: what the steps alone would expect, and its reasons. */
-  exception?: { normal_snt: number; notes: string[] }
+  /** When agreed exceptions fall in the month: what the steps alone would expect, and the exceptions as stored. */
+  exception?: { normal_snt: number; agreed: LeaseException[] }
   /** Water settlement shares due in the month: + the tenant pays, - refunded. */
   water_snt: number
   received_snt: number

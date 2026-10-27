@@ -516,7 +516,9 @@ correction would change the open year's income statement lines. The rental-objec
   water settlement due then), exact to the cent also on a part month. Water and parking stay;
   the difference comes off the rent. The owner checks it, gives the reason and saves it on the
   object page; the agreement is attached on the edit page. None is offered where an exception
-  already lies in the month.
+  already lies in the month: such a month offers "Muokkaa poikkeusta" instead, the stored
+  exception in the same form, saved in its place (found by its first day) with its agreement kept,
+  or removed there once confirmed.
 - Why not edit the steps: a temporary change entered as two steps (down, then back up) reads as
   two rent changes, loses the reason, and would make the increase clause prefill from the
   discounted rent.

@@ -300,9 +300,14 @@ export function PropertyView({
     setData(await saveProperty(id, skipDocument(detail.doc, skip), targetBp != null ? { targetBp } : {}))
   }
 
-  /** Saves an agreed exception to a stored lease and shows the object as saved (ADR-027). */
-  async function addException(detail: PropertyDetail, leaseKey: string, exception: LeaseException) {
-    const leases = (detail.doc.leases ?? []).map((l) => (l.key === leaseKey ? { ...l, exceptions: [...(l.exceptions ?? []), exception] } : l))
+  /**
+   * Saves an agreed exception to a stored lease, new or in place of `replaces` (found by its first
+   * day: a lease's exceptions never overlap; null removes it), and shows the object as saved
+   * (ADR-027). The save puts them in order.
+   */
+  async function saveException(detail: PropertyDetail, leaseKey: string, exception: LeaseException | null, replaces?: LeaseException) {
+    const saved = (list: LeaseException[]) => [...list.filter((e) => e.from !== replaces?.from), ...(exception ? [exception] : [])]
+    const leases = (detail.doc.leases ?? []).map((l) => (l.key === leaseKey ? { ...l, exceptions: saved(l.exceptions ?? []) } : l))
     setData(await saveProperty(id, { ...detail.doc, leases }, targetBp != null ? { targetBp } : {}))
   }
 
@@ -453,7 +458,7 @@ export function PropertyView({
               asOf={d.as_of}
               onEdit={onEdit}
               onOpenVoucher={(v) => openVoucher(v)}
-              onAddException={d.read_only ? undefined : (leaseKey, exception) => addException(d, leaseKey, exception)}
+              onSaveException={d.read_only ? undefined : (leaseKey, exception, replaces) => saveException(d, leaseKey, exception, replaces)}
             />
           ) : null}
 

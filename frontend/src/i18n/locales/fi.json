@@ -1594,6 +1594,11 @@
       "exceptionLegend": "* poikkeava vuokra: sovittu summa. Normaali vuokra ja syy näkyvät, kun viet hiiren summan päälle.",
       "addException": "Lisää poikkeus",
       "saveException": "Tallenna poikkeus",
+      "editException": "Muokkaa poikkeusta",
+      "editExceptionOf": "Muokkaa poikkeusta {period}",
+      "editLead": "Muutos koskee koko poikkeusta, kaikkia sen päiviä. Normaali vuokra ja korotukset eivät muutu; liitetty sopimus säilyy.",
+      "removeException": "Poista poikkeus",
+      "removeExceptionConfirm": "Poistetaanko poikkeus {period}? Sen päivinä odotetaan taas normaali vuokra.",
       "prefillLead": "Esitäytetty niin, että {month} odottaa sen, mitä maksettiin ({paid}). Normaali vuokra ja korotukset eivät muutu. Tarkista päivät ja summat ja kirjoita syy; sopimuksen voi liittää muokkaussivulla."
     }
   }
