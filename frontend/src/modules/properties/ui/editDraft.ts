@@ -24,6 +24,8 @@ export type EditState = {
   leases: LeaseDraft[]
   /** The owner's own first day of rent (`rent_from`); empty for the default. */
   rentFrom: string
+  /** The owner's own last day of rent (`rent_until`); empty for the default. */
+  rentUntil: string
   water: SettlementDraft[]
   /** Documents written on the page (vouchers already in the book). */
   newDocs: DocCandidate[]
@@ -52,6 +54,7 @@ export function stateFromDoc(doc: PropertyDoc, partners: Partner[]): EditState {
     excluded: Boolean(doc.excluded),
     leases: withKeys(leaseDrafts(doc.leases, partners)),
     rentFrom: doc.rent_from ?? '',
+    rentUntil: doc.rent_until ?? '',
     water: settlementDrafts(doc.water_settlements),
     newDocs: [],
     eras: doc.eras.map((e) => e.eraid),
@@ -83,7 +86,8 @@ export function loadEditDraft(book: string, id: number, rev: number): { state: E
     if (!draft || draft.book !== book || draft.id !== id || draft.rev !== rev || !draft.state) return null
     // A draft kept by an earlier version of the form lacks fields added since.
     const leases = (draft.state.leases ?? []).map((l) => ({ ...l, exceptions: l.exceptions ?? [] }))
-    return { state: { ...draft.state, leases, rentFrom: draft.state.rentFrom ?? '' }, scrollTop: draft.scrollTop ?? 0 }
+    const state = { ...draft.state, leases, rentFrom: draft.state.rentFrom ?? '', rentUntil: draft.state.rentUntil ?? '' }
+    return { state, scrollTop: draft.scrollTop ?? 0 }
   } catch {
     return null
   }

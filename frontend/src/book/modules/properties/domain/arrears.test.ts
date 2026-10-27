@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { exceptionPrefill, expectedRent, leaseForLine, rentAccount, rentBalance, rentStart, waterCharges, type RentLine } from './arrears'
+import { exceptionPrefill, expectedRent, leaseForLine, rentAccount, rentBalance, rentEnd, rentStart, waterCharges, type RentLine } from './arrears'
 import type { Lease, WaterSettlement } from './types'
 
 const ctx = { partnerName: (id: number | null) => (id != null ? `Maksaja ${id}` : null), refs: new Map() }
@@ -119,6 +119,19 @@ describe('rent accounts', () => {
     // Agreed otherwise (the month of the sale to the buyer): the owner's date, as given.
     expect(rentStart('2023-06-12', books, [], '2023-06-01')).toEqual({ from: '2023-06-01', source: 'own' })
     expect(rentStart(null, books, [{ date: '2021-12-05' }], '2021-03-15')).toEqual({ from: '2021-03-15', source: 'own' })
+  })
+
+  it('a sale counts to the end of its month; the owner\'s own date stands for it; a held object runs on', () => {
+    expect(rentEnd('2025-06-15')).toEqual({ until: '2025-06-30', source: 'sale' })
+    expect(rentEnd('2024-02-03')).toEqual({ until: '2024-02-29', source: 'sale' })
+    expect(rentEnd('2025-06-15', '2025-06-14')).toEqual({ until: '2025-06-14', source: 'own' })
+    expect(rentEnd(null)).toBeNull()
+    expect(rentEnd(null, '2025-03-31')).toEqual({ until: '2025-03-31', source: 'own' })
+    // The account ends on the lease's end or the owner's last day, whichever comes first.
+    const l = lease('l1', 7, '2025-01-01', '2025-08-31', [{ from: '2025-01-01', rent_snt: 50_000 }])
+    const account = (until: string) => rentAccount({ leases: [l], lines: [], charges: [], window: { from: '2021-01-01', until, asOf: '2025-12-31' }, ctx })
+    expect(account('2025-06-30').leases[0]).toMatchObject({ counted_until: '2025-06-30', expected_snt: 6 * 50_000 })
+    expect(account('2025-12-31').leases[0]).toMatchObject({ counted_until: '2025-08-31', expected_snt: 8 * 50_000 })
   })
 
   it('starts counting from rent received before a later-dated acquisition, at that payment\'s month', () => {

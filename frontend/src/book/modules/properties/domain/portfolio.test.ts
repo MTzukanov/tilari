@@ -241,6 +241,31 @@ describe('rental objects: figures', () => {
     expect(y2023.net_snt).toBe(6_700 * E) // so do the monthly figures: the cost is 2023's
   })
 
+  it('a sold object\'s rent counts to the end of the month of the sale, or to the owner\'s date', async () => {
+    const { db, voucher } = await setUp()
+    // June's rent came to the seller before the sale on 15 June.
+    voucher('rentJune', '2025-06-05', 0, 'Vuokra B 5', [
+      { account: 1910, debit: 800 * E },
+      { account: 3760, credit: 800 * E, allocation: CC.sold },
+    ])
+    const lease = { key: 'l1', tenant_name: 'Vuokralainen Myyntilä', starts: '2023-03-01', rents: [{ from: '2023-03-01', rent_snt: 800 * E }] }
+    let d = computeDetail(db, CC.sold, { today: TODAY })
+    saveProperty(db, CC.sold, { ...d.doc, leases: [lease] }, 'now')
+    d = computeDetail(db, CC.sold, { today: TODAY })
+    expect(d.rent_end).toEqual({ until: '2025-06-30', source: 'sale' })
+    // 28 months of 800,00 from March 2023 to June 2025, all paid.
+    expect(d.rent_account?.leases[0]).toMatchObject({ counted_until: '2025-06-30', expected_snt: 28 * 800 * E, balance_snt: 0 })
+
+    // Agreed in the sale: the buyer gets the rent from the day of the sale.
+    saveProperty(db, CC.sold, { ...d.doc, rent_until: '2025-06-14' }, 'now')
+    d = computeDetail(db, CC.sold, { today: TODAY })
+    expect(d.rent_end).toEqual({ until: '2025-06-14', source: 'own' })
+    expect(d.rent_end_default).toEqual({ until: '2025-06-30', source: 'sale' })
+    // June by days: 14 of 30 days of 800,00 = 373,33; the rest was paid ahead, owed to the buyer.
+    expect(d.rent_account?.leases[0]).toMatchObject({ counted_until: '2025-06-14', balance_snt: 37_333 - 800 * E })
+    expect(() => saveProperty(db, CC.sold, { ...d.doc, rent_from: '2025-07-01' }, 'now')).toThrow('invalid_field:rent_until')
+  })
+
   it('sold object: sale proceeds include the later broker invoice; actual IRR', async () => {
     const { db, vouchers } = await setUp()
     const d = computeDetail(db, CC.sold, { today: TODAY })

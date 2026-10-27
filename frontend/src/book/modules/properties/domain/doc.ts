@@ -138,6 +138,7 @@ const DOC_KEYS = new Set([
   'created_voucher_ids',
   'water_settlements',
   'rent_from',
+  'rent_until',
 ])
 
 const LEASE_KEYS = new Set([
@@ -433,6 +434,10 @@ export function normalizePropertyDoc(input: unknown): PropertyDoc {
   const leaseList = leases(input.leases)
   if (leaseList.length) out.leases = leaseList
   if (input.rent_from != null) out.rent_from = date(input.rent_from, 'rent_from')
+  if (input.rent_until != null) {
+    out.rent_until = date(input.rent_until, 'rent_until')
+    if (out.rent_from && out.rent_until < out.rent_from) fail('rent_until')
+  }
   const settlements = waterSettlements(input.water_settlements)
   if (settlements.length) out.water_settlements = settlements
   checkSize(out)
