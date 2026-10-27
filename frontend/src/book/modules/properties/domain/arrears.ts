@@ -186,7 +186,7 @@ function leaseAccount(lease: Lease, lines: RentLine[], charges: WaterCharge[], w
         key,
         rent_snt: monthRent,
         ...(exceptions.length
-          ? { exception: { normal_snt: normal!.get(key) ?? 0, notes: exceptions.flatMap((e) => (e.note ? [e.note] : [])) } }
+          ? { exception: { normal_snt: normal!.get(key) ?? 0, agreed: exceptions } }
           : {}),
         water_snt: monthWater,
         received_snt: monthPaid,

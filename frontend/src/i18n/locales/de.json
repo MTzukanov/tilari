@@ -1568,6 +1568,11 @@
       "exceptionLegend": "* abweichende Miete: der vereinbarte Betrag. Die reguläre Miete und der Grund erscheinen, wenn der Mauszeiger darauf zeigt.",
       "addException": "Ausnahme hinzufügen",
       "saveException": "Ausnahme speichern",
+      "editException": "Ausnahme bearbeiten",
+      "editExceptionOf": "Ausnahme {period} bearbeiten",
+      "editLead": "Die Änderung gilt für die ganze Ausnahme, alle ihre Tage. Die reguläre Miete und ihre Erhöhungen bleiben; eine angehängte Vereinbarung bleibt erhalten.",
+      "removeException": "Ausnahme entfernen",
+      "removeExceptionConfirm": "Ausnahme {period} entfernen? An ihren Tagen wird wieder die reguläre Miete erwartet.",
       "prefillLead": "Vorausgefüllt, sodass {month} das Gezahlte erwartet ({paid}). Die reguläre Miete und ihre Erhöhungen bleiben. Tage und Beträge prüfen und den Grund angeben; die Vereinbarung lässt sich auf der Bearbeitungsseite anhängen."
     }
   }

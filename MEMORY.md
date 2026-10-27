@@ -7,6 +7,16 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-27 - Rental objects: a month with an exception offers to change or remove it
+
+- Owner asked for "Muokkaa poikkeusta" on a rent account month that has an agreed exception,
+  where other months offer "Lisää poikkeus", and for a way to delete one. It opens the same form
+  (one `ExceptionForm` for adding and editing, as the owner wanted) with the stored exception
+  (dates, amounts, reason); the save replaces it on the lease, matched by its first day, and
+  keeps its agreement voucher. "Poista poikkeus" in that form removes it after a confirm (the
+  save is immediate). `RentMonth.exception` now carries the stored exceptions (`agreed`) instead
+  of only their notes. A month with two exceptions gets a button per exception, named by its days.
+
 ## 2026-10-27 - The storage chip shows only where the book lives, not its file name
 
 - The chip ("Selaimessa", "Levyllä", ...) also printed `source_name`, which the book picker right
