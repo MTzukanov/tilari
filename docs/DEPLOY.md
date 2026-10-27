@@ -51,8 +51,8 @@ The server has no login. It only serves browsers it trusts:
 
 - **Same origin** (the UI this server serves, or the Vite dev proxy) is always allowed.
 - **Cross-origin** callers need `TILARI_ALLOWED_ORIGINS` (comma-separated origins). Default:
-  `https://mtzukanov.github.io` (the Pages build of `tilari.html`). Setting the variable replaces
-  the default. `null` origins (`file://`, sandboxed frames) are never allowed.
+  `https://tilari.fi,https://mtzukanov.github.io` (the Pages build of `tilari.html` on its custom
+  domain, and on github.io if the domain is removed). Setting the variable replaces the default. `null` origins (`file://`, sandboxed frames) are never allowed.
 - Any other `Origin` gets **403** before routing, also for "simple" requests that skip the CORS
   preflight.
 - Bound to loopback (default `127.0.0.1`), the `Host` header must be `localhost`, `127.0.0.1` or

@@ -87,5 +87,5 @@ blocked, and no locker/`http` engine. Wasm ledger + file picker still work.
 Operator comparison (why a local pack beats this file):
 [WORKING_MODES.md — Local Node vs single HTML](WORKING_MODES.md#local-node-vs-single-html).
 User HTML: [`../site/index.html`](../site/index.html). CI publishes the same
-build as [tilari.html](https://mtzukanov.github.io/tilari/tilari.html) on GitHub
+build as [tilari.html](https://tilari.fi/tilari.html) on GitHub
 Pages ([PAGES.md](PAGES.md)).

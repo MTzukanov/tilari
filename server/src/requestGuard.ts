@@ -11,8 +11,11 @@
  */
 import type { IncomingMessage } from 'node:http'
 
-/** Public GitHub Pages build of the single-file app (docs/PAGES.md). */
-export const DEFAULT_ALLOWED_ORIGINS = ['https://mtzukanov.github.io']
+/**
+ * Public GitHub Pages build of the single-file app (docs/PAGES.md): its custom domain, and the
+ * github.io origin it is served from when no custom domain is set.
+ */
+export const DEFAULT_ALLOWED_ORIGINS = ['https://tilari.fi', 'https://mtzukanov.github.io']
 
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]'])
 
