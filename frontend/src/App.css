@@ -5362,7 +5362,8 @@ tr.tax-total td {
   font-variant-numeric: tabular-nums;
 }
 
-.property-lease-head {
+/* The form's "Vuokra alussa" row; scoped so the lease card's head (below) does not take its margin away. */
+.property-lease-edit .property-lease-head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;

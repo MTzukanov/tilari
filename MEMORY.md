@@ -28,6 +28,9 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   liability account); insurance forms are left out now.
 - The lease form's water checkbox sat ~1.5 px above the parking one (Chromium and Firefox): a flex
   row aligned by baseline took the checkbox's bottom edge as the label's baseline.
+- That row also had no space above it: the lease card's `.property-lease-head` rule (later in
+  App.css) took the form row's 1rem top margin away. The form's rule is scoped to
+  `.property-lease-edit` now; the card and the water panel keep theirs.
 
 ## 2026-10-26 - Rental objects: the list's rent leaves out the water advance
 
