@@ -133,7 +133,7 @@ test.describe('rental object leases', () => {
     await page.locator('.property-actions').getByRole('button', { name: 'Peru' }).click()
 
     await page.goto('/#/properties')
-    await expect(page.locator('.property-table').first()).toContainText('Testi Vuokralainen · 670,00 €/kk')
+    await expect(page.locator('.property-table').first()).toContainText('Testi Vuokralainen · 650,00 €/kk')
   })
 })
 

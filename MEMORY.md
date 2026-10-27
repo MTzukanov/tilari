@@ -29,6 +29,12 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 - The lease form's water checkbox sat ~1.5 px above the parking one (Chromium and Firefox): a flex
   row aligned by baseline took the checkbox's bottom edge as the label's baseline.
 
+## 2026-10-26 - Rental objects: the list's rent leaves out the water advance
+
+- Owner asked: the object list (`#/properties`) showed the tenant's rent with the water advance
+  included. The advance is settled against use, so the list now shows rent + parking only. The
+  lease card still shows the total with its parts, and the rent account still expects the total.
+
 ## 2026-10-26 - Rental objects: agreed rent exceptions; rent before a later acquisition (`feature/property-rent-exceptions`)
 
 - Owner asked for exceptional rents (discounts or otherwise agreed). A lease's `exceptions[]`
