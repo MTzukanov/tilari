@@ -1325,8 +1325,7 @@
       "confirmDeleteDoc": "Poistetaanko tosite kirjanpidosta: {titles}? Tällä käynnillä luotu poistetaan heti, aiemmin luotu kun tallennat.",
       "exceptionsLead": "Sovittu alennus, vuokravapaa jakso tai muu poikkeus: jakson päivinä vuokralainen maksaa nämä summat vuokran ja korotusten sijaan, ja vuokrasaldo laskee niillä. Alennus kirjoitetaan alempana vuokrana.",
       "addException": "Lisää poikkeava vuokra",
-      "uploadException": "Lataa liite",
-      "rentFromHint": "Tyhjänä {date} ({reason}). Kaupan jälkeen vuokra lasketaan ensimmäisestä kokonaan omistetusta kuukaudesta, koska kaupantekokuun vuokra kuuluu yleensä myyjälle. Anna päivä, jos kaupassa sovittiin toisin, esimerkiksi että kaupantekokuun vuokra kuuluu ostajalle."
+      "uploadException": "Lataa liite"
     },
     "setup": {
       "title": "Vuokrakohteiden määritys",

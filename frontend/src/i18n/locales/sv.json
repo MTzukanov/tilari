@@ -1325,8 +1325,7 @@
       "confirmDeleteDoc": "Ta bort verifikatet ur bokföringen: {titles}? Ett som skapats under detta besök tas bort genast, ett tidigare när du sparar.",
       "exceptionsLead": "En överenskommen rabatt, en hyresfri period eller annat undantag: under periodens dagar betalar hyresgästen dessa belopp i stället för hyran och höjningarna, och hyressaldot räknar med dem. Skriv en rabatt som den lägre hyran.",
       "addException": "Lägg till avvikande hyra",
-      "uploadException": "Ladda upp bilaga",
-      "rentFromHint": "Tomt: {date} ({reason}). Efter ett köp räknas hyran från första hela månaden i ägo, eftersom hyran för köpmånaden oftast går till säljaren. Ange ett datum om annat avtalades vid köpet, till exempel att köpmånadens hyra går till köparen."
+      "uploadException": "Ladda upp bilaga"
     },
     "setup": {
       "title": "Inställning av hyresobjekt",

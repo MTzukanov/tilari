@@ -1325,8 +1325,7 @@
       "confirmDeleteDoc": "Den Beleg aus der Buchhaltung löschen: {titles}? Ein bei diesem Besuch erstellter wird sofort gelöscht, ein früherer beim Speichern.",
       "exceptionsLead": "Ein vereinbarter Nachlass, eine mietfreie Zeit oder eine andere Ausnahme: an ihren Tagen zahlt der Mieter diese Beträge statt der Miete und ihrer Erhöhungen, und der Mietsaldo rechnet damit. Einen Nachlass als die niedrigere Miete eingeben.",
       "addException": "Abweichende Miete hinzufügen",
-      "uploadException": "Dokument hochladen",
-      "rentFromHint": "Leer: {date} ({reason}). Nach einem Kauf zählt die Miete ab dem ersten vollen Monat im Eigentum, da die Miete des Kaufmonats meist dem Verkäufer zusteht. Ein Datum angeben, wenn beim Kauf etwas anderes vereinbart wurde, etwa dass die Miete des Kaufmonats an den Käufer geht."
+      "uploadException": "Dokument hochladen"
     },
     "setup": {
       "title": "Mietobjekte einrichten",

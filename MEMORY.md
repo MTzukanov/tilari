@@ -7,6 +7,13 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-27 - Rental objects: the first day of rent box shows the default
+
+- Owner asked: instead of an empty "Vuokra omistajalle alkaen" box with a paragraph explaining
+  the default, the box shows the default day (`rent_start_default`) and the paragraph is gone.
+  Only a day other than the default is stored as `rent_from`, so an untouched box keeps
+  following the purchase date; a stored own day equal to the default is dropped on save.
+
 ## 2026-10-27 - Rental objects: the water form keeps a suggestion's booked lines
 
 - Owner reported: a water settlement the book suggested listed its booked lines, but once added
