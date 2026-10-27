@@ -465,11 +465,19 @@ correction would change the open year's income statement lines. The rental-objec
   claim. Rounding happens only where a part month is prorated: once per step segment.
 - **Expected:** the lease's step totals (rent, water advance, parking) for its days; a full month
   is the total exactly, a part month the total by days. Counted from the later of the lease's
-  start and the object's acquisition (else the books' first fiscal year), until the end, a sale
-  or the as-of date. Rent received on the object before the acquisition's date (an asset
-  re-booked as a balance item later, say) moves the start back to that payment's month: the
-  owner had the object then, and the payment would otherwise show as paid ahead for good. Each water settlement share (ADR-025) is due on the letter's date, else in
-  the month after the period's end; a refund is negative.
+  start and the owner's first day of rent, until the end, a sale or the as-of date. Each water
+  settlement share (ADR-025) is due on the letter's date, else in the month after the period's
+  end; a refund is negative.
+- **The owner's first day of rent** (changed 2026-10-27, owner's choice): after a purchase in the
+  books, the first whole month owned - the seller keeps the rent of the month of the sale, so a
+  purchase on the 8th counts from the 1st of the next month, one on the 1st from that day. Rent
+  received on the object before the purchase's date (an asset re-booked as a balance item later,
+  say) moves the start back to that payment's month: the owner had the object then, and the
+  payment would otherwise show as paid ahead for good. Without a purchase in the books, the books'
+  first fiscal year. When the sale agreed otherwise (the month of the sale to the buyer, say), the
+  owner gives the day on the edit page (`rent_from`), and it stands for all of these. Before, the
+  count started on the purchase day and the owner had to enter an exception at 0 for the rest of
+  that month on every object bought with a tenant.
 - **Received:** the object's income lines (without VAT, as booked), each given to one lease: the
   lease whose tenant paid it (from 31 days before its start, also after its end); else the lease
   running then; else the last that ended before it. A stored water settlement's lines go to the
@@ -487,7 +495,10 @@ correction would change the open year's income statement lines. The rental-objec
   the next increase and its notice still start from the normal rent.
 - A discount is typed as the lower rent, not as a minus amount: the form prefills the amounts in
   force and shows the difference. Exceptions lie within the lease and never overlap, so each day
-  has one set of amounts.
+  has one set of amounts. Likewise an object's leases never share a day (one day in two would
+  expect its rent twice), nor do its water settlement periods (2026-10-27): saving refuses them,
+  and the form names both with their days. A document saved before that check reads as it is and
+  the object warns about it (`lease_overlap`, `water_overlap`).
 - The rent account (ADR-026) expects the exception's amounts on its days, part months by days
   and rounded once per stretch; a month with one shows what the steps alone would expect and the
   owner's reason. Water advances in the settlements (ADR-025) follow the exception's water too:

@@ -6,7 +6,7 @@
  */
 import { addDays, addMonths, dayCount, monthEnd, monthKeys } from '../../../months'
 import { leaseState, rentSegments, rentTotal, termsAt } from './rent'
-import type { Lease, LeaseException, LeaseRentAccount, RentAccount, RentBalance, RentMonth, WaterSettlement } from './types'
+import type { Lease, LeaseException, LeaseRentAccount, RentAccount, RentBalance, RentMonth, RentStart, WaterSettlement } from './types'
 import { bookedLine, settlementShares } from './water'
 
 /** A booked line paid for rent (income) or a water refund passed on; `lease_key` when already known. */
@@ -89,13 +89,19 @@ export function exceptionPrefill(lease: Lease, key: string, target: number, wind
 }
 
 /**
- * The first day the owner's rent counts: the acquisition, else the books' start. Rent received on
- * the object before a later-dated acquisition (an asset re-booked as a balance item, say) shows
- * the owner had it already: counting then starts from that payment's month.
+ * The first day the owner's rent counts (ADR-026). A purchase in the books counts from the first
+ * whole month owned: the seller keeps the rent of the month of the sale, so a purchase on the 8th
+ * counts from the 1st of the next month, one on the 1st from that day. Rent received on the object
+ * before the purchase's date (an asset re-booked as a balance item later, say) shows the owner had
+ * it already: counting then starts from that payment's month. Without a purchase in the books,
+ * from their start. The owner's own date (`rent_from`, agreed otherwise) stands for all of these.
  */
-export function rentCountedFrom(owned: string, payments: Pick<RentLine, 'date'>[]): string {
+export function rentStart(acquired: string | null, booksStart: string, payments: Pick<RentLine, 'date'>[], own?: string): RentStart {
+  if (own) return { from: own, source: 'own' }
+  if (!acquired || acquired <= booksStart) return { from: booksStart, source: 'books' }
   const first = payments.reduce<string | null>((min, p) => (min == null || p.date < min ? p.date : min), null)
-  return first != null && first < owned ? `${monthOf(first)}-01` : owned
+  if (first != null && first < acquired) return { from: `${monthOf(first)}-01`, source: 'payment' }
+  return { from: acquired.endsWith('-01') ? acquired : `${addMonths(monthOf(acquired), 1)}-01`, source: 'purchase' }
 }
 
 /**
@@ -140,7 +146,7 @@ export function leaseForLine(line: Pick<RentLine, 'date' | 'partner_id'>, leases
 
 type LineContext = Parameters<typeof bookedLine>[2]
 
-/** The period the owner's rent accounts cover: from `rentCountedFrom`, to the sale or the as-of date. */
+/** The period the owner's rent accounts cover: from `rentStart`, to the sale or the as-of date. */
 export type RentWindow = { from: string; until: string; asOf: string }
 
 function leaseAccount(lease: Lease, lines: RentLine[], charges: WaterCharge[], window: RentWindow, ctx: LineContext): LeaseRentAccount {

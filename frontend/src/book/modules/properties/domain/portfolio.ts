@@ -1,11 +1,12 @@
 /** Loads ledger + stored documents and assembles the portfolio, one object, or the setup view. */
 import { getPeriods } from '../../../access'
-import { rentAccount, rentBalance, rentCountedFrom, waterCharges, type RentLine } from './arrears'
+import { rentAccount, rentBalance, rentStart, waterCharges, type RentLine } from './arrears'
 import { BookError } from '../../../errors'
 import { readTilariData, readTilariDataPrefix, writeTilariData } from '../../../kernel/tilariData'
 import type { SqliteDb } from '../../../sqlite'
 import { disposalCandidates, saleShares } from './classify'
 import {
+  checkRanges,
   costCentreIdFromKey,
   mergePortfolioSettings,
   mergePropertyDoc,
@@ -44,6 +45,7 @@ import {
   type VoucherRef,
 } from './ledger'
 import { isWaterSettlementText, representedBy, suggestLeases, type LeaseSuggestion, type SuggestIncome } from './leaseSuggest'
+import { leaseOverlaps, settlementOverlaps } from './ranges'
 import { currentLease, leasePartnerIds, leaseVoucherIds, leaseView } from './rent'
 import { saleNet, toBp, xirr, yieldBp, type Flow } from './returns'
 import {
@@ -71,6 +73,7 @@ import {
   type PropertyDetail,
   type PropertyDoc,
   type PropertyRow,
+  type RentStart,
   type SetupApplyInput,
   type SetupResponse,
   type BookedLine,
@@ -263,16 +266,21 @@ function rentLines(c: Computed): RentLine[] {
   return [...income, ...passed]
 }
 
+/** Where the owner's rent counts from (ADR-026); without `own`, where it would without their agreed date. */
+function rentStartOf(c: Computed, ctx: LeaseContext, lines: RentLine[], own: boolean): RentStart {
+  const payments = lines.filter((l) => l.net_snt > 0)
+  return rentStart(c.result.summary.acquired_on, ctx.booksStart, payments, own ? c.parsed.doc.rent_from : undefined)
+}
+
 /** The stored leases' rent accounts (ADR-026); `refs` label the lines and date the water letters. */
 function rentAccountOf(c: Computed, ctx: LeaseContext, refs: Map<number, VoucherRef>): RentAccount | null {
   const leases = c.parsed.doc.leases ?? []
   if (!leases.length) return null
   const charges = waterCharges(c.parsed.doc.water_settlements ?? [], leases, (id) => refs.get(id)?.date ?? null)
   const lines = rentLines(c)
-  // Rent is the owner's from the acquisition (else the books' start, or rent received before it) until a sale.
-  const { acquired_on, sold_on } = c.result.summary
-  const owned = acquired_on && acquired_on > ctx.booksStart ? acquired_on : ctx.booksStart
-  const from = rentCountedFrom(owned, lines.filter((l) => l.net_snt > 0))
+  // Rent is the owner's from `rentStartOf` until a sale.
+  const { from } = rentStartOf(c, ctx, lines, true)
+  const { sold_on } = c.result.summary
   const until = c.result.status === 'sold' && sold_on && sold_on < ctx.asOf ? sold_on : ctx.asOf
   return rentAccount({ leases, lines, charges, window: { from, until, asOf: ctx.asOf }, ctx: { partnerName: partnerName(ctx), refs } })
 }
@@ -286,6 +294,11 @@ function toRow(c: Computed, ctx: LeaseContext, account: RentAccount | null = ren
   if (rent?.current_snt && rent.current_snt > 0) warnings.push({ code: 'rent_arrears', params: { amount_snt: rent.current_snt } })
   if (rent && rent.others_snt > 0) warnings.push({ code: 'former_owes', params: { amount_snt: rent.others_snt } })
   if (rent && rent.others_snt < 0) warnings.push({ code: 'former_paid_ahead', params: { amount_snt: -rent.others_snt } })
+  // Saved before saving checked it: each day in two leases or two settlements counts twice.
+  const [leases] = leaseOverlaps(parsed.doc.leases ?? [])
+  if (leases) warnings.push({ code: 'lease_overlap', params: { from_date: leases[1].starts } })
+  const [settlements] = settlementOverlaps(parsed.doc.water_settlements ?? [])
+  if (settlements) warnings.push({ code: 'water_overlap', params: { from_date: settlements[1].from } })
   return {
     id: centre.id,
     name: centre.name,
@@ -379,7 +392,8 @@ export function computeDetail(
   const { water, latest } = waterDetail(db, computed, ctx)
   const suggestions = ctx.suggestions.get(id) ?? []
   const sources = leaseSources(db, computed, suggestions, ctx)
-  const lineRefs = loadVoucherRefs(db, new Set(rentLines(computed).map((l) => l.voucher_id)))
+  const lines = rentLines(computed)
+  const lineRefs = loadVoucherRefs(db, new Set(lines.map((l) => l.voucher_id)))
   const account = rentAccountOf(computed, ctx, new Map([...ctx.refs, ...lineRefs]))
   const row = toRow(computed, ctx, account)
   if (row.lease && !row.lease.suggested) row.lease = { ...row.lease, water_latest: latest.get(row.lease.key) ?? null }
@@ -405,6 +419,8 @@ export function computeDetail(
       .sort((a, b) => b.lease.starts.localeCompare(a.lease.starts)),
     water,
     rent_account: account,
+    rent_start: rentStartOf(computed, ctx, lines, true),
+    rent_start_default: rentStartOf(computed, ctx, lines, false),
   }
 }
 
@@ -571,6 +587,7 @@ export function saveProperty(db: SqliteDb, id: number, input: unknown, now: stri
   requireCostCentre(db, id)
   const loaded = loadStored(db)
   const doc = checkLinks(db, id, normalizePropertyDoc(input), loaded)
+  checkRanges(doc)
   const merged = mergePropertyDoc(docFor(loaded, id), doc, now)
   if (!merged) return false
   return writeTilariData(db, propertyKey(id), serializeDoc(merged), now)

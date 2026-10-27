@@ -2,6 +2,7 @@
 import { isIsoDate } from '../../../clock'
 import { BookError } from '../../../errors'
 import { stableJson } from '../../../json'
+import { leaseOverlaps, settlementOverlaps } from './ranges'
 import {
   PORTFOLIO_KEY,
   PROPERTY_DOC_VERSION,
@@ -135,6 +136,7 @@ const DOC_KEYS = new Set([
   'leases',
   'created_voucher_ids',
   'water_settlements',
+  'rent_from',
 ])
 
 const LEASE_KEYS = new Set([
@@ -414,10 +416,24 @@ export function normalizePropertyDoc(input: unknown): PropertyDoc {
   if (note) out.note = note
   const leaseList = leases(input.leases)
   if (leaseList.length) out.leases = leaseList
+  if (input.rent_from != null) out.rent_from = date(input.rent_from, 'rent_from')
   const settlements = waterSettlements(input.water_settlements)
   if (settlements.length) out.water_settlements = settlements
   checkSize(out)
   return out
+}
+
+/**
+ * Saving refuses leases, or water settlement periods, that share days (`overlap`, naming the later
+ * one). Reading keeps such a document as it is, and the object warns about it.
+ */
+export function checkRanges(doc: PropertyDoc): void {
+  const leases = doc.leases ?? []
+  const [lease] = leaseOverlaps(leases)
+  if (lease) throw new PropertyDocError('overlap', `leases[${leases.indexOf(lease[1])}].starts`)
+  const settlements = doc.water_settlements ?? []
+  const [settlement] = settlementOverlaps(settlements)
+  if (settlement) throw new PropertyDocError('overlap', `water_settlements[${settlements.indexOf(settlement[1])}].from`)
 }
 
 export type ParsedDoc<T> = { doc: T; exists: boolean; corrupt: boolean; read_only: boolean }

@@ -24,11 +24,20 @@ export function statusClass(status: PropertyStatus): string {
 
 type T = (key: string, vars?: Record<string, string | number>) => string
 
-/** Warning text; unknown codes fall back to the code itself. A `*_snt` param is money, named without the suffix. */
+/**
+ * Warning text; unknown codes fall back to the code itself. A `*_snt` param is money and a `*_date`
+ * param a date, each named without the suffix.
+ */
 export function warningText(t: T, w: Warning): string {
   const key = `properties.warn.${w.code}`
   const params = Object.fromEntries(
-    Object.entries(w.params ?? {}).map(([k, v]) => (k.endsWith('_snt') && typeof v === 'number' ? [k.slice(0, -4), formatCents(v)] : [k, v])),
+    Object.entries(w.params ?? {}).map(([k, v]) =>
+      k.endsWith('_snt') && typeof v === 'number'
+        ? [k.slice(0, -4), formatCents(v)]
+        : k.endsWith('_date') && typeof v === 'string'
+          ? [k.slice(0, -5), formatDate(v)]
+          : [k, v],
+    ),
   )
   const text = t(key, params)
   return text === key ? w.code : text
