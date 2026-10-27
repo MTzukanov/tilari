@@ -39,6 +39,28 @@ the site works at `https://<org>.github.io/<repo>/` and on a custom domain.
 Do not point Pages at `docs/` — Jekyll would mix ADRs with the user guide.
 The user site is static HTML only (`.nojekyll` is present).
 
+## PR previews
+
+Workflow: [`.github/workflows/pr-preview.yml`](../.github/workflows/pr-preview.yml). Each push
+to a PR from a branch of this repo builds `tilari.html` from the PR head and uploads it as the
+non-zipped artifact `tilari-pr-<N>.html` (`upload-artifact` v7, `archive: false`). The PR's checks
+get a **PR preview** status whose **Details** link opens that file in the browser. Closing or
+merging the PR deletes its previews; otherwise they expire after 30 days.
+
+- **Nothing is deployed.** The workflow holds no secret, and its token can only set the status
+  and delete artifacts. Fork PRs get no preview (the Test workflow still runs for them).
+- **Who can open it:** any signed-in GitHub user who finds the link. Artifact links need a
+  sign-in and hand out a signed URL valid for a few minutes, so search engines do not index them.
+  A reload after that fails; open the link again.
+- **Origin:** the file is served from `https://productionresultssa<N>.blob.core.windows.net`, a
+  storage host shared by the artifacts of every GitHub repo. Its OPFS, localStorage and IndexedDB
+  are shared with any other HTML artifact opened in the same browser, and with earlier previews.
+  It is never the `tilari.fi` origin, so a preview cannot touch the live app's working copies,
+  file handles or locker credentials. Test with `testdb/` or a copy, preferably in a private
+  window, and do not tick "remember" for locker credentials there.
+- The footer links to `LICENSE` and `THIRD_PARTY.md` do not resolve in a preview, and a Tilari
+  server only answers it if `TILARI_ALLOWED_ORIGINS` lists that origin.
+
 ## Custom domain
 
 Yes. GitHub Pages will serve this site on a hostname you own (apex or
