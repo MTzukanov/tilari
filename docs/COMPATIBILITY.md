@@ -59,7 +59,8 @@ Desktop Kitsas uses WAL and can take an exclusive lock.
 Tilari writes the closing exactly where desktop Kitsas looks for it:
 
 - Notes to the accounts in the `TPTEKSTI_{loppupvm}` attachment on voucher 0, with a
-  copy under `Asetus.tilinpaatos/{loppupvm}`
+  copy under `Asetus.tilinpaatos/{loppupvm}` (Tilari reads the copy when the working
+  copy is lean and `Liite.data` is NULL; Kitsas itself reads only the attachment)
 - Closing state in `Tilikausi.json` (`henkilosto` headcount, `tilinpaatos` drafted-at, `vahvistettu` confirmed-at)
 - Year-end vouchers 9910 / 9920 / 9930 with the `Vienti.tyyppi` codes Kitsas
   uses (99100 depreciation, 99211/99212 accrual, 99221/99222 opening)

@@ -206,6 +206,7 @@ Rules already encoded:
 
 - Prefer killing the PID from `ss -tlnp | grep 8000` over broad `pkill`.
 - Close desktop Kitsas before write; WAL + backup-on-first-write.
+- `Liite.data` is NULL once a book has been reopened (lean): the bytes are in the attachment store, which domain code and `Ledger.mutate` cannot await. Do not read attachment content from it in domain code.
 - `compute_saldot(endDate)[account]` for `BE`/`T` may not equal last row running balance (those accounts are often synthetic).
 
 ## Suggested test sniff

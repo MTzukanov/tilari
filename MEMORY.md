@@ -7,6 +7,30 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-31 - Fixed: saved statement notes lost on reopen; legal form never read
+
+- Every reopen moves `Liite.data` to the attachment store, and the statement code read only
+  `Liite.data`. After a reopen the notes editor opened blank, the print silently regenerated the
+  text from the template (ignoring the owner's edits), and a save dropped the report line from the
+  stored text. The text now comes from `Asetus.tilinpaatos/{date}` when `Liite.data` is NULL; Kitsas
+  (since 2020) and tilari write that copy together with the attachment. The store itself is not
+  used: domain code is synchronous and a locker book's bytes may still be syncing. No attachment row
+  still means no text, as in Kitsas.
+- Checked on copies of real books after extraction: every statement's text read back, reached the
+  print and kept its report line on a second save; where the attachment was still inline, its
+  `Asetus` copy was byte-identical, and every lean one had a copy.
+- The statement asked `Asetus` for `Muoto`; the key is `muoto` (Kitsas `AsetusModel`), so every
+  book got the limited company's `?muoto=oy` sections, a `tmi` book too. A book with no `muoto`
+  still reads as `oy` (only test books have none; Kitsas would leave out both sections).
+- Seen, not changed:
+  - `settingCondition` compares every `?avain=arvo` with the legal form; Kitsas `kyssariTesti`
+    reads `avain`. The shipped templates use only `?muoto=`; a custom `tppohja` with another
+    key would go wrong.
+  - After Tallenna the status turns clean before the final OPFS write: a reload right then can
+    show "Ei tallennettu" for a saved book (intermittent). The file is already written.
+  - A row with `Liite.data` NULL and no `Asetus` copy still reads as empty; no known writer
+    leaves one.
+
 ## 2026-10-31 - Posting in tilari vs saving in Kitsas: NULL line fields, log snapshot
 
 - Owner test: the same drafts (written by tilari-bank-import) posted in tilari and saved in desktop
