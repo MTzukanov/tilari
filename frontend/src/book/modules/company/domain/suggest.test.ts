@@ -97,6 +97,10 @@ describe('reading document kinds from text', () => {
     expect(kindsIn('Ylimäräinen yhtiökokous 2032')).toMatchObject({ period: [], extraordinary: true })
   })
 
+  it('does not take a PRH receipt for the statements it names', () => {
+    expect(kindsIn('PRH kuitti tilinpäätös 2031').period).toEqual(['prh_filing_receipt'])
+  })
+
   it('reads the year, not a date, and the end of a range', () => {
     expect(yearIn('Verotuspäätös 2031')).toBe(2031)
     expect(yearIn('Verotuspaatos (pdf)_12.06.2033.pdf')).toBeNull()

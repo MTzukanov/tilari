@@ -66,9 +66,10 @@ export function kindsIn(text: string): { period: PeriodKind[]; company: CompanyK
   const company = COMPANY_RULES.filter((r) => r.pattern.test(folded)).map((r) => r.kind)
   if (company.length) return { period: [], company, extraordinary: false }
   const extraordinary = EXTRAORDINARY.test(folded)
-  const period = PERIOD_RULES.filter((r) => r.pattern.test(folded))
-    .map((r) => r.kind)
-    .filter((kind) => !(extraordinary && kind === 'agm_minutes'))
+  const found = PERIOD_RULES.filter((r) => r.pattern.test(folded)).map((r) => r.kind)
+  // A receipt names what it is for, and is not the statements itself.
+  const receipt = found.includes('prh_filing_receipt')
+  const period = found.filter((kind) => !(extraordinary && kind === 'agm_minutes') && !(receipt && kind === 'financial_statements'))
   return { period, company: [], extraordinary }
 }
 
