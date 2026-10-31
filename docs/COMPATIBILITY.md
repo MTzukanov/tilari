@@ -37,7 +37,10 @@ tools. That means:
 - Cents in `debetsnt` / `kreditsnt`
 - JSON columns remain valid JSON objects (possibly `{}`)
 - Exported `Liite.data` is a BLOB; `sha` is hex SHA-256
-- `Tositeloki` rows are additive
+- `Tositeloki` rows are additive; tilari's carry `userid 0`, `toiminto` and, on save or post,
+  the voucher like Kitsas logs it
+- Lines without a tase-erä, partner or archive id have NULL there (not 0 / ''), as Kitsas writes
+  them; a save or post in tilari stores 0 / '' from other tools as NULL
 
 Opening a classic Kitsas file unpacks attachment BLOBs into the web store
 once; the OPFS working copy stays lean.

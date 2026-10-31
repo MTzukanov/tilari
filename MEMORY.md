@@ -7,6 +7,23 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-31 - Posting in tilari vs saving in Kitsas: NULL line fields, log snapshot
+
+- Owner test: the same drafts (written by tilari-bank-import) posted in tilari and saved in desktop
+  Kitsas gave the same accounts, amounts, numbers and attachments, but different line fields:
+  Kitsas's save rewrites every line (`lisaaTaiPaivita`: `eraid > 0 ? eraid : NULL`,
+  `kumppani ? kumppani : NULL`, empty `arkistotunnus` NULL); tilari's post kept the tool's
+  `eraid` 0, `kumppani` 0, `arkistotunnus` ''. Kitsas's tase-erittely (`eraroute.cpp`) lists
+  the lines without a tase-erä by `eraid IS NULL`, so those lines were missing from the list
+  (totals right, from the account balance).
+- Fixed: a save that writes the voucher, and a post, store those as NULL (`nullEmptyLineFields`);
+  an unchanged save still writes nothing. tilari-bank-import writes NULL too and has
+  `fix-empty-line-fields` for older lines.
+- Log: tilari's `kirjaa` / `tallenna` rows now also carry the voucher in Kitsas's log shape
+  (`lokiSnapshot`), so Kitsas's log tab shows what was posted; still `userid 0` + `toiminto`.
+- Seen, not changed: the locker's lean split rewrote three Kitsas-written `Liite.sha` values from
+  BLOB to TEXT (same hex, data identical on download).
+
 ## 2026-10-27 - Rental objects 1f: lease reminders (`feature/property-reminders`)
 
 - Phase 2 increment 1f (ADR-030): reminders are warnings computed on the as-of date - vacancy,
