@@ -154,11 +154,19 @@ const SECTION_TITLES: Record<string, string> = {
   oyeiosinko: 'Ei osinkoa',
 }
 
-/** Sections the user can tick in the wizard (skips the size/always-on tags). */
-export function parseSections(template: string): TemplateSection[] {
+/**
+ * Sections the user can tick in the wizard (skips the size/always-on tags, and sections
+ * under a `?` condition that does not hold, like Kitsas `TpAloitus`).
+ */
+export function parseSections(template: string, setting: SettingReader): TemplateSection[] {
   const sections: TemplateSection[] = []
+  let settingOk = true
   for (const raw of template.split('\n')) {
-    if (!raw.startsWith('#') || raw.startsWith('##')) continue
+    if (raw.startsWith('?')) {
+      settingOk = settingCondition(raw.trimEnd(), setting)
+      continue
+    }
+    if (!settingOk || !raw.startsWith('#') || raw.startsWith('##')) continue
     const parts = raw.slice(1).trim().split(/\s+/)
     const tag = parts.shift() || ''
     if (!tag || tag.startsWith('-') || tag === tag.toUpperCase()) continue
@@ -172,6 +180,9 @@ export function parseSections(template: string): TemplateSection[] {
   return sections
 }
 
+/** An `Asetus` value for a `?avain=arvo` line; '' when the book has none. */
+export type SettingReader = (key: string) => string
+
 export type GeneratorContext = {
   size: PmaSize
   /** Optional `#tag` sections the user selected. */
@@ -179,8 +190,7 @@ export type GeneratorContext = {
   headcount: number | null
   macros: MacroContext
   scalars: Record<string, string>
-  /** Company legal form for `?muoto=oy` conditionals (`oy`, `tmi`, …). */
-  muoto?: string
+  setting: SettingReader
   /** Expands `@tase@`, `@tulos@`, `@verolaskelma@`, `@henkilosto@`. */
   marker: (name: string, suffix?: string) => string
 }
@@ -229,10 +239,11 @@ function sectionActive(line: string, ctx: GeneratorContext): boolean {
   return ctx.selected.has(tag)
 }
 
-function settingCondition(line: string, ctx: GeneratorContext): boolean {
-  const match = line.slice(1).match(/^(\w+)=(.+)$/)
+/** `?avain=arvo` like Kitsas `kyssariTesti`; a bare `?` ends the condition. */
+function settingCondition(line: string, setting: SettingReader): boolean {
+  const match = line.slice(1).match(/^(.+)=(.+)$/)
   if (!match) return true
-  return (ctx.muoto || '').toLowerCase() === match[2].toLowerCase()
+  return setting(match[1]) === match[2]
 }
 
 function isAccountMacro(key: string): boolean {
@@ -261,6 +272,7 @@ export function generateNotes(template: string, ctx: GeneratorContext): NotesRes
   const out: string[] = []
   const reportMarkers: string[] = []
   let active = true
+  // A `?` condition holds across headings until the next `?` line (Kitsas `kyssariEhto`).
   let settingOk = true
   let atCondition = true
   let atBuffer: string[] = []
@@ -278,7 +290,6 @@ export function generateNotes(template: string, ctx: GeneratorContext): NotesRes
 
     if (line.startsWith('##')) {
       active = true
-      settingOk = true
       flushAtBlock()
       continue
     }
@@ -290,7 +301,7 @@ export function generateNotes(template: string, ctx: GeneratorContext): NotesRes
     }
 
     if (line.startsWith('?')) {
-      settingOk = settingCondition(line, ctx)
+      settingOk = settingCondition(line, ctx.setting)
       continue
     }
 

@@ -26,6 +26,7 @@ import {
   generateNotes,
   parseSections,
   type PmaSize,
+  type SettingReader,
   type TemplateSection,
 } from './statementTemplate'
 import { renderReportMarkerHtml, parseReportMarkerLine } from '../../../chartReport'
@@ -126,6 +127,11 @@ function writeAttachment(
 
 export function getTemplate(db: SqliteDb): string {
   return getSettings(db, [TEMPLATE_KEY])[TEMPLATE_KEY] || DEFAULT_TEMPLATE_FI
+}
+
+/** Template conditions read `Asetus`; a book with no legal form counts as a limited company. */
+function templateSettings(db: SqliteDb): SettingReader {
+  return (key) => getSettings(db, [key])[key] || (key === 'muoto' ? 'oy' : '')
 }
 
 function readOptions(db: SqliteDb): { size: PmaSize; selected: string[] } {
@@ -369,7 +375,7 @@ function generateStatementDocument(
   },
 ): { html: string; reportLine: string } {
   const period = requireFiscalPeriodByEnd(db, ends)
-  const company = getSettings(db, ['Nimi', 'Ytunnus', 'Kaupunki', 'muoto', 'Kotipaikka'])
+  const company = getSettings(db, ['Nimi', 'Ytunnus', 'Kaupunki', 'Kotipaikka'])
   const tax = period.json.verolaskelma ?? null
   const balances = computeBalances(db, ends).balances
   const profit = Object.entries(balances)
@@ -393,7 +399,7 @@ function generateStatementDocument(
     selected: new Set(opts.selected),
     headcount: opts.headcount,
     macros,
-    muoto: (company.muoto || 'oy').toLowerCase(),
+    setting: templateSettings(db),
     scalars: buildStatementScalars(
       db,
       period.starts,
@@ -462,7 +468,7 @@ export function getStatement(db: SqliteDb, ends: string): StatementDoc {
     selected: options.selected,
     headcount: period.json.henkilosto ?? null,
     share_count: readShareCount(db),
-    sections: parseSections(getTemplate(db)),
+    sections: parseSections(getTemplate(db), templateSettings(db)),
     drafted_at: period.json.tilinpaatos ?? null,
     confirmed_at: period.json.vahvistettu ?? null,
     has_pdf: Boolean(
