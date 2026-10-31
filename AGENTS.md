@@ -152,9 +152,15 @@ Rules already encoded:
     after its own fields change, reusing line ids, and vouchers it cannot rebuild exactly open on
     "Viennit" only. Statement rows loaded from the book are saved as stored until edited; loaded
     rows are hidden (and dropped) only by archive id. `postVoucher` posts a draft as it is
-    (status + number, Kitsas PATCH). Every `Ledger.mutate` is one SAVEPOINT; never await inside it.
-14. **Tositeloki writer signature**: tilari writes `userid 0` + `{"toiminto": ...}`; Kitsas desktop
-    writes `userid NULL` + the full voucher JSON. Keep tilari's writes distinguishable.
+    (status + number, Kitsas PATCH). A save that writes the voucher, and a post, store a line's
+    `eraid` / `kumppani` 0 and `arkistotunnus` '' as NULL like Kitsas `lisaaTaiPaivita`
+    (`nullEmptyLineFields`): Kitsas's tase-erittely lists lines without a tase-erä by
+    `eraid IS NULL`. Every `Ledger.mutate` is one SAVEPOINT; never await inside it.
+14. **Tositeloki writer signature**: tilari writes `userid 0` + `{"toiminto": ...}`; a save
+    (`tallenna`) or post (`kirjaa`) also carries the voucher in Kitsas's log shape
+    (`lokiSnapshot`: header, lines with euro amounts as text), which Kitsas shows from its log tab.
+    Kitsas desktop writes `userid NULL` + the full voucher JSON. Keep tilari's writes
+    distinguishable (`userid 0` + `toiminto`; tilari-bank-import reads `toiminto`).
 
 ## UI conventions
 

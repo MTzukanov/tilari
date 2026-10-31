@@ -190,8 +190,51 @@ describe('postVoucher', () => {
     expect(after.tosite!.tila).toBe(STATUS_POSTED)
     expect(Number(after.tosite!.tunniste)).toBeGreaterThan(0)
     expect(after.tosite!.json_type).toBe('blob')
+    const loki = db.get<{ data: string; userid: number }>(
+      'SELECT data, userid FROM Tositeloki WHERE tosite = ? ORDER BY id DESC',
+      [ids.B],
+    )
+    // tilari's own row (userid 0, toiminto) carrying the voucher like Kitsas logs a save.
+    expect(loki!.userid).toBe(0)
+    const logged = JSON.parse(loki!.data)
+    expect(logged).toMatchObject({ toiminto: 'kirjaa', id: ids.B, tila: STATUS_POSTED })
+    expect(logged.tunniste).toBe(Number(after.tosite!.tunniste))
+    expect(logged.viennit).toHaveLength(before.viennit.length)
+    const first = before.viennit[0]
+    expect(logged.viennit[0]).toMatchObject({ id: first.id, tili: first.tili })
+    const cents = Number(first.debetsnt || first.kreditsnt)
+    expect(logged.viennit[0][first.debetsnt ? 'debet' : 'kredit']).toBe((cents / 100).toFixed(2))
+  })
+
+  it("stores a line's 0 / '' for no tase-erä, partner or archive id as NULL, like a Kitsas save", async () => {
+    const { db, ids } = await loadImportedFixture()
+    // How another tool wrote lines without a tase-erä, partner or archive id.
+    db.run("UPDATE Vienti SET eraid = 0, kumppani = 0, arkistotunnus = '' WHERE tosite = ?", [ids.B])
+    const before = voucherSnapshot(db, ids.B)
+    postVoucher(db, ids.B)
+    const after = voucherSnapshot(db, ids.B)
+    for (const [i, line] of after.viennit.entries()) {
+      expect([line.eraid, line.kumppani, line.arkistotunnus]).toEqual([null, null, null])
+      const { eraid: _e, kumppani: _k, arkistotunnus: _a, ...rest } = line
+      const { eraid: _e2, kumppani: _k2, arkistotunnus: _a2, ...was } = before.viennit[i]
+      expect(rest).toEqual(was)
+    }
+  })
+
+  it('a save that writes the voucher stores those fields as NULL; an unchanged save writes nothing', async () => {
+    const { db, ids } = await loadImportedFixture()
+    db.run("UPDATE Vienti SET eraid = 0, kumppani = 0, arkistotunnus = '' WHERE tosite = ?", [ids.B])
+    const unchanged = voucherSnapshot(db, ids.B)
+    saveVoucher(db, payloadFromLoaded(db, ids.B), ids.B)
+    expect(voucherSnapshot(db, ids.B)).toEqual(unchanged)
+
+    saveVoucher(db, { ...payloadFromLoaded(db, ids.B), title: 'Changed title' }, ids.B)
+    const after = voucherSnapshot(db, ids.B)
+    expect(after.viennit.map((l) => [l.eraid, l.kumppani, l.arkistotunnus])).toEqual(
+      after.viennit.map(() => [null, null, null]),
+    )
     const loki = db.get<{ data: string }>('SELECT data FROM Tositeloki WHERE tosite = ? ORDER BY id DESC', [ids.B])
-    expect(JSON.parse(loki!.data)).toEqual({ toiminto: 'kirjaa' })
+    expect(JSON.parse(loki!.data)).toMatchObject({ toiminto: 'tallenna', otsikko: 'Changed title' })
   })
 
   it('refuses an unbalanced draft', async () => {
