@@ -29,7 +29,7 @@ mode is **session-only** and is never written to the file.
 
 | Column | Meaning |
 |--------|---------|
-| `key` | `property/{kohdennusId}` (one rental object) or `portfolio` (defaults) |
+| `key` | `property/{kohdennusId}` (one rental object), `portfolio` (defaults) or `company` (company documents) |
 | `value` | JSON document, keys sorted |
 | `updated` | ISO timestamp of the last write |
 
@@ -97,6 +97,15 @@ tenant as partner and the letter as a PDF (`modules/properties/ui/waterLetter.ts
 
 `portfolio`: `v`, `rev`, `sale_costs`, `target_return_bp`, `dismissed[]` (setup suggestions
 the owner rejected: `era:{eraid}`, `doc:{voucherId}`).
+
+`company` (ADR-031): `v`, `rev`, `updated_at`; `settings` (`audited`, `annual_report`, only when on);
+`documents[]`, one link each: `key` (stable, `d12`), `kind`, `period_ends` (`Tilikausi.loppuu`, null
+for the company's own), `voucher_id`, `attachment_id` (one file of a voucher with several),
+`doc_date` (the document's own date when the voucher's differs), `note`; `not_needed[]`
+(`period_ends`, `kind`: a slot marked as needing no document); `dismissed[]` (rejected suggestions:
+`{voucherId}:{attachmentId}:{kind}`). Writes refuse a voucher that is not posted, a file of another
+voucher, and a period that does not exist. Links are read fresh: a voucher deleted later shows as
+missing. Nothing computed is stored; deadlines come from the period's end.
 
 ## Tables we leave alone (v1)
 

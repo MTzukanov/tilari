@@ -185,6 +185,23 @@ not this.
 | Palauttamatta | Ej återfått | Not yet recovered | Noch nicht zurück |
 | Nollahinta | Nollpris | Break-even price | Break-even-Preis |
 
+## Company documents (yhtiö)
+
+| Finnish | Swedish | English | German |
+|---------|---------|---------|--------|
+| Yhtiö | Bolag | Company | Unternehmen |
+| Varsinainen yhtiökokous | Ordinarie bolagsstämma | Annual general meeting | Ordentliche Hauptversammlung |
+| Ylimääräinen yhtiökokous | Extra bolagsstämma | Extraordinary general meeting | Außerordentliche Hauptversammlung |
+| Hallitus | Styrelse | Board | Vorstand |
+| Tase-erittely | Balansspecifikation | Balance sheet specification | Bilanzaufstellung |
+| Toimintakertomus | Verksamhetsberättelse | Annual report | Lagebericht |
+| Tilintarkastuskertomus | Revisionsberättelse | Audit report | Prüfungsbericht |
+| Verotuspäätös | Beskattningsbeslut | Tax decision | Steuerbescheid |
+| Yhtiöjärjestys | Bolagsordning | Articles of association | Satzung |
+| Kaupparekisteriote | Handelsregisterutdrag | Trade register extract | Handelsregisterauszug |
+| Osakasluettelo | Aktieägarförteckning | Shareholder list | Aktionärsliste |
+| Osakassopimus | Aktieägaravtal | Shareholder agreement | Aktionärsvereinbarung |
+
 ## VAT (ALV / arvonlisävero)
 
 | Finnish | Swedish | English | German |

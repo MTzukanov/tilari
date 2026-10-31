@@ -7,6 +7,29 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-31 - Company documents and deadlines (`feature/company-documents`)
+
+- Owner asked for a place for the company's cycle: a new sidebar item (Yhtiö, `#/company`), Tilikaudet
+  left as it is, files as normal vouchers (type 800 or on the records they belong to), Tilari's own
+  data in `TilariData` (ADR-031). A design from a session without access to this repo was the
+  starting point; its concepts carried over, its Kitsas API, SQL tables and dividend model did not.
+- Owner decisions: documents and deadlines first, dividends next after the review; company-level
+  documents get their own section; dividend vouchers will be drafts the owner posts, cash payments
+  keep coming from the bank import.
+- What the model has to allow: documents on normal vouchers, several documents on one voucher, the
+  same file on two vouchers. A dividend can go in steps: decided on one voucher, moved to withholding
+  and a payable on a second, paid later through bank statements, where not every line on the payable
+  is a dividend.
+- Matching notes: `osinko` inflects to `osingon`; `veroilmoitus` is inside VAT and transfer-tax
+  returns; `6b` is inside hex file names; a file name's date is not the period's year.
+- Checked on a copy of a real book (pass/fail only): the suggestions put each file of a voucher with
+  several documents on its own slot, look-alikes gave none, and accepting all of them changed only
+  `TilariData`.
+- Open: the deadline rules for the 4 month statements (KPL 3:6) and the 6 month AGM (OYL 5:3) rest
+  on secondary sources; Finlex's pages could not be read by the tools. Check the current text before
+  merging. Vero.fi and PRH confirmed the 6B and the 8 month PRH deadline; the first design's
+  month-end rounding of the PRH date was late for mid-month period ends.
+
 ## 2026-10-31 - Fixed: the save status turned clean before the working copy was written
 
 - A save marked the book clean first and wrote the working copy after, so a reload right then

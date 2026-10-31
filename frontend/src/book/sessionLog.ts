@@ -27,6 +27,7 @@ export type SessionChangeKind =
   | 'property'
   | 'property_setup'
   | 'property_settings'
+  | 'company'
   | 'book_saved'
 
 export type SessionChange = {

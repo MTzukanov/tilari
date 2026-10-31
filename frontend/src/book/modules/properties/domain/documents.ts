@@ -10,7 +10,7 @@ import { TYPE_ATTACHMENT_NOTE, TYPE_BANK_STATEMENT } from '../../../vouchers'
 import type { DocumentGroupKind, DocumentVoucher, PropertyDocuments } from './types'
 
 /** Kitsas system attachments (VAT report, statements, tax calculations) are not documents. */
-function isUserAttachment(role: string | null): boolean {
+export function isUserAttachment(role: string | null): boolean {
   return !role || role === 'lasku'
 }
 

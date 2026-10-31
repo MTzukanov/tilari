@@ -1,6 +1,7 @@
 import { helpUi } from '../app/helpUi'
 import type { Route } from '../app/routing'
 import { allocationsUi } from './allocations/screen'
+import { companyUi } from './company/screen'
 import { deferredUi } from './deferred/screen'
 import { fiscalPeriodsUi } from './fiscalPeriods/screen'
 import { journalUi } from './journal/screen'
@@ -21,6 +22,7 @@ export const UI_MODULES: UiModule[] = [
   journalUi,
   allocationsUi,
   propertiesUi,
+  companyUi,
   reportsUi,
   settingsUi,
   helpUi,
@@ -32,6 +34,7 @@ export const NAV_ITEMS: ModuleNavItem[] = [
   ...(deferredUi.navItems ?? []),
   ...(reportsUi.navItems ?? []).filter((item) => item.id === 'reportsHub'),
   ...(propertiesUi.navItems ?? []),
+  ...(companyUi.navItems ?? []),
   ...(fiscalPeriodsUi.navItems ?? []),
   ...(vatUi.navItems ?? []),
   ...(settingsUi.navItems ?? []),

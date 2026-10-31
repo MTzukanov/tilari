@@ -118,7 +118,7 @@ Rules already encoded:
 8. Writable types: 0, 100, 200, 300, 400, 800, 9100, and edit 9910/9920/9930. Type 210 is read-only until Billing.
 9. JSON blobs stay opaque except documented fields (`tiliote`, `alv`, `tilioterivi`); `info` is
    read only for `[hki:omit:...]` keys of lines left uncorrected on purpose (ADR-024).
-   Tilari's own data (rental objects) lives only in the `TilariData` table (ADR-023):
+   Tilari's own data (rental objects, company documents) lives only in the `TilariData` table (ADR-023):
    never in Kitsas JSON columns, `Tosite.info` or `Asetus` - Kitsas dialogs rebuild those JSONs
    and its chart export copies every `Asetus` key. Store links and inputs, never computed figures.
 10. Fiscal year can start mid-month. Period lookup for month ranges must use **overlap**.
@@ -172,7 +172,8 @@ Rules already encoded:
 - **Always write source files as UTF-8.** Never introduce Windows-1252 bytes (especially `0x97` en-dash). Prefer ASCII `-`.
 - No react-router in v1; hashes: `#/browse`, `#/journal`, `#/vat`, `#/settings`, `#/voucher/new/100`, `#/account/{n}`, `#/allocation/{id}`,
   `#/properties`, `#/properties/alerts` (opened on its list of warnings), `#/properties/setup`,
-  `#/property/{id}`, `#/property/{id}/edit`; a
+  `#/property/{id}`, `#/property/{id}/edit`, `#/company`, `#/company/documents`,
+  `#/company/period/{ends}`; a
   `/month/{YYYY-MM}` after `#/property/{id}` or `#/allocation/{id}` opens that month (and stays on the
   way back from a voucher).
   `#/settings` (and `#/settings/storage`) work without an open book for app prefs; book/company fields appear once a book is open.
