@@ -34,6 +34,8 @@ import { processStatementTables } from './statementTables'
 import { formatFiCents } from './yearEndBook'
 
 const TEXT_ROLE = (ends: string) => `TPTEKSTI_${ends}`
+/** Kitsas backup of the text in `Asetus`, written with the attachment. */
+const TEXT_COPY_KEY = (ends: string) => `tilinpaatos/${ends}`
 const PDF_ROLE = (ends: string) => `TP_${ends}`
 /** Kitsas: tppohja/fi — notes-to-the-accounts template. */
 const TEMPLATE_KEY = 'tppohja/fi'
@@ -71,14 +73,24 @@ function formatFi(iso: string): string {
   return `${Number(d)}.${Number(m)}.${y}`
 }
 
-function readAttachmentText(db: SqliteDb, role: string): { markers: string; html: string } | null {
+/**
+ * The saved text: report markers on the first line, notes HTML after it. A lean book has the
+ * attachment's bytes in the attachment store, out of reach here, with `Liite.data` NULL; the
+ * text then comes from its `Asetus` copy, which Kitsas and `saveStatement` write with it.
+ */
+function readStatementText(db: SqliteDb, ends: string): { markers: string; html: string } | null {
   const row = db.get<{ data: Uint8Array | null }>(
     'SELECT data FROM Liite WHERE tosite = 0 AND roolinimi = ?',
-    [role],
+    [TEXT_ROLE(ends)],
   )
-  if (!row?.data) return null
-  const bytes = row.data instanceof Uint8Array ? row.data : new Uint8Array(row.data as ArrayBuffer)
-  const text = new TextDecoder().decode(bytes)
+  if (!row) return null
+  const key = TEXT_COPY_KEY(ends)
+  const text = row.data
+    ? new TextDecoder().decode(
+        row.data instanceof Uint8Array ? row.data : new Uint8Array(row.data as ArrayBuffer),
+      )
+    : getSettings(db, [key])[key]
+  if (!text) return null
   const nl = text.indexOf('\n')
   if (nl < 0) return { markers: text.trim(), html: '' }
   return { markers: text.slice(0, nl).trim(), html: text.slice(nl + 1) }
@@ -357,7 +369,7 @@ function generateStatementDocument(
   },
 ): { html: string; reportLine: string } {
   const period = requireFiscalPeriodByEnd(db, ends)
-  const company = getSettings(db, ['Nimi', 'Ytunnus', 'Kaupunki', 'Muoto', 'Kotipaikka'])
+  const company = getSettings(db, ['Nimi', 'Ytunnus', 'Kaupunki', 'muoto', 'Kotipaikka'])
   const tax = period.json.verolaskelma ?? null
   const balances = computeBalances(db, ends).balances
   const profit = Object.entries(balances)
@@ -381,7 +393,7 @@ function generateStatementDocument(
     selected: new Set(opts.selected),
     headcount: opts.headcount,
     macros,
-    muoto: (company.Muoto || 'oy').toLowerCase(),
+    muoto: (company.muoto || 'oy').toLowerCase(),
     scalars: buildStatementScalars(
       db,
       period.starts,
@@ -439,7 +451,7 @@ function generateStatementDocument(
 /** Current notes state for the editor. */
 export function getStatement(db: SqliteDb, ends: string): StatementDoc {
   const period = requireFiscalPeriodByEnd(db, ends)
-  const stored = readAttachmentText(db, TEXT_ROLE(ends))
+  const stored = readStatementText(db, ends)
   const options = readOptions(db)
   const html = stored?.html ?? ''
   return {
@@ -488,7 +500,7 @@ export function saveStatement(
   reportLine?: string,
 ): StatementDoc {
   const period = requireFiscalPeriodByEnd(db, ends)
-  const existing = readAttachmentText(db, TEXT_ROLE(ends))
+  const existing = readStatementText(db, ends)
   const markers = reportLine ?? existing?.markers ?? ''
   const text = markers ? `${markers}\n${html}` : `\n${html}`
   const bytes = new TextEncoder().encode(text)
@@ -496,7 +508,7 @@ export function saveStatement(
   db.run(
     `INSERT INTO Asetus (avain, arvo) VALUES (?, ?)
      ON CONFLICT(avain) DO UPDATE SET arvo = excluded.arvo`,
-    [`tilinpaatos/${ends}`, text], // Kitsas backup key
+    [TEXT_COPY_KEY(ends), text],
   )
   updateFiscalPeriodJson(db, period.starts, { tilinpaatos: new Date().toISOString() })
   return getStatement(db, ends)
@@ -562,7 +574,7 @@ export function buildStatementPrintHtml(db: SqliteDb, ends: string): string {
   const doc = getStatement(db, ends)
   const company = getSettings(db, ['Nimi', 'Ytunnus', 'Kaupunki', 'Harjoitus'])
   const practice = isPracticeValue(company.Harjoitus)
-  const stored = readAttachmentText(db, TEXT_ROLE(ends))
+  const stored = readStatementText(db, ends)
   const liiteBody = prepareNotesForPrint(
     db,
     ends,
