@@ -49,6 +49,7 @@ export type SessionPersistListener = (state: SessionPersistState) => void
 export class WasmBookService extends Ledger implements BookService {
   private bookId = ''
   private attachmentsDirty = false
+  private saveFinishing = false
   private backupDone = false
   private lockerId: string | undefined
   private lockerBinding: LockerBinding | undefined
@@ -181,6 +182,21 @@ export class WasmBookService extends Ledger implements BookService {
     if (this.attachmentsDirty === value) return
     this.attachmentsDirty = value
     this.emitDirtyChange()
+  }
+
+  /**
+   * The status turns clean only after `save` has written the saved flag to the working copy,
+   * where a reload reads it. The dirty flags change as usual and decide the status afterwards,
+   * also when `save` fails.
+   */
+  private async holdStatusDuring<T>(save: () => Promise<T>): Promise<T> {
+    this.saveFinishing = true
+    try {
+      return await save()
+    } finally {
+      this.saveFinishing = false
+      this.emitDirtyChange()
+    }
   }
 
   private clearAllDirty(): void {
@@ -764,7 +780,7 @@ export class WasmBookService extends Ledger implements BookService {
   }
 
   override isDirty(): boolean {
-    return this.dirty || this.attachmentsDirty
+    return this.dirty || this.attachmentsDirty || this.saveFinishing
   }
 
   private async exportPackedKitsas(): Promise<Uint8Array> {
@@ -824,9 +840,11 @@ export class WasmBookService extends Ledger implements BookService {
     } catch {
       this.setSourceModifiedAt(new Date().toISOString())
     }
-    await this.recordBookSaved({ target: 'disk', name: this.sourceName })
-    this.attachmentsDirty = false
-    await this.flushPersistNow()
+    await this.holdStatusDuring(async () => {
+      await this.recordBookSaved({ target: 'disk', name: this.sourceName })
+      this.attachmentsDirty = false
+      await this.flushPersistNow()
+    })
   }
 
   async downloadCopy(promptForName: (suggested: string) => string | null) {
@@ -836,10 +854,12 @@ export class WasmBookService extends Ledger implements BookService {
     // The download is the book's home only for a book that has no locker and no linked file;
     // otherwise it is just a copy and the changes are still unsaved at home.
     if (this.lockerId || this.fileHandle) return
-    this.clearAllDirty()
-    this.setSourceModifiedAt(new Date().toISOString())
-    await this.recordBookSaved({ target: 'disk', name })
-    await this.flushPersistNow()
+    await this.holdStatusDuring(async () => {
+      this.clearAllDirty()
+      this.setSourceModifiedAt(new Date().toISOString())
+      await this.recordBookSaved({ target: 'disk', name })
+      await this.flushPersistNow()
+    })
   }
 
   async downloadLeanCopy(promptForName: (suggested: string) => string | null) {
@@ -911,6 +931,10 @@ export class WasmBookService extends Ledger implements BookService {
   }
 
   async saveToLocker(opts: TransferOpts = {}): Promise<'saved' | 'reverted'> {
+    return this.holdStatusDuring(() => this.runLockerSave(opts))
+  }
+
+  private async runLockerSave(opts: TransferOpts): Promise<'saved' | 'reverted'> {
     const initialAsNew = opts.asNew ?? false
     const checkpoint = this.captureLockerCheckpoint(initialAsNew)
     let asNew = initialAsNew
