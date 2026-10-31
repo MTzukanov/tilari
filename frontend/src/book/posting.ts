@@ -195,6 +195,75 @@ export function appendLoki(
   ])
 }
 
+/**
+ * Kitsas writes NULL, never 0 or '', for a line without a tase-erä, a partner or an archive id
+ * (`tositeroute.cpp` lisaaTaiPaivita: `eraid > 0 ? eraid : NULL`); its tase-erittely lists the
+ * lines without a tase-erä by `eraid IS NULL`, so a 0 drops a line from that list. Lines written
+ * by other tools can carry 0 / '': a save or post that writes the voucher stores them as Kitsas.
+ */
+function nullEmptyLineFields(db: SqliteDb, voucherId: number): void {
+  db.run(
+    `UPDATE Vienti SET eraid = NULLIF(eraid, 0), kumppani = NULLIF(kumppani, 0),
+       arkistotunnus = NULLIF(arkistotunnus, '')
+     WHERE tosite = ? AND (eraid = 0 OR kumppani = 0 OR arkistotunnus = '')`,
+    [voucherId],
+  )
+}
+
+/**
+ * The voucher as Kitsas logs a save (`TositeRoute::lisaaTaiPaivita` stores the client's voucher
+ * JSON; Kitsas shows it from the log tab): header and lines, euro amounts as text, empty fields
+ * left out. Merged into tilari's own `{"toiminto": ...}` row, which keeps `userid 0`.
+ */
+export function lokiSnapshot(db: SqliteDb, voucherId: number): Record<string, unknown> {
+  const t = db.get<RawRow>(
+    'SELECT id, pvm, tyyppi, tila, tunniste, sarja, otsikko, kumppani, laskupvm, erapvm, viite, json FROM Tosite WHERE id = ?',
+    [voucherId],
+  )
+  if (!t) return {}
+  const set = (o: Record<string, unknown>) =>
+    Object.fromEntries(Object.entries(o).filter(([, v]) => v != null && v !== '' && v !== 0))
+  const euros = (cents: unknown) => (cents ? (Number(cents) / 100).toFixed(2) : null)
+  const lines = db.all<RawRow>(
+    `SELECT id, pvm, tili, kohdennus, selite, debetsnt, kreditsnt, alvkoodi, alvprosentti, eraid, kumppani,
+            arkistotunnus FROM Vienti WHERE tosite = ? ORDER BY rivi, id`,
+    [voucherId],
+  )
+  const info = (parseJson(t.json) as Record<string, unknown> | null)?.info
+  return {
+    id: Number(t.id),
+    pvm: t.pvm,
+    tyyppi: Number(t.tyyppi),
+    tila: Number(t.tila),
+    ...set({
+      tunniste: Number(t.tunniste),
+      sarja: t.sarja,
+      otsikko: t.otsikko,
+      kumppani: Number(t.kumppani),
+      laskupvm: t.laskupvm,
+      erapvm: t.erapvm,
+      viite: t.viite,
+      info,
+    }),
+    viennit: lines.map((l) =>
+      set({
+        id: Number(l.id),
+        pvm: l.pvm,
+        tili: Number(l.tili),
+        kohdennus: Number(l.kohdennus),
+        selite: l.selite,
+        debet: euros(l.debetsnt),
+        kredit: euros(l.kreditsnt),
+        alvkoodi: Number(l.alvkoodi),
+        alvprosentti: l.alvprosentti,
+        era: l.eraid ? { id: Number(l.eraid) } : null,
+        kumppani: Number(l.kumppani),
+        arkistotunnus: l.arkistotunnus,
+      }),
+    ),
+  }
+}
+
 function lineAmounts(line: SaveEntryInput): [number, number] {
   const debit = asCents(line.debit_cents)
   const credit = asCents(line.credit_cents)
@@ -486,7 +555,7 @@ export function saveVoucher(
     else eraid = stored ? stored.eraid : null
     let kumppani: unknown
     if (stored) kumppani = line.partner === undefined ? stored.kumppani : resolvePartner(db, line.partner)
-    else kumppani = resolvePartner(db, line.partner) || partnerId
+    else kumppani = resolvePartner(db, line.partner) || partnerId || null
     const values: RawRow = {
       rivi: sameStructure && stored ? stored.rivi : Number(line.line_no || idx + 1),
       tyyppi: line.entry_type !== undefined ? Number(line.entry_type || 0) : stored ? stored.tyyppi : 0,
@@ -580,13 +649,15 @@ export function saveVoucher(
     if (p.newEra) db.run('UPDATE Vienti SET eraid = id WHERE id = ?', [ins.lastInsertRowid])
   })
 
-  appendLoki(db, savedId, status, { toiminto: 'tallenna' })
+  nullEmptyLineFields(db, savedId)
+  appendLoki(db, savedId, status, { toiminto: 'tallenna', ...lokiSnapshot(db, savedId) })
   return savedId
 }
 
 /**
- * Post a draft without touching its lines (Kitsas `TositeRoute::patch`): sets `tila` and
- * assigns a number. Lines are expanded once (cash-basis VAT), as a posting save would.
+ * Post a draft without changing its lines (Kitsas `TositeRoute::patch`): sets `tila` and
+ * assigns a number. Lines are expanded once (cash-basis VAT), as a posting save would, and empty
+ * line fields are stored as NULL like a Kitsas save (`nullEmptyLineFields`).
  */
 export function postVoucher(
   db: SqliteDb,
@@ -661,7 +732,8 @@ export function postVoucher(
       db.run('UPDATE Vienti SET eraid = id WHERE id = ?', [ins.lastInsertRowid])
     }
   }
-  appendLoki(db, voucherId, STATUS_POSTED, { toiminto: 'kirjaa' })
+  nullEmptyLineFields(db, voucherId)
+  appendLoki(db, voucherId, STATUS_POSTED, { toiminto: 'kirjaa', ...lokiSnapshot(db, voucherId) })
   return voucherId
 }
 
