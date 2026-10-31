@@ -15,23 +15,6 @@ async function openClosingWizard2024(page: Page) {
   return openClosingWizard(page)
 }
 
-/** A reload restores the OPFS working copy; the saved status can show before it is written. */
-async function workingCopyHolds(page: Page, text: string): Promise<boolean> {
-  return page.evaluate(async (needle) => {
-    const root = await navigator.storage.getDirectory()
-    const tilari = await root.getDirectoryHandle('tilari')
-    for await (const handle of tilari.values()) {
-      if (handle.kind !== 'directory') continue
-      const file = await (handle as FileSystemDirectoryHandle)
-        .getFileHandle('working.kitsas')
-        .then((h) => h.getFile())
-        .catch(() => null)
-      if (file && (await file.text()).includes(needle)) return true
-    }
-    return false
-  }, text)
-}
-
 test.describe('period-end closing', () => {
   test.beforeEach(({ browserName }) => {
     skipWebkitOpfs(browserName)
@@ -205,7 +188,6 @@ test.describe('period-end closing', () => {
     await expect(notesEdit).toHaveCount(0, { timeout: 15_000 })
     await wizard.getByRole('button', { name: 'Sulje' }).click()
     await saveBookInBrowser(page, 'tilari-period-end.kitsas')
-    await expect.poll(() => workingCopyHolds(page, 'Oma liitetieto')).toBe(true)
 
     // The restore moves Liite.data to the attachment store, as every reopen does.
     await page.reload()

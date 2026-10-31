@@ -15,6 +15,22 @@ import {
 } from './sessionChanges.helpers'
 
 test.describe('session changes (wasm)', () => {
+  test('a reload right after saving shows the book as saved', async ({ page, browserName }) => {
+    skipWebkitOpfs(browserName)
+    test.setTimeout(90_000)
+    await openBook(page)
+    await changeCompanyName(page, 'Testikirja E2E-1')
+    await expectDirtyStatus(page, true)
+    await saveBookInBrowser(page)
+
+    await page.reload()
+    await expect(page.getByRole('heading', { name: 'Testikirja E2E-1' })).toBeVisible({
+      timeout: 60_000,
+    })
+    await expectDirtyStatus(page, false)
+    await expectUnsavedBadge(page, 0)
+  })
+
   test('open, edit, see changes, save, edit again', async ({ page, browserName }) => {
     skipWebkitOpfs(browserName)
     test.setTimeout(90_000)

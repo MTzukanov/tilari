@@ -7,6 +7,15 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-31 - Fixed: the save status turned clean before the working copy was written
+
+- A save marked the book clean first and wrote the working copy after, so a reload right then
+  restored the older dirty flag and a saved book showed "Ei tallennettu" (2 of 8 tries in the e2e).
+  The file itself was already saved. Now `isDirty()` stays true until that write has finished
+  (`holdStatusDuring`), on disk, download and locker saves; the dirty flags themselves change as
+  before, so the working copy records the save and a failure leaves them to decide the status.
+- A reload during the write still shows "Ei tallennettu", but the status showed that too by then.
+
 ## 2026-10-31 - Fixed: `?` conditions in the statement template did not work
 
 - The `muoto` fix in #55 changed nothing on the shipped template: `?muoto=oy` sits right above a
@@ -34,11 +43,8 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   `Asetus` copy was byte-identical, and every lean one had a copy.
 - The statement asked `Asetus` for `Muoto`; the key is `muoto` (Kitsas `AsetusModel`). That alone
   did not fix the legal form; see the entry above.
-- Seen, not changed:
-  - After Tallenna the status turns clean before the final OPFS write: a reload right then can
-    show "Ei tallennettu" for a saved book (intermittent). The file is already written.
-  - A row with `Liite.data` NULL and no `Asetus` copy still reads as empty; no known writer
-    leaves one.
+- Seen, not changed: a row with `Liite.data` NULL and no `Asetus` copy still reads as empty; no
+  known writer leaves one.
 
 ## 2026-10-31 - Posting in tilari vs saving in Kitsas: NULL line fields, log snapshot
 
