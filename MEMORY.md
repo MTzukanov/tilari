@@ -7,6 +7,19 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-10-31 - Fixed: `?` conditions in the statement template did not work
+
+- The `muoto` fix in #55 changed nothing on the shipped template: `?muoto=oy` sits right above a
+  `##` heading and the generator reset the condition at every `##`, so `oy` and `tmi` books got
+  byte-identical notes. Its test used a template with no heading; the tests now use the shipped one.
+- Now like Kitsas: a condition holds until the next `?` line (`kyssariEhto`) and compares the
+  setting the line names, exactly (`kyssariTesti`); the wizard hides the sections under a
+  condition that does not hold (`TpAloitus`). A book with no `muoto` still counts as `oy`, where
+  Kitsas would leave out both forms' sections (only test books have none).
+- Checked on copies of real limited-company books: notes byte-identical with the stored, no and all
+  choices; the wizard drops only `tmipaaoma`. In the browser with the shipped template, a `tmi` book
+  no longer offers the dividend choices and its notes do not mention share capital.
+
 ## 2026-10-31 - Fixed: saved statement notes lost on reopen; legal form never read
 
 - Every reopen moves `Liite.data` to the attachment store, and the statement code read only
@@ -19,13 +32,9 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 - Checked on copies of real books after extraction: every statement's text read back, reached the
   print and kept its report line on a second save; where the attachment was still inline, its
   `Asetus` copy was byte-identical, and every lean one had a copy.
-- The statement asked `Asetus` for `Muoto`; the key is `muoto` (Kitsas `AsetusModel`), so every
-  book got the limited company's `?muoto=oy` sections, a `tmi` book too. A book with no `muoto`
-  still reads as `oy` (only test books have none; Kitsas would leave out both sections).
+- The statement asked `Asetus` for `Muoto`; the key is `muoto` (Kitsas `AsetusModel`). That alone
+  did not fix the legal form; see the entry above.
 - Seen, not changed:
-  - `settingCondition` compares every `?avain=arvo` with the legal form; Kitsas `kyssariTesti`
-    reads `avain`. The shipped templates use only `?muoto=`; a custom `tppohja` with another
-    key would go wrong.
   - After Tallenna the status turns clean before the final OPFS write: a reload right then can
     show "Ei tallennettu" for a saved book (intermittent). The file is already written.
   - A row with `Liite.data` NULL and no `Asetus` copy still reads as empty; no known writer

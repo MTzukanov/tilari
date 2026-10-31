@@ -13,6 +13,7 @@ import { buildStatementScalars } from './statementMacros'
 import { buildMacroContext } from './statementMacros'
 import { parseSections, generateNotes, type GeneratorContext } from './statementTemplate'
 import { loadGoldenDb } from '../../../golden'
+import yritysChart from '../../../newBook/vendor/yritys.json'
 import type { SqliteDb } from '../../../sqlite'
 
 async function withGolden(fn: (db: SqliteDb) => void | Promise<void>) {
@@ -83,7 +84,7 @@ describe('statement notes', () => {
   it('cleans internal section titles for the wizard', () => {
     const sections = parseSections(`#oykaytto -oyeiosinko Hallituksen ehdotus vapaan oman pääoman käytöstä
 #oyeiosinko -oykaytto Ei osinkoa
-#kaypa -MIKRO Käypään arvoon merkitseminen`)
+#kaypa -MIKRO Käypään arvoon merkitseminen`, () => '')
     expect(sections.find((s) => s.tag === 'oykaytto')?.title).toBe(
       'Hallituksen ehdotus vapaan oman pääoman käytöstä',
     )
@@ -102,6 +103,7 @@ describe('statement notes', () => {
         anyNonZero: () => false,
       },
       scalars: { pvm: '28.8.2026', 'kayttaja.nimi': '' },
+      setting: () => '',
       marker: () => '',
     }
     const html = generateNotes(
@@ -201,45 +203,115 @@ describe('statement on a lean book (Liite.data moved to the attachment store)', 
   })
 })
 
-describe('statement legal form', () => {
-  const TEMPLATE = [
-    '?muoto=oy',
-    'Osakeyhtiön teksti',
-    '?muoto=tmi',
-    'Toiminimen teksti',
-    '?',
-    'Kaikille yhteinen teksti',
-  ].join('\n')
+describe('statement settings conditions', () => {
+  const ENDS = '2025-12-31'
+  const SHIPPED = yritysChart.asetukset['tppohja/fi']
 
-  function notes(db: SqliteDb, muoto: string | null): string {
-    db.run("INSERT INTO Asetus (avain, arvo) VALUES ('tppohja/fi', ?)", [TEMPLATE])
-    if (muoto) db.run("INSERT INTO Asetus (avain, arvo) VALUES ('muoto', ?)", [muoto])
-    return generateStatementHtml(db, '2025-12-31', { size: 'ISO', selected: [], headcount: 1 })
+  function useBook(db: SqliteDb, template: string, settings: Record<string, string> = {}) {
+    const rows = { 'tppohja/fi': template, ...settings }
+    for (const [key, value] of Object.entries(rows)) {
+      db.run('INSERT OR REPLACE INTO Asetus (avain, arvo) VALUES (?, ?)', [key, value])
+    }
   }
 
-  it('follows Asetus.muoto', async () => {
-    await withGolden((db) => {
-      const html = notes(db, 'tmi')
-      expect(html).toContain('Toiminimen teksti')
-      expect(html).not.toContain('Osakeyhtiön teksti')
-      expect(html).toContain('Kaikille yhteinen teksti')
+  function notes(db: SqliteDb, selected: string[] = []): string {
+    return generateStatementHtml(db, ENDS, {
+      size: 'ISO',
+      selected,
+      headcount: 1,
+      share_count: 1000,
+    })
+  }
+
+  const prints = (db: SqliteDb, tag: string) => notes(db, [tag]) !== notes(db)
+  const offered = (db: SqliteDb) => getStatement(db, ENDS).sections.map((s) => s.tag)
+
+  describe('shipped template', () => {
+    it('prints a limited company only its own sections', async () => {
+      await withGolden((db) => {
+        useBook(db, SHIPPED, { muoto: 'oy' })
+        expect(prints(db, 'oypaaoma')).toBe(true)
+        expect(prints(db, 'oykaytto')).toBe(true)
+        expect(prints(db, 'tmipaaoma')).toBe(false)
+        expect(prints(db, 'sahko')).toBe(true)
+      })
+    })
+
+    it('prints a sole trader only its own sections', async () => {
+      await withGolden((db) => {
+        useBook(db, SHIPPED, { muoto: 'tmi' })
+        expect(prints(db, 'tmipaaoma')).toBe(true)
+        expect(prints(db, 'oypaaoma')).toBe(false)
+        expect(prints(db, 'oykaytto')).toBe(false)
+        expect(prints(db, 'sahko')).toBe(true)
+      })
+    })
+
+    it('prints neither form-specific section for another form', async () => {
+      await withGolden((db) => {
+        useBook(db, SHIPPED, { muoto: 'ky' })
+        expect(prints(db, 'tmipaaoma')).toBe(false)
+        expect(prints(db, 'oypaaoma')).toBe(false)
+        expect(prints(db, 'sahko')).toBe(true)
+      })
+    })
+
+    it('offers only the sections of the book in the wizard', async () => {
+      await withGolden((db) => {
+        useBook(db, SHIPPED, { muoto: 'oy' })
+        expect(offered(db)).toEqual(expect.arrayContaining(['oypaaoma', 'oykaytto', 'sahko']))
+        expect(offered(db)).not.toContain('tmipaaoma')
+      })
+      await withGolden((db) => {
+        useBook(db, SHIPPED, { muoto: 'tmi' })
+        expect(offered(db)).toEqual(expect.arrayContaining(['tmipaaoma', 'sahko']))
+        expect(offered(db)).not.toContain('oypaaoma')
+        expect(offered(db)).not.toContain('oykaytto')
+      })
+    })
+
+    it('treats a book with no legal form as a limited company', async () => {
+      await withGolden((db) => {
+        useBook(db, SHIPPED)
+        expect(offered(db)).toContain('oypaaoma')
+        expect(offered(db)).not.toContain('tmipaaoma')
+        expect(prints(db, 'oypaaoma')).toBe(true)
+      })
     })
   })
 
-  it('leaves out both sections for another form', async () => {
+  it('holds a condition across headings until the next ? line', async () => {
     await withGolden((db) => {
-      const html = notes(db, 'ky')
-      expect(html).not.toContain('Toiminimen teksti')
-      expect(html).not.toContain('Osakeyhtiön teksti')
-      expect(html).toContain('Kaikille yhteinen teksti')
+      useBook(
+        db,
+        '?muoto=tmi\n##Otsikko\nEhdollinen teksti\n##Toinen otsikko\nMyös ehdollinen\n?\nAina',
+        { muoto: 'oy' },
+      )
+      const html = notes(db)
+      expect(html).not.toContain('Ehdollinen teksti')
+      expect(html).not.toContain('Myös ehdollinen')
+      expect(html).toContain('Aina')
     })
   })
 
-  it('reads as a limited company when the book has no form', async () => {
+  it('reads the setting the line names, not the legal form', async () => {
+    const template = '?omaAsetus=oy\nEhdollinen teksti\n?\nAina'
     await withGolden((db) => {
-      const html = notes(db, null)
-      expect(html).toContain('Osakeyhtiön teksti')
-      expect(html).not.toContain('Toiminimen teksti')
+      useBook(db, template, { muoto: 'oy' })
+      expect(notes(db)).not.toContain('Ehdollinen teksti')
     })
+    await withGolden((db) => {
+      useBook(db, template, { muoto: 'tmi', omaAsetus: 'oy' })
+      expect(notes(db)).toContain('Ehdollinen teksti')
+      expect(notes(db)).toContain('Aina')
+    })
+  })
+
+  it('applies conditions to the wizard sections the same way', () => {
+    const template = '#ensin Ensin\n?omaAsetus=kylla\n#ehto Ehdollinen\n?\n#lopuksi Lopuksi'
+    const tags = (value: string) =>
+      parseSections(template, (key) => (key === 'omaAsetus' ? value : '')).map((s) => s.tag)
+    expect(tags('kylla')).toEqual(['ensin', 'ehto', 'lopuksi'])
+    expect(tags('ei')).toEqual(['ensin', 'lopuksi'])
   })
 })
