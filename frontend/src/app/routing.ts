@@ -15,6 +15,8 @@ export type VoucherVia =
   | { kind: 'fiscalPeriods'; ends: string }
   /** Opened from a bank statement (tiliote) green row — cancel returns to that statement. */
   | { kind: 'bankStatement'; voucherId: number }
+  /** Opened from a company page: a period (`ends`) or the list of all documents. */
+  | { kind: 'company'; ends?: string; section?: 'documents' }
 
 export type Route =
   | { view: 'reports' }
@@ -27,6 +29,9 @@ export type Route =
   | { view: 'propertiesSetup' }
   | { view: 'property'; id: number; month?: string }
   | { view: 'propertyEdit'; id: number }
+  /** `section: 'documents'` (`#/company/documents`): every document, searchable. */
+  | { view: 'company'; section?: 'documents' }
+  | { view: 'companyPeriod'; ends: string }
   | { view: 'reportsHub' }
   | { view: 'overview' }
   | { view: 'browse' }
@@ -55,6 +60,12 @@ export function allocationHash(id: number, month?: string): string {
 /** `#/property/{id}`, or `#/property/{id}/month/{YYYY-MM}` with that month's lines open. */
 export function propertyHash(id: number, month?: string): string {
   return `#/property/${id}${month ? `/month/${month}` : ''}`
+}
+
+/** `#/company`, `#/company/documents`, or a period's page `#/company/period/{ends}`. */
+export function companyHash(target: { ends?: string; section?: 'documents' } = {}): string {
+  if (target.ends) return `#/company/period/${target.ends}`
+  return target.section ? `#/company/${target.section}` : '#/company'
 }
 
 const MONTH = '(\\d{4}-(?:0[1-9]|1[0-2]))'
@@ -104,6 +115,8 @@ export function voucherHash(
       return `#/fiscal-periods/${via.ends}/closing${tail}`
     case 'bankStatement':
       return `#/statement/${via.voucherId}${tail}`
+    case 'company':
+      return `${companyHash(via)}${tail}`
   }
 }
 
@@ -132,6 +145,8 @@ export function voucherParentHash(via: VoucherVia): string {
     case 'bankStatement':
       // Re-open the statement editor (same as double-click / Tosite return).
       return voucherHash({ kind: 'browse' }, via.voucherId, null)
+    case 'company':
+      return companyHash(via)
   }
 }
 
@@ -160,6 +175,8 @@ export function voucherUpI18n(via: VoucherVia): { key: string; vars?: Record<str
       return { key: 'up.closing' }
     case 'bankStatement':
       return { key: 'up.bankStatement' }
+    case 'company':
+      return { key: 'up.company' }
   }
 }
 
@@ -237,6 +254,14 @@ export function parseRoute(hash: string = window.location.hash): Route {
     }
     const ref = parseVoucherSegment(property[3])
     if (ref) return voucherRoute({ kind: 'property', id, ...month }, ref)
+  }
+
+  const company = hash.match(/^#\/company(?:\/period\/(\d{4}-\d{2}-\d{2})|\/(documents))?(?:\/(.+))?$/)
+  if (company) {
+    const target = company[1] ? { ends: company[1] } : company[2] ? { section: 'documents' as const } : {}
+    if (!company[3]) return company[1] ? { view: 'companyPeriod', ends: company[1] } : { view: 'company', ...target }
+    const ref = parseVoucherSegment(company[3])
+    if (ref) return voucherRoute({ kind: 'company', ...target }, ref)
   }
 
   const account = hash.match(/^#\/account\/(\d+)(?:\/(.+))?$/)

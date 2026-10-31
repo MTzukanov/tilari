@@ -56,7 +56,8 @@
     "balanceSheetItems": "Bilanzgliederung",
     "costCentres": "Kostenstellen",
     "journal": "Journal",
-    "properties": "Mietobjekte"
+    "properties": "Mietobjekte",
+    "company": "Unternehmen"
   },
   "file": {
     "label": "Buchhaltungsdatei",
@@ -516,7 +517,8 @@
     "property": "Zum Objekt",
     "properties": "Zu den Mietobjekten",
     "propertiesSetup": "Zur Einrichtung der Objekte",
-    "propertyEdit": "Zur Bearbeitung des Objekts"
+    "propertyEdit": "Zur Bearbeitung des Objekts",
+    "company": "Zur Unternehmensseite"
   },
   "ledger": {
     "empty": "Keine Buchungen auf diesem Konto in der Periode."
@@ -950,7 +952,8 @@
       "book_saved_disk": "In Datei gespeichert ({name})",
       "property": "Mietobjekt {id} bearbeitet",
       "property_setup": "Mietobjekte eingerichtet ({count} Objekte)",
-      "property_settings": "Standardwerte für Mietobjekte bearbeitet"
+      "property_settings": "Standardwerte für Mietobjekte bearbeitet",
+      "company": "Unternehmensdokumente bearbeitet"
     }
   },
   "voucherStatus": {
@@ -1600,6 +1603,166 @@
       "removeException": "Ausnahme entfernen",
       "removeExceptionConfirm": "Ausnahme {period} entfernen? An ihren Tagen wird wieder die reguläre Miete erwartet.",
       "prefillLead": "Vorausgefüllt, sodass {month} das Gezahlte erwartet ({paid}). Die reguläre Miete und ihre Erhöhungen bleiben. Tage und Beträge prüfen und den Grund angeben; die Vereinbarung lässt sich auf der Bearbeitungsseite anhängen."
+    }
+  },
+  "company": {
+    "title": "Unternehmen",
+    "lead": "Dokumente des Unternehmens und der Geschäftsjahre sowie die gesetzlichen Fristen. Die Dokumente sind normale Belege und erscheinen daher auch in Kitsas.",
+    "readOnly": "Diese Daten wurden mit einem neueren Tilari gespeichert und können hier nur gelesen werden.",
+    "corrupt": "Die gespeicherten Daten sind nicht lesbar, daher wird nichts darüber gespeichert.",
+    "docDate": "Dokument {date}",
+    "next": {
+      "title": "Anstehende und versäumte Fristen"
+    },
+    "suggest": {
+      "title": "Vorschläge aus der Buchhaltung",
+      "lead": "Diese Belege sehen ihrem Namen nach wie Unternehmensdokumente aus. Nichts wird ohne deine Zustimmung verknüpft.",
+      "addAll": "Alle hinzufügen ({n})",
+      "show": "Vorschläge anzeigen",
+      "add": "Hinzufügen",
+      "reject": "Ablehnen",
+      "mark": "Vorschlag"
+    },
+    "companyDocs": {
+      "title": "Dokumente des Unternehmens",
+      "lead": "Dokumente, die zum Unternehmen und nicht zu einem einzelnen Geschäftsjahr gehören."
+    },
+    "periods": {
+      "title": "Geschäftsjahre",
+      "empty": "Keine Geschäftsjahre.",
+      "running": "Läuft",
+      "open": "Offen",
+      "locked": "Gesperrt",
+      "docs": "Dokumente {done}/{required}",
+      "deadlines": "Fristen: {n}",
+      "problems": "Hinweise: {n}",
+      "suggestions": "Vorschläge: {n}"
+    },
+    "period": {
+      "title": "Geschäftsjahr {period}",
+      "confirmed": "In Kitsas als bestätigt markiert am {date}",
+      "notFound": "Das Geschäftsjahr wurde nicht gefunden.",
+      "documents": "Dokumente"
+    },
+    "documents": {
+      "title": "Alle Dokumente",
+      "open": "Alle Dokumente ({n})",
+      "search": "Titel, Art, Geschäftsjahr oder Datum suchen",
+      "allKinds": "Alle Arten",
+      "allPeriods": "Alle Geschäftsjahre",
+      "companyLevel": "Unternehmen",
+      "empty": "Keine Dokumente.",
+      "col": {
+        "date": "Datum",
+        "period": "Geschäftsjahr",
+        "kind": "Art",
+        "title": "Titel",
+        "files": "Dateien",
+        "state": "Hinweis"
+      }
+    },
+    "unlinked": {
+      "title": "Nicht verknüpft",
+      "lead": "Anlagebelege, die weder hier noch mit Mietobjekten verknüpft sind.",
+      "pickKind": "Hinzufügen zu...",
+      "pickOwner": "Geschäftsjahr oder Unternehmen"
+    },
+    "orphans": {
+      "title": "Geschäftsjahr nicht gefunden",
+      "lead": "Die Daten des Geschäftsjahres dieser Dokumente haben sich geändert. Entferne die Verknüpfung und verknüpfe das Dokument erneut mit dem richtigen Geschäftsjahr."
+    },
+    "settings": {
+      "title": "Unternehmenseinstellungen",
+      "audited": "Das Unternehmen hat einen Abschlussprüfer (der Prüfungsbericht ist erforderlich)",
+      "annualReport": "Das Unternehmen erstellt einen Lagebericht (er ist erforderlich)"
+    },
+    "slot": {
+      "upload": "Hochladen",
+      "link": "Vorhandenes verknüpfen",
+      "notNeeded": "Nicht nötig",
+      "needed": "Doch nötig",
+      "unlink": "Verknüpfung entfernen",
+      "kitsasPdf": "Abschluss-PDF von Kitsas, erstellt am {date}.",
+      "kitsasPdfOpen": "Öffnen",
+      "status": {
+        "complete": "Fertig",
+        "missing": "Fehlt",
+        "waiting": "Wartet",
+        "optional": "Freiwillig",
+        "filled": "Hinzugefügt",
+        "not_needed": "Nicht nötig"
+      }
+    },
+    "link": {
+      "pick": "Beleg suchen",
+      "all": "Alle Belege anzeigen",
+      "close": "Schließen",
+      "gone": "Beleg {id} wurde gelöscht",
+      "state": {
+        "missing": "Gelöscht",
+        "draft": "Entwurf",
+        "file_missing": "Datei gelöscht",
+        "ok": "OK"
+      }
+    },
+    "upload": {
+      "date": "Datum des Dokuments",
+      "titleField": "Titel",
+      "save": "Dokument speichern",
+      "cancel": "Abbrechen",
+      "files": "Dateien: {names}",
+      "willCreate": "Daraus wird ein normaler Anlagebeleg (Art 800) ohne Buchungszeilen, der auch in Kitsas erscheint.",
+      "lockedFallback": "Dieses Datum liegt in einem abgeschlossenen Zeitraum, daher wird der Beleg auf den {date} datiert. Das eigene Datum des Dokuments bleibt hier erhalten.",
+      "noOpenYear": "Für dieses Datum und das Datum des Buchs gibt es kein offenes Geschäftsjahr. Lege zuerst eines an."
+    },
+    "deadlines": {
+      "title": "Fristen",
+      "footnote": "Die Fristen sind Richtwerte: Die Satzung kann die Frist der Hauptversammlung verkürzen, und der Jahresabschluss muss auch innerhalb von zwei Monaten nach der Feststellung bei PRH eingehen. Prüfe die Termine bei PRH und der Steuerverwaltung."
+    },
+    "deadline": {
+      "statements_prepared": "Jahresabschluss erstellt",
+      "agm": "Ordentliche Hauptversammlung",
+      "tax_return": "Steuererklärung 6B",
+      "prh_filing": "Jahresabschluss an PRH"
+    },
+    "deadlineState": {
+      "done": "Erledigt",
+      "not_needed": "Nicht nötig",
+      "overdue": "{days} T verspätet",
+      "upcoming": "Noch {days} T",
+      "later": "Kommt",
+      "noDocument": "Kein Dokument"
+    },
+    "alerts": {
+      "header": "Zu beachtende Unternehmensfristen: {count}"
+    },
+    "error": {
+      "unknown_kind": "Unbekannte Dokumentart.",
+      "unknown_period": "Dieses Geschäftsjahr gibt es nicht mehr.",
+      "voucher_not_posted": "Der zu verknüpfende Beleg ist ein Entwurf oder gelöscht.",
+      "attachment_not_on_voucher": "Die Datei gehört nicht zu diesem Beleg.",
+      "unknown_link": "Die Verknüpfung wurde bereits entfernt.",
+      "corrupt": "Die gespeicherten Daten sind nicht lesbar.",
+      "newer_version": "Diese Daten wurden mit einem neueren Tilari gespeichert.",
+      "too_large": "Die Unternehmensdaten sind zu groß zum Speichern.",
+      "invalid_field": "Speichern fehlgeschlagen: ungültige Angabe.",
+      "partial": "Das Dokument wurde erstellt, konnte aber nicht abgeschlossen werden ({reason}). Es steht bei den Belegen und unter Nicht verknüpft."
+    },
+    "kind": {
+      "financial_statements": "Unterzeichneter Jahresabschluss",
+      "balance_sheet_specs": "Bilanzaufstellungen",
+      "annual_report": "Lagebericht",
+      "audit_report": "Prüfungsbericht",
+      "agm_minutes": "Protokoll der ordentlichen Hauptversammlung",
+      "board_minutes": "Vorstandsprotokolle",
+      "prh_filing_receipt": "PRH-Quittung zum Jahresabschluss",
+      "tax_return_6b": "Steuererklärung 6B",
+      "tax_decision": "Steuerbescheid",
+      "other": "Sonstige",
+      "articles": "Satzung",
+      "trade_register_extract": "Handelsregisterauszug",
+      "shareholder_register": "Aktionärsliste",
+      "shareholder_agreement": "Aktionärsvereinbarung"
     }
   }
 }

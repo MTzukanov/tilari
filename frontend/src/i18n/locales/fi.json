@@ -56,7 +56,8 @@
     "balanceSheetItems": "Tase-erät",
     "costCentres": "Kustannuspaikat",
     "journal": "Päiväkirja",
-    "properties": "Vuokrakohteet"
+    "properties": "Vuokrakohteet",
+    "company": "Yhtiö"
   },
   "file": {
     "label": "Kirjanpitotiedosto",
@@ -516,7 +517,8 @@
     "property": "Kohteeseen",
     "properties": "Vuokrakohteisiin",
     "propertiesSetup": "Kohteiden määritykseen",
-    "propertyEdit": "Kohteen muokkaukseen"
+    "propertyEdit": "Kohteen muokkaukseen",
+    "company": "Yhtiö-sivulle"
   },
   "ledger": {
     "empty": "Ei vientejä tällä tilillä jaksolla."
@@ -950,7 +952,8 @@
       "book_saved_disk": "Tallennettu tiedostoon ({name})",
       "property": "Muokattiin vuokrakohdetta {id}",
       "property_setup": "Vuokrakohteiden määritys ({count} kohdetta)",
-      "property_settings": "Muokattiin vuokrakohteiden oletuksia"
+      "property_settings": "Muokattiin vuokrakohteiden oletuksia",
+      "company": "Muokattiin yhtiön asiakirjoja"
     }
   },
   "voucherStatus": {
@@ -1600,6 +1603,166 @@
       "removeException": "Poista poikkeus",
       "removeExceptionConfirm": "Poistetaanko poikkeus {period}? Sen päivinä odotetaan taas normaali vuokra.",
       "prefillLead": "Esitäytetty niin, että {month} odottaa sen, mitä maksettiin ({paid}). Normaali vuokra ja korotukset eivät muutu. Tarkista päivät ja summat ja kirjoita syy; sopimuksen voi liittää muokkaussivulla."
+    }
+  },
+  "company": {
+    "title": "Yhtiö",
+    "lead": "Yhtiön ja tilikausien asiakirjat sekä lakisääteiset määräajat. Asiakirjat ovat tavallisia tositteita, joten ne näkyvät myös Kitsaksessa.",
+    "readOnly": "Tiedot on tallennettu uudemmalla Tilarilla, joten tässä ne voi vain lukea.",
+    "corrupt": "Tallennettuja tietoja ei voi lukea, joten niiden päälle ei tallenneta mitään.",
+    "docDate": "asiakirja {date}",
+    "next": {
+      "title": "Lähestyvät ja myöhässä olevat määräajat"
+    },
+    "suggest": {
+      "title": "Ehdotuksia kirjanpidosta",
+      "lead": "Nämä tositteet näyttävät yhtiön asiakirjoilta nimensä perusteella. Mitään ei linkitetä ilman hyväksyntääsi.",
+      "addAll": "Lisää kaikki ({n})",
+      "show": "Näytä ehdotukset",
+      "add": "Lisää",
+      "reject": "Hylkää",
+      "mark": "Ehdotus"
+    },
+    "companyDocs": {
+      "title": "Yhtiön asiakirjat",
+      "lead": "Asiakirjat, jotka kuuluvat yhtiölle eivätkä yhdelle tilikaudelle."
+    },
+    "periods": {
+      "title": "Tilikaudet",
+      "empty": "Ei tilikausia.",
+      "running": "Käynnissä",
+      "open": "Avoin",
+      "locked": "Lukittu",
+      "docs": "Asiakirjat {done}/{required}",
+      "deadlines": "Määräaikoja: {n}",
+      "problems": "Huomioita: {n}",
+      "suggestions": "Ehdotuksia: {n}"
+    },
+    "period": {
+      "title": "Tilikausi {period}",
+      "confirmed": "Kitsaksessa merkitty vahvistetuksi {date}",
+      "notFound": "Tilikautta ei löydy.",
+      "documents": "Asiakirjat"
+    },
+    "documents": {
+      "title": "Kaikki asiakirjat",
+      "open": "Kaikki asiakirjat ({n})",
+      "search": "Hae otsikkoa, lajia, tilikautta tai päivää",
+      "allKinds": "Kaikki lajit",
+      "allPeriods": "Kaikki tilikaudet",
+      "companyLevel": "Yhtiö",
+      "empty": "Ei asiakirjoja.",
+      "col": {
+        "date": "Päivä",
+        "period": "Tilikausi",
+        "kind": "Laji",
+        "title": "Otsikko",
+        "files": "Tiedostot",
+        "state": "Huomio"
+      }
+    },
+    "unlinked": {
+      "title": "Linkittämättä",
+      "lead": "Liitetietotositteet, joita ei ole linkitetty tänne eikä vuokrakohteisiin.",
+      "pickKind": "Liitä kohtaan...",
+      "pickOwner": "Tilikausi tai yhtiö"
+    },
+    "orphans": {
+      "title": "Tilikautta ei löydy",
+      "lead": "Näiden asiakirjojen tilikauden päivät ovat muuttuneet. Poista linkki ja linkitä asiakirja uudelleen oikealle tilikaudelle."
+    },
+    "settings": {
+      "title": "Yhtiön asetukset",
+      "audited": "Yhtiöllä on tilintarkastaja (tilintarkastuskertomus on pakollinen)",
+      "annualReport": "Yhtiö laatii toimintakertomuksen (se on pakollinen)"
+    },
+    "slot": {
+      "upload": "Lataa",
+      "link": "Linkitä olemassa oleva",
+      "notNeeded": "Ei tarvita",
+      "needed": "Tarvitaan sittenkin",
+      "unlink": "Poista linkki",
+      "kitsasPdf": "Kitsaksen tilinpäätös-PDF, luotu {date}.",
+      "kitsasPdfOpen": "Avaa",
+      "status": {
+        "complete": "Valmis",
+        "missing": "Puuttuu",
+        "waiting": "Odottaa",
+        "optional": "Vapaaehtoinen",
+        "filled": "Lisätty",
+        "not_needed": "Ei tarvita"
+      }
+    },
+    "link": {
+      "pick": "Hae tositetta",
+      "all": "Näytä kaikki tositteet",
+      "close": "Sulje",
+      "gone": "Tosite {id} on poistettu",
+      "state": {
+        "missing": "Poistettu",
+        "draft": "Luonnos",
+        "file_missing": "Tiedosto poistettu",
+        "ok": "OK"
+      }
+    },
+    "upload": {
+      "date": "Asiakirjan päivä",
+      "titleField": "Otsikko",
+      "save": "Tallenna asiakirja",
+      "cancel": "Peru",
+      "files": "Tiedostot: {names}",
+      "willCreate": "Tästä tulee tavallinen liitetietotosite (laji 800) ilman vientejä, joten se näkyy myös Kitsaksessa.",
+      "lockedFallback": "Tämä päivä on suljetulla kaudella, joten tosite päivätään {date}. Asiakirjan oma päivä säilyy täällä.",
+      "noOpenYear": "Avointa tilikautta ei ole tälle päivälle eikä kirjan päivälle. Lisää ensin tilikausi."
+    },
+    "deadlines": {
+      "title": "Määräajat",
+      "footnote": "Määräajat ovat suuntaa-antavia: yhtiöjärjestys voi lyhentää yhtiökokouksen määräaikaa, ja tilinpäätös on ilmoitettava PRH:lle myös kahden kuukauden kuluessa vahvistamisesta. Tarkista ajat PRH:lta ja Verohallinnolta."
+    },
+    "deadline": {
+      "statements_prepared": "Tilinpäätös laadittu",
+      "agm": "Varsinainen yhtiökokous",
+      "tax_return": "Veroilmoitus 6B",
+      "prh_filing": "Tilinpäätös PRH:lle"
+    },
+    "deadlineState": {
+      "done": "Tehty",
+      "not_needed": "Ei tarvita",
+      "overdue": "Myöhässä {days} pv",
+      "upcoming": "{days} pv jäljellä",
+      "later": "Tulossa",
+      "noDocument": "Ei asiakirjaa"
+    },
+    "alerts": {
+      "header": "Yhtiön määräaikoja huomioitavana: {count}"
+    },
+    "error": {
+      "unknown_kind": "Tuntematon asiakirjan laji.",
+      "unknown_period": "Tilikautta ei ole enää.",
+      "voucher_not_posted": "Linkitettävä tosite on luonnos tai poistettu.",
+      "attachment_not_on_voucher": "Tiedosto ei kuulu tähän tositteeseen.",
+      "unknown_link": "Linkki on jo poistettu.",
+      "corrupt": "Tallennettuja tietoja ei voi lukea.",
+      "newer_version": "Tiedot on tallennettu uudemmalla Tilarilla.",
+      "too_large": "Yhtiön tiedot ovat liian suuret tallennettaviksi.",
+      "invalid_field": "Tallennus ei onnistunut: virheellinen tieto.",
+      "partial": "Asiakirja luotiin, mutta sen viimeistely ei onnistunut ({reason}). Se löytyy tositteista ja kohdasta Linkittämättä."
+    },
+    "kind": {
+      "financial_statements": "Allekirjoitettu tilinpäätös",
+      "balance_sheet_specs": "Tase-erittelyt",
+      "annual_report": "Toimintakertomus",
+      "audit_report": "Tilintarkastuskertomus",
+      "agm_minutes": "Varsinaisen yhtiökokouksen pöytäkirja",
+      "board_minutes": "Hallituksen pöytäkirjat",
+      "prh_filing_receipt": "PRH:n kuitti tilinpäätöksestä",
+      "tax_return_6b": "Veroilmoitus 6B",
+      "tax_decision": "Verotuspäätös",
+      "other": "Muut",
+      "articles": "Yhtiöjärjestys",
+      "trade_register_extract": "Kaupparekisteriote",
+      "shareholder_register": "Osakasluettelo",
+      "shareholder_agreement": "Osakassopimus"
     }
   }
 }

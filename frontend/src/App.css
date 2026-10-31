@@ -331,7 +331,8 @@ body {
   gap: 0.35rem;
 }
 
-.topbar-alerts {
+.topbar-alerts,
+.topbar-deadlines {
   font: inherit;
   font-size: 0.82rem;
   font-weight: 600;
@@ -5973,4 +5974,222 @@ tr.property-needs-choice td:first-child {
 .property-move-sale {
   color: #2f6fed;
   border-color: color-mix(in srgb, #2f6fed 40%, var(--line));
+}
+
+/* Company documents and deadlines (#/company). */
+.company-page h2 {
+  margin-bottom: 0.25rem;
+}
+
+.company-page > .overview-panel {
+  margin-top: 1rem;
+}
+
+.company-periods {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.company-period {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  align-items: baseline;
+  width: 100%;
+  padding: 0.5rem 0.25rem;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  cursor: pointer;
+}
+
+.company-period:hover {
+  background: color-mix(in srgb, var(--accent-soft) 45%, transparent);
+}
+
+.company-status {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.company-status-complete,
+.company-status-filled {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.company-status-missing,
+.company-status-problem {
+  color: var(--neg);
+  border-color: color-mix(in srgb, var(--neg) 40%, transparent);
+}
+
+.company-status-waiting {
+  color: #7a5200;
+  border-color: color-mix(in srgb, #c98a00 40%, var(--line));
+}
+
+.company-status-suggestion {
+  color: #2f5fb8;
+  border-color: color-mix(in srgb, #2f6fed 40%, var(--line));
+}
+
+.company-slot {
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+}
+
+.company-slot.is-file-over {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--accent-soft) 45%, transparent);
+}
+
+.company-slot-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  align-items: center;
+}
+
+.company-row-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+.company-slot .property-doc-list {
+  margin-top: 0.35rem;
+}
+
+.company-unlink {
+  margin-left: auto;
+  font-size: 0.85rem;
+}
+
+.company-kitsas-pdf {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+}
+
+.company-suggestion-mark {
+  font-size: 0.75rem;
+  color: #2f5fb8;
+}
+
+.company-suggest-list {
+  margin-top: 0.75rem;
+}
+
+.company-panel {
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+}
+
+.company-panel p {
+  margin: 0.35rem 0;
+}
+
+.company-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.company-note {
+  padding: 0.5rem 0.75rem;
+  color: #7a5200;
+  border: 1px solid color-mix(in srgb, #c98a00 40%, var(--line));
+  border-radius: 6px;
+  background: color-mix(in srgb, #f6e7c4 45%, var(--surface));
+}
+
+.company-deadlines {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.6rem;
+}
+
+.company-deadline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.company-deadline-label,
+.company-deadline-state {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.company-deadline-done .company-deadline-state {
+  color: var(--accent);
+}
+
+.company-deadline-overdue {
+  border-color: color-mix(in srgb, var(--neg) 40%, var(--line));
+}
+
+.company-deadline-overdue .company-deadline-state {
+  color: var(--neg);
+}
+
+.company-deadline-upcoming {
+  border-color: color-mix(in srgb, #c98a00 40%, var(--line));
+}
+
+.company-deadline-upcoming .company-deadline-state {
+  color: #7a5200;
+}
+
+.company-footnote {
+  margin: 0.6rem 0 0;
+  font-size: 0.8rem;
+}
+
+.company-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.company-filters input[type='search'] {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.company-file {
+  margin-right: 0.5rem;
+}
+
+.company-unlinked {
+  margin-top: 1rem;
+}
+
+.company-unlinked > summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.company-row-actions .btn-link {
+  font-size: 0.85rem;
 }

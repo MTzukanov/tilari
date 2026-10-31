@@ -82,6 +82,21 @@ describe('activeNav', () => {
     ).toBe('vat')
   })
 
+  it('highlights the company item on its pages and on vouchers opened from them', () => {
+    expect(activeNav({ view: 'company' })).toBe('company')
+    expect(activeNav({ view: 'company', section: 'documents' })).toBe('company')
+    expect(activeNav({ view: 'companyPeriod', ends: '2031-12-31' })).toBe('company')
+    expect(
+      activeNav({
+        view: 'edit',
+        voucherId: 8,
+        type: null,
+        via: { kind: 'company', ends: '2031-12-31' },
+        entryId: null,
+      }),
+    ).toBe('company')
+  })
+
   it('highlights rental objects on their pages and on vouchers opened from them', () => {
     expect(activeNav({ view: 'properties' })).toBe('properties')
     expect(activeNav({ view: 'propertiesSetup' })).toBe('properties')

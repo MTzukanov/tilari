@@ -56,7 +56,8 @@
     "balanceSheetItems": "Balance-sheet items",
     "costCentres": "Cost centres",
     "journal": "Journal",
-    "properties": "Rental objects"
+    "properties": "Rental objects",
+    "company": "Company"
   },
   "file": {
     "label": "Bookkeeping file",
@@ -516,7 +517,8 @@
     "property": "To the object",
     "properties": "To rental objects",
     "propertiesSetup": "To object setup",
-    "propertyEdit": "To editing the object"
+    "propertyEdit": "To editing the object",
+    "company": "To the company page"
   },
   "ledger": {
     "empty": "No postings on this account in the period."
@@ -950,7 +952,8 @@
       "book_saved_disk": "Saved to file ({name})",
       "property": "Edited rental object {id}",
       "property_setup": "Set up rental objects ({count} objects)",
-      "property_settings": "Edited rental object defaults"
+      "property_settings": "Edited rental object defaults",
+      "company": "Edited company documents"
     }
   },
   "voucherStatus": {
@@ -1600,6 +1603,166 @@
       "removeException": "Remove exception",
       "removeExceptionConfirm": "Remove the exception {period}? Its days expect the normal rent again.",
       "prefillLead": "Prefilled so that {month} expects what was paid ({paid}). The normal rent and its increases do not change. Check the days and amounts and give the reason; the agreement can be attached on the edit page."
+    }
+  },
+  "company": {
+    "title": "Company",
+    "lead": "The company's and its periods' documents, and the statutory deadlines. Documents are normal vouchers, so they show in Kitsas too.",
+    "readOnly": "This data was saved by a newer Tilari, so it can only be read here.",
+    "corrupt": "The saved data cannot be read, so nothing is saved over it.",
+    "docDate": "document {date}",
+    "next": {
+      "title": "Deadlines coming up or missed"
+    },
+    "suggest": {
+      "title": "Suggestions from the books",
+      "lead": "These vouchers look like company documents by their names. Nothing is linked until you accept it.",
+      "addAll": "Add all ({n})",
+      "show": "Show the suggestions",
+      "add": "Add",
+      "reject": "Reject",
+      "mark": "Suggestion"
+    },
+    "companyDocs": {
+      "title": "The company's documents",
+      "lead": "Documents that belong to the company, not to one period."
+    },
+    "periods": {
+      "title": "Fiscal periods",
+      "empty": "No fiscal periods.",
+      "running": "Running",
+      "open": "Open",
+      "locked": "Locked",
+      "docs": "Documents {done}/{required}",
+      "deadlines": "Deadlines: {n}",
+      "problems": "Issues: {n}",
+      "suggestions": "Suggestions: {n}"
+    },
+    "period": {
+      "title": "Fiscal period {period}",
+      "confirmed": "Marked as confirmed in Kitsas on {date}",
+      "notFound": "The fiscal period was not found.",
+      "documents": "Documents"
+    },
+    "documents": {
+      "title": "All documents",
+      "open": "All documents ({n})",
+      "search": "Search title, kind, period or date",
+      "allKinds": "All kinds",
+      "allPeriods": "All periods",
+      "companyLevel": "Company",
+      "empty": "No documents.",
+      "col": {
+        "date": "Date",
+        "period": "Period",
+        "kind": "Kind",
+        "title": "Title",
+        "files": "Files",
+        "state": "Issue"
+      }
+    },
+    "unlinked": {
+      "title": "Not linked",
+      "lead": "Note vouchers linked neither here nor to rental objects.",
+      "pickKind": "Add to...",
+      "pickOwner": "Period or company"
+    },
+    "orphans": {
+      "title": "Period not found",
+      "lead": "The dates of these documents' period have changed. Remove the link and link the document to the right period again."
+    },
+    "settings": {
+      "title": "Company settings",
+      "audited": "The company has an auditor (the audit report is required)",
+      "annualReport": "The company writes an annual report (it is required)"
+    },
+    "slot": {
+      "upload": "Upload",
+      "link": "Link existing",
+      "notNeeded": "Not needed",
+      "needed": "Needed after all",
+      "unlink": "Remove link",
+      "kitsasPdf": "Kitsas's statement PDF, created {date}.",
+      "kitsasPdfOpen": "Open",
+      "status": {
+        "complete": "Done",
+        "missing": "Missing",
+        "waiting": "Waiting",
+        "optional": "Optional",
+        "filled": "Added",
+        "not_needed": "Not needed"
+      }
+    },
+    "link": {
+      "pick": "Search vouchers",
+      "all": "Show all vouchers",
+      "close": "Close",
+      "gone": "Voucher {id} has been deleted",
+      "state": {
+        "missing": "Deleted",
+        "draft": "Draft",
+        "file_missing": "File deleted",
+        "ok": "OK"
+      }
+    },
+    "upload": {
+      "date": "Document's date",
+      "titleField": "Title",
+      "save": "Save document",
+      "cancel": "Cancel",
+      "files": "Files: {names}",
+      "willCreate": "This becomes a normal note voucher (type 800) with no lines, so it shows in Kitsas too.",
+      "lockedFallback": "This date is in a closed period, so the voucher is dated {date}. The document's own date is kept here.",
+      "noOpenYear": "No open fiscal period covers this date or the book's date. Add a period first."
+    },
+    "deadlines": {
+      "title": "Deadlines",
+      "footnote": "Deadlines are indicative: the articles can shorten the AGM period, and the statements must also reach PRH within two months of adoption. Check the dates with PRH and the Tax Administration."
+    },
+    "deadline": {
+      "statements_prepared": "Statements prepared",
+      "agm": "Annual general meeting",
+      "tax_return": "Tax return 6B",
+      "prh_filing": "Statements to PRH"
+    },
+    "deadlineState": {
+      "done": "Done",
+      "not_needed": "Not needed",
+      "overdue": "{days} d late",
+      "upcoming": "{days} d left",
+      "later": "Coming",
+      "noDocument": "No document"
+    },
+    "alerts": {
+      "header": "Company deadlines to look at: {count}"
+    },
+    "error": {
+      "unknown_kind": "Unknown document kind.",
+      "unknown_period": "That fiscal period no longer exists.",
+      "voucher_not_posted": "The voucher to link is a draft or deleted.",
+      "attachment_not_on_voucher": "The file does not belong to this voucher.",
+      "unknown_link": "The link was already removed.",
+      "corrupt": "The saved data cannot be read.",
+      "newer_version": "This data was saved by a newer Tilari.",
+      "too_large": "The company data is too large to save.",
+      "invalid_field": "Saving failed: invalid data.",
+      "partial": "The document was created but could not be finished ({reason}). It is among the vouchers and under Not linked."
+    },
+    "kind": {
+      "financial_statements": "Signed financial statements",
+      "balance_sheet_specs": "Balance sheet specifications",
+      "annual_report": "Annual report",
+      "audit_report": "Audit report",
+      "agm_minutes": "Minutes of the annual general meeting",
+      "board_minutes": "Board minutes",
+      "prh_filing_receipt": "PRH receipt for the statements",
+      "tax_return_6b": "Tax return 6B",
+      "tax_decision": "Tax decision",
+      "other": "Other",
+      "articles": "Articles of association",
+      "trade_register_extract": "Trade register extract",
+      "shareholder_register": "Shareholder list",
+      "shareholder_agreement": "Shareholder agreement"
     }
   }
 }

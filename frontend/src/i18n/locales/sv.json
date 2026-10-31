@@ -56,7 +56,8 @@
     "balanceSheetItems": "Balansposter",
     "costCentres": "Kostnadsställen",
     "journal": "Dagbok",
-    "properties": "Hyresobjekt"
+    "properties": "Hyresobjekt",
+    "company": "Bolag"
   },
   "file": {
     "label": "Bokföringsfil",
@@ -516,7 +517,8 @@
     "property": "Till objektet",
     "properties": "Till hyresobjekten",
     "propertiesSetup": "Till inställningen av objekt",
-    "propertyEdit": "Till redigeringen av objektet"
+    "propertyEdit": "Till redigeringen av objektet",
+    "company": "Till bolagssidan"
   },
   "ledger": {
     "empty": "Inga transaktioner på det här kontot under perioden."
@@ -950,7 +952,8 @@
       "book_saved_disk": "Sparad till fil ({name})",
       "property": "Hyresobjekt {id} ändrat",
       "property_setup": "Hyresobjekt inställda ({count} objekt)",
-      "property_settings": "Standardvärden för hyresobjekt ändrade"
+      "property_settings": "Standardvärden för hyresobjekt ändrade",
+      "company": "Bolagets dokument redigerade"
     }
   },
   "voucherStatus": {
@@ -1600,6 +1603,166 @@
       "removeException": "Ta bort undantaget",
       "removeExceptionConfirm": "Ta bort undantaget {period}? Dess dagar väntar åter den normala hyran.",
       "prefillLead": "Förifyllt så att {month} väntar det som betalades ({paid}). Den normala hyran och höjningarna ändras inte. Kontrollera dagar och belopp och skriv orsaken; avtalet kan bifogas på redigeringssidan."
+    }
+  },
+  "company": {
+    "title": "Bolag",
+    "lead": "Bolagets och räkenskapsperiodernas dokument samt lagstadgade tidsfrister. Dokumenten är vanliga verifikat, så de syns också i Kitsas.",
+    "readOnly": "Uppgifterna har sparats med en nyare Tilari, så här kan de bara läsas.",
+    "corrupt": "De sparade uppgifterna kan inte läsas, så inget sparas ovanpå dem.",
+    "docDate": "dokument {date}",
+    "next": {
+      "title": "Närmande och försenade tidsfrister"
+    },
+    "suggest": {
+      "title": "Förslag från bokföringen",
+      "lead": "Dessa verifikat ser ut som bolagets dokument utifrån sina namn. Inget länkas utan ditt godkännande.",
+      "addAll": "Lägg till alla ({n})",
+      "show": "Visa förslagen",
+      "add": "Lägg till",
+      "reject": "Avvisa",
+      "mark": "Förslag"
+    },
+    "companyDocs": {
+      "title": "Bolagets dokument",
+      "lead": "Dokument som hör till bolaget och inte till en enskild räkenskapsperiod."
+    },
+    "periods": {
+      "title": "Räkenskapsperioder",
+      "empty": "Inga räkenskapsperioder.",
+      "running": "Pågår",
+      "open": "Öppen",
+      "locked": "Låst",
+      "docs": "Dokument {done}/{required}",
+      "deadlines": "Tidsfrister: {n}",
+      "problems": "Anmärkningar: {n}",
+      "suggestions": "Förslag: {n}"
+    },
+    "period": {
+      "title": "Räkenskapsperiod {period}",
+      "confirmed": "Markerat som fastställt i Kitsas {date}",
+      "notFound": "Räkenskapsperioden hittas inte.",
+      "documents": "Dokument"
+    },
+    "documents": {
+      "title": "Alla dokument",
+      "open": "Alla dokument ({n})",
+      "search": "Sök rubrik, typ, period eller datum",
+      "allKinds": "Alla typer",
+      "allPeriods": "Alla perioder",
+      "companyLevel": "Bolag",
+      "empty": "Inga dokument.",
+      "col": {
+        "date": "Datum",
+        "period": "Period",
+        "kind": "Typ",
+        "title": "Rubrik",
+        "files": "Filer",
+        "state": "Anmärkning"
+      }
+    },
+    "unlinked": {
+      "title": "Olänkade",
+      "lead": "Bilageverifikat som inte är länkade hit eller till hyresobjekt.",
+      "pickKind": "Lägg till i...",
+      "pickOwner": "Period eller bolag"
+    },
+    "orphans": {
+      "title": "Perioden hittas inte",
+      "lead": "Datumen för dessa dokuments period har ändrats. Ta bort länken och länka dokumentet på nytt till rätt period."
+    },
+    "settings": {
+      "title": "Bolagets inställningar",
+      "audited": "Bolaget har en revisor (revisionsberättelsen är obligatorisk)",
+      "annualReport": "Bolaget upprättar en verksamhetsberättelse (den är obligatorisk)"
+    },
+    "slot": {
+      "upload": "Ladda upp",
+      "link": "Länka befintligt",
+      "notNeeded": "Behövs inte",
+      "needed": "Behövs ändå",
+      "unlink": "Ta bort länken",
+      "kitsasPdf": "Kitsas bokslut som PDF, skapad {date}.",
+      "kitsasPdfOpen": "Öppna",
+      "status": {
+        "complete": "Klart",
+        "missing": "Saknas",
+        "waiting": "Väntar",
+        "optional": "Frivilligt",
+        "filled": "Tillagt",
+        "not_needed": "Behövs inte"
+      }
+    },
+    "link": {
+      "pick": "Sök verifikat",
+      "all": "Visa alla verifikat",
+      "close": "Stäng",
+      "gone": "Verifikat {id} har tagits bort",
+      "state": {
+        "missing": "Borttaget",
+        "draft": "Utkast",
+        "file_missing": "Filen borttagen",
+        "ok": "OK"
+      }
+    },
+    "upload": {
+      "date": "Dokumentets datum",
+      "titleField": "Rubrik",
+      "save": "Spara dokumentet",
+      "cancel": "Avbryt",
+      "files": "Filer: {names}",
+      "willCreate": "Detta blir ett vanligt bilageverifikat (typ 800) utan konteringar, så det syns också i Kitsas.",
+      "lockedFallback": "Detta datum ligger i en stängd period, så verifikatet dateras {date}. Dokumentets eget datum sparas här.",
+      "noOpenYear": "Det finns ingen öppen räkenskapsperiod för detta datum eller bokens datum. Lägg först till en period."
+    },
+    "deadlines": {
+      "title": "Tidsfrister",
+      "footnote": "Tidsfristerna är riktgivande: bolagsordningen kan förkorta fristen för bolagsstämman, och bokslutet ska anmälas till PRH också inom två månader från fastställandet. Kontrollera tiderna hos PRH och Skatteförvaltningen."
+    },
+    "deadline": {
+      "statements_prepared": "Bokslutet upprättat",
+      "agm": "Ordinarie bolagsstämma",
+      "tax_return": "Skattedeklaration 6B",
+      "prh_filing": "Bokslutet till PRH"
+    },
+    "deadlineState": {
+      "done": "Klart",
+      "not_needed": "Behövs inte",
+      "overdue": "Försenad {days} d",
+      "upcoming": "{days} d kvar",
+      "later": "Kommande",
+      "noDocument": "Inget dokument"
+    },
+    "alerts": {
+      "header": "Bolagets tidsfrister att beakta: {count}"
+    },
+    "error": {
+      "unknown_kind": "Okänd dokumenttyp.",
+      "unknown_period": "Perioden finns inte längre.",
+      "voucher_not_posted": "Verifikatet som ska länkas är ett utkast eller borttaget.",
+      "attachment_not_on_voucher": "Filen hör inte till detta verifikat.",
+      "unknown_link": "Länken är redan borttagen.",
+      "corrupt": "De sparade uppgifterna kan inte läsas.",
+      "newer_version": "Uppgifterna har sparats med en nyare Tilari.",
+      "too_large": "Bolagets uppgifter är för stora för att sparas.",
+      "invalid_field": "Det gick inte att spara: felaktig uppgift.",
+      "partial": "Dokumentet skapades, men det gick inte att slutföra ({reason}). Det finns bland verifikaten och under Olänkade."
+    },
+    "kind": {
+      "financial_statements": "Undertecknat bokslut",
+      "balance_sheet_specs": "Balansspecifikationer",
+      "annual_report": "Verksamhetsberättelse",
+      "audit_report": "Revisionsberättelse",
+      "agm_minutes": "Protokoll från ordinarie bolagsstämma",
+      "board_minutes": "Styrelseprotokoll",
+      "prh_filing_receipt": "PRH:s kvitto på bokslutet",
+      "tax_return_6b": "Skattedeklaration 6B",
+      "tax_decision": "Beskattningsbeslut",
+      "other": "Övriga",
+      "articles": "Bolagsordning",
+      "trade_register_extract": "Handelsregisterutdrag",
+      "shareholder_register": "Aktieägarförteckning",
+      "shareholder_agreement": "Aktieägaravtal"
     }
   }
 }

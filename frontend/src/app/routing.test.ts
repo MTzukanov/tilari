@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  companyHash,
   parseRoute,
   routeAllowsNoBook,
   voucherHash,
@@ -82,6 +83,35 @@ describe('parseRoute', () => {
     expect(voucherParentHash(editVia)).toBe('#/property/15/edit')
     expect(voucherUpI18n(editVia)).toEqual({ key: 'up.propertyEdit' })
     expect(parseRoute('#/property/15/edit')).toEqual({ view: 'propertyEdit', id: 15 })
+  })
+
+  it('parses company routes and returns to the same page from a voucher', () => {
+    expect(parseRoute('#/company')).toEqual({ view: 'company' })
+    expect(parseRoute('#/company/documents')).toEqual({ view: 'company', section: 'documents' })
+    expect(parseRoute('#/company/period/2031-12-31')).toEqual({ view: 'companyPeriod', ends: '2031-12-31' })
+    expect(companyHash()).toBe('#/company')
+    expect(companyHash({ section: 'documents' })).toBe('#/company/documents')
+    expect(companyHash({ ends: '2031-12-31' })).toBe('#/company/period/2031-12-31')
+
+    const front = { kind: 'company' as const }
+    expect(voucherHash(front, 8)).toBe('#/company/voucher/8/edit')
+    expect(parseRoute('#/company/voucher/8/edit')).toEqual({ view: 'edit', voucherId: 8, type: null, via: front, entryId: null })
+    expect(voucherParentHash(front)).toBe('#/company')
+    expect(voucherUpI18n(front)).toEqual({ key: 'up.company' })
+
+    const period = { kind: 'company' as const, ends: '2031-12-31' }
+    expect(voucherHash(period, 8)).toBe('#/company/period/2031-12-31/voucher/8/edit')
+    expect(parseRoute('#/company/period/2031-12-31/voucher/8/edit')).toEqual({ view: 'edit', voucherId: 8, type: null, via: period, entryId: null })
+    expect(voucherParentHash(period)).toBe('#/company/period/2031-12-31')
+
+    const documents = { kind: 'company' as const, section: 'documents' as const }
+    expect(voucherHash(documents, 8)).toBe('#/company/documents/voucher/8/edit')
+    expect(parseRoute('#/company/documents/voucher/8/edit')).toEqual({ view: 'edit', voucherId: 8, type: null, via: documents, entryId: null })
+    expect(voucherParentHash(documents)).toBe('#/company/documents')
+
+    // Neither a date nor a page of the module: not its route.
+    expect(parseRoute('#/company/period/2031')).toEqual({ view: 'reports' })
+    expect(parseRoute('#/company/other')).toEqual({ view: 'reports' })
   })
 
   it('keeps an open month on the object and cost-centre pages through a voucher', () => {
