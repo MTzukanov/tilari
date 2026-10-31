@@ -15,6 +15,23 @@ async function openClosingWizard2024(page: Page) {
   return openClosingWizard(page)
 }
 
+/** A reload restores the OPFS working copy; the saved status can show before it is written. */
+async function workingCopyHolds(page: Page, text: string): Promise<boolean> {
+  return page.evaluate(async (needle) => {
+    const root = await navigator.storage.getDirectory()
+    const tilari = await root.getDirectoryHandle('tilari')
+    for await (const handle of tilari.values()) {
+      if (handle.kind !== 'directory') continue
+      const file = await (handle as FileSystemDirectoryHandle)
+        .getFileHandle('working.kitsas')
+        .then((h) => h.getFile())
+        .catch(() => null)
+      if (file && (await file.text()).includes(needle)) return true
+    }
+    return false
+  }, text)
+}
+
 test.describe('period-end closing', () => {
   test.beforeEach(({ browserName }) => {
     skipWebkitOpfs(browserName)
@@ -170,6 +187,42 @@ test.describe('period-end closing', () => {
 
     await again.getByRole('button', { name: 'Sulje' }).click()
     await expect(page.getByRole('heading', { name: 'Tilikaudet' })).toBeVisible()
+  })
+
+  test('saved notes read back after a reload', async ({ page }) => {
+    test.setTimeout(120_000)
+    await openPeriodEndBook(page)
+
+    const wizard = await openClosingWizard2024(page)
+    await wizard.getByRole('button', { name: 'Laadi liitetiedot…' }).click()
+    const notesStart = page.getByRole('dialog', { name: 'Liitetietojen laatiminen' })
+    await notesStart.getByRole('radio', { name: 'Pienyritys' }).check()
+    await notesStart.getByRole('button', { name: 'Luo liitetiedot' }).click()
+    const notesEdit = page.getByRole('dialog', { name: 'Liitetiedot' })
+    await expect(notesEdit).toBeVisible({ timeout: 30_000 })
+    await notesEdit.locator('.tp-editor').fill('Oma liitetieto')
+    await notesEdit.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(notesEdit).toHaveCount(0, { timeout: 15_000 })
+    await wizard.getByRole('button', { name: 'Sulje' }).click()
+    await saveBookInBrowser(page, 'tilari-period-end.kitsas')
+    await expect.poll(() => workingCopyHolds(page, 'Oma liitetieto')).toBe(true)
+
+    // The restore moves Liite.data to the attachment store, as every reopen does.
+    await page.reload()
+    await expect(page.getByRole('heading', { name: 'Testikirja Oy' })).toBeVisible({
+      timeout: 60_000,
+    })
+    const reopened = await openClosingWizard2024(page)
+    await reopened.getByRole('button', { name: 'Muokkaa liitetietoja…' }).click()
+    const editor = page.getByRole('dialog', { name: 'Liitetiedot' }).locator('.tp-editor')
+    await expect(editor).toHaveText('Oma liitetieto')
+    await dismissDialog(page, 'Liitetiedot')
+
+    const popupPromise = page.waitForEvent('popup')
+    await reopened.getByRole('button', { name: 'Avaa tulostettava…' }).click()
+    const printPage = await popupPromise
+    await expect(printPage.locator('body')).toContainText('Oma liitetieto', { timeout: 15_000 })
+    await printPage.close()
   })
 
   test('deleting 9930 then opening the wizard does not dirty the book', async ({ page }) => {

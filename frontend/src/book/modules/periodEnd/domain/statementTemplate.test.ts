@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
+import { extractAttachmentsFromDb } from '../../../attachments'
+import { AttachmentStore } from '../../../blobStore'
 import { renderReportMarkerHtml, parseReportMarkerLine } from '../../../chartReport'
-import { buildStatementPrintHtml, generateStatementHtml, startStatement } from './statement'
+import {
+  buildStatementPrintHtml,
+  generateStatementHtml,
+  getStatement,
+  saveStatement,
+  startStatement,
+} from './statement'
 import { buildStatementScalars } from './statementMacros'
 import { buildMacroContext } from './statementMacros'
 import { parseSections, generateNotes, type GeneratorContext } from './statementTemplate'
@@ -135,6 +143,103 @@ describe('statement notes', () => {
       expect(print).toContain('harjoittelutilassa')
       expect(print).not.toContain('Poista ennen tulostusta')
       expect(print).not.toContain('Ylikurssirahasto')
+    })
+  })
+})
+
+describe('statement on a lean book (Liite.data moved to the attachment store)', () => {
+  const ENDS = '2025-12-31'
+  const OPTS = { size: 'ISO', selected: [], headcount: 1, share_count: 1000 } as const
+
+  function storedText(db: SqliteDb): string {
+    const row = db.get<{ data: Uint8Array | null }>(
+      'SELECT data FROM Liite WHERE tosite = 0 AND roolinimi = ?',
+      [`TPTEKSTI_${ENDS}`],
+    )
+    return new TextDecoder().decode(row?.data ?? new Uint8Array())
+  }
+
+  it('reads back the saved notes', async () => {
+    await withGolden(async (db) => {
+      startStatement(db, ENDS, OPTS)
+      saveStatement(db, ENDS, '<p>Muokattu teksti</p>')
+      await extractAttachmentsFromDb(db, new AttachmentStore())
+      expect(storedText(db)).toBe('')
+      expect(getStatement(db, ENDS).html).toBe('<p>Muokattu teksti</p>')
+    })
+  })
+
+  it('prints the saved notes, not a regenerated text', async () => {
+    await withGolden(async (db) => {
+      startStatement(db, ENDS, OPTS)
+      saveStatement(db, ENDS, '<p>Muokattu teksti</p>')
+      await extractAttachmentsFromDb(db, new AttachmentStore())
+      const print = buildStatementPrintHtml(db, ENDS)
+      expect(print).toContain('Muokattu teksti')
+      expect(print).not.toContain('Liitetiedot sisältävät ainakin')
+    })
+  })
+
+  it('keeps the report line when the notes are saved again', async () => {
+    await withGolden(async (db) => {
+      startStatement(db, ENDS, OPTS)
+      const reportLine = storedText(db).split('\n')[0]
+      expect(reportLine).toContain('@tase/')
+      await extractAttachmentsFromDb(db, new AttachmentStore())
+      saveStatement(db, ENDS, '<p>Toinen versio</p>')
+      expect(storedText(db)).toBe(`${reportLine}\n<p>Toinen versio</p>`)
+    })
+  })
+
+  it('has no text without the attachment row, like Kitsas', async () => {
+    await withGolden((db) => {
+      db.run("INSERT INTO Asetus (avain, arvo) VALUES (?, '@tase@\n<p>Vanha teksti</p>')", [
+        `tilinpaatos/${ENDS}`,
+      ])
+      expect(getStatement(db, ENDS).html).toBe('')
+    })
+  })
+})
+
+describe('statement legal form', () => {
+  const TEMPLATE = [
+    '?muoto=oy',
+    'Osakeyhtiön teksti',
+    '?muoto=tmi',
+    'Toiminimen teksti',
+    '?',
+    'Kaikille yhteinen teksti',
+  ].join('\n')
+
+  function notes(db: SqliteDb, muoto: string | null): string {
+    db.run("INSERT INTO Asetus (avain, arvo) VALUES ('tppohja/fi', ?)", [TEMPLATE])
+    if (muoto) db.run("INSERT INTO Asetus (avain, arvo) VALUES ('muoto', ?)", [muoto])
+    return generateStatementHtml(db, '2025-12-31', { size: 'ISO', selected: [], headcount: 1 })
+  }
+
+  it('follows Asetus.muoto', async () => {
+    await withGolden((db) => {
+      const html = notes(db, 'tmi')
+      expect(html).toContain('Toiminimen teksti')
+      expect(html).not.toContain('Osakeyhtiön teksti')
+      expect(html).toContain('Kaikille yhteinen teksti')
+    })
+  })
+
+  it('leaves out both sections for another form', async () => {
+    await withGolden((db) => {
+      const html = notes(db, 'ky')
+      expect(html).not.toContain('Toiminimen teksti')
+      expect(html).not.toContain('Osakeyhtiön teksti')
+      expect(html).toContain('Kaikille yhteinen teksti')
+    })
+  })
+
+  it('reads as a limited company when the book has no form', async () => {
+    await withGolden((db) => {
+      const html = notes(db, null)
+      expect(html).toContain('Osakeyhtiön teksti')
+      expect(html).not.toContain('Toiminimen teksti')
     })
   })
 })
