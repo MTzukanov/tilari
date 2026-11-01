@@ -7,6 +7,17 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-01 - Confirmed: desktop Kitsas keeps `TilariData`
+
+- Owner test: a book saved by Tilari, with company and rental data, was opened in desktop Kitsas, a voucher
+  edited and a backup taken. Every table of the file and its backup was compared: the only difference is
+  `Asetus.Varmuuskopioitu`. `TilariData` is intact, every link resolves, files keep their bytes, and
+  Kitsas logged its edit as usual. Tilari's own reader gives the same overview on both files.
+- Not covered: nothing was uploaded through the company page in that book. Such a voucher comes from the
+  same save as a rental document's, which Kitsas also kept, and the e2e covers the upload itself.
+- That book, an older copy, has importer lines with `kumppani` 0 and `eraid` 0: the case fixed in #54, not
+  from this page, which writes no lines. Most of its broken foreign keys are also in a book Tilari never saved.
+
 ## 2026-11-01 - Fixed: the 6B date ignored holidays; PRH's "receipt" is optional
 
 - The 6B showed 1.5.2023 for a year ending 31.12.2022. 30.4. was a Sunday, and the code moved only past
@@ -488,7 +499,7 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 - Checked on a copy of a real book (pass/fail only): every object's per-year result equals the
   Kitsas cost-centre report; linked share items equal the 1453 balance, and 1441 once the
   ambiguous items (two flats in one housing company) are chosen; desktop-Kitsas open/edit/backup
-  of a file with `TilariData` still to be confirmed by the owner.
+  of a file with `TilariData` still to be confirmed by the owner (confirmed 2026-11-01).
 
 ## 2026-10-07 - Part C merged (PRs #16-#24)
 
