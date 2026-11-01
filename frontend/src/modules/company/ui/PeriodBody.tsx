@@ -2,10 +2,20 @@ import { useState } from 'react'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { DocLines, DocRows } from '../../../shared/DocRows'
+import { TaxReturnButton } from '../../taxReturn/ui/TaxReturnButton'
 import type { CompanyOverview, PeriodView } from '../api'
 import { DeadlineTiles } from './Deadlines'
 import { errorText, periodShort } from './format'
 import { AttachSelect, SlotRow, UnlinkedRow, type SlotActions } from './Slot'
+
+function taxDocuments(period: PeriodView) {
+  const held = (kind: string) => period.slots.some((slot) => slot.kind === kind && slot.documents.length > 0)
+  return {
+    statements: held('financial_statements') || Boolean(period.kitsas_statement),
+    audit_report: held('audit_report'),
+    minutes: held('agm_minutes'),
+  }
+}
 
 /** What an open period's card holds: its deadlines and documents. */
 export function PeriodBody({
@@ -41,6 +51,7 @@ export function PeriodBody({
       />
       {rowError ? <p className="error">{rowError}</p> : null}
       <p className="muted company-footnote">{t('company.deadlines.footnote')}</p>
+      <TaxReturnButton ends={period.ends} documents={taxDocuments(period)} />
 
       <h3 className="section-label">{t('company.period.documents')}</h3>
       <DocRows>
