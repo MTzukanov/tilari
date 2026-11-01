@@ -1625,21 +1625,22 @@
     },
     "companyDocs": {
       "title": "Dokumente des Unternehmens",
-      "lead": "Dokumente, die zum Unternehmen und nicht zu einem einzelnen Geschäftsjahr gehören."
+      "lead": "Dokumente, die zum Unternehmen und nicht zu einem einzelnen Geschäftsjahr gehören.",
+      "count": "Dokumente: {n}"
     },
     "periods": {
       "title": "Geschäftsjahre",
+      "label": "GJ{period}",
       "empty": "Keine Geschäftsjahre.",
       "running": "Läuft",
       "open": "Offen",
       "locked": "Gesperrt",
-      "docs": "Dokumente {done}/{required}",
+      "docs": "{done}/{required} Dokumente",
       "deadlines": "Fristen: {n}",
       "problems": "Hinweise: {n}",
       "suggestions": "Vorschläge: {n}"
     },
     "period": {
-      "title": "Geschäftsjahr {period}",
       "confirmed": "In Kitsas als bestätigt markiert am {date}",
       "notFound": "Das Geschäftsjahr wurde nicht gefunden.",
       "documents": "Dokumente"
@@ -1678,12 +1679,12 @@
     },
     "slot": {
       "upload": "Hochladen",
-      "link": "Vorhandenes verknüpfen",
+      "link": "Beleg verknüpfen",
       "notNeeded": "Nicht nötig",
       "needed": "Doch nötig",
       "unlink": "Verknüpfung entfernen",
-      "kitsasPdf": "Abschluss-PDF von Kitsas, erstellt am {date}.",
-      "kitsasPdfOpen": "Öffnen",
+      "kitsasPdf": "Abschluss-PDF von Kitsas",
+      "kitsasPdfOpen": "PDF öffnen",
       "status": {
         "complete": "Fertig",
         "missing": "Fehlt",
@@ -1691,12 +1692,17 @@
         "optional": "Freiwillig",
         "filled": "Hinzugefügt",
         "not_needed": "Nicht nötig"
+      },
+      "hint": {
+        "balance_sheet_specs": "Die Bilanzaufstellungen sind zu erstellen und 10 Jahre aufzubewahren, werden aber nicht beim PRH eingereicht (finn. Buchführungsgesetz 3:13). Das Kitsas-Archiv enthält sie, daher ist keine eigene Datei nötig."
       }
     },
     "link": {
       "pick": "Beleg suchen",
       "all": "Alle Belege anzeigen",
       "close": "Schließen",
+      "voucher": "Beleg {id}",
+      "voucherNoId": "Beleg",
       "gone": "Beleg {id} wurde gelöscht",
       "state": {
         "missing": "Gelöscht",
@@ -1717,7 +1723,8 @@
     },
     "deadlines": {
       "title": "Fristen",
-      "footnote": "Die Fristen sind Richtwerte: Die Satzung kann die Frist der Hauptversammlung verkürzen, und der Jahresabschluss muss auch innerhalb von zwei Monaten nach der Feststellung bei PRH eingehen. Prüfe die Termine bei PRH und der Steuerverwaltung."
+      "footnote": "Die Fristen sind Richtwerte: Die Satzung kann die Frist der Hauptversammlung verkürzen, und der Jahresabschluss muss auch innerhalb von zwei Monaten nach der Feststellung bei PRH eingehen. Prüfe die Termine bei PRH und der Steuerverwaltung.",
+      "due": "Fällig {date}"
     },
     "deadline": {
       "statements_prepared": "Jahresabschluss erstellt",

@@ -109,6 +109,13 @@ describe('parseRoute', () => {
     expect(parseRoute('#/company/documents/voucher/8/edit')).toEqual({ view: 'edit', voucherId: 8, type: null, via: documents, entryId: null })
     expect(voucherParentHash(documents)).toBe('#/company/documents')
 
+    const own = { kind: 'company' as const, section: 'own' as const }
+    expect(companyHash({ section: 'own' })).toBe('#/company/own')
+    expect(parseRoute('#/company/own')).toEqual({ view: 'company', section: 'own' })
+    expect(voucherHash(own, 8)).toBe('#/company/own/voucher/8/edit')
+    expect(parseRoute('#/company/own/voucher/8/edit')).toEqual({ view: 'edit', voucherId: 8, type: null, via: own, entryId: null })
+    expect(voucherParentHash(own)).toBe('#/company/own')
+
     // Neither a date nor a page of the module: not its route.
     expect(parseRoute('#/company/period/2031')).toEqual({ view: 'reports' })
     expect(parseRoute('#/company/other')).toEqual({ view: 'reports' })

@@ -1625,21 +1625,22 @@
     },
     "companyDocs": {
       "title": "The company's documents",
-      "lead": "Documents that belong to the company, not to one period."
+      "lead": "Documents that belong to the company, not to one period.",
+      "count": "Documents: {n}"
     },
     "periods": {
       "title": "Fiscal periods",
+      "label": "FY{period}",
       "empty": "No fiscal periods.",
       "running": "Running",
       "open": "Open",
       "locked": "Locked",
-      "docs": "Documents {done}/{required}",
+      "docs": "{done}/{required} documents",
       "deadlines": "Deadlines: {n}",
       "problems": "Issues: {n}",
       "suggestions": "Suggestions: {n}"
     },
     "period": {
-      "title": "Fiscal period {period}",
       "confirmed": "Marked as confirmed in Kitsas on {date}",
       "notFound": "The fiscal period was not found.",
       "documents": "Documents"
@@ -1678,12 +1679,12 @@
     },
     "slot": {
       "upload": "Upload",
-      "link": "Link existing",
+      "link": "Link voucher",
       "notNeeded": "Not needed",
       "needed": "Needed after all",
       "unlink": "Remove link",
-      "kitsasPdf": "Kitsas's statement PDF, created {date}.",
-      "kitsasPdfOpen": "Open",
+      "kitsasPdf": "Kitsas's statement PDF",
+      "kitsasPdfOpen": "Open PDF",
       "status": {
         "complete": "Done",
         "missing": "Missing",
@@ -1691,12 +1692,17 @@
         "optional": "Optional",
         "filled": "Added",
         "not_needed": "Not needed"
+      },
+      "hint": {
+        "balance_sheet_specs": "Balance sheet specifications must be prepared and kept for 10 years, but they are not filed with PRH (Accounting Act 3:13). The Kitsas archive contains them, so no separate file is needed."
       }
     },
     "link": {
       "pick": "Search vouchers",
       "all": "Show all vouchers",
       "close": "Close",
+      "voucher": "Voucher {id}",
+      "voucherNoId": "Voucher",
       "gone": "Voucher {id} has been deleted",
       "state": {
         "missing": "Deleted",
@@ -1717,7 +1723,8 @@
     },
     "deadlines": {
       "title": "Deadlines",
-      "footnote": "Deadlines are indicative: the articles can shorten the AGM period, and the statements must also reach PRH within two months of adoption. Check the dates with PRH and the Tax Administration."
+      "footnote": "Deadlines are indicative: the articles can shorten the AGM period, and the statements must also reach PRH within two months of adoption. Check the dates with PRH and the Tax Administration.",
+      "due": "Due {date}"
     },
     "deadline": {
       "statements_prepared": "Statements prepared",

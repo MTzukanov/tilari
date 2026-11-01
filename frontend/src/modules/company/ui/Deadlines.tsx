@@ -1,24 +1,22 @@
-import { deadlineAlerts } from '../../../book/modules/company/domain/deadlines'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
+import { DueTile, DueTiles } from '../../../shared/DueTile'
 import type { DeadlineView } from '../api'
-import { deadlineStateText } from './format'
-
-function stateClass(d: DeadlineView): string {
-  return d.state === 'overdue' && !deadlineAlerts(d) ? 'company-deadline-old' : `company-deadline-${d.state}`
-}
+import { deadlineStateText, deadlineTone } from './format'
 
 export function DeadlineTiles({ deadlines }: { deadlines: DeadlineView[] }) {
   const { t } = useI18n()
   return (
-    <div className="company-deadlines">
+    <DueTiles>
       {deadlines.map((d) => (
-        <div key={d.key} className={`company-deadline ${stateClass(d)}`}>
-          <span className="company-deadline-label">{t(`company.deadline.${d.key}`)}</span>
-          <strong>{formatDate(d.due)}</strong>
-          <span className="company-deadline-state">{deadlineStateText(d, t)}</span>
-        </div>
+        <DueTile
+          key={d.key}
+          label={t(`company.deadline.${d.key}`)}
+          due={t('company.deadlines.due', { date: formatDate(d.due) })}
+          state={deadlineStateText(d, t)}
+          tone={deadlineTone(d)}
+        />
       ))}
-    </div>
+    </DueTiles>
   )
 }

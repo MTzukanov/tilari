@@ -118,6 +118,8 @@ function requiredKind(kind: PeriodKind, doc: CompanyDoc): boolean {
       return doc.settings?.annual_report === true
     case 'audit_report':
       return doc.settings?.audited === true
+    // Kept, not filed (KPL 3:13), and Kitsas's archive holds them: a file of their own is optional.
+    case 'balance_sheet_specs':
     case 'board_minutes':
     case 'other':
       return false

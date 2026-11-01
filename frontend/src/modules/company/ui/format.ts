@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { deadlineAlerts } from '../../../book/modules/company/domain/deadlines'
 import { formatDate } from '../../../shared/dates'
+import type { DueTone } from '../../../shared/DueTile'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import { applyCompanyChanges, fetchCompany, type CompanyChanges, type CompanyOverview, type DeadlineView, type Suggestion } from '../api'
 
@@ -17,6 +18,11 @@ export function periodShort(p: { starts: string; ends: string }): string {
   return from === to ? to : `${from}/${to.slice(2)}`
 }
 
+/** The period's short name on the page: "TK2025". */
+export function periodLabel(p: { starts: string; ends: string }, t: T): string {
+  return t('company.periods.label', { period: periodShort(p) })
+}
+
 /** Codes come as `code` or `code:path`; anything else (a posting refusal) reads as it is. */
 export function errorText(t: T, err: unknown): string {
   const raw = err instanceof Error ? err.message : String(err)
@@ -30,6 +36,13 @@ export function errorText(t: T, err: unknown): string {
 export function deadlineStateText(d: DeadlineView, t: T): string {
   if (d.state === 'overdue' && !deadlineAlerts(d)) return t('company.deadlineState.noDocument')
   return t(`company.deadlineState.${d.state}`, { days: Math.abs(d.days) })
+}
+
+/** Done is green and what still counts as late is red; a gap too old to act on stays grey. */
+export function deadlineTone(d: DeadlineView): DueTone {
+  if (d.state === 'done') return 'ok'
+  if (d.state === 'upcoming') return 'warn'
+  return d.state === 'overdue' && deadlineAlerts(d) ? 'crit' : 'neutral'
 }
 
 export function allSuggestions(overview: CompanyOverview): Suggestion[] {

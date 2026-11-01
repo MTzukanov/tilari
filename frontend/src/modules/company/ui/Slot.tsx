@@ -3,11 +3,11 @@ import { saveVoucher, uploadAttachment } from '../../../api'
 import { voucherDateFor } from '../../../book/modules/company/domain/upload'
 import { TYPE_ATTACHMENT_NOTE } from '../../../book/vouchers'
 import { useI18n } from '../../../i18n'
-import { AttachmentLink } from '../../../shared/AttachmentLink'
 import { formatDate } from '../../../shared/dates'
+import { DocLine, DocLines, DocRow, type DocRowTone } from '../../../shared/DocRows'
 import { FileButton } from '../../../shared/FileButton'
-import { FileDropArea } from '../../../shared/FileDropArea'
 import { formatVoucherId } from '../../../shared/formatVoucherId'
+import { FilePill, Pill, VoucherPill, type PillTone } from '../../../shared/Pill'
 import { SearchSelect } from '../../../shared/SearchSelect'
 import { voucherTypeName } from '../../../shared/voucherTypes'
 import {
@@ -20,7 +20,7 @@ import {
   type SlotStatus,
   type Suggestion,
 } from '../api'
-import { errorText, suggestionAdd } from './format'
+import { errorText, suggestionAdd, type T } from './format'
 
 export type SlotActions = {
   apply: (changes: CompanyChanges) => Promise<void>
@@ -28,9 +28,23 @@ export type SlotActions = {
   onOpenVoucher: (voucherId: number) => void
 }
 
-/** A voucher's date, number and title, as the voucher list shows them. */
-function voucherLabel(v: { date: string | null; series: string; doc_number: number | null; title: string; type: number | null }): string {
-  return [formatDate(v.date), formatVoucherId(v.series, v.doc_number, v.date ?? ''), v.title || voucherTypeName(v.type)].filter(Boolean).join(' · ')
+/** The pill that opens a voucher, by its number; the full date on hover. */
+function OpenVoucher({
+  voucher,
+  actions,
+}: {
+  voucher: { voucher_id: number; series: string; doc_number: number | null; date: string | null }
+  actions: SlotActions
+}) {
+  const { t } = useI18n()
+  const id = formatVoucherId(voucher.series, voucher.doc_number, voucher.date ?? '')
+  return (
+    <VoucherPill
+      label={id ? t('company.link.voucher', { id }) : t('company.link.voucherNoId')}
+      title={formatDate(voucher.date)}
+      onOpen={() => actions.onOpenVoucher(voucher.voucher_id)}
+    />
+  )
 }
 
 export function DocumentRow({
@@ -45,33 +59,31 @@ export function DocumentRow({
   onError: (message: string) => void
 }) {
   const { t } = useI18n()
-  const stateTag = doc.state === 'ok' ? null : <span className="company-status company-status-problem">{t(`company.link.state.${doc.state}`)}</span>
+  const gone = doc.state === 'missing'
+  // A closed year keeps the document's own date on the link only: say whose date this is.
+  const date = doc.date && doc.date !== doc.voucher_date ? t('company.docDate', { date: formatDate(doc.date) }) : formatDate(doc.date)
   return (
-    <li>
-      {doc.state === 'missing' ? (
-        <span className="muted">{t('company.link.gone', { id: doc.voucher_id })}</span>
-      ) : (
-        <button type="button" className="btn-link" onClick={() => actions.onOpenVoucher(doc.voucher_id)}>
-          {voucherLabel({ ...doc, date: doc.voucher_date })}
-        </button>
-      )}
-      {doc.date && doc.date !== doc.voucher_date ? <span className="muted">{t('company.docDate', { date: formatDate(doc.date) })}</span> : null}
+    <DocLine
+      title={gone ? <span className="muted">{t('company.link.gone', { id: doc.voucher_id })}</span> : doc.title || voucherTypeName(doc.type)}
+      date={gone ? null : date}
+      end={
+        readOnly ? null : (
+          <button
+            type="button"
+            className="btn-link btn-quiet"
+            onClick={() => actions.apply({ remove: [doc.key] }).catch((err) => onError(errorText(t, err)))}
+          >
+            {t('company.slot.unlink')}
+          </button>
+        )
+      }
+    >
       {doc.files.map((f) => (
-        <AttachmentLink key={f.id} id={f.id} lazy className="property-attachment">
-          {f.name}
-        </AttachmentLink>
+        <FilePill key={f.id} id={f.id} name={f.name} />
       ))}
-      {stateTag}
-      {readOnly ? null : (
-        <button
-          type="button"
-          className="btn-link company-unlink"
-          onClick={() => actions.apply({ remove: [doc.key] }).catch((err) => onError(errorText(t, err)))}
-        >
-          {t('company.slot.unlink')}
-        </button>
-      )}
-    </li>
+      {gone ? null : <OpenVoucher voucher={{ ...doc, date: doc.voucher_date }} actions={actions} />}
+      {doc.state === 'ok' ? null : <Pill tone="crit">{t(`company.link.state.${doc.state}`)}</Pill>}
+    </DocLine>
   )
 }
 
@@ -92,39 +104,39 @@ export function SuggestionRows({
   const { t } = useI18n()
   if (!suggestions.length) return null
   return (
-    <ul className="property-doc-list company-suggestions">
+    <DocLines>
       {suggestions.map((s) => (
-        <li key={s.key}>
-          <span className="company-suggestion-mark">{showTarget ? showTarget(s) : t('company.suggest.mark')}</span>
-          <button type="button" className="btn-link" onClick={() => actions.onOpenVoucher(s.voucher_id)}>
-            {voucherLabel(s)}
-          </button>
-          {s.file_id != null ? (
-            <AttachmentLink id={s.file_id} lazy className="property-attachment">
-              {s.file_name}
-            </AttachmentLink>
-          ) : null}
-          {readOnly ? null : (
-            <span className="company-row-actions">
-              <button
-                type="button"
-                className="btn-small"
-                onClick={() => actions.apply({ add: [suggestionAdd(s)] }).catch((err) => onError(errorText(t, err)))}
-              >
-                {t('company.suggest.add')}
-              </button>
-              <button
-                type="button"
-                className="btn-link"
-                onClick={() => actions.apply({ dismissed: [s.key] }).catch((err) => onError(errorText(t, err)))}
-              >
-                {t('company.suggest.reject')}
-              </button>
-            </span>
-          )}
-        </li>
+        <DocLine
+          key={s.key}
+          mark={<Pill tone="doc">{showTarget ? showTarget(s) : t('company.suggest.mark')}</Pill>}
+          title={s.title || voucherTypeName(s.type)}
+          date={formatDate(s.date)}
+          end={
+            readOnly ? null : (
+              <>
+                <button
+                  type="button"
+                  className="btn-small is-primary"
+                  onClick={() => actions.apply({ add: [suggestionAdd(s)] }).catch((err) => onError(errorText(t, err)))}
+                >
+                  {t('company.suggest.add')}
+                </button>
+                <button
+                  type="button"
+                  className="btn-link btn-quiet"
+                  onClick={() => actions.apply({ dismissed: [s.key] }).catch((err) => onError(errorText(t, err)))}
+                >
+                  {t('company.suggest.reject')}
+                </button>
+              </>
+            )
+          }
+        >
+          {s.file_id != null ? <FilePill id={s.file_id} name={s.file_name} /> : null}
+          <OpenVoucher voucher={s} actions={actions} />
+        </DocLine>
       ))}
-    </ul>
+    </DocLines>
   )
 }
 
@@ -271,9 +283,32 @@ function LinkPanel({
   )
 }
 
+const STATUS_TONE: Record<SlotStatus, PillTone> = {
+  complete: 'ok',
+  filled: 'ok',
+  missing: 'crit',
+  waiting: 'warn',
+  optional: 'neutral',
+  not_needed: 'neutral',
+}
+
+function rowTone(status: SlotStatus | undefined, hasDocuments: boolean): DocRowTone {
+  if (status === 'missing') return 'missing'
+  if (status === 'not_needed') return 'muted'
+  return hasDocuments ? 'done' : 'plain'
+}
+
+/** A note on a kind, if the catalog has one. */
+function kindHint(t: T, kind: string): string | null {
+  const key = `company.slot.hint.${kind}`
+  const text = t(key)
+  return text === key ? null : text
+}
+
 /**
  * One document slot: what is linked, what the book suggests, and the ways to fill it. Files can be
- * dropped on the whole row. `other` and the company's slots take any number of documents.
+ * dropped on the whole row. `other` and the company's slots take any number of documents. A missing
+ * slot makes upload the row's main action, unless the book already suggests a document for it.
  */
 export function SlotRow({
   kind,
@@ -313,66 +348,67 @@ export function SlotRow({
     actions.apply({ not_needed: [{ period_ends: periodEnds, kind, value }] }).catch((err) => setError(errorText(t, err)))
   }
 
-  return (
-    <FileDropArea
-      className={`company-slot${status ? ` company-slot-${status}` : ''}`}
-      disabled={readOnly}
-      onFiles={(dropped) => {
-        setError(null)
-        setFiles(dropped)
-      }}
-    >
-      <div className="company-slot-head">
-        <strong>{label}</strong>
-        {status ? <span className={`company-status company-status-${status}`}>{t(`company.slot.status.${status}`)}</span> : null}
-        {readOnly ? null : (
-          <span className="company-row-actions">
-            <FileButton
-              className="btn-small"
-              onFiles={(picked) => {
-                setError(null)
-                if (picked.length) setFiles(picked)
-              }}
-            >
-              {t('company.slot.upload')}
-            </FileButton>
-            <button
-              type="button"
-              className="btn-small"
-              onClick={() => {
-                setError(null)
-                setLinking(!linking)
-              }}
-            >
-              {t('company.slot.link')}
-            </button>
-            {notNeededToggle && status && status !== 'not_needed' && !documents.length ? (
-              <button type="button" className="btn-link" onClick={() => setNotNeeded(true)}>
-                {t('company.slot.notNeeded')}
-              </button>
-            ) : null}
-            {notNeededToggle && status === 'not_needed' ? (
-              <button type="button" className="btn-link" onClick={() => setNotNeeded(false)}>
-                {t('company.slot.needed')}
-              </button>
-            ) : null}
-          </span>
-        )}
-      </div>
-      {kitsasStatement ? (
-        <p className="muted company-kitsas-pdf">
-          {t('company.slot.kitsasPdf', { date: formatDate(kitsasStatement.created) })}{' '}
-          <AttachmentLink id={kitsasStatement.attachment_id} lazy className="property-attachment">
-            {t('company.slot.kitsasPdfOpen')}
-          </AttachmentLink>
-        </p>
+  const rowActions = readOnly ? null : (
+    <>
+      <FileButton
+        className={`btn-small${status === 'missing' && !suggestions.length ? ' is-primary' : ''}`}
+        onFiles={(picked) => {
+          setError(null)
+          if (picked.length) setFiles(picked)
+        }}
+      >
+        {t('company.slot.upload')}
+      </FileButton>
+      <button
+        type="button"
+        className="btn-small"
+        onClick={() => {
+          setError(null)
+          setLinking(!linking)
+        }}
+      >
+        {t('company.slot.link')}
+      </button>
+      {notNeededToggle && status && status !== 'not_needed' && !documents.length ? (
+        <button type="button" className="btn-link btn-quiet" onClick={() => setNotNeeded(true)}>
+          {t('company.slot.notNeeded')}
+        </button>
       ) : null}
-      {documents.length ? (
-        <ul className="property-doc-list">
+      {notNeededToggle && status === 'not_needed' ? (
+        <button type="button" className="btn-link btn-quiet" onClick={() => setNotNeeded(false)}>
+          {t('company.slot.needed')}
+        </button>
+      ) : null}
+    </>
+  )
+
+  return (
+    <DocRow
+      name={label}
+      status={status ? <Pill tone={STATUS_TONE[status]}>{t(`company.slot.status.${status}`)}</Pill> : null}
+      actions={rowActions}
+      hint={documents.length ? null : kindHint(t, kind)}
+      tone={rowTone(status, documents.length > 0)}
+      onFiles={
+        readOnly
+          ? undefined
+          : (dropped) => {
+              setError(null)
+              setFiles(dropped)
+            }
+      }
+    >
+      {kitsasStatement || documents.length ? (
+        <DocLines>
+          {kitsasStatement ? (
+            <DocLine title={t('company.slot.kitsasPdf')} date={formatDate(kitsasStatement.created)}>
+              <FilePill id={kitsasStatement.attachment_id} name={t('company.slot.kitsasPdfOpen')} />
+            </DocLine>
+          ) : null}
           {documents.map((doc) => (
             <DocumentRow key={doc.key} doc={doc} actions={actions} readOnly={readOnly} onError={setError} />
           ))}
-        </ul>
+        </DocLines>
       ) : null}
       <SuggestionRows suggestions={suggestions} actions={actions} readOnly={readOnly} onError={setError} />
       {error ? <p className="error">{error}</p> : null}
@@ -390,7 +426,7 @@ export function SlotRow({
         />
       ) : null}
       {linking ? <LinkPanel kind={kind} periodEnds={periodEnds} actions={actions} onClose={() => setLinking(false)} onError={setError} /> : null}
-    </FileDropArea>
+    </DocRow>
   )
 }
 
@@ -435,16 +471,9 @@ export function AttachSelect({
 
 export function UnlinkedRow({ candidate, actions, children }: { candidate: DocCandidate; actions: SlotActions; children: React.ReactNode }) {
   return (
-    <li>
-      <button type="button" className="btn-link" onClick={() => actions.onOpenVoucher(candidate.voucher_id)}>
-        {voucherLabel(candidate)}
-      </button>
-      {candidate.file_id != null ? (
-        <AttachmentLink id={candidate.file_id} lazy className="property-attachment">
-          {candidate.file_name}
-        </AttachmentLink>
-      ) : null}
-      <span className="company-row-actions">{children}</span>
-    </li>
+    <DocLine title={candidate.title || voucherTypeName(candidate.type)} date={formatDate(candidate.date)} end={children}>
+      {candidate.file_id != null ? <FilePill id={candidate.file_id} name={candidate.file_name} /> : null}
+      <OpenVoucher voucher={candidate} actions={actions} />
+    </DocLine>
   )
 }

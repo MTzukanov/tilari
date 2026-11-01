@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useI18n } from '../../../i18n'
-import { AttachmentLink } from '../../../shared/AttachmentLink'
 import { formatDate } from '../../../shared/dates'
+import { DocLines } from '../../../shared/DocRows'
+import { FilePill, Pill } from '../../../shared/Pill'
 import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import { COMPANY_KINDS, PERIOD_KINDS, type CompanyOverview, type DocCandidate, type DocumentView } from '../api'
 import { periodShort, useCompany, type T } from './format'
@@ -34,11 +35,9 @@ function columns(overview: CompanyOverview, t: T): TableColumn<DocumentView>[] {
       width: 260,
       render: (d) => (
         // A file opens itself; the rest of the row opens the voucher.
-        <span onClick={(e) => e.stopPropagation()}>
+        <span className="company-files" onClick={(e) => e.stopPropagation()}>
           {d.files.map((f) => (
-            <AttachmentLink key={f.id} id={f.id} lazy className="property-attachment company-file">
-              {f.name}
-            </AttachmentLink>
+            <FilePill key={f.id} id={f.id} name={f.name} />
           ))}
         </span>
       ),
@@ -48,7 +47,7 @@ function columns(overview: CompanyOverview, t: T): TableColumn<DocumentView>[] {
       label: t('company.documents.col.state'),
       width: 130,
       sortValue: (d) => d.state,
-      render: (d) => (d.state === 'ok' ? '' : t(`company.link.state.${d.state}`)),
+      render: (d) => (d.state === 'ok' ? '' : <Pill tone="crit">{t(`company.link.state.${d.state}`)}</Pill>),
     },
   ]
 }
@@ -178,19 +177,19 @@ export function CompanyDocuments({
           )}
 
           {data.unlinked.length ? (
-            <details className="overview-panel company-unlinked">
-              <summary>
+            <details className="company-unlinked">
+              <summary className="section-label">
                 {t('company.unlinked.title')} ({data.unlinked.length})
               </summary>
               <p className="muted">{t('company.unlinked.lead')}</p>
               {rowError ? <p className="error">{rowError}</p> : null}
-              <ul className="property-doc-list">
+              <DocLines>
                 {data.unlinked.map((c) => (
                   <UnlinkedRow key={c.voucher_id} candidate={c} actions={actions}>
                     {data.read_only ? null : <UnlinkedAttach candidate={c} overview={data} actions={actions} onError={setRowError} />}
                   </UnlinkedRow>
                 ))}
-              </ul>
+              </DocLines>
             </details>
           ) : null}
         </>

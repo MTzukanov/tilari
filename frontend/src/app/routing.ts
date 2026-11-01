@@ -1,3 +1,5 @@
+export type CompanySection = 'documents' | 'own'
+
 export type VoucherVia =
   | { kind: 'account'; account: number }
   /** `month` (YYYY-MM): the page was showing that month; back returns to it. */
@@ -15,8 +17,8 @@ export type VoucherVia =
   | { kind: 'fiscalPeriods'; ends: string }
   /** Opened from a bank statement (tiliote) green row — cancel returns to that statement. */
   | { kind: 'bankStatement'; voucherId: number }
-  /** Opened from a company page: a period (`ends`) or the list of all documents. */
-  | { kind: 'company'; ends?: string; section?: 'documents' }
+  /** Opened from a company page: a period (`ends`), the company's own documents or the list of all. */
+  | { kind: 'company'; ends?: string; section?: CompanySection }
 
 export type Route =
   | { view: 'reports' }
@@ -29,8 +31,9 @@ export type Route =
   | { view: 'propertiesSetup' }
   | { view: 'property'; id: number; month?: string }
   | { view: 'propertyEdit'; id: number }
-  /** `section: 'documents'` (`#/company/documents`): every document, searchable. */
-  | { view: 'company'; section?: 'documents' }
+  /** `documents`: every document, searchable. `own`: the page with the company's own documents open. */
+  | { view: 'company'; section?: CompanySection }
+  /** The page with this period open. */
   | { view: 'companyPeriod'; ends: string }
   | { view: 'reportsHub' }
   | { view: 'overview' }
@@ -62,8 +65,8 @@ export function propertyHash(id: number, month?: string): string {
   return `#/property/${id}${month ? `/month/${month}` : ''}`
 }
 
-/** `#/company`, `#/company/documents`, or a period's page `#/company/period/{ends}`. */
-export function companyHash(target: { ends?: string; section?: 'documents' } = {}): string {
+/** `#/company`, `#/company/documents`, `#/company/own`, or with a period open `#/company/period/{ends}`. */
+export function companyHash(target: { ends?: string; section?: CompanySection } = {}): string {
   if (target.ends) return `#/company/period/${target.ends}`
   return target.section ? `#/company/${target.section}` : '#/company'
 }
@@ -256,9 +259,9 @@ export function parseRoute(hash: string = window.location.hash): Route {
     if (ref) return voucherRoute({ kind: 'property', id, ...month }, ref)
   }
 
-  const company = hash.match(/^#\/company(?:\/period\/(\d{4}-\d{2}-\d{2})|\/(documents))?(?:\/(.+))?$/)
+  const company = hash.match(/^#\/company(?:\/period\/(\d{4}-\d{2}-\d{2})|\/(documents|own))?(?:\/(.+))?$/)
   if (company) {
-    const target = company[1] ? { ends: company[1] } : company[2] ? { section: 'documents' as const } : {}
+    const target = company[1] ? { ends: company[1] } : company[2] ? { section: company[2] as CompanySection } : {}
     if (!company[3]) return company[1] ? { view: 'companyPeriod', ends: company[1] } : { view: 'company', ...target }
     const ref = parseVoucherSegment(company[3])
     if (ref) return voucherRoute({ kind: 'company', ...target }, ref)

@@ -12,13 +12,21 @@ async function openCompany(page: Page) {
   await expect(page.getByRole('heading', { name: 'Yhtiö', exact: true })).toBeVisible()
 }
 
+/** The newest ended period is open on arrival. */
 async function openPeriod2024(page: Page) {
-  await page.locator('.company-period', { hasText: '31.12.2024' }).click()
-  await expect(page.getByRole('heading', { name: /Tilikausi 1\.1\.2024/ })).toBeVisible()
+  await expect(periodCard(page, '2024')).toHaveAttribute('aria-expanded', 'true')
+}
+
+function periodCard(page: Page, year: string): Locator {
+  return page.locator('.binder-head', { hasText: `31.12.${year}` })
 }
 
 function slot(page: Page, label: string): Locator {
-  return page.locator('.company-slot', { has: page.locator('.company-slot-head strong', { hasText: new RegExp(`^${label}$`) }) })
+  return page.locator('.doc-row', { has: page.locator('.doc-row-name', { hasText: new RegExp(`^${label}$`) }) })
+}
+
+function slotStatus(row: Locator): Locator {
+  return row.locator('.doc-row-head .pill')
 }
 
 async function chooseFiles(page: Page, target: Locator, files: { name: string; mimeType: string; buffer: Buffer }[]) {
@@ -39,24 +47,27 @@ test.describe('company documents', () => {
     await openPeriod2024(page)
 
     const agm = slot(page, AGM)
-    await expect(agm.locator('.company-status-missing')).toHaveText('Puuttuu')
-    const tile = page.locator('.company-deadline', { hasText: 'Varsinainen yhtiökokous' })
+    await expect(slotStatus(agm)).toHaveText('Puuttuu')
+    await expect(agm).toHaveClass(/doc-row-missing/)
+    const tile = page.locator('.binder-body .due-tile', { hasText: 'Varsinainen yhtiökokous' })
     await expect(tile).toContainText('30.6.2025')
     await expect(tile).toContainText('Myöhässä 168 pv')
 
     await chooseFiles(page, agm, [{ name: 'poytakirja.pdf', ...PDF }])
     await expect(agm.getByRole('textbox', { name: 'Otsikko' })).toHaveValue(`${AGM} 2024`)
     await agm.getByRole('button', { name: 'Tallenna asiakirja' }).click()
-    await expect(agm.locator('.company-status-complete')).toHaveText('Valmis')
+    await expect(slotStatus(agm)).toHaveText('Valmis')
     await expect(agm.getByRole('link', { name: 'poytakirja.pdf' })).toBeVisible()
     await expect(tile).toContainText('Tehty')
 
-    // It is a normal voucher: the link opens it in the editor, and back returns to the period.
-    await agm.getByRole('button', { name: new RegExp(`${AGM} 2024`) }).click()
+    // It is a normal voucher: its pill opens it in the editor, and back returns to the open period.
+    await expect(agm.locator('.doc-line-title')).toHaveText(`${AGM} 2024`)
+    await agm.getByRole('button', { name: /^Tosite/ }).click()
     await expectVoucherEditorOpen(page, `${AGM} 2024`)
     await expect(page).toHaveURL(/#\/company\/period\/2024-12-31\/voucher\/\d+/)
     await page.goBack()
-    await expect(page.getByRole('heading', { name: /Tilikausi 1\.1\.2024/ })).toBeVisible()
+    await expect(periodCard(page, '2024')).toHaveAttribute('aria-expanded', 'true')
+    await expect(slotStatus(agm)).toHaveText('Valmis')
 
     // It is in the voucher list too.
     await page.locator('.sidenav').getByRole('link', { name: 'Selaa' }).click()
@@ -71,9 +82,9 @@ test.describe('company documents', () => {
     await agm.getByLabel('Asiakirjan päivä').fill('2023-06-01')
     await expect(agm.getByText(/suljetulla kaudella/)).toContainText('15.12.2025')
     await agm.getByRole('button', { name: 'Tallenna asiakirja' }).click()
-    await expect(agm.locator('.company-status-complete')).toBeVisible()
+    await expect(slotStatus(agm)).toHaveText('Valmis')
     await expect(agm.getByText('asiakirja 1.6.2023')).toBeVisible()
-    await expect(agm.getByRole('button', { name: /15\.12\.2025/ })).toBeVisible()
+    await expect(agm.getByRole('button', { name: /^Tosite/ })).toHaveAttribute('title', '15.12.2025')
   })
 
   test('a file dropped on a row opens the upload for that slot', async ({ page }) => {
@@ -91,7 +102,7 @@ test.describe('company documents', () => {
     await expect(decision).not.toHaveClass(/is-file-over/)
     await expect(decision.getByText('Tiedostot: paatos.pdf')).toBeVisible()
     await decision.getByRole('button', { name: 'Tallenna asiakirja' }).click()
-    await expect(decision.locator('.company-status-complete')).toBeVisible()
+    await expect(slotStatus(decision)).toHaveText('Valmis')
   })
 
   test('one file of a voucher with several links to its own slot, and unlinking leaves the voucher', async ({ page }) => {
@@ -108,7 +119,7 @@ test.describe('company documents', () => {
     await expect(other.getByRole('link', { name: 'toka.pdf' })).toBeVisible()
 
     const board = slot(page, 'Hallituksen pöytäkirjat')
-    await board.getByRole('button', { name: 'Linkitä olemassa oleva' }).click()
+    await board.getByRole('button', { name: 'Linkitä tosite' }).click()
     const pick = board.getByRole('combobox', { name: 'Hae tositetta' }).or(board.getByPlaceholder('Hae tositetta')).first()
     await pick.fill('toka.pdf')
     await page.getByRole('option', { name: /toka\.pdf/ }).click()
@@ -126,30 +137,74 @@ test.describe('company documents', () => {
 
     const taxReturn = slot(page, 'Veroilmoitus 6B')
     await taxReturn.getByRole('button', { name: 'Ei tarvita' }).click()
-    await expect(taxReturn.locator('.company-status-not_needed')).toHaveText('Ei tarvita')
-    await expect(page.locator('.company-deadline', { hasText: 'Veroilmoitus 6B' })).toContainText('Ei tarvita')
+    await expect(slotStatus(taxReturn)).toHaveText('Ei tarvita')
+    await expect(taxReturn).toHaveClass(/doc-row-muted/)
+    await expect(page.locator('.binder-body .due-tile', { hasText: 'Veroilmoitus 6B' })).toContainText('Ei tarvita')
     await taxReturn.getByRole('button', { name: 'Tarvitaan sittenkin' }).click()
-    await expect(taxReturn.locator('.company-status-missing')).toBeVisible()
+    await expect(slotStatus(taxReturn)).toHaveText('Puuttuu')
 
     const agm = slot(page, AGM)
     await upload(page, agm, 'poistuva.pdf')
-    await agm.getByRole('button', { name: new RegExp(`${AGM} 2024`) }).click()
+    await agm.getByRole('button', { name: /^Tosite/ }).click()
     await expectVoucherEditorOpen(page, `${AGM} 2024`)
     await deleteOpenVoucherFromEditor(page)
     await page.goto('/#/company/period/2024-12-31')
-    await expect(agm.locator('.company-status-problem')).toHaveText('Poistettu')
-    await expect(agm.locator('.company-status-missing')).toHaveText('Puuttuu')
+    await expect(agm.locator('.doc-line .pill-crit')).toHaveText('Poistettu')
+    await expect(slotStatus(agm)).toHaveText('Puuttuu')
+  })
+
+  test('the balance sheet specifications are not counted as a missing document', async ({ page }) => {
+    await openCompany(page)
+    await openPeriod2024(page)
+    const specs = slot(page, 'Tase-erittelyt')
+    await expect(slotStatus(specs)).toHaveText('Vapaaehtoinen')
+    await expect(specs).not.toHaveClass(/doc-row-missing/)
+    await expect(specs.getByText(/Kitsaksen arkisto sisältää ne/)).toBeVisible()
+    await expect(periodCard(page, '2024').locator('.pill-warn')).toHaveText('0/5 asiakirjaa')
+  })
+
+  test('cards open in place, one at a time, and the address follows', async ({ page }) => {
+    await openCompany(page)
+    const period = periodCard(page, '2024')
+    const own = page.locator('.binder-head', { hasText: 'Yhtiön asiakirjat' })
+
+    // Open on arrival without being in the address, and closing it stays closed.
+    await expect(period).toHaveAttribute('aria-expanded', 'true')
+    await expect(page).toHaveURL(/#\/company$/)
+    await period.click()
+    await expect(period).toHaveAttribute('aria-expanded', 'false')
+    await expect(page.locator('.binder-body')).toHaveCount(0)
+
+    await own.click()
+    await expect(page).toHaveURL(/#\/company\/own$/)
+    await expect(own).toHaveAttribute('aria-expanded', 'true')
+
+    await period.click()
+    await expect(page).toHaveURL(/#\/company\/period\/2024-12-31$/)
+    await expect(own).toHaveAttribute('aria-expanded', 'false')
+    await expect(page.locator('.binder-body')).toHaveCount(1)
+
+    // A deadline tile opens its period and brings it into view, also when it is open already.
+    await page.locator('.company-next .due-tile').first().click()
+    await expect(period).toHaveAttribute('aria-expanded', 'true')
+    await expect(period).toBeInViewport()
+
+    // Only the page's own scroll box moves: the app's frame stays in place.
+    const frameScroll = await page.evaluate(() =>
+      ['.app-shell', '.app-main'].map((s) => document.querySelector(s)?.scrollTop ?? 0).concat(document.documentElement.scrollTop),
+    )
+    expect(frameScroll).toEqual([0, 0, 0])
   })
 
   test('the front page lists every document, and the header counts near deadlines', async ({ page }) => {
     await openCompany(page)
-    await expect(page.locator('.company-period')).toHaveCount(2)
-    await expect(page.getByRole('heading', { name: 'Yhtiön asiakirjat' })).toBeVisible()
+    await expect(page.locator('.binder')).toHaveCount(3)
 
     // The 2024 period's deadlines fell within the last year of the book's day.
     await expect(page.locator('.topbar-deadlines')).toBeVisible()
-    await expect(page.locator('.company-next li').first()).toBeVisible()
+    await expect(page.locator('.company-next .due-tile').first()).toBeVisible()
 
+    await page.locator('.binder-head', { hasText: 'Yhtiön asiakirjat' }).click()
     const articles = slot(page, 'Yhtiöjärjestys')
     await chooseFiles(page, articles, [{ name: 'jarjestys.pdf', ...PDF }])
     await expect(articles.getByRole('textbox', { name: 'Otsikko' })).toHaveValue('Yhtiöjärjestys')

@@ -2,23 +2,21 @@ import { companyHash, voucherHash } from '../../app/routing'
 import type { BookViewCtx, UiModule } from '../ui'
 import { viaKind } from '../ui'
 import { CompanyDocuments } from './ui/CompanyDocuments'
-import { CompanyFront } from './ui/CompanyFront'
-import { CompanyPeriod } from './ui/CompanyPeriod'
+import { CompanyFront, type CompanyOpen } from './ui/CompanyFront'
 import { DeadlinesButton } from './ui/DeadlinesButton'
+
+function hashOf(open: CompanyOpen): string {
+  if (open === 'own') return companyHash({ section: 'own' })
+  return companyHash(open ?? {})
+}
+
+function viaOf(open: CompanyOpen) {
+  if (open === 'own') return { kind: 'company' as const, section: 'own' as const }
+  return { kind: 'company' as const, ...(open ?? {}) }
+}
 
 function CompanyScreen({ route, goTo, meta }: BookViewCtx) {
   const today = meta?.book_date
-  if (route.view === 'companyPeriod') {
-    return (
-      <CompanyPeriod
-        key={route.ends}
-        ends={route.ends}
-        today={today}
-        onBack={() => goTo(companyHash())}
-        onOpenVoucher={(voucherId) => goTo(voucherHash({ kind: 'company', ends: route.ends }, voucherId))}
-      />
-    )
-  }
   if (route.view === 'company' && route.section === 'documents') {
     return (
       <CompanyDocuments
@@ -28,13 +26,15 @@ function CompanyScreen({ route, goTo, meta }: BookViewCtx) {
       />
     )
   }
-  if (route.view === 'company') {
+  if (route.view === 'company' || route.view === 'companyPeriod') {
+    const open: CompanyOpen = route.view === 'companyPeriod' ? { ends: route.ends } : route.section === 'own' ? 'own' : null
     return (
       <CompanyFront
         today={today}
-        onOpenPeriod={(ends) => goTo(companyHash({ ends }))}
+        open={open}
+        onOpen={(target) => goTo(hashOf(target))}
         onOpenDocuments={() => goTo(companyHash({ section: 'documents' }))}
-        onOpenVoucher={(voucherId) => goTo(voucherHash({ kind: 'company' }, voucherId))}
+        onOpenVoucher={(from, voucherId) => goTo(voucherHash(viaOf(from), voucherId))}
       />
     )
   }

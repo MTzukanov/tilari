@@ -1625,21 +1625,22 @@
     },
     "companyDocs": {
       "title": "Yhtiön asiakirjat",
-      "lead": "Asiakirjat, jotka kuuluvat yhtiölle eivätkä yhdelle tilikaudelle."
+      "lead": "Asiakirjat, jotka kuuluvat yhtiölle eivätkä yhdelle tilikaudelle.",
+      "count": "Asiakirjoja: {n}"
     },
     "periods": {
       "title": "Tilikaudet",
+      "label": "TK{period}",
       "empty": "Ei tilikausia.",
       "running": "Käynnissä",
       "open": "Avoin",
       "locked": "Lukittu",
-      "docs": "Asiakirjat {done}/{required}",
+      "docs": "{done}/{required} asiakirjaa",
       "deadlines": "Määräaikoja: {n}",
       "problems": "Huomioita: {n}",
       "suggestions": "Ehdotuksia: {n}"
     },
     "period": {
-      "title": "Tilikausi {period}",
       "confirmed": "Kitsaksessa merkitty vahvistetuksi {date}",
       "notFound": "Tilikautta ei löydy.",
       "documents": "Asiakirjat"
@@ -1678,12 +1679,12 @@
     },
     "slot": {
       "upload": "Lataa",
-      "link": "Linkitä olemassa oleva",
+      "link": "Linkitä tosite",
       "notNeeded": "Ei tarvita",
       "needed": "Tarvitaan sittenkin",
       "unlink": "Poista linkki",
-      "kitsasPdf": "Kitsaksen tilinpäätös-PDF, luotu {date}.",
-      "kitsasPdfOpen": "Avaa",
+      "kitsasPdf": "Kitsaksen tilinpäätös-PDF",
+      "kitsasPdfOpen": "Avaa PDF",
       "status": {
         "complete": "Valmis",
         "missing": "Puuttuu",
@@ -1691,12 +1692,17 @@
         "optional": "Vapaaehtoinen",
         "filled": "Lisätty",
         "not_needed": "Ei tarvita"
+      },
+      "hint": {
+        "balance_sheet_specs": "Tase-erittelyt on laadittava ja säilytettävä 10 vuotta, mutta niitä ei ilmoiteta PRH:lle (KPL 3:13). Kitsaksen arkisto sisältää ne, joten erillistä tiedostoa ei tarvita."
       }
     },
     "link": {
       "pick": "Hae tositetta",
       "all": "Näytä kaikki tositteet",
       "close": "Sulje",
+      "voucher": "Tosite {id}",
+      "voucherNoId": "Tosite",
       "gone": "Tosite {id} on poistettu",
       "state": {
         "missing": "Poistettu",
@@ -1717,7 +1723,8 @@
     },
     "deadlines": {
       "title": "Määräajat",
-      "footnote": "Määräajat ovat suuntaa-antavia: yhtiöjärjestys voi lyhentää yhtiökokouksen määräaikaa, ja tilinpäätös on ilmoitettava PRH:lle myös kahden kuukauden kuluessa vahvistamisesta. Tarkista ajat PRH:lta ja Verohallinnolta."
+      "footnote": "Määräajat ovat suuntaa-antavia: yhtiöjärjestys voi lyhentää yhtiökokouksen määräaikaa, ja tilinpäätös on ilmoitettava PRH:lle myös kahden kuukauden kuluessa vahvistamisesta. Tarkista ajat PRH:lta ja Verohallinnolta.",
+      "due": "Eräpäivä {date}"
     },
     "deadline": {
       "statements_prepared": "Tilinpäätös laadittu",
