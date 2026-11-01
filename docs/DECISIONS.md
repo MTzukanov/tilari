@@ -678,3 +678,22 @@ correction would change the open year's income statement lines. The rental-objec
   dividend. Tilari has the ledger in-process and one table, and a dividend can go in steps through a
   payable account and bank statements. Dividends come later, on those steps.
 
+## ADR-032 Annual tax return: one calculation, two outputs (2026-11-01)
+
+**Status:** accepted. Details in [TAX_RETURN.md](TAX_RETURN.md).
+
+- **Both routes** (owner, 2026-11-01). The owner has filed by hand in OmaVero because the figures were worked out
+  by hand. An Ilmoitin file should be quicker, but full control needs the numbers for OmaVero as well. Both render
+  `computeTaxReturn`, so they cannot disagree.
+- **Read-only for the ledger.** A button on the period's card, in a module of its own (`taxReturn`). Only the owner's
+  inputs and account choices are written, to `TilariData` (ADR-023), never computed figures.
+- **The personal ID is never stored.** The file needs it, so it is typed at download and the file is built in the
+  browser, also on the Node engine. A self-hosted server does not see it.
+- **The chart decides where past filings differ.** Filed returns placed some accounts differently from year to year.
+  Defaults follow the statutory chart, and the owner overrides per account. An account outside the standard chart
+  is a guess from its heading, so it stays listed until confirmed.
+- **No tolerance.** Each reconciliation shows its difference to the cent ([MEMORY.md](../MEMORY.md), exact figures).
+- **OmaVero's wording in the UI.** Vero's file codes appear only in code and the file: OmaVero does not show them.
+- **A file is only called ready when complete.** Forms in the same file must exist, since a corrected return replaces
+  the earlier one. It can still be format-checked at every step.
+

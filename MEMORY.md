@@ -19,6 +19,22 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   links, with only a missing document's upload or a suggestion's "Lisää" a real button. That replaced fading a
   finished row's buttons until hover, so the `done` tone went too. Separators are only between documents.
 
+## 2026-11-01 - Annual tax return (6B): figures for OmaVero and an Ilmoitin file
+
+- Owner asked for a button with the annual return's data, for OmaVero by hand or Ilmoitin. Both outputs render one
+  calculation (ADR-032, [docs/TAX_RETURN.md](docs/TAX_RETURN.md)). 8A, 71B, 73 and 62 come next; until then a file
+  for a company with such figures can be format-checked but not sent.
+- Back-tested on real filed returns against the book, read in place and printed as pass/fail: the book's result and
+  equity match every year, and the differences were accounts placed differently between years and a few figures typed
+  by hand. The rules alone gave almost every field. Account types are today's, so a type changed later moves earlier years too.
+- Kitsas keeps the tax contact in `VeroYhteysHenkilo` and `VeroYhteysPuhelin`, and Tilari has no field for them. A
+  message pointing to the book's settings was a dead end, so the dialog takes them too and never writes `Asetus`.
+- A select does not fire for the value it already shows, so confirming a guessed field needs its own button.
+- `createBook.ts` imports `luo.sql?raw`, which only Vite understands: anything using it runs under Vitest, not
+  `node --import tsx`.
+- Vero's 6B record description v1.1 is dated 24.11.2026 on its own page, later than this entry. Taken as current; its
+  only change from 1.0 is the optional field 179.
+
 ## 2026-11-01 - Company page: a period's rows follow the year's closing
 
 - Owner's request: chronological. The rows are in a fixed order (`PERIOD_KINDS`), not sorted by date: an
