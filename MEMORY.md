@@ -7,6 +7,18 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-01 - Company page: a period's rows follow the year's closing
+
+- Owner's request: chronological. The rows are in a fixed order (`PERIOD_KINDS`), not sorted by date: an
+  empty row has no date, and a document on a shared voucher can carry a date later than its own.
+- Statements (specifications, annual report), board minutes, audit report, 6B, AGM, PRH, tax decision, other.
+  The audit report has no deadline of its own; it goes after the board because it covers what the board signed.
+- Documents inside a row are oldest first. Kitsas's own statement PDF stays at the top of its row.
+- Open, found on the way and not from this change: `e2e/company.spec.ts` "a slot can be marked not needed, and a
+  deleted voucher shows as deleted" fails on webkit every time, also on `main` at #58, waiting for the "Poistettu"
+  pill after `page.goto`. Chromium and Firefox pass. PR CI runs Chromium only; the release tier runs webkit.
+  Cause not looked into.
+
 ## 2026-11-01 - Confirmed: desktop Kitsas keeps `TilariData`
 
 - Owner test: a book saved by Tilari, with company and rental data, was opened in desktop Kitsas, a voucher

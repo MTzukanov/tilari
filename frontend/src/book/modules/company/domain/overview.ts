@@ -213,7 +213,10 @@ export function computeOverview(db: SqliteDb, query: { today: string; asOf?: str
   const periods = loadPeriods(db)
   const statements = loadStatements(db)
   const vouchers = loadVouchers(db, doc.documents.map((d) => d.voucher_id))
-  const views = doc.documents.map((d) => documentView(d, vouchers.get(d.voucher_id)))
+  // Oldest first in every list; a link whose voucher is gone has no date and leads.
+  const views = doc.documents
+    .map((d) => documentView(d, vouchers.get(d.voucher_id)))
+    .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
 
   const rows = loadVoucherFiles(db, doc.documents)
   const excluded = propertyVoucherIds(db)

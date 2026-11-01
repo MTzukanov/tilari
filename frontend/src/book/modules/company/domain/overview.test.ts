@@ -107,7 +107,7 @@ describe('the company overview', () => {
 
   it('lists a chosen kind only when ticked, and then it is required', () => {
     const listed = () => period('2031-12-31').slots.map((s) => s.kind)
-    expect(listed()).toEqual(['financial_statements', 'agm_minutes', 'board_minutes', 'tax_return_6b', 'tax_decision', 'other'])
+    expect(listed()).toEqual(['financial_statements', 'board_minutes', 'tax_return_6b', 'agm_minutes', 'tax_decision', 'other'])
     save({ settings: { balance_sheet_specs: true, prh_receipt: true } })
     expect(slot('2031-12-31', 'balance_sheet_specs')).toMatchObject({ required: true, status: 'missing' })
     expect(slot('2031-12-31', 'prh_filing_receipt')).toMatchObject({ required: true, status: 'missing' })
@@ -115,6 +115,28 @@ describe('the company overview', () => {
     save({ settings: { balance_sheet_specs: false, prh_receipt: false } })
     expect(listed()).not.toContain('balance_sheet_specs')
     expect(period('2031-12-31').docs).toEqual({ done: 0, required: 4 })
+  })
+
+  it('lists the rows in the order a year produces them', () => {
+    save({ settings: { audited: true, annual_report: true, balance_sheet_specs: true, prh_receipt: true } })
+    expect(period('2031-12-31').slots.map((s) => s.kind)).toEqual([
+      'financial_statements',
+      'balance_sheet_specs',
+      'annual_report',
+      'board_minutes',
+      'audit_report',
+      'tax_return_6b',
+      'agm_minutes',
+      'prh_filing_receipt',
+      'tax_decision',
+      'other',
+    ])
+  })
+
+  it('lists the documents of a row oldest first, whatever order they were linked in', () => {
+    const add = (voucher_id: number) => ({ kind: 'board_minutes', period_ends: '2032-12-31', voucher_id })
+    save({ add: [add(fx.vouchers.decision2033), add(fx.vouchers.board2033)] })
+    expect(slot('2032-12-31', 'board_minutes').documents.map((d) => d.voucher_id)).toEqual([fx.vouchers.board2033, fx.vouchers.decision2033])
   })
 
   it('keeps an unticked row that holds a document: unticking does not hide what was attached', () => {
