@@ -48,7 +48,8 @@ export function PeriodBody({
               today={today}
               actions={actions}
               kitsasStatement={slot.kind === 'financial_statements' ? period.kitsas_statement : undefined}
-              notNeededToggle={slot.required}
+              // A deadline's slot can be settled without a file even when no file is required.
+              notNeededToggle={slot.required || period.deadlines.some((d) => d.kind === slot.kind)}
             />
           )
         })}

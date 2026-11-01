@@ -1674,8 +1674,7 @@
     },
     "settings": {
       "title": "Company settings",
-      "audited": "The company has an auditor (the audit report is required)",
-      "annualReport": "The company writes an annual report (it is required)"
+      "lead": "A required document shows as missing until it is added. To skip one period, use Not needed on its row."
     },
     "slot": {
       "upload": "Upload",
@@ -1694,7 +1693,8 @@
         "not_needed": "Not needed"
       },
       "hint": {
-        "balance_sheet_specs": "Balance sheet specifications must be prepared and kept for 10 years, but they are not filed with PRH (Accounting Act 3:13). The Kitsas archive contains them, so no separate file is needed."
+        "balance_sheet_specs": "Balance sheet specifications must be prepared and kept for 10 years, but they are not filed with PRH (Accounting Act 3:13). The Kitsas archive contains them, so no separate file is needed.",
+        "prh_filing_receipt": "Not required. PRH sends a trade register extract once the statements are registered, and the free extract in Virre shows the registered statements. Once you have checked, mark this Not needed."
       }
     },
     "link": {
@@ -1734,8 +1734,9 @@
     },
     "deadlineState": {
       "done": "Done",
-      "not_needed": "Not needed",
+      "not_needed": "Handled",
       "overdue": "{days} d late",
+      "unverified": "Check with PRH",
       "upcoming": "{days} d left",
       "later": "Coming",
       "noDocument": "No document"
@@ -1762,7 +1763,7 @@
       "audit_report": "Audit report",
       "agm_minutes": "Minutes of the annual general meeting",
       "board_minutes": "Board minutes",
-      "prh_filing_receipt": "PRH receipt for the statements",
+      "prh_filing_receipt": "PRH extract of the registered statements",
       "tax_return_6b": "Tax return 6B",
       "tax_decision": "Tax decision",
       "other": "Other",

@@ -31,7 +31,19 @@ export type CompanySettings = {
   audited?: boolean
   /** The company writes an annual report (toimintakertomus): it is required. */
   annual_report?: boolean
+  /** Keep the balance sheet specifications as a file here; Kitsas's archive holds them anyway. */
+  balance_sheet_specs?: boolean
+  /** Keep PRH's extract showing the statements as registered; PRH's register has them anyway. */
+  prh_receipt?: boolean
 }
+
+/** The kinds the owner chooses to require, each with its setting, in the order the page lists them. */
+export const KIND_SETTINGS = {
+  balance_sheet_specs: 'balance_sheet_specs',
+  annual_report: 'annual_report',
+  audit_report: 'audited',
+  prh_filing_receipt: 'prh_receipt',
+} as const satisfies Partial<Record<PeriodKind, keyof CompanySettings>>
 
 /** A link to a voucher, or to one file of it. Kitsas stays the source of the document. */
 export type CompanyDocument = {
@@ -154,7 +166,8 @@ export type SlotView = {
 }
 
 export type DeadlineKey = 'statements_prepared' | 'agm' | 'tax_return' | 'prh_filing'
-export type DeadlineState = 'done' | 'not_needed' | 'overdue' | 'upcoming' | 'later'
+/** `unverified`: the date has passed, but no document is required, so Tilari cannot tell. */
+export type DeadlineState = 'done' | 'not_needed' | 'overdue' | 'unverified' | 'upcoming' | 'later'
 
 export type DeadlineView = {
   key: DeadlineKey

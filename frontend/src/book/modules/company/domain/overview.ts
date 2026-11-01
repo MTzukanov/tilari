@@ -15,6 +15,7 @@ import { suggestDocuments } from './suggest'
 import {
   COMPANY_KEY,
   COMPANY_KINDS,
+  KIND_SETTINGS,
   PERIOD_KINDS,
   type CompanyAlerts,
   type CompanyChanges,
@@ -113,19 +114,8 @@ function documentView(d: CompanyDocument, voucher: VoucherRow | undefined): Docu
 }
 
 function requiredKind(kind: PeriodKind, doc: CompanyDoc): boolean {
-  switch (kind) {
-    case 'annual_report':
-      return doc.settings?.annual_report === true
-    case 'audit_report':
-      return doc.settings?.audited === true
-    // Kept, not filed (KPL 3:13), and Kitsas's archive holds them: a file of their own is optional.
-    case 'balance_sheet_specs':
-    case 'board_minutes':
-    case 'other':
-      return false
-    default:
-      return true
-  }
+  if (kind in KIND_SETTINGS) return doc.settings?.[KIND_SETTINGS[kind as keyof typeof KIND_SETTINGS]] === true
+  return kind !== 'board_minutes' && kind !== 'other'
 }
 
 function slotStatus(kind: PeriodKind, required: boolean, filled: boolean, notNeeded: boolean, ended: boolean): SlotStatus {
@@ -203,6 +193,7 @@ function buildPeriod(doc: CompanyDoc, { period, views, statement, asOf, lock, su
       asOf,
       filled,
       notNeeded: (kind) => isNotNeeded(doc, period.ends, kind),
+      required: (kind) => requiredKind(kind, doc),
       kitsasStatement: statement != null,
     }),
     slots,
@@ -295,6 +286,7 @@ export function computeAlerts(db: SqliteDb, query: { today: string; asOf?: strin
       asOf,
       filled: (kind) => usable.has(`${period.ends}|${kind}`),
       notNeeded: (kind) => isNotNeeded(doc, period.ends, kind),
+      required: (kind) => requiredKind(kind, doc),
       kitsasStatement: statements.has(period.ends),
     }),
   )

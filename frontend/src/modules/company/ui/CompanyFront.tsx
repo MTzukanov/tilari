@@ -6,7 +6,7 @@ import { formatDate } from '../../../shared/dates'
 import { DocLines, DocRows } from '../../../shared/DocRows'
 import { DueTile, DueTiles } from '../../../shared/DueTile'
 import { Pill } from '../../../shared/Pill'
-import { COMPANY_KINDS, type CompanyOverview, type PeriodView, type Suggestion } from '../api'
+import { COMPANY_KINDS, KIND_SETTINGS, type CompanyOverview, type PeriodView, type Suggestion } from '../api'
 import { allSuggestions, deadlineStateText, deadlineTone, errorText, periodLabel, periodRange, suggestionAdd, useCompany } from './format'
 import { PeriodBody } from './PeriodBody'
 import { DocumentRow, SlotRow, SuggestionRows, type SlotActions } from './Slot'
@@ -98,29 +98,23 @@ function SuggestionsPanel({ overview, actions }: { overview: CompanyOverview; ac
 function SettingsPanel({ overview, actions }: { overview: CompanyOverview; actions: SlotActions }) {
   const { t } = useI18n()
   const [error, setError] = useState<string | null>(null)
-  const change = (key: 'audited' | 'annual_report', value: boolean) =>
-    actions.apply({ settings: { [key]: value } }).catch((err) => setError(errorText(t, err)))
   return (
     <details className="property-defaults company-settings">
       <summary>{t('company.settings.title')}</summary>
-      <label className="allocation-check">
-        <input
-          type="checkbox"
-          disabled={overview.read_only}
-          checked={overview.settings.audited === true}
-          onChange={(e) => void change('audited', e.target.checked)}
-        />
-        {t('company.settings.audited')}
-      </label>
-      <label className="allocation-check">
-        <input
-          type="checkbox"
-          disabled={overview.read_only}
-          checked={overview.settings.annual_report === true}
-          onChange={(e) => void change('annual_report', e.target.checked)}
-        />
-        {t('company.settings.annualReport')}
-      </label>
+      <p className="muted">{t('company.settings.lead')}</p>
+      <div className="company-settings-list">
+        {Object.entries(KIND_SETTINGS).map(([kind, key]) => (
+          <label key={key} className="allocation-check">
+            <input
+              type="checkbox"
+              disabled={overview.read_only}
+              checked={overview.settings[key] === true}
+              onChange={(e) => void actions.apply({ settings: { [key]: e.target.checked } }).catch((err) => setError(errorText(t, err)))}
+            />
+            {t(`company.kind.${kind}`)}
+          </label>
+        ))}
+      </div>
       {error ? <p className="error">{error}</p> : null}
     </details>
   )

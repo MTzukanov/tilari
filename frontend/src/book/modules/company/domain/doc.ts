@@ -5,6 +5,7 @@ import { stableJson } from '../../../json'
 import {
   COMPANY_DOC_VERSION,
   COMPANY_KINDS,
+  KIND_SETTINGS,
   PERIOD_KINDS,
   type CompanyChanges,
   type CompanyDoc,
@@ -76,7 +77,7 @@ function normalizeDocument(input: unknown, path: string): CompanyDocument {
 function normalizeSettings(input: unknown): CompanySettings | undefined {
   if (!isObject(input)) return undefined
   const out: CompanySettings = { ...input }
-  for (const key of ['audited', 'annual_report'] as const) {
+  for (const key of Object.values(KIND_SETTINGS)) {
     if (input[key] === true) out[key] = true
     else delete out[key]
   }

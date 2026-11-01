@@ -80,6 +80,8 @@ describe('changes to the company document', () => {
     expect(more.settings).toEqual({ audited: true })
     const off = applyChanges(parseCompanyDoc(serializeCompanyDoc(more)), { settings: { audited: false } }, NOW)!
     expect(off.settings).toBeUndefined()
+    const all = applyChanges(stored(), { settings: { annual_report: true, balance_sheet_specs: true, prh_receipt: true } }, NOW)!
+    expect(all.settings).toEqual({ annual_report: true, balance_sheet_specs: true, prh_receipt: true })
   })
 
   it('collects rejected suggestions once', () => {

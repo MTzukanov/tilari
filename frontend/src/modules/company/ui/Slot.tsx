@@ -387,7 +387,7 @@ export function SlotRow({
       name={label}
       status={status ? <Pill tone={STATUS_TONE[status]}>{t(`company.slot.status.${status}`)}</Pill> : null}
       actions={rowActions}
-      hint={documents.length ? null : kindHint(t, kind)}
+      hint={status === 'optional' && !documents.length ? kindHint(t, kind) : null}
       tone={rowTone(status, documents.length > 0)}
       onFiles={
         readOnly

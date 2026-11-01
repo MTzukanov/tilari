@@ -139,7 +139,7 @@ test.describe('company documents', () => {
     await taxReturn.getByRole('button', { name: 'Ei tarvita' }).click()
     await expect(slotStatus(taxReturn)).toHaveText('Ei tarvita')
     await expect(taxReturn).toHaveClass(/doc-row-muted/)
-    await expect(page.locator('.binder-body .due-tile', { hasText: 'Veroilmoitus 6B' })).toContainText('Ei tarvita')
+    await expect(page.locator('.binder-body .due-tile', { hasText: 'Veroilmoitus 6B' }).locator('.pill-ok')).toHaveText('Hoidettu')
     await taxReturn.getByRole('button', { name: 'Tarvitaan sittenkin' }).click()
     await expect(slotStatus(taxReturn)).toHaveText('Puuttuu')
 
@@ -153,14 +153,49 @@ test.describe('company documents', () => {
     await expect(slotStatus(agm)).toHaveText('Puuttuu')
   })
 
-  test('the balance sheet specifications are not counted as a missing document', async ({ page }) => {
+  test('the specifications and the PRH extract are optional until the settings require them', async ({ page }) => {
     await openCompany(page)
     await openPeriod2024(page)
     const specs = slot(page, 'Tase-erittelyt')
     await expect(slotStatus(specs)).toHaveText('Vapaaehtoinen')
     await expect(specs).not.toHaveClass(/doc-row-missing/)
     await expect(specs.getByText(/Kitsaksen arkisto sisältää ne/)).toBeVisible()
-    await expect(periodCard(page, '2024').locator('.pill-warn')).toHaveText('0/5 asiakirjaa')
+    await expect(periodCard(page, '2024').locator('.pill-warn')).toHaveText('0/4 asiakirjaa')
+
+    // With no document required, a passed date says to go and check, and is not late.
+    const prh = slot(page, 'PRH:n ote rekisteröidystä tilinpäätöksestä')
+    await expect(slotStatus(prh)).toHaveText('Vapaaehtoinen')
+    const prhTile = page.locator('.binder-body .due-tile', { hasText: 'Tilinpäätös PRH:lle' })
+    await expect(prhTile.locator('.pill')).toHaveText('Tarkista PRH:lta')
+    await prh.getByRole('button', { name: 'Ei tarvita' }).click()
+    await expect(prhTile.locator('.pill-ok')).toHaveText('Hoidettu')
+    await prh.getByRole('button', { name: 'Tarvitaan sittenkin' }).click()
+
+    const settings = page.locator('.company-settings')
+    await settings.locator('summary').click()
+    const boxes = settings.getByRole('checkbox')
+    await expect(boxes).toHaveCount(4)
+    // One choice per line.
+    const tops = await boxes.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)))
+    expect(new Set(tops).size).toBe(4)
+
+    await settings.getByRole('checkbox', { name: 'Tase-erittelyt' }).check()
+    await expect(slotStatus(specs)).toHaveText('Puuttuu')
+    await expect(specs.getByText(/Kitsaksen arkisto sisältää ne/)).toHaveCount(0)
+    await settings.getByRole('checkbox', { name: 'PRH:n ote rekisteröidystä tilinpäätöksestä' }).check()
+    await expect(slotStatus(prh)).toHaveText('Puuttuu')
+    await expect(prhTile.locator('.pill-crit')).toBeVisible()
+    await expect(periodCard(page, '2024').locator('.pill-warn')).toHaveText('0/6 asiakirjaa')
+  })
+
+  test("a deadline's state is a pill in the colour of a row's status", async ({ page }) => {
+    await openCompany(page)
+    await openPeriod2024(page)
+    const tile = page.locator('.binder-body .due-tile', { hasText: 'Varsinainen yhtiökokous' })
+    await expect(tile.locator('.pill-crit')).toContainText('Myöhässä')
+    await chooseFiles(page, slot(page, AGM), [{ name: 'poytakirja.pdf', ...PDF }])
+    await slot(page, AGM).getByRole('button', { name: 'Tallenna asiakirja' }).click()
+    await expect(tile.locator('.pill-ok')).toHaveText('Tehty')
   })
 
   test('cards open in place, one at a time, and the address follows', async ({ page }) => {

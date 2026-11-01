@@ -38,8 +38,12 @@ stand out. Here colour and a filled button mark what needs doing, and everything
    Body text keeps the font the user picked (`shared/fontPrefs.ts`).
 
 6. **Say why a row is not required.** When something is legally needed but needs no file here, say so
-   on the row (`DocRow`'s `hint`) instead of showing it as missing. The balance sheet specifications are
-   the example.
+   on the row (`DocRow`'s `hint`) instead of showing it as missing. The balance sheet specifications and
+   PRH's extract are the examples. Show the note only while the row is optional: once a setting requires
+   the document, the note would contradict the row.
+
+7. **State reads as a pill, not as coloured text.** Plain coloured words were too easy to miss. Use the
+   same tone for the same meaning: "Tehty" looks like "Valmis", and "Ei asiakirjaa" like "Puuttuu".
 
 ## Parts
 
@@ -48,7 +52,7 @@ stand out. Here colour and a filled button mark what needs doing, and everything
 | `Pill` | `shared/Pill.tsx` | A status or fact, by tone |
 | `FilePill` | `shared/Pill.tsx` | Opens one attachment; a long name is cut and shows in full on hover |
 | `VoucherPill` | `shared/Pill.tsx` | Opens a voucher; pass its number as the label and its date as `title` |
-| `DueTiles`, `DueTile` | `shared/DueTile.tsx` | Something with a due day, coloured on its edge; `onOpen` makes it a button |
+| `DueTiles`, `DueTile` | `shared/DueTile.tsx` | Something with a due day; its state is a `Pill`, with the same colour on the edge. `onOpen` makes it a button |
 | `DocRows`, `DocRow` | `shared/DocRows.tsx` | A framed list of things that hold documents; `onFiles` makes a row take dropped files |
 | `DocLines`, `DocLine` | `shared/DocRows.tsx` | One document: `mark`, title, date, pills, and `end` at the far side |
 | `Binder` | `shared/Binder.tsx` | A card that opens in place, with badges that show its state while closed |

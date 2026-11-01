@@ -16,7 +16,7 @@ export type {
   SlotView,
   Suggestion,
 } from '../../book/modules/company/domain/types'
-export { COMPANY_KINDS, PERIOD_KINDS } from '../../book/modules/company/domain/types'
+export { COMPANY_KINDS, KIND_SETTINGS, PERIOD_KINDS } from '../../book/modules/company/domain/types'
 
 function service() {
   return getBookService().modules.company

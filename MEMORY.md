@@ -7,6 +7,21 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-01 - Fixed: the 6B date ignored holidays; PRH's "receipt" is optional
+
+- The 6B showed 1.5.2023 for a year ending 31.12.2022. 30.4. was a Sunday, and the code moved only past
+  weekends, onto Vappu. The right day is 2.5., as Vero's notice of 13.1.2023 says. `isDayOff` now follows
+  laki 150/1930, 5 §, including Easter, Ascension and Midsummer Eve.
+- Only the 6B moves. The act covers deadlines at an authority (1 §), so not the statements or the AGM, and
+  PRH's text names no day-off rule. With a late fee at stake its date stays the earlier one.
+- The PRH "receipt" came from the first design, and the owner has never had one. PRH sends a trade register
+  extract once statements are registered, and the free extract in Virre lists them. So the row is optional
+  and renamed, and a passed date says to check with PRH, not "late". The late fee covers periods ending
+  on or after 1.12.2024: 150, 300 or 600 euros by lateness, doubled in some cases (PRH, 25.8.2026).
+- Filing with the tax return reaches the register only if the attachment is filed exactly as Vero
+  instructs, so a filed return does not prove the statements were registered (PRH, 27.4.2026).
+- Owner rule: a real book is never copied to temp or test folders, and demos use invented books.
+
 ## 2026-11-01 - Company page: colour and cards; balance sheet specifications are optional
 
 - Owner reviewed the first demo: too dull to see what is missing. The page now has cards that open in

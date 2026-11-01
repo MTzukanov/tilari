@@ -98,7 +98,7 @@ tenant as partner and the letter as a PDF (`modules/properties/ui/waterLetter.ts
 `portfolio`: `v`, `rev`, `sale_costs`, `target_return_bp`, `dismissed[]` (setup suggestions
 the owner rejected: `era:{eraid}`, `doc:{voucherId}`).
 
-`company` (ADR-031): `v`, `rev`, `updated_at`; `settings` (`audited`, `annual_report`, only when on);
+`company` (ADR-031): `v`, `rev`, `updated_at`; `settings` (`audited`, `annual_report`, `balance_sheet_specs`, `prh_receipt`, only when on);
 `documents[]`, one link each: `key` (stable, `d12`), `kind`, `period_ends` (`Tilikausi.loppuu`, null
 for the company's own), `voucher_id`, `attachment_id` (one file of a voucher with several),
 `doc_date` (the document's own date when the voucher's differs), `note`; `not_needed[]`

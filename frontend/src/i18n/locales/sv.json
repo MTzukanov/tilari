@@ -1674,8 +1674,7 @@
     },
     "settings": {
       "title": "Bolagets inställningar",
-      "audited": "Bolaget har en revisor (revisionsberättelsen är obligatorisk)",
-      "annualReport": "Bolaget upprättar en verksamhetsberättelse (den är obligatorisk)"
+      "lead": "Ett obligatoriskt dokument visas som saknat tills det har lagts till. En enskild räkenskapsperiod kan hoppas över med Behövs inte på raden."
     },
     "slot": {
       "upload": "Ladda upp",
@@ -1694,7 +1693,8 @@
         "not_needed": "Behövs inte"
       },
       "hint": {
-        "balance_sheet_specs": "Balansspecifikationerna ska upprättas och bevaras i 10 år, men de ges inte in till PRH (BokfL 3:13). Kitsas arkiv innehåller dem, så en separat fil behövs inte."
+        "balance_sheet_specs": "Balansspecifikationerna ska upprättas och bevaras i 10 år, men de ges inte in till PRH (BokfL 3:13). Kitsas arkiv innehåller dem, så en separat fil behövs inte.",
+        "prh_filing_receipt": "Inte obligatoriskt. PRH skickar ett handelsregisterutdrag när bokslutet har registrerats, och det avgiftsfria utdraget i Virre visar registrerade bokslut. När du har kontrollerat saken, markera Behövs inte."
       }
     },
     "link": {
@@ -1734,8 +1734,9 @@
     },
     "deadlineState": {
       "done": "Klart",
-      "not_needed": "Behövs inte",
+      "not_needed": "Hanterad",
       "overdue": "Försenad {days} d",
+      "unverified": "Kontrollera hos PRH",
       "upcoming": "{days} d kvar",
       "later": "Kommande",
       "noDocument": "Inget dokument"
@@ -1762,7 +1763,7 @@
       "audit_report": "Revisionsberättelse",
       "agm_minutes": "Protokoll från ordinarie bolagsstämma",
       "board_minutes": "Styrelseprotokoll",
-      "prh_filing_receipt": "PRH:s kvitto på bokslutet",
+      "prh_filing_receipt": "PRH:s utdrag om registrerat bokslut",
       "tax_return_6b": "Skattedeklaration 6B",
       "tax_decision": "Beskattningsbeslut",
       "other": "Övriga",

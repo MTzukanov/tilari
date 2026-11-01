@@ -638,9 +638,9 @@ correction would change the open year's income statement lines. The rental-objec
 - **What belongs to a period is stored, not read from a date.** Most documents of a period are dated
   after it ended, in a later period's open year. An old document cannot carry its real date on a new
   voucher (`assertUnlocked`), so the voucher takes the book's day and the link keeps `doc_date`.
-- **Kinds are code constants** (`domain/types.ts`), with two settings (audited, annual report) for
-  what is required; a slot can be marked not needed for one period. A table of kinds would be
-  configuration nobody asked for.
+- **Kinds are code constants** (`domain/types.ts`), with four settings for what is required (audit
+  report, annual report, balance sheet specifications, PRH extract); a slot can be marked not needed
+  for one period. A table of kinds would be configuration nobody asked for.
 - **Balance sheet specifications are not a required slot** (2026-11-01; the owner keeps them in
   Kitsas's archive and never as a file of their own). The law requires them to be prepared and kept
   for 10 years, and says they are not filed for registration (KPL 3:13, 2:10). KILA 2068/2024 calls
@@ -649,6 +649,12 @@ correction would change the open year's income statement lines. The rental-objec
   nothing and showing "Puuttuu" would be wrong. The slot stays optional, for a book that keeps them as
   a file, and says why. Tilari cannot check that an archive exists: Kitsas keeps its date in the
   desktop's settings, not in the book.
+- **PRH's extract is not a required slot either** (2026-11-01). The first design's "receipt" is not a
+  standard document: PRH sends a trade register extract once statements are registered, and the free
+  extract in Virre lists them, so nothing has to be kept here. Tilari cannot see the register, so after
+  the date the tile says to check with PRH instead of calling it late, and it stays out of the header.
+  It still reminds before the date, because of the late fee. "Ei tarvita" on the row marks it handled.
+  The setting brings back the old behaviour.
 - **One page, with cards that open in place** (the owner's review of the first demo, 2026-11-01). A
   separate page per period hid the state of the others. The address holds what is open
   (`#/company/period/{ends}`, `#/company/own`), so a voucher returns to it; with nothing asked for, the
@@ -663,7 +669,9 @@ correction would change the open year's income statement lines. The rental-objec
   also inside VAT and transfer-tax returns and `6b` inside hex names. Minutes go by date, because
   they name the meeting's year; statements by the year they name. Nothing is stored until accepted.
 - **Deadlines are computed** (`domain/deadlines.ts`), on the as-of date, indicative, and answered by
-  a slot's document. Rules and sources are in that file. The header counts those due within 30 days
+  a slot's document or by "Ei tarvita", which shows as "Hoidettu". Rules and sources are in that file.
+  Only the 6B moves past days off (laki 150/1930, 5 §), holidays included: the act covers deadlines at an
+  authority, and PRH's text names no such rule, so its date stays the earlier, safer one. The header counts those due within 30 days
   or overdue by at most a year: older gaps show on their period's row, or old years would keep it
   lit. Like ADR-030 they cannot be dismissed, only answered.
 - **Why not the dossier as designed elsewhere:** the first design assumed a Kitsas HTTP API, its own

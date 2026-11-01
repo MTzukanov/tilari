@@ -79,6 +79,7 @@ describe('the company overview', () => {
     expect(slot('2031-12-31', 'agm_minutes')).toMatchObject({ required: true, status: 'missing' })
     expect(slot('2031-12-31', 'board_minutes')).toMatchObject({ required: false, status: 'optional' })
     expect(slot('2031-12-31', 'balance_sheet_specs')).toMatchObject({ required: false, status: 'optional' })
+    expect(slot('2031-12-31', 'prh_filing_receipt')).toMatchObject({ required: false, status: 'optional' })
     expect(slot('2031-12-31', 'annual_report')).toMatchObject({ required: false, status: 'optional' })
     expect(slot('2031-12-31', 'tax_decision')).toMatchObject({ required: true, status: 'waiting' })
     expect(period('2034-12-31').slots.find((s) => s.kind === 'agm_minutes')!.status).toBe('waiting')
@@ -91,7 +92,7 @@ describe('the company overview', () => {
     expect(s.documents[0]).toMatchObject({ state: 'ok', title: 'Yhtiökokous 2032', date: '2032-04-20', attachment_id: null })
     expect(s.documents[0].files.map((f) => f.name)).toEqual(['kokous-poytakirja-2032.pdf'])
     expect(s.suggestions).toEqual([])
-    expect(period('2031-12-31').docs).toEqual({ done: 1, required: 5 })
+    expect(period('2031-12-31').docs).toEqual({ done: 1, required: 4 })
     expect(period('2031-12-31').deadlines.find((d) => d.key === 'agm')!.state).toBe('done')
   })
 
@@ -99,13 +100,20 @@ describe('the company overview', () => {
     save({ settings: { audited: true, annual_report: true } })
     expect(slot('2031-12-31', 'audit_report')).toMatchObject({ required: true, status: 'missing' })
     expect(slot('2031-12-31', 'annual_report')).toMatchObject({ required: true, status: 'missing' })
-    expect(period('2031-12-31').docs).toEqual({ done: 0, required: 7 })
+    expect(period('2031-12-31').docs).toEqual({ done: 0, required: 6 })
+  })
+
+  it('requires the specifications and the PRH extract only when asked to', () => {
+    save({ settings: { balance_sheet_specs: true, prh_receipt: true } })
+    expect(slot('2031-12-31', 'balance_sheet_specs')).toMatchObject({ required: true, status: 'missing' })
+    expect(slot('2031-12-31', 'prh_filing_receipt')).toMatchObject({ required: true, status: 'missing' })
+    expect(period('2031-12-31').docs).toEqual({ done: 0, required: 6 })
   })
 
   it('takes a slot marked not needed out of the count and the deadline', () => {
     save({ not_needed: [{ period_ends: '2031-12-31', kind: 'tax_return_6b', value: true }] })
     expect(slot('2031-12-31', 'tax_return_6b').status).toBe('not_needed')
-    expect(period('2031-12-31').docs).toEqual({ done: 0, required: 4 })
+    expect(period('2031-12-31').docs).toEqual({ done: 0, required: 3 })
     expect(period('2031-12-31').deadlines.find((d) => d.key === 'tax_return')!.state).toBe('not_needed')
   })
 
@@ -176,13 +184,16 @@ describe('the company overview', () => {
 
   it('lists what is due in order, and only the near and the recently missed', () => {
     const { next_deadlines: due } = overview()
-    expect(due.map((d) => `${d.period_ends}:${d.key}`)).toEqual(['2032-12-31:statements_prepared', '2032-12-31:tax_return', '2032-12-31:agm', '2032-12-31:prh_filing'])
-    expect(due.map((d) => d.state)).toEqual(['overdue', 'overdue', 'overdue', 'overdue'])
+    expect(due.map((d) => `${d.period_ends}:${d.key}`)).toEqual(['2032-12-31:statements_prepared', '2032-12-31:tax_return', '2032-12-31:agm'])
+    expect(due.map((d) => d.state)).toEqual(['overdue', 'overdue', 'overdue'])
+    // The PRH date counts as missed only when its document is required.
+    save({ settings: { prh_receipt: true } })
+    expect(overview().next_deadlines.at(-1)).toMatchObject({ key: 'prh_filing', state: 'overdue' })
+    save({ settings: { prh_receipt: false } })
     // Earlier in the year, the period before is within its year of being missed, and this one is near.
     expect(overview('2033-04-10').next_deadlines.map((d) => `${d.period_ends}:${d.key}:${d.state}`)).toEqual([
       '2031-12-31:tax_return:overdue',
       '2031-12-31:agm:overdue',
-      '2031-12-31:prh_filing:overdue',
       '2032-12-31:statements_prepared:upcoming',
       '2032-12-31:tax_return:upcoming',
     ])
@@ -197,14 +208,14 @@ describe('the header count', () => {
   it('counts what the page lists', () => {
     expect(computeAlerts(fx.db, { today: AS_OF, asOf: AS_OF })).toEqual({ applicable: true, deadlines: overview().next_deadlines.length })
     save({ add: [{ kind: 'agm_minutes', period_ends: '2032-12-31', voucher_id: fx.vouchers.decision2033, attachment_id: fx.files['Yhtiokokouksen poytakirja 2033.pdf'] }] })
-    expect(computeAlerts(fx.db, { today: AS_OF, asOf: AS_OF }).deadlines).toBe(3)
-    expect(overview().next_deadlines).toHaveLength(3)
+    expect(computeAlerts(fx.db, { today: AS_OF, asOf: AS_OF }).deadlines).toBe(2)
+    expect(overview().next_deadlines).toHaveLength(2)
   })
 
   it('does not count a link to a deleted voucher as done', () => {
     save({ add: [{ kind: 'agm_minutes', period_ends: '2032-12-31', voucher_id: fx.vouchers.agm2032 }] })
     fx.db.run('UPDATE Tosite SET tila = 0 WHERE id = ?', [fx.vouchers.agm2032])
-    expect(computeAlerts(fx.db, { today: AS_OF, asOf: AS_OF }).deadlines).toBe(4)
+    expect(computeAlerts(fx.db, { today: AS_OF, asOf: AS_OF }).deadlines).toBe(3)
   })
 
   it('applies to limited companies and to books that do not say', () => {

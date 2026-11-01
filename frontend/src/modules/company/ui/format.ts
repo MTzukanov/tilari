@@ -38,11 +38,11 @@ export function deadlineStateText(d: DeadlineView, t: T): string {
   return t(`company.deadlineState.${d.state}`, { days: Math.abs(d.days) })
 }
 
-/** Done is green and what still counts as late is red; a gap too old to act on stays grey. */
+/** Handled is green, near is yellow and overdue is red, however old; the rest is only information. */
 export function deadlineTone(d: DeadlineView): DueTone {
-  if (d.state === 'done') return 'ok'
+  if (d.state === 'done' || d.state === 'not_needed') return 'ok'
   if (d.state === 'upcoming') return 'warn'
-  return d.state === 'overdue' && deadlineAlerts(d) ? 'crit' : 'neutral'
+  return d.state === 'overdue' ? 'crit' : 'neutral'
 }
 
 export function allSuggestions(overview: CompanyOverview): Suggestion[] {

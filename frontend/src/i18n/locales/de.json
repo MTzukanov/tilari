@@ -1674,8 +1674,7 @@
     },
     "settings": {
       "title": "Unternehmenseinstellungen",
-      "audited": "Das Unternehmen hat einen Abschlussprüfer (der Prüfungsbericht ist erforderlich)",
-      "annualReport": "Das Unternehmen erstellt einen Lagebericht (er ist erforderlich)"
+      "lead": "Ein Pflichtdokument gilt als fehlend, bis es hinzugefügt ist. Ein einzelnes Geschäftsjahr lässt sich mit „Nicht nötig“ in der Zeile überspringen."
     },
     "slot": {
       "upload": "Hochladen",
@@ -1694,7 +1693,8 @@
         "not_needed": "Nicht nötig"
       },
       "hint": {
-        "balance_sheet_specs": "Die Bilanzaufstellungen sind zu erstellen und 10 Jahre aufzubewahren, werden aber nicht beim PRH eingereicht (finn. Buchführungsgesetz 3:13). Das Kitsas-Archiv enthält sie, daher ist keine eigene Datei nötig."
+        "balance_sheet_specs": "Die Bilanzaufstellungen sind zu erstellen und 10 Jahre aufzubewahren, werden aber nicht beim PRH eingereicht (finn. Buchführungsgesetz 3:13). Das Kitsas-Archiv enthält sie, daher ist keine eigene Datei nötig.",
+        "prh_filing_receipt": "Nicht erforderlich. Das PRH sendet einen Handelsregisterauszug, sobald der Abschluss eingetragen ist, und der kostenlose Auszug in Virre zeigt die eingetragenen Abschlüsse. Wenn Sie das geprüft haben, markieren Sie „Nicht nötig“."
       }
     },
     "link": {
@@ -1734,8 +1734,9 @@
     },
     "deadlineState": {
       "done": "Erledigt",
-      "not_needed": "Nicht nötig",
+      "not_needed": "Bearbeitet",
       "overdue": "{days} T verspätet",
+      "unverified": "Beim PRH prüfen",
       "upcoming": "Noch {days} T",
       "later": "Kommt",
       "noDocument": "Kein Dokument"
@@ -1762,7 +1763,7 @@
       "audit_report": "Prüfungsbericht",
       "agm_minutes": "Protokoll der ordentlichen Hauptversammlung",
       "board_minutes": "Vorstandsprotokolle",
-      "prh_filing_receipt": "PRH-Quittung zum Jahresabschluss",
+      "prh_filing_receipt": "PRH-Auszug zum eingetragenen Abschluss",
       "tax_return_6b": "Steuererklärung 6B",
       "tax_decision": "Steuerbescheid",
       "other": "Sonstige",

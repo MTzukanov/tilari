@@ -1674,8 +1674,7 @@
     },
     "settings": {
       "title": "Yhtiön asetukset",
-      "audited": "Yhtiöllä on tilintarkastaja (tilintarkastuskertomus on pakollinen)",
-      "annualReport": "Yhtiö laatii toimintakertomuksen (se on pakollinen)"
+      "lead": "Pakollinen asiakirja näkyy puuttuvana, kunnes se on lisätty. Yhden tilikauden voi ohittaa rivin kohdasta Ei tarvita."
     },
     "slot": {
       "upload": "Lataa",
@@ -1694,7 +1693,8 @@
         "not_needed": "Ei tarvita"
       },
       "hint": {
-        "balance_sheet_specs": "Tase-erittelyt on laadittava ja säilytettävä 10 vuotta, mutta niitä ei ilmoiteta PRH:lle (KPL 3:13). Kitsaksen arkisto sisältää ne, joten erillistä tiedostoa ei tarvita."
+        "balance_sheet_specs": "Tase-erittelyt on laadittava ja säilytettävä 10 vuotta, mutta niitä ei ilmoiteta PRH:lle (KPL 3:13). Kitsaksen arkisto sisältää ne, joten erillistä tiedostoa ei tarvita.",
+        "prh_filing_receipt": "Ei pakollinen. PRH lähettää kaupparekisteriotteen, kun tilinpäätös on rekisteröity, ja Virren maksuton ote näyttää rekisteröidyt tilinpäätökset. Kun olet tarkistanut asian, merkitse Ei tarvita."
       }
     },
     "link": {
@@ -1734,8 +1734,9 @@
     },
     "deadlineState": {
       "done": "Tehty",
-      "not_needed": "Ei tarvita",
+      "not_needed": "Hoidettu",
       "overdue": "Myöhässä {days} pv",
+      "unverified": "Tarkista PRH:lta",
       "upcoming": "{days} pv jäljellä",
       "later": "Tulossa",
       "noDocument": "Ei asiakirjaa"
@@ -1762,7 +1763,7 @@
       "audit_report": "Tilintarkastuskertomus",
       "agm_minutes": "Varsinaisen yhtiökokouksen pöytäkirja",
       "board_minutes": "Hallituksen pöytäkirjat",
-      "prh_filing_receipt": "PRH:n kuitti tilinpäätöksestä",
+      "prh_filing_receipt": "PRH:n ote rekisteröidystä tilinpäätöksestä",
       "tax_return_6b": "Veroilmoitus 6B",
       "tax_decision": "Verotuspäätös",
       "other": "Muut",

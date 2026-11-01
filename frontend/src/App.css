@@ -6124,25 +6124,10 @@ button.due-tile:hover {
 .due-tile-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 0.6rem;
+  gap: 0.15rem 0.6rem;
+  align-items: center;
   font-size: 0.8rem;
   color: var(--muted);
-}
-
-.due-tile-state {
-  font-weight: 600;
-}
-
-.due-tile-ok .due-tile-state {
-  color: var(--ok);
-}
-
-.due-tile-warn .due-tile-state {
-  color: var(--warn);
-}
-
-.due-tile-crit .due-tile-state {
-  color: var(--crit);
 }
 
 .doc-rows {
@@ -6524,4 +6509,15 @@ button.due-tile:hover {
 
 .company-settings {
   margin-top: 1rem;
+}
+
+.company-settings > .muted {
+  margin: 0.4rem 0;
+  font-size: 0.85rem;
+}
+
+.company-settings-list {
+  display: grid;
+  gap: 0.3rem;
+  justify-items: start;
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Pill } from './Pill'
 
 export type DueTone = 'neutral' | 'ok' | 'warn' | 'crit'
 
@@ -7,7 +8,7 @@ export function DueTiles({ children }: { children: ReactNode }) {
   return <div className="due-tiles">{children}</div>
 }
 
-/** Something with a due day: what, when and how it stands, with the colour on its edge. */
+/** Something with a due day: what, when and how it stands, as a pill with the same colour on the edge. */
 export function DueTile({
   label,
   due,
@@ -26,7 +27,7 @@ export function DueTile({
       <span className="due-tile-label">{label}</span>
       <span className="due-tile-meta">
         <span className="num-text">{due}</span>
-        <span className="due-tile-state">{state}</span>
+        <Pill tone={tone}>{state}</Pill>
       </span>
     </>
   )
