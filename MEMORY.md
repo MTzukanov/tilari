@@ -7,6 +7,67 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-01 - Confirmed: desktop Kitsas keeps `TilariData`
+
+- Owner test: a book saved by Tilari, with company and rental data, was opened in desktop Kitsas, a voucher
+  edited and a backup taken. Every table of the file and its backup was compared: the only difference is
+  `Asetus.Varmuuskopioitu`. `TilariData` is intact, every link resolves, files keep their bytes, and
+  Kitsas logged its edit as usual. Tilari's own reader gives the same overview on both files.
+- Not covered: nothing was uploaded through the company page in that book. Such a voucher comes from the
+  same save as a rental document's, which Kitsas also kept, and the e2e covers the upload itself.
+- That book, an older copy, has importer lines with `kumppani` 0 and `eraid` 0: the case fixed in #54, not
+  from this page, which writes no lines. Most of its broken foreign keys are also in a book Tilari never saved.
+
+## 2026-11-01 - Fixed: the 6B date ignored holidays; PRH's "receipt" is optional
+
+- The 6B showed 1.5.2023 for a year ending 31.12.2022. 30.4. was a Sunday, and the code moved only past
+  weekends, onto Vappu. The right day is 2.5., as Vero's notice of 13.1.2023 says. `isDayOff` now follows
+  laki 150/1930, 5 §, including Easter, Ascension and Midsummer Eve.
+- Only the 6B moves. The act covers deadlines at an authority (1 §), so not the statements or the AGM, and
+  PRH's text names no day-off rule. With a late fee at stake its date stays the earlier one.
+- The PRH "receipt" came from the first design and is not a standard document. PRH sends a trade register
+  extract once statements are registered, and the free extract in Virre lists them. So the kind is renamed
+  and off by default, and a passed date says to check with PRH, not "late". The late fee covers periods
+  ending on or after 1.12.2024: 150, 300 or 600 euros by lateness, doubled in some cases (PRH, 25.8.2026).
+- Owner: a ticked document is listed and required, an unticked one is not listed. A row holding a document
+  stays, or unticking would hide what was attached (the list of all documents would still have it).
+- Filing with the tax return reaches the register only if the attachment is filed exactly as Vero
+  instructs, so a filed return does not prove the statements were registered (PRH, 27.4.2026).
+- Owner rule: a real book is never copied to temp or test folders, and demos use invented books.
+
+## 2026-11-01 - Company page: colour and cards; balance sheet specifications are optional
+
+- Owner reviewed the first demo: too dull to see what is missing. The page now has cards that open in
+  place, tinted missing rows and coloured pills, built from reusable parts. Parts, rules and the steps for
+  moving rental objects' documents the same way are in `docs/UI_PATTERNS.md`. Not moved yet.
+- Tase-erittelyt: required by law to be prepared and kept (KPL 3:13, 2:10), never filed, and already in
+  Kitsas's archive, so no separate file by default (ADR-031). Kitsas keeps the archive's date in the
+  desktop's settings, so the book cannot tell whether an archive was made.
+- Legal text checked from Finlex's open data (`opendata.finlex.fi/.../statute-consolidated/{year}/{number}`
+  returns XML; the normal pages do not read with the tools): KPL 3:6 four months, OYL 5:3 six months, OYL
+  8:10 two months from adoption. The newest consolidated KPL served there was 167/2022, OYL 652/2024.
+
+## 2026-10-31 - Company documents and deadlines (`feature/company-documents`)
+
+- Owner asked for a place for the company's cycle: a new sidebar item (Yhtiö, `#/company`), Tilikaudet
+  left as it is, files as normal vouchers (type 800 or on the records they belong to), Tilari's own
+  data in `TilariData` (ADR-031). A design from a session without access to this repo was the
+  starting point; its concepts carried over, its Kitsas API, SQL tables and dividend model did not.
+- Owner decisions: documents and deadlines first, dividends next after the review; company-level
+  documents get their own section; dividend vouchers will be drafts the owner posts, cash payments
+  keep coming from the bank import.
+- What the model has to allow: documents on normal vouchers, several documents on one voucher, the
+  same file on two vouchers. A dividend can go in steps: decided on one voucher, moved to withholding
+  and a payable on a second, paid later through bank statements, where not every line on the payable
+  is a dividend.
+- Matching notes: `osinko` inflects to `osingon`; `veroilmoitus` is inside VAT and transfer-tax
+  returns; `6b` is inside hex file names; a file name's date is not the period's year.
+- Checked on a copy of a real book (pass/fail only): the suggestions put each file of a voucher with
+  several documents on its own slot, look-alikes gave none, and accepting all of them changed only
+  `TilariData`.
+- Vero.fi and PRH confirmed the 6B and the 8 month PRH deadline; the first design's month-end rounding
+  of the PRH date was late for mid-month period ends. The other two: see 2026-11-01.
+
 ## 2026-10-31 - Fixed: the save status turned clean before the working copy was written
 
 - A save marked the book clean first and wrote the working copy after, so a reload right then
@@ -438,7 +499,7 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 - Checked on a copy of a real book (pass/fail only): every object's per-year result equals the
   Kitsas cost-centre report; linked share items equal the 1453 balance, and 1441 once the
   ambiguous items (two flats in one housing company) are chosen; desktop-Kitsas open/edit/backup
-  of a file with `TilariData` still to be confirmed by the owner.
+  of a file with `TilariData` still to be confirmed by the owner (confirmed 2026-11-01).
 
 ## 2026-10-07 - Part C merged (PRs #16-#24)
 

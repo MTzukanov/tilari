@@ -1,3 +1,4 @@
+import { companyModule } from './company'
 import { periodEndModule } from './periodEnd'
 import { propertiesModule } from './properties'
 import { vatModule } from './vat'
@@ -8,6 +9,7 @@ export const BOOK_MODULES = {
   vat: vatModule,
   periodEnd: periodEndModule,
   properties: propertiesModule,
+  company: companyModule,
 } as const
 
 export type BookModuleId = keyof typeof BOOK_MODULES

@@ -14,6 +14,12 @@ import {
   computePortfolio,
   saveProperty,
 } from '../../frontend/src/book/modules/properties/domain/portfolio.ts'
+import {
+  computeAlerts as computeCompanyAlerts,
+  computeOverview as computeCompanyOverview,
+  fetchCandidates as fetchCompanyCandidates,
+  saveChanges as saveCompanyChanges,
+} from '../../frontend/src/book/modules/company/domain/overview.ts'
 
 const GOLDEN = join(
   fileURLToPath(new URL('../../testdb/tilari-test.kitsas', import.meta.url)),
@@ -269,6 +275,56 @@ describe('ledger http', () => {
     // The kernel's own allocation routes are untouched.
     assert.equal((await fetch(`${base}/api/allocations/4`)).status, 200)
     assert.equal((await fetch(`${base}/api/properties/999`)).status, 404)
+    local.close()
+  })
+
+  it('company documents over HTTP match the in-browser engine', async () => {
+    await fetch(`${base}/api/close`, { method: 'POST' })
+    const openRes = await fetch(`${base}/api/open-path`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: GOLDEN }),
+    })
+    assert.equal(openRes.status, 200, await openRes.text())
+    const local = await SqliteDb.fromBytes(readFileSync(GOLDEN))
+    const asOf = '2025-12-31'
+    const same = { today: asOf, asOf }
+    const post = (body: unknown) =>
+      fetch(`${base}/api/company/changes?as_of=${asOf}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+    const before = await fetch(`${base}/api/company?as_of=${asOf}`).then((r) => r.json())
+    assert.deepEqual(before, JSON.parse(JSON.stringify(computeCompanyOverview(local, same))))
+    assert.deepEqual(await fetch(`${base}/api/company/alerts?as_of=${asOf}`).then((r) => r.json()), computeCompanyAlerts(local, same))
+
+    const voucher = local.get<{ id: number }>('SELECT id FROM Tosite WHERE tila >= 100 ORDER BY id LIMIT 1')!.id
+    const changes = {
+      add: [{ kind: 'agm_minutes', period_ends: '2024-12-31', voucher_id: Number(voucher) }],
+      not_needed: [{ period_ends: '2024-12-31', kind: 'tax_return_6b', value: true }],
+      settings: { audited: true },
+    }
+    const res = await post(changes)
+    const text = await res.text()
+    assert.equal(res.status, 200, text)
+    saveCompanyChanges(local, changes, 'now')
+    assert.deepEqual(JSON.parse(text), JSON.parse(JSON.stringify(computeCompanyOverview(local, same))))
+
+    assert.deepEqual(
+      await fetch(`${base}/api/company/candidates`).then((r) => r.json()),
+      JSON.parse(JSON.stringify(fetchCompanyCandidates(local, false))),
+    )
+    assert.deepEqual(
+      await fetch(`${base}/api/company/candidates?all=1`).then((r) => r.json()),
+      JSON.parse(JSON.stringify(fetchCompanyCandidates(local, true))),
+    )
+
+    const refused = await post({ add: [{ kind: 'agm_minutes', period_ends: '2099-12-31', voucher_id: Number(voucher) }] })
+    assert.equal(refused.status, 400)
+    assert.match(await refused.text(), /unknown_period/)
+    assert.equal((await fetch(`${base}/api/company/nothing`)).status, 404)
     local.close()
   })
 })

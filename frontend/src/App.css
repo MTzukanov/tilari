@@ -11,6 +11,20 @@
   --sidebar: #d5dce4;
   --sidebar-text: #2a3440;
   --sidebar-active: #c3d0db;
+  --card: #fff;
+  --sunk: #eef1f4;
+  /* Status colours: text on its soft background, at least 4.5:1 (docs/UI_PATTERNS.md). */
+  --ok: #24693f;
+  --ok-soft: #dcefe3;
+  --warn: #7f5000;
+  --warn-soft: #fbedcf;
+  --crit: var(--neg);
+  --crit-soft: #f8dfdb;
+  --doc: #34548a;
+  --doc-soft: #dfe8f5;
+  --voucher: #6f4680;
+  --voucher-soft: #eee3f3;
+  --font-num: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --tilari-content-max: 1200px;
   --tilari-text-scale: 1;
   /* User-selectable; see fontPrefs.ts. No webfont downloads. */
@@ -331,7 +345,8 @@ body {
   gap: 0.35rem;
 }
 
-.topbar-alerts {
+.topbar-alerts,
+.topbar-deadlines {
   font: inherit;
   font-size: 0.82rem;
   font-weight: 600;
@@ -5973,4 +5988,559 @@ tr.property-needs-choice td:first-child {
 .property-move-sale {
   color: #2f6fed;
   border-color: color-mix(in srgb, #2f6fed 40%, var(--line));
+}
+
+/* Documents and status: shared/Pill, DueTile, DocRows and Binder (docs/UI_PATTERNS.md). */
+.section-label {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.num-text {
+  font-family: var(--font-num);
+  font-size: 0.92em;
+  font-variant-numeric: tabular-nums;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 100%;
+  padding: 0.1rem 0.55rem;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  text-decoration: none;
+  color: #4f5a66;
+  background: #e6ebf0;
+  border: 0;
+  border-radius: 999px;
+}
+
+.pill-ok {
+  color: var(--ok);
+  background: var(--ok-soft);
+}
+
+.pill-warn {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.pill-crit {
+  color: var(--crit);
+  background: var(--crit-soft);
+}
+
+.pill-accent {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.pill-doc {
+  color: var(--doc);
+  background: var(--doc-soft);
+}
+
+.pill-voucher {
+  color: var(--voucher);
+  background: var(--voucher-soft);
+}
+
+.pill-action {
+  cursor: pointer;
+}
+
+.pill-action:hover {
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.pill-icon {
+  flex: none;
+}
+
+.pill-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+a.pill-doc {
+  max-width: 20rem;
+}
+
+.due-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.5rem;
+}
+
+.due-tile {
+  display: grid;
+  align-content: start;
+  gap: 0.1rem;
+  padding: 0.55rem 0.75rem;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: var(--sunk);
+  border: 0;
+  border-left: 3px solid var(--line);
+  border-radius: 8px;
+}
+
+button.due-tile {
+  cursor: pointer;
+}
+
+button.due-tile:hover {
+  background: color-mix(in srgb, var(--sunk) 70%, var(--line));
+}
+
+.due-tile-ok {
+  border-left-color: var(--ok);
+}
+
+.due-tile-warn {
+  border-left-color: #c98a00;
+}
+
+.due-tile-crit {
+  border-left-color: var(--crit);
+}
+
+.due-tile-label {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.due-tile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.6rem;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.doc-rows {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.doc-row {
+  padding: 0.6rem 0.8rem;
+  border-top: 1px solid var(--line);
+}
+
+.doc-row:first-child {
+  border-top: 0;
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+}
+
+.doc-row:last-child {
+  border-bottom-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+}
+
+.doc-row-missing {
+  background: color-mix(in srgb, var(--crit-soft) 50%, transparent);
+}
+
+.doc-row-muted .doc-row-name {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.doc-row.is-file-over {
+  outline: 2px dashed var(--accent);
+  outline-offset: -3px;
+  background: var(--accent-soft);
+}
+
+.doc-row-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  align-items: center;
+  min-height: 1.8rem;
+}
+
+.doc-row-name {
+  font-weight: 600;
+}
+
+.doc-row-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+.doc-row-actions .btn-small,
+.doc-line-end .btn-small {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  border-radius: 6px;
+}
+
+.btn-small:hover {
+  border-color: var(--accent);
+}
+
+.btn-small.is-primary {
+  color: #f7faf8;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-link.btn-quiet {
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.btn-link.btn-quiet:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+/* A finished row keeps its actions, but they do not compete with what is still missing. */
+@media (hover: hover) {
+  .doc-row-done .doc-row-actions {
+    opacity: 0.55;
+  }
+
+  .doc-row-done:hover .doc-row-actions,
+  .doc-row-done:focus-within .doc-row-actions {
+    opacity: 1;
+  }
+}
+
+.doc-lines {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doc-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.55rem;
+  align-items: center;
+  min-width: 0;
+  font-size: 0.9rem;
+}
+
+.doc-line-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.doc-line-date {
+  color: var(--muted);
+}
+
+.doc-line-end {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.6rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+.binder {
+  margin-bottom: 0.65rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  scroll-margin-top: 0.5rem;
+}
+
+.binder-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.35rem 0.85rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.binder-head:hover {
+  background: color-mix(in srgb, var(--accent-soft) 35%, transparent);
+}
+
+.binder-label {
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.binder-sub {
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.binder-chevron {
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+
+.binder.is-open .binder-chevron {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .binder-chevron {
+    transition: none;
+  }
+}
+
+.binder-badges {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  gap: 0.35rem;
+}
+
+.binder-body {
+  padding: 0 1rem 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.binder-body > .doc-rows:first-child {
+  margin-top: 0.85rem;
+}
+
+@media (max-width: 560px) {
+  .doc-row-actions,
+  .doc-line-end {
+    margin-left: 0;
+  }
+}
+
+/* Company documents and deadlines (#/company). */
+.company-next {
+  margin-bottom: 1rem;
+}
+
+.company-titlebar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.company-titlebar > div {
+  flex: 1 1 24rem;
+  min-width: 0;
+}
+
+.company-titlebar h2 {
+  margin-bottom: 0.25rem;
+}
+
+.company-titlebar .lede {
+  margin: 0;
+}
+
+.company-suggest {
+  margin-bottom: 1rem;
+  padding: 0.7rem 1rem;
+  background: var(--doc-soft);
+  border-radius: 10px;
+}
+
+.company-suggest-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.company-suggest-head > div {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.company-suggest h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--doc);
+}
+
+.company-suggest p {
+  margin: 0.1rem 0 0;
+  font-size: 0.88rem;
+}
+
+.company-suggest-list {
+  margin-top: 0.4rem;
+  font-size: 0.88rem;
+}
+
+.company-suggest-list > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--doc);
+}
+
+.company-suggest-list .doc-line {
+  padding: 0.3rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--doc) 20%, transparent);
+}
+
+.company-confirmed {
+  margin: 0.7rem 0 0;
+  font-size: 0.85rem;
+}
+
+.company-panel {
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.company-panel p {
+  margin: 0.35rem 0;
+  font-size: 0.88rem;
+}
+
+.company-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.company-note {
+  padding: 0.5rem 0.75rem;
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-radius: 6px;
+}
+
+.company-footnote {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
+}
+
+.company-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.company-filters input,
+.company-filters select {
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+  font-size: 0.9rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.company-filters input[type='search'] {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+/* In a table cell: a pill is cut inside the column, not by the column's edge. */
+.company-files {
+  display: flex;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.company-files .pill {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.company-unlinked {
+  margin-top: 1rem;
+}
+
+.company-unlinked > summary {
+  cursor: pointer;
+}
+
+.company-unlinked > .muted {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+}
+
+.company-orphans {
+  margin-top: 1rem;
+}
+
+.company-settings {
+  margin-top: 1rem;
+}
+
+.company-settings fieldset {
+  min-width: 0;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.company-settings legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.company-settings fieldset > .muted {
+  margin: 0.15rem 0 0.5rem;
+  font-size: 0.85rem;
+}
+
+.company-settings-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.company-settings-list label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.company-settings-list input {
+  flex: none;
+  margin-top: 0.25rem;
+}
+
+.company-settings-hint {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
 }

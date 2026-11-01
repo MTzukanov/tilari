@@ -6,6 +6,7 @@ import { NAV_ITEMS, activeNav as activeNavFromModules } from '../modules/registr
 import { useEffect, useState } from 'react'
 import { fetchAllocations, fetchSettings } from '../api'
 import { isVatLiableSetting } from '../book/settings'
+import { fetchCompanyAlerts } from '../modules/company/api'
 
 export type NavId = string
 
@@ -76,6 +77,15 @@ function NavGlyph({ name }: { name: string }) {
           />
         </svg>
       )
+    case 'building':
+      return (
+        <svg {...common}>
+          <path
+            fill="currentColor"
+            d="M5 20.5V4.8A1.3 1.3 0 0 1 6.3 3.5h7.4A1.3 1.3 0 0 1 15 4.8v4.7h3.7A1.3 1.3 0 0 1 20 10.8v9.7h-5.8v-3.3H10v3.3H5zm2.5-14.3v2.2h2.2V6.2H7.5zm3.3 0v2.2H13V6.2h-2.2zm-3.3 3.8v2.2h2.2V10H7.5zm3.3 0v2.2H13V10h-2.2zm-3.3 3.8V16h2.2v-2.2H7.5zm3.3 0V16H13v-2.2h-2.2zm5.2-1.9V14h2v-2.1h-2zm0 3.7v2.1h2v-2.1h-2z"
+          />
+        </svg>
+      )
     case 'pct':
       return (
         <svg {...common}>
@@ -133,11 +143,13 @@ export function SideNav({
   const { t } = useI18n()
   const [vatLiable, setVatLiable] = useState(true)
   const [hasCostCentres, setHasCostCentres] = useState(false)
+  const [limitedCompany, setLimitedCompany] = useState(true)
 
   useEffect(() => {
     if (!bookOpen) {
       setVatLiable(true)
       setHasCostCentres(false)
+      setLimitedCompany(true)
       return
     }
     void fetchSettings()
@@ -146,10 +158,14 @@ export function SideNav({
     void fetchAllocations()
       .then((a) => setHasCostCentres(a.allocations.some((item) => item.type === 1)))
       .catch(() => setHasCostCentres(false))
+    void fetchCompanyAlerts()
+      .then((a) => setLimitedCompany(a.applicable))
+      .catch(() => setLimitedCompany(true))
   }, [bookOpen, route.view])
 
   const items = NAV_ITEMS.filter(
-    (item) => (item.id !== 'vat' || vatLiable) && (item.id !== 'properties' || hasCostCentres),
+    (item) =>
+      (item.id !== 'vat' || vatLiable) && (item.id !== 'properties' || hasCostCentres) && (item.id !== 'company' || limitedCompany),
   )
 
   return (

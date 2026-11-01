@@ -620,3 +620,61 @@ correction would change the open year's income statement lines. The rental-objec
   `no_document: true` on that step, exception or settlement - an input on the item, not a list of
   dismissals - and taken back by unticking it. Never stored beside a document. The lease's
   contract cannot be skipped: every lease needs one.
+
+
+## ADR-031 Company documents and deadlines link to vouchers, in their own module (2026-10-31)
+
+**Status:** accepted. Builds on ADR-023; first increment of the company page (`#/company`).
+
+- **Own sidebar item, Tilikaudet untouched** (owner, 2026-10-31). A module `company` with its own
+  routes. The closing wizard and the fiscal-period list do not change.
+- **A document stays a voucher.** New ones are posted type-800 vouchers. Existing ones stay where
+  they are, on any posted voucher: AGM minutes can sit on the voucher that books the dividend, and
+  one voucher can hold several documents. So a link names a voucher and, when a
+  voucher has several files, one file (`attachment_id`). Kitsas needs nothing from Tilari to show
+  them; a link is only ever an id in `TilariData`, key `company` (`docs/DATA_MODEL.md`).
+- **A period is its end date** (`Tilikausi.loppuu`), as for Kitsas's `TP_{loppuu}`. Links whose
+  period's dates later change stay visible under "Tilikautta ei löydy", so nothing is lost silently.
+- **What belongs to a period is stored, not read from a date.** Most documents of a period are dated
+  after it ended, in a later period's open year. An old document cannot carry its real date on a new
+  voucher (`assertUnlocked`), so the voucher takes the book's day and the link keeps `doc_date`.
+- **Kinds are code constants** (`domain/types.ts`). Four are the owner's choice (balance sheet
+  specifications, annual report, audit report, PRH extract), all off by default: ticked means listed for
+  every period and required, unticked means not listed (owner, 2026-11-01). A row that already holds a
+  document stays, because unticking must not hide what was attached. A required slot can be marked not
+  needed for one period. A table of kinds would be configuration nobody asked for.
+- **Balance sheet specifications need no file here.** The law requires them to be prepared and kept for
+  10 years, and says they are not filed for registration (KPL 3:13, 2:10). KILA 2068/2024 calls them an
+  internal document, not part of the statements. Kitsas's archive contains them (`arkistoija.cpp`,
+  `arkistoiRaportit`), so showing "Puuttuu" would be wrong. Tilari cannot check that an archive exists:
+  Kitsas keeps its date in the desktop's settings, not in the book.
+- **PRH's extract is not expected either.** The first design's "receipt" is not a standard document: PRH
+  sends a trade register extract once statements are registered, and the free extract in Virre lists them.
+  The filing itself is still a duty with a late fee, so its deadline stays when the row is not listed. Tilari
+  cannot see the register, so after the date the tile says to check with PRH instead of calling it late,
+  and it stays out of the header. It reminds before the date, and the tile can be marked handled.
+- **One page, with cards that open in place** (the owner's review of the first demo, 2026-11-01). A
+  separate page per period hid the state of the others. The address holds what is open
+  (`#/company/period/{ends}`, `#/company/own`), so a voucher returns to it; with nothing asked for, the
+  newest ended period is open. The look is in `docs/UI_PATTERNS.md`.
+- **Kitsas's own statement PDF** (`Liite`, `tosite = 0`, role `TP_{loppuu}`) shows read-only on the
+  statements slot. It counts for "prepared" but does not fill the signed slot.
+  `Tilikausi.json.vahvistettu` is the day someone pressed confirm, so it is shown as that and never
+  stands in for the AGM.
+- **Suggestions, never silent links.** `domain/suggest.ts` reads file names, and the title for a
+  voucher's only file or a generated file name; only types 0, 300 and 800, so an invoice about a
+  statement is not one. Words are matched after folding, on word starts, because `veroilmoitus` is
+  also inside VAT and transfer-tax returns and `6b` inside hex names. Minutes go by date, because
+  they name the meeting's year; statements by the year they name. Nothing is stored until accepted.
+- **Deadlines are computed** (`domain/deadlines.ts`), on the as-of date, indicative, and answered by
+  a slot's document or by the owner's word ("Ei tarvita" on the row, or on the tile when the row is not
+  listed), which shows as "Hoidettu". Rules and sources are in that file.
+  Only the 6B moves past days off (laki 150/1930, 5 §), holidays included: the act covers deadlines at an
+  authority, and PRH's text names no such rule, so its date stays the earlier, safer one. The header counts those due within 30 days
+  or overdue by at most a year: older gaps show on their period's row, or old years would keep it
+  lit. Like ADR-030 they cannot be dismissed, only answered.
+- **Why not the dossier as designed elsewhere:** the first design assumed a Kitsas HTTP API, its own
+  SQL tables, a dossier inside Tilikaudet, documents only on type 800, and one payment voucher per
+  dividend. Tilari has the ledger in-process and one table, and a dividend can go in steps through a
+  payable account and bank statements. Dividends come later, on those steps.
+

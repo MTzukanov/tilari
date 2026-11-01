@@ -9,11 +9,13 @@ export function AttachmentLink({
   id,
   children,
   className,
+  title,
   lazy = false,
 }: {
   id: number
   children: React.ReactNode
   className?: string
+  title?: string
   lazy?: boolean
 }) {
   const [href, setHref] = useState<string>('#')
@@ -31,6 +33,7 @@ export function AttachmentLink({
     return (
       <a
         className={className}
+        title={title}
         href="#"
         onClick={(e) => {
           e.preventDefault()
@@ -50,7 +53,7 @@ export function AttachmentLink({
     )
   }
   return (
-    <a className={className} href={href} target="_blank" rel="noopener noreferrer">
+    <a className={className} title={title} href={href} target="_blank" rel="noopener noreferrer">
       {children}
     </a>
   )
