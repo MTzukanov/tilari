@@ -641,6 +641,18 @@ correction would change the open year's income statement lines. The rental-objec
 - **Kinds are code constants** (`domain/types.ts`), with two settings (audited, annual report) for
   what is required; a slot can be marked not needed for one period. A table of kinds would be
   configuration nobody asked for.
+- **Balance sheet specifications are not a required slot** (2026-11-01; the owner keeps them in
+  Kitsas's archive and never as a file of their own). The law requires them to be prepared and kept
+  for 10 years, and says they are not filed for registration (KPL 3:13, 2:10). KILA 2068/2024 calls
+  them an internal document, not part of the statements. Kitsas's archive contains them
+  (`arkistoija.cpp`, `arkistoiRaportit`), and that is what goes to audit, so a separate file adds
+  nothing and showing "Puuttuu" would be wrong. The slot stays optional, for a book that keeps them as
+  a file, and says why. Tilari cannot check that an archive exists: Kitsas keeps its date in the
+  desktop's settings, not in the book.
+- **One page, with cards that open in place** (the owner's review of the first demo, 2026-11-01). A
+  separate page per period hid the state of the others. The address holds what is open
+  (`#/company/period/{ends}`, `#/company/own`), so a voucher returns to it; with nothing asked for, the
+  newest ended period is open. The look is in `docs/UI_PATTERNS.md`.
 - **Kitsas's own statement PDF** (`Liite`, `tosite = 0`, role `TP_{loppuu}`) shows read-only on the
   statements slot. It counts for "prepared" but does not fill the signed slot.
   `Tilikausi.json.vahvistettu` is the day someone pressed confirm, so it is shown as that and never

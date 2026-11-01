@@ -7,6 +7,18 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-01 - Company page: colour and cards; balance sheet specifications are optional
+
+- Owner reviewed the first demo: too dull to see what is missing. The page now has cards that open in
+  place, tinted missing rows and coloured pills, built from reusable parts. Parts, rules and the steps for
+  moving rental objects' documents the same way are in `docs/UI_PATTERNS.md`. Not moved yet.
+- Tase-erittelyt: required by law to be prepared and kept (KPL 3:13, 2:10), never filed, and already in
+  Kitsas's archive, so no separate file. The slot is optional and says why (ADR-031). Kitsas keeps the
+  archive's date in the desktop's settings, so the book cannot tell whether an archive was made.
+- Legal text checked from Finlex's open data (`opendata.finlex.fi/.../statute-consolidated/{year}/{number}`
+  returns XML; the normal pages do not read with the tools): KPL 3:6 four months, OYL 5:3 six months, OYL
+  8:10 two months from adoption. The newest consolidated KPL served there was 167/2022, OYL 652/2024.
+
 ## 2026-10-31 - Company documents and deadlines (`feature/company-documents`)
 
 - Owner asked for a place for the company's cycle: a new sidebar item (Yhtiö, `#/company`), Tilikaudet
@@ -25,10 +37,8 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 - Checked on a copy of a real book (pass/fail only): the suggestions put each file of a voucher with
   several documents on its own slot, look-alikes gave none, and accepting all of them changed only
   `TilariData`.
-- Open: the deadline rules for the 4 month statements (KPL 3:6) and the 6 month AGM (OYL 5:3) rest
-  on secondary sources; Finlex's pages could not be read by the tools. Check the current text before
-  merging. Vero.fi and PRH confirmed the 6B and the 8 month PRH deadline; the first design's
-  month-end rounding of the PRH date was late for mid-month period ends.
+- Vero.fi and PRH confirmed the 6B and the 8 month PRH deadline; the first design's month-end rounding
+  of the PRH date was late for mid-month period ends. The other two: see 2026-11-01.
 
 ## 2026-10-31 - Fixed: the save status turned clean before the working copy was written
 
