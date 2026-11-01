@@ -28,6 +28,7 @@ export type SessionChangeKind =
   | 'property_setup'
   | 'property_settings'
   | 'company'
+  | 'tax_return'
   | 'book_saved'
 
 export type SessionChange = {
