@@ -165,19 +165,23 @@ type PeriodParts = {
 
 function buildPeriod(doc: CompanyDoc, { period, views, statement, asOf, lock, suggestions, unlinked }: PeriodParts): PeriodView {
   const ended = period.ends < asOf
-  const slots: SlotView[] = PERIOD_KINDS.map((kind) => {
+  const slots: SlotView[] = PERIOD_KINDS.flatMap((kind) => {
     const documents = views.filter((v) => v.kind === kind)
     const filled = documents.some((v) => v.state === 'ok')
     const required = requiredKind(kind, doc)
-    return {
-      kind,
-      required,
-      status: slotStatus(kind, required, filled, isNotNeeded(doc, period.ends, kind), ended),
-      documents,
-      suggestions: suggestions.filter((s) => s.kind === kind),
-    }
+    // A row with a document stays even when unticked: unticking must not hide what was attached.
+    if (kind in KIND_SETTINGS && !required && !documents.length) return []
+    return [
+      {
+        kind,
+        required,
+        status: slotStatus(kind, required, filled, isNotNeeded(doc, period.ends, kind), ended),
+        documents,
+        suggestions: suggestions.filter((s) => s.kind === kind),
+      },
+    ]
   })
-  const filled = (kind: PeriodKind) => slots.find((s) => s.kind === kind)!.documents.some((v) => v.state === 'ok')
+  const filled = (kind: PeriodKind) => views.some((v) => v.kind === kind && v.state === 'ok')
   const counted = slots.filter((s) => s.required && s.status !== 'not_needed')
   return {
     starts: period.starts,
@@ -262,7 +266,7 @@ export function computeOverview(db: SqliteDb, query: { today: string; asOf?: str
     company_slots: companySlots,
     orphans: views.filter((v) => v.period_ends != null && !ends.has(v.period_ends)),
     next_deadlines: nextDeadlines,
-    suggestion_count: suggestions.length,
+    suggestion_count: [...companySlots, ...periodViews.flatMap((p) => p.slots)].reduce((n, s) => n + s.suggestions.length, 0),
     documents: views,
     unlinked,
   }

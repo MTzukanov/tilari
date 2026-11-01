@@ -84,7 +84,7 @@ function UnlinkedAttach({
       </select>
       <AttachSelect
         candidate={candidate}
-        kinds={periodEnds == null ? COMPANY_KINDS : PERIOD_KINDS}
+        kinds={periodEnds == null ? COMPANY_KINDS : (overview.periods.find((p) => p.ends === periodEnds)?.slots.map((s) => s.kind) ?? PERIOD_KINDS)}
         periodEnds={periodEnds}
         kindLabel={(kind) => t(`company.kind.${kind}`)}
         actions={actions}

@@ -1674,7 +1674,14 @@
     },
     "settings": {
       "title": "Unternehmenseinstellungen",
-      "lead": "Ein Pflichtdokument gilt als fehlend, bis es hinzugefügt ist. Ein einzelnes Geschäftsjahr lässt sich mit „Nicht nötig“ in der Zeile überspringen."
+      "listTitle": "Dokumentenliste eines Geschäftsjahres",
+      "lead": "Ein markiertes Dokument steht in der Liste jedes Geschäftsjahres und ist erforderlich. Ein nicht markiertes steht nicht in der Liste. Ist bereits ein Dokument verknüpft, bleibt die Zeile.",
+      "hint": {
+        "balance_sheet_specs": "Sie sind zu erstellen und 10 Jahre aufzubewahren, werden aber nicht beim PRH eingereicht (finn. Buchführungsgesetz 3:13). Das Kitsas-Archiv enthält sie, daher ist meist keine eigene Datei nötig.",
+        "annual_report": "Markieren, wenn das Unternehmen einen Lagebericht erstellt.",
+        "audit_report": "Markieren, wenn das Unternehmen einen Abschlussprüfer hat.",
+        "prh_filing_receipt": "Das PRH sendet einen Handelsregisterauszug, sobald der Abschluss eingetragen ist, und der kostenlose Auszug in Virre zeigt die eingetragenen Abschlüsse. Markieren, um den Auszug hier aufzubewahren. Die Frist wird in jedem Fall angezeigt."
+      }
     },
     "slot": {
       "upload": "Hochladen",
@@ -1691,10 +1698,6 @@
         "optional": "Freiwillig",
         "filled": "Hinzugefügt",
         "not_needed": "Nicht nötig"
-      },
-      "hint": {
-        "balance_sheet_specs": "Die Bilanzaufstellungen sind zu erstellen und 10 Jahre aufzubewahren, werden aber nicht beim PRH eingereicht (finn. Buchführungsgesetz 3:13). Das Kitsas-Archiv enthält sie, daher ist keine eigene Datei nötig.",
-        "prh_filing_receipt": "Nicht erforderlich. Das PRH sendet einen Handelsregisterauszug, sobald der Abschluss eingetragen ist, und der kostenlose Auszug in Virre zeigt die eingetragenen Abschlüsse. Wenn Sie das geprüft haben, markieren Sie „Nicht nötig“."
       }
     },
     "link": {
@@ -1724,7 +1727,9 @@
     "deadlines": {
       "title": "Fristen",
       "footnote": "Die Fristen sind Richtwerte: Die Satzung kann die Frist der Hauptversammlung verkürzen, und der Jahresabschluss muss auch innerhalb von zwei Monaten nach der Feststellung bei PRH eingehen. Prüfe die Termine bei PRH und der Steuerverwaltung.",
-      "due": "Fällig {date}"
+      "due": "Fällig {date}",
+      "markHandled": "Als bearbeitet markieren",
+      "unmark": "Rückgängig"
     },
     "deadline": {
       "statements_prepared": "Jahresabschluss erstellt",

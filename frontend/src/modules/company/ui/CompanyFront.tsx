@@ -101,20 +101,25 @@ function SettingsPanel({ overview, actions }: { overview: CompanyOverview; actio
   return (
     <details className="property-defaults company-settings">
       <summary>{t('company.settings.title')}</summary>
-      <p className="muted">{t('company.settings.lead')}</p>
-      <div className="company-settings-list">
-        {Object.entries(KIND_SETTINGS).map(([kind, key]) => (
-          <label key={key} className="allocation-check">
-            <input
-              type="checkbox"
-              disabled={overview.read_only}
-              checked={overview.settings[key] === true}
-              onChange={(e) => void actions.apply({ settings: { [key]: e.target.checked } }).catch((err) => setError(errorText(t, err)))}
-            />
-            {t(`company.kind.${kind}`)}
-          </label>
-        ))}
-      </div>
+      <fieldset disabled={overview.read_only}>
+        <legend>{t('company.settings.listTitle')}</legend>
+        <p className="muted">{t('company.settings.lead')}</p>
+        <div className="company-settings-list">
+          {Object.entries(KIND_SETTINGS).map(([kind, key]) => (
+            <label key={key}>
+              <input
+                type="checkbox"
+                checked={overview.settings[key] === true}
+                onChange={(e) => void actions.apply({ settings: { [key]: e.target.checked } }).catch((err) => setError(errorText(t, err)))}
+              />
+              <span>
+                {t(`company.kind.${kind}`)}
+                <span className="company-settings-hint">{t(`company.settings.hint.${kind}`)}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
       {error ? <p className="error">{error}</p> : null}
     </details>
   )

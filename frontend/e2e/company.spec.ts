@@ -153,39 +153,60 @@ test.describe('company documents', () => {
     await expect(slotStatus(agm)).toHaveText('Puuttuu')
   })
 
-  test('the specifications and the PRH extract are optional until the settings require them', async ({ page }) => {
+  test('a ticked document is listed and required, an unticked one is not listed', async ({ page }) => {
     await openCompany(page)
     await openPeriod2024(page)
     const specs = slot(page, 'Tase-erittelyt')
-    await expect(slotStatus(specs)).toHaveText('Vapaaehtoinen')
-    await expect(specs).not.toHaveClass(/doc-row-missing/)
-    await expect(specs.getByText(/Kitsaksen arkisto sisältää ne/)).toBeVisible()
-    await expect(periodCard(page, '2024').locator('.pill-warn')).toHaveText('0/4 asiakirjaa')
-
-    // With no document required, a passed date says to go and check, and is not late.
     const prh = slot(page, 'PRH:n ote rekisteröidystä tilinpäätöksestä')
-    await expect(slotStatus(prh)).toHaveText('Vapaaehtoinen')
-    const prhTile = page.locator('.binder-body .due-tile', { hasText: 'Tilinpäätös PRH:lle' })
-    await expect(prhTile.locator('.pill')).toHaveText('Tarkista PRH:lta')
-    await prh.getByRole('button', { name: 'Ei tarvita' }).click()
-    await expect(prhTile.locator('.pill-ok')).toHaveText('Hoidettu')
-    await prh.getByRole('button', { name: 'Tarvitaan sittenkin' }).click()
+    await expect(specs).toHaveCount(0)
+    await expect(prh).toHaveCount(0)
+    await expect(slot(page, 'Toimintakertomus')).toHaveCount(0)
+    await expect(slot(page, 'Tilintarkastuskertomus')).toHaveCount(0)
+    await expect(periodCard(page, '2024').locator('.pill-warn')).toHaveText('0/4 asiakirjaa')
 
     const settings = page.locator('.company-settings')
     await settings.locator('summary').click()
+    await expect(settings.locator('legend')).toHaveText('Tilikauden asiakirjalista')
+    await expect(settings.getByText(/Valittu asiakirja näkyy/)).toBeVisible()
     const boxes = settings.getByRole('checkbox')
     await expect(boxes).toHaveCount(4)
     // One choice per line.
     const tops = await boxes.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)))
     expect(new Set(tops).size).toBe(4)
 
-    await settings.getByRole('checkbox', { name: 'Tase-erittelyt' }).check()
+    const specsBox = settings.getByRole('checkbox', { name: /^Tase-erittelyt/ })
+    await specsBox.check()
     await expect(slotStatus(specs)).toHaveText('Puuttuu')
-    await expect(specs.getByText(/Kitsaksen arkisto sisältää ne/)).toHaveCount(0)
-    await settings.getByRole('checkbox', { name: 'PRH:n ote rekisteröidystä tilinpäätöksestä' }).check()
-    await expect(slotStatus(prh)).toHaveText('Puuttuu')
-    await expect(prhTile.locator('.pill-crit')).toBeVisible()
-    await expect(periodCard(page, '2024').locator('.pill-warn')).toHaveText('0/6 asiakirjaa')
+    await expect(specs).toHaveClass(/doc-row-missing/)
+    await expect(periodCard(page, '2024').locator('.pill-warn')).toHaveText('0/5 asiakirjaa')
+    await specsBox.uncheck()
+    await expect(specs).toHaveCount(0)
+
+    // A row with a document stays when unticked, so nothing attached disappears.
+    await specsBox.check()
+    await upload(page, specs, 'erittelyt.pdf')
+    await specsBox.uncheck()
+    await expect(slotStatus(specs)).toHaveText('Lisätty')
+    await expect(periodCard(page, '2024').locator('.pill-warn')).toHaveText('0/4 asiakirjaa')
+  })
+
+  test('the PRH deadline stands without a listed document, and can be marked handled', async ({ page }) => {
+    await openCompany(page)
+    await openPeriod2024(page)
+    const tile = page.locator('.binder-body .due-tile', { hasText: 'Tilinpäätös PRH:lle' })
+    await expect(tile.locator('.pill')).toHaveText('Tarkista PRH:lta')
+    await tile.getByRole('button', { name: 'Merkitse hoidetuksi' }).click()
+    await expect(tile.locator('.pill-ok')).toHaveText('Hoidettu')
+    await tile.getByRole('button', { name: 'Peru' }).click()
+    await expect(tile.locator('.pill')).toHaveText('Tarkista PRH:lta')
+
+    // Ticked, the row answers it and a passed date is late again.
+    const settings = page.locator('.company-settings')
+    await settings.locator('summary').click()
+    await settings.getByRole('checkbox', { name: /^PRH:n ote/ }).check()
+    await expect(slotStatus(slot(page, 'PRH:n ote rekisteröidystä tilinpäätöksestä'))).toHaveText('Puuttuu')
+    await expect(tile.locator('.pill-crit')).toContainText('Myöhässä')
+    await expect(tile.getByRole('button', { name: 'Merkitse hoidetuksi' })).toHaveCount(0)
   })
 
   test("a deadline's state is a pill in the colour of a row's status", async ({ page }) => {

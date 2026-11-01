@@ -1674,7 +1674,14 @@
     },
     "settings": {
       "title": "Company settings",
-      "lead": "A required document shows as missing until it is added. To skip one period, use Not needed on its row."
+      "listTitle": "A period's document list",
+      "lead": "A ticked document is listed for every period and is required. An unticked one is not listed. If a document is already linked to it, the row stays.",
+      "hint": {
+        "balance_sheet_specs": "They must be prepared and kept for 10 years, but are not filed with PRH (Accounting Act 3:13). The Kitsas archive contains them, so a separate file is not usually needed.",
+        "annual_report": "Tick if the company writes an annual report.",
+        "audit_report": "Tick if the company has an auditor.",
+        "prh_filing_receipt": "PRH sends a trade register extract once the statements are registered, and the free extract in Virre shows the registered statements. Tick to keep the extract here. The deadline shows either way."
+      }
     },
     "slot": {
       "upload": "Upload",
@@ -1691,10 +1698,6 @@
         "optional": "Optional",
         "filled": "Added",
         "not_needed": "Not needed"
-      },
-      "hint": {
-        "balance_sheet_specs": "Balance sheet specifications must be prepared and kept for 10 years, but they are not filed with PRH (Accounting Act 3:13). The Kitsas archive contains them, so no separate file is needed.",
-        "prh_filing_receipt": "Not required. PRH sends a trade register extract once the statements are registered, and the free extract in Virre shows the registered statements. Once you have checked, mark this Not needed."
       }
     },
     "link": {
@@ -1724,7 +1727,9 @@
     "deadlines": {
       "title": "Deadlines",
       "footnote": "Deadlines are indicative: the articles can shorten the AGM period, and the statements must also reach PRH within two months of adoption. Check the dates with PRH and the Tax Administration.",
-      "due": "Due {date}"
+      "due": "Due {date}",
+      "markHandled": "Mark as handled",
+      "unmark": "Undo"
     },
     "deadline": {
       "statements_prepared": "Statements prepared",

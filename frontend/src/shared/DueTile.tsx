@@ -14,12 +14,15 @@ export function DueTile({
   due,
   state,
   tone = 'neutral',
+  action,
   onOpen,
 }: {
   label: string
   due: string
   state: string
   tone?: DueTone
+  /** A quiet link after the state. Not with `onOpen`: the whole tile is a button then. */
+  action?: ReactNode
   onOpen?: () => void
 }) {
   const body = (
@@ -28,6 +31,7 @@ export function DueTile({
       <span className="due-tile-meta">
         <span className="num-text">{due}</span>
         <Pill tone={tone}>{state}</Pill>
+        {action}
       </span>
     </>
   )

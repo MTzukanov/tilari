@@ -55,7 +55,6 @@ describe('the company overview', () => {
     expect(slot('2031-12-31', 'financial_statements').suggestions.map((s) => s.voucher_id)).toEqual([fx.vouchers.statements2031])
     expect(slot('2031-12-31', 'agm_minutes').suggestions.map((s) => s.voucher_id)).toEqual([fx.vouchers.agm2032])
     expect(slot('2032-12-31', 'financial_statements').suggestions.map((s) => s.file_name)).toEqual(['Signeerattu tilinpäätös 2032.pdf'])
-    expect(slot('2032-12-31', 'audit_report').suggestions.map((s) => s.file_name)).toEqual(['Signeerattu tt-kertomus 2032.pdf'])
     expect(slot('2032-12-31', 'agm_minutes').suggestions.map((s) => s.file_name)).toEqual(['Yhtiokokouksen poytakirja 2033.pdf'])
     expect(slot('2032-12-31', 'board_minutes').suggestions.map((s) => s.file_name)).toEqual(['Hallituksen poytakirja.pdf'])
     expect(slot('2032-12-31', 'other').suggestions.map((s) => s.file_name)).toEqual(['Ylimaarainen yhtiokokous poytakirja 2033.pdf'])
@@ -63,8 +62,14 @@ describe('the company overview', () => {
     const data = overview()
     expect(data.company_slots.find((s) => s.kind === 'articles')!.suggestions.map((s) => s.voucher_id)).toEqual([fx.vouchers.articles])
     expect(data.company_slots.find((s) => s.kind === 'trade_register_extract')!.suggestions.map((s) => s.voucher_id)).toEqual([fx.vouchers.extract])
-    expect(data.suggestion_count).toBe(10)
+    expect(data.suggestion_count).toBe(9)
     expect(readTilariData(fx.db, COMPANY_KEY)).toBeNull()
+  })
+
+  it('suggests for a chosen kind only when it is ticked', () => {
+    save({ settings: { audited: true } })
+    expect(slot('2032-12-31', 'audit_report').suggestions.map((s) => s.file_name)).toEqual(['Signeerattu tt-kertomus 2032.pdf'])
+    expect(overview().suggestion_count).toBe(10)
   })
 
   it('suggests nothing from look-alikes, deleted vouchers, drafts or rental documents', () => {
@@ -78,9 +83,6 @@ describe('the company overview', () => {
   it('names slots by what is linked, required and due', () => {
     expect(slot('2031-12-31', 'agm_minutes')).toMatchObject({ required: true, status: 'missing' })
     expect(slot('2031-12-31', 'board_minutes')).toMatchObject({ required: false, status: 'optional' })
-    expect(slot('2031-12-31', 'balance_sheet_specs')).toMatchObject({ required: false, status: 'optional' })
-    expect(slot('2031-12-31', 'prh_filing_receipt')).toMatchObject({ required: false, status: 'optional' })
-    expect(slot('2031-12-31', 'annual_report')).toMatchObject({ required: false, status: 'optional' })
     expect(slot('2031-12-31', 'tax_decision')).toMatchObject({ required: true, status: 'waiting' })
     expect(period('2034-12-31').slots.find((s) => s.kind === 'agm_minutes')!.status).toBe('waiting')
   })
@@ -103,11 +105,24 @@ describe('the company overview', () => {
     expect(period('2031-12-31').docs).toEqual({ done: 0, required: 6 })
   })
 
-  it('requires the specifications and the PRH extract only when asked to', () => {
+  it('lists a chosen kind only when ticked, and then it is required', () => {
+    const listed = () => period('2031-12-31').slots.map((s) => s.kind)
+    expect(listed()).toEqual(['financial_statements', 'agm_minutes', 'board_minutes', 'tax_return_6b', 'tax_decision', 'other'])
     save({ settings: { balance_sheet_specs: true, prh_receipt: true } })
     expect(slot('2031-12-31', 'balance_sheet_specs')).toMatchObject({ required: true, status: 'missing' })
     expect(slot('2031-12-31', 'prh_filing_receipt')).toMatchObject({ required: true, status: 'missing' })
     expect(period('2031-12-31').docs).toEqual({ done: 0, required: 6 })
+    save({ settings: { balance_sheet_specs: false, prh_receipt: false } })
+    expect(listed()).not.toContain('balance_sheet_specs')
+    expect(period('2031-12-31').docs).toEqual({ done: 0, required: 4 })
+  })
+
+  it('keeps an unticked row that holds a document: unticking does not hide what was attached', () => {
+    save({ settings: { balance_sheet_specs: true } })
+    save({ add: [{ kind: 'balance_sheet_specs', period_ends: '2031-12-31', voucher_id: fx.vouchers.agm2032 }] })
+    save({ settings: { balance_sheet_specs: false } })
+    expect(slot('2031-12-31', 'balance_sheet_specs')).toMatchObject({ required: false, status: 'filled' })
+    expect(period('2032-12-31').slots.map((s) => s.kind)).not.toContain('balance_sheet_specs')
   })
 
   it('takes a slot marked not needed out of the count and the deadline', () => {
@@ -275,7 +290,7 @@ describe('saving changes', () => {
   it('adds every suggestion at once and leaves none behind', () => {
     addAll()
     expect(overview().suggestion_count).toBe(0)
-    expect(parseCompanyDoc(readTilariData(fx.db, COMPANY_KEY)).doc.documents).toHaveLength(10)
+    expect(parseCompanyDoc(readTilariData(fx.db, COMPANY_KEY)).doc.documents).toHaveLength(9)
     expect(period('2032-12-31').slots.find((s) => s.kind === 'financial_statements')!.status).toBe('complete')
     expect(overview().documents.every((d) => d.state === 'ok')).toBe(true)
   })

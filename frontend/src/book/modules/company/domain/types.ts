@@ -37,7 +37,10 @@ export type CompanySettings = {
   prh_receipt?: boolean
 }
 
-/** The kinds the owner chooses to require, each with its setting, in the order the page lists them. */
+/**
+ * The kinds the owner chooses, each with its setting, in the order the page lists them. Ticked: listed
+ * for every period and required. Unticked: not listed, unless a document is already linked to it.
+ */
 export const KIND_SETTINGS = {
   balance_sheet_specs: 'balance_sheet_specs',
   annual_report: 'annual_report',

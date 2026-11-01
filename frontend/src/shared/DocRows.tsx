@@ -17,7 +17,6 @@ export function DocRow({
   name,
   status,
   actions,
-  hint,
   tone = 'plain',
   onFiles,
   children,
@@ -25,7 +24,6 @@ export function DocRow({
   name: ReactNode
   status?: ReactNode
   actions?: ReactNode
-  hint?: ReactNode
   tone?: DocRowTone
   onFiles?: (files: File[]) => void
   children?: ReactNode
@@ -37,7 +35,6 @@ export function DocRow({
         {status}
         {actions ? <span className="doc-row-actions">{actions}</span> : null}
       </div>
-      {hint ? <p className="doc-row-hint">{hint}</p> : null}
       {children}
     </FileDropArea>
   )

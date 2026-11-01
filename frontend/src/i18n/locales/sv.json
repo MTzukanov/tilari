@@ -1674,7 +1674,14 @@
     },
     "settings": {
       "title": "Bolagets inställningar",
-      "lead": "Ett obligatoriskt dokument visas som saknat tills det har lagts till. En enskild räkenskapsperiod kan hoppas över med Behövs inte på raden."
+      "listTitle": "Räkenskapsperiodens dokumentlista",
+      "lead": "Ett valt dokument visas på varje räkenskapsperiods lista och är obligatoriskt. Ett dokument som inte är valt visas inte på listan. Om ett dokument redan är länkat dit står raden kvar.",
+      "hint": {
+        "balance_sheet_specs": "De ska upprättas och bevaras i 10 år, men de ges inte in till PRH (BokfL 3:13). Kitsas arkiv innehåller dem, så en separat fil behövs vanligen inte.",
+        "annual_report": "Välj om bolaget upprättar en verksamhetsberättelse.",
+        "audit_report": "Välj om bolaget har en revisor.",
+        "prh_filing_receipt": "PRH skickar ett handelsregisterutdrag när bokslutet har registrerats, och det avgiftsfria utdraget i Virre visar registrerade bokslut. Välj om du vill spara utdraget här. Tidsfristen visas i vilket fall."
+      }
     },
     "slot": {
       "upload": "Ladda upp",
@@ -1691,10 +1698,6 @@
         "optional": "Frivilligt",
         "filled": "Tillagt",
         "not_needed": "Behövs inte"
-      },
-      "hint": {
-        "balance_sheet_specs": "Balansspecifikationerna ska upprättas och bevaras i 10 år, men de ges inte in till PRH (BokfL 3:13). Kitsas arkiv innehåller dem, så en separat fil behövs inte.",
-        "prh_filing_receipt": "Inte obligatoriskt. PRH skickar ett handelsregisterutdrag när bokslutet har registrerats, och det avgiftsfria utdraget i Virre visar registrerade bokslut. När du har kontrollerat saken, markera Behövs inte."
       }
     },
     "link": {
@@ -1724,7 +1727,9 @@
     "deadlines": {
       "title": "Tidsfrister",
       "footnote": "Tidsfristerna är riktgivande: bolagsordningen kan förkorta fristen för bolagsstämman, och bokslutet ska anmälas till PRH också inom två månader från fastställandet. Kontrollera tiderna hos PRH och Skatteförvaltningen.",
-      "due": "Förfaller {date}"
+      "due": "Förfaller {date}",
+      "markHandled": "Markera som hanterad",
+      "unmark": "Ångra"
     },
     "deadline": {
       "statements_prepared": "Bokslutet upprättat",

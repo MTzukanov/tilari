@@ -20,7 +20,7 @@ import {
   type SlotStatus,
   type Suggestion,
 } from '../api'
-import { errorText, suggestionAdd, type T } from './format'
+import { errorText, suggestionAdd } from './format'
 
 export type SlotActions = {
   apply: (changes: CompanyChanges) => Promise<void>
@@ -298,13 +298,6 @@ function rowTone(status: SlotStatus | undefined, hasDocuments: boolean): DocRowT
   return hasDocuments ? 'done' : 'plain'
 }
 
-/** A note on a kind, if the catalog has one. */
-function kindHint(t: T, kind: string): string | null {
-  const key = `company.slot.hint.${kind}`
-  const text = t(key)
-  return text === key ? null : text
-}
-
 /**
  * One document slot: what is linked, what the book suggests, and the ways to fill it. Files can be
  * dropped on the whole row. `other` and the company's slots take any number of documents. A missing
@@ -387,7 +380,6 @@ export function SlotRow({
       name={label}
       status={status ? <Pill tone={STATUS_TONE[status]}>{t(`company.slot.status.${status}`)}</Pill> : null}
       actions={rowActions}
-      hint={status === 'optional' && !documents.length ? kindHint(t, kind) : null}
       tone={rowTone(status, documents.length > 0)}
       onFiles={
         readOnly

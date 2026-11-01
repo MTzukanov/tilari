@@ -14,10 +14,12 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   laki 150/1930, 5 §, including Easter, Ascension and Midsummer Eve.
 - Only the 6B moves. The act covers deadlines at an authority (1 §), so not the statements or the AGM, and
   PRH's text names no day-off rule. With a late fee at stake its date stays the earlier one.
-- The PRH "receipt" came from the first design, and the owner has never had one. PRH sends a trade register
-  extract once statements are registered, and the free extract in Virre lists them. So the row is optional
-  and renamed, and a passed date says to check with PRH, not "late". The late fee covers periods ending
-  on or after 1.12.2024: 150, 300 or 600 euros by lateness, doubled in some cases (PRH, 25.8.2026).
+- The PRH "receipt" came from the first design and is not a standard document. PRH sends a trade register
+  extract once statements are registered, and the free extract in Virre lists them. So the kind is renamed
+  and off by default, and a passed date says to check with PRH, not "late". The late fee covers periods
+  ending on or after 1.12.2024: 150, 300 or 600 euros by lateness, doubled in some cases (PRH, 25.8.2026).
+- Owner: a ticked document is listed and required, an unticked one is not listed. A row holding a document
+  stays, or unticking would hide what was attached (the list of all documents would still have it).
 - Filing with the tax return reaches the register only if the attachment is filed exactly as Vero
   instructs, so a filed return does not prove the statements were registered (PRH, 27.4.2026).
 - Owner rule: a real book is never copied to temp or test folders, and demos use invented books.
@@ -28,8 +30,8 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   place, tinted missing rows and coloured pills, built from reusable parts. Parts, rules and the steps for
   moving rental objects' documents the same way are in `docs/UI_PATTERNS.md`. Not moved yet.
 - Tase-erittelyt: required by law to be prepared and kept (KPL 3:13, 2:10), never filed, and already in
-  Kitsas's archive, so no separate file. The slot is optional and says why (ADR-031). Kitsas keeps the
-  archive's date in the desktop's settings, so the book cannot tell whether an archive was made.
+  Kitsas's archive, so no separate file by default (ADR-031). Kitsas keeps the archive's date in the
+  desktop's settings, so the book cannot tell whether an archive was made.
 - Legal text checked from Finlex's open data (`opendata.finlex.fi/.../statute-consolidated/{year}/{number}`
   returns XML; the normal pages do not read with the tools): KPL 3:6 four months, OYL 5:3 six months, OYL
   8:10 two months from adoption. The newest consolidated KPL served there was 167/2022, OYL 652/2024.

@@ -1674,7 +1674,14 @@
     },
     "settings": {
       "title": "Yhtiön asetukset",
-      "lead": "Pakollinen asiakirja näkyy puuttuvana, kunnes se on lisätty. Yhden tilikauden voi ohittaa rivin kohdasta Ei tarvita."
+      "listTitle": "Tilikauden asiakirjalista",
+      "lead": "Valittu asiakirja näkyy jokaisen tilikauden listalla ja on pakollinen. Valitsematon ei näy listalla. Jos siihen on jo linkitetty asiakirja, rivi pysyy näkyvissä.",
+      "hint": {
+        "balance_sheet_specs": "Ne on laadittava ja säilytettävä 10 vuotta, mutta niitä ei ilmoiteta PRH:lle (KPL 3:13). Kitsaksen arkisto sisältää ne, joten erillistä tiedostoa ei yleensä tarvita.",
+        "annual_report": "Valitse, jos yhtiö laatii toimintakertomuksen.",
+        "audit_report": "Valitse, jos yhtiöllä on tilintarkastaja.",
+        "prh_filing_receipt": "PRH lähettää kaupparekisteriotteen, kun tilinpäätös on rekisteröity, ja Virren maksuton ote näyttää rekisteröidyt tilinpäätökset. Valitse, jos haluat säilyttää otteen täällä. Määräaika näkyy joka tapauksessa."
+      }
     },
     "slot": {
       "upload": "Lataa",
@@ -1691,10 +1698,6 @@
         "optional": "Vapaaehtoinen",
         "filled": "Lisätty",
         "not_needed": "Ei tarvita"
-      },
-      "hint": {
-        "balance_sheet_specs": "Tase-erittelyt on laadittava ja säilytettävä 10 vuotta, mutta niitä ei ilmoiteta PRH:lle (KPL 3:13). Kitsaksen arkisto sisältää ne, joten erillistä tiedostoa ei tarvita.",
-        "prh_filing_receipt": "Ei pakollinen. PRH lähettää kaupparekisteriotteen, kun tilinpäätös on rekisteröity, ja Virren maksuton ote näyttää rekisteröidyt tilinpäätökset. Kun olet tarkistanut asian, merkitse Ei tarvita."
       }
     },
     "link": {
@@ -1724,7 +1727,9 @@
     "deadlines": {
       "title": "Määräajat",
       "footnote": "Määräajat ovat suuntaa-antavia: yhtiöjärjestys voi lyhentää yhtiökokouksen määräaikaa, ja tilinpäätös on ilmoitettava PRH:lle myös kahden kuukauden kuluessa vahvistamisesta. Tarkista ajat PRH:lta ja Verohallinnolta.",
-      "due": "Eräpäivä {date}"
+      "due": "Eräpäivä {date}",
+      "markHandled": "Merkitse hoidetuksi",
+      "unmark": "Peru"
     },
     "deadline": {
       "statements_prepared": "Tilinpäätös laadittu",

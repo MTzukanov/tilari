@@ -6227,12 +6227,6 @@ button.due-tile:hover {
   }
 }
 
-.doc-row-hint {
-  margin: 0.15rem 0 0;
-  font-size: 0.82rem;
-  color: var(--muted);
-}
-
 .doc-lines {
   display: grid;
   gap: 0.3rem;
@@ -6511,13 +6505,42 @@ button.due-tile:hover {
   margin-top: 1rem;
 }
 
-.company-settings > .muted {
-  margin: 0.4rem 0;
+.company-settings fieldset {
+  min-width: 0;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.company-settings legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.company-settings fieldset > .muted {
+  margin: 0.15rem 0 0.5rem;
   font-size: 0.85rem;
 }
 
 .company-settings-list {
   display: grid;
-  gap: 0.3rem;
-  justify-items: start;
+  gap: 0.5rem;
+}
+
+.company-settings-list label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.company-settings-list input {
+  flex: none;
+  margin-top: 0.25rem;
+}
+
+.company-settings-hint {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
 }
