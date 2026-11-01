@@ -7,16 +7,16 @@
 export const COMPANY_KEY = 'company'
 export const COMPANY_DOC_VERSION = 1
 
-/** A period's documents, in the order the page lists them. */
+/** A period's documents, in the order the page lists them: the order a year's closing produces them, `other` last. */
 export const PERIOD_KINDS = [
   'financial_statements',
   'balance_sheet_specs',
   'annual_report',
-  'audit_report',
-  'agm_minutes',
   'board_minutes',
-  'prh_filing_receipt',
+  'audit_report',
   'tax_return_6b',
+  'agm_minutes',
+  'prh_filing_receipt',
   'tax_decision',
   'other',
 ] as const
