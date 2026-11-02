@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { TYPE_INCOME_TAX } from '../../../vouchers'
-import { buildTaxFixture, check } from '../testFixture'
+import { ALL_NO, buildTaxFixture, check } from '../testFixture'
+import { ANSWERS } from './fields6b'
 import { sanitizeInputs } from './inputs'
 import { SALE } from './mapping'
 
@@ -280,14 +281,34 @@ describe('forms the figures call for', () => {
 describe("the owner's inputs", () => {
   const holder = { name: 'Essi Esimerkki', shares: 100, rents_cents: 1_000, interest_cents: 0, sales_cents: 0, other_cents: 0, loans_cents: 0 }
 
-  it('carries answers and share counts to a later period, not payments or figures', async () => {
+  it('carries the contact and share counts to a later period, not answers, payments or figures', async () => {
     const f = await buildTaxFixture()
     f.inputs({ contact_email: 'essi@example.com', shareholders: [holder], own_shares: 3, answers: { ifrs: true }, audit: 1, manual: { 377: 5 }, dividend: { decided: '2032-06-01', payable: '2032-06-02', amount_cents: 1 } })
     const next = f.view('2032-12-31')
     expect(next.saved).toBe(false)
     expect(next.carried_from).toBe('2031-12-31')
     expect(next.inputs.shareholders).toEqual([{ ...holder, rents_cents: 0 }])
-    expect(next.inputs).toMatchObject({ contact_email: 'essi@example.com', own_shares: 3, answers: { ifrs: true }, audit: null, dividend: null, manual: {} })
+    expect(next.inputs).toMatchObject({ contact_email: 'essi@example.com', own_shares: 3, audit: null, dividend: null, manual: {} })
+    expect(next.inputs.answers).toEqual({})
+  })
+
+  it('asks every question until it has a yes or a no', async () => {
+    const f = await buildTaxFixture()
+    expect(check(f.view(), 'unanswered')).toEqual({ key: 'unanswered', state: 'crit', count: ANSWERS.length })
+    const { aland: _open, ...rest } = ALL_NO
+    f.inputs({ answers: rest })
+    expect(check(f.view(), 'unanswered')?.count).toBe(1)
+    f.inputs({ answers: ALL_NO })
+    expect(check(f.view(), 'unanswered')).toBeUndefined()
+    expect(f.view().inputs.answers).toEqual(ALL_NO)
+  })
+
+  it('takes the statements as prepared unless told otherwise', async () => {
+    const f = await buildTaxFixture()
+    expect(f.view().inputs.statements_prepared).toBe(true)
+    f.inputs({ statements_prepared: false })
+    expect(f.view().inputs.statements_prepared).toBe(false)
+    expect(sanitizeInputs({ statements_prepared: null }).statements_prepared).toBe(true)
   })
 
   it('uses the book\'s tax contact until the owner types another, and never changes the book\'s', async () => {
@@ -316,9 +337,9 @@ describe("the owner's inputs", () => {
   })
 
   it('drops what is not valid rather than saving it', () => {
-    const clean = sanitizeInputs({ audit: 9, manual: { abc: 5, 377: 1.5, 378: 100 }, shareholders: [{ name: ' ' }], own_shares: -2, answers: { ifrs: 'yes', aland: true } })
-    expect(clean).toMatchObject({ audit: null, manual: { 378: 100 }, shareholders: [], own_shares: 0, answers: { aland: true } })
-    expect(Object.keys(clean.answers)).toEqual(['aland'])
+    const clean = sanitizeInputs({ audit: 9, manual: { abc: 5, 377: 1.5, 378: 100 }, shareholders: [{ name: ' ' }], own_shares: -2, answers: { ifrs: 'yes', aland: true, form_75: false } })
+    expect(clean).toMatchObject({ audit: null, manual: { 378: 100 }, shareholders: [], own_shares: 0 })
+    expect(clean.answers).toEqual({ aland: true, form_75: false })
   })
 
   it('removes an account choice when it goes back to the rules', async () => {

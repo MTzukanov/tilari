@@ -39,6 +39,7 @@ test.describe('annual tax return data', () => {
 
     await dialog.getByRole('tab', { name: 'Ilmoitin-tiedosto' }).click()
     await expect(dialog.getByText('Täytä osakkeenomistajat.')).toBeVisible()
+    await expect(dialog.getByText('18 OmaVeron kysymystä on vastaamatta.', { exact: true })).toBeVisible()
     await expect(dialog.getByRole('button', { name: 'Lataa Ilmoitin-tiedosto' })).toBeDisabled()
 
     await dialog.getByRole('tab', { name: 'Täytettävät tiedot' }).click()
@@ -48,6 +49,15 @@ test.describe('annual tax return data', () => {
     await dialog.getByLabel('Nimi', { exact: true }).fill('Essi Esimerkki')
     await dialog.getByLabel('Osakkeiden lukumäärä').fill('100')
     await dialog.getByLabel('Onko tilintarkastus tehty?').selectOption('3')
+    await expect(dialog.getByLabel('Tilinpäätös on laadittu')).toBeChecked()
+
+    // Neither answer is preselected, and every question needs one.
+    await expect(dialog.getByText('Vastaamatta: 18')).toBeVisible()
+    const questions = dialog.locator('.tax-return-yesno')
+    await expect(questions.first().getByRole('radio', { name: 'Kyllä' })).not.toBeChecked()
+    await expect(questions.first().getByRole('radio', { name: 'Ei' })).not.toBeChecked()
+    for (const question of await questions.all()) await question.getByRole('radio', { name: 'Ei' }).check()
+    await expect(dialog.getByText(/^Vastaamatta:/)).toHaveCount(0)
     await dialog.getByRole('button', { name: 'Tallenna' }).click()
     await expect(dialog.getByText('Tallennettu')).toBeVisible()
 
@@ -72,6 +82,8 @@ test.describe('annual tax return data', () => {
     await page.getByRole('button', { name: 'Veroilmoituksen tiedot (6B)' }).click()
     await page.getByRole('dialog').getByRole('tab', { name: 'Ilmoitin-tiedosto' }).click()
     await expect(page.getByRole('dialog').getByLabel('Essi Esimerkki')).toHaveValue('')
+    await page.getByRole('dialog').getByRole('tab', { name: 'Täytettävät tiedot' }).click()
+    await expect(page.getByRole('dialog').locator('.tax-return-yesno').first().getByRole('radio', { name: 'Ei' })).toBeChecked()
   })
 
   test('an account can move to another field, and back', async ({ page }) => {

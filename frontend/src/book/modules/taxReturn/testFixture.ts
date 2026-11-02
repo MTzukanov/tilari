@@ -2,9 +2,13 @@
 import { buildNewBook, PRACTICE_BUSINESS_ID } from '../../newBook/createBook'
 import { SqliteDb } from '../../sqlite'
 import { computeTaxReturn } from './domain/compute'
+import { ANSWERS } from './domain/fields6b'
 import { writeInputs, writeOverrides } from './domain/inputs'
 import type { Target } from './domain/mapping'
 import type { TaxReturnInputs, TaxReturnView } from './domain/types'
+
+/** Every OmaVero question answered no. */
+export const ALL_NO: Record<string, boolean> = Object.fromEntries(ANSWERS.map((answer) => [answer.key, false]))
 
 export type Posting = [account: number, debitCents: number, creditCents: number]
 

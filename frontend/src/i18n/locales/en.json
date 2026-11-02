@@ -1839,7 +1839,7 @@
     "manualBook": "Kirjanpito by hand",
     "manualTax": "Verotus by hand",
     "manualValue": "Figure by hand",
-    "carried": "Answers and share counts were brought from the period ending {date}. Check and save.",
+    "carried": "Contact details and share counts were brought from the period ending {date}. Check and save.",
     "checks": {
       "title": "Reconciliations",
       "blocked": "To fix before filing",
@@ -1854,13 +1854,18 @@
     },
     "check": {
       "unplaced": "{count} accounts have no field. Choose one below.",
-      "custom_accounts": "{count} accounts are not in the standard chart, so their field is a guess from the heading. Confirm or change it below.",
+      "unplaced_one": "{count} account has no field. Choose one below.",
+      "unanswered": "{count} OmaVero questions are unanswered. Answer them under Facts to fill in.",
+      "unanswered_one": "{count} OmaVero question is unanswered. Answer it under Facts to fill in.",
+      "custom_accounts": "{count} accounts were added to this book outside the standard chart. Tilari worked out their field from the account number, so it may be wrong. Confirm or change it below.",
+      "custom_accounts_one": "{count} account was added to this book outside the standard chart. Tilari worked out its field from the account number, so it may be wrong. Confirm or change it below.",
       "result_ties": "The form's book figures differ from the book's result by {amount} euros.",
       "net_wealth": "Net wealth differs from equity by {amount} euros.",
       "estimate": "The business result differs from the income tax calculation by {amount} euros.",
       "negative": "A negative figure in a field that does not allow it: {fields}.",
       "income_tax": "No income tax is booked for this period.",
       "drafts": "{count} drafts are left out: only posted vouchers count.",
+      "drafts_one": "{count} draft is left out: only posted vouchers count.",
       "not_ended": "The period ends on {date}, so the figures can still change.",
       "dividend_answer": "A dividend of {amount} euros is booked on {date}, but the decision is not filled in. Fill it in, or if the return is already filed, report the decision through the same channel.",
       "sale_split": "The sale accounts' net of {amount} euros sits in one field. Fill in gains and losses from form 71B's rows.",
@@ -1905,15 +1910,18 @@
       "audit1": "Yes",
       "audit2": "No, it will be done later",
       "audit3": "No, no auditor was elected",
-      "auditRemarks": "The report has adverse statements, remarks or additional information",
+      "auditRemarks": "Does the report have adverse statements, remarks or additional information?",
       "prepared": "The statements have been prepared",
       "ownershipYear": "Tax year in which over half of the shares changed owners",
       "answers": "OmaVero's questions",
-      "answersLead": "Tick only the yes answers. The rest are no.",
+      "answersLead": "Answer every question. The answers apply to this period and do not carry over to the next.",
       "saved": "Saved",
       "contactName": "Contact person",
       "contactPhone": "Phone",
-      "contactLead": "An empty field uses the book's settings, if they hold it."
+      "contactLead": "An empty field uses the book's settings, if they hold it.",
+      "yes": "Yes",
+      "no": "No",
+      "unanswered": "Unanswered: {count}"
     },
     "problem": {
       "business_id": "The book's settings have no business ID, or it is in the wrong format.",
@@ -1926,7 +1934,9 @@
       "negative": "A negative figure in a field that does not allow it: {field}.",
       "text": "Text too long, or a character the file does not allow: {field}.",
       "distribution": "Fill in the decision date, payable date and amount: {field}.",
-      "answer": "This answer needs fields the file does not produce yet: {answer}"
+      "answer": "This answer needs fields the file does not produce yet: {answer}",
+      "unanswered": "{count} OmaVero questions are unanswered.",
+      "unanswered_one": "{count} OmaVero question is unanswered."
     },
     "notice": {
       "form": "Form {form} belongs in the same file and is not generated yet.",

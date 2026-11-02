@@ -14,6 +14,8 @@ function problemText(t: (key: string, params?: Record<string, string | number>) 
       return t(`taxReturn.problem.${problem.key}`, { field: fieldName(problem.code) })
     case 'answer':
       return t('taxReturn.problem.answer', { answer: ANSWERS.find((a) => a.key === problem.answer)?.label ?? problem.answer })
+    case 'unanswered':
+      return t('taxReturn.problem.unanswered', { count: problem.count })
     default:
       return t(`taxReturn.problem.${problem.key}`)
   }

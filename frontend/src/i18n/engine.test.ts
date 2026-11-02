@@ -8,6 +8,7 @@ import {
   setFormatLocale,
   setLocale,
   t,
+  tIn,
 } from './engine'
 import { STORAGE_KEY } from './types'
 import { formatDate } from '../shared/dates'
@@ -117,6 +118,22 @@ describe('i18n engine', () => {
     expect(isLocaleChosen()).toBe(false)
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
     initLocale('fi', 'fi')
+  })
+})
+
+describe('counted messages', () => {
+  it('uses the singular for one, in every language', () => {
+    expect(tIn('fi', 'taxReturn.check.drafts', { count: 1 })).toContain('1 luonnos jää pois')
+    expect(tIn('fi', 'taxReturn.check.drafts', { count: 2 })).toContain('2 luonnosta jää pois')
+    expect(tIn('fi', 'taxReturn.check.custom_accounts', { count: 1 })).toContain('1 tili on lisätty')
+    expect(tIn('en', 'taxReturn.check.drafts', { count: 1 })).toContain('1 draft is left out')
+    expect(tIn('en', 'taxReturn.check.drafts', { count: 0 })).toContain('0 drafts are left out')
+    expect(tIn('sv', 'taxReturn.check.unplaced', { count: 1 })).toContain('1 konto saknar')
+    expect(tIn('de', 'taxReturn.check.unplaced', { count: 1 })).toContain('1 Konto hat')
+  })
+
+  it('leaves a message without a singular as it is', () => {
+    expect(tIn('fi', 'taxReturn.placeAccount', { account: 1, count: 1 })).toBe('Tilin 1 kenttä')
   })
 })
 

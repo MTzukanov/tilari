@@ -64,12 +64,20 @@ describe('the text for filling OmaVero by hand', () => {
     expect(omaVeroText(f.view())).toContain('Vähennettävät poistot: Kirjanpito 80,00, Verotus 60,00 (käsin)')
   })
 
-  it('gives every yes/no question, with no as the default', async () => {
+  it('gives every yes/no question, and does not turn an open one into a no', async () => {
     const f = await book()
-    f.inputs({ answers: { aland: true } })
+    f.inputs({ answers: { aland: true, form_75: false } })
     const text = omaVeroText(f.view())
     expect(text).toContain('Onko yhtiöllä toimintaa sekä Manner-Suomessa että Ahvenanmaalla? Kyllä')
     expect(text).toContain('Onko yhtiöllä kiinteä toimipaikka ulkomailla (lomake 75)? Ei')
+    expect(text).toContain('Onko yhtiö tehnyt liiketoimintasiirron verovuoden aikana? täytä itse')
+  })
+
+  it('says the statements are prepared unless told otherwise', async () => {
+    const f = await book()
+    expect(omaVeroText(f.view())).toContain('Onko tilinpäätös laadittu? Kyllä')
+    f.inputs({ statements_prepared: false })
+    expect(omaVeroText(f.view())).toContain('Onko tilinpäätös laadittu? Ei')
   })
 
   it('writes the dividend decision in the words OmaVero asks it', async () => {

@@ -6787,6 +6787,37 @@ button.due-tile:hover {
   margin: 0.25rem 0;
 }
 
+.tax-return-yesno {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin: 0.15rem -0.4rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 0.3rem;
+}
+
+.tax-return-yesno-open {
+  background: color-mix(in srgb, var(--crit-soft) 50%, transparent);
+}
+
+.tax-return-yesno-question {
+  flex: 1 1 20rem;
+}
+
+.tax-return-yesno-choices {
+  display: flex;
+  flex: none;
+  gap: 1rem;
+}
+
+.tax-return-yesno-choices label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
 .tax-return-table {
   width: 100%;
   margin-bottom: 0.9rem;

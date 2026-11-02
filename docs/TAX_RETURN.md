@@ -12,7 +12,10 @@ A button on a period's card on the company page (`#/company`) opens a dialog wit
 
 - **OmaVero-luvut**: the figures in OmaVero's order and wording, each traced to its accounts, with a copy
   button on every amount, and the whole return as text.
-- **Täytettävät tiedot**: what the book cannot know.
+- **Täytettävät tiedot**: what the book cannot know. Each OmaVero question takes a yes or a no for this period:
+  neither is preselected, a question left open is not a no, and answers do not carry over to the next period (the
+  contact and share counts do). The form saves with questions open, so typed work is not lost; the return then
+  shows them as a check, and no file is made. "Onko tilinpäätös laadittu?" is yes unless the owner says otherwise.
 - **Ilmoitin-tiedosto**: the same figures as a file for Ilmoitin.fi.
 
 Both outputs render one calculation (`computeTaxReturn`), so they cannot disagree. Nothing is posted: the
@@ -40,7 +43,11 @@ ledger is read, and only the owner's inputs are written, to `TilariData` (`tax-r
 
 Account types are the book's today, not as they were: a type changed later applies to earlier years as well.
 
-- **Outside the standard chart:** an account placed only by its heading is a guess. It is listed for the owner
+- **Outside the standard chart:** Vero publishes fields, not accounts, so no official table says where an account
+  goes. Software that fills in a 6B keeps per-field rules built on its own standard chart; Kitsas has only its
+  statement formulas (`tase/PMA`, `tulos/yleinen`), which stop at a statement line and are coarser than the form. An
+  account the book added has no such rule, so it takes the nearest heading above its number. That is a guess, and it
+  can change the tax: a dividend account placed in Muut rahoitustuotot is taxed in full. It is listed for the owner
   to confirm or change, and the return says so until then.
 - **Sale accounts** (`sale` in the mapping): sale proceeds and costs carry one net figure. Gains and losses come
   from the 71B rows, and gains minus losses must equal the accounts' net exactly. Without rows, the net goes to
@@ -58,6 +65,7 @@ Exact, with no tolerance; differences are shown to the cent.
 | Check | Fails when |
 |---|---|
 | `unplaced` | An account with a balance has no field |
+| `unanswered` | An OmaVero question has neither a yes nor a no |
 | `result_ties` | The form's Kirjanpito figures do not give the book's result |
 | `net_wealth` | Assets minus debts differ from equity |
 | `estimate` | The result differs from the stored `verolaskelma`, or from the Kitsas estimate if none is stored |
@@ -77,7 +85,7 @@ and 573/574 applies. Repeating groups go between `001:n` and `009:i`.
   `Tilari`. **045** is left out: Vero says the operator that transmits the file adds it.
 - **The personal ID** is required in 703. It is typed when downloading and kept only in the dialog's state. The file
   is built in the browser, also on the Node engine, so the ID never reaches the book or a server.
-- **Stopped** (no bytes): missing required answers, characters outside ISO-8859-1, too long a text, a negative in an
+- **Stopped** (no bytes): missing required answers, an OmaVero question left open, characters outside ISO-8859-1, too long a text, a negative in an
   `R13,2` field, an answer needing fields the file does not produce.
 - **Check only** (bytes, but not to send): a form in the same file that is not generated, a failed check, or a year
   other than the record description's.

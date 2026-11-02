@@ -24,6 +24,7 @@ import {
   PNL_GROUPS,
   RESULT_TOTALS,
   TAXABLE_INCOME_CODES,
+  openAnswers,
   type RowDef,
   type Side,
 } from './fields6b'
@@ -341,7 +342,10 @@ function buildChecks(db: SqliteDb, input: CheckInput): CheckView[] {
 
   if (input.unplaced.length) checks.push({ key: 'unplaced', state: 'crit', count: input.unplaced.length })
 
-  const custom = groups.flatMap((g) => g.rows).flatMap((r) => r.accounts).filter((a) => a.custom)
+  const unanswered = openAnswers(input.inputs.answers).length
+  if (unanswered) checks.push({ key: 'unanswered', state: 'crit', count: unanswered })
+
+  const custom =groups.flatMap((g) => g.rows).flatMap((r) => r.accounts).filter((a) => a.custom)
   const customAccounts = new Set(custom.map((a) => a.account))
   if (customAccounts.size) checks.push({ key: 'custom_accounts', state: 'warn', count: customAccounts.size })
 

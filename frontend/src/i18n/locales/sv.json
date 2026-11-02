@@ -1839,7 +1839,7 @@
     "manualBook": "Bokföring för hand",
     "manualTax": "Beskattning för hand",
     "manualValue": "Siffra för hand",
-    "carried": "Svar och aktieantal har hämtats från perioden som slutade {date}. Kontrollera och spara.",
+    "carried": "Kontaktuppgifter och aktieantal har hämtats från perioden som slutade {date}. Kontrollera och spara.",
     "checks": {
       "title": "Avstämningar",
       "blocked": "Att rätta före anmälan",
@@ -1854,13 +1854,18 @@
     },
     "check": {
       "unplaced": "{count} konton saknar fält. Välj fält nedan.",
-      "custom_accounts": "{count} konton finns inte i standardkontoplanen, så deras fält är en gissning utifrån rubriken. Bekräfta eller ändra fältet nedan.",
+      "unplaced_one": "{count} konto saknar fält. Välj fält nedan.",
+      "unanswered": "{count} frågor i MinSkatt är obesvarade. Besvara dem under Uppgifter att fylla i.",
+      "unanswered_one": "{count} fråga i MinSkatt är obesvarad. Besvara den under Uppgifter att fylla i.",
+      "custom_accounts": "{count} konton har lagts till i bokföringen utanför standardkontoplanen. Tilari härledde deras fält från kontonumret, så det kan vara fel. Bekräfta eller ändra fältet nedan.",
+      "custom_accounts_one": "{count} konto har lagts till i bokföringen utanför standardkontoplanen. Tilari härledde dess fält från kontonumret, så det kan vara fel. Bekräfta eller ändra fältet nedan.",
       "result_ties": "Blankettens bokföringssiffror skiljer sig från bokföringens resultat med {amount} euro.",
       "net_wealth": "Nettoförmögenheten skiljer sig från det egna kapitalet med {amount} euro.",
       "estimate": "Näringsverksamhetens resultat skiljer sig från inkomstskatteberäkningen med {amount} euro.",
       "negative": "Negativ siffra i ett fält som inte tillåter det: {fields}.",
       "income_tax": "Ingen inkomstskatt är bokförd för perioden.",
       "drafts": "{count} utkast lämnas utanför: endast bokförda verifikat räknas.",
+      "drafts_one": "{count} utkast lämnas utanför: endast bokförda verifikat räknas.",
       "not_ended": "Perioden slutar {date}, så siffrorna kan ännu ändras.",
       "dividend_answer": "Dividend på {amount} euro är bokförd {date}, men beslutet är inte ifyllt. Fyll i det, eller anmäl beslutet via samma kanal om deklarationen redan är inlämnad.",
       "sale_split": "Försäljningskontonas netto {amount} euro finns i ett fält. Fyll i vinster och förluster från raderna på blankett 71B.",
@@ -1905,15 +1910,18 @@
       "audit1": "Ja",
       "audit2": "Nej, görs senare",
       "audit3": "Nej, ingen revisor har valts",
-      "auditRemarks": "Berättelsen innehåller negativa uttalanden, anmärkningar eller tilläggsuppgifter",
+      "auditRemarks": "Innehåller berättelsen negativa uttalanden, anmärkningar eller tilläggsuppgifter?",
       "prepared": "Bokslutet är upprättat",
       "ownershipYear": "Skatteår då över hälften av aktierna bytte ägare",
       "answers": "MinSkatts frågor",
-      "answersLead": "Markera bara ja-svaren. De övriga är nej.",
+      "answersLead": "Besvara varje fråga. Svaren gäller den här räkenskapsperioden och följer inte med till nästa.",
       "saved": "Sparat",
       "contactName": "Kontaktperson",
       "contactPhone": "Telefon",
-      "contactLead": "Ett tomt fält använder bokföringens inställningar, om uppgiften finns där."
+      "contactLead": "Ett tomt fält använder bokföringens inställningar, om uppgiften finns där.",
+      "yes": "Ja",
+      "no": "Nej",
+      "unanswered": "Obesvarade: {count}"
     },
     "problem": {
       "business_id": "FO-nummer saknas i bokföringens inställningar eller har fel format.",
@@ -1926,7 +1934,9 @@
       "negative": "Negativ siffra i ett fält som inte tillåter det: {field}.",
       "text": "För lång text eller ett tecken som filen inte tillåter: {field}.",
       "distribution": "Fyll i beslutsdag, lyftdag och belopp: {field}.",
-      "answer": "Svaret kräver uppgifter som filen inte har ännu: {answer}"
+      "answer": "Svaret kräver uppgifter som filen inte har ännu: {answer}",
+      "unanswered": "{count} frågor i MinSkatt är obesvarade.",
+      "unanswered_one": "{count} fråga i MinSkatt är obesvarad."
     },
     "notice": {
       "form": "Blankett {form} hör till samma fil och skapas inte ännu.",

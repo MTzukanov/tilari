@@ -693,6 +693,10 @@ correction would change the open year's income statement lines. The rental-objec
   Defaults follow the statutory chart, and the owner overrides per account. An account outside the standard chart
   is a guess from its heading, so it stays listed until confirmed.
 - **No tolerance.** Each reconciliation shows its difference to the cent ([MEMORY.md](../MEMORY.md), exact figures).
+- **Every question answered, every year** (owner, 2026-11-02). OmaVero's questions take an explicit yes or no, so a
+  question considered can be told from one missed. Answers do not carry over: a carried no would look considered.
+  The form still saves with questions open, since refusing would lose typed work; the check and the stopped file say
+  what is left.
 - **OmaVero's wording in the UI.** Vero's file codes appear only in code and the file: OmaVero does not show them.
 - **A file is only called ready when complete.** Forms in the same file must exist, since a corrected return replaces
   the earlier one. It can still be format-checked at every step.

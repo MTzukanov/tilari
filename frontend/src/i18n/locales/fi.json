@@ -1839,7 +1839,7 @@
     "manualBook": "Kirjanpito käsin",
     "manualTax": "Verotus käsin",
     "manualValue": "Luku käsin",
-    "carried": "Vastaukset ja osakemäärät on tuotu tilikaudelta {date}. Tarkista ja tallenna.",
+    "carried": "Yhteystiedot ja osakemäärät on tuotu tilikaudelta {date}. Tarkista ja tallenna.",
     "checks": {
       "title": "Täsmäytykset",
       "blocked": "Korjattavaa ennen ilmoittamista",
@@ -1854,13 +1854,18 @@
     },
     "check": {
       "unplaced": "{count} tiliä ilman kenttää. Valitse niille kenttä alta.",
-      "custom_accounts": "{count} tiliä ei ole vakiotilikartassa, joten niiden kenttä on arvio otsikon perusteella. Vahvista tai vaihda kenttä alta.",
+      "unplaced_one": "{count} tili ilman kenttää. Valitse sille kenttä alta.",
+      "unanswered": "{count} OmaVeron kysymystä on vastaamatta. Vastaa niihin kohdassa Täytettävät tiedot.",
+      "unanswered_one": "{count} OmaVeron kysymys on vastaamatta. Vastaa siihen kohdassa Täytettävät tiedot.",
+      "custom_accounts": "{count} tiliä on lisätty kirjanpitoon vakiotilikartan ulkopuolelta. Tilari päätteli niiden kentän tilinumerosta, joten se voi olla väärä. Vahvista tai vaihda kenttä alta.",
+      "custom_accounts_one": "{count} tili on lisätty kirjanpitoon vakiotilikartan ulkopuolelta. Tilari päätteli sen kentän tilinumerosta, joten se voi olla väärä. Vahvista tai vaihda kenttä alta.",
       "result_ties": "Lomakkeen kirjanpitoluvut eroavat kirjanpidon tuloksesta {amount} euroa.",
       "net_wealth": "Nettovarallisuus eroaa omasta pääomasta {amount} euroa.",
       "estimate": "Elinkeinotoiminnan tulos eroaa tuloverolaskelmasta {amount} euroa.",
       "negative": "Negatiivinen luku kentässä, joka ei sitä salli: {fields}.",
       "income_tax": "Tuloveroa ei ole kirjattu tälle tilikaudelle.",
       "drafts": "{count} luonnosta jää pois: mukana ovat vain kirjatut tositteet.",
+      "drafts_one": "{count} luonnos jää pois: mukana ovat vain kirjatut tositteet.",
       "not_ended": "Tilikausi päättyy {date}, joten luvut voivat vielä muuttua.",
       "dividend_answer": "Osingonjako {amount} euroa on kirjattu {date}, mutta päätöstä ei ole täytetty. Täytä se, tai jos ilmoitus on jo annettu, ilmoita päätös samaa kanavaa käyttäen.",
       "sale_split": "Myyntitilien netto {amount} euroa on yhdessä kentässä. Täytä voitot ja tappiot lomakkeen 71B riveiltä.",
@@ -1905,15 +1910,18 @@
       "audit1": "Kyllä",
       "audit2": "Ei, tehdään myöhemmin",
       "audit3": "Ei, tilintarkastaja on jätetty valitsematta",
-      "auditRemarks": "Kertomus sisältää kielteisiä lausuntoja, huomautuksia tai lisätietoja",
+      "auditRemarks": "Sisältääkö kertomus kielteisiä lausuntoja, huomautuksia tai lisätietoja?",
       "prepared": "Tilinpäätös on laadittu",
       "ownershipYear": "Verovuosi, jolloin yli puolet osakkeista vaihtoi omistajaa",
       "answers": "OmaVeron kysymykset",
-      "answersLead": "Merkitse vain kyllä-vastaukset. Muut ovat ei.",
+      "answersLead": "Vastaa jokaiseen kysymykseen. Vastaukset koskevat tätä tilikautta, eivätkä ne siirry seuraavalle.",
       "saved": "Tallennettu",
       "contactName": "Yhteyshenkilö",
       "contactPhone": "Puhelinnumero",
-      "contactLead": "Tyhjä kenttä käyttää kirjanpidon asetuksia, jos niissä on tieto."
+      "contactLead": "Tyhjä kenttä käyttää kirjanpidon asetuksia, jos niissä on tieto.",
+      "yes": "Kyllä",
+      "no": "Ei",
+      "unanswered": "Vastaamatta: {count}"
     },
     "problem": {
       "business_id": "Kirjanpidon asetuksista puuttuu Y-tunnus tai se on väärässä muodossa.",
@@ -1926,7 +1934,9 @@
       "negative": "Negatiivinen luku kentässä, joka ei sitä salli: {field}.",
       "text": "Liian pitkä teksti tai merkki, jota tiedosto ei salli: {field}.",
       "distribution": "Täytä päätöspäivä, nostopäivä ja määrä: {field}.",
-      "answer": "Tämä vastaus vaatii tietoja, joita tiedostossa ei vielä ole: {answer}"
+      "answer": "Tämä vastaus vaatii tietoja, joita tiedostossa ei vielä ole: {answer}",
+      "unanswered": "{count} OmaVeron kysymystä on vastaamatta.",
+      "unanswered_one": "{count} OmaVeron kysymys on vastaamatta."
     },
     "notice": {
       "form": "Lomake {form} kuuluu samaan tiedostoon, eikä sitä vielä muodosteta.",

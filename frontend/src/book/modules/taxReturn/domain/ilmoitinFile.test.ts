@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildTaxFixture } from '../testFixture'
+import { ALL_NO, buildTaxFixture } from '../testFixture'
 import { ilmoitinFile } from './ilmoitinFile'
 import type { TaxReturnInputs, TaxReturnView } from './types'
 
@@ -8,7 +8,7 @@ const ID = '010101-0101'
 const NOW = new Date(2027, 2, 4, 5, 6, 7)
 
 const holder = { name: 'Essi Esimerkki', shares: 100, rents_cents: 0, interest_cents: 0, sales_cents: 0, other_cents: 0, loans_cents: 0 }
-const complete: Partial<TaxReturnInputs> = { shareholders: [holder], audit: 3, statements_prepared: true }
+const complete: Partial<TaxReturnInputs> = { shareholders: [holder], audit: 3, answers: ALL_NO }
 
 async function simpleBook(year = 2026, inputs: Partial<TaxReturnInputs> = complete): Promise<TaxReturnView> {
   const f = await buildTaxFixture(year)
@@ -120,9 +120,16 @@ describe('the file format', () => {
   })
 
   it('writes yes answers as 1 and no answers not at all', async () => {
-    const lines = linesOf(ilmoitinFile(await simpleBook(2026, { ...complete, answers: { aland: true, own_shares_changed: true } }), { ids: [ID], now: NOW }).text)
+    const lines = linesOf(ilmoitinFile(await simpleBook(2026, { ...complete, answers: { ...ALL_NO, aland: true, own_shares_changed: true } }), { ids: [ID], now: NOW }).text)
     expect(lines).toEqual(expect.arrayContaining(['184:1', '586:1']))
     expect(lines.some((line) => line.startsWith('173:'))).toBe(false)
+  })
+
+  it('says the statements are prepared unless told otherwise', async () => {
+    const yes = linesOf(ilmoitinFile(await simpleBook(), { ids: [ID], now: NOW }).text)
+    expect(yes).toContain('179:1')
+    const no = linesOf(ilmoitinFile(await simpleBook(2026, { ...complete, statements_prepared: false }), { ids: [ID], now: NOW }).text)
+    expect(no).toContain('179:2')
   })
 
   it('leaves out the field Vero added for 2026 from earlier years', async () => {
@@ -134,15 +141,24 @@ describe('the file format', () => {
 
 describe('what stops the file', () => {
   it.each([
-    ['audit', { shareholders: [holder], statements_prepared: true }, 'audit'],
-    ['audit remarks', { shareholders: [holder], audit: 1 as const }, 'audit_remarks'],
-    ['shareholders', { audit: 3 as const }, 'no_shareholders'],
+    ['audit', { shareholders: [holder], answers: ALL_NO }, 'audit'],
+    ['audit remarks', { shareholders: [holder], audit: 1 as const, answers: ALL_NO }, 'audit_remarks'],
+    ['shareholders', { audit: 3 as const, answers: ALL_NO }, 'no_shareholders'],
     ['a half-filled dividend', { ...complete, dividend: { decided: '2027-03-15', payable: '', amount_cents: 1 } }, 'distribution'],
-    ['an answer the file cannot carry', { ...complete, answers: { owner_housing: true } }, 'answer'],
+    ['an answer the file cannot carry', { ...complete, answers: { ...ALL_NO, owner_housing: true } }, 'answer'],
   ])('%s', async (_name, inputs, key) => {
     const file = ilmoitinFile(await simpleBook(2026, inputs), { ids: [ID], now: NOW })
     expect(file.problems.map((p) => p.key)).toContain(key)
     expect(file.bytes).toBeNull()
+  })
+
+  it('a question with no answer: open is not the same as no', async () => {
+    const { aland: _aland, ifrs: _ifrs, ...rest } = ALL_NO
+    const file = ilmoitinFile(await simpleBook(2026, { ...complete, answers: rest }), { ids: [ID], now: NOW })
+    expect(file.problems).toEqual([{ key: 'unanswered', count: 2 }])
+    expect(file.bytes).toBeNull()
+    // Not reported a second time as a reconciliation to fix.
+    expect(file.notices).toEqual([])
   })
 
   it('a missing or malformed ID, naming the shareholder', async () => {

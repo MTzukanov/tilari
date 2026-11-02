@@ -3,7 +3,7 @@
  * e-filing and the record description `VSY06B26` say. Pure and run in the browser: the personal IDs it
  * writes are typed for this file only, and reach neither the book nor a server.
  */
-import { ANSWERS, PNL_GROUPS, BALANCE_GROUPS, SPEC_YEAR } from './fields6b'
+import { ANSWERS, PNL_GROUPS, BALANCE_GROUPS, SPEC_YEAR, openAnswers } from './fields6b'
 import { typedAmount } from './omaVeroText'
 import type { TaxReturnView } from './types'
 
@@ -23,6 +23,7 @@ export type FileProblem =
   | { key: 'text'; code: number }
   | { key: 'distribution'; code: number }
   | { key: 'answer'; answer: string }
+  | { key: 'unanswered'; count: number }
 
 export type FileNotice =
   | { key: 'form'; form: string }
@@ -94,6 +95,8 @@ export function ilmoitinFile(view: TaxReturnView, options: FileOptions): Ilmoiti
   add(10, company.business_id)
   add(54, `${fileDate(view.starts)}-${fileDate(view.ends)}`)
 
+  const unanswered = openAnswers(inputs.answers).length
+  if (unanswered) problems.push({ key: 'unanswered', count: unanswered })
   for (const answer of ANSWERS) {
     if (!inputs.answers[answer.key]) continue
     if (answer.blocksFile) problems.push({ key: 'answer', answer: answer.key })
@@ -182,7 +185,7 @@ export function ilmoitinFile(view: TaxReturnView, options: FileOptions): Ilmoiti
   add(478, typedAmount(values[478] ?? 0))
 
   // Vero added this field to the 2026 record description; earlier years reject it.
-  if (inputs.statements_prepared != null && year >= 2026) add(179, inputs.statements_prepared ? 1 : 2)
+  if (year >= 2026) add(179, inputs.statements_prepared ? 1 : 2)
   if (inputs.audit == null) problems.push({ key: 'audit' })
   else add(177, inputs.audit)
   if (inputs.audit === 1) {
@@ -196,7 +199,8 @@ export function ilmoitinFile(view: TaxReturnView, options: FileOptions): Ilmoiti
   for (const form of view.forms) {
     if (form.in_file && !form.built) notices.push({ key: 'form', form: form.form })
   }
-  if (view.checks.some((check) => check.state === 'crit')) notices.push({ key: 'checks' })
+  // Open questions are not a reconciliation to fix, and they already stop the file above.
+  if (view.checks.some((check) => check.state === 'crit' && check.key !== 'unanswered')) notices.push({ key: 'checks' })
   if (year !== SPEC_YEAR) notices.push({ key: 'spec_year', year })
 
   const text = lines.join('\r\n')

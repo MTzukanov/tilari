@@ -13,7 +13,7 @@ export type {
   TaxReturnInputs,
   TaxReturnView,
 } from '../../book/modules/taxReturn/domain/types'
-export { ANSWERS, BALANCE_GROUPS, PNL_GROUPS, fieldName } from '../../book/modules/taxReturn/domain/fields6b'
+export { ANSWERS, BALANCE_GROUPS, PNL_GROUPS, fieldName, openAnswers } from '../../book/modules/taxReturn/domain/fields6b'
 export { SALE, type Target } from '../../book/modules/taxReturn/domain/mapping'
 export { ilmoitinFile, type FileNotice, type FileProblem } from '../../book/modules/taxReturn/domain/ilmoitinFile'
 export { omaVeroText, typedAmount } from '../../book/modules/taxReturn/domain/omaVeroText'

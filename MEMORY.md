@@ -7,6 +7,16 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-02 - 6B questions take a yes or a no; counted messages have a singular
+
+- Owner: a single checkbox cannot tell "no" from "not thought about", so OmaVero's questions became compulsory yes/no
+  answers, and they no longer carry over (ADR-032). "Tilinpäätös on laadittu" is on by default.
+- `audit_remarks` had the same flaw and worse: an untouched checkbox stopped the file, and "no" took two clicks.
+- The i18n engine had no plurals, so counts read "1 luonnosta". A message can now have `key_one`. Finnish changes the
+  noun, not the verb: "1 luonnos jää", "2 luonnosta jää".
+- Whether a custom account's guess matters: placed by heading alone, a dividend account landed in Muut rahoitustuotot,
+  which also hid form 73 from the list of forms needed. Confirming accounts is not a formality.
+
 ## 2026-11-02 - Company page: document lines as a table
 
 - Owner's request: lines looked unstructured, and "Ehdotus" pushed everything to the right. A line now has

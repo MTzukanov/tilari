@@ -1839,7 +1839,7 @@
     "manualBook": "Kirjanpito von Hand",
     "manualTax": "Verotus von Hand",
     "manualValue": "Betrag von Hand",
-    "carried": "Antworten und Aktienzahlen stammen aus dem Geschäftsjahr bis {date}. Prüfen und speichern.",
+    "carried": "Kontaktdaten und Aktienzahlen stammen aus dem Geschäftsjahr bis {date}. Prüfen und speichern.",
     "checks": {
       "title": "Abstimmungen",
       "blocked": "Vor der Abgabe zu korrigieren",
@@ -1854,13 +1854,18 @@
     },
     "check": {
       "unplaced": "{count} Konten haben kein Feld. Wählen Sie unten eines.",
-      "custom_accounts": "{count} Konten sind nicht im Standardkontenplan, ihr Feld ist also nur eine Schätzung aus der Überschrift. Bestätigen oder ändern Sie es unten.",
+      "unplaced_one": "{count} Konto hat kein Feld. Wählen Sie unten eines.",
+      "unanswered": "{count} OmaVero-Fragen sind unbeantwortet. Beantworten Sie sie unter Auszufüllende Angaben.",
+      "unanswered_one": "{count} OmaVero-Frage ist unbeantwortet. Beantworten Sie sie unter Auszufüllende Angaben.",
+      "custom_accounts": "{count} Konten wurden außerhalb des Standardkontenplans zur Buchführung hinzugefügt. Tilari hat ihr Feld aus der Kontonummer abgeleitet, es kann also falsch sein. Bestätigen oder ändern Sie es unten.",
+      "custom_accounts_one": "{count} Konto wurde außerhalb des Standardkontenplans zur Buchführung hinzugefügt. Tilari hat sein Feld aus der Kontonummer abgeleitet, es kann also falsch sein. Bestätigen oder ändern Sie es unten.",
       "result_ties": "Die Buchwerte des Formulars weichen um {amount} Euro vom Ergebnis der Buchführung ab.",
       "net_wealth": "Das Nettovermögen weicht um {amount} Euro vom Eigenkapital ab.",
       "estimate": "Das Betriebsergebnis weicht um {amount} Euro von der Einkommensteuerberechnung ab.",
       "negative": "Negativer Betrag in einem Feld, das dies nicht erlaubt: {fields}.",
       "income_tax": "Für dieses Geschäftsjahr ist keine Einkommensteuer gebucht.",
       "drafts": "{count} Entwürfe bleiben außen vor: Es zählen nur gebuchte Belege.",
+      "drafts_one": "{count} Entwurf bleibt außen vor: Es zählen nur gebuchte Belege.",
       "not_ended": "Das Geschäftsjahr endet am {date}, die Zahlen können sich also noch ändern.",
       "dividend_answer": "Eine Dividende von {amount} Euro ist am {date} gebucht, aber der Beschluss ist nicht ausgefüllt. Füllen Sie ihn aus oder melden Sie ihn über denselben Kanal, falls die Erklärung schon abgegeben ist.",
       "sale_split": "Der Saldo der Verkaufskonten von {amount} Euro steht in einem Feld. Tragen Sie Gewinne und Verluste aus den Zeilen von Formular 71B ein.",
@@ -1905,15 +1910,18 @@
       "audit1": "Ja",
       "audit2": "Nein, erfolgt später",
       "audit3": "Nein, kein Prüfer gewählt",
-      "auditRemarks": "Der Bericht enthält negative Aussagen, Hinweise oder Zusatzangaben",
+      "auditRemarks": "Enthält der Bericht negative Aussagen, Hinweise oder Zusatzangaben?",
       "prepared": "Der Jahresabschluss ist erstellt",
       "ownershipYear": "Steuerjahr, in dem über die Hälfte der Aktien den Eigentümer wechselte",
       "answers": "Fragen von OmaVero",
-      "answersLead": "Markieren Sie nur die Ja-Antworten. Die übrigen sind Nein.",
+      "answersLead": "Beantworten Sie jede Frage. Die Antworten gelten für dieses Geschäftsjahr und werden nicht ins nächste übernommen.",
       "saved": "Gespeichert",
       "contactName": "Kontaktperson",
       "contactPhone": "Telefon",
-      "contactLead": "Ein leeres Feld verwendet die Einstellungen der Buchführung, falls sie den Wert enthalten."
+      "contactLead": "Ein leeres Feld verwendet die Einstellungen der Buchführung, falls sie den Wert enthalten.",
+      "yes": "Ja",
+      "no": "Nein",
+      "unanswered": "Unbeantwortet: {count}"
     },
     "problem": {
       "business_id": "In den Einstellungen fehlt die Unternehmenskennung oder sie hat ein falsches Format.",
@@ -1926,7 +1934,9 @@
       "negative": "Negativer Betrag in einem Feld, das dies nicht erlaubt: {field}.",
       "text": "Text zu lang oder ein Zeichen, das die Datei nicht erlaubt: {field}.",
       "distribution": "Tragen Sie Beschlussdatum, Abhebedatum und Betrag ein: {field}.",
-      "answer": "Diese Antwort braucht Angaben, die die Datei noch nicht enthält: {answer}"
+      "answer": "Diese Antwort braucht Angaben, die die Datei noch nicht enthält: {answer}",
+      "unanswered": "{count} OmaVero-Fragen sind unbeantwortet.",
+      "unanswered_one": "{count} OmaVero-Frage ist unbeantwortet."
     },
     "notice": {
       "form": "Formular {form} gehört in dieselbe Datei und wird noch nicht erzeugt.",

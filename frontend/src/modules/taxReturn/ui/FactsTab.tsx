@@ -1,8 +1,28 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useI18n } from '../../../i18n'
+import { Pill } from '../../../shared/Pill'
 import { formatEurInput, parseEurInput, sanitizeEurInput } from '../../../shared/money'
-import { ANSWERS, type DistributionInput, type ShareholderInput, type TaxReturnInputs, type TaxReturnView } from '../api'
+import { ANSWERS, openAnswers, type DistributionInput, type ShareholderInput, type TaxReturnInputs, type TaxReturnView } from '../api'
 import { formatDay } from './format'
+
+/** Two choices and neither preselected, so a question nobody has considered cannot pass for a no. */
+function YesNo({ question, value, onChange }: { question: string; value: boolean | null | undefined; onChange: (value: boolean) => void }) {
+  const { t } = useI18n()
+  const name = useId()
+  return (
+    <div className={`tax-return-yesno${value == null ? ' tax-return-yesno-open' : ''}`} role="radiogroup" aria-label={question} aria-required="true">
+      <span className="tax-return-yesno-question">{question}</span>
+      <span className="tax-return-yesno-choices">
+        <label>
+          <input type="radio" name={name} checked={value === true} onChange={() => onChange(true)} /> {t('taxReturn.fact.yes')}
+        </label>
+        <label>
+          <input type="radio" name={name} checked={value === false} onChange={() => onChange(false)} /> {t('taxReturn.fact.no')}
+        </label>
+      </span>
+    </div>
+  )
+}
 
 function EurField({ label, cents, onChange }: { label: string; cents: number; onChange: (cents: number) => void }) {
   const [draft, setDraft] = useState(formatEurInput(cents, { emptyZero: true }))
@@ -76,6 +96,7 @@ export function FactsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
   const setHolder = (index: number, next: Partial<ShareholderInput>) => {
     patch({ shareholders: draft.shareholders.map((row, i) => (i === index ? { ...row, ...next } : row)) })
   }
+  const unanswered = openAnswers(draft.answers).length
 
   return (
     <form
@@ -181,13 +202,9 @@ export function FactsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
             <option value="3">{t('taxReturn.fact.audit3')}</option>
           </select>
         </label>
-        {draft.audit === 1 ? (
-          <label className="tax-return-toggle">
-            <input type="checkbox" checked={draft.audit_remarks === true} onChange={(e) => patch({ audit_remarks: e.target.checked })} /> {t('taxReturn.fact.auditRemarks')}
-          </label>
-        ) : null}
+        {draft.audit === 1 ? <YesNo question={t('taxReturn.fact.auditRemarks')} value={draft.audit_remarks} onChange={(audit_remarks) => patch({ audit_remarks })} /> : null}
         <label className="tax-return-toggle">
-          <input type="checkbox" checked={draft.statements_prepared === true} onChange={(e) => patch({ statements_prepared: e.target.checked })} /> {t('taxReturn.fact.prepared')}
+          <input type="checkbox" checked={draft.statements_prepared} onChange={(e) => patch({ statements_prepared: e.target.checked })} /> {t('taxReturn.fact.prepared')}
         </label>
         <label>
           {t('taxReturn.fact.ownershipYear')}
@@ -205,19 +222,12 @@ export function FactsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
         <legend>{t('taxReturn.fact.answers')}</legend>
         <p className="muted">{t('taxReturn.fact.answersLead')}</p>
         {ANSWERS.map((answer) => (
-          <label key={answer.key} className="tax-return-toggle">
-            <input
-              type="checkbox"
-              checked={Boolean(draft.answers[answer.key])}
-              onChange={(e) => {
-                const answers = { ...draft.answers }
-                if (e.target.checked) answers[answer.key] = true
-                else delete answers[answer.key]
-                patch({ answers })
-              }}
-            />{' '}
-            {answer.label}
-          </label>
+          <YesNo
+            key={answer.key}
+            question={answer.label}
+            value={draft.answers[answer.key]}
+            onChange={(value) => patch({ answers: { ...draft.answers, [answer.key]: value } })}
+          />
         ))}
       </fieldset>
 
@@ -226,6 +236,7 @@ export function FactsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
           {t('common.save')}
         </button>
         {saved && !dirty ? <span className="muted">{t('taxReturn.fact.saved')}</span> : null}
+        {unanswered ? <Pill tone="crit">{t('taxReturn.fact.unanswered', { count: unanswered })}</Pill> : null}
       </p>
     </form>
   )

@@ -93,7 +93,10 @@ export function omaVeroText(view: TaxReturnView): string {
   out.push('', 'Kaikki muut rahakentät: 0,00')
 
   out.push('', 'Kysymykset')
-  for (const answer of ANSWERS) out.push(`${answer.label} ${yesNo(Boolean(inputs.answers[answer.key]))}`)
+  for (const answer of ANSWERS) {
+    const value = inputs.answers[answer.key]
+    out.push(`${answer.label} ${value == null ? 'täytä itse' : yesNo(value)}`)
+  }
   out.push(`Pitääkö yhtiön antaa erittely varauksista, arvonmuutoksista tai poistamattomista hankintamenoista? ${yesNo(view.forms.some((f) => f.form === '62'))}`)
 
   out.push('', 'Tilinpäätöstiedot ja muut liitteet')
@@ -101,7 +104,7 @@ export function omaVeroText(view: TaxReturnView): string {
   if (inputs.audit === 1 && inputs.audit_remarks != null) {
     out.push(`Sisältääkö tilintarkastuskertomus kielteisiä lausuntoja, huomautuksia tai lisätietoja? ${yesNo(inputs.audit_remarks)}`)
   }
-  out.push(`Onko tilinpäätös laadittu? ${inputs.statements_prepared == null ? 'täytä itse' : yesNo(inputs.statements_prepared)}`)
+  out.push(`Onko tilinpäätös laadittu? ${yesNo(inputs.statements_prepared)}`)
   if (inputs.ownership_change_year) out.push(`Omistusmuutos, verovuosi: ${inputs.ownership_change_year}`)
 
   const forms = view.forms.map((f) => f.form)

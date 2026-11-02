@@ -359,7 +359,7 @@ export type AnswerDef = {
   blocksFile?: boolean
 }
 
-/** OmaVero's yes/no questions, in its order. A question not answered is no. */
+/** OmaVero's yes/no questions, in its order. Each needs an answer: one left open is not a no. */
 export const ANSWERS: AnswerDef[] = [
   { key: 'owner_housing', label: 'Onko yrittäjäosakas tai hänen perheensä käyttänyt yhteisön omistamaa huoneistoa tai kiinteistöä asuntona?', blocksFile: true },
   { key: 'own_shares_changed', label: 'Onko yhtiö lunastanut, luovuttanut tai hankkinut omia osakkeitaan?', fileCode: 586 },
@@ -380,3 +380,8 @@ export const ANSWERS: AnswerDef[] = [
   { key: 'form_67a', label: 'Vaatiiko yhtiö tutkimus- ja kehittämistoiminnan väliaikaista lisävähennystä (lomake 67A)?', form: '67A' },
   { key: 'form_67y', label: 'Vaatiiko yhtiö tutkimus- ja kehittämistoiminnan yleistä tai ylimääräistä lisävähennystä (lomake 67Y)?', form: '67Y' },
 ]
+
+/** The questions with neither a yes nor a no yet. */
+export function openAnswers(answers: Record<string, boolean>): AnswerDef[] {
+  return ANSWERS.filter((answer) => answers[answer.key] == null)
+}

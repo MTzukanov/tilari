@@ -29,10 +29,12 @@ export type TaxReturnInputs = {
   free_equity: DistributionInput | null
   audit: AuditAnswer | null
   audit_remarks: boolean | null
-  statements_prepared: boolean | null
+  /** Yes unless the owner says otherwise: a return normally rests on finished statements. */
+  statements_prepared: boolean
   ownership_change_year: number | null
   /** Filled from the 71B rows; the sale accounts' net must equal gains minus losses. */
   sales: { gains_cents: number; losses_cents: number } | null
+  /** OmaVero's questions, for this period. A question missing here has not been answered. */
   answers: Record<string, boolean>
   /** Hand-entered figures by field code, replacing what the ledger gives. */
   manual: Record<string, number>
@@ -78,6 +80,7 @@ export type CheckState = 'ok' | 'warn' | 'crit'
 
 export type CheckKey =
   | 'unplaced'
+  | 'unanswered'
   | 'custom_accounts'
   | 'result_ties'
   | 'net_wealth'
@@ -123,7 +126,7 @@ export type TaxReturnView = {
   checks: CheckView[]
   forms: FormNeed[]
   inputs: TaxReturnInputs
-  /** The earlier period the answers and share counts came from, until these are saved. */
+  /** The earlier period the contact and share counts came from, until these are saved. */
   carried_from: string | null
   saved: boolean
   overrides: Record<string, Target>

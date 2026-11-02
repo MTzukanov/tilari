@@ -25,7 +25,7 @@ export function emptyInputs(): TaxReturnInputs {
     free_equity: null,
     audit: null,
     audit_remarks: null,
-    statements_prepared: null,
+    statements_prepared: true,
     ownership_change_year: null,
     sales: null,
     answers: {},
@@ -73,7 +73,7 @@ function booleans(raw: unknown): Record<string, boolean> {
   const out: Record<string, boolean> = {}
   if (!raw || typeof raw !== 'object') return out
   for (const [key, value] of Object.entries(raw)) {
-    if (value === true) out[key] = true
+    if (typeof value === 'boolean') out[key] = value
   }
   return out
 }
@@ -104,7 +104,7 @@ export function sanitizeInputs(raw: unknown): TaxReturnInputs {
     free_equity: distribution(data.free_equity),
     audit: audit === 1 || audit === 2 || audit === 3 ? (audit as AuditAnswer) : null,
     audit_remarks: typeof data.audit_remarks === 'boolean' ? data.audit_remarks : null,
-    statements_prepared: typeof data.statements_prepared === 'boolean' ? data.statements_prepared : null,
+    statements_prepared: data.statements_prepared !== false,
     ownership_change_year: Number.isInteger(year) && year > 0 ? year : null,
     sales: sales ? { gains_cents: count(sales.gains_cents), losses_cents: count(sales.losses_cents) } : null,
     answers: booleans(data.answers),
@@ -112,7 +112,10 @@ export function sanitizeInputs(raw: unknown): TaxReturnInputs {
   }
 }
 
-/** Yes/no answers, the contact and share counts stay from year to year; payments and figures do not. */
+/**
+ * The contact and share counts stay from year to year. Payments and figures do not, and neither do the yes/no
+ * answers: a carried answer would look considered for a year nobody has thought about yet.
+ */
 function carryOver(earlier: TaxReturnInputs): TaxReturnInputs {
   return {
     ...emptyInputs(),
@@ -121,7 +124,6 @@ function carryOver(earlier: TaxReturnInputs): TaxReturnInputs {
     contact_email: earlier.contact_email,
     all_below_10_percent: earlier.all_below_10_percent,
     own_shares: earlier.own_shares,
-    answers: earlier.answers,
     shareholders: earlier.shareholders.map((row) => ({
       name: row.name,
       shares: row.shares,

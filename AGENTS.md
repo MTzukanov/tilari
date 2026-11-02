@@ -164,7 +164,7 @@ Rules already encoded:
 
 ## UI conventions
 
-- Put user-visible strings in `frontend/src/i18n/locales/{fi,sv,en,de}.json` and call `t('key')`. Finnish is the source catalog; keep the other three in sync. Do not hardcode Finnish in components.
+- Put user-visible strings in `frontend/src/i18n/locales/{fi,sv,en,de}.json` and call `t('key')`. Finnish is the source catalog; keep the other three in sync. Do not hardcode Finnish in components. A message with `{count}` can have its singular in `key_one`, used when the count is 1.
 - i18n **keys** and TypeScript identifiers are English. Finnish UI strings stay in `fi.json` values. Kitsas schema names (`Tosite`, `Vienti`, `Asetus.tilinpaatos`, …) stay as stored; comment the English meaning on first use.
 - Pages that list documents, deadlines or things to do use the parts in [docs/UI_PATTERNS.md](docs/UI_PATTERNS.md)
   (`shared/Pill`, `DueTile`, `DocRows`, `Binder`): a colour means one thing everywhere, blue opens a file,
