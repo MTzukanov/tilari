@@ -23,9 +23,9 @@ stand out. Here colour and a filled button mark what needs doing, and everything
    | `doc` | A file or a suggestion | a file name, Ehdotus |
    | `voucher` | A voucher | Tosite 4/2026 |
 
-2. **One filled button, on what is wanted now.** A missing row gets a filled upload button. If the
-   book already suggests a document for that row, the suggestion's "Lisää" is the filled one instead.
-   Finished rows keep their actions but fade them until hover, so a long list is not a wall of buttons.
+2. **One filled button, on what is wanted now, and no other buttons.** A missing row gets a filled upload
+   button. If the book already suggests a document for that row, the suggestion's "Lisää" is the filled one
+   instead. Every other action in a row is a quiet link, so a long list is not a wall of buttons.
 
 3. **Blue opens the file, purple opens the voucher.** A title is plain text. The pill next to it is
    what you click, so the same two colours lead to the same two places on every page.
@@ -45,16 +45,24 @@ stand out. Here colour and a filled button mark what needs doing, and everything
 7. **State reads as a pill, not as coloured text.** Plain coloured words were too easy to miss. Use the
    same tone for the same meaning: "Tehty" looks like "Valmis", and "Ei asiakirjaa" like "Puuttuu".
 
+8. **A list of documents reads as a table.** Each part of a line stays in its place from line to line:
+   the voucher pill with the date, the title, the files, the actions. A mark such as "Ehdotus" sits at the
+   title's far side, so it moves nothing. A row's status starts at one place and its buttons end at one,
+   with the quiet link in front of them. Where one row does not fit (a list under 60rem), a line folds into
+   two: date and title, then files and actions. On a phone (under 30rem) the voucher number and "Ehdotus" go
+   and the title wraps to two lines, since there is no hover to show it in full. A thin line separates
+   documents from each other; none goes under a row's name or after its last document.
+
 ## Parts
 
 | Part | File | Use it for |
 |---|---|---|
 | `Pill` | `shared/Pill.tsx` | A status or fact, by tone |
 | `FilePill` | `shared/Pill.tsx` | Opens one attachment; a long name is cut and shows in full on hover |
-| `VoucherPill` | `shared/Pill.tsx` | Opens a voucher; pass its number as the label and its date as `title` |
+| `VoucherPill` | `shared/Pill.tsx` | Opens a voucher and shows its `date` and `number`; `label` names it on hover and for screen readers |
 | `DueTiles`, `DueTile` | `shared/DueTile.tsx` | Something with a due day; its state is a `Pill`, with the same colour on the edge. `action` adds a quiet link; `onOpen` makes the whole tile a button |
 | `DocRows`, `DocRow` | `shared/DocRows.tsx` | A framed list of things that hold documents; `onFiles` makes a row take dropped files |
-| `DocLines`, `DocLine` | `shared/DocRows.tsx` | One document: `mark`, title, date, pills, and `end` at the far side |
+| `DocLines`, `DocLine` | `shared/DocRows.tsx` | One document as a table row: `voucher` (or a plain `date` if it has none), title, `mark` at the title's far side, the files as children, and `end` |
 | `Binder` | `shared/Binder.tsx` | A card that opens in place, with badges that show its state while closed |
 
 CSS, in the "Documents and status" part of `App.css`:
@@ -82,9 +90,12 @@ it to `shared/` when a second page uses it.
     onFiles={upload}
   >
     <DocLines>
-      <DocLine title={doc.title} date={formatDate(doc.date)} end={<button className="btn-link btn-quiet">...</button>}>
+      <DocLine
+        voucher={<VoucherPill label={t('some.voucher', { id })} date={formatDate(doc.date)} number={id} onOpen={open} />}
+        title={doc.title}
+        end={<button className="btn-link btn-quiet">...</button>}
+      >
         <FilePill id={file.id} name={file.name} />
-        <VoucherPill label={t('some.voucher', { id })} title={formatDate(doc.date)} onOpen={open} />
       </DocLine>
     </DocLines>
   </DocRow>

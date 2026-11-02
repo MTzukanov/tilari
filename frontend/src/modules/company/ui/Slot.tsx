@@ -28,7 +28,7 @@ export type SlotActions = {
   onOpenVoucher: (voucherId: number) => void
 }
 
-/** The pill that opens a voucher, by its number; the full date on hover. */
+/** The pill that opens a voucher, with its date and number. */
 function OpenVoucher({
   voucher,
   actions,
@@ -37,11 +37,12 @@ function OpenVoucher({
   actions: SlotActions
 }) {
   const { t } = useI18n()
-  const id = formatVoucherId(voucher.series, voucher.doc_number, voucher.date ?? '')
+  const id = formatVoucherId(voucher.series, voucher.doc_number, voucher.date ?? '', { fallback: '' })
   return (
     <VoucherPill
       label={id ? t('company.link.voucher', { id }) : t('company.link.voucherNoId')}
-      title={formatDate(voucher.date)}
+      date={formatDate(voucher.date)}
+      number={id}
       onOpen={() => actions.onOpenVoucher(voucher.voucher_id)}
     />
   )
@@ -61,11 +62,20 @@ export function DocumentRow({
   const { t } = useI18n()
   const gone = doc.state === 'missing'
   // A closed year keeps the document's own date on the link only: say whose date this is.
-  const date = doc.date && doc.date !== doc.voucher_date ? t('company.docDate', { date: formatDate(doc.date) }) : formatDate(doc.date)
+  const ownDate = !gone && doc.date && doc.date !== doc.voucher_date ? t('company.docDate', { date: formatDate(doc.date) }) : null
+  const problem = doc.state === 'ok' ? null : <Pill tone="crit">{t(`company.link.state.${doc.state}`)}</Pill>
   return (
     <DocLine
+      voucher={gone ? null : <OpenVoucher voucher={{ ...doc, date: doc.voucher_date }} actions={actions} />}
       title={gone ? <span className="muted">{t('company.link.gone', { id: doc.voucher_id })}</span> : doc.title || voucherTypeName(doc.type)}
-      date={gone ? null : date}
+      mark={
+        ownDate || problem ? (
+          <>
+            {ownDate}
+            {problem}
+          </>
+        ) : null
+      }
       end={
         readOnly ? null : (
           <button
@@ -81,8 +91,6 @@ export function DocumentRow({
       {doc.files.map((f) => (
         <FilePill key={f.id} id={f.id} name={f.name} />
       ))}
-      {gone ? null : <OpenVoucher voucher={{ ...doc, date: doc.voucher_date }} actions={actions} />}
-      {doc.state === 'ok' ? null : <Pill tone="crit">{t(`company.link.state.${doc.state}`)}</Pill>}
     </DocLine>
   )
 }
@@ -108,9 +116,9 @@ export function SuggestionRows({
       {suggestions.map((s) => (
         <DocLine
           key={s.key}
-          mark={<Pill tone="doc">{showTarget ? showTarget(s) : t('company.suggest.mark')}</Pill>}
+          voucher={<OpenVoucher voucher={s} actions={actions} />}
           title={s.title || voucherTypeName(s.type)}
-          date={formatDate(s.date)}
+          mark={<Pill tone="doc">{showTarget ? showTarget(s) : t('company.suggest.mark')}</Pill>}
           end={
             readOnly ? null : (
               <>
@@ -133,7 +141,6 @@ export function SuggestionRows({
           }
         >
           {s.file_id != null ? <FilePill id={s.file_id} name={s.file_name} /> : null}
-          <OpenVoucher voucher={s} actions={actions} />
         </DocLine>
       ))}
     </DocLines>
@@ -292,10 +299,10 @@ const STATUS_TONE: Record<SlotStatus, PillTone> = {
   not_needed: 'neutral',
 }
 
-function rowTone(status: SlotStatus | undefined, hasDocuments: boolean): DocRowTone {
+function rowTone(status: SlotStatus | undefined): DocRowTone {
   if (status === 'missing') return 'missing'
   if (status === 'not_needed') return 'muted'
-  return hasDocuments ? 'done' : 'plain'
+  return 'plain'
 }
 
 /**
@@ -341,27 +348,10 @@ export function SlotRow({
     actions.apply({ not_needed: [{ period_ends: periodEnds, kind, value }] }).catch((err) => setError(errorText(t, err)))
   }
 
+  // Quiet links, so a list is not a wall of buttons; only a missing document's upload is a button.
+  // "Ei tarvita" goes first, so the other two stay in place whether it is there or not.
   const rowActions = readOnly ? null : (
     <>
-      <FileButton
-        className={`btn-small${status === 'missing' && !suggestions.length ? ' is-primary' : ''}`}
-        onFiles={(picked) => {
-          setError(null)
-          if (picked.length) setFiles(picked)
-        }}
-      >
-        {t('company.slot.upload')}
-      </FileButton>
-      <button
-        type="button"
-        className="btn-small"
-        onClick={() => {
-          setError(null)
-          setLinking(!linking)
-        }}
-      >
-        {t('company.slot.link')}
-      </button>
       {notNeededToggle && status && status !== 'not_needed' && !documents.length ? (
         <button type="button" className="btn-link btn-quiet" onClick={() => setNotNeeded(true)}>
           {t('company.slot.notNeeded')}
@@ -372,6 +362,25 @@ export function SlotRow({
           {t('company.slot.needed')}
         </button>
       ) : null}
+      <FileButton
+        className={status === 'missing' && !suggestions.length ? 'btn-small is-primary' : 'btn-link btn-quiet'}
+        onFiles={(picked) => {
+          setError(null)
+          if (picked.length) setFiles(picked)
+        }}
+      >
+        {t('company.slot.upload')}
+      </FileButton>
+      <button
+        type="button"
+        className="btn-link btn-quiet"
+        onClick={() => {
+          setError(null)
+          setLinking(!linking)
+        }}
+      >
+        {t('company.slot.link')}
+      </button>
     </>
   )
 
@@ -380,7 +389,7 @@ export function SlotRow({
       name={label}
       status={status ? <Pill tone={STATUS_TONE[status]}>{t(`company.slot.status.${status}`)}</Pill> : null}
       actions={rowActions}
-      tone={rowTone(status, documents.length > 0)}
+      tone={rowTone(status)}
       onFiles={
         readOnly
           ? undefined
@@ -463,9 +472,8 @@ export function AttachSelect({
 
 export function UnlinkedRow({ candidate, actions, children }: { candidate: DocCandidate; actions: SlotActions; children: React.ReactNode }) {
   return (
-    <DocLine title={candidate.title || voucherTypeName(candidate.type)} date={formatDate(candidate.date)} end={children}>
+    <DocLine voucher={<OpenVoucher voucher={candidate} actions={actions} />} title={candidate.title || voucherTypeName(candidate.type)} end={children}>
       {candidate.file_id != null ? <FilePill id={candidate.file_id} name={candidate.file_name} /> : null}
-      <OpenVoucher voucher={candidate} actions={actions} />
     </DocLine>
   )
 }

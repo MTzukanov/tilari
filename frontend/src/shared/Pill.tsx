@@ -40,12 +40,16 @@ export function FilePill({ id, name }: { id: number; name: string }) {
   )
 }
 
-/** Opens a voucher. */
-export function VoucherPill({ label, title, onOpen }: { label: string; title?: string; onOpen: () => void }) {
+/** Opens a voucher. Shows its date and number; `label` names it on hover and for screen readers. */
+export function VoucherPill({ label, date, number, onOpen }: { label: string; date: string; number?: string; onOpen: () => void }) {
+  const name = `${label}, ${date}`
   return (
-    <button type="button" className="pill pill-voucher pill-action" title={title} onClick={onOpen}>
+    <button type="button" className="pill pill-voucher pill-action" title={name} aria-label={name} onClick={onOpen}>
       <VoucherIcon />
-      <span className="pill-text">{label}</span>
+      <span className="pill-text num-text">
+        <span className="pill-date">{date}</span>
+        {number ? <span className="pill-number">{number}</span> : null}
+      </span>
     </button>
   )
 }
