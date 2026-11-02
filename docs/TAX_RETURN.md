@@ -8,7 +8,7 @@ does not show the file codes. This page uses the codes because it talks about th
 
 ## What it does
 
-A button on a period's card on the company page (`#/company`) opens a dialog with three tabs:
+A button on a period's card on the company page (`#/company`) opens a dialog with four tabs:
 
 - **OmaVero-luvut**: the figures in OmaVero's order and wording, each traced to its accounts, with a copy
   button on every amount, and the whole return as text.
@@ -16,15 +16,18 @@ A button on a period's card on the company page (`#/company`) opens a dialog wit
   neither is preselected, a question left open is not a no, and answers do not carry over to the next period (the
   contact and share counts do). The form saves with questions open, so typed work is not lost; the return then
   shows them as a check, and no file is made. "Onko tilinpäätös laadittu?" is yes unless the owner says otherwise.
+- **Liitelomakkeet**: forms 62, 8A and 71B, as far as the figures call for them.
 - **Ilmoitin-tiedosto**: the same figures as a file for Ilmoitin.fi.
+
+Leaving a tab with typed figures saves them, so moving on to the file does not lose them.
 
 Both outputs render one calculation (`computeTaxReturn`), so they cannot disagree. Nothing is posted: the
 ledger is read, and only the owner's inputs are written, to `TilariData` (`tax-return/{ends}`, `tax-return/mapping`).
 
 ## Sources
 
-- Fields, money types and formulas: Vero's record description `VSY06B26` v1.1, "Elinkeinotoiminnan
-  veroilmoitus, yhteisö (6B)".
+- Fields, money types and formulas: Vero's record descriptions `VSY06B26` v1.1 "Elinkeinotoiminnan veroilmoitus,
+  yhteisö (6B)", `VSY08A26`, `VSY71B26` and `VSY06226`.
 - File format: Vero's "Electronic filing of information returns, general description".
 - Attachments: Vero's "Enclosures to the electronically submitted income tax return".
 - Order and wording: OmaVero's print of a filed return.
@@ -51,12 +54,43 @@ Account types are the book's today, not as they were: a type changed later appli
   to confirm or change, and the return says so until then.
 - **Sale accounts** (`sale` in the mapping): sale proceeds and costs carry one net figure. Gains and losses come
   from the 71B rows, and gains minus losses must equal the accounts' net exactly. Without rows, the net goes to
-  261 or 270.
+  261 or 270, and so it does while suggested rows do not tie: the form's figures stay the ledger's until the rows are
+  saved or tie. On saved rows a difference is reported once, as `sale_gap`: `result_ties` and `estimate` leave it out.
 - **A credit balance on a `19x` account** moves to 452, as a short-term debt.
-- **Long and short term** (461, 462): accounts under `26`-`27` are long-term, `28`-`29` short-term.
+- **Long and short term** (461, 462): accounts under `26`-`27` are long-term, `28`-`29` short-term, unless the owner
+  says otherwise for the account (`terms` in `tax-return/mapping`).
 - **Opening profit** (474, 475): equity accounts `225`-`237` plus every earlier period's result.
 
 Where past filings of a book differ from the chart, the chart decides and the owner can override per account.
+
+## Attached forms
+
+**8A, securities** (`domain/form8a.ts`). One group per asset class, each tied to its 6B field to the cent.
+
+- In Käyttöomaisuus and Muu omaisuus a row comes from each tase-erä with a balance, and that balance is the cost.
+- In Rahoitusomaisuus rows are typed: one tase-erä can hold a whole portfolio. The cost is typed too, and the check
+  says what is left.
+- The company's name and business ID start empty. The line that opened a tase-erä is no guide: on a purchase its
+  partner is usually the seller, and on a real book it named the company in no case. Its text shows beside the row.
+- Rows with one business ID become one line on the form, so a flat and its garage take one row. Their counts add up,
+  so a count goes on only one of them.
+- Comparison value per share: three decimals under 10 euros, otherwise two (Vero's check #2038). The total is count
+  times unit, rounded to the cent, unless typed.
+- Names, IDs and counts carry over to the next year; comparison values do not.
+
+**71B, sales** (`domain/form71b.ts`). Sections 2, 4 and 5, for other assets.
+
+- A voucher that credits a tase-erä and books on a sale account suggests a row, with its price, the tase-erä's credit
+  as the cost, and the dates. The owner adds what the ledger lacks. Costs booked on other vouchers, such as a broker's
+  fee, are not linked to a sale: they stay in `sale_gap` until written on a row.
+- A row with a gain goes to section 2; a loss goes to section 4, as deductible in full.
+- Once saved, removed rows stay removed, and vouchers not on the rows are listed to add.
+
+**62, depreciation** (`domain/form62.ts`). Accounts in Koneet ja kalusto fill the movable assets section; Aineettomat
+oikeudet and Muu käyttöomaisuus fill other depreciation; Pitkävaikutteiset menot fill long-term expenditure. Tax follows
+the book until a figure is typed, and the rest of the section follows from it. Reserves, value changes and buildings
+are typed: the ledger cannot tell their tax class. The form ties to Vähennettävät poistot in both columns, and Vero's
+limits on regular depreciation (25 %, 7 %, 4 %) are checked exactly.
 
 ## Checks
 
@@ -71,14 +105,18 @@ Exact, with no tolerance; differences are shown to the cent.
 | `estimate` | The result differs from the stored `verolaskelma`, or from the Kitsas estimate if none is stored |
 | `negative` | A negative in an `R13,2` field |
 | `sale_gap` | Gains minus losses differ from the sale accounts' net |
+| `form8a_gap` | A group's costs on 8A differ from its 6B field |
+| `form62_tax`, `form62_book` | Depreciation on 62 differs from Vähennettävät poistot |
+| `form62_limit` | Regular depreciation is over Vero's limit |
 
-`unplaced`, `result_ties`, `net_wealth`, `negative` and `sale_gap` stop a file from being called ready.
+`unplaced`, `result_ties`, `net_wealth`, `negative`, `sale_gap` and the form checks stop a file from being called ready.
 Warnings: `custom_accounts`, `drafts`, `not_ended`, `income_tax`, `dividend_answer`, `sale_split`, `manual`, `to_check`.
 
 ## The file
 
 `domain/ilmoitinFile.ts`. ISO-8859-1 `name:value` lines joined by CRLF, starting `000:VSY06Byy` and ending
-`999:1` with no line break after it. Comma decimals; zero fields left out, except 478 and whichever of 500/505
+`999:n` with no line break after it. The forms follow one another, each with its own header and `999:` running in
+sequence: 6B, then 62, 8A and 71B as far as they have rows. Comma decimals; zero fields left out, except 478 and whichever of 500/505
 and 573/574 applies. Repeating groups go between `001:n` and `009:i`.
 
 - **014** is the book's business ID plus `_TL`: Vero's rule for software a filer has developed itself. **048** is
@@ -86,9 +124,10 @@ and 573/574 applies. Repeating groups go between `001:n` and `009:i`.
 - **The personal ID** is required in 703. It is typed on the file tab, next to the download button, and kept only in the dialog's state. The file
   is built in the browser, also on the Node engine, so the ID never reaches the book or a server.
 - **Stopped** (no bytes): missing required answers, an OmaVero question left open, characters outside ISO-8859-1, too long a text, a negative in an
-  `R13,2` field, an answer needing fields the file does not produce.
+  `R13,2` field, an answer needing fields the file does not produce, a form row missing what Vero requires.
 - **Check only** (bytes, but not to send): a form in the same file that is not generated, a failed check, or a year
   other than the record description's.
+- **Remarks** (no effect on the file): an 8A row without a business ID or comparison value. Vero only remarks on these.
 
 Checking is the owner's: Ilmoitin.fi's check validates a file before sending. `testi.ilmoitin.fi` takes invented
 data only. Vero asks software makers to tell `ohjelmistotalot@vero.fi` when production use starts; Tilari sends
@@ -96,8 +135,11 @@ nothing itself.
 
 ## Left for later
 
-- Forms 8A, 71B, 73 and 62. Until they exist a file for a company with securities or depreciable assets can be
-  checked but not sent. 8A's securities and 73 by country need detail that lives in the bank import, not the ledger.
+- Form 73. Until it exists a file for a company with dividends can be checked but not sent. It and 8A's listed
+  securities need detail per security that lives in the bank import, not the ledger.
+- 71B for fixed-asset shares and partnership interests, losses with restricted deduction, and earlier years' confirmed
+  losses: these go by hand in OmaVero. The dialog says so when the figures call for the first.
+- 62 does not carry typed figures over: where tax differs from the book, next year's opening balance is typed again.
 - Attachment PDFs' names for Ilmoitin.
 - 7812 (dividends) and 7851 (shareholder loans) are separate annual returns: listed, not generated.
 - Owner's housing in company property, share capital changes after the year end, and banks and insurers: a yes

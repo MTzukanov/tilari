@@ -3,6 +3,7 @@
  * Empty SQLite + vendored `luo.sql` + yritys chart, then user overlays.
  */
 import { validateBook } from '../access'
+import { isValidFinnishBusinessId } from '../businessId'
 import { isIsoDate } from '../clock'
 import { BookError } from '../errors'
 import { DEFAULT_TEMPLATE_FI } from '../modules/periodEnd/domain/statementTemplate'
@@ -36,9 +37,6 @@ type ChartFile = {
 
 const KP_VERSIO = '24'
 const TEMPLATE_KEY = 'tppohja/fi'
-const YTUNNUS_RE = /^(\d{7})-(\d)$/
-const YTUNNUS_WEIGHTS = [7, 9, 10, 5, 8, 4, 2]
-
 /** Valid checksum; used when practice mode has no Y-tunnus. Not a real company. */
 export const PRACTICE_BUSINESS_ID = '1234567-1'
 
@@ -50,19 +48,7 @@ function chartFile(): ChartFile {
   return raw
 }
 
-/** Finnish Y-tunnus: 7 digits, hyphen, check digit (mod 11). */
-export function isValidFinnishBusinessId(raw: string): boolean {
-  const m = raw.trim().replace(/\s+/g, '').match(YTUNNUS_RE)
-  if (!m) return false
-  const digits = m[1]
-  const check = Number(m[2])
-  let sum = 0
-  for (let i = 0; i < 7; i++) sum += Number(digits[i]) * YTUNNUS_WEIGHTS[i]
-  const rem = sum % 11
-  if (rem === 1) return false
-  const expected = rem === 0 ? 0 : 11 - rem
-  return check === expected
-}
+export { isValidFinnishBusinessId }
 
 export function kitsasFileName(name: string): string {
   const trimmed = name.trim()

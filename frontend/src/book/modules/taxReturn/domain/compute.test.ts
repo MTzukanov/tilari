@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { TYPE_INCOME_TAX } from '../../../vouchers'
 import { ALL_NO, buildTaxFixture, check } from '../testFixture'
 import { ANSWERS } from './fields6b'
-import { sanitizeInputs } from './inputs'
+import { readOverrides, readTerms, sanitizeInputs, writeTerms } from './inputs'
 import { SALE } from './mapping'
 
 const BANK = 1910
@@ -135,6 +135,8 @@ describe('sales of other assets', () => {
     return f
   }
 
+  const row = { voucher: null, id_type: 1 as const, name: 'As Oy Esimerkki', id_code: '2345678-0', apartment: '', acquired: '2020-01-01', sold: '2031-05-01', share_after: '0', expenses_cents: 0 }
+
   it('puts the net in one field and asks for the 71B rows', async () => {
     const f = await withSale()
     const view = f.view()
@@ -146,7 +148,12 @@ describe('sales of other assets', () => {
 
   it('takes gains and losses from the rows when they match the books exactly', async () => {
     const f = await withSale()
-    f.inputs({ sales: { gains_cents: 130_000, losses_cents: 30_000 } })
+    f.inputs({
+      sale_rows: [
+        { ...row, price_cents: 530_000, cost_cents: 400_000 },
+        { ...row, price_cents: 470_000, cost_cents: 500_000 },
+      ],
+    })
     const view = f.view()
     expect(view.values[261]).toBe(130_000)
     expect(view.values[270]).toBe(30_000)
@@ -157,7 +164,12 @@ describe('sales of other assets', () => {
 
   it('shows the exact gap when they do not', async () => {
     const f = await withSale()
-    f.inputs({ sales: { gains_cents: 130_000, losses_cents: 29_999 } })
+    f.inputs({
+      sale_rows: [
+        { ...row, price_cents: 530_000, cost_cents: 400_000 },
+        { ...row, price_cents: 470_001, cost_cents: 500_000 },
+      ],
+    })
     expect(check(f.view(), 'sale_gap')).toMatchObject({ state: 'crit', cents: 1 })
   })
 })
@@ -174,6 +186,28 @@ describe('the balance sheet', () => {
     const line = view.groups.flatMap((g) => g.rows).find((r) => r.code === 452)?.accounts[0]
     expect(line).toMatchObject({ account: BANK, source: 'moved' })
     expect(check(view, 'negative')).toBeUndefined()
+  })
+
+  it('lets the owner say a debt is long or short term, whatever its number says', async () => {
+    const f = await buildTaxFixture()
+    f.post('2031-02-01', [[BANK, 200_000, 0], [2621, 0, 200_000]])
+    expect(f.view().values[462]).toBe(200_000)
+    writeTerms(f.db, { 2621: 'short' }, '2030-01-01T00:00:00.000Z')
+    const moved = f.view()
+    expect(moved.values[462]).toBe(0)
+    expect(moved.values[461]).toBe(200_000)
+    expect(moved.groups.flatMap((g) => g.rows).flatMap((r) => r.accounts).find((a) => a.account === 2621)?.term).toBe('short')
+    writeTerms(f.db, { 2621: null }, '2030-01-01T00:00:00.000Z')
+    expect(f.view().values[462]).toBe(200_000)
+  })
+
+  it('keeps account choices and debt terms apart when saving either', async () => {
+    const f = await buildTaxFixture()
+    writeTerms(f.db, { 2621: 'short' }, '2030-01-01T00:00:00.000Z')
+    f.place({ 3991: SALE })
+    expect(readTerms(f.db)).toEqual({ 2621: 'short' })
+    writeTerms(f.db, { 2621: null }, '2030-01-01T00:00:00.000Z')
+    expect(readOverrides(f.db)).toEqual({ 3991: SALE })
   })
 
   it('splits debts into long and short term by the chart', async () => {

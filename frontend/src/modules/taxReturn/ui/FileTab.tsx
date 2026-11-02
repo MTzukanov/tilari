@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useI18n } from '../../../i18n'
 import { Pill } from '../../../shared/Pill'
 import { downloadFile } from '../../../shared/downloadFile'
-import { ANSWERS, fieldName, ilmoitinFile, type FileNotice, type FileProblem, type TaxReturnView } from '../api'
+import { ANSWERS, fieldName, ilmoitinFile, type FileNotice, type FileProblem, type FileRemark, type TaxReturnView } from '../api'
 
 function problemText(t: (key: string, params?: Record<string, string | number>) => string, problem: FileProblem): string {
   switch (problem.key) {
@@ -16,6 +16,16 @@ function problemText(t: (key: string, params?: Record<string, string | number>) 
       return t('taxReturn.problem.answer', { answer: ANSWERS.find((a) => a.key === problem.answer)?.label ?? problem.answer })
     case 'unanswered':
       return t('taxReturn.problem.unanswered', { count: problem.count })
+    case 'form62_negative':
+    case 'holding_name':
+    case 'holding_id':
+    case 'holding_shares':
+    case 'holding_unit':
+    case 'holding_cost':
+    case 'sale_fields':
+    case 'sale_id':
+    case 'sale_share':
+      return t(`taxReturn.problem.${problem.key}`, { row: problem.row })
     default:
       return t(`taxReturn.problem.${problem.key}`)
   }
@@ -30,6 +40,10 @@ function noticeText(t: (key: string, params?: Record<string, string | number>) =
     default:
       return t('taxReturn.notice.checks')
   }
+}
+
+function remarkText(t: (key: string, params?: Record<string, string | number>) => string, remark: FileRemark): string {
+  return t(`taxReturn.remark.${remark.key}`, { count: remark.count })
 }
 
 /** The Ilmoitin file. Built in this browser: the IDs typed here go only into the downloaded file. */
@@ -63,6 +77,17 @@ export function FileTab({ view }: { view: TaxReturnView }) {
             <li key={index}>
               <Pill tone="warn">{t('taxReturn.state.warn')}</Pill>
               <span>{noticeText(t, notice)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {file.remarks.length ? (
+        <ul className="tax-return-check-list">
+          {file.remarks.map((remark) => (
+            <li key={remark.key}>
+              <Pill tone="neutral">{t('taxReturn.remarkTag')}</Pill>
+              <span>{remarkText(t, remark)}</span>
             </li>
           ))}
         </ul>

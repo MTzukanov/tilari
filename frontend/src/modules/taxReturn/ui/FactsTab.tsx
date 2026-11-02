@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useI18n } from '../../../i18n'
 import { Pill } from '../../../shared/Pill'
 import { formatEurInput, parseEurInput, sanitizeEurInput } from '../../../shared/money'
@@ -24,7 +24,7 @@ function YesNo({ question, value, onChange }: { question: string; value: boolean
   )
 }
 
-function EurField({ label, cents, onChange }: { label: string; cents: number; onChange: (cents: number) => void }) {
+export function EurField({ label, cents, onChange }: { label: string; cents: number; onChange: (cents: number) => void }) {
   const [draft, setDraft] = useState(formatEurInput(cents, { emptyZero: true }))
   return (
     <label>
@@ -87,6 +87,20 @@ export function FactsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
     setDraft(view.inputs)
     setDirty(false)
   }, [view.inputs])
+
+  // Leaving the tab keeps what was typed, so moving to the file does not lose it.
+  const pending = useRef<TaxReturnInputs | null>(null)
+  const save = useRef(onSave)
+  save.current = onSave
+  useEffect(() => {
+    pending.current = dirty ? draft : null
+  }, [dirty, draft])
+  useEffect(
+    () => () => {
+      if (pending.current) void save.current(pending.current)
+    },
+    [],
+  )
 
   const patch = (next: Partial<TaxReturnInputs>) => {
     setDraft((old) => ({ ...old, ...next }))
@@ -164,27 +178,6 @@ export function FactsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
 
       <Distribution legend={t('taxReturn.fact.dividend')} value={draft.dividend} onChange={(dividend) => patch({ dividend })} />
       <Distribution legend={t('taxReturn.fact.freeEquity')} value={draft.free_equity} onChange={(free_equity) => patch({ free_equity })} />
-
-      <fieldset className="tax-return-fieldset">
-        <legend>{t('taxReturn.fact.sale')}</legend>
-        <p className="muted">{t('taxReturn.fact.saleLead')}</p>
-        <EurField
-          label={t('taxReturn.fact.gains')}
-          cents={draft.sales?.gains_cents ?? 0}
-          onChange={(gains_cents) => {
-            const losses_cents = draft.sales?.losses_cents ?? 0
-            patch({ sales: gains_cents || losses_cents ? { gains_cents, losses_cents } : null })
-          }}
-        />
-        <EurField
-          label={t('taxReturn.fact.losses')}
-          cents={draft.sales?.losses_cents ?? 0}
-          onChange={(losses_cents) => {
-            const gains_cents = draft.sales?.gains_cents ?? 0
-            patch({ sales: gains_cents || losses_cents ? { gains_cents, losses_cents } : null })
-          }}
-        />
-      </fieldset>
 
       <fieldset className="tax-return-fieldset">
         <legend>{t('taxReturn.fact.statements')}</legend>

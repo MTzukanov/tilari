@@ -86,6 +86,60 @@ test.describe('annual tax return data', () => {
     await expect(page.getByRole('dialog').locator('.tax-return-yesno').first().getByRole('radio', { name: 'Ei' })).toBeChecked()
   })
 
+  test('an attached form takes typed rows, and leaving the tab keeps them for the file', async ({ page }) => {
+    await openReturn(page)
+    const dialog = page.getByRole('dialog')
+
+    await dialog.getByRole('tab', { name: 'Täytettävät tiedot' }).click()
+    await dialog.getByLabel('Yhteyshenkilö').fill('Essi Esimerkki')
+    await dialog.getByLabel('Puhelinnumero').fill('0401234567')
+    await dialog.getByRole('button', { name: 'Lisää osakkeenomistaja' }).click()
+    await dialog.getByLabel('Nimi', { exact: true }).fill('Essi Esimerkki')
+    await dialog.getByLabel('Osakkeiden lukumäärä').fill('100')
+    await dialog.getByLabel('Onko tilintarkastus tehty?').selectOption('3')
+    for (const question of await dialog.locator('.tax-return-yesno').all()) await question.getByRole('radio', { name: 'Ei' }).check()
+
+    // The bank account stands in for securities: only its place on the form matters here.
+    await dialog.getByRole('tab', { name: 'OmaVero-luvut' }).click()
+    await dialog.getByRole('button', { name: 'Pankkisaamiset', exact: true }).click()
+    await dialog.locator('.tax-return-accounts li').first().getByRole('combobox').first().selectOption({ label: 'Rahoitusomaisuusarvopaperit' })
+    await expect(dialog.getByText(/Lomakkeen 8A hankintamenot ja Rahoitusomaisuusarvopaperit eroavat/)).toBeVisible()
+
+    await dialog.getByRole('tab', { name: 'Liitelomakkeet' }).click()
+    await dialog.getByRole('button', { name: 'Lisää rivi' }).click()
+    await dialog.getByLabel('Yhtiön tai osuuskunnan nimi').fill('Esimerkki Oyj')
+    await dialog.getByLabel('Y-tunnus').fill('4567890-7')
+    await dialog.getByLabel('Osakkeiden lukumäärä').fill('150,5')
+    await dialog.getByLabel('Tuloverotuksessa poistamaton hankintameno').fill('1000,00')
+    await dialog.getByLabel('Vertailuarvo kappaleelta').fill('21,50')
+
+    // Not saved by hand: moving on must not lose it.
+    await dialog.getByRole('tab', { name: 'Ilmoitin-tiedosto' }).click()
+    await dialog.getByLabel('Essi Esimerkki: henkilö- tai Y-tunnus').fill('010101-0101')
+    const download = page.waitForEvent('download')
+    await dialog.getByRole('button', { name: 'Lataa Ilmoitin-tiedosto' }).click()
+    const text = (await readFile(await (await download).path())).toString('latin1')
+    expect(text).toContain('000:VSY08A24')
+    expect(text).toContain('240:Esimerkki Oyj')
+    expect(text).toContain('248:150,5')
+    expect(text).toContain('249:1000,00')
+    expect(text).toContain('251:3235,75')
+    expect(text.endsWith('999:2')).toBe(true)
+  })
+
+  test('a debt can count as short term, whatever its number says', async ({ page }) => {
+    await openReturn(page)
+    const dialog = page.getByRole('dialog')
+    // The bank account stands in for a debt: only its place on the form matters here.
+    await dialog.getByRole('button', { name: 'Pankkisaamiset', exact: true }).click()
+    await dialog.locator('.tax-return-accounts li').first().getByRole('combobox').first().selectOption({ label: 'Ostovelat' })
+    await dialog.getByRole('button', { name: 'Ostovelat', exact: true }).click()
+    const term = dialog.getByRole('combobox', { name: /velan pituus/ })
+    await expect(term).toHaveValue('short')
+    await term.selectOption({ label: 'Pitkäaikainen' })
+    await expect(dialog.getByRole('combobox', { name: /velan pituus/ })).toHaveValue('long')
+  })
+
   test('an account can move to another field, and back', async ({ page }) => {
     await openReturn(page)
     const dialog = page.getByRole('dialog')

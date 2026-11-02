@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useI18n } from '../../../i18n'
 import { Pill } from '../../../shared/Pill'
 import { formatEurInput, parseEurInput, sanitizeEurInput } from '../../../shared/money'
-import { BALANCE_GROUPS, PNL_GROUPS, SALE, type RowView, type Target, type TaxReturnInputs } from '../api'
+import { BALANCE_GROUPS, PNL_GROUPS, SALE, type DebtTerm, type RowView, type Target, type TaxReturnInputs } from '../api'
 import { formatFigure } from './format'
 
 function isIncomeStatement(account: number): boolean {
@@ -69,10 +69,12 @@ export function AccountRows({
   row,
   overrides,
   onPlace,
+  onTerm,
 }: {
   row: RowView
   overrides: Record<string, Target>
   onPlace: (account: number, target: Target | null) => Promise<void>
+  onTerm: (account: number, term: DebtTerm) => Promise<void>
 }) {
   const { t } = useI18n()
   if (!row.accounts.length && row.prior_results_cents == null) {
@@ -89,6 +91,17 @@ export function AccountRows({
             {line.custom ? <ConfirmField account={line.account} code={row.code} onPlace={onPlace} /> : null}
             {line.source === 'moved' ? <Pill tone="neutral">{t('taxReturn.movedTag')}</Pill> : null}
             <PlaceSelect account={line.account} current={own ?? (line.source === 'moved' ? null : row.code)} overridden={own != null} onPlace={onPlace} />
+            {line.term && line.source !== 'moved' ? (
+              <select
+                className="tax-return-place"
+                aria-label={t('taxReturn.termAccount', { account: line.account })}
+                value={line.term}
+                onChange={(e) => void onTerm(line.account, e.target.value === 'long' ? 'long' : 'short')}
+              >
+                <option value="long">{t('taxReturn.termLong')}</option>
+                <option value="short">{t('taxReturn.termShort')}</option>
+              </select>
+            ) : null}
           </li>
         )
       })}

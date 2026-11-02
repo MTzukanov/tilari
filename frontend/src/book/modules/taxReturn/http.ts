@@ -1,7 +1,7 @@
 import { getJson } from '../../http'
 import type { WriteJson } from '../types'
 import type { Target } from './domain/mapping'
-import type { TaxReturnInputs, TaxReturnView } from './domain/types'
+import type { DebtTerm, TaxReturnInputs, TaxReturnView } from './domain/types'
 import type { TaxReturnService } from './service'
 
 function endsQuery(ends: string): string {
@@ -18,6 +18,9 @@ export function createTaxReturnHttp(writeJson: WriteJson, _afterMutate: () => vo
     },
     saveMapping(ends: string, accounts: Record<string, Target | null>) {
       return writeJson<TaxReturnView>(`/api/tax-return/mapping${endsQuery(ends)}`, 'POST', accounts)
+    },
+    saveTerms(ends: string, terms: Record<string, DebtTerm | null>) {
+      return writeJson<TaxReturnView>(`/api/tax-return/terms${endsQuery(ends)}`, 'POST', terms)
     },
   } as unknown as TaxReturnService
 }

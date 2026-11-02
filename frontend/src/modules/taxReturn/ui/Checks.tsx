@@ -28,7 +28,7 @@ export function Checks({ view }: { view: TaxReturnView }) {
       {open.length ? (
         <ul className="tax-return-check-list">
           {open.map((check) => (
-            <li key={check.key}>
+            <li key={`${check.key}-${check.codes?.join() ?? ''}`}>
               <Pill tone={TONE[check.state]}>{t(`taxReturn.state.${check.state}`)}</Pill>
               <span>{t(`taxReturn.check.${check.key}`, params(check))}</span>
             </li>
@@ -37,7 +37,7 @@ export function Checks({ view }: { view: TaxReturnView }) {
       ) : null}
       {passed.length ? (
         <p className="muted tax-return-passed">
-          {t('taxReturn.checks.passed')}: {passed.map((check) => t(`taxReturn.checkOk.${check.key}`)).join(', ')}
+          {t('taxReturn.checks.passed')}: {[...new Set(passed.map((check) => t(`taxReturn.checkOk.${check.key}`)))].join(', ')}
         </p>
       ) : null}
     </section>

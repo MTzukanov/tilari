@@ -3,9 +3,12 @@
  * e-filing and the record description `VSY06B26` say. Pure and run in the browser: the personal IDs it
  * writes are typed for this file only, and reach neither the book nor a server.
  */
+import { isValidFinnishBusinessId } from '../../../businessId'
 import { ANSWERS, PNL_GROUPS, BALANCE_GROUPS, SPEC_YEAR, openAnswers } from './fields6b'
+import { SALE_GAIN_CODES, SALE_LOSS_CODES, SALE_SUMMARY_GAINS, SALE_SUMMARY_RESULT } from './form71b'
+import { FORM_8A_COST_TOTAL, FORM_8A_VALUE_TOTAL, HOLDING_GROUPS, parseShares, parseUnitValue } from './form8a'
 import { typedAmount } from './omaVeroText'
-import type { TaxReturnView } from './types'
+import type { SaleRow, TaxReturnView } from './types'
 
 /** Tilari is the software for this file: the filer's own ID plus two characters, as Vero instructs. */
 const SOFTWARE_NAME = 'Tilari'
@@ -24,6 +27,18 @@ export type FileProblem =
   | { key: 'distribution'; code: number }
   | { key: 'answer'; answer: string }
   | { key: 'unanswered'; count: number }
+  | { key: 'form62_negative'; row: string }
+  | { key: 'holding_name'; row: string }
+  | { key: 'holding_id'; row: string }
+  | { key: 'holding_shares'; row: string }
+  | { key: 'holding_unit'; row: string }
+  | { key: 'holding_cost'; row: string }
+  | { key: 'sale_fields'; row: string }
+  | { key: 'sale_id'; row: string }
+  | { key: 'sale_share'; row: string }
+
+/** Vero's own remarks: the file still goes through. */
+export type FileRemark = { key: 'holding_no_id' | 'holding_no_value'; count: number }
 
 export type FileNotice =
   | { key: 'form'; form: string }
@@ -38,6 +53,7 @@ export type IlmoitinFile = {
   problems: FileProblem[]
   /** Reasons the file can be checked in Ilmoitin but not yet sent. */
   notices: FileNotice[]
+  remarks: FileRemark[]
 }
 
 function fileDate(iso: string): string {
@@ -60,6 +76,17 @@ function validText(value: string): boolean {
     const code = ch.codePointAt(0) ?? 0
     return (code >= 0x20 && code <= 0x7e) || (code >= 0xa0 && code <= 0xff)
   })
+}
+
+/** Vero's `MAATUNNUS`: two capital letters. */
+const COUNTRY = /^[A-Z]{2}$/
+/** Vero's `+D3,2`: up to 100, two decimals. */
+const PERCENT = /^(?:100(?:,0{1,2})?|\d{1,2}(?:,\d{1,2})?)$/
+
+function validSaleId(row: SaleRow): boolean {
+  if (row.id_type === 1) return isValidFinnishBusinessId(row.id_code)
+  if (row.id_type === 3) return COUNTRY.test(row.id_code)
+  return row.id_code.length > 0 && row.id_code.length <= 23
 }
 
 export type FileOptions = {
@@ -88,12 +115,17 @@ export function ilmoitinFile(view: TaxReturnView, options: FileOptions): Ilmoiti
   if (!company.contact_name.trim()) problems.push({ key: 'contact_name' })
   if (!company.contact_phone.trim()) problems.push({ key: 'contact_phone' })
 
-  add(0, `VSY06B${String(year).slice(-2)}`)
-  add(48, SOFTWARE_NAME)
-  add(14, `${company.business_id}${SOFTWARE_SUFFIX}`)
-  add(198, stamp(options.now))
-  add(10, company.business_id)
-  add(54, `${fileDate(view.starts)}-${fileDate(view.ends)}`)
+  const yy = String(year).slice(-2)
+  const formHeader = (record: string) => {
+    add(0, `${record}${yy}`)
+    add(48, SOFTWARE_NAME)
+    add(14, `${company.business_id}${SOFTWARE_SUFFIX}`)
+    add(198, stamp(options.now))
+    add(10, company.business_id)
+    add(54, `${fileDate(view.starts)}-${fileDate(view.ends)}`)
+  }
+
+  formHeader('VSY06B')
 
   const unanswered = openAnswers(inputs.answers).length
   if (unanswered) problems.push({ key: 'unanswered', count: unanswered })
@@ -193,7 +225,114 @@ export function ilmoitinFile(view: TaxReturnView, options: FileOptions): Ilmoiti
     else add(178, inputs.audit_remarks ? 1 : 2)
   }
   if (inputs.ownership_change_year) add(531, inputs.ownership_change_year)
-  add(999, 1)
+  let formNumber = 1
+  add(999, formNumber)
+
+  if (view.form62.used) {
+    formHeader('VSY062')
+    for (const section of view.form62.sections) {
+      for (const row of section.rows) {
+        if (row.role !== 'difference' && row.cents < 0) problems.push({ key: 'form62_negative', row: row.label })
+        addMoney(row.code, row.cents)
+      }
+    }
+    add(999, (formNumber += 1))
+  }
+
+  const remarks: FileRemark[] = []
+  const holdingRows = view.form8a.groups.flatMap((group) => group.lines)
+  if (holdingRows.length) {
+    formHeader('VSY08A')
+    for (const group of view.form8a.groups) {
+      const codes = HOLDING_GROUPS.find((def) => def.key === group.key)?.codes
+      if (!codes || !group.lines.length) continue
+      add(1, group.lines.length)
+      group.lines.forEach((line, index) => {
+        const label = line.name || line.business_id || `${group.title} ${index + 1}`
+        if (!line.name) problems.push({ key: 'holding_name', row: label })
+        if (line.cost_cents < 0) problems.push({ key: 'holding_cost', row: label })
+        if (line.business_id && !isValidFinnishBusinessId(line.business_id)) problems.push({ key: 'holding_id', row: label })
+        addText(codes.name, line.name, 140)
+        if (line.business_id) add(codes.id, line.business_id)
+        if (parseShares(line.shares)) add(codes.shares, line.shares)
+        addMoney(codes.cost, line.cost_cents)
+        if (line.unit_value) {
+          if (parseUnitValue(line.unit_value) == null) problems.push({ key: 'holding_unit', row: label })
+          add(codes.unit, line.unit_value.replace('.', ','))
+        }
+        addMoney(codes.total, line.value_cents)
+        add(9, index + 1)
+      })
+      if (parseShares(group.shares_total)) add(codes.sharesTotal, group.shares_total)
+      addMoney(codes.costTotal, group.cost_cents)
+      addMoney(codes.valueTotal, group.value_cents)
+    }
+    addMoney(FORM_8A_COST_TOTAL, view.form8a.cost_cents)
+    addMoney(FORM_8A_VALUE_TOTAL, view.form8a.value_cents)
+    add(999, (formNumber += 1))
+
+    for (const row of view.form8a.groups.flatMap((group) => group.rows)) {
+      if (parseShares(row.shares) == null) problems.push({ key: 'holding_shares', row: row.name || row.era_text })
+    }
+    const noId = holdingRows.filter((line) => !line.business_id).length
+    if (noId) remarks.push({ key: 'holding_no_id', count: noId })
+    const noValue = holdingRows.filter((line) => !line.value_cents).length
+    if (noValue) remarks.push({ key: 'holding_no_value', count: noValue })
+  }
+
+  const { rows: saleRows } = view.form71b
+  if (saleRows.length) {
+    formHeader('VSY71B')
+    const gains = saleRows.filter((row) => row.result_cents >= 0)
+    const losses = saleRows.filter((row) => row.result_cents < 0)
+    for (const row of saleRows) {
+      const label = row.name || row.id_code || row.sold
+      if (!row.name) problems.push({ key: 'sale_fields', row: label })
+      if (!validSaleId(row)) problems.push({ key: 'sale_id', row: label })
+    }
+    if (gains.length) {
+      const codes = SALE_GAIN_CODES
+      add(1, gains.length)
+      gains.forEach((row, index) => {
+        const label = row.name || row.id_code || row.sold
+        if (!row.acquired || !row.sold) problems.push({ key: 'sale_fields', row: label })
+        if (!PERCENT.test(row.share_after)) problems.push({ key: 'sale_share', row: label })
+        add(codes.idType, row.id_type)
+        addText(codes.name, row.name, 70)
+        addText(codes.id, row.id_code, 23)
+        if (row.apartment) addText(codes.apartment, row.apartment, 5)
+        add(codes.acquired, fileDate(row.acquired))
+        add(codes.sold, fileDate(row.sold))
+        add(codes.shareAfter, row.share_after)
+        add(codes.price, typedAmount(row.price_cents))
+        add(codes.cost, typedAmount(row.cost_cents))
+        add(codes.expenses, typedAmount(row.expenses_cents))
+        add(codes.result, typedAmount(row.result_cents))
+        add(9, index + 1)
+      })
+      add(codes.total, typedAmount(view.form71b.gains_cents))
+    }
+    if (losses.length) {
+      const codes = SALE_LOSS_CODES
+      add(1, losses.length)
+      losses.forEach((row, index) => {
+        add(codes.idType, row.id_type)
+        addText(codes.name, row.name, 70)
+        addText(codes.id, row.id_code, 23)
+        add(codes.price, typedAmount(row.price_cents))
+        add(codes.cost, typedAmount(row.cost_cents))
+        add(codes.expenses, typedAmount(row.expenses_cents))
+        add(codes.result, typedAmount(-row.result_cents))
+        add(9, index + 1)
+      })
+      add(codes.total, typedAmount(view.form71b.losses_cents))
+    }
+    if (gains.length) {
+      add(SALE_SUMMARY_GAINS, typedAmount(view.form71b.gains_cents))
+      add(SALE_SUMMARY_RESULT, typedAmount(view.form71b.gains_cents))
+    }
+    add(999, (formNumber += 1))
+  }
 
   const notices: FileNotice[] = []
   for (const form of view.forms) {
@@ -205,5 +344,5 @@ export function ilmoitinFile(view: TaxReturnView, options: FileOptions): Ilmoiti
 
   const text = lines.join('\r\n')
   const bytes = problems.length ? null : Uint8Array.from(text, (ch) => ch.charCodeAt(0))
-  return { name: `6B_${company.business_id}_${year}.txt`, bytes, text, problems, notices }
+  return { name: `6B_${company.business_id}_${year}.txt`, bytes, text, problems, notices, remarks }
 }

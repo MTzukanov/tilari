@@ -1786,6 +1786,7 @@
     "tab": {
       "figures": "OmaVero-luvut",
       "facts": "Täytettävät tiedot",
+      "forms": "Liitelomakkeet",
       "file": "Ilmoitin-tiedosto"
     },
     "copied": "Kopioitu",
@@ -1868,16 +1869,24 @@
       "drafts_one": "{count} luonnos jää pois: mukana ovat vain kirjatut tositteet.",
       "not_ended": "Tilikausi päättyy {date}, joten luvut voivat vielä muuttua.",
       "dividend_answer": "Osingonjako {amount} euroa on kirjattu {date}, mutta päätöstä ei ole täytetty. Täytä se, tai jos ilmoitus on jo annettu, ilmoita päätös samaa kanavaa käyttäen.",
-      "sale_split": "Myyntitilien netto {amount} euroa on yhdessä kentässä. Täytä voitot ja tappiot lomakkeen 71B riveiltä.",
+      "sale_split": "Myyntitilien netto {amount} euroa on yhdessä kentässä. Täytä myyntirivit kohdassa Liitelomakkeet.",
       "sale_gap": "Voitot miinus tappiot eroaa myyntitilien netosta {amount} euroa.",
       "manual": "Käsin annetut luvut: {fields}.",
-      "to_check": "Kirjanpito ja verotus voivat erota, tarkista: {fields}."
+      "to_check": "Kirjanpito ja verotus voivat erota, tarkista: {fields}.",
+      "form8a_gap": "Lomakkeen 8A hankintamenot ja {fields} eroavat {amount} euroa.",
+      "form62_tax": "Lomakkeen 62 verotuksen poistot ja Vähennettävät poistot eroavat {amount} euroa.",
+      "form62_book": "Lomakkeen 62 kirjanpidon poistot ja Vähennettävät poistot eroavat {amount} euroa.",
+      "form62_limit": "Säännönmukainen poisto ylittää Verohallinnon enimmäismäärän {count} osiossa lomakkeella 62.",
+      "form62_limit_one": "Säännönmukainen poisto ylittää Verohallinnon enimmäismäärän {count} osiossa lomakkeella 62."
     },
     "checkOk": {
       "result_ties": "kirjanpidon tulos",
       "net_wealth": "nettovarallisuus ja oma pääoma",
       "estimate": "tuloverolaskelma",
-      "sale_gap": "myyntivoitot ja -tappiot"
+      "sale_gap": "myyntivoitot ja -tappiot",
+      "form8a_gap": "arvopaperit ja lomake 8A",
+      "form62_tax": "verotuksen poistot ja lomake 62",
+      "form62_book": "kirjanpidon poistot ja lomake 62"
     },
     "fact": {
       "lead": "Näitä tietoja ei ole kirjanpidossa. Ne tallentuvat kirjanpitotiedostoon. Henkilötunnusta ei tallenneta.",
@@ -1900,10 +1909,6 @@
       "decided": "Päätöspäivä",
       "payable": "Nostettavissa",
       "amount": "Määrä yhteensä",
-      "sale": "Muun omaisuuden luovutukset",
-      "saleLead": "Lomakkeen 71B riveiltä, kun myyntitilit on merkitty. Voitot miinus tappiot täsmäytetään kirjanpitoon.",
-      "gains": "Luovutusvoitot yhteensä",
-      "losses": "Luovutustappiot yhteensä",
       "statements": "Tilinpäätös ja tilintarkastus",
       "audit": "Onko tilintarkastus tehty?",
       "choose": "Valitse",
@@ -1937,7 +1942,16 @@
       "distribution": "Täytä päätöspäivä, nostopäivä ja määrä: {field}.",
       "answer": "Tämä vastaus vaatii tietoja, joita tiedostossa ei vielä ole: {answer}",
       "unanswered": "{count} OmaVeron kysymystä on vastaamatta.",
-      "unanswered_one": "{count} OmaVeron kysymys on vastaamatta."
+      "unanswered_one": "{count} OmaVeron kysymys on vastaamatta.",
+      "form62_negative": "Lomakkeen 62 luku on negatiivinen: {row}.",
+      "holding_name": "Lomakkeen 8A riviltä puuttuu nimi: {row}.",
+      "holding_id": "Lomakkeen 8A Y-tunnus ei kelpaa: {row}.",
+      "holding_shares": "Lomakkeen 8A lukumäärä ei kelpaa: {row}. Enintään neljä desimaalia.",
+      "holding_unit": "Lomakkeen 8A vertailuarvo kappaleelta ei kelpaa: {row}. Alle 10 euron arvossa enintään kolme desimaalia, muuten kaksi.",
+      "holding_cost": "Lomakkeen 8A hankintameno on negatiivinen: {row}.",
+      "sale_fields": "Lomakkeen 71B riviltä puuttuu nimi tai päivä: {row}.",
+      "sale_id": "Lomakkeen 71B tunnus ei vastaa sen tyyppiä: {row}.",
+      "sale_share": "Lomakkeen 71B omistusosuus ei kelpaa: {row}."
     },
     "notice": {
       "form": "Lomake {form} kuuluu samaan tiedostoon, eikä sitä vielä muodosteta.",
@@ -1956,6 +1970,36 @@
       "idLabel": "{name}: henkilö- tai Y-tunnus"
     },
     "toConfirm": "Vahvista tilien kentät",
-    "confirmField": "Vahvista"
+    "confirmField": "Vahvista",
+    "formBuilt": "Mukana",
+    "remarkTag": "Huomautus",
+    "termAccount": "Tilin {account} velan pituus",
+    "termLong": "Pitkäaikainen",
+    "termShort": "Lyhytaikainen",
+    "remark": {
+      "holding_no_id": "{count} lomakkeen 8A riviltä puuttuu Y-tunnus.",
+      "holding_no_id_one": "{count} lomakkeen 8A riviltä puuttuu Y-tunnus.",
+      "holding_no_value": "{count} lomakkeen 8A riviltä puuttuu vertailuarvo.",
+      "holding_no_value_one": "{count} lomakkeen 8A riviltä puuttuu vertailuarvo."
+    },
+    "attached": {
+      "lead": "Nämä lomakkeet kuuluvat veroilmoitukseen. Ne tulevat sekä OmaVero-tekstiin että Ilmoitin-tiedostoon.",
+      "none": "Luvut eivät vaadi lomakkeita 8A, 71B tai 62.",
+      "holdingsEra": "Hankintameno tulee tase-erästä. Sama Y-tunnus yhdistyy lomakkeella yhdeksi riviksi, joten kirjoita lukumäärä vain yhdelle.",
+      "holdingsTyped": "Nämä arvopaperit eivät ole kirjanpidossa yksitellen, joten kirjoita rivit itse.",
+      "fromEra": "Tase-erä: {text}",
+      "addRow": "Lisää rivi",
+      "field": "{field}: {amount} euroa",
+      "salesLead": "Vain muun omaisuuden luovutukset. Tappio ilmoitetaan rajoittamattomasti vähennyskelpoisena, kuten asunto- ja kiinteistöosakkeissa.",
+      "salesSuggested": "Rivit on ehdotettu myyntitositteista. Tarkista ne ja täydennä puuttuvat tiedot.",
+      "salesFixed": "Käyttöomaisuusosakkeiden luovutukset täytetään toistaiseksi suoraan OmaVerossa.",
+      "suggestions": "Myyntitositteet, jotka eivät ole riveillä",
+      "noSales": "Ei luovutusrivejä.",
+      "gain": "Voitto",
+      "loss": "Tappio",
+      "depreciationLead": "Luvut tulevat kirjanpidosta, ja verotus seuraa kirjanpitoa. Kirjoita luku, jos verotuksessa on muuta.",
+      "showAll": "Näytä kaikki osiot",
+      "fromLedger": "Kirjanpidon mukaan"
+    }
   }
 }

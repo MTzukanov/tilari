@@ -697,6 +697,10 @@ correction would change the open year's income statement lines. The rental-objec
   question considered can be told from one missed. Answers do not carry over: a carried no would look considered.
   The form still saves with questions open, since refusing would lose typed work; the check and the stopped file say
   what is left.
+- **Forms start from the ledger, and are tied to it to the cent** (2026-11-02). 8A follows tase-eriä, 71B sale vouchers
+  and 62 asset movements; what the ledger cannot know is typed. Nothing is guessed from a voucher's partner, who on a
+  purchase is usually the seller: back-tested on a real book, it named the filed company in no case. A row or field
+  left empty says so rather than holding a plausible wrong value.
 - **OmaVero's wording in the UI.** Vero's file codes appear only in code and the file: OmaVero does not show them.
 - **A file is only called ready when complete.** Forms in the same file must exist, since a corrected return replaces
   the earlier one. It can still be format-checked at every step.

@@ -341,6 +341,14 @@ const OTHER_FIELDS: Record<number, string> = {
   701: 'Osakkeenomistajan nimi',
   522: 'Jaettavan osingon tai ylijäämän määrä',
   293: 'Vapaan oman pääoman rahastosta jaettavaksi päätetty määrä',
+  140: 'Yhtiön tai osuuskunnan nimi',
+  240: 'Yhtiön tai osuuskunnan nimi',
+  440: 'Yhtiön tai osuuskunnan nimi',
+  760: 'Luovutetun kohteen nimi',
+  761: 'Luovutetun kohteen tunnus',
+  762: 'Huoneiston numero',
+  831: 'Luovutetun kohteen nimi',
+  832: 'Luovutetun kohteen tunnus',
 }
 
 /** OmaVero's wording for a file code: the owner never sees the codes there. */

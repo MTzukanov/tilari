@@ -1,13 +1,21 @@
 import { getBookService } from '../../book/engine'
 import type { Target } from '../../book/modules/taxReturn/domain/mapping'
-import type { TaxReturnInputs } from '../../book/modules/taxReturn/domain/types'
+import type { DebtTerm, TaxReturnInputs } from '../../book/modules/taxReturn/domain/types'
 
 export type {
   AccountLine,
   CheckView,
+  DebtTerm,
   DistributionInput,
+  Form62Row,
+  Form62Section,
   FormNeed,
   GroupView,
+  HoldingGroupView,
+  HoldingInput,
+  HoldingRow,
+  SaleIdType,
+  SaleInput,
   RowView,
   ShareholderInput,
   TaxReturnInputs,
@@ -15,7 +23,8 @@ export type {
 } from '../../book/modules/taxReturn/domain/types'
 export { ANSWERS, BALANCE_GROUPS, PNL_GROUPS, fieldName, openAnswers } from '../../book/modules/taxReturn/domain/fields6b'
 export { SALE, type Target } from '../../book/modules/taxReturn/domain/mapping'
-export { ilmoitinFile, type FileNotice, type FileProblem } from '../../book/modules/taxReturn/domain/ilmoitinFile'
+export { saleResult } from '../../book/modules/taxReturn/domain/form71b'
+export { ilmoitinFile, type FileNotice, type FileProblem, type FileRemark } from '../../book/modules/taxReturn/domain/ilmoitinFile'
 export { omaVeroText, typedAmount } from '../../book/modules/taxReturn/domain/omaVeroText'
 
 function service() {
@@ -30,4 +39,7 @@ export function saveTaxReturnInputs(ends: string, inputs: TaxReturnInputs) {
 }
 export function saveTaxReturnMapping(ends: string, accounts: Record<string, Target | null>) {
   return service().saveMapping(ends, accounts)
+}
+export function saveTaxReturnTerms(ends: string, terms: Record<string, DebtTerm | null>) {
+  return service().saveTerms(ends, terms)
 }

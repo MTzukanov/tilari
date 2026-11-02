@@ -28,7 +28,10 @@ import {
   type RowDef,
   type Side,
 } from './fields6b'
-import { readInputs, readOverrides } from './inputs'
+import { computeForm62, form62Checks } from './form62'
+import { computeForm71B, FIXED_ASSET_SALE_CODES } from './form71b'
+import { computeForm8A } from './form8a'
+import { readInputs, readOverrides, readTerms } from './inputs'
 import {
   BANK_OVERDRAFT_CODE,
   SALE,
@@ -38,7 +41,7 @@ import {
   placeIncomeStatement,
   type Placement,
 } from './mapping'
-import type { AccountLine, CheckView, FormNeed, GroupView, RowView, TaxReturnInputs, TaxReturnView } from './types'
+import type { AccountLine, CheckView, Form62View, Form71bView, Form8aView, FormNeed, GroupView, RowView, TaxReturnInputs, TaxReturnView } from './types'
 
 /** Kitsas's account for a decided dividend; a debit there after the year end is a distribution. */
 const DIVIDEND_ACCOUNT = 2261
@@ -98,6 +101,7 @@ export function computeTaxReturn(db: SqliteDb, ends: string, options: ComputeOpt
   const period = requireFiscalPeriodByEnd(db, ends)
   const { starts } = period
   const overrides = readOverrides(db)
+  const terms = readTerms(db)
   const { inputs, saved, carried_from } = readInputs(db, ends)
   const settings = getSettings(db, ['Nimi', 'Ytunnus', 'VeroYhteysHenkilo', 'VeroYhteysPuhelin'])
 
@@ -137,6 +141,12 @@ export function computeTaxReturn(db: SqliteDb, ends: string, options: ComputeOpt
   }
 
   const balanceRows = accountRows(db, `${bsAccount()} AND Vienti.pvm <= ?`, [ends])
+  // Form 62 needs an asset's movements even in the year its balance reaches zero.
+  const placedAccounts = new Map<number, number[]>()
+  for (const account of balanceRows) {
+    const { code } = placeBalanceSheet(account.account, overrides)
+    if (typeof code === 'number') placedAccounts.set(code, [...(placedAccounts.get(code) ?? []), account.account])
+  }
   let longTerm = 0
   let shortTerm = 0
   let previousProfit = 0
@@ -161,9 +171,12 @@ export function computeTaxReturn(db: SqliteDb, ends: string, options: ComputeOpt
     const cents = draft.side === 'asset' ? debit : -debit
     draft.book += cents
     draft.taxBase += cents
-    draft.accounts.push(line(account, cents, placement))
+    const accountLine = line(account, cents, placement)
+    draft.accounts.push(accountLine)
     if (draft.side === 'debt') {
-      if (debtTerm(account.account) === 'long' && placement.source !== 'moved') longTerm += cents
+      const term = placement.source === 'moved' ? 'short' : (terms[String(account.account)] ?? debtTerm(account.account))
+      accountLine.term = term
+      if (term === 'long') longTerm += cents
       else shortTerm += cents
     }
   }
@@ -171,8 +184,12 @@ export function computeTaxReturn(db: SqliteDb, ends: string, options: ComputeOpt
   const priorResults = accountRows(db, `${pnlAccount()} AND Vienti.pvm < ?`, [starts]).reduce((total, a) => total + a.k - a.d, 0)
   previousProfit += priorResults
 
-  const gains = inputs.sales ? inputs.sales.gains_cents : Math.max(saleNet, 0)
-  const losses = inputs.sales ? inputs.sales.losses_cents : Math.max(-saleNet, 0)
+  const form71b = computeForm71B(db, starts, ends, overrides, inputs)
+  // Suggested rows drive the form only once they tie: until then its figures stay the ledger's.
+  const saleRowGap = form71b.gains_cents - form71b.losses_cents - saleNet
+  const useSaleRows = form71b.rows.length > 0 && (form71b.saved || saleRowGap === 0)
+  const gains = useSaleRows ? form71b.gains_cents : Math.max(saleNet, 0)
+  const losses = useSaleRows ? form71b.losses_cents : Math.max(-saleNet, 0)
   const applySale = (code: number, cents: number) => {
     const draft = drafts.get(code)
     if (!draft) return
@@ -266,6 +283,11 @@ export function computeTaxReturn(db: SqliteDb, ends: string, options: ComputeOpt
   const costsGroup = groups.find((g) => g.key === 'other_costs')
   costsGroup?.totals.push(...RESULT_TOTALS.map((total) => ({ ...total, cents: totals[total.code] ?? 0 })))
 
+  const accountsIn = (field: number) => placedAccounts.get(field) ?? (drafts.get(field)?.accounts ?? []).map((a) => a.account)
+  const form8a = computeForm8A(db, ends, overrides, inputs, values)
+  const form62 = computeForm62(db, { starts, ends, inputs, accountsIn })
+  const forms = formsNeeded(values, inputs, form62)
+
   const checks = buildChecks(db, {
     starts,
     ends,
@@ -280,7 +302,12 @@ export function computeTaxReturn(db: SqliteDb, ends: string, options: ComputeOpt
     equity: totals[478] ?? 0,
     saleNet,
     hasSales: saleLines.length > 0,
+    saleRowGap,
+    useSaleRows,
     inputs,
+    form8a,
+    form71b,
+    form62: forms.some((form) => form.form === '62') ? form62 : null,
     storedEstimate: period.json.verolaskelma?.tulos_cents ?? null,
     taxBooked: Boolean(period.json.verolaskelma?.booked_at),
   })
@@ -298,11 +325,14 @@ export function computeTaxReturn(db: SqliteDb, ends: string, options: ComputeOpt
     values,
     unplaced,
     checks,
-    forms: formsNeeded(values, inputs),
+    forms,
     inputs,
     carried_from,
     saved,
     overrides,
+    form8a,
+    form71b,
+    form62,
   }
 }
 
@@ -320,7 +350,13 @@ type CheckInput = {
   equity: number
   saleNet: number
   hasSales: boolean
+  saleRowGap: number
+  useSaleRows: boolean
   inputs: TaxReturnInputs
+  form8a: Form8aView
+  form71b: Form71bView
+  /** Only when the figures call for the form. */
+  form62: Form62View | null
   storedEstimate: number | null
   taxBooked: boolean
 }
@@ -349,14 +385,17 @@ function buildChecks(db: SqliteDb, input: CheckInput): CheckView[] {
   const customAccounts = new Set(custom.map((a) => a.account))
   if (customAccounts.size) checks.push({ key: 'custom_accounts', state: 'warn', count: customAccounts.size })
 
-  const resultGap = formResult(values) - input.bookResult
+  // A difference between the 71B rows and the sale accounts is reported once, as itself.
+  const usedGap = input.useSaleRows ? input.saleRowGap : 0
+
+  const resultGap = formResult(values) - input.bookResult - usedGap
   checks.push({ key: 'result_ties', state: resultGap ? 'crit' : 'ok', cents: resultGap })
 
   const wealthGap = input.netWealth - input.equity
   checks.push({ key: 'net_wealth', state: wealthGap ? 'crit' : 'ok', cents: wealthGap })
 
   const estimate = input.storedEstimate ?? taxFromBasis(computeTaxBasis(db, input.starts, input.ends)).tulos_cents
-  const estimateGap = input.taxResult - estimate
+  const estimateGap = input.taxResult - usedGap - estimate
   checks.push({ key: 'estimate', state: estimateGap ? 'warn' : 'ok', cents: estimateGap })
 
   const negative = groups
@@ -388,13 +427,18 @@ function buildChecks(db: SqliteDb, input: CheckInput): CheckView[] {
     checks.push({ key: 'dividend_answer', state: 'warn', cents: dividendCents, date: dividend?.first ?? undefined })
   }
 
-  if (input.hasSales) {
-    if (!input.inputs.sales) checks.push({ key: 'sale_split', state: 'warn', cents: input.saleNet })
-    else {
-      const gap = input.inputs.sales.gains_cents - input.inputs.sales.losses_cents - input.saleNet
-      checks.push({ key: 'sale_gap', state: gap ? 'crit' : 'ok', cents: gap })
-    }
+  if (input.hasSales || input.form71b.rows.length) {
+    if (!input.form71b.rows.length) checks.push({ key: 'sale_split', state: 'warn', cents: input.saleNet })
+    else checks.push({ key: 'sale_gap', state: input.saleRowGap ? 'crit' : 'ok', cents: input.saleRowGap })
   }
+
+  for (const group of input.form8a.groups) {
+    if (!group.rows.length && !group.field_cents) continue
+    const gap = group.cost_cents - group.field_cents
+    checks.push({ key: 'form8a_gap', state: gap ? 'crit' : 'ok', cents: gap, codes: [group.field] })
+  }
+
+  if (input.form62) checks.push(...form62Checks(input.form62, values))
 
   if (input.usedManual.length) checks.push({ key: 'manual', state: 'warn', codes: [...input.usedManual] })
   const toCheck = groups.flatMap((g) => g.rows).filter((row) => row.check).map((row) => row.code)
@@ -403,10 +447,10 @@ function buildChecks(db: SqliteDb, input: CheckInput): CheckView[] {
   return checks
 }
 
-const FIELD_FORMS: { form: string; codes: number[]; in_file: boolean }[] = [
-  { form: '62', codes: [364, 365, 400, 401, 403, 409], in_file: true },
+const FIELD_FORMS: { form: string; codes: number[]; in_file: boolean; built?: boolean }[] = [
+  { form: '62', codes: [364, 365, 400, 401, 403, 409], in_file: true, built: true },
   { form: '73', codes: [337, 338], in_file: true },
-  { form: '8A', codes: [405, 424, 430], in_file: true },
+  { form: '8A', codes: [405, 424, 430], in_file: true, built: true },
   { form: '18', codes: [402, 431], in_file: true },
   { form: '71B', codes: [332, 333, 372, 373, 261, 270, 271], in_file: true },
   { form: '65', codes: [436, 439], in_file: true },
@@ -417,12 +461,16 @@ const FIELD_FORMS: { form: string; codes: number[]; in_file: boolean }[] = [
 ]
 
 /** Vero's notices in the record description say which fields call for which form. */
-function formsNeeded(values: Record<string, number>, inputs: TaxReturnInputs): FormNeed[] {
+function formsNeeded(values: Record<string, number>, inputs: TaxReturnInputs, form62: Form62View): FormNeed[] {
   const forms: FormNeed[] = []
   for (const rule of FIELD_FORMS) {
     const codes = rule.codes.filter((code) => values[code])
-    if (codes.length) forms.push({ form: rule.form, codes, built: false, in_file: rule.in_file })
+    if (!codes.length) continue
+    // Only other assets' sections of 71B are produced: fixed-asset shares still go by hand.
+    const built = rule.form === '71B' ? !codes.some((code) => FIXED_ASSET_SALE_CODES.includes(code)) : Boolean(rule.built)
+    forms.push({ form: rule.form, codes, built, in_file: rule.in_file })
   }
+  if (form62.used && !forms.some((form) => form.form === '62')) forms.push({ form: '62', codes: [], built: true, in_file: true })
   for (const answer of ANSWERS) {
     if (answer.form && inputs.answers[answer.key] && !forms.some((f) => f.form === answer.form)) {
       forms.push({ form: answer.form, codes: [], built: false, in_file: true })

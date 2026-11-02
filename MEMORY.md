@@ -7,6 +7,20 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-02 - Forms 8A, 71B and 62, and a debt's term by choice
+
+- Back-tested on real filed returns, read in place and printed as pass/fail. It found two things the unit tests had
+  not: a fully depreciated asset vanished from 62, because accounts came from those with a closing balance; and a
+  tase-erä's partner is the seller, not the company, so it was dropped as a source of names and business IDs.
+- In financial assets one tase-erä can hold many securities, so 8A's rows there are typed until the bank import brings
+  them. Other assets follow tase-eriä, and two can make one filed row: rows with one business ID combine.
+- A filed 71B row's cost can differ from the booked cost, so a suggestion stays editable, and `sale_gap` shows what is
+  left. Sale fees are booked on their own vouchers, with nothing linking them to a sale.
+- Leaving a tab with typed figures saves them. With these forms too much could be lost by moving to the file to check it.
+- A very long patch hits the sandbox's limit on one shell argument, and a script mentioning `rm` inside `bash -c` is
+  stopped by a safety check. Scratch browser tests can live outside the repo, with a config that imports the repo's and
+  a `node_modules` link beside it, so nothing needs removing afterwards.
+
 ## 2026-11-02 - 6B questions take a yes or a no; counted messages have a singular
 
 - Owner: a single checkbox cannot tell "no" from "not thought about", so OmaVero's questions became compulsory yes/no

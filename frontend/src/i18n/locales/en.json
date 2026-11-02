@@ -1786,6 +1786,7 @@
     "tab": {
       "figures": "OmaVero numbers",
       "facts": "Facts to fill in",
+      "forms": "Attached forms",
       "file": "Ilmoitin file"
     },
     "copied": "Copied",
@@ -1868,16 +1869,24 @@
       "drafts_one": "{count} draft is left out: only posted vouchers count.",
       "not_ended": "The period ends on {date}, so the figures can still change.",
       "dividend_answer": "A dividend of {amount} euros is booked on {date}, but the decision is not filled in. Fill it in, or if the return is already filed, report the decision through the same channel.",
-      "sale_split": "The sale accounts' net of {amount} euros sits in one field. Fill in gains and losses from form 71B's rows.",
+      "sale_split": "The sale accounts' net of {amount} euros is in one field. Fill in the sale rows under Attached forms.",
       "sale_gap": "Gains minus losses differ from the sale accounts' net by {amount} euros.",
       "manual": "Figures given by hand: {fields}.",
-      "to_check": "Book and tax can differ here, check: {fields}."
+      "to_check": "Book and tax can differ here, check: {fields}.",
+      "form8a_gap": "Costs on form 8A and {fields} differ by {amount} euros.",
+      "form62_tax": "Tax depreciation on form 62 and Vähennettävät poistot differ by {amount} euros.",
+      "form62_book": "Book depreciation on form 62 and Vähennettävät poistot differ by {amount} euros.",
+      "form62_limit": "Regular depreciation is over the Tax Administration's maximum in {count} sections of form 62.",
+      "form62_limit_one": "Regular depreciation is over the Tax Administration's maximum in {count} section of form 62."
     },
     "checkOk": {
       "result_ties": "book result",
       "net_wealth": "net wealth and equity",
       "estimate": "income tax calculation",
-      "sale_gap": "sale gains and losses"
+      "sale_gap": "sale gains and losses",
+      "form8a_gap": "securities and form 8A",
+      "form62_tax": "tax depreciation and form 62",
+      "form62_book": "book depreciation and form 62"
     },
     "fact": {
       "lead": "The books do not hold these. They are saved in the book file. The personal ID is not saved.",
@@ -1900,10 +1909,6 @@
       "decided": "Decision date",
       "payable": "Payable from",
       "amount": "Total amount",
-      "sale": "Sales of other assets",
-      "saleLead": "From form 71B's rows, once sale accounts are marked. Gains minus losses are reconciled to the books.",
-      "gains": "Total gains",
-      "losses": "Total losses",
       "statements": "Statements and audit",
       "audit": "Has the audit been done?",
       "choose": "Choose",
@@ -1937,7 +1942,16 @@
       "distribution": "Fill in the decision date, payable date and amount: {field}.",
       "answer": "This answer needs fields the file does not produce yet: {answer}",
       "unanswered": "{count} OmaVero questions are unanswered.",
-      "unanswered_one": "{count} OmaVero question is unanswered."
+      "unanswered_one": "{count} OmaVero question is unanswered.",
+      "form62_negative": "A figure on form 62 is negative: {row}.",
+      "holding_name": "A row on form 8A has no name: {row}.",
+      "holding_id": "The business ID on form 8A is not valid: {row}.",
+      "holding_shares": "The count on form 8A is not valid: {row}. At most four decimals.",
+      "holding_unit": "The comparison value per share on form 8A is not valid: {row}. Under 10 euros at most three decimals, otherwise two.",
+      "holding_cost": "The cost on form 8A is negative: {row}.",
+      "sale_fields": "A row on form 71B has no name or date: {row}.",
+      "sale_id": "The ID on form 71B does not match its type: {row}.",
+      "sale_share": "The ownership share on form 71B is not valid: {row}."
     },
     "notice": {
       "form": "Form {form} belongs in the same file and is not generated yet.",
@@ -1956,6 +1970,36 @@
       "idLabel": "{name}: personal or business ID"
     },
     "toConfirm": "Confirm these accounts' fields",
-    "confirmField": "Confirm"
+    "confirmField": "Confirm",
+    "formBuilt": "Included",
+    "remarkTag": "Remark",
+    "termAccount": "Term of the debt on account {account}",
+    "termLong": "Long-term",
+    "termShort": "Short-term",
+    "remark": {
+      "holding_no_id": "{count} rows on form 8A have no business ID.",
+      "holding_no_id_one": "{count} row on form 8A has no business ID.",
+      "holding_no_value": "{count} rows on form 8A have no comparison value.",
+      "holding_no_value_one": "{count} row on form 8A has no comparison value."
+    },
+    "attached": {
+      "lead": "These forms belong to the tax return. They go into both the OmaVero text and the Ilmoitin file.",
+      "none": "The figures do not call for forms 8A, 71B or 62.",
+      "holdingsEra": "The cost comes from the balance sheet item. One business ID makes one row on the form, so write the count on only one of them.",
+      "holdingsTyped": "These securities are not in the ledger one by one, so type the rows yourself.",
+      "fromEra": "Balance sheet item: {text}",
+      "addRow": "Add a row",
+      "field": "{field}: {amount} euros",
+      "salesLead": "Sales of other assets only. A loss is reported as deductible in full, as for housing and real estate company shares.",
+      "salesSuggested": "The rows are suggestions from the sale vouchers. Check them and fill in what is missing.",
+      "salesFixed": "Sales of fixed-asset shares are filled in directly in OmaVero for now.",
+      "suggestions": "Sale vouchers not on the rows",
+      "noSales": "No sale rows.",
+      "gain": "Gain",
+      "loss": "Loss",
+      "depreciationLead": "The figures come from the ledger, and tax follows the book. Type a figure where tax differs.",
+      "showAll": "Show all sections",
+      "fromLedger": "As in the ledger"
+    }
   }
 }

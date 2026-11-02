@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useI18n } from '../../../i18n'
 import { Pill } from '../../../shared/Pill'
 import { downloadFile } from '../../../shared/downloadFile'
-import { omaVeroText, typedAmount, type GroupView, type RowView, type Target, type TaxReturnInputs, type TaxReturnView } from '../api'
+import { omaVeroText, typedAmount, type DebtTerm, type GroupView, type RowView, type Target, type TaxReturnInputs, type TaxReturnView } from '../api'
 import { AccountRows, ConfirmField, ManualFigure, PlaceSelect } from './AccountPlacement'
 import { formatFigure } from './format'
 import type { PeriodDocuments } from './TaxReturnDialog'
@@ -10,6 +10,7 @@ import type { PeriodDocuments } from './TaxReturnDialog'
 type Actions = {
   onSaveInputs: (inputs: TaxReturnInputs) => Promise<void>
   onPlaceAccount: (account: number, target: Target | null) => Promise<void>
+  onTerm: (account: number, term: DebtTerm) => Promise<void>
 }
 
 async function copyText(text: string): Promise<boolean> {
@@ -22,7 +23,7 @@ async function copyText(text: string): Promise<boolean> {
 }
 
 /** An amount that copies itself in the form a field takes, without thousands separators. */
-function CopyFigure({ cents, label }: { cents: number; label: string }) {
+export function CopyFigure({ cents, label }: { cents: number; label: string }) {
   const { t } = useI18n()
   const [done, setDone] = useState(false)
   return (
@@ -62,7 +63,7 @@ function Row({ row, view, actions }: { row: RowView; view: TaxReturnView; action
       {open ? (
         <tr className="tax-return-detail">
           <td colSpan={3}>
-            <AccountRows row={row} overrides={view.overrides} onPlace={actions.onPlaceAccount} />
+            <AccountRows row={row} overrides={view.overrides} onPlace={actions.onPlaceAccount} onTerm={actions.onTerm} />
             <ManualFigure row={row} inputs={view.inputs} onSave={actions.onSaveInputs} />
           </td>
         </tr>
@@ -103,11 +104,11 @@ function Group({ group, view, showZero, actions }: { group: GroupView; view: Tax
 }
 
 /** The numbers to type into OmaVero, in its order and wording, each traced to its accounts. */
-export function FiguresTab({ view, documents, onSaveInputs, onPlaceAccount }: { view: TaxReturnView; documents: PeriodDocuments } & Actions) {
+export function FiguresTab({ view, documents, onSaveInputs, onPlaceAccount, onTerm }: { view: TaxReturnView; documents: PeriodDocuments } & Actions) {
   const { t } = useI18n()
   const [showZero, setShowZero] = useState(false)
   const [copied, setCopied] = useState(false)
-  const actions: Actions = { onSaveInputs, onPlaceAccount }
+  const actions: Actions = { onSaveInputs, onPlaceAccount, onTerm }
   const text = () => omaVeroText(view)
   const guessed = view.groups
     .flatMap((group) => group.rows)
@@ -182,7 +183,7 @@ export function FiguresTab({ view, documents, onSaveInputs, onPlaceAccount }: { 
           <ul className="tax-return-check-list">
             {view.forms.map((form) => (
               <li key={form.form}>
-                <Pill tone="warn">{t('taxReturn.formOpen')}</Pill>
+                <Pill tone={form.built ? 'ok' : 'warn'}>{t(form.built ? 'taxReturn.formBuilt' : 'taxReturn.formOpen')}</Pill>
                 <span>{t(`taxReturn.form.${form.form}`, { form: form.form })}</span>
               </li>
             ))}

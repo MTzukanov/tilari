@@ -1,7 +1,8 @@
 /** The return as plain text in OmaVero's order and wording, to read while filling the form by hand. */
 import { formatFiCents } from '../../../cents'
 import { ANSWERS } from './fields6b'
-import type { RowView, TaxReturnView } from './types'
+import { HOLDING_GROUPS } from './form8a'
+import type { RowView, SaleIdType, TaxReturnView } from './types'
 
 /** Plain spaces and a plain minus, so the text pastes anywhere. */
 export function plainAmount(cents: number): string {
@@ -27,6 +28,89 @@ const AUDIT_TEXT: Record<number, string> = {
   1: 'Kyllä',
   2: 'Ei, tehdään myöhemmin.',
   3: 'Ei, tilintarkastaja on jätetty valitsematta.',
+}
+
+const SALE_ID_TYPE: Record<SaleIdType, string> = { 1: 'Y-tunnus', 2: 'Kiinteistötunnus', 3: 'Maakoodi' }
+
+function form8aText(view: TaxReturnView): string[] {
+  const groups = view.form8a.groups.filter((group) => group.lines.length)
+  if (!groups.length) return []
+  const out = ['', 'Luettelo yhteisön omistamista arvopapereista ja arvo-osuuksista (lomake 8A)']
+  for (const group of groups) {
+    const def = HOLDING_GROUPS.find((item) => item.key === group.key)
+    out.push('', group.title)
+    for (const line of group.lines) {
+      out.push(
+        `Yhtiön tai osuuskunnan nimi: ${line.name}`,
+        `Y-tunnus: ${line.business_id || 'täytä itse'}`,
+        `Osakkeiden lukumäärä: ${line.shares}`,
+        `Tuloverotuksessa poistamaton hankintameno: ${plainAmount(line.cost_cents)}`,
+        `Vertailuarvo kappaleelta: ${line.unit_value || 'täytä itse'}`,
+        `Vertailuarvo yhteensä: ${line.value_cents ? plainAmount(line.value_cents) : 'täytä itse'}`,
+      )
+    }
+    out.push(
+      `Osakkeiden lukumäärä yhteensä: ${group.shares_total}`,
+      `${def?.costLabel ?? ''}: ${plainAmount(group.cost_cents)}`,
+      `${def?.valueLabel ?? ''}: ${plainAmount(group.value_cents)}`,
+    )
+  }
+  out.push(
+    '',
+    `Tuloverotuksen poistamattomat hankintamenot yhteensä: ${plainAmount(view.form8a.cost_cents)}`,
+    `Vertailuarvot yhteensä: ${plainAmount(view.form8a.value_cents)}`,
+  )
+  return out
+}
+
+function form71bText(view: TaxReturnView): string[] {
+  const { rows } = view.form71b
+  if (!rows.length) return []
+  const out = ['', 'Veronalaiset luovutusvoitot ja verotuksessa vähennyskelpoiset luovutustappiot (lomake 71B)']
+  const part = (title: string, resultLabel: string, totalLabel: string, chosen: typeof rows, total: number) => {
+    if (!chosen.length) return
+    out.push('', title)
+    for (const row of chosen) {
+      out.push(
+        `Luovutetun kohteen tunnuksen tyyppi: ${SALE_ID_TYPE[row.id_type]}`,
+        `Luovutetun kohteen nimi: ${row.name}`,
+        `${SALE_ID_TYPE[row.id_type]}: ${row.id_code || 'täytä itse'}`,
+        ...(row.apartment ? [`Huoneiston numero: ${row.apartment}`] : []),
+        `Hankinta-aika: ${row.acquired ? fiDate(row.acquired) : 'täytä itse'}`,
+        `Luovutusaika: ${row.sold ? fiDate(row.sold) : 'täytä itse'}`,
+        `Omistusosuus: ${row.share_after || 'täytä itse'}`,
+        `Luovutushinta tai todennäköinen luovutushinta: ${plainAmount(row.price_cents)}`,
+        `Verotuksessa poistamaton hankintameno: ${plainAmount(row.cost_cents)}`,
+        `Voiton hankkimisesta aiheutuneet menot: ${plainAmount(row.expenses_cents)}`,
+        `${resultLabel}: ${plainAmount(Math.abs(row.result_cents))}`,
+      )
+    }
+    out.push(`${totalLabel}: ${plainAmount(total)}`)
+  }
+  part(
+    'Veronalaiset muun omaisuuden luovutusvoitot',
+    'Veronalainen luovutusvoitto',
+    'Veronalaiset luovutusvoitot yhteensä',
+    rows.filter((row) => row.result_cents >= 0),
+    view.form71b.gains_cents,
+  )
+  part(
+    'Muun omaisuuden rajoittamattomasti vähennyskelpoiset luovutustappiot',
+    'Luovutustappio',
+    'Luovutustappiot yhteensä',
+    rows.filter((row) => row.result_cents < 0),
+    view.form71b.losses_cents,
+  )
+  return out
+}
+
+function form62Text(view: TaxReturnView): string[] {
+  if (!view.form62.used) return []
+  const out = ['', 'Erittely varauksista, arvonmuutoksista ja poistoista (lomake 62)']
+  for (const section of view.form62.sections.filter((item) => item.has_values)) {
+    out.push('', section.title, ...section.rows.filter((row) => row.cents).map((row) => `${row.label}: ${plainAmount(row.cents)}`))
+  }
+  return out
 }
 
 function rowText(row: RowView): string | null {
@@ -109,5 +193,6 @@ export function omaVeroText(view: TaxReturnView): string {
 
   const forms = view.forms.map((f) => f.form)
   out.push('', `Liitelomakkeet ja muut ilmoitukset: ${forms.length ? forms.join(', ') : 'ei lukujen perusteella'}`)
+  out.push(...form62Text(view), ...form8aText(view), ...form71bText(view))
   return out.join('\n')
 }

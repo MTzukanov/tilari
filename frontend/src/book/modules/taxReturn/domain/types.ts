@@ -16,6 +16,47 @@ export type DistributionInput = { decided: string; payable: string; amount_cents
 /** 1 yes, 2 no and done later, 3 no auditor elected. */
 export type AuditAnswer = 1 | 2 | 3
 
+export type HoldingGroup = 'fixed' | 'financial' | 'other'
+
+/** A row of form 8A as typed. */
+export type HoldingInput = {
+  /** The tase-erä whose balance is the cost; `null` for a row typed by hand. */
+  era: number | null
+  group: HoldingGroup
+  name: string
+  business_id: string
+  /** As written, up to four decimals. */
+  shares: string
+  /** Only for a row typed by hand: otherwise the ledger's figure. */
+  cost_cents: number
+  /** Vertailuarvo kappaleelta: three decimals under 10 euros, so kept as written. */
+  unit_value: string
+  /** Vertailuarvo yhteensä. `null`: count times unit value. */
+  total_value_cents: number | null
+}
+
+/** 1 business ID, 2 property ID, 3 country code. */
+export type SaleIdType = 1 | 2 | 3
+
+/** A row of form 71B as typed. */
+export type SaleInput = {
+  /** The sale voucher that suggested the row. */
+  voucher: number | null
+  id_type: SaleIdType
+  name: string
+  id_code: string
+  apartment: string
+  acquired: string
+  sold: string
+  /** Omistusosuus luovutuksen jälkeen, as written. */
+  share_after: string
+  price_cents: number
+  cost_cents: number
+  expenses_cents: number
+}
+
+export type DebtTerm = 'long' | 'short'
+
 /** What the book cannot know. Links and inputs only (ADR-023); the personal ID is never here. */
 export type TaxReturnInputs = {
   /** Empty: the book's `VeroYhteysHenkilo` and `VeroYhteysPuhelin`, if Kitsas has them. */
@@ -32,8 +73,11 @@ export type TaxReturnInputs = {
   /** Yes unless the owner says otherwise: a return normally rests on finished statements. */
   statements_prepared: boolean
   ownership_change_year: number | null
-  /** Filled from the 71B rows; the sale accounts' net must equal gains minus losses. */
-  sales: { gains_cents: number; losses_cents: number } | null
+  holdings: HoldingInput[]
+  /** Form 71B's rows. `null`: not saved yet, so the sale vouchers suggest them. */
+  sale_rows: SaleInput[] | null
+  /** Figures typed on form 62, by code, replacing what the ledger gives. */
+  form62: Record<string, number>
   /** OmaVero's questions, for this period. A question missing here has not been answered. */
   answers: Record<string, boolean>
   /** Hand-entered figures by field code, replacing what the ledger gives. */
@@ -47,6 +91,8 @@ export type AccountLine = {
   source: PlacementSource | null
   /** Not in the standard chart, so its heading is only a guess until the owner picks a field. */
   custom: boolean
+  /** For a debt: which total it counts in. */
+  term?: DebtTerm
 }
 
 export type RowState = 'zero' | 'ledger' | 'manual'
@@ -92,6 +138,10 @@ export type CheckKey =
   | 'dividend_answer'
   | 'sale_split'
   | 'sale_gap'
+  | 'form8a_gap'
+  | 'form62_tax'
+  | 'form62_book'
+  | 'form62_limit'
   | 'manual'
   | 'to_check'
 
@@ -115,6 +165,62 @@ export type FormNeed = {
   in_file: boolean
 }
 
+export type HoldingRow = HoldingInput & {
+  account: number | null
+  era_text: string
+  value_cents: number
+}
+
+/** A row as it goes on the form: rows with one business ID combined. */
+export type HoldingLine = {
+  name: string
+  business_id: string
+  shares: string
+  cost_cents: number
+  unit_value: string
+  value_cents: number
+}
+
+export type HoldingGroupView = {
+  key: HoldingGroup
+  title: string
+  /** The 6B field the costs must equal. */
+  field: number
+  field_cents: number
+  rows: HoldingRow[]
+  lines: HoldingLine[]
+  shares_total: string
+  cost_cents: number
+  value_cents: number
+}
+
+export type Form8aView = { groups: HoldingGroupView[]; cost_cents: number; value_cents: number }
+
+export type SaleRow = SaleInput & { result_cents: number }
+
+export type Form71bView = {
+  rows: SaleRow[]
+  saved: boolean
+  /** Sale vouchers not on the saved rows. */
+  suggestions: SaleInput[]
+  gains_cents: number
+  losses_cents: number
+}
+
+export type Form62Row = {
+  code: number
+  label: string
+  role: string
+  cents: number
+  /** What the ledger and the formulas give, shown when nothing is typed. */
+  computed_cents: number
+  typed: boolean
+}
+
+export type Form62Section = { key: string; title: string; rows: Form62Row[]; has_values: boolean }
+
+export type Form62View = { sections: Form62Section[]; used: boolean }
+
 export type TaxReturnView = {
   starts: string
   ends: string
@@ -130,4 +236,7 @@ export type TaxReturnView = {
   carried_from: string | null
   saved: boolean
   overrides: Record<string, Target>
+  form8a: Form8aView
+  form71b: Form71bView
+  form62: Form62View
 }

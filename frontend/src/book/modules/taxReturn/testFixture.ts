@@ -10,13 +10,16 @@ import type { TaxReturnInputs, TaxReturnView } from './domain/types'
 /** Every OmaVero question answered no. */
 export const ALL_NO: Record<string, boolean> = Object.fromEntries(ANSWERS.map((answer) => [answer.key, false]))
 
-export type Posting = [account: number, debitCents: number, creditCents: number]
+/** `era`: `'new'` opens a tase-erä on this line; a number books on the tase-erä opened by that line. */
+export type Posting = [account: number, debitCents: number, creditCents: number, era?: 'new' | number]
 
 export type TaxFixture = {
   db: SqliteDb
   ends: string
   post: (date: string, lines: Posting[], status?: number, type?: number) => number
   addAccount: (account: number, type: string, name: string) => void
+  /** The id of a voucher's line, in posting order, to refer to the tase-erä it opened. */
+  lineId: (voucher: number, index?: number) => number
   inputs: (inputs: Partial<TaxReturnInputs>, ends?: string) => void
   place: (accounts: Record<string, Target | null>) => void
   view: (ends?: string, today?: string) => TaxReturnView
@@ -45,10 +48,17 @@ export async function buildTaxFixture(year = 2031): Promise<TaxFixture> {
       number += 1
       db.run('INSERT INTO Tosite (pvm, tyyppi, tila, tunniste, otsikko) VALUES (?, ?, ?, ?, ?)', [date, type, status, status >= 100 ? number : 0, 'Tosite'])
       const voucher = Number(db.get<{ id: number }>('SELECT last_insert_rowid() AS id')!.id)
-      lines.forEach(([account, debit, credit], index) => {
+      lines.forEach(([account, debit, credit, era], index) => {
         db.run('INSERT INTO Vienti (tosite, rivi, pvm, tili, debetsnt, kreditsnt) VALUES (?, ?, ?, ?, ?, ?)', [voucher, index + 1, date, account, debit || null, credit || null])
+        if (era == null) return
+        const line = Number(db.get<{ id: number }>('SELECT last_insert_rowid() AS id')!.id)
+        db.run('UPDATE Vienti SET eraid = ? WHERE id = ?', [era === 'new' ? line : era, line])
       })
       return voucher
+    },
+    lineId(voucher, index = 0) {
+      const rows = db.all<{ id: number }>('SELECT id FROM Vienti WHERE tosite = ? ORDER BY rivi', [voucher])
+      return Number(rows[index]!.id)
     },
     addAccount(account, type, name) {
       db.run('INSERT INTO Tili (numero, tyyppi, json) VALUES (?, ?, ?)', [account, type, JSON.stringify({ nimi: { fi: name } })])

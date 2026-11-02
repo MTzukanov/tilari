@@ -1786,6 +1786,7 @@
     "tab": {
       "figures": "Siffror för MinSkatt",
       "facts": "Uppgifter att fylla i",
+      "forms": "Bilagor",
       "file": "Ilmoitin-fil"
     },
     "copied": "Kopierat",
@@ -1868,16 +1869,24 @@
       "drafts_one": "{count} utkast lämnas utanför: endast bokförda verifikat räknas.",
       "not_ended": "Perioden slutar {date}, så siffrorna kan ännu ändras.",
       "dividend_answer": "Dividend på {amount} euro är bokförd {date}, men beslutet är inte ifyllt. Fyll i det, eller anmäl beslutet via samma kanal om deklarationen redan är inlämnad.",
-      "sale_split": "Försäljningskontonas netto {amount} euro finns i ett fält. Fyll i vinster och förluster från raderna på blankett 71B.",
+      "sale_split": "Försäljningskontonas netto {amount} euro står i ett fält. Fyll i försäljningsraderna under Bilagor.",
       "sale_gap": "Vinster minus förluster skiljer sig från försäljningskontonas netto med {amount} euro.",
       "manual": "Siffror givna för hand: {fields}.",
-      "to_check": "Bokföring och beskattning kan skilja sig här, kontrollera: {fields}."
+      "to_check": "Bokföring och beskattning kan skilja sig här, kontrollera: {fields}.",
+      "form8a_gap": "Anskaffningsutgifterna på blankett 8A och {fields} skiljer sig med {amount} euro.",
+      "form62_tax": "Skattemässiga avskrivningar på blankett 62 och Vähennettävät poistot skiljer sig med {amount} euro.",
+      "form62_book": "Bokföringens avskrivningar på blankett 62 och Vähennettävät poistot skiljer sig med {amount} euro.",
+      "form62_limit": "Den regelmässiga avskrivningen överskrider Skatteförvaltningens maximibelopp i {count} avsnitt på blankett 62.",
+      "form62_limit_one": "Den regelmässiga avskrivningen överskrider Skatteförvaltningens maximibelopp i {count} avsnitt på blankett 62."
     },
     "checkOk": {
       "result_ties": "bokföringens resultat",
       "net_wealth": "nettoförmögenhet och eget kapital",
       "estimate": "inkomstskatteberäkning",
-      "sale_gap": "överlåtelsevinster och -förluster"
+      "sale_gap": "överlåtelsevinster och -förluster",
+      "form8a_gap": "värdepapper och blankett 8A",
+      "form62_tax": "skattemässiga avskrivningar och blankett 62",
+      "form62_book": "bokföringens avskrivningar och blankett 62"
     },
     "fact": {
       "lead": "Bokföringen innehåller inte dessa. De sparas i bokföringsfilen. Personbeteckningen sparas inte.",
@@ -1900,10 +1909,6 @@
       "decided": "Beslutsdag",
       "payable": "Kan lyftas från",
       "amount": "Totalt belopp",
-      "sale": "Överlåtelser av övriga tillgångar",
-      "saleLead": "Från raderna på blankett 71B, när försäljningskonton är markerade. Vinster minus förluster stäms av mot bokföringen.",
-      "gains": "Överlåtelsevinster totalt",
-      "losses": "Överlåtelseförluster totalt",
       "statements": "Bokslut och revision",
       "audit": "Har revisionen gjorts?",
       "choose": "Välj",
@@ -1937,7 +1942,16 @@
       "distribution": "Fyll i beslutsdag, lyftdag och belopp: {field}.",
       "answer": "Svaret kräver uppgifter som filen inte har ännu: {answer}",
       "unanswered": "{count} frågor i MinSkatt är obesvarade.",
-      "unanswered_one": "{count} fråga i MinSkatt är obesvarad."
+      "unanswered_one": "{count} fråga i MinSkatt är obesvarad.",
+      "form62_negative": "Beloppet på blankett 62 är negativt: {row}.",
+      "holding_name": "Namn saknas på en rad på blankett 8A: {row}.",
+      "holding_id": "FO-numret på blankett 8A duger inte: {row}.",
+      "holding_shares": "Antalet på blankett 8A duger inte: {row}. Högst fyra decimaler.",
+      "holding_unit": "Jämförelsevärdet per styck på blankett 8A duger inte: {row}. Under 10 euro högst tre decimaler, annars två.",
+      "holding_cost": "Anskaffningsutgiften på blankett 8A är negativ: {row}.",
+      "sale_fields": "Namn eller datum saknas på en rad på blankett 71B: {row}.",
+      "sale_id": "Koden på blankett 71B motsvarar inte sin typ: {row}.",
+      "sale_share": "Ägarandelen på blankett 71B duger inte: {row}."
     },
     "notice": {
       "form": "Blankett {form} hör till samma fil och skapas inte ännu.",
@@ -1956,6 +1970,36 @@
       "idLabel": "{name}: person- eller FO-nummer"
     },
     "toConfirm": "Bekräfta kontonas fält",
-    "confirmField": "Bekräfta"
+    "confirmField": "Bekräfta",
+    "formBuilt": "Ingår",
+    "remarkTag": "Anmärkning",
+    "termAccount": "Skuldens längd på konto {account}",
+    "termLong": "Långfristig",
+    "termShort": "Kortfristig",
+    "remark": {
+      "holding_no_id": "FO-nummer saknas på {count} rader på blankett 8A.",
+      "holding_no_id_one": "FO-nummer saknas på {count} rad på blankett 8A.",
+      "holding_no_value": "Jämförelsevärde saknas på {count} rader på blankett 8A.",
+      "holding_no_value_one": "Jämförelsevärde saknas på {count} rad på blankett 8A."
+    },
+    "attached": {
+      "lead": "De här blanketterna hör till skattedeklarationen. De ingår både i MinSkatt-texten och i Ilmoitin-filen.",
+      "none": "Siffrorna kräver inte blanketterna 8A, 71B eller 62.",
+      "holdingsEra": "Anskaffningsutgiften kommer från balansposten. Samma FO-nummer blir en rad på blanketten, så skriv antalet bara på en.",
+      "holdingsTyped": "De här värdepapperen finns inte styckvis i bokföringen, så skriv raderna själv.",
+      "fromEra": "Balanspost: {text}",
+      "addRow": "Lägg till rad",
+      "field": "{field}: {amount} euro",
+      "salesLead": "Endast överlåtelser av övriga tillgångar. En förlust anges som fullt avdragsgill, som för bostads- och fastighetsaktier.",
+      "salesSuggested": "Raderna är förslag från försäljningsverifikaten. Kontrollera dem och komplettera det som saknas.",
+      "salesFixed": "Överlåtelser av anläggningsaktier fylls tills vidare i direkt i MinSkatt.",
+      "suggestions": "Försäljningsverifikat som inte finns på raderna",
+      "noSales": "Inga överlåtelserader.",
+      "gain": "Vinst",
+      "loss": "Förlust",
+      "depreciationLead": "Siffrorna kommer från bokföringen och beskattningen följer bokföringen. Skriv ett belopp om beskattningen avviker.",
+      "showAll": "Visa alla avsnitt",
+      "fromLedger": "Enligt bokföringen"
+    }
   }
 }

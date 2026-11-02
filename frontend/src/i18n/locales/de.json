@@ -1786,6 +1786,7 @@
     "tab": {
       "figures": "Zahlen für OmaVero",
       "facts": "Auszufüllende Angaben",
+      "forms": "Anlagen",
       "file": "Ilmoitin-Datei"
     },
     "copied": "Kopiert",
@@ -1868,16 +1869,24 @@
       "drafts_one": "{count} Entwurf bleibt außen vor: Es zählen nur gebuchte Belege.",
       "not_ended": "Das Geschäftsjahr endet am {date}, die Zahlen können sich also noch ändern.",
       "dividend_answer": "Eine Dividende von {amount} Euro ist am {date} gebucht, aber der Beschluss ist nicht ausgefüllt. Füllen Sie ihn aus oder melden Sie ihn über denselben Kanal, falls die Erklärung schon abgegeben ist.",
-      "sale_split": "Der Saldo der Verkaufskonten von {amount} Euro steht in einem Feld. Tragen Sie Gewinne und Verluste aus den Zeilen von Formular 71B ein.",
+      "sale_split": "Der Saldo der Verkaufskonten von {amount} Euro steht in einem Feld. Füllen Sie die Verkaufszeilen unter Anlagen aus.",
       "sale_gap": "Gewinne minus Verluste weichen um {amount} Euro vom Saldo der Verkaufskonten ab.",
       "manual": "Von Hand eingegebene Beträge: {fields}.",
-      "to_check": "Buchführung und Besteuerung können hier abweichen, prüfen: {fields}."
+      "to_check": "Buchführung und Besteuerung können hier abweichen, prüfen: {fields}.",
+      "form8a_gap": "Anschaffungskosten auf Formular 8A und {fields} weichen um {amount} Euro ab.",
+      "form62_tax": "Steuerliche Abschreibungen auf Formular 62 und Vähennettävät poistot weichen um {amount} Euro ab.",
+      "form62_book": "Buchhalterische Abschreibungen auf Formular 62 und Vähennettävät poistot weichen um {amount} Euro ab.",
+      "form62_limit": "Die regelmäßige Abschreibung überschreitet das Maximum der Steuerverwaltung in {count} Abschnitten von Formular 62.",
+      "form62_limit_one": "Die regelmäßige Abschreibung überschreitet das Maximum der Steuerverwaltung in {count} Abschnitt von Formular 62."
     },
     "checkOk": {
       "result_ties": "Buchergebnis",
       "net_wealth": "Nettovermögen und Eigenkapital",
       "estimate": "Einkommensteuerberechnung",
-      "sale_gap": "Veräußerungsgewinne und -verluste"
+      "sale_gap": "Veräußerungsgewinne und -verluste",
+      "form8a_gap": "Wertpapiere und Formular 8A",
+      "form62_tax": "steuerliche Abschreibungen und Formular 62",
+      "form62_book": "buchhalterische Abschreibungen und Formular 62"
     },
     "fact": {
       "lead": "Diese Angaben stehen nicht in der Buchführung. Sie werden in der Buchführungsdatei gespeichert. Die Personenkennziffer wird nicht gespeichert.",
@@ -1900,10 +1909,6 @@
       "decided": "Beschlussdatum",
       "payable": "Abhebbar ab",
       "amount": "Gesamtbetrag",
-      "sale": "Veräußerungen sonstiger Vermögenswerte",
-      "saleLead": "Aus den Zeilen von Formular 71B, sobald Verkaufskonten markiert sind. Gewinne minus Verluste werden mit der Buchführung abgestimmt.",
-      "gains": "Veräußerungsgewinne gesamt",
-      "losses": "Veräußerungsverluste gesamt",
       "statements": "Jahresabschluss und Prüfung",
       "audit": "Wurde die Prüfung durchgeführt?",
       "choose": "Wählen",
@@ -1937,7 +1942,16 @@
       "distribution": "Tragen Sie Beschlussdatum, Abhebedatum und Betrag ein: {field}.",
       "answer": "Diese Antwort braucht Angaben, die die Datei noch nicht enthält: {answer}",
       "unanswered": "{count} OmaVero-Fragen sind unbeantwortet.",
-      "unanswered_one": "{count} OmaVero-Frage ist unbeantwortet."
+      "unanswered_one": "{count} OmaVero-Frage ist unbeantwortet.",
+      "form62_negative": "Ein Betrag auf Formular 62 ist negativ: {row}.",
+      "holding_name": "Einer Zeile auf Formular 8A fehlt der Name: {row}.",
+      "holding_id": "Die Unternehmenskennung auf Formular 8A ist ungültig: {row}.",
+      "holding_shares": "Die Anzahl auf Formular 8A ist ungültig: {row}. Höchstens vier Dezimalstellen.",
+      "holding_unit": "Der Vergleichswert je Stück auf Formular 8A ist ungültig: {row}. Unter 10 Euro höchstens drei Dezimalstellen, sonst zwei.",
+      "holding_cost": "Die Anschaffungskosten auf Formular 8A sind negativ: {row}.",
+      "sale_fields": "Einer Zeile auf Formular 71B fehlt Name oder Datum: {row}.",
+      "sale_id": "Die Kennung auf Formular 71B passt nicht zu ihrem Typ: {row}.",
+      "sale_share": "Der Eigentumsanteil auf Formular 71B ist ungültig: {row}."
     },
     "notice": {
       "form": "Formular {form} gehört in dieselbe Datei und wird noch nicht erzeugt.",
@@ -1956,6 +1970,36 @@
       "idLabel": "{name}: Personen- oder Unternehmenskennung"
     },
     "toConfirm": "Felder dieser Konten bestätigen",
-    "confirmField": "Bestätigen"
+    "confirmField": "Bestätigen",
+    "formBuilt": "Enthalten",
+    "remarkTag": "Hinweis",
+    "termAccount": "Laufzeit der Schuld auf Konto {account}",
+    "termLong": "Langfristig",
+    "termShort": "Kurzfristig",
+    "remark": {
+      "holding_no_id": "{count} Zeilen auf Formular 8A fehlt die Unternehmenskennung.",
+      "holding_no_id_one": "{count} Zeile auf Formular 8A fehlt die Unternehmenskennung.",
+      "holding_no_value": "{count} Zeilen auf Formular 8A fehlt der Vergleichswert.",
+      "holding_no_value_one": "{count} Zeile auf Formular 8A fehlt der Vergleichswert."
+    },
+    "attached": {
+      "lead": "Diese Formulare gehören zur Steuererklärung. Sie gehen in den OmaVero-Text und in die Ilmoitin-Datei ein.",
+      "none": "Die Zahlen erfordern die Formulare 8A, 71B und 62 nicht.",
+      "holdingsEra": "Die Anschaffungskosten stammen aus dem Bilanzposten. Dieselbe Unternehmenskennung ergibt eine Zeile, tragen Sie die Anzahl also nur einmal ein.",
+      "holdingsTyped": "Diese Wertpapiere stehen nicht einzeln in der Buchführung, tragen Sie die Zeilen also selbst ein.",
+      "fromEra": "Bilanzposten: {text}",
+      "addRow": "Zeile hinzufügen",
+      "field": "{field}: {amount} Euro",
+      "salesLead": "Nur Veräußerungen sonstigen Vermögens. Ein Verlust gilt als voll abzugsfähig, wie bei Wohnungs- und Immobilienaktien.",
+      "salesSuggested": "Die Zeilen sind Vorschläge aus den Verkaufsbelegen. Prüfen Sie sie und ergänzen Sie, was fehlt.",
+      "salesFixed": "Veräußerungen von Anlageaktien werden vorerst direkt in OmaVero ausgefüllt.",
+      "suggestions": "Verkaufsbelege, die nicht in den Zeilen stehen",
+      "noSales": "Keine Verkaufszeilen.",
+      "gain": "Gewinn",
+      "loss": "Verlust",
+      "depreciationLead": "Die Zahlen stammen aus der Buchführung, und die Steuer folgt ihr. Tragen Sie einen Betrag ein, wenn die Steuer abweicht.",
+      "showAll": "Alle Abschnitte zeigen",
+      "fromLedger": "Laut Buchführung"
+    }
   }
 }

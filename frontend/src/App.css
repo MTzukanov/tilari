@@ -6987,6 +6987,79 @@ button.due-tile:hover {
   }
 }
 
+.tax-return-attached-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  align-items: end;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed var(--rule, #ccd);
+}
+
+.tax-return-attached-row > label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  font-size: 0.85rem;
+}
+
+.tax-return-attached-row input,
+.tax-return-attached-row select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tax-return-attached-wide {
+  grid-column: span 2;
+}
+
+.tax-return-attached-source {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.tax-return-attached-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+}
+
+.tax-return-attached-end {
+  justify-self: end;
+  padding-bottom: 0.2rem;
+}
+
+.tax-return-attached-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+.tax-return-form62 td:last-child {
+  width: 10rem;
+}
+
+.tax-return-form62 input {
+  width: 8.5rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 40rem) {
+  .tax-return-attached-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tax-return-attached-wide {
+    grid-column: 1 / -1;
+  }
+}
+
 .tax-return-ids > label {
   display: flex;
   margin: 0.15rem -0.4rem;
