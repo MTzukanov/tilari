@@ -677,6 +677,15 @@ correction would change the open year's income statement lines. The rental-objec
   listed only when the book shows a dividend from that period: a posted credit on Osingonjako after the
   period's end. It is the row the dividend's "reported" step will read. Its date comes from the payment, the
   first debit after that credit, and its name gives that year.
+- **A dividend is read from the ledger, nothing is stored** (`domain/dividends.ts`, 2026-11-02). A posted
+  credit on Osingonjako (2261) is a decision, and debits on it pay the oldest open decision first. Each
+  payment voucher's credit on Ennakonpidätysvelka (2921) is withheld, and debits on that account remit the
+  oldest withholding first, whatever it came from, by the 12th of the next month moved past days off. A
+  payment that credits another liability left the dividend as a debt, so its voucher should hold the contract.
+  The card's five steps (decided, booked, paid, withholding paid, reported) compare these figures to the cent.
+  The account numbers are the chart's; a book on others shows no dividend until they become a setting.
+- **Income tax bookings are shown, not linked.** The period's type 9930 vouchers lead its documents as a row
+  with nothing to upload, since the book already says where they are.
 - **Why not the dossier as designed elsewhere:** the first design assumed a Kitsas HTTP API, its own
   SQL tables, a dossier inside Tilikaudet, documents only on type 800, and a payment voucher that
   pays from the bank. Tilari has the ledger in-process and one table, and a payment can turn the dividend into

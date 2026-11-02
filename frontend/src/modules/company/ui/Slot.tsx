@@ -29,7 +29,7 @@ export type SlotActions = {
 }
 
 /** The pill that opens a voucher, with its date and number. */
-function OpenVoucher({
+export function OpenVoucher({
   voucher,
   actions,
 }: {

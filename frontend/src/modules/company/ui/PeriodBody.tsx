@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
-import { DocLines, DocRows } from '../../../shared/DocRows'
+import { DocLine, DocLines, DocRow, DocRows } from '../../../shared/DocRows'
+import { FilePill, Pill } from '../../../shared/Pill'
 import type { CompanyOverview, PeriodView } from '../api'
 import { DeadlineTiles } from './Deadlines'
+import { DividendSection } from './Dividends'
 import { errorText, periodShort } from './format'
-import { AttachSelect, SlotRow, UnlinkedRow, type SlotActions } from './Slot'
+import { AttachSelect, OpenVoucher, SlotRow, UnlinkedRow, type SlotActions } from './Slot'
 
-/** What an open period's card holds: its deadlines and documents. */
+/** What an open period's card holds: its deadlines, documents and dividends. */
 export function PeriodBody({
   period,
   overview,
@@ -49,6 +51,20 @@ export function PeriodBody({
 
       <h3 className="section-label">{t('company.period.documents')}</h3>
       <DocRows>
+        {period.income_tax.length ? (
+          // Booked on the period's last day, so it leads. Read from the book: nothing to upload or link.
+          <DocRow name={t('company.incomeTax.title')} status={<Pill tone="ok">{t('company.incomeTax.booked')}</Pill>}>
+            <DocLines>
+              {period.income_tax.map((v) => (
+                <DocLine key={v.voucher_id} voucher={<OpenVoucher voucher={v} actions={actions} />} title={v.title || t('company.incomeTax.title')}>
+                  {v.files.map((f) => (
+                    <FilePill key={f.id} id={f.id} name={f.name} />
+                  ))}
+                </DocLine>
+              ))}
+            </DocLines>
+          </DocRow>
+        ) : null}
         {period.slots.map((slot) => (
           <SlotRow
             key={slot.kind}
@@ -67,6 +83,8 @@ export function PeriodBody({
           />
         ))}
       </DocRows>
+
+      <DividendSection dividends={period.dividends} actions={actions} />
 
       {period.unlinked.length ? (
         <details className="company-unlinked">

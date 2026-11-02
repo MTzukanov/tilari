@@ -1739,7 +1739,45 @@
       "agm": "Annual general meeting",
       "tax_return": "Tax return 6B",
       "prh_filing": "Statements to PRH",
+      "dividend_withholding": "Withholding on dividends",
       "dividend_report": "Annual information return on dividends"
+    },
+    "dividend": {
+      "title": "Dividends from this period's profit",
+      "name": "Dividend",
+      "decided": "Decided {date}",
+      "step": {
+        "decided": "Decided",
+        "booked": "Booked",
+        "paid": "Paid",
+        "withheld": "Withholding paid",
+        "reported": "Reported"
+      },
+      "state": {
+        "done": "Done",
+        "waiting": "Waiting",
+        "overdue": "Late",
+        "missing": "Missing",
+        "no_minutes": "No minutes",
+        "difference": "Difference",
+        "no_contract": "No contract",
+        "not_applicable": "Not needed"
+      },
+      "voucher": {
+        "decision": "Decision",
+        "payment": "Payment",
+        "remittance": "Withholding paid to the tax office"
+      },
+      "alert": {
+        "difference": "Paid {paid}, decided {decided}.",
+        "noContract": "The dividend was left as a debt to the shareholder, but the payment's voucher has no attachment, such as the loan agreement.",
+        "unpaid": "Unpaid {amount}",
+        "withholdingOpen": "Withholding not paid {amount}, due {date}"
+      }
+    },
+    "incomeTax": {
+      "title": "Income tax booking",
+      "booked": "Booked"
     },
     "deadlineState": {
       "done": "Done",

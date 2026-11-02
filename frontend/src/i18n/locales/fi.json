@@ -1739,7 +1739,45 @@
       "agm": "Varsinainen yhtiökokous",
       "tax_return": "Veroilmoitus 6B",
       "prh_filing": "Tilinpäätös PRH:lle",
+      "dividend_withholding": "Osingon ennakonpidätys",
       "dividend_report": "Osinkojen vuosi-ilmoitus"
+    },
+    "dividend": {
+      "title": "Osingot tämän tilikauden voitosta",
+      "name": "Osinko",
+      "decided": "Päätös {date}",
+      "step": {
+        "decided": "Päätetty",
+        "booked": "Kirjattu",
+        "paid": "Maksettu",
+        "withheld": "Pidätys tilitetty",
+        "reported": "Ilmoitettu"
+      },
+      "state": {
+        "done": "Valmis",
+        "waiting": "Odottaa",
+        "overdue": "Myöhässä",
+        "missing": "Puuttuu",
+        "no_minutes": "Ei pöytäkirjaa",
+        "difference": "Ero",
+        "no_contract": "Ei sopimusta",
+        "not_applicable": "Ei tarvita"
+      },
+      "voucher": {
+        "decision": "Päätös",
+        "payment": "Maksu",
+        "remittance": "Pidätyksen tilitys"
+      },
+      "alert": {
+        "difference": "Maksettu {paid}, päätetty {decided}.",
+        "noContract": "Osinko jäi velaksi osakkaalle, mutta maksun tositteella ei ole liitettä, kuten velkasopimusta.",
+        "unpaid": "Maksamatta {amount}",
+        "withholdingOpen": "Pidätys tilittämättä {amount}, eräpäivä {date}"
+      }
+    },
+    "incomeTax": {
+      "title": "Tuloverojen kirjaus",
+      "booked": "Kirjattu"
     },
     "deadlineState": {
       "done": "Tehty",

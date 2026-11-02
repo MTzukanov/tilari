@@ -169,14 +169,14 @@ export type SlotView = {
   suggestions: Suggestion[]
 }
 
-export type DeadlineKey = 'statements_prepared' | 'agm' | 'tax_return' | 'prh_filing' | 'dividend_report'
+export type DeadlineKey = 'statements_prepared' | 'agm' | 'tax_return' | 'prh_filing' | 'dividend_withholding' | 'dividend_report'
 /** `unverified`: the date has passed, but no document is required, so Tilari cannot tell. */
 export type DeadlineState = 'done' | 'not_needed' | 'overdue' | 'unverified' | 'upcoming' | 'later'
 
 export type DeadlineView = {
   key: DeadlineKey
-  /** The slot that answers it. */
-  kind: PeriodKind
+  /** The slot that answers it. None when the ledger does, as for withholding. */
+  kind?: PeriodKind
   due: string
   state: DeadlineState
   /** Days from the as-of date to the due date; negative when past. */
@@ -185,6 +185,38 @@ export type DeadlineView = {
 
 /** Kitsas's own statement PDF: `Liite` with `tosite = 0`, role `TP_{loppuu}`. */
 export type KitsasStatement = { attachment_id: number; created: string | null }
+
+/** A voucher shown as it is in the book. */
+export type VoucherRef = {
+  voucher_id: number
+  date: string
+  doc_number: number | null
+  series: string
+  title: string
+  files: DocumentFile[]
+}
+
+export type DividendStepKey = 'decided' | 'booked' | 'paid' | 'withheld' | 'reported'
+/** `no_minutes`, `difference`, `no_contract`, `overdue` and `missing` are problems. */
+export type DividendStepState = 'done' | 'waiting' | 'overdue' | 'missing' | 'no_minutes' | 'difference' | 'no_contract' | 'not_applicable'
+export type DividendStep = { key: DividendStepKey; state: DividendStepState; date: string | null }
+
+export type DividendVoucher = VoucherRef & { role: 'decision' | 'payment' | 'remittance'; amount_snt: number }
+
+/** One dividend, read from the ledger on every load (`domain/dividends.ts`). */
+export type DividendView = {
+  decided_on: string
+  amount_snt: number
+  paid_snt: number
+  withheld_snt: number
+  remitted_snt: number
+  withholding_due: string | null
+  /** Payment vouchers that left the dividend as a debt but hold no file, such as the contract. */
+  no_contract: number[]
+  steps: DividendStep[]
+  /** Oldest first. */
+  vouchers: DividendVoucher[]
+}
 
 export type PeriodView = {
   starts: string
@@ -195,11 +227,15 @@ export type PeriodView = {
   /** The period has ended on the as-of date. */
   ended: boolean
   docs: { done: number; required: number }
-  /** Links that are not `ok`. */
+  /** Links that are not `ok`, and dividends whose figures differ or whose debt has no contract. */
   problems: number
   kitsas_statement: KitsasStatement | null
   deadlines: DeadlineView[]
   slots: SlotView[]
+  /** Dividends from this period's profit, oldest first. */
+  dividends: DividendView[]
+  /** The period's income tax vouchers (type 9930). */
+  income_tax: VoucherRef[]
   /** Posted type-800 vouchers dated in the year after the period's end, linked nowhere. */
   unlinked: DocCandidate[]
 }

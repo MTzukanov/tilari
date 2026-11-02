@@ -64,6 +64,7 @@ stand out. Here colour and a filled button mark what needs doing, and everything
 | `DocRows`, `DocRow` | `shared/DocRows.tsx` | A framed list of things that hold documents; `onFiles` makes a row take dropped files |
 | `DocLines`, `DocLine` | `shared/DocRows.tsx` | One document as a table row: `voucher` (or a plain `date` if it has none), title, `mark` at the title's far side, the files as children, and `end` |
 | `Binder` | `shared/Binder.tsx` | A card that opens in place, with badges that show its state while closed |
+| `StepRail` | `shared/StepRail.tsx` | Steps that follow each other, each with its state as a `Pill` and a date; the line turns green between steps done. Under 34rem it lists them one under the other. The company page's dividend card uses it |
 
 CSS, in the "Documents and status" part of `App.css`:
 

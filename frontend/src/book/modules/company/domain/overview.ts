@@ -6,11 +6,11 @@ import { addDays } from '../../../months'
 import { lockDate } from '../../../posting'
 import { SQL_POSTED } from '../../../kernel/sqlFragments'
 import type { SqliteDb } from '../../../sqlite'
-import { TYPE_ATTACHMENT_NOTE } from '../../../vouchers'
+import { TYPE_ATTACHMENT_NOTE, TYPE_INCOME_TAX } from '../../../vouchers'
 import { isUserAttachment } from '../../properties/domain/documents'
 import { loadVoucherFiles, propertyVoucherIds, selectCandidates } from './candidates'
 import { deadlineAlerts, dividendReportDue, periodDeadlines } from './deadlines'
-import { dividendsByPeriod, type PeriodDividend } from './dividends'
+import { dividendsByPeriod, type Dividend, type PeriodDividend } from './dividends'
 import { applyChanges, CompanyDocError, parseCompanyDoc, serializeCompanyDoc, type ParsedCompanyDoc } from './doc'
 import { suggestDocuments } from './suggest'
 import {
@@ -24,6 +24,9 @@ import {
   type CompanyDocument,
   type CompanyOverview,
   type CompanySlotView,
+  type DividendStep,
+  type DividendVoucher,
+  type DividendView,
   type DocCandidate,
   type DocumentFile,
   type DocumentView,
@@ -35,6 +38,7 @@ import {
   type SlotStatus,
   type SlotView,
   type Suggestion,
+  type VoucherRef,
 } from './types'
 
 type VoucherRow = {
@@ -84,6 +88,72 @@ function loadVouchers(db: SqliteDb, ids: number[]): Map<number, VoucherRow> {
     })
   }
   return out
+}
+
+function voucherRef(row: VoucherRow): VoucherRef {
+  return { voucher_id: row.id, date: row.date, doc_number: row.doc_number, series: row.series, title: row.title, files: row.files }
+}
+
+type DividendContext = {
+  asOf: string
+  vouchers: Map<number, VoucherRow>
+  /** The period's AGM minutes are stored here. */
+  minutesFiled: boolean
+  report: SlotView | undefined
+  reportDue: string | null
+}
+
+/** The five steps, each read from the book or from the period's rows. Exact to the cent. */
+function dividendView(d: Dividend, ctx: DividendContext): DividendView {
+  const decision = ctx.vouchers.get(d.decision.voucher_id)
+  const noContract = d.payments.filter((p) => p.debt && !ctx.vouchers.get(p.voucher_id)?.files.length).map((p) => p.voucher_id)
+  const firstPaid = d.payments[0]?.date ?? null
+  const amount = d.decision.amount_snt
+
+  let paid: DividendStep
+  if (d.paid_snt === 0 || d.paid_snt < amount) paid = { key: 'paid', state: 'waiting', date: null }
+  else if (d.paid_snt > amount) paid = { key: 'paid', state: 'difference', date: firstPaid }
+  else paid = { key: 'paid', state: noContract.length ? 'no_contract' : 'done', date: firstPaid }
+
+  let withheld: DividendStep
+  if (!d.payments.length) withheld = { key: 'withheld', state: 'waiting', date: null }
+  else if (d.withheld_snt === 0) withheld = { key: 'withheld', state: 'not_applicable', date: null }
+  else if (d.remitted_snt >= d.withheld_snt) withheld = { key: 'withheld', state: 'done', date: d.remittances.at(-1)?.date ?? null }
+  else withheld = { key: 'withheld', state: d.withholding_due && d.withholding_due < ctx.asOf ? 'overdue' : 'waiting', date: d.withholding_due }
+
+  const reportDoc = ctx.report?.documents.find((v) => v.state === 'ok')
+  let reported: DividendStep
+  if (reportDoc) reported = { key: 'reported', state: 'done', date: reportDoc.date }
+  else if (ctx.report?.status === 'not_needed') reported = { key: 'reported', state: 'not_applicable', date: null }
+  else if (!ctx.reportDue) reported = { key: 'reported', state: 'waiting', date: null }
+  else reported = { key: 'reported', state: ctx.reportDue < ctx.asOf ? 'missing' : 'waiting', date: ctx.reportDue }
+
+  const listed: { role: DividendVoucher['role']; id: number; amount: number }[] = [
+    { role: 'decision', id: d.decision.voucher_id, amount },
+    ...d.payments.map((p) => ({ role: 'payment' as const, id: p.voucher_id, amount: p.amount_snt })),
+    ...d.remittances.map((r) => ({ role: 'remittance' as const, id: r.voucher_id, amount: r.amount_snt })),
+  ]
+  return {
+    decided_on: d.decision.date,
+    amount_snt: amount,
+    paid_snt: d.paid_snt,
+    withheld_snt: d.withheld_snt,
+    remitted_snt: d.remitted_snt,
+    withholding_due: d.withholding_due,
+    no_contract: noContract,
+    steps: [
+      // The minutes are often a file on the decision's own voucher.
+      { key: 'decided', state: ctx.minutesFiled || decision?.files.length ? 'done' : 'no_minutes', date: d.decision.date },
+      { key: 'booked', state: 'done', date: d.decision.date },
+      paid,
+      withheld,
+      reported,
+    ],
+    vouchers: listed.flatMap(({ role, id, amount: snt }) => {
+      const row = ctx.vouchers.get(id)
+      return row ? [{ ...voucherRef(row), role, amount_snt: snt }] : []
+    }),
+  }
 }
 
 function documentView(d: CompanyDocument, voucher: VoucherRow | undefined): DocumentView {
@@ -164,9 +234,15 @@ type PeriodParts = {
   suggestions: Suggestion[]
   unlinked: DocCandidate[]
   dividend: PeriodDividend | undefined
+  /** The vouchers the dividends and the income tax rows name. */
+  vouchers: Map<number, VoucherRow>
+  incomeTax: number[]
 }
 
-function buildPeriod(doc: CompanyDoc, { period, views, statement, asOf, lock, suggestions, unlinked, dividend }: PeriodParts): PeriodView {
+function buildPeriod(
+  doc: CompanyDoc,
+  { period, views, statement, asOf, lock, suggestions, unlinked, dividend, vouchers, incomeTax }: PeriodParts,
+): PeriodView {
   const ended = period.ends < asOf
   const reportOverdue = dividend?.paid != null && dividendReportDue(dividend.paid) < asOf
   const slots: SlotView[] = PERIOD_KINDS.flatMap((kind) => {
@@ -189,6 +265,17 @@ function buildPeriod(doc: CompanyDoc, { period, views, statement, asOf, lock, su
   })
   const filled = (kind: PeriodKind) => views.some((v) => v.kind === kind && v.state === 'ok')
   const counted = slots.filter((s) => s.required && s.status !== 'not_needed')
+  const dividends = (dividend?.dividends ?? []).map((d) =>
+    dividendView(d, {
+      asOf,
+      vouchers,
+      minutesFiled: filled('agm_minutes'),
+      report: slots.find((s) => s.kind === 'dividend_annual_report'),
+      reportDue: dividend?.paid ? dividendReportDue(dividend.paid) : null,
+    }),
+  )
+  // Late deadlines count on their own badge; these have no date to be late by.
+  const dividendProblems = dividends.filter((d) => d.steps.some((s) => s.state === 'difference' || s.state === 'no_contract')).length
   return {
     starts: period.starts,
     ends: period.ends,
@@ -196,7 +283,7 @@ function buildPeriod(doc: CompanyDoc, { period, views, statement, asOf, lock, su
     confirmed_at: period.confirmed_at,
     ended,
     docs: { done: counted.filter((s) => s.status === 'complete').length, required: counted.length },
-    problems: views.filter((v) => v.state !== 'ok').length,
+    problems: views.filter((v) => v.state !== 'ok').length + dividendProblems,
     kitsas_statement: statement,
     deadlines: periodDeadlines({
       ends: period.ends,
@@ -205,11 +292,22 @@ function buildPeriod(doc: CompanyDoc, { period, views, statement, asOf, lock, su
       notNeeded: (kind) => isNotNeeded(doc, period.ends, kind),
       required: (kind) => requiredKind(kind, doc, dividend),
       kitsasStatement: statement != null,
-      dividendPaid: dividend?.paid,
+      dividend,
     }),
     slots,
+    dividends,
+    income_tax: incomeTax.flatMap((id) => {
+      const row = vouchers.get(id)
+      return row ? [voucherRef(row)] : []
+    }),
     unlinked,
   }
+}
+
+/** Posted income tax vouchers by period, oldest first. */
+function incomeTaxVouchers(db: SqliteDb, periods: Period[]): Map<string, number[]> {
+  const rows = db.all<{ id: number; pvm: string }>(`SELECT id, pvm FROM Tosite WHERE tyyppi = ? AND ${SQL_POSTED} ORDER BY pvm, id`, [TYPE_INCOME_TAX])
+  return new Map(periods.map((p) => [p.ends, rows.filter((r) => r.pvm >= p.starts && r.pvm <= p.ends).map((r) => Number(r.id))]))
 }
 
 export function computeOverview(db: SqliteDb, query: { today: string; asOf?: string | null }): CompanyOverview {
@@ -243,6 +341,11 @@ export function computeOverview(db: SqliteDb, query: { today: string; asOf?: str
   })
 
   const dividends = dividendsByPeriod(db, periods)
+  const incomeTax = incomeTaxVouchers(db, periods)
+  const dividendVouchers = [...dividends.values()].flatMap((p) =>
+    p.dividends.flatMap((d) => [d.decision.voucher_id, ...d.payments.map((x) => x.voucher_id), ...d.remittances.map((x) => x.voucher_id)]),
+  )
+  const shownVouchers = loadVouchers(db, [...dividendVouchers, ...[...incomeTax.values()].flat()])
   const periodViews = periods.map((period) =>
     buildPeriod(doc, {
       period,
@@ -254,6 +357,8 @@ export function computeOverview(db: SqliteDb, query: { today: string; asOf?: str
       // Documents of a period are dated after it ends; each shows under one period only.
       unlinked: unlinked.filter((u) => u.date > period.ends && u.date <= addDays(period.ends, 365)),
       dividend: dividends.get(period.ends),
+      vouchers: shownVouchers,
+      incomeTax: incomeTax.get(period.ends) ?? [],
     }),
   )
 
@@ -306,7 +411,7 @@ export function computeAlerts(db: SqliteDb, query: { today: string; asOf?: strin
       notNeeded: (kind) => isNotNeeded(doc, period.ends, kind),
       required: (kind) => requiredKind(kind, doc, dividends.get(period.ends)),
       kitsasStatement: statements.has(period.ends),
-      dividendPaid: dividends.get(period.ends)?.paid,
+      dividend: dividends.get(period.ends),
     }),
   )
   return { applicable: true, deadlines: deadlines.filter(deadlineAlerts).length }

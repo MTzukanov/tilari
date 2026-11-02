@@ -7,6 +7,8 @@ export type {
   CompanyOverview,
   CompanySlotView,
   DeadlineView,
+  DividendStepState,
+  DividendView,
   DocCandidate,
   DocumentView,
   KitsasStatement,
@@ -15,6 +17,7 @@ export type {
   SlotStatus,
   SlotView,
   Suggestion,
+  VoucherRef,
 } from '../../book/modules/company/domain/types'
 export { COMPANY_KINDS, KIND_SETTINGS, PERIOD_KINDS } from '../../book/modules/company/domain/types'
 

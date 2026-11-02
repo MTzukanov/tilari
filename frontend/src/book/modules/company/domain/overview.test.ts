@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { readTilariData } from '../../../kernel/tilariData'
-import { TYPE_OPENING, TYPE_TRANSFER } from '../../../vouchers'
+import { TYPE_BANK_STATEMENT, TYPE_INCOME_TAX, TYPE_OPENING, TYPE_OTHER, TYPE_TRANSFER } from '../../../vouchers'
 import { buildCompanyFixture, type CompanyFixture } from '../testFixture'
 import { parseCompanyDoc } from './doc'
 import { computeAlerts, computeOverview, fetchCandidates, isLimitedCompany, saveChanges } from './overview'
@@ -433,5 +433,121 @@ describe("the dividends' annual report", () => {
     dividendLine('paid2034', '2034-04-03', 'debetsnt')
     expect(tile('2032-12-31', '2034-05-01')?.due).toBe('2034-01-31')
     expect(tile('2033-12-31', '2034-05-01')?.due).toBe('2035-01-31')
+  })
+})
+
+describe('dividends from the ledger', () => {
+  type LineSpec = [account: number, debit: number, credit: number]
+
+  function book(key: string, date: string, type: number, lines: LineSpec[], files: string[] = [], status = 100) {
+    const voucher = fx.voucher(key, date, type, key, files, status)
+    lines.forEach(([account, debit, credit], i) =>
+      fx.db.run('INSERT INTO Vienti (rivi, tosite, pvm, tili, debetsnt, kreditsnt) VALUES (?, ?, ?, ?, ?, ?)', [i + 1, voucher, date, account, debit || null, credit || null]),
+    )
+    return voucher
+  }
+
+  /** From period 2032's profit: decided with the minutes on the voucher, paid as a debt with its contract. */
+  function cycle({ paid = 100000, debt = true, contract = true, withheld = 7500 } = {}) {
+    book('decision', '2033-05-02', TYPE_TRANSFER, [[2251, 100000, 0], [2261, 0, 100000]], ['poytakirja.pdf'])
+    const lines: LineSpec[] = [[2261, paid, 0], [debt ? 2943 : 1910, 0, paid - withheld]]
+    if (withheld) lines.push([2921, 0, withheld])
+    book('payment', '2033-06-15', TYPE_OTHER, lines, contract ? ['velkakirja.pdf'] : [])
+  }
+
+  const dividend = (asOf: string, ends = '2032-12-31') => period(ends, asOf).dividends[0]
+  const steps = (asOf: string) => Object.fromEntries(dividend(asOf).steps.map((s) => [s.key, s.state]))
+
+  it('reads the five steps of a dividend paid as a debt, with its withholding remitted', () => {
+    cycle()
+    book('remit', '2033-07-12', TYPE_BANK_STATEMENT, [[2921, 7500, 0], [1910, 0, 7500]])
+    const d = dividend('2033-08-01')
+    expect(d).toMatchObject({ decided_on: '2033-05-02', amount_snt: 100000, paid_snt: 100000, withheld_snt: 7500, remitted_snt: 7500, no_contract: [] })
+    expect(d.steps).toEqual([
+      { key: 'decided', state: 'done', date: '2033-05-02' },
+      { key: 'booked', state: 'done', date: '2033-05-02' },
+      { key: 'paid', state: 'done', date: '2033-06-15' },
+      { key: 'withheld', state: 'done', date: '2033-07-12' },
+      { key: 'reported', state: 'waiting', date: '2034-01-31' },
+    ])
+    expect(d.vouchers.map((v) => [v.role, v.voucher_id, v.amount_snt])).toEqual([
+      ['decision', fx.vouchers.decision, 100000],
+      ['payment', fx.vouchers.payment, 100000],
+      ['remittance', fx.vouchers.remit, 7500],
+    ])
+    expect(d.vouchers[1].files.map((f) => f.name)).toEqual(['velkakirja.pdf'])
+    expect(period('2031-12-31', '2033-08-01').dividends).toEqual([])
+  })
+
+  it('takes the report from its row', () => {
+    cycle()
+    expect(steps('2034-02-01').reported).toBe('missing')
+    save({ add: [{ kind: 'dividend_annual_report', period_ends: '2032-12-31', voucher_id: fx.vouchers.plain, doc_date: '2034-01-20' }] })
+    expect(dividend('2034-02-01').steps.at(-1)).toEqual({ key: 'reported', state: 'done', date: '2034-01-20' })
+  })
+
+  it('wants a file on a payment that left a debt, not on one from the bank', () => {
+    cycle({ contract: false })
+    expect(steps('2033-08-01').paid).toBe('no_contract')
+    expect(dividend('2033-08-01').no_contract).toEqual([fx.vouchers.payment])
+    expect(period('2032-12-31', '2033-08-01').problems).toBe(1)
+  })
+
+  it('needs no contract when the bank paid', () => {
+    cycle({ debt: false, contract: false })
+    expect(steps('2033-08-01').paid).toBe('done')
+    expect(period('2032-12-31', '2033-08-01').problems).toBe(0)
+  })
+
+  it('shows a payment over the decision as a difference, exact to the cent', () => {
+    cycle({ paid: 100001 })
+    expect(steps('2033-08-01').paid).toBe('difference')
+    expect(dividend('2033-08-01')).toMatchObject({ amount_snt: 100000, paid_snt: 100001 })
+    expect(period('2032-12-31', '2033-08-01').problems).toBe(1)
+  })
+
+  it('waits while part is unpaid', () => {
+    cycle({ paid: 50000 })
+    expect(steps('2033-08-01').paid).toBe('waiting')
+    expect(dividend('2033-08-01').paid_snt).toBe(50000)
+  })
+
+  it('makes withholding late after the 12th of the next month, and counts it in the header', () => {
+    cycle()
+    expect(steps('2033-07-12').withheld).toBe('waiting')
+    expect(steps('2033-07-13').withheld).toBe('overdue')
+    const tile = period('2032-12-31', '2033-07-13').deadlines.find((d) => d.key === 'dividend_withholding')
+    expect(tile).toMatchObject({ due: '2033-07-12', state: 'overdue' })
+    expect(computeAlerts(fx.db, { today: '2033-07-13', asOf: '2033-07-13' }).deadlines).toBeGreaterThan(0)
+  })
+
+  it('remits the oldest withholding first, whatever it came from', () => {
+    book('payroll', '2033-05-31', TYPE_OTHER, [[5000, 3000, 0], [2921, 0, 3000]])
+    cycle()
+    book('remit', '2033-07-10', TYPE_BANK_STATEMENT, [[2921, 7500, 0], [1910, 0, 7500]])
+    expect(dividend('2033-08-01')).toMatchObject({ withheld_snt: 7500, remitted_snt: 4500 })
+    expect(steps('2033-08-01').withheld).toBe('overdue')
+    book('remit2', '2033-07-20', TYPE_BANK_STATEMENT, [[2921, 3000, 0], [1910, 0, 3000]])
+    expect(steps('2033-08-01').withheld).toBe('done')
+  })
+
+  it('has nothing to remit when nothing was withheld', () => {
+    cycle({ withheld: 0 })
+    expect(steps('2033-08-01').withheld).toBe('not_applicable')
+    expect(period('2032-12-31', '2033-08-01').deadlines.map((d) => d.key)).not.toContain('dividend_withholding')
+  })
+
+  it('takes the minutes from the AGM row when the decision holds no file', () => {
+    book('decision', '2033-05-02', TYPE_TRANSFER, [[2251, 100000, 0], [2261, 0, 100000]])
+    expect(steps('2033-06-01').decided).toBe('no_minutes')
+    save({ add: [{ kind: 'agm_minutes', period_ends: '2032-12-31', voucher_id: fx.vouchers.agm2032 }] })
+    expect(steps('2033-06-01').decided).toBe('done')
+    expect(steps('2033-06-01').paid).toBe('waiting')
+  })
+
+  it('lists the income tax vouchers of the period', () => {
+    book('incomeTax', '2032-12-31', TYPE_INCOME_TAX, [[9960, 500, 0], [2968, 0, 500]])
+    expect(period('2032-12-31', AS_OF).income_tax.map((v) => v.voucher_id)).toEqual([fx.vouchers.incomeTax])
+    expect(period('2033-12-31', AS_OF).income_tax).toEqual([])
   })
 })

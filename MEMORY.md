@@ -7,6 +7,18 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-02 - Company page: dividends read from the ledger
+
+- Owner approved the steps after the annual report row. Each period's card gets "Osingot tämän tilikauden
+  voitosta": one card per decision with five steps, the vouchers behind them and their files, and rows for what
+  is unpaid or unremitted. Nothing is stored; ADR-031 has the rules.
+- Problems with no date (a payment over the decision, a debt without a contract) count in the card's
+  "Huomioita"; a late withholding counts in "Määräaikoja", and in the header like any deadline.
+- Withholding is matched oldest first across the whole account, so a book whose payroll also uses 2921 still
+  comes out exact as long as each remittance clears what came before it.
+- No e2e for the card: the test books have no dividend accounts, and adding them would change the golden
+  books. Unit tests cover the figures; the look was checked on an invented book at 1280px and 380px.
+
 ## 2026-11-02 - Company page: the dividends' annual report; what a dividend payment is
 
 - Owner: the report is filed with Vero but was never stored in the book, and past and future ones should be

@@ -1739,7 +1739,45 @@
       "agm": "Ordentliche Hauptversammlung",
       "tax_return": "Steuererklärung 6B",
       "prh_filing": "Jahresabschluss an PRH",
+      "dividend_withholding": "Quellensteuer auf Dividenden",
       "dividend_report": "Jahresmeldung über Dividenden"
+    },
+    "dividend": {
+      "title": "Dividenden aus dem Gewinn dieses Geschäftsjahres",
+      "name": "Dividende",
+      "decided": "Beschluss {date}",
+      "step": {
+        "decided": "Beschlossen",
+        "booked": "Gebucht",
+        "paid": "Ausgezahlt",
+        "withheld": "Quellensteuer abgeführt",
+        "reported": "Gemeldet"
+      },
+      "state": {
+        "done": "Erledigt",
+        "waiting": "Ausstehend",
+        "overdue": "Verspätet",
+        "missing": "Fehlt",
+        "no_minutes": "Kein Protokoll",
+        "difference": "Differenz",
+        "no_contract": "Kein Vertrag",
+        "not_applicable": "Nicht nötig"
+      },
+      "voucher": {
+        "decision": "Beschluss",
+        "payment": "Zahlung",
+        "remittance": "Abführung der Quellensteuer"
+      },
+      "alert": {
+        "difference": "Ausgezahlt {paid}, beschlossen {decided}.",
+        "noContract": "Die Dividende wurde zur Schuld gegenüber dem Aktionär, aber der Beleg der Zahlung hat keinen Anhang wie den Darlehensvertrag.",
+        "unpaid": "Nicht ausgezahlt {amount}",
+        "withholdingOpen": "Quellensteuer nicht abgeführt {amount}, fällig {date}"
+      }
+    },
+    "incomeTax": {
+      "title": "Ertragsteuerbuchung",
+      "booked": "Gebucht"
     },
     "deadlineState": {
       "done": "Erledigt",

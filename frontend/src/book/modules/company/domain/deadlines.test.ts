@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { deadlineAlerts, dividendReportDue, isDayOff, periodDeadlines, type DeadlineInputs } from './deadlines'
+import { withholdingDue } from './dividends'
 import type { DeadlineKey } from './types'
 
 function deadlines(partial: Partial<DeadlineInputs> & { ends: string; asOf: string }) {
@@ -55,13 +56,32 @@ describe('company deadlines', () => {
 
   it('has no annual report deadline before a dividend is paid', () => {
     expect(deadlines({ ends: '2031-12-31', asOf: '2032-06-01' }).map((d) => d.key)).not.toContain('dividend_report')
-    expect(deadlines({ ends: '2031-12-31', asOf: '2032-06-01', dividendPaid: null }).map((d) => d.key)).not.toContain('dividend_report')
+    const unpaid = { dividends: [], paid: null, withholding: null }
+    expect(deadlines({ ends: '2031-12-31', asOf: '2032-06-01', dividend: unpaid }).map((d) => d.key)).not.toContain('dividend_report')
     const report = (asOf: string, partial: Partial<DeadlineInputs> = {}) =>
-      deadlines({ ends: '2031-12-31', asOf, dividendPaid: '2032-06-15', ...partial }).find((d) => d.key === 'dividend_report')!
+      deadlines({ ends: '2031-12-31', asOf, dividend: { ...unpaid, paid: '2032-06-15' }, ...partial }).find((d) => d.key === 'dividend_report')!
     expect(report('2032-07-01')).toMatchObject({ kind: 'dividend_annual_report', due: '2033-01-31', state: 'later' })
     expect(report('2033-01-20').state).toBe('upcoming')
     expect(report('2033-02-05').state).toBe('overdue')
     expect(report('2033-02-05', { filled: (k) => k === 'dividend_annual_report' }).state).toBe('done')
+  })
+
+  it('dates withholding on a dividend the 12th of the next month, moved past days off', () => {
+    expect(withholdingDue('2032-06-15')).toBe('2032-07-12')
+    // 12.12.2026 is a Saturday; December rolls into January.
+    expect(withholdingDue('2026-11-01')).toBe('2026-12-14')
+    expect(withholdingDue('2032-12-01')).toBe('2033-01-12')
+  })
+
+  it('answers the withholding deadline from the ledger, with no slot to mark', () => {
+    const tile = (asOf: string, open: number) =>
+      deadlines({ ends: '2031-12-31', asOf, dividend: { dividends: [], paid: '2032-06-15', withholding: { due: '2032-07-12', open_snt: open } } }).find(
+        (d) => d.key === 'dividend_withholding',
+      )!
+    expect(tile('2032-07-01', 100)).toMatchObject({ due: '2032-07-12', state: 'upcoming' })
+    expect(tile('2032-07-01', 100).kind).toBeUndefined()
+    expect(tile('2032-07-13', 100).state).toBe('overdue')
+    expect(tile('2032-07-13', 0).state).toBe('done')
   })
 
   it('knows the days off of the deadlines act', () => {

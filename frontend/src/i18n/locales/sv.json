@@ -1739,7 +1739,45 @@
       "agm": "Ordinarie bolagsstämma",
       "tax_return": "Skattedeklaration 6B",
       "prh_filing": "Bokslutet till PRH",
+      "dividend_withholding": "Förskottsinnehållning på dividend",
       "dividend_report": "Årsanmälan om dividender"
+    },
+    "dividend": {
+      "title": "Dividender ur räkenskapsperiodens vinst",
+      "name": "Dividend",
+      "decided": "Beslut {date}",
+      "step": {
+        "decided": "Beslutad",
+        "booked": "Bokförd",
+        "paid": "Betald",
+        "withheld": "Innehållning redovisad",
+        "reported": "Anmäld"
+      },
+      "state": {
+        "done": "Klar",
+        "waiting": "Väntar",
+        "overdue": "Försenad",
+        "missing": "Saknas",
+        "no_minutes": "Inget protokoll",
+        "difference": "Differens",
+        "no_contract": "Inget avtal",
+        "not_applicable": "Behövs inte"
+      },
+      "voucher": {
+        "decision": "Beslut",
+        "payment": "Betalning",
+        "remittance": "Redovisning av innehållning"
+      },
+      "alert": {
+        "difference": "Betalt {paid}, beslutat {decided}.",
+        "noContract": "Dividenden blev en skuld till aktieägaren, men betalningens verifikat har ingen bilaga, till exempel skuldavtalet.",
+        "unpaid": "Obetalt {amount}",
+        "withholdingOpen": "Innehållning oredovisad {amount}, förfallodag {date}"
+      }
+    },
+    "incomeTax": {
+      "title": "Bokföring av inkomstskatt",
+      "booked": "Bokförd"
     },
     "deadlineState": {
       "done": "Klart",
