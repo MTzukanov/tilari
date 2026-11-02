@@ -7,6 +7,23 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-02 - Company page: the dividends' annual report; what a dividend payment is
+
+- Owner: the report is filed with Vero but was never stored in the book, and past and future ones should be
+  here. So it is a required row, listed only for a period the book shows a dividend from. It goes on the period
+  whose profit was distributed, where the dividend's own section will go, and its name gives the year paid,
+  since that is the year the report covers.
+- Its date is the end of the January after the year paid (Vero), moved past days off like the 6B. It is
+  "Odottaa" until that date, then "Puuttuu". A past report goes through the row's upload, with its own date kept
+  when the year is closed. No suggestions for it: nothing in a book names one yet.
+- Read from Osingonjako (2261, the chart's number, as the statement template reads it): a posted credit is the
+  decision, and the first debit after it the payment. A draft payment does not count. Nothing is stored. The
+  accounts become a setting with the dividends themselves.
+- Correction to the 2026-10-31 entry and ADR-031: "cash payments keep coming from the bank import" was the
+  agent's wording inside a question, never the owner's decision. A payment is a voucher, whether or not money
+  leaves the bank that day: it can turn the dividend into a debt to the shareholder, with the contract attached.
+  Later lines on the payable repay that debt and are no dividend step, so nothing allocates them to dividends.
+
 ## 2026-11-02 - Company page: document lines as a table
 
 - Owner's request: lines looked unstructured, and "Ehdotus" pushed everything to the right. A line now has
@@ -78,12 +95,10 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   data in `TilariData` (ADR-031). A design from a session without access to this repo was the
   starting point; its concepts carried over, its Kitsas API, SQL tables and dividend model did not.
 - Owner decisions: documents and deadlines first, dividends next after the review; company-level
-  documents get their own section; dividend vouchers will be drafts the owner posts, cash payments
-  keep coming from the bank import.
+  documents get their own section; dividend vouchers will be drafts the owner posts.
 - What the model has to allow: documents on normal vouchers, several documents on one voucher, the
-  same file on two vouchers. A dividend can go in steps: decided on one voucher, moved to withholding
-  and a payable on a second, paid later through bank statements, where not every line on the payable
-  is a dividend.
+  same file on two vouchers. A dividend is decided on one voucher and paid on a second, which moves it
+  to withholding and a payable (corrected 2026-11-02, see that entry).
 - Matching notes: `osinko` inflects to `osingon`; `veroilmoitus` is inside VAT and transfer-tax
   returns; `6b` is inside hex file names; a file name's date is not the period's year.
 - Checked on a copy of a real book (pass/fail only): the suggestions put each file of a voucher with

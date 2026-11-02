@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { readTilariData } from '../../../kernel/tilariData'
+import { TYPE_OPENING, TYPE_TRANSFER } from '../../../vouchers'
 import { buildCompanyFixture, type CompanyFixture } from '../testFixture'
 import { parseCompanyDoc } from './doc'
 import { computeAlerts, computeOverview, fetchCandidates, isLimitedCompany, saveChanges } from './overview'
@@ -357,5 +358,80 @@ describe('saving changes', () => {
 
   it('refuses to remove a link that is not there', () => {
     expect(() => save({ remove: ['d99'] })).toThrow('unknown_link')
+  })
+})
+
+describe("the dividends' annual report", () => {
+  const REPORT = 'dividend_annual_report'
+
+  function dividendLine(key: string, date: string, side: 'debetsnt' | 'kreditsnt', status = 100) {
+    const voucher = fx.voucher(key, date, TYPE_TRANSFER, 'Osinko', [], status)
+    fx.db.run(`INSERT INTO Vienti (rivi, tosite, pvm, tili, ${side}) VALUES (1, ?, ?, 2261, 100)`, [voucher, date])
+  }
+
+  /** Decided in 2033 from period 2032's profit, and paid. */
+  function decideAndPay(paid = '2033-06-15') {
+    dividendLine('decided', '2033-05-02', 'kreditsnt')
+    dividendLine('paid', paid, 'debetsnt')
+  }
+
+  const row = (ends: string, asOf: string) => period(ends, asOf).slots.find((s) => s.kind === REPORT)
+  const tile = (ends: string, asOf: string) => period(ends, asOf).deadlines.find((d) => d.key === 'dividend_report')
+
+  it('is not listed for a period the book shows no dividend from', () => {
+    decideAndPay()
+    expect(row('2031-12-31', AS_OF)).toBeUndefined()
+    expect(row('2033-12-31', AS_OF)).toBeUndefined()
+    expect(tile('2031-12-31', AS_OF)).toBeUndefined()
+  })
+
+  it('goes on the period whose profit was distributed, and is dated from the payment', () => {
+    decideAndPay()
+    expect(row('2032-12-31', '2033-07-01')).toMatchObject({ required: true, status: 'waiting' })
+    expect(tile('2032-12-31', '2033-07-01')).toMatchObject({ due: '2034-01-31', state: 'later' })
+  })
+
+  it('waits without a date until the dividend is paid; a draft payment does not count', () => {
+    dividendLine('decided', '2033-05-02', 'kreditsnt')
+    dividendLine('draftPayment', '2033-06-15', 'debetsnt', 50)
+    expect(row('2032-12-31', '2035-01-01')).toMatchObject({ required: true, status: 'waiting' })
+    expect(tile('2032-12-31', '2035-01-01')).toBeUndefined()
+  })
+
+  it('is missing only after its date, not after the period ends', () => {
+    decideAndPay()
+    expect(row('2032-12-31', '2034-01-31')?.status).toBe('waiting')
+    expect(row('2032-12-31', '2034-02-01')?.status).toBe('missing')
+    expect(tile('2032-12-31', '2034-02-01')?.state).toBe('overdue')
+  })
+
+  it('is answered by a document stored after the fact', () => {
+    decideAndPay()
+    save({ add: [{ kind: REPORT, period_ends: '2032-12-31', voucher_id: fx.vouchers.plain, doc_date: '2034-01-20' }] })
+    expect(row('2032-12-31', '2034-06-01')).toMatchObject({ required: true, status: 'complete' })
+    expect(tile('2032-12-31', '2034-06-01')?.state).toBe('done')
+  })
+
+  it('counts in the X/Y documents and in the header', () => {
+    const before = computeAlerts(fx.db, { today: '2034-01-20', asOf: '2034-01-20' }).deadlines
+    const required = period('2032-12-31', '2034-01-20').docs.required
+    decideAndPay()
+    expect(period('2032-12-31', '2034-01-20').docs.required).toBe(required + 1)
+    expect(computeAlerts(fx.db, { today: '2034-01-20', asOf: '2034-01-20' }).deadlines).toBe(before + 1)
+  })
+
+  it('keeps a row holding a document when the book shows no dividend', () => {
+    save({ add: [{ kind: REPORT, period_ends: '2031-12-31', voucher_id: fx.vouchers.plain }] })
+    expect(row('2031-12-31', AS_OF)).toMatchObject({ required: false, status: 'filled' })
+  })
+
+  it('keeps each dividend on its own period, and ignores an opening balance', () => {
+    fx.voucher('opening', '2031-01-01', TYPE_OPENING, 'Avaus')
+    fx.db.run('INSERT INTO Vienti (rivi, tosite, pvm, tili, kreditsnt) VALUES (1, ?, ?, 2261, 100)', [fx.vouchers.opening, '2031-01-01'])
+    decideAndPay()
+    dividendLine('decided2034', '2034-04-02', 'kreditsnt')
+    dividendLine('paid2034', '2034-04-03', 'debetsnt')
+    expect(tile('2032-12-31', '2034-05-01')?.due).toBe('2034-01-31')
+    expect(tile('2033-12-31', '2034-05-01')?.due).toBe('2035-01-31')
   })
 })

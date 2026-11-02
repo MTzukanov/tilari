@@ -1735,7 +1735,8 @@
       "statements_prepared": "Jahresabschluss erstellt",
       "agm": "Ordentliche Hauptversammlung",
       "tax_return": "Steuererklärung 6B",
-      "prh_filing": "Jahresabschluss an PRH"
+      "prh_filing": "Jahresabschluss an PRH",
+      "dividend_report": "Jahresmeldung über Dividenden"
     },
     "deadlineState": {
       "done": "Erledigt",
@@ -1771,6 +1772,7 @@
       "prh_filing_receipt": "PRH-Auszug zum eingetragenen Abschluss",
       "tax_return_6b": "Steuererklärung 6B",
       "tax_decision": "Steuerbescheid",
+      "dividend_annual_report": "Jahresmeldung über Dividenden",
       "other": "Sonstige",
       "articles": "Satzung",
       "trade_register_extract": "Handelsregisterauszug",

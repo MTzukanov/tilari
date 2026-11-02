@@ -9,7 +9,8 @@ import type { SqliteDb } from '../../../sqlite'
 import { TYPE_ATTACHMENT_NOTE } from '../../../vouchers'
 import { isUserAttachment } from '../../properties/domain/documents'
 import { loadVoucherFiles, propertyVoucherIds, selectCandidates } from './candidates'
-import { deadlineAlerts, periodDeadlines } from './deadlines'
+import { deadlineAlerts, dividendReportDue, periodDeadlines } from './deadlines'
+import { dividendsByPeriod, type PeriodDividend } from './dividends'
 import { applyChanges, CompanyDocError, parseCompanyDoc, serializeCompanyDoc, type ParsedCompanyDoc } from './doc'
 import { suggestDocuments } from './suggest'
 import {
@@ -113,17 +114,18 @@ function documentView(d: CompanyDocument, voucher: VoucherRow | undefined): Docu
   }
 }
 
-function requiredKind(kind: PeriodKind, doc: CompanyDoc): boolean {
+function requiredKind(kind: PeriodKind, doc: CompanyDoc, dividend: PeriodDividend | undefined): boolean {
+  if (kind === 'dividend_annual_report') return dividend != null
   if (kind in KIND_SETTINGS) return doc.settings?.[KIND_SETTINGS[kind as keyof typeof KIND_SETTINGS]] === true
   return kind !== 'board_minutes' && kind !== 'other'
 }
 
-function slotStatus(kind: PeriodKind, required: boolean, filled: boolean, notNeeded: boolean, ended: boolean): SlotStatus {
+function slotStatus(kind: PeriodKind, required: boolean, filled: boolean, notNeeded: boolean, expected: boolean): SlotStatus {
   if (filled) return required ? 'complete' : 'filled'
   if (notNeeded) return 'not_needed'
   if (!required) return 'optional'
   // A tax decision comes when the tax office is done, whatever the date.
-  if (!ended || kind === 'tax_decision') return 'waiting'
+  if (!expected || kind === 'tax_decision') return 'waiting'
   return 'missing'
 }
 
@@ -161,21 +163,25 @@ type PeriodParts = {
   lock: string | null
   suggestions: Suggestion[]
   unlinked: DocCandidate[]
+  dividend: PeriodDividend | undefined
 }
 
-function buildPeriod(doc: CompanyDoc, { period, views, statement, asOf, lock, suggestions, unlinked }: PeriodParts): PeriodView {
+function buildPeriod(doc: CompanyDoc, { period, views, statement, asOf, lock, suggestions, unlinked, dividend }: PeriodParts): PeriodView {
   const ended = period.ends < asOf
+  const reportOverdue = dividend?.paid != null && dividendReportDue(dividend.paid) < asOf
   const slots: SlotView[] = PERIOD_KINDS.flatMap((kind) => {
     const documents = views.filter((v) => v.kind === kind)
     const filled = documents.some((v) => v.state === 'ok')
-    const required = requiredKind(kind, doc)
+    const required = requiredKind(kind, doc, dividend)
+    const isReport = kind === 'dividend_annual_report'
     // A row with a document stays even when unticked: unticking must not hide what was attached.
-    if (kind in KIND_SETTINGS && !required && !documents.length) return []
+    // The annual report is listed like a ticked document, for a period the book shows a dividend from.
+    if ((kind in KIND_SETTINGS || isReport) && !required && !documents.length) return []
     return [
       {
         kind,
         required,
-        status: slotStatus(kind, required, filled, isNotNeeded(doc, period.ends, kind), ended),
+        status: slotStatus(kind, required, filled, isNotNeeded(doc, period.ends, kind), isReport ? reportOverdue : ended),
         documents,
         suggestions: suggestions.filter((s) => s.kind === kind),
       },
@@ -197,8 +203,9 @@ function buildPeriod(doc: CompanyDoc, { period, views, statement, asOf, lock, su
       asOf,
       filled,
       notNeeded: (kind) => isNotNeeded(doc, period.ends, kind),
-      required: (kind) => requiredKind(kind, doc),
+      required: (kind) => requiredKind(kind, doc, dividend),
       kitsasStatement: statement != null,
+      dividendPaid: dividend?.paid,
     }),
     slots,
     unlinked,
@@ -235,6 +242,7 @@ export function computeOverview(db: SqliteDb, query: { today: string; asOf?: str
     return true
   })
 
+  const dividends = dividendsByPeriod(db, periods)
   const periodViews = periods.map((period) =>
     buildPeriod(doc, {
       period,
@@ -245,6 +253,7 @@ export function computeOverview(db: SqliteDb, query: { today: string; asOf?: str
       suggestions: suggestions.filter((s) => s.period_ends === period.ends),
       // Documents of a period are dated after it ends; each shows under one period only.
       unlinked: unlinked.filter((u) => u.date > period.ends && u.date <= addDays(period.ends, 365)),
+      dividend: dividends.get(period.ends),
     }),
   )
 
@@ -287,14 +296,17 @@ export function computeAlerts(db: SqliteDb, query: { today: string; asOf?: strin
       .filter((d) => documentView(d, vouchers.get(d.voucher_id)).state === 'ok')
       .map((d) => `${d.period_ends}|${d.kind}`),
   )
-  const deadlines = loadPeriods(db).flatMap((period) =>
+  const periods = loadPeriods(db)
+  const dividends = dividendsByPeriod(db, periods)
+  const deadlines = periods.flatMap((period) =>
     periodDeadlines({
       ends: period.ends,
       asOf,
       filled: (kind) => usable.has(`${period.ends}|${kind}`),
       notNeeded: (kind) => isNotNeeded(doc, period.ends, kind),
-      required: (kind) => requiredKind(kind, doc),
+      required: (kind) => requiredKind(kind, doc, dividends.get(period.ends)),
       kitsasStatement: statements.has(period.ends),
+      dividendPaid: dividends.get(period.ends)?.paid,
     }),
   )
   return { applicable: true, deadlines: deadlines.filter(deadlineAlerts).length }

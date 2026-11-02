@@ -9,9 +9,12 @@
  *   30.4. was a Sunday and 1.5. Vappu, and Vero's own notice said 2.5.
  * - Statements to PRH: 8 months from the period's end, the day itself and not its month's end
  *   (PRH's late fee). Osakeyhtiölaki 8:10 also says 2 months from adoption.
+ * - Dividends' annual report: the end of the January after the year they were paid (Vero), moved like
+ *   the 6B. It has a date only once a dividend is paid.
  *
- * Only the 6B moves. The first two are not deadlines at an authority, which is what the act covers
- * (1 §). PRH's text names no day-off rule and a late fee is at stake, so its date stays the earlier one.
+ * Only the 6B and the annual report move. The first two are not deadlines at an authority, which is what
+ * the act covers (1 §). PRH's text names no day-off rule and a late fee is at stake, so its date stays the
+ * earlier one.
  */
 import { addDays, addMonths, dayCount, monthEnd } from '../../../months'
 import { addMonthsIso } from '../../vat/domain/vatPeriod'
@@ -61,6 +64,10 @@ function nextWorkingDay(date: string): string {
   return day
 }
 
+export function dividendReportDue(paid: string): string {
+  return nextWorkingDay(`${Number(paid.slice(0, 4)) + 1}-01-31`)
+}
+
 const RULES: { key: DeadlineKey; kind: PeriodKind; due: (ends: string) => string }[] = [
   { key: 'statements_prepared', kind: 'financial_statements', due: (ends) => addMonthsIso(ends, 4) },
   { key: 'tax_return', kind: 'tax_return_6b', due: (ends) => nextWorkingDay(monthEnd(addMonths(ends.slice(0, 7), 4))) },
@@ -78,11 +85,15 @@ export type DeadlineInputs = {
   required: (kind: PeriodKind) => boolean
   /** Kitsas has its own statement PDF, which shows the statements were prepared. */
   kitsasStatement: boolean
+  /** The date this period's dividend was paid, if it has been. */
+  dividendPaid?: string | null
 }
 
-export function periodDeadlines({ ends, asOf, filled, notNeeded, required, kitsasStatement }: DeadlineInputs): DeadlineView[] {
-  return RULES.map((rule) => {
-    const due = rule.due(ends)
+export function periodDeadlines({ ends, asOf, filled, notNeeded, required, kitsasStatement, dividendPaid }: DeadlineInputs): DeadlineView[] {
+  const rules: { key: DeadlineKey; kind: PeriodKind; due: string }[] = RULES.map((rule) => ({ ...rule, due: rule.due(ends) }))
+  if (dividendPaid) rules.push({ key: 'dividend_report', kind: 'dividend_annual_report', due: dividendReportDue(dividendPaid) })
+  return rules.map((rule) => {
+    const { due } = rule
     const days = dayCount(asOf, due) - 1
     let state: DeadlineState
     if (filled(rule.kind) || (rule.key === 'statements_prepared' && kitsasStatement)) state = 'done'

@@ -197,6 +197,7 @@ not this.
 | Toimintakertomus | Verksamhetsberättelse | Annual report | Lagebericht |
 | Tilintarkastuskertomus | Revisionsberättelse | Audit report | Prüfungsbericht |
 | Verotuspäätös | Beskattningsbeslut | Tax decision | Steuerbescheid |
+| Osinkojen vuosi-ilmoitus | Årsanmälan om dividender | Annual information return on dividends | Jahresmeldung über Dividenden |
 | Yhtiöjärjestys | Bolagsordning | Articles of association | Satzung |
 | Kaupparekisteriote | Handelsregisterutdrag | Trade register extract | Handelsregisterauszug |
 | Osakasluettelo | Aktieägarförteckning | Shareholder list | Aktionärsliste |

@@ -22,6 +22,11 @@ export function PeriodBody({
   const { t } = useI18n()
   const [rowError, setRowError] = useState<string | null>(null)
   const kindLabel = (kind: string) => t(`company.kind.${kind}`)
+  // The report goes by the year the dividend was paid, which is not this period's: it is due the January after.
+  const reportDue = period.deadlines.find((d) => d.key === 'dividend_report')?.due
+  const reportYear = reportDue ? Number(reportDue.slice(0, 4)) - 1 : null
+  const rowLabel = (kind: string) => (kind === 'dividend_annual_report' && reportYear ? `${kindLabel(kind)} ${reportYear}` : kindLabel(kind))
+  const rowTitle = (kind: string) => (kind === 'dividend_annual_report' && reportYear ? rowLabel(kind) : `${kindLabel(kind)} ${periodShort(period)}`)
   return (
     <>
       {period.confirmed_at ? <p className="muted company-confirmed">{t('company.period.confirmed', { date: formatDate(period.confirmed_at) })}</p> : null}
@@ -44,26 +49,23 @@ export function PeriodBody({
 
       <h3 className="section-label">{t('company.period.documents')}</h3>
       <DocRows>
-        {period.slots.map((slot) => {
-          const label = kindLabel(slot.kind)
-          return (
-            <SlotRow
-              key={slot.kind}
-              kind={slot.kind}
-              label={label}
-              status={slot.status}
-              documents={slot.documents}
-              suggestions={slot.suggestions}
-              periodEnds={period.ends}
-              defaultTitle={`${label} ${periodShort(period)}`}
-              overview={overview}
-              today={today}
-              actions={actions}
-              kitsasStatement={slot.kind === 'financial_statements' ? period.kitsas_statement : undefined}
-              notNeededToggle={slot.required}
-            />
-          )
-        })}
+        {period.slots.map((slot) => (
+          <SlotRow
+            key={slot.kind}
+            kind={slot.kind}
+            label={rowLabel(slot.kind)}
+            status={slot.status}
+            documents={slot.documents}
+            suggestions={slot.suggestions}
+            periodEnds={period.ends}
+            defaultTitle={rowTitle(slot.kind)}
+            overview={overview}
+            today={today}
+            actions={actions}
+            kitsasStatement={slot.kind === 'financial_statements' ? period.kitsas_statement : undefined}
+            notNeededToggle={slot.required}
+          />
+        ))}
       </DocRows>
 
       {period.unlinked.length ? (

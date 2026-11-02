@@ -18,6 +18,7 @@ export const PERIOD_KINDS = [
   'agm_minutes',
   'prh_filing_receipt',
   'tax_decision',
+  'dividend_annual_report',
   'other',
 ] as const
 export type PeriodKind = (typeof PERIOD_KINDS)[number]
@@ -152,7 +153,7 @@ export type SlotStatus =
   | 'complete'
   /** Required, the period has ended, nothing linked. */
   | 'missing'
-  /** Required but not expected yet: the period is running, or a tax decision has not come. */
+  /** Required but not expected yet: the period is running, a tax decision has not come, or an annual report is not due. */
   | 'waiting'
   /** Not required and empty. */
   | 'optional'
@@ -168,7 +169,7 @@ export type SlotView = {
   suggestions: Suggestion[]
 }
 
-export type DeadlineKey = 'statements_prepared' | 'agm' | 'tax_return' | 'prh_filing'
+export type DeadlineKey = 'statements_prepared' | 'agm' | 'tax_return' | 'prh_filing' | 'dividend_report'
 /** `unverified`: the date has passed, but no document is required, so Tilari cannot tell. */
 export type DeadlineState = 'done' | 'not_needed' | 'overdue' | 'unverified' | 'upcoming' | 'later'
 

@@ -1735,7 +1735,8 @@
       "statements_prepared": "Tilinpäätös laadittu",
       "agm": "Varsinainen yhtiökokous",
       "tax_return": "Veroilmoitus 6B",
-      "prh_filing": "Tilinpäätös PRH:lle"
+      "prh_filing": "Tilinpäätös PRH:lle",
+      "dividend_report": "Osinkojen vuosi-ilmoitus"
     },
     "deadlineState": {
       "done": "Tehty",
@@ -1771,6 +1772,7 @@
       "prh_filing_receipt": "PRH:n ote rekisteröidystä tilinpäätöksestä",
       "tax_return_6b": "Veroilmoitus 6B",
       "tax_decision": "Verotuspäätös",
+      "dividend_annual_report": "Osinkojen vuosi-ilmoitus",
       "other": "Muut",
       "articles": "Yhtiöjärjestys",
       "trade_register_extract": "Kaupparekisteriote",

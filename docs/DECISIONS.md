@@ -669,12 +669,16 @@ correction would change the open year's income statement lines. The rental-objec
 - **Deadlines are computed** (`domain/deadlines.ts`), on the as-of date, indicative, and answered by
   a slot's document or by the owner's word ("Ei tarvita" on the row, or on the tile when the row is not
   listed), which shows as "Hoidettu". Rules and sources are in that file.
-  Only the 6B moves past days off (laki 150/1930, 5 §), holidays included: the act covers deadlines at an
-  authority, and PRH's text names no such rule, so its date stays the earlier, safer one. The header counts those due within 30 days
+  Only the 6B and the dividends' annual report move past days off (laki 150/1930, 5 §), holidays included: the
+  act covers deadlines at an authority, and PRH's text names no such rule, so its date stays the earlier, safer one. The header counts those due within 30 days
   or overdue by at most a year: older gaps show on their period's row, or old years would keep it
   lit. Like ADR-030 they cannot be dismissed, only answered.
+- **The dividends' annual report is a row of the period whose profit was distributed** (owner, 2026-11-02),
+  listed only when the book shows a dividend from that period: a posted credit on Osingonjako after the
+  period's end. It is the row the dividend's "reported" step will read. Its date comes from the payment, the
+  first debit after that credit, and its name gives that year.
 - **Why not the dossier as designed elsewhere:** the first design assumed a Kitsas HTTP API, its own
-  SQL tables, a dossier inside Tilikaudet, documents only on type 800, and one payment voucher per
-  dividend. Tilari has the ledger in-process and one table, and a dividend can go in steps through a
-  payable account and bank statements. Dividends come later, on those steps.
+  SQL tables, a dossier inside Tilikaudet, documents only on type 800, and a payment voucher that
+  pays from the bank. Tilari has the ledger in-process and one table, and a payment can turn the dividend into
+  a debt to the shareholder, which later bank lines repay. Dividends come later, on those steps.
 

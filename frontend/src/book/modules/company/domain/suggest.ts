@@ -84,7 +84,7 @@ export function yearIn(text: string): number | null {
 
 export type PeriodRange = { starts: string; ends: string }
 
-function lastEndedBefore(periods: PeriodRange[], date: string): string | null {
+export function lastEndedBefore(periods: PeriodRange[], date: string): string | null {
   let found: string | null = null
   for (const p of periods) if (p.ends < date && (found == null || p.ends > found)) found = p.ends
   return found
