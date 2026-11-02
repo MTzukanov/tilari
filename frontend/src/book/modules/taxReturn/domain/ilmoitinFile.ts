@@ -276,7 +276,8 @@ export function ilmoitinFile(view: TaxReturnView, options: FileOptions): Ilmoiti
     }
     const noId = holdingRows.filter((line) => !line.business_id).length
     if (noId) remarks.push({ key: 'holding_no_id', count: noId })
-    const noValue = holdingRows.filter((line) => !line.value_cents).length
+    // Housing shares bought since 2006 have no separate comparison value (Vero's guide to 8A): no remark in Muu omaisuus.
+    const noValue = view.form8a.groups.filter((group) => group.key !== 'other').flatMap((group) => group.lines).filter((line) => !line.value_cents).length
     if (noValue) remarks.push({ key: 'holding_no_value', count: noValue })
   }
 

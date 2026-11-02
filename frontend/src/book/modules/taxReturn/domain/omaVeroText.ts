@@ -39,14 +39,16 @@ function form8aText(view: TaxReturnView): string[] {
   for (const group of groups) {
     const def = HOLDING_GROUPS.find((item) => item.key === group.key)
     out.push('', group.title)
+    // Housing shares bought since 2006 have no separate comparison value, so Muu omaisuus does not ask for one.
+    const empty = group.key === 'other' ? '0,00' : 'täytä itse'
     for (const line of group.lines) {
       out.push(
         `Yhtiön tai osuuskunnan nimi: ${line.name}`,
         `Y-tunnus: ${line.business_id || 'täytä itse'}`,
         `Osakkeiden lukumäärä: ${line.shares}`,
         `Tuloverotuksessa poistamaton hankintameno: ${plainAmount(line.cost_cents)}`,
-        `Vertailuarvo kappaleelta: ${line.unit_value || 'täytä itse'}`,
-        `Vertailuarvo yhteensä: ${line.value_cents ? plainAmount(line.value_cents) : 'täytä itse'}`,
+        `Vertailuarvo kappaleelta: ${line.unit_value || empty}`,
+        `Vertailuarvo yhteensä: ${line.value_cents ? plainAmount(line.value_cents) : empty}`,
       )
     }
     out.push(

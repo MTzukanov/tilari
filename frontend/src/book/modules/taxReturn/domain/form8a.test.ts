@@ -113,6 +113,21 @@ describe('what the owner adds', () => {
     expect(other.lines).toEqual([{ name: 'As Oy Esimerkki', business_id: '2345678-0', shares: '120', cost_cents: 5_300_000, unit_value: '', value_cents: 420_000 }])
   })
 
+  it('joins a row with an ID and no name to the first row with that ID', async () => {
+    const { f, flat, garage } = await withFlat()
+    const row = { group: 'other' as const, business_id: '2345678-0', cost_cents: 0, unit_value: '', total_value_cents: null }
+    f.inputs({ holdings: [{ ...row, era: flat, name: 'As Oy Esimerkki', shares: '120' }, { ...row, era: garage, name: '', shares: '' }] })
+    expect(group(f.view(), 'other').lines).toEqual([expect.objectContaining({ name: 'As Oy Esimerkki', cost_cents: 5_300_000 })])
+  })
+
+  it('keeps different companies apart though they share a business ID', async () => {
+    const f = await buildTaxFixture()
+    f.inputs({ holdings: [typed, { ...typed, name: 'Toinen Rahasto', shares: '10', cost_cents: 5_000 }] })
+    const financial = group(f.view(), 'financial')
+    expect(financial.lines.map((line) => line.name)).toEqual(['Esimerkki Oyj', 'Toinen Rahasto'])
+    expect(financial.cost_cents).toBe(305_000)
+  })
+
   it('carries names, IDs and counts to the next year, not comparison values', async () => {
     const f = await buildTaxFixture()
     f.inputs({ holdings: [{ ...typed, total_value_cents: 5 }] })
@@ -220,7 +235,7 @@ describe('in the outputs', () => {
     expect(ilmoitinFile(f.view(), { ids: [ID], now: NOW }).problems.map((p) => p.key)).toEqual(expect.arrayContaining(['holding_name', 'holding_unit']))
     f.inputs({ ...complete, holdings: [{ ...holdings[0]!, business_id: '1234567-2' }, holdings[1]!] })
     expect(ilmoitinFile(f.view(), { ids: [ID], now: NOW }).problems.map((p) => p.key)).toContain('holding_id')
-    f.inputs({ ...complete, holdings: [{ ...holdings[0]!, business_id: '', unit_value: '' }, holdings[1]!] })
+    f.inputs({ ...complete, holdings: [{ ...holdings[0]!, business_id: '' }, { ...holdings[1]!, unit_value: '' }] })
     const file = ilmoitinFile(f.view(), { ids: [ID], now: NOW })
     expect(file.problems).toEqual([])
     expect(file.remarks).toEqual([
@@ -228,6 +243,17 @@ describe('in the outputs', () => {
       { key: 'holding_no_value', count: 1 },
     ])
     expect(file.bytes).not.toBeNull()
+  })
+
+  it('asks no comparison value of a housing share in Muu omaisuus, as Vero has none for those bought since 2006', async () => {
+    const f = await filled()
+    const holdings = f.view().inputs.holdings
+    f.inputs({ ...complete, holdings: [{ ...holdings[0]!, unit_value: '' }, holdings[1]!] })
+    const view = f.view()
+    expect(ilmoitinFile(view, { ids: [ID], now: NOW }).remarks).toEqual([])
+    const text = omaVeroText(view)
+    expect(text).toContain('Vertailuarvo kappaleelta: 0,00')
+    expect(text).toContain('Muun omaisuuden vertailuarvot yhteensä: 0,00')
   })
 
   it('gives the same rows in the OmaVero text, in its wording', async () => {

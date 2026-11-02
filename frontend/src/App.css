@@ -6856,6 +6856,16 @@ button.due-tile:hover {
   text-align: left;
 }
 
+.tax-return-chevron {
+  margin-right: 0.3rem;
+  vertical-align: -1px;
+  transition: transform 0.15s;
+}
+
+.tax-return-row-name[aria-expanded='true'] .tax-return-chevron {
+  transform: rotate(90deg);
+}
+
 .tax-return-figure {
   padding: 0.05rem 0.25rem;
   font: inherit;

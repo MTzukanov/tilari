@@ -1985,7 +1985,7 @@
     "attached": {
       "lead": "Diese Formulare gehören zur Steuererklärung. Sie gehen in den OmaVero-Text und in die Ilmoitin-Datei ein.",
       "none": "Die Zahlen erfordern die Formulare 8A, 71B und 62 nicht.",
-      "holdingsEra": "Die Anschaffungskosten stammen aus dem Bilanzposten. Dieselbe Unternehmenskennung ergibt eine Zeile, tragen Sie die Anzahl also nur einmal ein.",
+      "holdingsEra": "Die Anschaffungskosten stammen aus dem Bilanzposten. Zeilen mit demselben Namen und derselben Unternehmenskennung ergeben eine Zeile, tragen Sie die Anzahl also nur einmal ein.",
       "holdingsTyped": "Diese Wertpapiere stehen nicht einzeln in der Buchführung, tragen Sie die Zeilen also selbst ein.",
       "fromEra": "Bilanzposten: {text}",
       "addRow": "Zeile hinzufügen",
@@ -1999,7 +1999,9 @@
       "loss": "Verlust",
       "depreciationLead": "Die Zahlen stammen aus der Buchführung, und die Steuer folgt ihr. Tragen Sie einen Betrag ein, wenn die Steuer abweicht.",
       "showAll": "Alle Abschnitte zeigen",
-      "fromLedger": "Laut Buchführung"
-    }
+      "fromLedger": "Laut Buchführung",
+      "housingValue": "Wohnungsaktien, die 2006 oder später erworben wurden, haben keinen eigenen Vergleichswert, lassen Sie ihn also leer."
+    },
+    "rowHint": "Öffnen Sie eine Zeile, um die Konten hinter dem Betrag zu sehen."
   }
 }

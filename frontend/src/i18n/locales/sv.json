@@ -1985,7 +1985,7 @@
     "attached": {
       "lead": "De här blanketterna hör till skattedeklarationen. De ingår både i MinSkatt-texten och i Ilmoitin-filen.",
       "none": "Siffrorna kräver inte blanketterna 8A, 71B eller 62.",
-      "holdingsEra": "Anskaffningsutgiften kommer från balansposten. Samma FO-nummer blir en rad på blanketten, så skriv antalet bara på en.",
+      "holdingsEra": "Anskaffningsutgiften kommer från balansposten. Rader med samma namn och FO-nummer blir en rad på blanketten, så skriv antalet bara på en.",
       "holdingsTyped": "De här värdepapperen finns inte styckvis i bokföringen, så skriv raderna själv.",
       "fromEra": "Balanspost: {text}",
       "addRow": "Lägg till rad",
@@ -1999,7 +1999,9 @@
       "loss": "Förlust",
       "depreciationLead": "Siffrorna kommer från bokföringen och beskattningen följer bokföringen. Skriv ett belopp om beskattningen avviker.",
       "showAll": "Visa alla avsnitt",
-      "fromLedger": "Enligt bokföringen"
-    }
+      "fromLedger": "Enligt bokföringen",
+      "housingValue": "Bostadsaktier som förvärvats 2006 eller senare har inget separat jämförelsevärde, så lämna det tomt."
+    },
+    "rowHint": "Öppna en rad för att se kontona bakom siffran."
   }
 }

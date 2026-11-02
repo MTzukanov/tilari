@@ -14,6 +14,8 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   tase-erä's partner is the seller, not the company, so it was dropped as a source of names and business IDs.
 - In financial assets one tase-erä can hold many securities, so 8A's rows there are typed until the bank import brings
   them. Other assets follow tase-eriä, and two can make one filed row: rows with one business ID combine.
+- An 8A filing can give many securities one business ID (13 of 16 rows on a real one), so rows combine only when the
+  name matches too. Combining by ID alone would have merged them, and only a back-test against the filing showed it.
 - A filed 71B row's cost can differ from the booked cost, so a suggestion stays editable, and `sale_gap` shows what is
   left. Sale fees are booked on their own vouchers, with nothing linking them to a sale.
 - Leaving a tab with typed figures saves them. With these forms too much could be lost by moving to the file to check it.

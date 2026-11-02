@@ -72,10 +72,13 @@ Where past filings of a book differ from the chart, the chart decides and the ow
   says what is left.
 - The company's name and business ID start empty. The line that opened a tase-erä is no guide: on a purchase its
   partner is usually the seller, and on a real book it named the company in no case. Its text shows beside the row.
-- Rows with one business ID become one line on the form, so a flat and its garage take one row. Their counts add up,
-  so a count goes on only one of them.
+- Rows with the same name and business ID become one line on the form, so a flat and its garage take one row. Their
+  counts add up, so a count goes on only one of them. The ID alone is not enough: a filing can give several foreign
+  securities one ID, and those stay separate rows.
 - Comparison value per share: three decimals under 10 euros, otherwise two (Vero's check #2038). The total is count
-  times unit, rounded to the cent, unless typed.
+  times unit, rounded to the cent, unless typed. Vero's guide to 8A: a listed security's is 70 % of its closing price
+  on the balance sheet date, a fund unit's 70 % of its value at the end of the calendar year, and housing shares
+  bought since 1.1.2006 have none. So only Muu omaisuus goes without a remark when it is empty.
 - Names, IDs and counts carry over to the next year; comparison values do not.
 
 **71B, sales** (`domain/form71b.ts`). Sections 2, 4 and 5, for other assets.

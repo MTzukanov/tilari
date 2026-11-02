@@ -1985,7 +1985,7 @@
     "attached": {
       "lead": "These forms belong to the tax return. They go into both the OmaVero text and the Ilmoitin file.",
       "none": "The figures do not call for forms 8A, 71B or 62.",
-      "holdingsEra": "The cost comes from the balance sheet item. One business ID makes one row on the form, so write the count on only one of them.",
+      "holdingsEra": "The cost comes from the balance sheet item. Rows with the same name and business ID make one row on the form, so write the count on only one of them.",
       "holdingsTyped": "These securities are not in the ledger one by one, so type the rows yourself.",
       "fromEra": "Balance sheet item: {text}",
       "addRow": "Add a row",
@@ -1999,7 +1999,9 @@
       "loss": "Loss",
       "depreciationLead": "The figures come from the ledger, and tax follows the book. Type a figure where tax differs.",
       "showAll": "Show all sections",
-      "fromLedger": "As in the ledger"
-    }
+      "fromLedger": "As in the ledger",
+      "housingValue": "Housing shares acquired in 2006 or later have no separate comparison value, so leave it empty."
+    },
+    "rowHint": "Open a row to see the accounts behind the figure."
   }
 }

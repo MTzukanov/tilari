@@ -52,6 +52,9 @@ function Row({ row, view, actions }: { row: RowView; view: TaxReturnView; action
       <tr className={row.state === 'zero' ? 'tax-return-zero' : undefined}>
         <td>
           <button type="button" className="btn-link tax-return-row-name" aria-expanded={open} onClick={() => setOpen(!open)}>
+            <svg className="tax-return-chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+            </svg>
             {row.label}
           </button>
           {row.state === 'manual' ? <Pill tone="accent">{t('taxReturn.manualTag')}</Pill> : null}
@@ -173,6 +176,7 @@ export function FiguresTab({ view, documents, onSaveInputs, onPlaceAccount, onTe
         </section>
       ) : null}
 
+      <p className="muted">{t('taxReturn.rowHint')}</p>
       {view.groups.map((group) => (
         <Group key={group.key} group={group} view={view} showZero={showZero} actions={actions} />
       ))}

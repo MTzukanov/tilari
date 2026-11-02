@@ -141,14 +141,18 @@ function eraBalances(db: SqliteDb, ends: string): EraBalance[] {
     .filter((row) => row.cents !== 0)
 }
 
-/** One company is one row on the form, however many tase-eriä it took: rows with the same business ID combine. */
+/**
+ * One company is one row on the form, however many tase-eriä it took. The name counts as well as the business ID:
+ * a filing can give several foreign securities one ID, and those stay separate rows. A row with an ID and no name
+ * joins the first row with that ID, so a garage's row need not repeat the company's name.
+ */
 function mergeLines(rows: HoldingRow[]): HoldingLine[] {
   const lines: HoldingLine[] = []
-  const byId = new Map<string, HoldingLine>()
   const sharesOf = (text: string) => parseShares(text) ?? 0
+  const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
   for (const row of rows) {
     const id = row.business_id.trim()
-    const known = id ? byId.get(id) : undefined
+    const known = id ? lines.find((line) => line.business_id === id && (!row.name.trim() || !line.name || sameName(line.name, row.name))) : undefined
     if (known) {
       known.shares = formatShares(sharesOf(known.shares) + sharesOf(row.shares))
       known.cost_cents += row.cost_cents
@@ -166,7 +170,6 @@ function mergeLines(rows: HoldingRow[]): HoldingLine[] {
       value_cents: row.value_cents,
     }
     lines.push(line)
-    if (id) byId.set(id, line)
   }
   return lines
 }

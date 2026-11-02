@@ -171,7 +171,7 @@ export type HoldingRow = HoldingInput & {
   value_cents: number
 }
 
-/** A row as it goes on the form: rows with one business ID combined. */
+/** A row as it goes on the form: rows of one company combined. */
 export type HoldingLine = {
   name: string
   business_id: string

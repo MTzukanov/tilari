@@ -1985,7 +1985,7 @@
     "attached": {
       "lead": "Nämä lomakkeet kuuluvat veroilmoitukseen. Ne tulevat sekä OmaVero-tekstiin että Ilmoitin-tiedostoon.",
       "none": "Luvut eivät vaadi lomakkeita 8A, 71B tai 62.",
-      "holdingsEra": "Hankintameno tulee tase-erästä. Sama Y-tunnus yhdistyy lomakkeella yhdeksi riviksi, joten kirjoita lukumäärä vain yhdelle.",
+      "holdingsEra": "Hankintameno tulee tase-erästä. Rivit, joilla on sama nimi ja Y-tunnus, yhdistyvät lomakkeella yhdeksi riviksi, joten kirjoita lukumäärä vain yhdelle.",
       "holdingsTyped": "Nämä arvopaperit eivät ole kirjanpidossa yksitellen, joten kirjoita rivit itse.",
       "fromEra": "Tase-erä: {text}",
       "addRow": "Lisää rivi",
@@ -1999,7 +1999,9 @@
       "loss": "Tappio",
       "depreciationLead": "Luvut tulevat kirjanpidosta, ja verotus seuraa kirjanpitoa. Kirjoita luku, jos verotuksessa on muuta.",
       "showAll": "Näytä kaikki osiot",
-      "fromLedger": "Kirjanpidon mukaan"
-    }
+      "fromLedger": "Kirjanpidon mukaan",
+      "housingValue": "Vuonna 2006 tai sen jälkeen hankituilla huoneisto-osakkeilla ei ole erillistä vertailuarvoa, joten jätä se tyhjäksi."
+    },
+    "rowHint": "Avaa rivi nähdäksesi tilit, joista luku koostuu."
   }
 }
