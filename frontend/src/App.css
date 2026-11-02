@@ -6131,6 +6131,7 @@ button.due-tile:hover {
 }
 
 .doc-rows {
+  container: doc-rows / inline-size;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -6167,24 +6168,37 @@ button.due-tile:hover {
   background: var(--accent-soft);
 }
 
+/* Statuses start at one place and actions end at one, however long the name is. */
 .doc-row-head {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 22rem) auto minmax(0, 1fr);
   gap: 0.35rem 0.6rem;
   align-items: center;
   min-height: 1.8rem;
 }
 
 .doc-row-name {
+  grid-column: 1;
   font-weight: 600;
 }
 
 .doc-row-actions {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
+  grid-column: 3;
   gap: 0.35rem 0.5rem;
   align-items: center;
-  margin-left: auto;
+  justify-content: flex-end;
+}
+
+@container doc-rows (max-width: 44rem) {
+  .doc-row-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .doc-row-actions {
+    grid-column: 1 / -1;
+  }
 }
 
 .doc-row-actions .btn-small,
@@ -6228,37 +6242,153 @@ button.due-tile:hover {
 }
 
 .doc-lines {
-  display: grid;
-  gap: 0.3rem;
+  --doc-end: 7.5rem;
+  container: doc-lines / inline-size;
   margin: 0.35rem 0 0;
   padding: 0;
   list-style: none;
 }
 
+.doc-lines + .doc-lines {
+  margin-top: 0;
+}
+
+/*
+ * One document is one row of a table, so each part stays in its place from line to line. A narrower
+ * list folds it into two rows, and a phone's drops the voucher number and gives the file the whole width.
+ */
 .doc-line {
+  display: grid;
+  grid-template: 'when what files end' / 11.5rem minmax(0, 1fr) 18rem var(--doc-end);
+  gap: 0.2rem 0.75rem;
+  align-items: center;
+  padding: 0.3rem 0;
+  font-size: 0.9rem;
+  border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+}
+
+.doc-line-when {
+  grid-area: when;
+  min-width: 0;
+}
+
+/* Starts where the date in a voucher's pill starts, so the dates make one column. */
+.doc-line-date {
+  padding-left: calc(0.85rem + 13px);
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.doc-line-what {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.55rem;
+  grid-area: what;
+  gap: 0.2rem 0.5rem;
   align-items: center;
   min-width: 0;
-  font-size: 0.9rem;
 }
 
 .doc-line-title {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.doc-line-date {
+.doc-line-mark {
+  display: flex;
+  flex: none;
+  gap: 0.2rem 0.5rem;
+  align-items: center;
+  max-width: 100%;
+  margin-left: auto;
+  font-size: 0.8rem;
   color: var(--muted);
 }
 
+.doc-line-mark .pill {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.doc-line-files {
+  display: flex;
+  flex-direction: column;
+  grid-area: files;
+  gap: 0.2rem;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.doc-line-files .pill {
+  max-width: 100%;
+}
+
 .doc-line-end {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
+  grid-area: end;
   gap: 0.25rem 0.6rem;
   align-items: center;
-  margin-left: auto;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.doc-line-end select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pill-date {
+  display: inline-block;
+  min-width: 10ch;
+  margin-right: 1ch;
+}
+
+@container doc-lines (max-width: 60rem) {
+  .doc-line {
+    grid-template:
+      'when what what'
+      '. files end' / 11.5rem minmax(0, 1fr) auto;
+  }
+}
+
+@container doc-lines (max-width: 30rem) {
+  .doc-line {
+    grid-template:
+      'when what what'
+      'files files end' / 6.5rem minmax(0, 1fr) auto;
+  }
+
+  .doc-line .pill-number {
+    display: none;
+  }
+
+  .doc-line .pill-date {
+    margin-right: 0;
+  }
+
+  /* No hover on a phone: the title wraps instead of hiding its end, and a mark goes under it. */
+  .doc-line-what {
+    flex-wrap: wrap;
+  }
+
+  .doc-line-title {
+    display: -webkit-box;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .doc-line-mark {
+    margin-left: 0;
+  }
+
+  /* "Ehdotus": its Lisää and Hylkää say the same on a line that has no room to spare. */
+  .doc-row .doc-line-mark .pill-doc {
+    display: none;
+  }
 }
 
 .binder {
@@ -6332,9 +6462,12 @@ button.due-tile:hover {
 }
 
 @media (max-width: 560px) {
-  .doc-row-actions,
-  .doc-line-end {
-    margin-left: 0;
+  .binder-body {
+    padding: 0 0.5rem 0.75rem;
+  }
+
+  .doc-row {
+    padding: 0.5rem 0.6rem;
   }
 }
 
@@ -6408,8 +6541,27 @@ button.due-tile:hover {
 }
 
 .company-suggest-list .doc-line {
-  padding: 0.3rem 0;
-  border-top: 1px solid color-mix(in srgb, var(--doc) 20%, transparent);
+  border-top-color: color-mix(in srgb, var(--doc) 20%, transparent);
+}
+
+/* The mark here names the row a suggestion goes to: too long to share the title's line. */
+.company-suggest-list .doc-line-what {
+  flex-wrap: wrap;
+}
+
+.company-suggest-list .doc-line-title {
+  flex-basis: 100%;
+}
+
+.company-suggest-list .doc-line-mark {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: 0;
+}
+
+.company-suggest-list .doc-line-mark .pill {
+  white-space: normal;
+  border-radius: 0.6rem;
 }
 
 .company-confirmed {
@@ -6495,6 +6647,10 @@ button.due-tile:hover {
 .company-unlinked > .muted {
   margin: 0 0 0.35rem;
   font-size: 0.85rem;
+}
+
+.company-unlinked .doc-lines {
+  --doc-end: 10.5rem;
 }
 
 .company-orphans {

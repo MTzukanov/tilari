@@ -7,6 +7,15 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-02 - Company page: document lines as a table
+
+- Owner's request: lines looked unstructured, and "Ehdotus" pushed everything to the right. A line now has
+  fixed columns: voucher pill (date and number together), title, files, actions (UI_PATTERNS rule 8).
+- The pill always shows the voucher's date. A document's own date from a closed year stays next to the title
+  ("asiakirja ..."), so the pill never shows a date the voucher does not have.
+- Breakpoints are container queries on the list, not the window, since the side menu and the card change its width.
+- A draft's pill used to read "Tosite -": `formatVoucherId`'s default fallback is truthy, so `voucherNoId` was never used.
+
 ## 2026-11-01 - Company page: a period's rows follow the year's closing
 
 - Owner's request: chronological. The rows are in a fixed order (`PERIOD_KINDS`), not sorted by date: an

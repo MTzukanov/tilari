@@ -84,7 +84,7 @@ test.describe('company documents', () => {
     await agm.getByRole('button', { name: 'Tallenna asiakirja' }).click()
     await expect(slotStatus(agm)).toHaveText('Valmis')
     await expect(agm.getByText('asiakirja 1.6.2023')).toBeVisible()
-    await expect(agm.getByRole('button', { name: /^Tosite/ })).toHaveAttribute('title', '15.12.2025')
+    await expect(agm.getByRole('button', { name: /^Tosite/ })).toContainText('15.12.2025')
   })
 
   test('a file dropped on a row opens the upload for that slot', async ({ page }) => {
@@ -129,6 +129,48 @@ test.describe('company documents', () => {
     await board.getByRole('button', { name: 'Poista linkki' }).click()
     await expect(board.getByRole('link', { name: 'toka.pdf' })).toHaveCount(0)
     await expect(other.getByRole('link', { name: 'toka.pdf' })).toBeVisible()
+  })
+
+  test('a document line keeps its columns with or without a suggestion, and fits a phone', async ({ page }) => {
+    await openCompany(page)
+    await openPeriod2024(page)
+
+    // Unlinked, the file is suggested again.
+    const decision = slot(page, 'Verotuspäätös')
+    await upload(page, decision, 'Verotuspaatos 2024.pdf')
+    await decision.getByRole('button', { name: 'Poista linkki' }).click()
+    const suggested = decision.locator('.doc-line')
+    await expect(suggested.getByText('Ehdotus')).toBeVisible()
+
+    const other = slot(page, 'Muut')
+    await upload(page, other, `${'pitka-tiedostonimi-'.repeat(8)}.pdf`)
+    const linked = other.locator('.doc-line')
+    const title = linked.locator('.doc-line-title')
+    const file = linked.getByRole('link')
+
+    const left = (line: Locator, part: string) => line.locator(part).first().evaluate((el) => Math.round(el.getBoundingClientRect().left))
+    for (const [width, rows] of [
+      [1500, 1],
+      [900, 2],
+    ]) {
+      await page.setViewportSize({ width, height: 900 })
+      for (const part of ['.pill-voucher', '.doc-line-title', '.doc-line-files']) {
+        expect(await left(suggested, part), `${part} at ${width}`).toBe(await left(linked, part))
+      }
+      const titleBox = (await title.boundingBox())!
+      const fileBox = (await file.boundingBox())!
+      expect(fileBox.y >= titleBox.y + titleBox.height - 1 ? 2 : 1, `rows at ${width}`).toBe(rows)
+    }
+
+    await page.setViewportSize({ width: 360, height: 740 })
+    await expect(linked.locator('.pill-date')).toBeVisible()
+    await expect(linked.locator('.pill-number')).toBeHidden()
+    await expect(suggested.getByText('Ehdotus')).toBeHidden()
+    await expect(suggested.getByRole('button', { name: 'Lisää' })).toBeVisible()
+    const fileBox = (await file.boundingBox())!
+    const unlink = (await linked.getByRole('button', { name: 'Poista linkki' }).boundingBox())!
+    expect(fileBox.x + fileBox.width).toBeLessThanOrEqual(unlink.x)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360)
   })
 
   test('a slot can be marked not needed, and a deleted voucher shows as deleted', async ({ page }) => {

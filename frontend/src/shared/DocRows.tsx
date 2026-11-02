@@ -44,27 +44,38 @@ export function DocLines({ children }: { children: ReactNode }) {
   return <ul className="doc-lines">{children}</ul>
 }
 
-/** One document: what and when, the pills that open it, and `end` at the far side of the line. */
+/**
+ * One document as a row of a table, so its parts stay in place from line to line: when, title with
+ * `mark` at the title's far side, the files in `children`, and `end`. A narrow list folds it into two rows.
+ */
 export function DocLine({
-  mark,
-  title,
+  voucher,
   date,
+  title,
+  mark,
   children,
   end,
 }: {
-  /** In front of the title, as a pill: why the line is here. */
-  mark?: ReactNode
-  title: ReactNode
+  /** A `VoucherPill`, which shows the voucher's date. */
+  voucher?: ReactNode
+  /** For a line without a voucher. */
   date?: ReactNode
+  title: ReactNode
+  /** Why the line is here or what is wrong with it. Never moves the title or the files. */
+  mark?: ReactNode
   children?: ReactNode
   end?: ReactNode
 }) {
   return (
     <li className="doc-line">
-      {mark}
-      <span className="doc-line-title">{title}</span>
-      {date ? <span className="doc-line-date num-text">{date}</span> : null}
-      {children}
+      <span className="doc-line-when">{voucher ?? (date ? <span className="doc-line-date num-text">{date}</span> : null)}</span>
+      <span className="doc-line-what">
+        <span className="doc-line-title" title={typeof title === 'string' ? title : undefined}>
+          {title}
+        </span>
+        {mark ? <span className="doc-line-mark">{mark}</span> : null}
+      </span>
+      <span className="doc-line-files">{children}</span>
       {end ? <span className="doc-line-end">{end}</span> : null}
     </li>
   )
