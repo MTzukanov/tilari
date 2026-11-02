@@ -173,6 +173,25 @@ test.describe('company documents', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360)
   })
 
+  test('a row has one real button at most, and a line only between documents', async ({ page }) => {
+    await openCompany(page)
+    await openPeriod2024(page)
+    const buttons = (row: Locator) => row.locator('.doc-row-actions .btn-small')
+    await expect(buttons(slot(page, 'Veroilmoitus 6B'))).toHaveText(['Lataa'])
+
+    const other = slot(page, 'Muut')
+    await expect(buttons(other)).toHaveCount(0)
+
+    const separator = (line: Locator) => line.evaluate((el) => getComputedStyle(el).borderTopStyle)
+    await upload(page, other, 'eka.pdf')
+    await expect(other.locator('.doc-line')).toHaveCount(1)
+    expect(await separator(other.locator('.doc-line').first())).toBe('none')
+    await upload(page, other, 'toka.pdf')
+    await expect(other.locator('.doc-line')).toHaveCount(2)
+    expect(await separator(other.locator('.doc-line').first())).toBe('none')
+    expect(await separator(other.locator('.doc-line').last())).toBe('solid')
+  })
+
   test('a slot can be marked not needed, and a deleted voucher shows as deleted', async ({ page }) => {
     await openCompany(page)
     await openPeriod2024(page)

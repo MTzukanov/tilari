@@ -23,9 +23,9 @@ stand out. Here colour and a filled button mark what needs doing, and everything
    | `doc` | A file or a suggestion | a file name, Ehdotus |
    | `voucher` | A voucher | Tosite 4/2026 |
 
-2. **One filled button, on what is wanted now.** A missing row gets a filled upload button. If the
-   book already suggests a document for that row, the suggestion's "Lisää" is the filled one instead.
-   Finished rows keep their actions but fade them until hover, so a long list is not a wall of buttons.
+2. **One filled button, on what is wanted now, and no other buttons.** A missing row gets a filled upload
+   button. If the book already suggests a document for that row, the suggestion's "Lisää" is the filled one
+   instead. Every other action in a row is a quiet link, so a long list is not a wall of buttons.
 
 3. **Blue opens the file, purple opens the voucher.** A title is plain text. The pill next to it is
    what you click, so the same two colours lead to the same two places on every page.
@@ -50,7 +50,8 @@ stand out. Here colour and a filled button mark what needs doing, and everything
    title's far side, so it moves nothing. A row's status starts at one place and its buttons end at one,
    with the quiet link in front of them. Where one row does not fit (a list under 60rem), a line folds into
    two: date and title, then files and actions. On a phone (under 30rem) the voucher number and "Ehdotus" go
-   and the title wraps to two lines, since there is no hover to show it in full.
+   and the title wraps to two lines, since there is no hover to show it in full. A thin line separates
+   documents from each other; none goes under a row's name or after its last document.
 
 ## Parts
 

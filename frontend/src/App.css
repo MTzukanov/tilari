@@ -6186,9 +6186,10 @@ button.due-tile:hover {
   display: flex;
   flex-wrap: wrap;
   grid-column: 3;
-  gap: 0.35rem 0.5rem;
+  gap: 0.25rem;
   align-items: center;
   justify-content: flex-end;
+  margin-right: -0.6rem;
 }
 
 @container doc-rows (max-width: 44rem) {
@@ -6229,22 +6230,17 @@ button.due-tile:hover {
   text-decoration: underline;
 }
 
-/* A finished row keeps its actions, but they do not compete with what is still missing. */
-@media (hover: hover) {
-  .doc-row-done .doc-row-actions {
-    opacity: 0.55;
-  }
-
-  .doc-row-done:hover .doc-row-actions,
-  .doc-row-done:focus-within .doc-row-actions {
-    opacity: 1;
-  }
+/* The size of the row's button, so nothing moves when one of them is the filled one. */
+.doc-row-actions .btn-link {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  border: 1px solid transparent;
 }
 
 .doc-lines {
   --doc-end: 7.5rem;
   container: doc-lines / inline-size;
-  margin: 0.35rem 0 0;
+  margin: 0.1rem 0 0;
   padding: 0;
   list-style: none;
 }
@@ -6264,7 +6260,16 @@ button.due-tile:hover {
   align-items: center;
   padding: 0.3rem 0;
   font-size: 0.9rem;
+}
+
+/* Only between documents: nothing under the row's name or after its last document. */
+.doc-line + .doc-line,
+.doc-lines + .doc-lines > .doc-line:first-child {
   border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+}
+
+.doc-row > .doc-lines:last-child > .doc-line:last-child {
+  padding-bottom: 0;
 }
 
 .doc-line-when {

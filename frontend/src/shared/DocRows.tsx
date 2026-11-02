@@ -1,11 +1,8 @@
 import type { ReactNode } from 'react'
 import { FileDropArea } from './FileDropArea'
 
-/**
- * `missing` tints the row, for what is wanted now; `done` quiets its actions until hover, so a list
- * of finished rows is not a wall of buttons; `muted` is for what was marked as not needed.
- */
-export type DocRowTone = 'plain' | 'missing' | 'done' | 'muted'
+/** `missing` tints the row, for what is wanted now; `muted` is for what was marked as not needed. */
+export type DocRowTone = 'plain' | 'missing' | 'muted'
 
 /** A framed list of rows, one for each thing that can hold documents. */
 export function DocRows({ children }: { children: ReactNode }) {

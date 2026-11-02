@@ -299,10 +299,10 @@ const STATUS_TONE: Record<SlotStatus, PillTone> = {
   not_needed: 'neutral',
 }
 
-function rowTone(status: SlotStatus | undefined, hasDocuments: boolean): DocRowTone {
+function rowTone(status: SlotStatus | undefined): DocRowTone {
   if (status === 'missing') return 'missing'
   if (status === 'not_needed') return 'muted'
-  return hasDocuments ? 'done' : 'plain'
+  return 'plain'
 }
 
 /**
@@ -348,7 +348,8 @@ export function SlotRow({
     actions.apply({ not_needed: [{ period_ends: periodEnds, kind, value }] }).catch((err) => setError(errorText(t, err)))
   }
 
-  // The quiet link goes first, so the two buttons stay in place whether it is there or not.
+  // Quiet links, so a list is not a wall of buttons; only a missing document's upload is a button.
+  // "Ei tarvita" goes first, so the other two stay in place whether it is there or not.
   const rowActions = readOnly ? null : (
     <>
       {notNeededToggle && status && status !== 'not_needed' && !documents.length ? (
@@ -362,7 +363,7 @@ export function SlotRow({
         </button>
       ) : null}
       <FileButton
-        className={`btn-small${status === 'missing' && !suggestions.length ? ' is-primary' : ''}`}
+        className={status === 'missing' && !suggestions.length ? 'btn-small is-primary' : 'btn-link btn-quiet'}
         onFiles={(picked) => {
           setError(null)
           if (picked.length) setFiles(picked)
@@ -372,7 +373,7 @@ export function SlotRow({
       </FileButton>
       <button
         type="button"
-        className="btn-small"
+        className="btn-link btn-quiet"
         onClick={() => {
           setError(null)
           setLinking(!linking)
@@ -388,7 +389,7 @@ export function SlotRow({
       name={label}
       status={status ? <Pill tone={STATUS_TONE[status]}>{t(`company.slot.status.${status}`)}</Pill> : null}
       actions={rowActions}
-      tone={rowTone(status, documents.length > 0)}
+      tone={rowTone(status)}
       onFiles={
         readOnly
           ? undefined

@@ -15,6 +15,9 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   ("asiakirja ..."), so the pill never shows a date the voucher does not have.
 - Breakpoints are container queries on the list, not the window, since the side menu and the card change its width.
 - A draft's pill used to read "Tosite -": `formatVoucherId`'s default fallback is truthy, so `voucherNoId` was never used.
+- Owner: too many similar buttons too close, and separators after a single item. A row's actions are now quiet
+  links, with only a missing document's upload or a suggestion's "Lisää" a real button. That replaced fading a
+  finished row's buttons until hover, so the `done` tone went too. Separators are only between documents.
 
 ## 2026-11-01 - Company page: a period's rows follow the year's closing
 
