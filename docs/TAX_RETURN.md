@@ -73,8 +73,8 @@ Where past filings of a book differ from the chart, the chart decides and the ow
 - The company's name and business ID start empty. The line that opened a tase-erä is no guide: on a purchase its
   partner is usually the seller, and on a real book it named the company in no case. Its text shows beside the row.
 - Rows with the same name and business ID become one line on the form, so a flat and its garage take one row. Their
-  counts add up, so a count goes on only one of them. The ID alone is not enough: a filing can give several foreign
-  securities one ID, and those stay separate rows.
+  counts add up, so a count goes on only one of them. The ID alone is not enough: OmaVero takes no empty ID, so a
+  company without a Finnish one gets 0000000-0 (valid by its check digit), and those rows stay separate.
 - Comparison value per share: three decimals under 10 euros, otherwise two (Vero's check #2038). The total is count
   times unit, rounded to the cent, unless typed. Vero's guide to 8A: a listed security's is 70 % of its closing price
   on the balance sheet date, a fund unit's 70 % of its value at the end of the calendar year, and housing shares

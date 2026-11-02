@@ -2000,7 +2000,8 @@
       "depreciationLead": "Luvut tulevat kirjanpidosta, ja verotus seuraa kirjanpitoa. Kirjoita luku, jos verotuksessa on muuta.",
       "showAll": "Näytä kaikki osiot",
       "fromLedger": "Kirjanpidon mukaan",
-      "housingValue": "Vuonna 2006 tai sen jälkeen hankituilla huoneisto-osakkeilla ei ole erillistä vertailuarvoa, joten jätä se tyhjäksi."
+      "housingValue": "Vuonna 2006 tai sen jälkeen hankituilla huoneisto-osakkeilla ei ole erillistä vertailuarvoa, joten jätä se tyhjäksi.",
+      "noFinnishId": "Jos yhtiöllä ei ole suomalaista Y-tunnusta, kirjoita 0000000-0: OmaVero ei hyväksy tyhjää kenttää."
     },
     "rowHint": "Avaa rivi nähdäksesi tilit, joista luku koostuu."
   }

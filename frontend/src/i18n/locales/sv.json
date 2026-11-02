@@ -2000,7 +2000,8 @@
       "depreciationLead": "Siffrorna kommer från bokföringen och beskattningen följer bokföringen. Skriv ett belopp om beskattningen avviker.",
       "showAll": "Visa alla avsnitt",
       "fromLedger": "Enligt bokföringen",
-      "housingValue": "Bostadsaktier som förvärvats 2006 eller senare har inget separat jämförelsevärde, så lämna det tomt."
+      "housingValue": "Bostadsaktier som förvärvats 2006 eller senare har inget separat jämförelsevärde, så lämna det tomt.",
+      "noFinnishId": "Om bolaget saknar finskt FO-nummer, skriv 0000000-0: MinSkatt godtar inte ett tomt fält."
     },
     "rowHint": "Öppna en rad för att se kontona bakom siffran."
   }

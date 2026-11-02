@@ -2000,7 +2000,8 @@
       "depreciationLead": "Die Zahlen stammen aus der Buchführung, und die Steuer folgt ihr. Tragen Sie einen Betrag ein, wenn die Steuer abweicht.",
       "showAll": "Alle Abschnitte zeigen",
       "fromLedger": "Laut Buchführung",
-      "housingValue": "Wohnungsaktien, die 2006 oder später erworben wurden, haben keinen eigenen Vergleichswert, lassen Sie ihn also leer."
+      "housingValue": "Wohnungsaktien, die 2006 oder später erworben wurden, haben keinen eigenen Vergleichswert, lassen Sie ihn also leer.",
+      "noFinnishId": "Hat das Unternehmen keine finnische Unternehmenskennung, tragen Sie 0000000-0 ein: OmaVero nimmt kein leeres Feld an."
     },
     "rowHint": "Öffnen Sie eine Zeile, um die Konten hinter dem Betrag zu sehen."
   }

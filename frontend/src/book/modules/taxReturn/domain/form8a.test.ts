@@ -120,9 +120,10 @@ describe('what the owner adds', () => {
     expect(group(f.view(), 'other').lines).toEqual([expect.objectContaining({ name: 'As Oy Esimerkki', cost_cents: 5_300_000 })])
   })
 
-  it('keeps different companies apart though they share a business ID', async () => {
+  it('keeps different companies apart though they share a business ID, as foreign ones do with 0000000-0', async () => {
     const f = await buildTaxFixture()
-    f.inputs({ holdings: [typed, { ...typed, name: 'Toinen Rahasto', shares: '10', cost_cents: 5_000 }] })
+    const foreign = { ...typed, business_id: '0000000-0' }
+    f.inputs({ holdings: [foreign, { ...foreign, name: 'Toinen Rahasto', shares: '10', cost_cents: 5_000 }] })
     const financial = group(f.view(), 'financial')
     expect(financial.lines.map((line) => line.name)).toEqual(['Esimerkki Oyj', 'Toinen Rahasto'])
     expect(financial.cost_cents).toBe(305_000)

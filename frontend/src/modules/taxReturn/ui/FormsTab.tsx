@@ -283,6 +283,7 @@ export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
                 <h4>{group.title}</h4>
                 <p className="muted">{t(typedGroup ? 'taxReturn.attached.holdingsTyped' : 'taxReturn.attached.holdingsEra')}</p>
                 {group.key === 'other' ? <p className="muted">{t('taxReturn.attached.housingValue')}</p> : null}
+                {typedGroup ? <p className="muted">{t('taxReturn.attached.noFinnishId')}</p> : null}
                 {own.map(({ row, index }) => (
                   <HoldingFields
                     key={`${row.era ?? 'typed'}-${index}-${revision}`}
