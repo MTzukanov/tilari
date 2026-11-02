@@ -3,8 +3,24 @@ import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { formatVoucherId } from '../../../shared/formatVoucherId'
 import { formatCents } from '../../../shared/money'
+import { VoucherPill } from '../../../shared/Pill'
 import type { BookedLine, LeaseVoucher } from '../api'
 import { saveErrorText } from './format'
+
+/** A voucher's pill: its date and Kitsas number, its title on hover and for screen readers. Opens the voucher. */
+export function VoucherOpen({
+  voucher,
+  onOpen,
+}: {
+  voucher: { voucher_id: number; date: string; doc_number: number | null; series: string | null; title: string }
+  onOpen: (voucherId: number) => void
+}) {
+  const { t } = useI18n()
+  // An empty fallback: the default one is truthy and would show as a number.
+  const number = formatVoucherId(voucher.series, voucher.doc_number, voucher.date, { fallback: '' })
+  const label = voucher.title || (number ? t('properties.docs.voucher', { id: number }) : t('properties.docs.voucherNoId'))
+  return <VoucherPill label={label} date={formatDate(voucher.date)} number={number} onOpen={() => onOpen(voucher.voucher_id)} />
+}
 
 /** The owner's word that a document slot stays empty, so no reminder asks for it (ADR-030); shown while none is picked. */
 export function NoDocumentCheck({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) {

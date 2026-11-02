@@ -7,6 +7,14 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-02 - Rental objects: the object page's documents as lines (`feature/property-doc-lines`)
+
+- First of the moves listed in `docs/UI_PATTERNS.md` "Next: rental objects"; each is its own demo. The
+  Asiakirjat panel lists a document as a `DocLine`: the purple pill opens the voucher, the blue pills open its
+  files. A linked voucher deleted in Kitsas reads "Poistettu", as on the company page. A sale's vouchers use the
+  same pill. Nothing stored changed.
+- `.property-doc-group h4` outranked `.section-label`, so the group names kept the old look until it went.
+
 ## 2026-11-02 - Company page: document lines as a table
 
 - Owner's request: lines looked unstructured, and "Ehdotus" pushed everything to the right. A line now has

@@ -4,10 +4,10 @@ import { parseRoute, propertyHash } from '../../../app/routing'
 import { skipDocument } from '../../../book/modules/properties/domain/reminders'
 import { grossPriceFor } from '../../../book/modules/properties/domain/returns'
 import { getBcp47, useI18n } from '../../../i18n'
-import { AttachmentLink } from '../../../shared/AttachmentLink'
 import { formatDate } from '../../../shared/dates'
-import { formatVoucherId } from '../../../shared/formatVoucherId'
+import { DocLine, DocLines } from '../../../shared/DocRows'
 import { formatCents } from '../../../shared/money'
+import { FilePill, Pill } from '../../../shared/Pill'
 import { formatBp, formatPercentInput, parsePercentInput } from '../../../shared/percent'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import { voucherTypeName } from '../../../shared/voucherTypes'
@@ -26,7 +26,7 @@ import {
   type YearRow,
 } from '../api'
 import { CashFlowChart, PaybackChart } from './Charts'
-import { SkipDocumentButton } from './FormParts'
+import { SkipDocumentButton, VoucherOpen } from './FormParts'
 import { LeasesPanel } from './LeasesPanel'
 import { formatEuro, statusClass, tenantSide, warningText } from './format'
 import { MonthLinesPanel } from './MonthLines'
@@ -127,11 +127,12 @@ const DOCS_PER_GROUP = 8
 
 type VoucherLabel = { voucher_id: number; date: string; doc_number: number | null; series: string | null; title: string }
 
+/** A sale's voucher: the pill that opens it, then its title. */
 function VoucherButton({ v, onOpen }: { v: VoucherLabel; onOpen: (voucherId: number) => void }) {
   return (
-    <button type="button" className="btn-link" onClick={() => onOpen(v.voucher_id)}>
-      {[formatDate(v.date), formatVoucherId(v.series, v.doc_number, v.date), v.title].filter(Boolean).join(' · ')}
-    </button>
+    <>
+      <VoucherOpen voucher={v} onOpen={onOpen} /> {v.title}
+    </>
   )
 }
 
@@ -197,29 +198,31 @@ function Documents({ id, onOpenVoucher }: { id: number; onOpenVoucher: (voucherI
       {data.groups.length === 0 ? <p className="muted">{t('properties.docs.empty')}</p> : null}
       {data.groups.map((group) => (
         <div key={group.kind} className="property-doc-group">
-          <h4>{t(`properties.docs.group.${group.kind}`)}</h4>
-          <ul className="property-doc-list">
-            {(expanded.has(group.kind) ? group.vouchers : group.vouchers.slice(0, DOCS_PER_GROUP)).map((v) => (
-              <li key={v.voucher_id}>
-                {v.missing ? (
-                  <span className="muted">{t('properties.docs.missing', { id: v.voucher_id })}</span>
-                ) : (
-                  <>
-                    <button type="button" className="btn-link" onClick={() => onOpenVoucher(v.voucher_id)}>
-                      {formatDate(v.date)} · {formatVoucherId(v.series, v.doc_number, v.date)} · {v.title || voucherTypeName(v.type)}
-                    </button>
-                    {v.attachments.map((a) => (
-                      <AttachmentLink key={a.id} id={a.id} lazy className="property-attachment">
-                        {a.name}
-                      </AttachmentLink>
-                    ))}
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
+          <h4 className="section-label">{t(`properties.docs.group.${group.kind}`)}</h4>
+          <DocLines>
+            {(expanded.has(group.kind) ? group.vouchers : group.vouchers.slice(0, DOCS_PER_GROUP)).map((v) => {
+              // A linked voucher deleted in Kitsas: no pill to open, as on the company page.
+              if (v.missing) {
+                return (
+                  <DocLine
+                    key={v.voucher_id}
+                    title={<span className="muted">{t('properties.docs.missing', { id: v.voucher_id })}</span>}
+                    mark={<Pill tone="crit">{t('properties.docs.deleted')}</Pill>}
+                  />
+                )
+              }
+              const title = v.title || voucherTypeName(v.type)
+              return (
+                <DocLine key={v.voucher_id} voucher={<VoucherOpen voucher={{ ...v, title }} onOpen={onOpenVoucher} />} title={title}>
+                  {v.attachments.map((a) => (
+                    <FilePill key={a.id} id={a.id} name={a.name} />
+                  ))}
+                </DocLine>
+              )
+            })}
+          </DocLines>
           {group.vouchers.length > DOCS_PER_GROUP && !expanded.has(group.kind) ? (
-            <button type="button" className="btn-link" onClick={() => setExpanded(new Set(expanded).add(group.kind))}>
+            <button type="button" className="btn-link btn-quiet" onClick={() => setExpanded(new Set(expanded).add(group.kind))}>
               {t('properties.docs.showAll', { n: group.vouchers.length })}
             </button>
           ) : null}

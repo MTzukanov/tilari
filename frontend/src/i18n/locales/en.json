@@ -1202,6 +1202,9 @@
       "linkedTitle": "Linked documents",
       "empty": "No attachments.",
       "missing": "Voucher {id} has been deleted",
+      "deleted": "Deleted",
+      "voucher": "Voucher {id}",
+      "voucherNoId": "Voucher",
       "showBank": "Show bank statements ({n})",
       "group": {
         "linked": "Linked (agreements and notices)",

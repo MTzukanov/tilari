@@ -1202,6 +1202,9 @@
       "linkedTitle": "Länkade dokument",
       "empty": "Inga bilagor.",
       "missing": "Verifikat {id} har raderats",
+      "deleted": "Borttaget",
+      "voucher": "Verifikat {id}",
+      "voucherNoId": "Verifikat",
       "showBank": "Visa kontoutdrag ({n})",
       "group": {
         "linked": "Länkade (avtal och meddelanden)",

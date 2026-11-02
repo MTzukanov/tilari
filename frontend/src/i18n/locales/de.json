@@ -1202,6 +1202,9 @@
       "linkedTitle": "Verknüpfte Dokumente",
       "empty": "Keine Anhänge.",
       "missing": "Beleg {id} wurde gelöscht",
+      "deleted": "Gelöscht",
+      "voucher": "Beleg {id}",
+      "voucherNoId": "Beleg",
       "showBank": "Kontoauszüge anzeigen ({n})",
       "group": {
         "linked": "Verknüpft (Verträge und Mitteilungen)",

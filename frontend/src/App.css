@@ -5697,16 +5697,9 @@ tr.tax-total td {
   background: color-mix(in srgb, #f6e7c4 50%, var(--surface));
 }
 
-.property-section h3,
-.property-doc-group h4 {
+.property-section h3 {
   margin: 0 0 0.5rem;
   font-size: 0.95rem;
-}
-
-.property-doc-group h4 {
-  color: var(--muted);
-  font-size: 0.85rem;
-  margin-top: 0.75rem;
 }
 
 .property-doc-list {
@@ -5733,10 +5726,6 @@ tr.tax-total td {
 .property-linked-list li > :first-child {
   flex: 1;
   min-width: 0;
-}
-
-.property-attachment {
-  font-size: 0.85rem;
 }
 
 .property-sales {
@@ -5775,10 +5764,6 @@ tr.tax-total td {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.85rem;
-}
-
-.property-sales-voucher .btn-link {
-  text-align: left;
 }
 
 .property-sales-part td.num {
@@ -5823,10 +5808,6 @@ tr.tax-total td {
   .property-sales-voucher:empty {
     display: none;
   }
-}
-
-.property-attachment::before {
-  content: '📎 ';
 }
 
 .property-note-text {
