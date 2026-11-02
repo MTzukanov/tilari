@@ -83,7 +83,7 @@ and 573/574 applies. Repeating groups go between `001:n` and `009:i`.
 
 - **014** is the book's business ID plus `_TL`: Vero's rule for software a filer has developed itself. **048** is
   `Tilari`. **045** is left out: Vero says the operator that transmits the file adds it.
-- **The personal ID** is required in 703. It is typed when downloading and kept only in the dialog's state. The file
+- **The personal ID** is required in 703. It is typed on the file tab, next to the download button, and kept only in the dialog's state. The file
   is built in the browser, also on the Node engine, so the ID never reaches the book or a server.
 - **Stopped** (no bytes): missing required answers, an OmaVero question left open, characters outside ISO-8859-1, too long a text, a negative in an
   `R13,2` field, an answer needing fields the file does not produce.

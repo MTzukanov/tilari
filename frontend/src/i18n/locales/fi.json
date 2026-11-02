@@ -1921,7 +1921,8 @@
       "contactLead": "Tyhjä kenttä käyttää kirjanpidon asetuksia, jos niissä on tieto.",
       "yes": "Kyllä",
       "no": "Ei",
-      "unanswered": "Vastaamatta: {count}"
+      "unanswered": "Vastaamatta: {count}",
+      "idLater": "Henkilö- tai Y-tunnus kirjoitetaan vasta Ilmoitin-tiedostoa ladattaessa, eikä sitä tallenneta."
     },
     "problem": {
       "business_id": "Kirjanpidon asetuksista puuttuu Y-tunnus tai se on väärässä muodossa.",
@@ -1930,7 +1931,7 @@
       "audit": "Täytä, onko tilintarkastus tehty.",
       "audit_remarks": "Täytä, sisältääkö tilintarkastuskertomus kielteisiä lausuntoja.",
       "no_shareholders": "Täytä osakkeenomistajat.",
-      "shareholder_id": "Kirjoita henkilö- tai Y-tunnus: {name}.",
+      "shareholder_id": "Kirjoita henkilö- tai Y-tunnus alla olevaan kenttään: {name}.",
       "negative": "Negatiivinen luku kentässä, joka ei sitä salli: {field}.",
       "text": "Liian pitkä teksti tai merkki, jota tiedosto ei salli: {field}.",
       "distribution": "Täytä päätöspäivä, nostopäivä ja määrä: {field}.",
@@ -1951,7 +1952,8 @@
       "ready": "Valmis tarkistettavaksi ja lähetettäväksi",
       "checkOnly": "Vain muodon tarkistukseen, ei vielä lähetettäväksi",
       "download": "Lataa Ilmoitin-tiedosto",
-      "after": "Tarkista tiedosto Ilmoitin.fi-palvelun aineiston tarkastuksella ennen lähettämistä. Testipalveluun testi.ilmoitin.fi ei saa lähettää oikeita tietoja. Tiedosto sisältää henkilötunnuksen, joten säilytä se huolellisesti."
+      "after": "Tarkista tiedosto Ilmoitin.fi-palvelun aineiston tarkastuksella ennen lähettämistä. Testipalveluun testi.ilmoitin.fi ei saa lähettää oikeita tietoja. Tiedosto sisältää henkilötunnuksen, joten säilytä se huolellisesti.",
+      "idLabel": "{name}: henkilö- tai Y-tunnus"
     },
     "toConfirm": "Vahvista tilien kentät",
     "confirmField": "Vahvista"

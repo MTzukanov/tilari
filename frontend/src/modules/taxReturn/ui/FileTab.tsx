@@ -42,29 +42,6 @@ export function FileTab({ view }: { view: TaxReturnView }) {
     <div className="tax-return-file">
       <p>{t('taxReturn.file.lead')}</p>
 
-      {view.inputs.shareholders.length ? (
-        <fieldset className="tax-return-fieldset">
-          <legend>{t('taxReturn.file.ids')}</legend>
-          <p className="muted">{t('taxReturn.file.idsLead')}</p>
-          {view.inputs.shareholders.map((holder, index) => (
-            <label key={holder.name}>
-              {holder.name}
-              <input
-                type="text"
-                autoComplete="off"
-                spellCheck={false}
-                value={ids[index] ?? ''}
-                onChange={(e) => {
-                  const next = [...ids]
-                  next[index] = e.target.value
-                  setIds(next)
-                }}
-              />
-            </label>
-          ))}
-        </fieldset>
-      ) : null}
-
       <p>
         <Pill tone={file.problems.length ? 'crit' : sendable ? 'ok' : 'warn'}>
           {t(file.problems.length ? 'taxReturn.file.stopped' : sendable ? 'taxReturn.file.ready' : 'taxReturn.file.checkOnly')}
@@ -89,6 +66,29 @@ export function FileTab({ view }: { view: TaxReturnView }) {
             </li>
           ))}
         </ul>
+      ) : null}
+
+      {view.inputs.shareholders.length ? (
+        <fieldset className="tax-return-fieldset tax-return-ids">
+          <legend>{t('taxReturn.file.ids')}</legend>
+          <p className="muted">{t('taxReturn.file.idsLead')}</p>
+          {view.inputs.shareholders.map((holder, index) => (
+            <label key={holder.name} className={file.problems.some((p) => p.key === 'shareholder_id' && p.name === holder.name) ? 'tax-return-id-open' : undefined}>
+              {t('taxReturn.file.idLabel', { name: holder.name })}
+              <input
+                type="text"
+                autoComplete="off"
+                spellCheck={false}
+                value={ids[index] ?? ''}
+                onChange={(e) => {
+                  const next = [...ids]
+                  next[index] = e.target.value
+                  setIds(next)
+                }}
+              />
+            </label>
+          ))}
+        </fieldset>
       ) : null}
 
       <p className="tax-return-actions">

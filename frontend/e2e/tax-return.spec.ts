@@ -62,8 +62,8 @@ test.describe('annual tax return data', () => {
     await expect(dialog.getByText('Tallennettu')).toBeVisible()
 
     await dialog.getByRole('tab', { name: 'Ilmoitin-tiedosto' }).click()
-    await expect(dialog.getByText('Kirjoita henkilö- tai Y-tunnus: Essi Esimerkki.')).toBeVisible()
-    await dialog.getByLabel('Essi Esimerkki').fill('010101-0101')
+    await expect(dialog.getByText('Kirjoita henkilö- tai Y-tunnus alla olevaan kenttään: Essi Esimerkki.')).toBeVisible()
+    await dialog.getByLabel('Essi Esimerkki: henkilö- tai Y-tunnus').fill('010101-0101')
 
     const download = page.waitForEvent('download')
     await dialog.getByRole('button', { name: 'Lataa Ilmoitin-tiedosto' }).click()
@@ -81,7 +81,7 @@ test.describe('annual tax return data', () => {
     await dialog.getByRole('button', { name: 'Sulje' }).click()
     await page.getByRole('button', { name: 'Veroilmoituksen tiedot (6B)' }).click()
     await page.getByRole('dialog').getByRole('tab', { name: 'Ilmoitin-tiedosto' }).click()
-    await expect(page.getByRole('dialog').getByLabel('Essi Esimerkki')).toHaveValue('')
+    await expect(page.getByRole('dialog').getByLabel('Essi Esimerkki: henkilö- tai Y-tunnus')).toHaveValue('')
     await page.getByRole('dialog').getByRole('tab', { name: 'Täytettävät tiedot' }).click()
     await expect(page.getByRole('dialog').locator('.tax-return-yesno').first().getByRole('radio', { name: 'Ei' })).toBeChecked()
   })

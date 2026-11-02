@@ -129,12 +129,13 @@ export function FactsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
       <fieldset className="tax-return-fieldset">
         <legend>{t('taxReturn.fact.shareholders')}</legend>
         <p className="muted">{t('taxReturn.fact.shareholdersLead')}</p>
+        <p className="muted">{t('taxReturn.fact.idLater')}</p>
         <label className="tax-return-toggle">
           <input type="checkbox" checked={draft.all_below_10_percent} onChange={(e) => patch({ all_below_10_percent: e.target.checked })} /> {t('taxReturn.fact.allBelow10')}
         </label>
         {draft.shareholders.map((holder, index) => (
           <div key={index} className="tax-return-holder">
-            <label>
+            <label className="tax-return-holder-name">
               {t('taxReturn.fact.holderName')}
               <input type="text" value={holder.name} onChange={(e) => setHolder(index, { name: e.target.value })} />
             </label>
@@ -142,14 +143,14 @@ export function FactsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
               {t('taxReturn.fact.shares')}
               <input type="number" min={0} step={1} value={holder.shares} onChange={(e) => setHolder(index, { shares: Number(e.target.value) || 0 })} />
             </label>
+            <button type="button" className="btn-link tax-return-holder-delete" onClick={() => patch({ shareholders: draft.shareholders.filter((_, i) => i !== index) })}>
+              {t('common.delete')}
+            </button>
             <EurField label={t('taxReturn.fact.rents')} cents={holder.rents_cents} onChange={(rents_cents) => setHolder(index, { rents_cents })} />
             <EurField label={t('taxReturn.fact.interest')} cents={holder.interest_cents} onChange={(interest_cents) => setHolder(index, { interest_cents })} />
             <EurField label={t('taxReturn.fact.sales')} cents={holder.sales_cents} onChange={(sales_cents) => setHolder(index, { sales_cents })} />
             <EurField label={t('taxReturn.fact.other')} cents={holder.other_cents} onChange={(other_cents) => setHolder(index, { other_cents })} />
             <EurField label={t('taxReturn.fact.loans')} cents={holder.loans_cents} onChange={(loans_cents) => setHolder(index, { loans_cents })} />
-            <button type="button" className="btn-link" onClick={() => patch({ shareholders: draft.shareholders.filter((_, i) => i !== index) })}>
-              {t('common.delete')}
-            </button>
           </div>
         ))}
         <button type="button" className="btn-secondary" onClick={() => patch({ shareholders: [...draft.shareholders, { ...EMPTY_HOLDER }] })}>

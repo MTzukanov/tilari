@@ -1921,7 +1921,8 @@
       "contactLead": "An empty field uses the book's settings, if they hold it.",
       "yes": "Yes",
       "no": "No",
-      "unanswered": "Unanswered: {count}"
+      "unanswered": "Unanswered: {count}",
+      "idLater": "The personal or business ID is typed only when downloading the Ilmoitin file, and it is not saved."
     },
     "problem": {
       "business_id": "The book's settings have no business ID, or it is in the wrong format.",
@@ -1930,7 +1931,7 @@
       "audit": "Fill in whether the audit has been done.",
       "audit_remarks": "Fill in whether the audit report has adverse statements.",
       "no_shareholders": "Fill in the shareholders.",
-      "shareholder_id": "Type the personal or business ID: {name}.",
+      "shareholder_id": "Type the personal or business ID in the field below: {name}.",
       "negative": "A negative figure in a field that does not allow it: {field}.",
       "text": "Text too long, or a character the file does not allow: {field}.",
       "distribution": "Fill in the decision date, payable date and amount: {field}.",
@@ -1951,7 +1952,8 @@
       "ready": "Ready to check and send",
       "checkOnly": "For a format check only, not for sending yet",
       "download": "Download the Ilmoitin file",
-      "after": "Check the file with Ilmoitin.fi's file check before sending. The test service testi.ilmoitin.fi must not receive real data. The file holds a personal ID, so keep it safe."
+      "after": "Check the file with Ilmoitin.fi's file check before sending. The test service testi.ilmoitin.fi must not receive real data. The file holds a personal ID, so keep it safe.",
+      "idLabel": "{name}: personal or business ID"
     },
     "toConfirm": "Confirm these accounts' fields",
     "confirmField": "Confirm"

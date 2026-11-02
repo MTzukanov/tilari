@@ -6954,18 +6954,59 @@ button.due-tile:hover {
   font-size: 0.85rem;
 }
 
+.tax-return-holder > label {
+  margin: 0;
+}
+
 .tax-return-holder {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  align-items: end;
   margin-bottom: 0.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px dashed var(--rule, #ccd);
 }
 
-.tax-return-holder input {
-  width: 8.5rem;
+.tax-return-holder-name {
+  grid-column: span 3;
 }
 
-.tax-return-holder label:first-child input {
+.tax-return-holder-delete {
+  justify-self: end;
+  padding-bottom: 0.2rem;
+}
+
+@media (max-width: 40rem) {
+  .tax-return-holder {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tax-return-holder-name {
+    grid-column: 1 / -1;
+  }
+}
+
+.tax-return-ids > label {
+  display: flex;
+  margin: 0.15rem -0.4rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 0.3rem;
+}
+
+.tax-return-ids > label.tax-return-id-open {
+  background: color-mix(in srgb, var(--crit-soft) 50%, transparent);
+}
+
+.tax-return-ids input {
   width: 15rem;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.tax-return-holder input {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .tax-return-confirm {

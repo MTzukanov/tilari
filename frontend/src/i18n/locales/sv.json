@@ -1921,7 +1921,8 @@
       "contactLead": "Ett tomt fält använder bokföringens inställningar, om uppgiften finns där.",
       "yes": "Ja",
       "no": "Nej",
-      "unanswered": "Obesvarade: {count}"
+      "unanswered": "Obesvarade: {count}",
+      "idLater": "Person- eller FO-numret skrivs först när Ilmoitin-filen laddas ner, och det sparas inte."
     },
     "problem": {
       "business_id": "FO-nummer saknas i bokföringens inställningar eller har fel format.",
@@ -1930,7 +1931,7 @@
       "audit": "Fyll i om revisionen har gjorts.",
       "audit_remarks": "Fyll i om revisionsberättelsen innehåller negativa uttalanden.",
       "no_shareholders": "Fyll i aktieägarna.",
-      "shareholder_id": "Skriv person- eller FO-nummer: {name}.",
+      "shareholder_id": "Skriv person- eller FO-nummer i fältet nedan: {name}.",
       "negative": "Negativ siffra i ett fält som inte tillåter det: {field}.",
       "text": "För lång text eller ett tecken som filen inte tillåter: {field}.",
       "distribution": "Fyll i beslutsdag, lyftdag och belopp: {field}.",
@@ -1951,7 +1952,8 @@
       "ready": "Klar att kontrolleras och skickas",
       "checkOnly": "Bara för formatkontroll, inte för att skickas ännu",
       "download": "Ladda ner Ilmoitin-filen",
-      "after": "Kontrollera filen med Ilmoitin.fi:s materialkontroll innan du skickar den. Testtjänsten testi.ilmoitin.fi får inte ta emot riktiga uppgifter. Filen innehåller en personbeteckning, så förvara den väl."
+      "after": "Kontrollera filen med Ilmoitin.fi:s materialkontroll innan du skickar den. Testtjänsten testi.ilmoitin.fi får inte ta emot riktiga uppgifter. Filen innehåller en personbeteckning, så förvara den väl.",
+      "idLabel": "{name}: person- eller FO-nummer"
     },
     "toConfirm": "Bekräfta kontonas fält",
     "confirmField": "Bekräfta"

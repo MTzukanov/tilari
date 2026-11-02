@@ -1921,7 +1921,8 @@
       "contactLead": "Ein leeres Feld verwendet die Einstellungen der Buchführung, falls sie den Wert enthalten.",
       "yes": "Ja",
       "no": "Nein",
-      "unanswered": "Unbeantwortet: {count}"
+      "unanswered": "Unbeantwortet: {count}",
+      "idLater": "Die Personen- oder Unternehmenskennung wird erst beim Herunterladen der Ilmoitin-Datei eingegeben und nicht gespeichert."
     },
     "problem": {
       "business_id": "In den Einstellungen fehlt die Unternehmenskennung oder sie hat ein falsches Format.",
@@ -1930,7 +1931,7 @@
       "audit": "Geben Sie an, ob die Prüfung durchgeführt wurde.",
       "audit_remarks": "Geben Sie an, ob der Prüfungsbericht negative Aussagen enthält.",
       "no_shareholders": "Tragen Sie die Aktionäre ein.",
-      "shareholder_id": "Geben Sie die Personen- oder Unternehmenskennung ein: {name}.",
+      "shareholder_id": "Geben Sie die Personen- oder Unternehmenskennung im Feld unten ein: {name}.",
       "negative": "Negativer Betrag in einem Feld, das dies nicht erlaubt: {field}.",
       "text": "Text zu lang oder ein Zeichen, das die Datei nicht erlaubt: {field}.",
       "distribution": "Tragen Sie Beschlussdatum, Abhebedatum und Betrag ein: {field}.",
@@ -1951,7 +1952,8 @@
       "ready": "Bereit zum Prüfen und Senden",
       "checkOnly": "Nur zur Formatprüfung, noch nicht zum Senden",
       "download": "Ilmoitin-Datei herunterladen",
-      "after": "Prüfen Sie die Datei vor dem Senden mit der Dateiprüfung von Ilmoitin.fi. Der Testdienst testi.ilmoitin.fi darf keine echten Daten erhalten. Die Datei enthält eine Personenkennziffer, bewahren Sie sie sicher auf."
+      "after": "Prüfen Sie die Datei vor dem Senden mit der Dateiprüfung von Ilmoitin.fi. Der Testdienst testi.ilmoitin.fi darf keine echten Daten erhalten. Die Datei enthält eine Personenkennziffer, bewahren Sie sie sicher auf.",
+      "idLabel": "{name}: Personen- oder Unternehmenskennung"
     },
     "toConfirm": "Felder dieser Konten bestätigen",
     "confirmField": "Bestätigen"
