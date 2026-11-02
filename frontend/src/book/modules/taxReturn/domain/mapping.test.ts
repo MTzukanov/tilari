@@ -97,7 +97,7 @@ describe('placing an account', () => {
   it("lets the book's choice win over every rule", () => {
     expect(placeBalanceSheet(1441, { 1441: 430 })).toEqual({ code: 430, source: 'override' })
     expect(placeIncomeStatement(6500, 'DZ', { 6500: 377 })).toEqual({ code: 377, source: 'override' })
-    expect(placeIncomeStatement(3990, 'C', { 3990: SALE })).toEqual({ code: SALE, source: 'override' })
+    expect(placeIncomeStatement(3000, 'C', { 3000: SALE })).toEqual({ code: SALE, source: 'override' })
   })
 
   it('knows bank accounts and the term of a debt', () => {
