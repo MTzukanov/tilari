@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import yritysChart from '../../../newBook/vendor/yritys.json'
 import { rowByCode } from './fields6b'
-import { debtTerm, isBankAccount, placeBalanceSheet, placeIncomeStatement, SALE } from './mapping'
+import { debtTerm, isBankAccount, placeBalanceSheet, placeByName, placeIncomeStatement, SALE } from './mapping'
 
 const accounts = (yritysChart.tilit as { numero: number; tyyppi: string }[]).filter((a) => !a.tyyppi.startsWith('H'))
 
@@ -64,6 +64,15 @@ describe('placing an account', () => {
     expect(placeIncomeStatement(9530, 'DZ').code).toBe(379)
     expect(placeIncomeStatement(9540, 'DZ').code).toBe(379)
     expect(placeIncomeStatement(9270, 'CZ')).toMatchObject({ code: 337, notInTax: true })
+  })
+
+  it('places an added financial income account named for dividends on the dividend field', () => {
+    expect(placeByName(9284, 'C', 'Osinkotuotot ulkomaisista yhtiöistä')).toEqual({ code: 337, source: 'name' })
+    expect(placeByName(9285, 'C', 'Utdelningar')).toEqual({ code: 337, source: 'name' })
+    expect(placeByName(9285, 'C', 'Korkotuotot')).toBeNull()
+    // An expense, such as tax withheld on dividends, and an account outside financial items stay as they were.
+    expect(placeByName(9286, 'D', 'Osinkojen lähdevero')).toBeNull()
+    expect(placeByName(3471, 'C', 'Osinkotuotot')).toBeNull()
   })
 
   it('compares numbers as text, as Kitsas orders its chart', () => {

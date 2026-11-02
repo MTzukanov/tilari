@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useI18n } from '../../../i18n'
-import { TaxReturnDialog, type PeriodDocuments } from './TaxReturnDialog'
+import { TaxReturnDialog, type CalculationStore, type PeriodDocuments } from './TaxReturnDialog'
 
 /** Opens a period's annual tax return data. Self-contained, so a page only places it. */
-export function TaxReturnButton({ ends, documents }: { ends: string; documents: PeriodDocuments }) {
+export function TaxReturnButton({ ends, documents, calculation }: { ends: string; documents: PeriodDocuments; calculation?: CalculationStore }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   return (
@@ -13,7 +13,7 @@ export function TaxReturnButton({ ends, documents }: { ends: string; documents: 
           {t('taxReturn.open')}
         </button>
       </p>
-      {open ? <TaxReturnDialog ends={ends} documents={documents} onClose={() => setOpen(false)} /> : null}
+      {open ? <TaxReturnDialog ends={ends} documents={documents} calculation={calculation} onClose={() => setOpen(false)} /> : null}
     </>
   )
 }

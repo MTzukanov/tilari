@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import { saveVoucher, uploadAttachment } from '../../../api'
+import { voucherDateFor } from '../../../book/modules/company/domain/upload'
+import { TYPE_ATTACHMENT_NOTE } from '../../../book/vouchers'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { DocLines, DocRows } from '../../../shared/DocRows'
@@ -32,6 +35,18 @@ export function PeriodBody({
   const { t } = useI18n()
   const [rowError, setRowError] = useState<string | null>(null)
   const kindLabel = (kind: string) => t(`company.kind.${kind}`)
+
+  /** The tax return's calculation as a new Liitetieto voucher, listed with the 6B but not filling it. */
+  async function storeCalculation(file: File, title: string) {
+    const when = voucherDateFor(today, today, overview.lock_date, overview.periods)
+    if (!when.ok) throw new Error(t('company.upload.noOpenYear'))
+    const saved = await saveVoucher({ date: when.date, type: TYPE_ATTACHMENT_NOTE, status: 100, title, entries: [] })
+    await uploadAttachment(saved.id, file)
+    await actions.apply({
+      add: [{ kind: 'tax_return_6b', period_ends: period.ends, voucher_id: saved.id, doc_date: when.doc_date ?? null, calculation: true }],
+    })
+  }
+
   return (
     <>
       {period.confirmed_at ? <p className="muted company-confirmed">{t('company.period.confirmed', { date: formatDate(period.confirmed_at) })}</p> : null}
@@ -51,7 +66,11 @@ export function PeriodBody({
       />
       {rowError ? <p className="error">{rowError}</p> : null}
       <p className="muted company-footnote">{t('company.deadlines.footnote')}</p>
-      <TaxReturnButton ends={period.ends} documents={taxDocuments(period)} />
+      <TaxReturnButton
+        ends={period.ends}
+        documents={taxDocuments(period)}
+        calculation={overview.read_only ? undefined : { today, store: storeCalculation }}
+      />
 
       <h3 className="section-label">{t('company.period.documents')}</h3>
       <DocRows>

@@ -1713,7 +1713,8 @@
         "draft": "Utkast",
         "file_missing": "Filen borttagen",
         "ok": "OK"
-      }
+      },
+      "calculation": "Kalkyl"
     },
     "upload": {
       "date": "Dokumentets datum",
@@ -1858,8 +1859,8 @@
       "unplaced_one": "{count} konto saknar fält. Välj fält nedan.",
       "unanswered": "{count} frågor i MinSkatt är obesvarade. Besvara dem under Uppgifter att fylla i.",
       "unanswered_one": "{count} fråga i MinSkatt är obesvarad. Besvara den under Uppgifter att fylla i.",
-      "custom_accounts": "{count} konton har lagts till i bokföringen utanför standardkontoplanen. Tilari härledde deras fält från kontonumret, så det kan vara fel. Bekräfta eller ändra fältet nedan.",
-      "custom_accounts_one": "{count} konto har lagts till i bokföringen utanför standardkontoplanen. Tilari härledde dess fält från kontonumret, så det kan vara fel. Bekräfta eller ändra fältet nedan.",
+      "custom_accounts": "{count} konton har lagts till i bokföringen utanför standardkontoplanen. Tilari härledde deras fält från kontonumret eller namnet, så det kan vara fel. Bekräfta eller ändra fältet nedan.",
+      "custom_accounts_one": "{count} konto har lagts till i bokföringen utanför standardkontoplanen. Tilari härledde dess fält från kontonumret eller namnet, så det kan vara fel. Bekräfta eller ändra fältet nedan.",
       "result_ties": "Blankettens bokföringssiffror skiljer sig från bokföringens resultat med {amount} euro.",
       "net_wealth": "Nettoförmögenheten skiljer sig från det egna kapitalet med {amount} euro.",
       "estimate": "Näringsverksamhetens resultat skiljer sig från inkomstskatteberäkningen med {amount} euro.",
@@ -1888,7 +1889,7 @@
       "net_wealth": "nettoförmögenhet och eget kapital",
       "estimate": "inkomstskatteberäkning",
       "sale_gap": "överlåtelsevinster och -förluster",
-      "form8a_gap": "värdepapper och blankett 8A",
+      "form8a_gap": "{fields} och blankett 8A",
       "form62_tax": "skattemässiga avskrivningar och blankett 62",
       "form62_book": "bokföringens avskrivningar och blankett 62",
       "form73_gap": "dividender och blankett 73",
@@ -2020,8 +2021,23 @@
       "pasteResult_one": "{count} rad lästes.",
       "pasteKept": "FO-numret behölls för {count} rader.",
       "pasteKept_one": "FO-numret behölls för {count} rad.",
-      "pasteSkipped": "Rader som inte kunde läsas hoppades över: {lines}."
+      "pasteSkipped": "Rader som inte kunde läsas hoppades över: {lines}.",
+      "notNeeded": "behövs inte med dessa siffror",
+      "dividendsTaxFree": "Blanketten behövs inte: under Uppgifter att fylla i svarade du att alla dividendinkomster är från Finland och skattefria.",
+      "dividendsNone": "Fältet {field} har inga euro, så blanketten behövs inte. Om bolaget har fått dividender, välj fältet {field} för deras konto.",
+      "toFigures": "Öppna Siffror för MinSkatt"
     },
-    "rowHint": "Öppna en rad för att se kontona bakom siffran."
+    "rowHint": "Öppna en rad för att se kontona bakom siffran.",
+    "calc": {
+      "store": "Spara kalkylen bland dokumenten",
+      "stored": "Kalkylen är sparad som PDF på sidan Bolag under Skattedeklaration 6B. Den markerar inte deklarationen som inlämnad.",
+      "heading": "Kalkyl för skattedeklarationen {year}",
+      "title": "Kalkyl för skattedeklarationen {year}, gjord {date}",
+      "made": "Gjord {date} av bokföringens bokförda verifikat. Ilmoitin-filens personbeteckningar finns inte med.",
+      "figures": "Siffror och konton",
+      "figuresLead": "Under varje fält står kontona som dess siffra kommer från.",
+      "priorResults": "Tidigare räkenskapsperioders resultat",
+      "page": "Sida {page}/{pages}"
+    }
   }
 }

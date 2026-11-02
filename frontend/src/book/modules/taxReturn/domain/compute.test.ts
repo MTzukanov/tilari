@@ -99,6 +99,20 @@ describe('what the form says against the book', () => {
     expect(check(confirmed, 'custom_accounts')).toBeUndefined()
   })
 
+  it('puts an added account named for dividends on the dividend field, so form 73 is asked for', async () => {
+    const f = await buildTaxFixture()
+    f.addAccount(9284, 'C', 'Osinkotuotot, rahoitusomaisuus')
+    f.post('2031-02-01', [[BANK, 4_000, 0], [9284, 0, 4_000]])
+    const guessed = f.view()
+    expect(guessed.values[337]).toBe(4_000)
+    expect(guessed.values[345] ?? 0).toBe(0)
+    expect(guessed.forms.map((form) => form.form)).toContain('73')
+    expect(check(guessed, 'custom_accounts')).toMatchObject({ state: 'warn', count: 1 })
+
+    f.place({ 9284: 345 })
+    expect(f.view().values[337] ?? 0).toBe(0)
+  })
+
   it('compares the result with the income tax estimate to the cent', async () => {
     const f = await buildTaxFixture()
     f.post('2031-02-01', [[BANK, 100_000, 0], [3000, 0, 100_000]])

@@ -11,15 +11,21 @@ does not show the file codes. This page uses the codes because it talks about th
 A button on a period's card on the company page (`#/company`) opens a dialog with four tabs:
 
 - **OmaVero-luvut**: the figures in OmaVero's order and wording, each traced to its accounts, with a copy
-  button on every amount, and the whole return as text.
+  button on every amount, and the whole return as text. "Tallenna laskelma asiakirjoihin" keeps the calculation
+  as a PDF (below).
 - **Täytettävät tiedot**: what the book cannot know. Each OmaVero question takes a yes or a no for this period:
   neither is preselected, a question left open is not a no, and answers do not carry over to the next period (the
   contact and share counts do). The form saves with questions open, so typed work is not lost; the return then
   shows them as a check, and no file is made. "Onko tilinpäätös laadittu?" is yes unless the owner says otherwise.
-- **Liitelomakkeet**: forms 62, 73, 8A and 71B, as far as the figures call for them.
+- **Liitelomakkeet**: forms 62, 8A and 71B as far as the figures call for them, and 73 always: closed, with the
+  reason, when they do not.
 - **Ilmoitin-tiedosto**: the same figures as a file for Ilmoitin.fi.
 
 Leaving a tab with typed figures saves them, so moving on to the file does not lose them.
+
+The checks and the file's problems are listed under a heading that says what is left. Each item's text links to
+where it is fixed: the tab, the section (focused, so it shows), and for a 6B field its row, opened on its accounts.
+Items fixed outside the dialog (drafts, the business ID in the settings) are plain text.
 
 Both outputs render one calculation (`computeTaxReturn`), so they cannot disagree. Nothing is posted: the
 ledger is read, and only the owner's inputs are written, to `TilariData` (`tax-return/{ends}`, `tax-return/mapping`).
@@ -42,7 +48,10 @@ ledger is read, and only the owner's inputs are written, to `TilariData` (`tax-r
    not taxed.
 3. Account type: `CZ`/`CLZ` to 358, `DZ` to 384, `DH` to 368 with half deductible, `DP` to 364, `DPZ` to 364
    and not deducted. Accounts starting `99` skip this and go to direct taxes, whatever their type says.
-4. The standard chart's headings, each covering accounts from its number to the next heading, compared as
+4. An income account added among financial items (`9...`, type `C...`) and named for dividends (`osinko`,
+   `osingot`, `utdelning`, `dividend`) goes to 337. Its heading would put it with interest, and then neither the
+   dividend field nor form 73 would show it. It is still a guess, listed to confirm.
+5. The standard chart's headings, each covering accounts from its number to the next heading, compared as
    text the way Kitsas orders its chart (`17631` sits under `176`).
 
 Account types are the book's today, not as they were: a type changed later applies to earlier years as well.
@@ -89,6 +98,8 @@ Where past filings of a book differ from the chart, the chart decides and the ow
   tilari-bank-import's `nordnet-tax-forms` does for Nordnet.
 
 **73, dividends** (`domain/form73.ts`). The ledger has one figure, Saadut osingot ja ylijäämät; the classes are typed.
+The form is always on the tab: when not needed it is closed and says why (no euros in the field, with a link to the
+figures, or the answer that all dividends are Finnish and tax-free), and it can still be filled in.
 
 - Classes, from Vero's guide: tax-free from Finland, another EU or EEA state, or outside; taxable in full from the same
   three; and REITs. A class is wholly tax-free or wholly taxable, so its share equals its total. Listed shares the
@@ -163,6 +174,17 @@ and 573/574 applies. Repeating groups go between `001:n` and `009:i`.
 Checking is the owner's: Ilmoitin.fi's check validates a file before sending. `testi.ilmoitin.fi` takes invented
 data only. Vero asks software makers to tell `ohjelmistotalot@vero.fi` when production use starts; Tilari sends
 nothing itself.
+
+## The stored calculation
+
+"Tallenna laskelma asiakirjoihin" writes the return as it stands into a PDF (`ui/calculationPdf.ts`, with the
+letters' `shared/textPdf.ts`: text only, A4, no library) and keeps it as a new Liitetieto voucher of the day, linked to
+the period's Veroilmoitus 6B row on the company page. The PDF holds the checks, every 6B figure with the accounts it
+comes from, and the rest of the return in OmaVero's wording. The personal IDs typed for the file are not in it.
+
+The link is marked `calculation`: the row lists it with a "Laskelma" tag, but it does not fill the row or meet the
+tax return's deadline. Only the filed return does. Each save adds a dated voucher; an old one is unlinked or deleted
+like any document.
 
 ## Left for later
 

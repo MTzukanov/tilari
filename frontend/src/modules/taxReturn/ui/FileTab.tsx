@@ -3,6 +3,8 @@ import { useI18n } from '../../../i18n'
 import { Pill } from '../../../shared/Pill'
 import { downloadFile } from '../../../shared/downloadFile'
 import { ANSWERS, fieldName, ilmoitinFile, type FileNotice, type FileProblem, type FileRemark, type TaxReturnView } from '../api'
+import { IssueRow } from './Checks'
+import { anchorId, problemJump, type Jump } from './jump'
 
 function problemText(t: (key: string, params?: Record<string, string | number>) => string, problem: FileProblem): string {
   switch (problem.key) {
@@ -48,7 +50,7 @@ function remarkText(t: (key: string, params?: Record<string, string | number>) =
 }
 
 /** The Ilmoitin file. Built in this browser: the IDs typed here go only into the downloaded file. */
-export function FileTab({ view }: { view: TaxReturnView }) {
+export function FileTab({ view, onJump }: { view: TaxReturnView; onJump: (jump: Jump) => void }) {
   const { t } = useI18n()
   const [ids, setIds] = useState<string[]>([])
   const file = useMemo(() => ilmoitinFile(view, { ids, now: new Date() }), [view, ids])
@@ -57,18 +59,13 @@ export function FileTab({ view }: { view: TaxReturnView }) {
     <div className="tax-return-file">
       <p>{t('taxReturn.file.lead')}</p>
 
-      <p>
-        <Pill tone={file.problems.length ? 'crit' : sendable ? 'ok' : 'warn'}>
-          {t(file.problems.length ? 'taxReturn.file.stopped' : sendable ? 'taxReturn.file.ready' : 'taxReturn.file.checkOnly')}
-        </Pill>
-      </p>
+      <h3 className="tax-return-checks-title">
+        {t(file.problems.length ? 'taxReturn.file.stopped' : sendable ? 'taxReturn.file.ready' : 'taxReturn.file.checkOnly')}
+      </h3>
       {file.problems.length ? (
         <ul className="tax-return-check-list">
           {file.problems.map((problem, index) => (
-            <li key={index}>
-              <Pill tone="crit">{t('taxReturn.state.crit')}</Pill>
-              <span>{problemText(t, problem)}</span>
-            </li>
+            <IssueRow key={index} tone="crit" label={t('taxReturn.state.crit')} text={problemText(t, problem)} jump={problemJump(problem)} onJump={onJump} />
           ))}
         </ul>
       ) : null}
@@ -95,7 +92,7 @@ export function FileTab({ view }: { view: TaxReturnView }) {
       ) : null}
 
       {view.inputs.shareholders.length ? (
-        <fieldset className="tax-return-fieldset tax-return-ids">
+        <fieldset id={anchorId('ids')} tabIndex={-1} className="tax-return-fieldset tax-return-ids">
           <legend>{t('taxReturn.file.ids')}</legend>
           <p className="muted">{t('taxReturn.file.idsLead')}</p>
           {view.inputs.shareholders.map((holder, index) => (

@@ -9,18 +9,46 @@ import { FiguresTab } from './FiguresTab'
 import { FileTab } from './FileTab'
 import { FormsTab } from './FormsTab'
 import { formatDay } from './format'
+import { anchorId, type Jump, type Tab } from './jump'
 
 /** What the company page knows about this period's documents. */
 export type PeriodDocuments = { statements: boolean; audit_report: boolean; minutes: boolean }
 
-type Tab = 'figures' | 'facts' | 'forms' | 'file'
+/** Keeps the calculation with the period's tax return documents, dated `today`. */
+export type CalculationStore = { today: string; store: (file: File, title: string) => Promise<void> }
+
 const TABS: Tab[] = ['figures', 'facts', 'forms', 'file']
 
-export function TaxReturnDialog({ ends, documents, onClose }: { ends: string; documents: PeriodDocuments; onClose: () => void }) {
+export function TaxReturnDialog({
+  ends,
+  documents,
+  calculation,
+  onClose,
+}: {
+  ends: string
+  documents: PeriodDocuments
+  calculation?: CalculationStore
+  onClose: () => void
+}) {
   const { t } = useI18n()
   const [view, setView] = useState<TaxReturnView | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('figures')
+  const [jump, setJump] = useState<(Jump & { n: number }) | null>(null)
+
+  const go = useCallback((target: Jump) => {
+    setTab(target.tab)
+    setJump((old) => ({ ...target, n: (old?.n ?? 0) + 1 }))
+  }, [])
+
+  // Runs after the tab has rendered, so the place exists; rows it names open themselves.
+  useEffect(() => {
+    if (!jump) return
+    const place = document.getElementById(anchorId(jump.to))
+    if (!place) return
+    place.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    place.focus({ preventScroll: true })
+  }, [jump])
 
   useEffect(() => lockBodyScroll(), [])
 
@@ -88,11 +116,13 @@ export function TaxReturnDialog({ ends, documents, onClose }: { ends: string; do
         <div key={tab} className="vat-dialog-body tax-return-body">
           {error ? <p className="error">{error}</p> : null}
           {!view && !error ? <p className="muted">{t('taxReturn.loading')}</p> : null}
-          {view && (tab === 'figures' || tab === 'file') ? <Checks view={view} /> : null}
-          {view && tab === 'figures' ? <FiguresTab view={view} documents={documents} onSaveInputs={saveInputs} onPlaceAccount={placeAccount} onTerm={setTerm} /> : null}
+          {view && (tab === 'figures' || tab === 'file') ? <Checks view={view} onJump={go} /> : null}
+          {view && tab === 'figures' ? (
+            <FiguresTab view={view} documents={documents} calculation={calculation} opened={jump} onJump={go} onSaveInputs={saveInputs} onPlaceAccount={placeAccount} onTerm={setTerm} />
+          ) : null}
           {view && tab === 'facts' ? <FactsTab view={view} onSave={saveInputs} /> : null}
-          {view && tab === 'forms' ? <FormsTab view={view} onSave={saveInputs} /> : null}
-          {view && tab === 'file' ? <FileTab view={view} /> : null}
+          {view && tab === 'forms' ? <FormsTab view={view} onSave={saveInputs} onJump={go} /> : null}
+          {view && tab === 'file' ? <FileTab view={view} onJump={go} /> : null}
         </div>
         <footer className="vat-dialog-actions">
           <button type="button" className="btn-secondary" onClick={onClose}>

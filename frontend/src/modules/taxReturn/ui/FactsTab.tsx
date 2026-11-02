@@ -4,6 +4,7 @@ import { Pill } from '../../../shared/Pill'
 import { formatEurInput, parseEurInput, sanitizeEurInput } from '../../../shared/money'
 import { ANSWERS, openAnswers, type DistributionInput, type ShareholderInput, type TaxReturnInputs, type TaxReturnView } from '../api'
 import { formatDay } from './format'
+import { anchorId } from './jump'
 
 /** Two choices and neither preselected, so a question nobody has considered cannot pass for a no. */
 export function YesNo({ question, value, onChange }: { question: string; value: boolean | null | undefined; onChange: (value: boolean) => void }) {
@@ -46,10 +47,12 @@ export function EurField({ label, cents, onChange }: { label: string; cents: num
 const EMPTY_HOLDER: ShareholderInput = { name: '', shares: 0, rents_cents: 0, interest_cents: 0, sales_cents: 0, other_cents: 0, loans_cents: 0 }
 
 function Distribution({
+  anchor,
   legend,
   value,
   onChange,
 }: {
+  anchor: string
   legend: string
   value: DistributionInput | null
   onChange: (value: DistributionInput | null) => void
@@ -61,7 +64,7 @@ function Distribution({
     onChange(next.decided || next.payable || next.amount_cents ? next : null)
   }
   return (
-    <fieldset className="tax-return-fieldset">
+    <fieldset id={anchorId(anchor)} tabIndex={-1} className="tax-return-fieldset">
       <legend>{legend}</legend>
       <label>
         {t('taxReturn.fact.decided')}
@@ -123,7 +126,7 @@ export function FactsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
       {view.carried_from ? <p className="muted">{t('taxReturn.carried', { date: formatDay(view.carried_from) })}</p> : null}
       <p className="muted">{t('taxReturn.fact.lead')}</p>
 
-      <fieldset className="tax-return-fieldset">
+      <fieldset id={anchorId('contact')} tabIndex={-1} className="tax-return-fieldset">
         <legend>{t('taxReturn.fact.contact')}</legend>
         <p className="muted">{t('taxReturn.fact.contactLead')}</p>
         <label>
@@ -140,7 +143,7 @@ export function FactsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
         </label>
       </fieldset>
 
-      <fieldset className="tax-return-fieldset">
+      <fieldset id={anchorId('shareholders')} tabIndex={-1} className="tax-return-fieldset">
         <legend>{t('taxReturn.fact.shareholders')}</legend>
         <p className="muted">{t('taxReturn.fact.shareholdersLead')}</p>
         <p className="muted">{t('taxReturn.fact.idLater')}</p>
@@ -176,10 +179,10 @@ export function FactsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
         </label>
       </fieldset>
 
-      <Distribution legend={t('taxReturn.fact.dividend')} value={draft.dividend} onChange={(dividend) => patch({ dividend })} />
-      <Distribution legend={t('taxReturn.fact.freeEquity')} value={draft.free_equity} onChange={(free_equity) => patch({ free_equity })} />
+      <Distribution anchor="dividend" legend={t('taxReturn.fact.dividend')} value={draft.dividend} onChange={(dividend) => patch({ dividend })} />
+      <Distribution anchor="free-equity" legend={t('taxReturn.fact.freeEquity')} value={draft.free_equity} onChange={(free_equity) => patch({ free_equity })} />
 
-      <fieldset className="tax-return-fieldset">
+      <fieldset id={anchorId('statements')} tabIndex={-1} className="tax-return-fieldset">
         <legend>{t('taxReturn.fact.statements')}</legend>
         <label>
           {t('taxReturn.fact.audit')}
@@ -212,7 +215,7 @@ export function FactsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
         </label>
       </fieldset>
 
-      <fieldset className="tax-return-fieldset">
+      <fieldset id={anchorId('answers')} tabIndex={-1} className="tax-return-fieldset">
         <legend>{t('taxReturn.fact.answers')}</legend>
         <p className="muted">{t('taxReturn.fact.answersLead')}</p>
         {ANSWERS.map((answer) => (

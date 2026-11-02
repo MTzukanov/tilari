@@ -7,6 +7,22 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-02 - Checks link to their place, form 73 always findable, the calculation kept as a PDF
+
+- Owner's look at form 73 on a real book: form 73 was not on the Liitelomakkeet tab. The dividend account had been
+  added to the chart, so the heading above its number placed it with interest; the 6B dividend field stayed empty and
+  73 was never asked for. An added `9...` income account named for dividends now goes to the dividend field (still to
+  confirm), and 73 is always on the tab, closed with the reason when the figures do not call for it.
+- The checks' heading was a pill and read as one more check; it is a heading now (owner). Each item links to its tab
+  and section; a 6B field's row opens on its accounts.
+- The passed list said "arvopaperit ja lomake 8A" while a failed 8A check named Rahoitusomaisuusarvopaperit: two 8A
+  groups, one tied and one not. The passed text now names the group's field.
+- The calculation is kept as a PDF on a Liitetieto voucher linked to the 6B row (owner asked to keep the result for later
+  reference). No library: `shared/textPdf.ts` already writes the rental letters. The link is flagged `calculation` so
+  the 6B row and its deadline stay open until the filed return is linked.
+- WebKit e2e: "a deleted voucher shows as deleted" (company spec) reloads with `page.goto` and WebKit then has no book
+  open. Not from this change; PR CI runs Chromium only, so it shows only in the release matrix.
+
 ## 2026-11-02 - Form 73, and 8A rows pasted from a spreadsheet
 
 - Form 73 is typed by class, because the ledger has one dividend figure. Its total must equal the 6B's Saadut osingot ja

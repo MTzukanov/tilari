@@ -1,6 +1,7 @@
 /**
  * Which 6B field an account belongs to. In this order: the book's own choices, named standard accounts,
- * the account's type, then the standard chart's headings. A heading covers the accounts from its number
+ * the account's type, then the standard chart's headings (an account added to the chart may be placed by
+ * its name first, see `placeByName`). A heading covers the accounts from its number
  * up to the next heading, compared as text the way Kitsas orders its chart (`17631` sits under `176`).
  * Tested against filed returns, see docs/TAX_RETURN.md.
  */
@@ -10,7 +11,7 @@ export const SALE = 'sale'
 
 export type Target = number | typeof SALE
 
-export type PlacementSource = 'override' | 'named' | 'type' | 'chart' | 'moved'
+export type PlacementSource = 'override' | 'named' | 'type' | 'chart' | 'name' | 'moved'
 
 export type Placement = {
   /** `null`: no field, the owner has to choose one. */
@@ -201,6 +202,17 @@ export function placeIncomeStatement(account: number, type: string, overrides: O
   const heading = headingOf(account, PNL_KEYS)
   const code = heading == null ? null : (PNL_CHART[heading] ?? null)
   return { code, source: code == null ? null : 'chart' }
+}
+
+const DIVIDEND_NAME = /osinko|osingot|utdelning|dividend/i
+
+/**
+ * An income account added among financial items and named for dividends. Its heading would put it with
+ * interest, and then neither the dividend field nor form 73 shows it. Still a guess the owner confirms.
+ */
+export function placeByName(account: number, type: string, name: string): Placement | null {
+  if (!String(account).startsWith('9') || !type.startsWith('C')) return null
+  return DIVIDEND_NAME.test(name) ? { code: 337, source: 'name' } : null
 }
 
 export function placeBalanceSheet(account: number, overrides: Overrides = {}): Placement {

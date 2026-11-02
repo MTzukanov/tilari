@@ -1,11 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useI18n } from '../../../i18n'
 import { Pill } from '../../../shared/Pill'
 import { downloadFile } from '../../../shared/downloadFile'
 import { omaVeroText, typedAmount, type DebtTerm, type GroupView, type RowView, type Target, type TaxReturnInputs, type TaxReturnView } from '../api'
 import { AccountRows, ConfirmField, ManualFigure, PlaceSelect } from './AccountPlacement'
 import { formatFigure } from './format'
-import type { PeriodDocuments } from './TaxReturnDialog'
+import { anchorId, type Jump } from './jump'
+import { calculationFileName, calculationPdf, calculationTitle } from './calculationPdf'
+import type { CalculationStore, PeriodDocuments } from './TaxReturnDialog'
+
+/** The rows a check pointed at; `n` tells one jump from the next. */
+type Opened = { codes?: number[]; n: number } | null
 
 type Actions = {
   onSaveInputs: (inputs: TaxReturnInputs) => Promise<void>
@@ -44,12 +49,15 @@ export function CopyFigure({ cents, label }: { cents: number; label: string }) {
   )
 }
 
-function Row({ row, view, actions }: { row: RowView; view: TaxReturnView; actions: Actions }) {
+function Row({ row, view, actions, opened }: { row: RowView; view: TaxReturnView; actions: Actions; opened: Opened }) {
   const { t } = useI18n()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(() => Boolean(opened?.codes?.includes(row.code)))
+  useEffect(() => {
+    if (opened?.codes?.includes(row.code)) setOpen(true)
+  }, [opened, row.code])
   return (
     <>
-      <tr className={row.state === 'zero' ? 'tax-return-zero' : undefined}>
+      <tr id={anchorId(`row-${row.code}`)} tabIndex={-1} className={row.state === 'zero' ? 'tax-return-zero' : undefined}>
         <td>
           <button type="button" className="btn-link tax-return-row-name" aria-expanded={open} onClick={() => setOpen(!open)}>
             <svg className="tax-return-chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
@@ -75,7 +83,7 @@ function Row({ row, view, actions }: { row: RowView; view: TaxReturnView; action
   )
 }
 
-function Group({ group, view, showZero, actions }: { group: GroupView; view: TaxReturnView; showZero: boolean; actions: Actions }) {
+function Group({ group, view, showZero, actions, opened }: { group: GroupView; view: TaxReturnView; showZero: boolean; actions: Actions; opened: Opened }) {
   const { t } = useI18n()
   const rows = showZero ? group.rows : group.rows.filter((row) => row.state !== 'zero')
   const totals = showZero ? group.totals : group.totals.filter((total) => total.cents)
@@ -92,7 +100,7 @@ function Group({ group, view, showZero, actions }: { group: GroupView; view: Tax
       </thead>
       <tbody>
         {rows.map((row) => (
-          <Row key={row.code} row={row} view={view} actions={actions} />
+          <Row key={row.code} row={row} view={view} actions={actions} opened={opened} />
         ))}
         {totals.map((total) => (
           <tr key={total.code} className="tax-return-total">
@@ -106,8 +114,58 @@ function Group({ group, view, showZero, actions }: { group: GroupView; view: Tax
   )
 }
 
+/** Writes the calculation as a PDF and keeps it with the period's tax return documents. */
+function StoreCalculation({ view, calculation }: { view: TaxReturnView; calculation: CalculationStore }) {
+  const { t } = useI18n()
+  const [state, setState] = useState<'idle' | 'busy' | 'done'>('idle')
+  const [error, setError] = useState<string | null>(null)
+  return (
+    <>
+      <button
+        type="button"
+        className="btn-secondary"
+        disabled={state === 'busy'}
+        onClick={() => {
+          const { today } = calculation
+          const pdf = calculationPdf(t, view, today)
+          const file = new File([pdf as BlobPart], calculationFileName(view, today), { type: 'application/pdf' })
+          setState('busy')
+          setError(null)
+          calculation
+            .store(file, calculationTitle(t, view, today))
+            .then(() => setState('done'))
+            .catch((err: unknown) => {
+              setState('idle')
+              setError(err instanceof Error ? err.message : String(err))
+            })
+        }}
+      >
+        {t('taxReturn.calc.store')}
+      </button>
+      {state === 'done' ? (
+        <span className="muted tax-return-actions-note" role="status">
+          {t('taxReturn.calc.stored')}
+        </span>
+      ) : null}
+      {error ? <span className="error tax-return-actions-note">{error}</span> : null}
+    </>
+  )
+}
+
+/** Forms filled in on the Liitelomakkeet tab. */
+const FORMS_TAB = ['62', '73', '8A', '71B']
+
 /** The numbers to type into OmaVero, in its order and wording, each traced to its accounts. */
-export function FiguresTab({ view, documents, onSaveInputs, onPlaceAccount, onTerm }: { view: TaxReturnView; documents: PeriodDocuments } & Actions) {
+export function FiguresTab({
+  view,
+  documents,
+  calculation,
+  opened,
+  onJump,
+  onSaveInputs,
+  onPlaceAccount,
+  onTerm,
+}: { view: TaxReturnView; documents: PeriodDocuments; calculation?: CalculationStore; opened: Opened; onJump: (jump: Jump) => void } & Actions) {
   const { t } = useI18n()
   const [showZero, setShowZero] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -140,13 +198,14 @@ export function FiguresTab({ view, documents, onSaveInputs, onPlaceAccount, onTe
         >
           {t('taxReturn.downloadText')}
         </button>
+        {calculation ? <StoreCalculation view={view} calculation={calculation} /> : null}
         <label className="tax-return-toggle">
           <input type="checkbox" checked={showZero} onChange={(e) => setShowZero(e.target.checked)} /> {t('taxReturn.showZero')}
         </label>
       </p>
 
       {view.unplaced.length ? (
-        <section className="tax-return-unplaced">
+        <section id={anchorId('unplaced')} tabIndex={-1} className="tax-return-unplaced">
           <h3 className="section-label">{t('taxReturn.unplaced')}</h3>
           <ul>
             {view.unplaced.map((line) => (
@@ -161,7 +220,7 @@ export function FiguresTab({ view, documents, onSaveInputs, onPlaceAccount, onTe
       ) : null}
 
       {guessed.length ? (
-        <section className="tax-return-unplaced">
+        <section id={anchorId('confirm')} tabIndex={-1} className="tax-return-unplaced">
           <h3 className="section-label">{t('taxReturn.toConfirm')}</h3>
           <ul>
             {guessed.map(({ line, code }) => (
@@ -178,7 +237,7 @@ export function FiguresTab({ view, documents, onSaveInputs, onPlaceAccount, onTe
 
       <p className="muted">{t('taxReturn.rowHint')}</p>
       {view.groups.map((group) => (
-        <Group key={group.key} group={group} view={view} showZero={showZero} actions={actions} />
+        <Group key={group.key} group={group} view={view} showZero={showZero} actions={actions} opened={opened} />
       ))}
 
       <section>
@@ -188,7 +247,13 @@ export function FiguresTab({ view, documents, onSaveInputs, onPlaceAccount, onTe
             {view.forms.map((form) => (
               <li key={form.form}>
                 <Pill tone={form.built ? 'ok' : 'warn'}>{t(form.built ? 'taxReturn.formBuilt' : 'taxReturn.formOpen')}</Pill>
-                <span>{t(`taxReturn.form.${form.form}`, { form: form.form })}</span>
+                {FORMS_TAB.includes(form.form) ? (
+                  <button type="button" className="btn-link tax-return-jump" onClick={() => onJump({ tab: 'forms', to: `form-${form.form}` })}>
+                    {t(`taxReturn.form.${form.form}`, { form: form.form })}
+                  </button>
+                ) : (
+                  <span>{t(`taxReturn.form.${form.form}`, { form: form.form })}</span>
+                )}
               </li>
             ))}
           </ul>

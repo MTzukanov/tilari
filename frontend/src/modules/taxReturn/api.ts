@@ -31,7 +31,7 @@ export { saleResult } from '../../book/modules/taxReturn/domain/form71b'
 export { computeForm73, emptyDividend } from '../../book/modules/taxReturn/domain/form73'
 export { parseHoldingTable } from '../../book/modules/taxReturn/domain/form8a'
 export { ilmoitinFile, type FileNotice, type FileProblem, type FileRemark } from '../../book/modules/taxReturn/domain/ilmoitinFile'
-export { omaVeroText, typedAmount } from '../../book/modules/taxReturn/domain/omaVeroText'
+export { omaVeroParts, omaVeroText, plainAmount, typedAmount } from '../../book/modules/taxReturn/domain/omaVeroText'
 
 function service() {
   return getBookService().modules.taxReturn

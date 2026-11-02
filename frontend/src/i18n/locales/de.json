@@ -1713,7 +1713,8 @@
         "draft": "Entwurf",
         "file_missing": "Datei gelöscht",
         "ok": "OK"
-      }
+      },
+      "calculation": "Berechnung"
     },
     "upload": {
       "date": "Datum des Dokuments",
@@ -1858,8 +1859,8 @@
       "unplaced_one": "{count} Konto hat kein Feld. Wählen Sie unten eines.",
       "unanswered": "{count} OmaVero-Fragen sind unbeantwortet. Beantworten Sie sie unter Auszufüllende Angaben.",
       "unanswered_one": "{count} OmaVero-Frage ist unbeantwortet. Beantworten Sie sie unter Auszufüllende Angaben.",
-      "custom_accounts": "{count} Konten wurden außerhalb des Standardkontenplans zur Buchführung hinzugefügt. Tilari hat ihr Feld aus der Kontonummer abgeleitet, es kann also falsch sein. Bestätigen oder ändern Sie es unten.",
-      "custom_accounts_one": "{count} Konto wurde außerhalb des Standardkontenplans zur Buchführung hinzugefügt. Tilari hat sein Feld aus der Kontonummer abgeleitet, es kann also falsch sein. Bestätigen oder ändern Sie es unten.",
+      "custom_accounts": "{count} Konten wurden außerhalb des Standardkontenplans zur Buchführung hinzugefügt. Tilari hat ihr Feld aus der Kontonummer oder dem Namen abgeleitet, es kann also falsch sein. Bestätigen oder ändern Sie es unten.",
+      "custom_accounts_one": "{count} Konto wurde außerhalb des Standardkontenplans zur Buchführung hinzugefügt. Tilari hat sein Feld aus der Kontonummer oder dem Namen abgeleitet, es kann also falsch sein. Bestätigen oder ändern Sie es unten.",
       "result_ties": "Die Buchwerte des Formulars weichen um {amount} Euro vom Ergebnis der Buchführung ab.",
       "net_wealth": "Das Nettovermögen weicht um {amount} Euro vom Eigenkapital ab.",
       "estimate": "Das Betriebsergebnis weicht um {amount} Euro von der Einkommensteuerberechnung ab.",
@@ -1888,7 +1889,7 @@
       "net_wealth": "Nettovermögen und Eigenkapital",
       "estimate": "Einkommensteuerberechnung",
       "sale_gap": "Veräußerungsgewinne und -verluste",
-      "form8a_gap": "Wertpapiere und Formular 8A",
+      "form8a_gap": "{fields} und Formular 8A",
       "form62_tax": "steuerliche Abschreibungen und Formular 62",
       "form62_book": "buchhalterische Abschreibungen und Formular 62",
       "form73_gap": "Dividenden und Formular 73",
@@ -2020,8 +2021,23 @@
       "pasteResult_one": "{count} Zeile gelesen.",
       "pasteKept": "Die Unternehmenskennung blieb für {count} Zeilen erhalten.",
       "pasteKept_one": "Die Unternehmenskennung blieb für {count} Zeile erhalten.",
-      "pasteSkipped": "Nicht lesbare Zeilen wurden übersprungen: {lines}."
+      "pasteSkipped": "Nicht lesbare Zeilen wurden übersprungen: {lines}.",
+      "notNeeded": "bei diesen Zahlen nicht nötig",
+      "dividendsTaxFree": "Das Formular ist nicht nötig: Unter Auszufüllende Angaben haben Sie geantwortet, dass alle Dividendeneinkünfte aus Finnland stammen und steuerfrei sind.",
+      "dividendsNone": "Das Feld {field} enthält keine Euro, daher ist das Formular nicht nötig. Hat die Gesellschaft Dividenden erhalten, wählen Sie für ihr Konto das Feld {field}.",
+      "toFigures": "Zahlen für OmaVero öffnen"
     },
-    "rowHint": "Öffnen Sie eine Zeile, um die Konten hinter dem Betrag zu sehen."
+    "rowHint": "Öffnen Sie eine Zeile, um die Konten hinter dem Betrag zu sehen.",
+    "calc": {
+      "store": "Berechnung bei den Dokumenten speichern",
+      "stored": "Die Berechnung ist als PDF auf der Seite Unternehmen unter Steuererklärung 6B gespeichert. Sie markiert die Erklärung nicht als abgegeben.",
+      "heading": "Berechnung zur Steuererklärung {year}",
+      "title": "Berechnung zur Steuererklärung {year}, erstellt {date}",
+      "made": "Erstellt am {date} aus den gebuchten Belegen. Die Personenkennungen der Ilmoitin-Datei sind nicht enthalten.",
+      "figures": "Zahlen und Konten",
+      "figuresLead": "Unter jedem Feld stehen die Konten, aus denen seine Zahl stammt.",
+      "priorResults": "Ergebnisse früherer Geschäftsjahre",
+      "page": "Seite {page}/{pages}"
+    }
   }
 }

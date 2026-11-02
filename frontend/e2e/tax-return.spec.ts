@@ -15,6 +15,7 @@ test.describe('annual tax return data', () => {
   test('a period shows the numbers for OmaVero, with the accounts behind them', async ({ page, context, browserName }) => {
     await openReturn(page)
     const dialog = page.getByRole('dialog')
+    await expect(dialog.getByRole('heading', { name: 'Korjattavaa ennen ilmoittamista' })).toBeVisible()
     await expect(dialog.locator('.tax-return-table caption', { hasText: 'Liiketoiminta ja oma käyttö' })).toBeVisible()
     await expect(dialog.getByRole('button', { name: 'Liikevaihto', exact: true })).toBeVisible()
     await dialog.getByRole('button', { name: 'Liikevaihto', exact: true }).click()
@@ -42,7 +43,10 @@ test.describe('annual tax return data', () => {
     await expect(dialog.getByText('18 OmaVeron kysymystä on vastaamatta.', { exact: true })).toBeVisible()
     await expect(dialog.getByRole('button', { name: 'Lataa Ilmoitin-tiedosto' })).toBeDisabled()
 
-    await dialog.getByRole('tab', { name: 'Täytettävät tiedot' }).click()
+    // A problem's text takes the owner to where it is fixed.
+    await dialog.getByRole('button', { name: 'Täytä osakkeenomistajat.' }).click()
+    await expect(dialog.getByRole('tab', { name: 'Täytettävät tiedot' })).toHaveAttribute('aria-selected', 'true')
+    await expect(dialog.locator('#tax-return-at-shareholders')).toBeFocused()
     await dialog.getByLabel('Yhteyshenkilö').fill('Essi Esimerkki')
     await dialog.getByLabel('Puhelinnumero').fill('0401234567')
     await dialog.getByRole('button', { name: 'Lisää osakkeenomistaja' }).click()
@@ -105,7 +109,9 @@ test.describe('annual tax return data', () => {
     await dialog.locator('.tax-return-accounts li').first().getByRole('combobox').first().selectOption({ label: 'Rahoitusomaisuusarvopaperit' })
     await expect(dialog.getByText(/Lomakkeen 8A hankintamenot ja Rahoitusomaisuusarvopaperit eroavat/)).toBeVisible()
 
-    await dialog.getByRole('tab', { name: 'Liitelomakkeet' }).click()
+    await dialog.getByRole('button', { name: /Lomakkeen 8A hankintamenot ja Rahoitusomaisuusarvopaperit eroavat/ }).click()
+    await expect(dialog.getByRole('tab', { name: 'Liitelomakkeet' })).toHaveAttribute('aria-selected', 'true')
+    await expect(dialog.locator('[id^="tax-return-at-form-8A-"]')).toBeFocused()
     await dialog.getByRole('button', { name: 'Lisää rivi' }).click()
     await dialog.getByLabel('Yhtiön tai osuuskunnan nimi').fill('Esimerkki Oyj')
     await dialog.getByLabel('Y-tunnus').fill('4567890-7')
@@ -125,6 +131,31 @@ test.describe('annual tax return data', () => {
     expect(text).toContain('249:1000,00')
     expect(text).toContain('251:3235,75')
     expect(text.endsWith('999:2')).toBe(true)
+  })
+
+  test('form 73 stays findable, and the calculation is kept with the 6B without marking it filed', async ({ page }) => {
+    await openReturn(page)
+    const dialog = page.getByRole('dialog')
+
+    // The book has no dividends, so the form is closed and says why.
+    await dialog.getByRole('tab', { name: 'Liitelomakkeet' }).click()
+    const form73 = dialog.locator('details', { hasText: '73 Erittely osinkotuloista' })
+    await expect(form73).not.toHaveAttribute('open')
+    await form73.locator('summary').click()
+    await expect(form73.getByText(/Kentässä Saadut osingot ja ylijäämät ei ole euroja/)).toBeVisible()
+    await form73.getByRole('button', { name: 'Avaa OmaVero-luvut' }).click()
+    await expect(dialog.getByRole('tab', { name: 'OmaVero-luvut' })).toHaveAttribute('aria-selected', 'true')
+
+    await dialog.getByRole('button', { name: 'Tallenna laskelma asiakirjoihin' }).click()
+    await expect(dialog.getByRole('status')).toContainText('Laskelma on tallennettu')
+    await dialog.getByRole('button', { name: 'Sulje' }).click()
+
+    const taxReturn = page.locator('.doc-row', { has: page.locator('.doc-row-name', { hasText: /^Veroilmoitus 6B$/ }) })
+    await expect(taxReturn).toContainText('Veroilmoituksen laskelma 2024, laadittu 15.12.2025')
+    await expect(taxReturn.getByText('Laskelma', { exact: true })).toBeVisible()
+    await expect(taxReturn.getByRole('link', { name: '6B-laskelma-2024-2025-12-15.pdf' })).toBeVisible()
+    // A calculation is not the filed return.
+    await expect(taxReturn.locator('.doc-row-head .pill')).toHaveText('Puuttuu')
   })
 
   test('a debt can count as short term, whatever its number says', async ({ page }) => {

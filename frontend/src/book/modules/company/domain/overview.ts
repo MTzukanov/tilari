@@ -108,6 +108,7 @@ function documentView(d: CompanyDocument, voucher: VoucherRow | undefined): Docu
     doc_number: gone ? null : voucher.doc_number,
     series: gone ? '' : voucher.series,
     note: d.note ?? null,
+    calculation: d.calculation === true,
     state,
     files,
   }
@@ -167,7 +168,7 @@ function buildPeriod(doc: CompanyDoc, { period, views, statement, asOf, lock, su
   const ended = period.ends < asOf
   const slots: SlotView[] = PERIOD_KINDS.flatMap((kind) => {
     const documents = views.filter((v) => v.kind === kind)
-    const filled = documents.some((v) => v.state === 'ok')
+    const filled = documents.some((v) => v.state === 'ok' && !v.calculation)
     const required = requiredKind(kind, doc)
     // A row with a document stays even when unticked: unticking must not hide what was attached.
     if (kind in KIND_SETTINGS && !required && !documents.length) return []
@@ -181,7 +182,7 @@ function buildPeriod(doc: CompanyDoc, { period, views, statement, asOf, lock, su
       },
     ]
   })
-  const filled = (kind: PeriodKind) => views.some((v) => v.kind === kind && v.state === 'ok')
+  const filled = (kind: PeriodKind) => views.some((v) => v.kind === kind && v.state === 'ok' && !v.calculation)
   const counted = slots.filter((s) => s.required && s.status !== 'not_needed')
   return {
     starts: period.starts,
@@ -284,7 +285,7 @@ export function computeAlerts(db: SqliteDb, query: { today: string; asOf?: strin
   const vouchers = loadVouchers(db, doc.documents.map((d) => d.voucher_id))
   const usable = new Set(
     doc.documents
-      .filter((d) => documentView(d, vouchers.get(d.voucher_id)).state === 'ok')
+      .filter((d) => d.calculation !== true && documentView(d, vouchers.get(d.voucher_id)).state === 'ok')
       .map((d) => `${d.period_ends}|${d.kind}`),
   )
   const deadlines = loadPeriods(db).flatMap((period) =>

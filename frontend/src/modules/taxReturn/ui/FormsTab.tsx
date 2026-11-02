@@ -23,6 +23,7 @@ import {
 import { EurField, YesNo } from './FactsTab'
 import { CopyFigure } from './FiguresTab'
 import { formatFigure } from './format'
+import { anchorId, type Jump } from './jump'
 
 /** An amount that can stay empty, so that "not typed" differs from a typed zero. */
 function OptionalEur({ label, cents, placeholder, onChange }: { label: string; cents: number | null | undefined; placeholder?: string; onChange: (cents: number | null) => void }) {
@@ -265,7 +266,7 @@ function PasteRows({ onRows }: { onRows: (text: string) => { count: number; kept
 }
 
 /** Forms 8A, 71B, 73 and 62: what the ledger gives, what the owner adds, and what is left to the cent. */
-export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (inputs: TaxReturnInputs) => Promise<void> }) {
+export function FormsTab({ view, onSave, onJump }: { view: TaxReturnView; onSave: (inputs: TaxReturnInputs) => Promise<void>; onJump: (jump: Jump) => void }) {
   const { t } = useI18n()
   const fromView = () => view.form8a.groups.flatMap((group) => group.rows.map(asInput))
   const salesFromView = (): SaleInput[] =>
@@ -353,7 +354,37 @@ export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
   const show62 = needs('62') || view.form62.used
   const sections62 = showAll62 ? view.form62.sections : view.form62.sections.filter((section) => section.has_values)
   const dividends = computeForm73(form73, view.form73.ledger_cents)
-  const show73 = needs('73') || view.form73.typed || dividends.typed
+  // Form 73 is always here: dividends on an account placed elsewhere would otherwise hide it.
+  const need73 = needs('73') || view.form73.typed || dividends.typed
+  const allTaxFree = view.inputs.answers.all_dividends_tax_free === true
+
+  const body73 = (
+    <>
+      <p className="muted">{t('taxReturn.attached.dividendsLead')}</p>
+      <YesNo
+        question="Onko yhtiö julkisesti noteerattu?"
+        value={form73.company_listed}
+        onChange={(company_listed) => {
+          setForm73((old) => ({ ...old, company_listed }))
+          touch()
+        }}
+      />
+      {dividends.classes.map((row) => (
+        <DividendFields key={`${row.key}-${revision}`} row={row} onChange={(patch) => setDividend(row, patch)} />
+      ))}
+      <p className="tax-return-attached-totals">
+        <span>{t('taxReturn.attached.field', { field: 'Osingot ja ylijäämät yhteensä', amount: formatFigure(dividends.total_cents) })}</span>
+        <span>{t('taxReturn.attached.field', { field: fieldName(337), amount: formatFigure(dividends.ledger_cents) })}</span>
+        <span>{t('taxReturn.attached.field', { field: 'Verovapaa osuus yhteensä', amount: formatFigure(dividends.taxfree_cents) })}</span>
+        <span>{t('taxReturn.attached.field', { field: 'Veronalainen osuus yhteensä', amount: formatFigure(dividends.taxable_cents) })}</span>
+      </p>
+      {dividends.total_cents !== dividends.ledger_cents ? (
+        <p>
+          <Pill tone="crit">{t('taxReturn.attached.dividendsLeft', { amount: formatFigure(dividends.ledger_cents - dividends.total_cents) })}</Pill>
+        </p>
+      ) : null}
+    </>
+  )
 
   return (
     <form
@@ -364,10 +395,10 @@ export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
       }}
     >
       <p className="muted">{t('taxReturn.attached.lead')}</p>
-      {!groups.length && !showSales && !show62 && !show73 ? <p className="muted">{t('taxReturn.attached.none')}</p> : null}
+      {!groups.length && !showSales && !show62 && !need73 ? <p className="muted">{t('taxReturn.attached.none')}</p> : null}
 
       {show62 ? (
-        <fieldset className="tax-return-fieldset">
+        <fieldset id={anchorId('form-62')} tabIndex={-1} className="tax-return-fieldset">
           <legend>{t('taxReturn.form.62', { form: '62' })}</legend>
           <p className="muted">{t('taxReturn.attached.depreciationLead')}</p>
           {sections62.map((section) => (
@@ -379,43 +410,38 @@ export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
         </fieldset>
       ) : null}
 
-      {show73 ? (
-        <fieldset className="tax-return-fieldset">
+      {need73 ? (
+        <fieldset id={anchorId('form-73')} tabIndex={-1} className="tax-return-fieldset">
           <legend>{t('taxReturn.form.73', { form: '73' })}</legend>
-          <p className="muted">{t('taxReturn.attached.dividendsLead')}</p>
-          <YesNo
-            question="Onko yhtiö julkisesti noteerattu?"
-            value={form73.company_listed}
-            onChange={(company_listed) => {
-              setForm73((old) => ({ ...old, company_listed }))
-              touch()
-            }}
-          />
-          {dividends.classes.map((row) => (
-            <DividendFields key={`${row.key}-${revision}`} row={row} onChange={(patch) => setDividend(row, patch)} />
-          ))}
-          <p className="tax-return-attached-totals">
-            <span>{t('taxReturn.attached.field', { field: 'Osingot ja ylijäämät yhteensä', amount: formatFigure(dividends.total_cents) })}</span>
-            <span>{t('taxReturn.attached.field', { field: fieldName(337), amount: formatFigure(dividends.ledger_cents) })}</span>
-            <span>{t('taxReturn.attached.field', { field: 'Verovapaa osuus yhteensä', amount: formatFigure(dividends.taxfree_cents) })}</span>
-            <span>{t('taxReturn.attached.field', { field: 'Veronalainen osuus yhteensä', amount: formatFigure(dividends.taxable_cents) })}</span>
-          </p>
-          {dividends.total_cents !== dividends.ledger_cents ? (
-            <p>
-              <Pill tone="crit">{t('taxReturn.attached.dividendsLeft', { amount: formatFigure(dividends.ledger_cents - dividends.total_cents) })}</Pill>
-            </p>
-          ) : null}
+          {body73}
         </fieldset>
-      ) : null}
+      ) : (
+        <details id={anchorId('form-73')} tabIndex={-1} className="tax-return-fieldset tax-return-optional">
+          <summary>
+            {t('taxReturn.form.73', { form: '73' })}: {t('taxReturn.attached.notNeeded')}
+          </summary>
+          {allTaxFree ? (
+            <p className="muted">{t('taxReturn.attached.dividendsTaxFree')}</p>
+          ) : (
+            <p className="muted">
+              {t('taxReturn.attached.dividendsNone', { field: fieldName(337) })}{' '}
+              <button type="button" className="btn-link tax-return-jump" onClick={() => onJump({ tab: 'figures', to: 'confirm' })}>
+                {t('taxReturn.attached.toFigures')}
+              </button>
+            </p>
+          )}
+          {body73}
+        </details>
+      )}
 
       {groups.length ? (
-        <fieldset className="tax-return-fieldset">
+        <fieldset id={anchorId('form-8A')} tabIndex={-1} className="tax-return-fieldset">
           <legend>{t('taxReturn.form.8A', { form: '8A' })}</legend>
           {groups.map((group) => {
             const own = holdings.map((row, index) => ({ row, index })).filter(({ row }) => row.group === group.key)
             const typedGroup = group.key === 'financial'
             return (
-              <section key={group.key}>
+              <section key={group.key} id={anchorId(`form-8A-${group.field}`)} tabIndex={-1}>
                 <h4>{group.title}</h4>
                 <p className="muted">{t(typedGroup ? 'taxReturn.attached.holdingsTyped' : 'taxReturn.attached.holdingsEra')}</p>
                 {group.key === 'other' ? <p className="muted">{t('taxReturn.attached.housingValue')}</p> : null}
@@ -459,7 +485,7 @@ export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
       ) : null}
 
       {showSales ? (
-        <fieldset className="tax-return-fieldset">
+        <fieldset id={anchorId('form-71B')} tabIndex={-1} className="tax-return-fieldset">
           <legend>{t('taxReturn.form.71B', { form: '71B' })}</legend>
           <p className="muted">{t('taxReturn.attached.salesLead')}</p>
           {fixedSales ? <p className="muted">{t('taxReturn.attached.salesFixed')}</p> : null}
@@ -515,14 +541,12 @@ export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
         </fieldset>
       ) : null}
 
-      {groups.length || showSales || show62 || show73 ? (
-        <p className="tax-return-actions">
-          <button type="submit" className="btn-primary" disabled={!dirty}>
-            {t('common.save')}
-          </button>
-          {saved && !dirty ? <span className="muted">{t('taxReturn.fact.saved')}</span> : null}
-        </p>
-      ) : null}
+      <p className="tax-return-actions">
+        <button type="submit" className="btn-primary" disabled={!dirty}>
+          {t('common.save')}
+        </button>
+        {saved && !dirty ? <span className="muted">{t('taxReturn.fact.saved')}</span> : null}
+      </p>
     </form>
   )
 }

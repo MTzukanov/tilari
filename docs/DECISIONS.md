@@ -707,6 +707,12 @@ correction would change the open year's income statement lines. The rental-objec
 - **Rows from a broker come as pasted text** (2026-11-02). Tilari reads no broker's files (SCOPE.md: bank and CSV
   importers stay outside). 8A takes rows pasted or read from a file in the form's own columns, which any spreadsheet
   can make; tilari-bank-import writes them for Nordnet. A Finnish business ID typed once is kept by name.
+- **The calculation is kept with the 6B, not as it** (2026-11-02). The owner wants the result kept for later
+  reference. It is a PDF on a Liitetieto voucher, like the rental letters, linked to the period's 6B row with the flag
+  `calculation`, so the row and the deadline wait for the filed return. The figures stay in the voucher's file, not in
+  `TilariData` (ADR-023).
+- **A check says where it is fixed** (owner, 2026-11-02). The list's heading is text, not a pill, and each item links
+  to its tab and section.
 - **OmaVero's wording in the UI.** Vero's file codes appear only in code and the file: OmaVero does not show them.
 - **A file is only called ready when complete.** Forms in the same file must exist, since a corrected return replaces
   the earlier one. It can still be format-checked at every step.

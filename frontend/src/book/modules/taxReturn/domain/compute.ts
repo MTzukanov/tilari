@@ -39,6 +39,7 @@ import {
   debtTerm,
   isBankAccount,
   placeBalanceSheet,
+  placeByName,
   placeIncomeStatement,
   type Placement,
 } from './mapping'
@@ -100,7 +101,7 @@ function line(account: AccountRow, cents: number, placement: Placement): Account
     name: account.name,
     cents,
     source: placement.source,
-    custom: placement.source === 'chart' && !STANDARD_ACCOUNTS.has(account.account),
+    custom: (placement.source === 'chart' || placement.source === 'name') && !STANDARD_ACCOUNTS.has(account.account),
   }
 }
 
@@ -136,7 +137,10 @@ export function computeTaxReturn(db: SqliteDb, ends: string, options: ComputeOpt
     if (!credit && !account.d) continue
     bookResult += credit
     if (!credit) continue
-    const placement = placeIncomeStatement(account.account, account.type, overrides)
+    let placement = placeIncomeStatement(account.account, account.type, overrides)
+    if (placement.source === 'chart' && !STANDARD_ACCOUNTS.has(account.account)) {
+      placement = placeByName(account.account, account.type, account.name) ?? placement
+    }
     if (placement.code === SALE) {
       saleNet += credit
       saleLines.push(line(account, credit, placement))

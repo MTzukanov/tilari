@@ -1,43 +1,52 @@
 import { useI18n } from '../../../i18n'
 import { Pill, type PillTone } from '../../../shared/Pill'
-import { fieldName, type CheckView, type TaxReturnView } from '../api'
-import { formatDay, formatFigure } from './format'
+import type { CheckView, TaxReturnView } from '../api'
+import { checkText, checksTitle, passedText } from './checkText'
+import { checkJump, type Jump } from './jump'
 
 const TONE: Record<CheckView['state'], PillTone> = { ok: 'ok', warn: 'warn', crit: 'crit' }
 
-function params(check: CheckView): Record<string, string | number> {
-  const out: Record<string, string | number> = {}
-  if (check.cents != null) out.amount = formatFigure(check.cents)
-  if (check.count != null) out.count = check.count
-  if (check.date) out.date = formatDay(check.date)
-  if (check.codes) out.fields = check.codes.map(fieldName).join(', ')
-  return out
+/** One thing to fix or look at; its text takes the owner where it is fixed. */
+export function IssueRow({ tone, label, text, jump, onJump }: { tone: PillTone; label: string; text: string; jump: Jump | null; onJump: (jump: Jump) => void }) {
+  return (
+    <li>
+      <Pill tone={tone}>{label}</Pill>
+      {jump ? (
+        <button type="button" className="btn-link tax-return-jump" onClick={() => onJump(jump)}>
+          {text}
+        </button>
+      ) : (
+        <span>{text}</span>
+      )}
+    </li>
+  )
 }
 
 /** Every reconciliation, exact to the cent. A problem comes first, passed ones stay short. */
-export function Checks({ view }: { view: TaxReturnView }) {
+export function Checks({ view, onJump }: { view: TaxReturnView; onJump: (jump: Jump) => void }) {
   const { t } = useI18n()
   const open = view.checks.filter((check) => check.state !== 'ok')
-  const passed = view.checks.filter((check) => check.state === 'ok')
-  const blocked = view.checks.some((check) => check.state === 'crit')
+  const passed = passedText(t, view.checks)
   return (
     <section className="tax-return-checks" aria-label={t('taxReturn.checks.title')}>
-      <p>
-        <Pill tone={blocked ? 'crit' : open.length ? 'warn' : 'ok'}>{t(blocked ? 'taxReturn.checks.blocked' : open.length ? 'taxReturn.checks.review' : 'taxReturn.checks.clean')}</Pill>
-      </p>
+      <h3 className="tax-return-checks-title">{checksTitle(t, view.checks)}</h3>
       {open.length ? (
         <ul className="tax-return-check-list">
           {open.map((check) => (
-            <li key={`${check.key}-${check.codes?.join() ?? ''}`}>
-              <Pill tone={TONE[check.state]}>{t(`taxReturn.state.${check.state}`)}</Pill>
-              <span>{t(`taxReturn.check.${check.key}`, params(check))}</span>
-            </li>
+            <IssueRow
+              key={`${check.key}-${check.codes?.join() ?? ''}`}
+              tone={TONE[check.state]}
+              label={t(`taxReturn.state.${check.state}`)}
+              text={checkText(t, check)}
+              jump={checkJump(check)}
+              onJump={onJump}
+            />
           ))}
         </ul>
       ) : null}
-      {passed.length ? (
+      {passed ? (
         <p className="muted tax-return-passed">
-          {t('taxReturn.checks.passed')}: {[...new Set(passed.map((check) => t(`taxReturn.checkOk.${check.key}`)))].join(', ')}
+          {t('taxReturn.checks.passed')}: {passed}
         </p>
       ) : null}
     </section>

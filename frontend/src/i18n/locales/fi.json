@@ -1713,7 +1713,8 @@
         "draft": "Luonnos",
         "file_missing": "Tiedosto poistettu",
         "ok": "OK"
-      }
+      },
+      "calculation": "Laskelma"
     },
     "upload": {
       "date": "Asiakirjan päivä",
@@ -1858,8 +1859,8 @@
       "unplaced_one": "{count} tili ilman kenttää. Valitse sille kenttä alta.",
       "unanswered": "{count} OmaVeron kysymystä on vastaamatta. Vastaa niihin kohdassa Täytettävät tiedot.",
       "unanswered_one": "{count} OmaVeron kysymys on vastaamatta. Vastaa siihen kohdassa Täytettävät tiedot.",
-      "custom_accounts": "{count} tiliä on lisätty kirjanpitoon vakiotilikartan ulkopuolelta. Tilari päätteli niiden kentän tilinumerosta, joten se voi olla väärä. Vahvista tai vaihda kenttä alta.",
-      "custom_accounts_one": "{count} tili on lisätty kirjanpitoon vakiotilikartan ulkopuolelta. Tilari päätteli sen kentän tilinumerosta, joten se voi olla väärä. Vahvista tai vaihda kenttä alta.",
+      "custom_accounts": "{count} tiliä on lisätty kirjanpitoon vakiotilikartan ulkopuolelta. Tilari päätteli niiden kentän tilinumerosta tai nimestä, joten se voi olla väärä. Vahvista tai vaihda kenttä alta.",
+      "custom_accounts_one": "{count} tili on lisätty kirjanpitoon vakiotilikartan ulkopuolelta. Tilari päätteli sen kentän tilinumerosta tai nimestä, joten se voi olla väärä. Vahvista tai vaihda kenttä alta.",
       "result_ties": "Lomakkeen kirjanpitoluvut eroavat kirjanpidon tuloksesta {amount} euroa.",
       "net_wealth": "Nettovarallisuus eroaa omasta pääomasta {amount} euroa.",
       "estimate": "Elinkeinotoiminnan tulos eroaa tuloverolaskelmasta {amount} euroa.",
@@ -1888,7 +1889,7 @@
       "net_wealth": "nettovarallisuus ja oma pääoma",
       "estimate": "tuloverolaskelma",
       "sale_gap": "myyntivoitot ja -tappiot",
-      "form8a_gap": "arvopaperit ja lomake 8A",
+      "form8a_gap": "{fields} ja lomake 8A",
       "form62_tax": "verotuksen poistot ja lomake 62",
       "form62_book": "kirjanpidon poistot ja lomake 62",
       "form73_gap": "osingot ja lomake 73",
@@ -2020,8 +2021,23 @@
       "pasteResult_one": "Luettiin {count} rivi.",
       "pasteKept": "Y-tunnus säilyi {count} riville.",
       "pasteKept_one": "Y-tunnus säilyi {count} riville.",
-      "pasteSkipped": "Ohitettiin rivit, joita ei voitu lukea: {lines}."
+      "pasteSkipped": "Ohitettiin rivit, joita ei voitu lukea: {lines}.",
+      "notNeeded": "ei tarvita näillä luvuilla",
+      "dividendsTaxFree": "Lomaketta ei tarvita, koska vastasit kohdassa Täytettävät tiedot, että kaikki osinkotulot ovat Suomesta saatuja ja verovapaita.",
+      "dividendsNone": "Kentässä {field} ei ole euroja, joten lomaketta ei tarvita. Jos yhtiö on saanut osinkoja, valitse niiden tilille kenttä {field}.",
+      "toFigures": "Avaa OmaVero-luvut"
     },
-    "rowHint": "Avaa rivi nähdäksesi tilit, joista luku koostuu."
+    "rowHint": "Avaa rivi nähdäksesi tilit, joista luku koostuu.",
+    "calc": {
+      "store": "Tallenna laskelma asiakirjoihin",
+      "stored": "Laskelma on tallennettu PDF:nä Yhtiö-sivulle kohtaan Veroilmoitus 6B. Se ei merkitse ilmoitusta annetuksi.",
+      "heading": "Veroilmoituksen laskelma {year}",
+      "title": "Veroilmoituksen laskelma {year}, laadittu {date}",
+      "made": "Laadittu {date} kirjanpidon kirjatuista tositteista. Ilmoitin-tiedoston henkilötunnukset eivät ole mukana.",
+      "figures": "Luvut ja tilit",
+      "figuresLead": "Jokaisen kentän alla ovat tilit, joista sen luku tulee.",
+      "priorResults": "Aiempien tilikausien tulokset",
+      "page": "Sivu {page}/{pages}"
+    }
   }
 }

@@ -154,12 +154,17 @@ function rowText(row: RowView): string | null {
   return `${row.label}: ${plainAmount(row.book_cents)}${mark}`
 }
 
-export function omaVeroText(view: TaxReturnView): string {
+/** The return's text in its parts: who and when, the facts before the figures, the figures, and the rest. */
+export type OmaVeroParts = { title: string[]; head: string[]; figures: string[]; rest: string[] }
+
+export function omaVeroParts(view: TaxReturnView): OmaVeroParts {
   const { inputs, values } = view
-  const out: string[] = [
+  const title = [
     'Elinkeinotoiminnan veroilmoitus - yhteisö (6B)',
     `${view.company.name}, ${view.company.business_id}`,
     `Tilikausi ${fiDate(view.starts)} - ${fiDate(view.ends)}`,
+  ]
+  let out: string[] = [
     '',
     'Lisätietojen antajan yhteystiedot',
     `Nimi: ${view.company.contact_name}`,
@@ -198,7 +203,9 @@ export function omaVeroText(view: TaxReturnView): string {
     )
   }
   out.push(`Yhtiön hallussa olevien omien osakkeiden lukumäärä tilikauden päättyessä: ${inputs.own_shares}`)
+  const head = out
 
+  out = []
   for (const group of view.groups) {
     const lines = group.rows.flatMap((row) => rowText(row) ?? [])
     const totals = group.totals.filter((total) => total.cents || total.code === 354 || total.code === 397 || total.code === 435 || total.code === 460 || total.code === 478)
@@ -207,8 +214,9 @@ export function omaVeroText(view: TaxReturnView): string {
   }
   if (values[504]) out.push(`Erät, joita ei oteta huomioon tappiota vahvistettaessa: ${plainAmount(values[504])}`)
   out.push('', 'Kaikki muut rahakentät: 0,00')
+  const figures = out
 
-  out.push('', 'Kysymykset')
+  out = ['', 'Kysymykset']
   for (const answer of ANSWERS) {
     const value = inputs.answers[answer.key]
     out.push(`${answer.label} ${value == null ? 'täytä itse' : yesNo(value)}`)
@@ -226,5 +234,10 @@ export function omaVeroText(view: TaxReturnView): string {
   const forms = view.forms.map((f) => f.form)
   out.push('', `Liitelomakkeet ja muut ilmoitukset: ${forms.length ? forms.join(', ') : 'ei lukujen perusteella'}`)
   out.push(...form62Text(view), ...form73Text(view), ...form8aText(view), ...form71bText(view))
-  return out.join('\n')
+  return { title, head, figures, rest: out }
+}
+
+export function omaVeroText(view: TaxReturnView): string {
+  const { title, head, figures, rest } = omaVeroParts(view)
+  return [...title, ...head, ...figures, ...rest].join('\n')
 }

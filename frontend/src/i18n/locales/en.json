@@ -1713,7 +1713,8 @@
         "draft": "Draft",
         "file_missing": "File deleted",
         "ok": "OK"
-      }
+      },
+      "calculation": "Calculation"
     },
     "upload": {
       "date": "Document's date",
@@ -1858,8 +1859,8 @@
       "unplaced_one": "{count} account has no field. Choose one below.",
       "unanswered": "{count} OmaVero questions are unanswered. Answer them under Facts to fill in.",
       "unanswered_one": "{count} OmaVero question is unanswered. Answer it under Facts to fill in.",
-      "custom_accounts": "{count} accounts were added to this book outside the standard chart. Tilari worked out their field from the account number, so it may be wrong. Confirm or change it below.",
-      "custom_accounts_one": "{count} account was added to this book outside the standard chart. Tilari worked out its field from the account number, so it may be wrong. Confirm or change it below.",
+      "custom_accounts": "{count} accounts were added to this book outside the standard chart. Tilari worked out their field from the account number or name, so it may be wrong. Confirm or change it below.",
+      "custom_accounts_one": "{count} account was added to this book outside the standard chart. Tilari worked out its field from the account number or name, so it may be wrong. Confirm or change it below.",
       "result_ties": "The form's book figures differ from the book's result by {amount} euros.",
       "net_wealth": "Net wealth differs from equity by {amount} euros.",
       "estimate": "The business result differs from the income tax calculation by {amount} euros.",
@@ -1888,7 +1889,7 @@
       "net_wealth": "net wealth and equity",
       "estimate": "income tax calculation",
       "sale_gap": "sale gains and losses",
-      "form8a_gap": "securities and form 8A",
+      "form8a_gap": "{fields} and form 8A",
       "form62_tax": "tax depreciation and form 62",
       "form62_book": "book depreciation and form 62",
       "form73_gap": "dividends and form 73",
@@ -2020,8 +2021,23 @@
       "pasteResult_one": "Read {count} row.",
       "pasteKept": "The business ID was kept for {count} rows.",
       "pasteKept_one": "The business ID was kept for {count} row.",
-      "pasteSkipped": "Skipped the lines that could not be read: {lines}."
+      "pasteSkipped": "Skipped the lines that could not be read: {lines}.",
+      "notNeeded": "not needed with these figures",
+      "dividendsTaxFree": "The form is not needed: under Facts to fill in you answered that all dividend income is from Finland and tax-free.",
+      "dividendsNone": "The field {field} holds no euros, so the form is not needed. If the company received dividends, choose the field {field} for their account.",
+      "toFigures": "Open the OmaVero numbers"
     },
-    "rowHint": "Open a row to see the accounts behind the figure."
+    "rowHint": "Open a row to see the accounts behind the figure.",
+    "calc": {
+      "store": "Save the calculation to documents",
+      "stored": "The calculation is saved as a PDF on the Company page under Tax return 6B. It does not mark the return as filed.",
+      "heading": "Tax return calculation {year}",
+      "title": "Tax return calculation {year}, made {date}",
+      "made": "Made {date} from the posted vouchers of the book. The personal IDs of the Ilmoitin file are not in it.",
+      "figures": "Figures and accounts",
+      "figuresLead": "Under each field are the accounts its figure comes from.",
+      "priorResults": "Results of earlier periods",
+      "page": "Page {page}/{pages}"
+    }
   }
 }

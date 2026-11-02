@@ -64,14 +64,17 @@ export function DocumentRow({
   // A closed year keeps the document's own date on the link only: say whose date this is.
   const ownDate = !gone && doc.date && doc.date !== doc.voucher_date ? t('company.docDate', { date: formatDate(doc.date) }) : null
   const problem = doc.state === 'ok' ? null : <Pill tone="crit">{t(`company.link.state.${doc.state}`)}</Pill>
+  // A calculation is kept with the slot's document and does not count as it.
+  const calculation = doc.calculation ? <Pill tone="neutral">{t('company.link.calculation')}</Pill> : null
   return (
     <DocLine
       voucher={gone ? null : <OpenVoucher voucher={{ ...doc, date: doc.voucher_date }} actions={actions} />}
       title={gone ? <span className="muted">{t('company.link.gone', { id: doc.voucher_id })}</span> : doc.title || voucherTypeName(doc.type)}
       mark={
-        ownDate || problem ? (
+        ownDate || calculation || problem ? (
           <>
             {ownDate}
+            {calculation}
             {problem}
           </>
         ) : null
