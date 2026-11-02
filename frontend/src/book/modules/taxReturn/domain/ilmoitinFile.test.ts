@@ -211,11 +211,8 @@ describe('what stops the file', () => {
 
 describe('what says the file is not ready to send, while it can still be checked', () => {
   it('a form that belongs in the same file and is not built yet', async () => {
-    const f = await buildTaxFixture(2026)
-    f.post('2026-02-01', [[1910, 10_000, 0], [9000, 0, 10_000]])
-    f.inputs(complete)
-    const file = ilmoitinFile(f.view(), { ids: [ID], now: NOW })
-    expect(file.notices).toContainEqual({ key: 'form', form: '73' })
+    const file = ilmoitinFile(await simpleBook(2026, { ...complete, answers: { ...ALL_NO, form_70: true } }), { ids: [ID], now: NOW })
+    expect(file.notices).toContainEqual({ key: 'form', form: '70' })
     expect(file.bytes).not.toBeNull()
   })
 

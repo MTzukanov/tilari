@@ -6,7 +6,7 @@ import { ANSWERS, openAnswers, type DistributionInput, type ShareholderInput, ty
 import { formatDay } from './format'
 
 /** Two choices and neither preselected, so a question nobody has considered cannot pass for a no. */
-function YesNo({ question, value, onChange }: { question: string; value: boolean | null | undefined; onChange: (value: boolean) => void }) {
+export function YesNo({ question, value, onChange }: { question: string; value: boolean | null | undefined; onChange: (value: boolean) => void }) {
   const { t } = useI18n()
   const name = useId()
   return (

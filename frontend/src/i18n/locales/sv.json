@@ -1877,7 +1877,11 @@
       "form62_tax": "Skattemässiga avskrivningar på blankett 62 och Vähennettävät poistot skiljer sig med {amount} euro.",
       "form62_book": "Bokföringens avskrivningar på blankett 62 och Vähennettävät poistot skiljer sig med {amount} euro.",
       "form62_limit": "Den regelmässiga avskrivningen överskrider Skatteförvaltningens maximibelopp i {count} avsnitt på blankett 62.",
-      "form62_limit_one": "Den regelmässiga avskrivningen överskrider Skatteförvaltningens maximibelopp i {count} avsnitt på blankett 62."
+      "form62_limit_one": "Den regelmässiga avskrivningen överskrider Skatteförvaltningens maximibelopp i {count} avsnitt på blankett 62.",
+      "form73_listed": "Besvara frågan på blankett 73 om bolaget är offentligt noterat. Den finns under Bilagor.",
+      "form73_gap": "Dividenderna på blankett 73 skiljer sig från Saadut osingot ja ylijäämät med {amount} euro. Fördela dividenderna under Bilagor.",
+      "form73_tax": "Den skattepliktiga andelen som skrivits in för hand skiljer sig från den på blankett 73 med {amount} euro.",
+      "tax_free_answer": "Du svarade att alla dividendinkomster kommer från Finland och är skattefria, men skattepliktiga eller utländska dividender uppgår till {amount} euro."
     },
     "checkOk": {
       "result_ties": "bokföringens resultat",
@@ -1886,7 +1890,9 @@
       "sale_gap": "överlåtelsevinster och -förluster",
       "form8a_gap": "värdepapper och blankett 8A",
       "form62_tax": "skattemässiga avskrivningar och blankett 62",
-      "form62_book": "bokföringens avskrivningar och blankett 62"
+      "form62_book": "bokföringens avskrivningar och blankett 62",
+      "form73_gap": "dividender och blankett 73",
+      "form73_tax": "skattepliktiga dividender och blankett 73"
     },
     "fact": {
       "lead": "Bokföringen innehåller inte dessa. De sparas i bokföringsfilen. Personbeteckningen sparas inte.",
@@ -1951,7 +1957,9 @@
       "holding_cost": "Anskaffningsutgiften på blankett 8A är negativ: {row}.",
       "sale_fields": "Namn eller datum saknas på en rad på blankett 71B: {row}.",
       "sale_id": "Koden på blankett 71B motsvarar inte sin typ: {row}.",
-      "sale_share": "Ägarandelen på blankett 71B duger inte: {row}."
+      "sale_share": "Ägarandelen på blankett 71B duger inte: {row}.",
+      "form73_listed": "Besvara frågan på blankett 73 om bolaget är offentligt noterat.",
+      "form73_ownership": "Ägarandelen på blankett 73 duger inte: {row}. Högst 100, två decimaler."
     },
     "notice": {
       "form": "Blankett {form} hör till samma fil och skapas inte ännu.",
@@ -1984,9 +1992,9 @@
     },
     "attached": {
       "lead": "De här blanketterna hör till skattedeklarationen. De ingår både i MinSkatt-texten och i Ilmoitin-filen.",
-      "none": "Siffrorna kräver inte blanketterna 8A, 71B eller 62.",
+      "none": "Siffrorna kräver inte blanketterna 8A, 71B, 73 eller 62.",
       "holdingsEra": "Anskaffningsutgiften kommer från balansposten. Rader med samma namn och FO-nummer blir en rad på blanketten, så skriv antalet bara på en.",
-      "holdingsTyped": "De här värdepapperen finns inte styckvis i bokföringen, så skriv raderna själv.",
+      "holdingsTyped": "De här värdepapperen finns inte styckvis i bokföringen, så skriv raderna själv eller klistra in dem från en tabell.",
       "fromEra": "Balanspost: {text}",
       "addRow": "Lägg till rad",
       "field": "{field}: {amount} euro",
@@ -2001,7 +2009,18 @@
       "showAll": "Visa alla avsnitt",
       "fromLedger": "Enligt bokföringen",
       "housingValue": "Bostadsaktier som förvärvats 2006 eller senare har inget separat jämförelsevärde, så lämna det tomt.",
-      "noFinnishId": "Om bolaget saknar finskt FO-nummer, skriv 0000000-0: MinSkatt godtar inte ett tomt fält."
+      "noFinnishId": "Om bolaget saknar finskt FO-nummer, skriv 0000000-0: MinSkatt godtar inte ett tomt fält.",
+      "dividendsLead": "I bokföringen är dividenderna en siffra. Fördela dem enligt betalarens hemland och skattebehandling: till exempel är en dividend från ett börsbolag skattepliktig när bolaget äger mindre än 10 % av det. Den skattepliktiga andelen förs härifrån till 6B.",
+      "dividendsLeft": "{amount} euro ofördelat",
+      "pasteOpen": "Klistra in rader från en tabell",
+      "pasteLead": "Ett värdepapper per rad, kolumnerna i blankettens ordning: namn, FO-nummer, antal, anskaffningsutgift och jämförelsevärde per styck, vid behov även jämförelsevärde totalt. Kolumnerna skiljs åt med tabb, som när man kopierar från en tabell, eller med semikolon. Raderna ersätter gruppens handskrivna rader. Ett tomt FO-nummer behålls från en tidigare rad med samma namn.",
+      "pasteFile": "Eller läs från en fil",
+      "pasteReplace": "Ersätt de handskrivna raderna",
+      "pasteResult": "{count} rader lästes.",
+      "pasteResult_one": "{count} rad lästes.",
+      "pasteKept": "FO-numret behölls för {count} rader.",
+      "pasteKept_one": "FO-numret behölls för {count} rad.",
+      "pasteSkipped": "Rader som inte kunde läsas hoppades över: {lines}."
     },
     "rowHint": "Öppna en rad för att se kontona bakom siffran."
   }

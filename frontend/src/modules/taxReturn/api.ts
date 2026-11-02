@@ -7,10 +7,14 @@ export type {
   CheckView,
   DebtTerm,
   DistributionInput,
+  DividendClassView,
+  DividendInput,
+  Form73Input,
   Form62Row,
   Form62Section,
   FormNeed,
   GroupView,
+  HoldingGroup,
   HoldingGroupView,
   HoldingInput,
   HoldingRow,
@@ -24,6 +28,8 @@ export type {
 export { ANSWERS, BALANCE_GROUPS, PNL_GROUPS, fieldName, openAnswers } from '../../book/modules/taxReturn/domain/fields6b'
 export { SALE, type Target } from '../../book/modules/taxReturn/domain/mapping'
 export { saleResult } from '../../book/modules/taxReturn/domain/form71b'
+export { computeForm73, emptyDividend } from '../../book/modules/taxReturn/domain/form73'
+export { parseHoldingTable } from '../../book/modules/taxReturn/domain/form8a'
 export { ilmoitinFile, type FileNotice, type FileProblem, type FileRemark } from '../../book/modules/taxReturn/domain/ilmoitinFile'
 export { omaVeroText, typedAmount } from '../../book/modules/taxReturn/domain/omaVeroText'
 

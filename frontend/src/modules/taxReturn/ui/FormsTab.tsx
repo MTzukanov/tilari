@@ -2,8 +2,25 @@ import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../../i18n'
 import { Pill } from '../../../shared/Pill'
 import { formatEurInput, parseEurInput, sanitizeEurInput } from '../../../shared/money'
-import { fieldName, saleResult, type Form62Section, type HoldingGroupView, type HoldingInput, type SaleIdType, type SaleInput, type TaxReturnInputs, type TaxReturnView } from '../api'
-import { EurField } from './FactsTab'
+import {
+  computeForm73,
+  emptyDividend,
+  fieldName,
+  parseHoldingTable,
+  saleResult,
+  type DividendClassView,
+  type DividendInput,
+  type Form62Section,
+  type Form73Input,
+  type HoldingGroup,
+  type HoldingGroupView,
+  type HoldingInput,
+  type SaleIdType,
+  type SaleInput,
+  type TaxReturnInputs,
+  type TaxReturnView,
+} from '../api'
+import { EurField, YesNo } from './FactsTab'
 import { CopyFigure } from './FiguresTab'
 import { formatFigure } from './format'
 
@@ -175,7 +192,79 @@ function Section62({ section, typed, onChange }: { section: Form62Section; typed
   )
 }
 
-/** Forms 8A, 71B and 62: what the ledger gives, what the owner adds, and what is left to the cent. */
+function DividendFields({ row, onChange }: { row: DividendClassView; onChange: (next: Partial<DividendInput>) => void }) {
+  return (
+    <div className="tax-return-attached-row">
+      <span className="tax-return-dividend-title">{row.title}</span>
+      <EurField label="Osingot ja ylijäämät yhteensä" cents={row.cents} onChange={(cents) => onChange({ cents })} />
+      {row.codes.listed != null ? (
+        <label className="tax-return-toggle">
+          <input type="checkbox" checked={row.listed} onChange={(e) => onChange({ listed: e.target.checked })} /> Jakajayhtiö on listattu
+        </label>
+      ) : (
+        <span />
+      )}
+      {row.codes.ownership != null ? (
+        <label>
+          Omistusosuus (%)
+          <input type="text" inputMode="decimal" value={row.ownership} onChange={(e) => onChange({ ownership: e.target.value })} />
+        </label>
+      ) : null}
+    </div>
+  )
+}
+
+/** Rows copied from a spreadsheet or read from a file replace the group's typed rows. */
+function PasteRows({ onRows }: { onRows: (text: string) => { count: number; kept: number; skipped: number[] } }) {
+  const { t } = useI18n()
+  const [text, setText] = useState('')
+  const [result, setResult] = useState<{ count: number; kept: number; skipped: number[] } | null>(null)
+  return (
+    <details className="tax-return-paste">
+      <summary>{t('taxReturn.attached.pasteOpen')}</summary>
+      <p className="muted">{t('taxReturn.attached.pasteLead')}</p>
+      <textarea
+        rows={6}
+        value={text}
+        aria-label={t('taxReturn.attached.pasteOpen')}
+        onChange={(e) => {
+          setText(e.target.value)
+          setResult(null)
+        }}
+      />
+      <p className="tax-return-paste-actions">
+        <label>
+          {t('taxReturn.attached.pasteFile')}
+          <input
+            type="file"
+            accept=".tsv,.csv,.txt,text/plain,text/tab-separated-values,text/csv"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              void file.text().then((content) => {
+                setText(content)
+                setResult(null)
+              })
+              e.target.value = ''
+            }}
+          />
+        </label>
+        <button type="button" className="btn-secondary" disabled={!text.trim()} onClick={() => setResult(onRows(text))}>
+          {t('taxReturn.attached.pasteReplace')}
+        </button>
+      </p>
+      {result ? (
+        <p className="muted" role="status">
+          {t('taxReturn.attached.pasteResult', { count: result.count })}
+          {result.kept ? ` ${t('taxReturn.attached.pasteKept', { count: result.kept })}` : ''}
+          {result.skipped.length ? ` ${t('taxReturn.attached.pasteSkipped', { lines: result.skipped.join(', ') })}` : ''}
+        </p>
+      ) : null}
+    </details>
+  )
+}
+
+/** Forms 8A, 71B, 73 and 62: what the ledger gives, what the owner adds, and what is left to the cent. */
 export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (inputs: TaxReturnInputs) => Promise<void> }) {
   const { t } = useI18n()
   const fromView = () => view.form8a.groups.flatMap((group) => group.rows.map(asInput))
@@ -187,6 +276,7 @@ export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
   const [holdings, setHoldings] = useState<HoldingInput[]>(fromView)
   const [sales, setSales] = useState<SaleInput[]>(salesFromView)
   const [form62, setForm62] = useState<Record<string, number>>(view.inputs.form62)
+  const [form73, setForm73] = useState<Form73Input>(view.inputs.form73)
   const [dirty, setDirty] = useState(false)
   const [saved, setSaved] = useState(false)
   const [showAll62, setShowAll62] = useState(false)
@@ -197,12 +287,13 @@ export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
     setHoldings(fromView())
     setSales(salesFromView())
     setForm62(view.inputs.form62)
+    setForm73(view.inputs.form73)
     setDirty(false)
     setRevision((n) => n + 1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view])
 
-  const next = (): TaxReturnInputs => ({ ...view.inputs, holdings, sale_rows: sales, form62 })
+  const next = (): TaxReturnInputs => ({ ...view.inputs, holdings, sale_rows: sales, form62, form73 })
 
   // Leaving the tab keeps what was typed, so moving to the file does not lose it.
   const pending = useRef<TaxReturnInputs | null>(null)
@@ -211,7 +302,7 @@ export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
   useEffect(() => {
     pending.current = dirty ? next() : null
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dirty, holdings, sales, form62])
+  }, [dirty, holdings, sales, form62, form73])
   useEffect(
     () => () => {
       if (pending.current) void save.current(pending.current)
@@ -241,12 +332,28 @@ export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
     touch()
   }
 
+  const setDividend = (row: DividendClassView, patch: Partial<DividendInput>) => {
+    setForm73((old) => ({ ...old, classes: { ...old.classes, [row.key]: { ...(old.classes[row.key] ?? emptyDividend()), ...patch } } }))
+    touch()
+  }
+  const pasteRows = (group: HoldingGroup, text: string) => {
+    const pasted = parseHoldingTable(text, group, holdings)
+    if (pasted.rows.length) {
+      setHoldings((rows) => [...rows.filter((row) => row.group !== group || row.era != null), ...pasted.rows])
+      setRevision((n) => n + 1)
+      touch()
+    }
+    return { count: pasted.rows.length, kept: pasted.kept_ids, skipped: pasted.skipped }
+  }
+
   const groups = view.form8a.groups.filter((group) => group.rows.length || group.field_cents)
   const needs = (form: string) => view.forms.some((item) => item.form === form)
   const fixedSales = view.forms.some((item) => item.form === '71B' && !item.built)
   const showSales = needs('71B') || view.form71b.rows.length > 0 || view.form71b.suggestions.length > 0 || sales.length > 0
   const show62 = needs('62') || view.form62.used
   const sections62 = showAll62 ? view.form62.sections : view.form62.sections.filter((section) => section.has_values)
+  const dividends = computeForm73(form73, view.form73.ledger_cents)
+  const show73 = needs('73') || view.form73.typed || dividends.typed
 
   return (
     <form
@@ -257,7 +364,7 @@ export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
       }}
     >
       <p className="muted">{t('taxReturn.attached.lead')}</p>
-      {!groups.length && !showSales && !show62 ? <p className="muted">{t('taxReturn.attached.none')}</p> : null}
+      {!groups.length && !showSales && !show62 && !show73 ? <p className="muted">{t('taxReturn.attached.none')}</p> : null}
 
       {show62 ? (
         <fieldset className="tax-return-fieldset">
@@ -269,6 +376,35 @@ export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
           <label className="tax-return-toggle">
             <input type="checkbox" checked={showAll62} onChange={(e) => setShowAll62(e.target.checked)} /> {t('taxReturn.attached.showAll')}
           </label>
+        </fieldset>
+      ) : null}
+
+      {show73 ? (
+        <fieldset className="tax-return-fieldset">
+          <legend>{t('taxReturn.form.73', { form: '73' })}</legend>
+          <p className="muted">{t('taxReturn.attached.dividendsLead')}</p>
+          <YesNo
+            question="Onko yhtiö julkisesti noteerattu?"
+            value={form73.company_listed}
+            onChange={(company_listed) => {
+              setForm73((old) => ({ ...old, company_listed }))
+              touch()
+            }}
+          />
+          {dividends.classes.map((row) => (
+            <DividendFields key={`${row.key}-${revision}`} row={row} onChange={(patch) => setDividend(row, patch)} />
+          ))}
+          <p className="tax-return-attached-totals">
+            <span>{t('taxReturn.attached.field', { field: 'Osingot ja ylijäämät yhteensä', amount: formatFigure(dividends.total_cents) })}</span>
+            <span>{t('taxReturn.attached.field', { field: fieldName(337), amount: formatFigure(dividends.ledger_cents) })}</span>
+            <span>{t('taxReturn.attached.field', { field: 'Verovapaa osuus yhteensä', amount: formatFigure(dividends.taxfree_cents) })}</span>
+            <span>{t('taxReturn.attached.field', { field: 'Veronalainen osuus yhteensä', amount: formatFigure(dividends.taxable_cents) })}</span>
+          </p>
+          {dividends.total_cents !== dividends.ledger_cents ? (
+            <p>
+              <Pill tone="crit">{t('taxReturn.attached.dividendsLeft', { amount: formatFigure(dividends.ledger_cents - dividends.total_cents) })}</Pill>
+            </p>
+          ) : null}
         </fieldset>
       ) : null}
 
@@ -310,6 +446,7 @@ export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
                 >
                   {t('taxReturn.attached.addRow')}
                 </button>
+                <PasteRows onRows={(text) => pasteRows(group.key, text)} />
                 <p className="tax-return-attached-totals">
                   <span>{t('taxReturn.attached.field', { field: fieldName(group.field), amount: formatFigure(group.field_cents) })}</span>
                   <span>{t('taxReturn.attached.field', { field: 'Hankintamenot yhteensä', amount: formatFigure(group.cost_cents) })}</span>
@@ -378,7 +515,7 @@ export function FormsTab({ view, onSave }: { view: TaxReturnView; onSave: (input
         </fieldset>
       ) : null}
 
-      {groups.length || showSales || show62 ? (
+      {groups.length || showSales || show62 || show73 ? (
         <p className="tax-return-actions">
           <button type="submit" className="btn-primary" disabled={!dirty}>
             {t('common.save')}

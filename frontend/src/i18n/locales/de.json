@@ -1877,7 +1877,11 @@
       "form62_tax": "Steuerliche Abschreibungen auf Formular 62 und Vähennettävät poistot weichen um {amount} Euro ab.",
       "form62_book": "Buchhalterische Abschreibungen auf Formular 62 und Vähennettävät poistot weichen um {amount} Euro ab.",
       "form62_limit": "Die regelmäßige Abschreibung überschreitet das Maximum der Steuerverwaltung in {count} Abschnitten von Formular 62.",
-      "form62_limit_one": "Die regelmäßige Abschreibung überschreitet das Maximum der Steuerverwaltung in {count} Abschnitt von Formular 62."
+      "form62_limit_one": "Die regelmäßige Abschreibung überschreitet das Maximum der Steuerverwaltung in {count} Abschnitt von Formular 62.",
+      "form73_listed": "Beantworten Sie die Frage auf Formular 73, ob die Gesellschaft börsennotiert ist. Sie steht unter Anlagen.",
+      "form73_gap": "Die Dividenden auf Formular 73 weichen von Saadut osingot ja ylijäämät um {amount} Euro ab. Teilen Sie die Dividenden unter Anlagen auf.",
+      "form73_tax": "Der von Hand eingetragene steuerpflichtige Anteil weicht vom steuerpflichtigen Anteil auf Formular 73 um {amount} Euro ab.",
+      "tax_free_answer": "Sie haben angegeben, dass alle Dividendeneinkünfte aus Finnland stammen und steuerfrei sind, aber steuerpflichtige oder ausländische Dividenden betragen {amount} Euro."
     },
     "checkOk": {
       "result_ties": "Buchergebnis",
@@ -1886,7 +1890,9 @@
       "sale_gap": "Veräußerungsgewinne und -verluste",
       "form8a_gap": "Wertpapiere und Formular 8A",
       "form62_tax": "steuerliche Abschreibungen und Formular 62",
-      "form62_book": "buchhalterische Abschreibungen und Formular 62"
+      "form62_book": "buchhalterische Abschreibungen und Formular 62",
+      "form73_gap": "Dividenden und Formular 73",
+      "form73_tax": "steuerpflichtige Dividenden und Formular 73"
     },
     "fact": {
       "lead": "Diese Angaben stehen nicht in der Buchführung. Sie werden in der Buchführungsdatei gespeichert. Die Personenkennziffer wird nicht gespeichert.",
@@ -1951,7 +1957,9 @@
       "holding_cost": "Die Anschaffungskosten auf Formular 8A sind negativ: {row}.",
       "sale_fields": "Einer Zeile auf Formular 71B fehlt Name oder Datum: {row}.",
       "sale_id": "Die Kennung auf Formular 71B passt nicht zu ihrem Typ: {row}.",
-      "sale_share": "Der Eigentumsanteil auf Formular 71B ist ungültig: {row}."
+      "sale_share": "Der Eigentumsanteil auf Formular 71B ist ungültig: {row}.",
+      "form73_listed": "Beantworten Sie die Frage auf Formular 73, ob die Gesellschaft börsennotiert ist.",
+      "form73_ownership": "Der Eigentumsanteil auf Formular 73 ist ungültig: {row}. Höchstens 100, zwei Dezimalstellen."
     },
     "notice": {
       "form": "Formular {form} gehört in dieselbe Datei und wird noch nicht erzeugt.",
@@ -1984,9 +1992,9 @@
     },
     "attached": {
       "lead": "Diese Formulare gehören zur Steuererklärung. Sie gehen in den OmaVero-Text und in die Ilmoitin-Datei ein.",
-      "none": "Die Zahlen erfordern die Formulare 8A, 71B und 62 nicht.",
+      "none": "Die Zahlen erfordern die Formulare 8A, 71B, 73 und 62 nicht.",
       "holdingsEra": "Die Anschaffungskosten stammen aus dem Bilanzposten. Zeilen mit demselben Namen und derselben Unternehmenskennung ergeben eine Zeile, tragen Sie die Anzahl also nur einmal ein.",
-      "holdingsTyped": "Diese Wertpapiere stehen nicht einzeln in der Buchführung, tragen Sie die Zeilen also selbst ein.",
+      "holdingsTyped": "Diese Wertpapiere stehen nicht einzeln in der Buchführung, tragen Sie die Zeilen also selbst ein oder fügen Sie sie aus einer Tabelle ein.",
       "fromEra": "Bilanzposten: {text}",
       "addRow": "Zeile hinzufügen",
       "field": "{field}: {amount} Euro",
@@ -2001,7 +2009,18 @@
       "showAll": "Alle Abschnitte zeigen",
       "fromLedger": "Laut Buchführung",
       "housingValue": "Wohnungsaktien, die 2006 oder später erworben wurden, haben keinen eigenen Vergleichswert, lassen Sie ihn also leer.",
-      "noFinnishId": "Hat das Unternehmen keine finnische Unternehmenskennung, tragen Sie 0000000-0 ein: OmaVero nimmt kein leeres Feld an."
+      "noFinnishId": "Hat das Unternehmen keine finnische Unternehmenskennung, tragen Sie 0000000-0 ein: OmaVero nimmt kein leeres Feld an.",
+      "dividendsLead": "In der Buchführung sind die Dividenden ein Betrag. Teilen Sie sie nach Sitzstaat des Zahlers und steuerlicher Behandlung auf: die Dividende einer börsennotierten Gesellschaft ist zum Beispiel steuerpflichtig, wenn die Gesellschaft weniger als 10 % daran hält. Der steuerpflichtige Anteil geht von hier in das 6B.",
+      "dividendsLeft": "{amount} Euro nicht aufgeteilt",
+      "pasteOpen": "Zeilen aus einer Tabelle einfügen",
+      "pasteLead": "Ein Wertpapier pro Zeile, die Spalten in der Reihenfolge des Formulars: Name, Unternehmenskennung, Anzahl, Anschaffungskosten und Vergleichswert je Stück, auf Wunsch auch der Vergleichswert insgesamt. Spalten werden durch Tabulatoren getrennt, wie beim Kopieren aus einer Tabelle, oder durch Semikolons. Die Zeilen ersetzen die von Hand eingetragenen Zeilen dieser Gruppe. Eine leere Unternehmenskennung bleibt von einer früheren Zeile gleichen Namens erhalten.",
+      "pasteFile": "Oder aus einer Datei lesen",
+      "pasteReplace": "Eingetragene Zeilen ersetzen",
+      "pasteResult": "{count} Zeilen gelesen.",
+      "pasteResult_one": "{count} Zeile gelesen.",
+      "pasteKept": "Die Unternehmenskennung blieb für {count} Zeilen erhalten.",
+      "pasteKept_one": "Die Unternehmenskennung blieb für {count} Zeile erhalten.",
+      "pasteSkipped": "Nicht lesbare Zeilen wurden übersprungen: {lines}."
     },
     "rowHint": "Öffnen Sie eine Zeile, um die Konten hinter dem Betrag zu sehen."
   }

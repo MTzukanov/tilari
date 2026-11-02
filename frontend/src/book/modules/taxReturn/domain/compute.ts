@@ -30,6 +30,7 @@ import {
 } from './fields6b'
 import { computeForm62, form62Checks } from './form62'
 import { computeForm71B, FIXED_ASSET_SALE_CODES } from './form71b'
+import { computeForm73, DIVIDEND_FIELD, DIVIDEND_TAXABLE_FIELD } from './form73'
 import { computeForm8A } from './form8a'
 import { readInputs, readOverrides, readTerms } from './inputs'
 import {
@@ -41,7 +42,19 @@ import {
   placeIncomeStatement,
   type Placement,
 } from './mapping'
-import type { AccountLine, CheckView, Form62View, Form71bView, Form8aView, FormNeed, GroupView, RowView, TaxReturnInputs, TaxReturnView } from './types'
+import type {
+  AccountLine,
+  CheckView,
+  Form62View,
+  Form71bView,
+  Form73View,
+  Form8aView,
+  FormNeed,
+  GroupView,
+  RowView,
+  TaxReturnInputs,
+  TaxReturnView,
+} from './types'
 
 /** Kitsas's account for a decided dividend; a debit there after the year end is a distribution. */
 const DIVIDEND_ACCOUNT = 2261
@@ -212,6 +225,9 @@ export function computeTaxReturn(db: SqliteDb, ends: string, options: ComputeOpt
   setEquity(previousProfit, 475, 474, previousLines, priorResults)
   setEquity(bookResult, 477, 476, [], null)
 
+  // Once form 73 has amounts, its classes say which part of the dividends is taxable (Vero's guide to 73).
+  const dividendClasses = computeForm73(inputs.form73, 0)
+
   // Final figures: the ledger's, or what the owner typed instead. Half of entertainment is deductible.
   const values: Record<string, number> = {}
   const usedManual: number[] = []
@@ -230,9 +246,16 @@ export function computeTaxReturn(db: SqliteDb, ends: string, options: ComputeOpt
       const draft = drafts.get(row.code)
       const book = pick(row.code, draft?.book ?? 0)
       const taxBase = draft?.taxBase ?? 0
-      const taxComputed = row.code === 368 ? Math.trunc(taxBase / 2) : taxBase
+      const taxComputed =
+        row.code === 368
+          ? Math.trunc(taxBase / 2)
+          : row.code === DIVIDEND_FIELD && dividendClasses.typed
+            ? dividendClasses.taxable_cents
+            : taxBase
       const tax = row.taxCode != null ? pick(row.taxCode, taxComputed) : book
       const typed = inputs.manual[row.code] != null || (row.taxCode != null && inputs.manual[row.taxCode] != null)
+      // Form 73's classes are the owner's word on which dividends are taxable, so that row has nothing left to check.
+      const settled = row.code === DIVIDEND_FIELD && dividendClasses.typed
       return {
         code: row.code,
         tax_code: row.taxCode ?? null,
@@ -241,7 +264,7 @@ export function computeTaxReturn(db: SqliteDb, ends: string, options: ComputeOpt
         tax_cents: tax,
         signed: row.signed,
         state: typed ? 'manual' : book || tax ? 'ledger' : 'zero',
-        check: Boolean(row.check) && !typed && Boolean(book || tax),
+        check: Boolean(row.check) && !typed && !settled && Boolean(book || tax),
         accounts: draft?.accounts ?? [],
         prior_results_cents: draft?.priorResults ?? null,
         manual_only: Boolean(row.manualOnly),
@@ -286,7 +309,8 @@ export function computeTaxReturn(db: SqliteDb, ends: string, options: ComputeOpt
   const accountsIn = (field: number) => placedAccounts.get(field) ?? (drafts.get(field)?.accounts ?? []).map((a) => a.account)
   const form8a = computeForm8A(db, ends, overrides, inputs, values)
   const form62 = computeForm62(db, { starts, ends, inputs, accountsIn })
-  const forms = formsNeeded(values, inputs, form62)
+  const form73: Form73View = { ...dividendClasses, ledger_cents: values[DIVIDEND_FIELD] ?? 0 }
+  const forms = formsNeeded(values, inputs, form62, form73)
 
   const checks = buildChecks(db, {
     starts,
@@ -308,6 +332,8 @@ export function computeTaxReturn(db: SqliteDb, ends: string, options: ComputeOpt
     form8a,
     form71b,
     form62: forms.some((form) => form.form === '62') ? form62 : null,
+    form73,
+    needs73: forms.some((form) => form.form === '73'),
     storedEstimate: period.json.verolaskelma?.tulos_cents ?? null,
     taxBooked: Boolean(period.json.verolaskelma?.booked_at),
   })
@@ -333,6 +359,7 @@ export function computeTaxReturn(db: SqliteDb, ends: string, options: ComputeOpt
     form8a,
     form71b,
     form62,
+    form73,
   }
 }
 
@@ -357,6 +384,8 @@ type CheckInput = {
   form71b: Form71bView
   /** Only when the figures call for the form. */
   form62: Form62View | null
+  form73: Form73View
+  needs73: boolean
   storedEstimate: number | null
   taxBooked: boolean
 }
@@ -440,6 +469,23 @@ function buildChecks(db: SqliteDb, input: CheckInput): CheckView[] {
 
   if (input.form62) checks.push(...form62Checks(input.form62, values))
 
+  const { form73 } = input
+  if (input.needs73) {
+    if (form73.company_listed == null) checks.push({ key: 'form73_listed', state: 'crit' })
+    const gap = form73.total_cents - form73.ledger_cents
+    checks.push({ key: 'form73_gap', state: gap ? 'crit' : 'ok', cents: gap })
+    // Only a typed Veronalainen osuus can differ: otherwise it is the form's.
+    if (form73.typed) {
+      const taxGap = (values[DIVIDEND_TAXABLE_FIELD] ?? 0) - form73.taxable_cents
+      checks.push({ key: 'form73_tax', state: taxGap ? 'crit' : 'ok', cents: taxGap })
+    }
+  }
+  if (input.inputs.answers.all_dividends_tax_free === true) {
+    const otherClasses = form73.classes.filter((row) => row.key !== 'taxfree_fi').reduce((sum, row) => sum + row.cents, 0)
+    const conflict = form73.typed ? otherClasses : (values[DIVIDEND_TAXABLE_FIELD] ?? 0)
+    if (conflict) checks.push({ key: 'tax_free_answer', state: 'crit', cents: conflict })
+  }
+
   if (input.usedManual.length) checks.push({ key: 'manual', state: 'warn', codes: [...input.usedManual] })
   const toCheck = groups.flatMap((g) => g.rows).filter((row) => row.check).map((row) => row.code)
   if (toCheck.length) checks.push({ key: 'to_check', state: 'warn', codes: toCheck })
@@ -449,7 +495,7 @@ function buildChecks(db: SqliteDb, input: CheckInput): CheckView[] {
 
 const FIELD_FORMS: { form: string; codes: number[]; in_file: boolean; built?: boolean }[] = [
   { form: '62', codes: [364, 365, 400, 401, 403, 409], in_file: true, built: true },
-  { form: '73', codes: [337, 338], in_file: true },
+  { form: '73', codes: [337, 338], in_file: true, built: true },
   { form: '8A', codes: [405, 424, 430], in_file: true, built: true },
   { form: '18', codes: [402, 431], in_file: true },
   { form: '71B', codes: [332, 333, 372, 373, 261, 270, 271], in_file: true },
@@ -461,10 +507,15 @@ const FIELD_FORMS: { form: string; codes: number[]; in_file: boolean; built?: bo
 ]
 
 /** Vero's notices in the record description say which fields call for which form. */
-function formsNeeded(values: Record<string, number>, inputs: TaxReturnInputs, form62: Form62View): FormNeed[] {
+function formsNeeded(values: Record<string, number>, inputs: TaxReturnInputs, form62: Form62View, form73: Form73View): FormNeed[] {
   const forms: FormNeed[] = []
   for (const rule of FIELD_FORMS) {
     const codes = rule.codes.filter((code) => values[code])
+    // Only tax-free dividends from Finland need no form 73, and OmaVero asks exactly that.
+    if (rule.form === '73') {
+      if (inputs.answers.all_dividends_tax_free === true) continue
+      if (!codes.length && form73.typed) forms.push({ form: '73', codes: [], built: true, in_file: true })
+    }
     if (!codes.length) continue
     // Only other assets' sections of 71B are produced: fixed-asset shares still go by hand.
     const built = rule.form === '71B' ? !codes.some((code) => FIXED_ASSET_SALE_CODES.includes(code)) : Boolean(rule.built)

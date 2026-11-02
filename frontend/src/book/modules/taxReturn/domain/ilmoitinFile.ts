@@ -6,6 +6,7 @@
 import { isValidFinnishBusinessId } from '../../../businessId'
 import { ANSWERS, PNL_GROUPS, BALANCE_GROUPS, SPEC_YEAR, openAnswers } from './fields6b'
 import { SALE_GAIN_CODES, SALE_LOSS_CODES, SALE_SUMMARY_GAINS, SALE_SUMMARY_RESULT } from './form71b'
+import { FORM_73_LISTED_COMPANY, FORM_73_TAXABLE, FORM_73_TAXFREE, FORM_73_TOTAL } from './form73'
 import { FORM_8A_COST_TOTAL, FORM_8A_VALUE_TOTAL, HOLDING_GROUPS, parseShares, parseUnitValue } from './form8a'
 import { typedAmount } from './omaVeroText'
 import type { SaleRow, TaxReturnView } from './types'
@@ -28,6 +29,8 @@ export type FileProblem =
   | { key: 'answer'; answer: string }
   | { key: 'unanswered'; count: number }
   | { key: 'form62_negative'; row: string }
+  | { key: 'form73_listed' }
+  | { key: 'form73_ownership'; row: string }
   | { key: 'holding_name'; row: string }
   | { key: 'holding_id'; row: string }
   | { key: 'holding_shares'; row: string }
@@ -236,6 +239,27 @@ export function ilmoitinFile(view: TaxReturnView, options: FileOptions): Ilmoiti
         addMoney(row.code, row.cents)
       }
     }
+    add(999, (formNumber += 1))
+  }
+
+  // Form 73 goes in only once it has amounts: until then its check says what is missing.
+  if (view.forms.some((form) => form.form === '73') && view.form73.typed) {
+    formHeader('VSY073')
+    if (view.form73.company_listed == null) problems.push({ key: 'form73_listed' })
+    if (view.form73.company_listed) add(FORM_73_LISTED_COMPANY, 1)
+    for (const row of view.form73.classes) {
+      if (!row.cents) continue
+      if (row.codes.listed != null && row.listed) add(row.codes.listed, 1)
+      addMoney(row.codes.total, row.cents)
+      addMoney(row.codes.share, row.share_cents)
+      if (row.codes.ownership != null && row.ownership) {
+        if (!PERCENT.test(row.ownership)) problems.push({ key: 'form73_ownership', row: row.title })
+        add(row.codes.ownership, row.ownership.replace('.', ','))
+      }
+    }
+    addMoney(FORM_73_TOTAL, view.form73.total_cents)
+    addMoney(FORM_73_TAXFREE, view.form73.taxfree_cents)
+    addMoney(FORM_73_TAXABLE, view.form73.taxable_cents)
     add(999, (formNumber += 1))
   }
 

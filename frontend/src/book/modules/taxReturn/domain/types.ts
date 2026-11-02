@@ -57,6 +57,24 @@ export type SaleInput = {
 
 export type DebtTerm = 'long' | 'short'
 
+/** Form 73's classes: tax-free or taxable, by the payer's country, and dividends from REITs. */
+export type DividendClass = 'taxfree_fi' | 'taxfree_eu' | 'taxfree_other' | 'taxable_fi' | 'taxable_eu' | 'taxable_other' | 'reit'
+
+/** A class of form 73 as typed. */
+export type DividendInput = {
+  cents: number
+  /** Jakajayhtiö on listattu. Off: not listed, or several payers. */
+  listed: boolean
+  /** Omistusosuus (%), as written; empty leaves it out. */
+  ownership: string
+}
+
+export type Form73Input = {
+  /** OmaVero's "Onko yhtiö julkisesti noteerattu?": `null` until answered. */
+  company_listed: boolean | null
+  classes: Partial<Record<DividendClass, DividendInput>>
+}
+
 /** What the book cannot know. Links and inputs only (ADR-023); the personal ID is never here. */
 export type TaxReturnInputs = {
   /** Empty: the book's `VeroYhteysHenkilo` and `VeroYhteysPuhelin`, if Kitsas has them. */
@@ -78,6 +96,7 @@ export type TaxReturnInputs = {
   sale_rows: SaleInput[] | null
   /** Figures typed on form 62, by code, replacing what the ledger gives. */
   form62: Record<string, number>
+  form73: Form73Input
   /** OmaVero's questions, for this period. A question missing here has not been answered. */
   answers: Record<string, boolean>
   /** Hand-entered figures by field code, replacing what the ledger gives. */
@@ -142,6 +161,10 @@ export type CheckKey =
   | 'form62_tax'
   | 'form62_book'
   | 'form62_limit'
+  | 'form73_listed'
+  | 'form73_gap'
+  | 'form73_tax'
+  | 'tax_free_answer'
   | 'manual'
   | 'to_check'
 
@@ -221,6 +244,26 @@ export type Form62Section = { key: string; title: string; rows: Form62Row[]; has
 
 export type Form62View = { sections: Form62Section[]; used: boolean }
 
+export type DividendClassView = DividendInput & {
+  key: DividendClass
+  title: string
+  taxable: boolean
+  codes: { total: number; share: number; listed?: number; ownership?: number }
+  share_cents: number
+}
+
+export type Form73View = {
+  company_listed: boolean | null
+  classes: DividendClassView[]
+  /** Some class has an amount. */
+  typed: boolean
+  total_cents: number
+  taxfree_cents: number
+  taxable_cents: number
+  /** Saadut osingot ja ylijäämät in the 6B's Kirjanpito column, which the total must equal. */
+  ledger_cents: number
+}
+
 export type TaxReturnView = {
   starts: string
   ends: string
@@ -239,4 +282,5 @@ export type TaxReturnView = {
   form8a: Form8aView
   form71b: Form71bView
   form62: Form62View
+  form73: Form73View
 }

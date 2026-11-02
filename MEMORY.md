@@ -7,6 +7,20 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-02 - Form 73, and 8A rows pasted from a spreadsheet
+
+- Form 73 is typed by class, because the ledger has one dividend figure. Its total must equal the 6B's Saadut osingot ja
+  ylijäämät, and its taxable share becomes the 6B's Veronalainen osuus (Vero's guide to 73). A filed return checked
+  against the bank import's year-end report: the class totals were the payer's country sums, all taxable.
+- The book's figure is the one that counts. Nordnet's own EUR for a foreign dividend can differ by cents from the ECB
+  rate the monthly vouchers use, so the bank import splits the booked amounts and takes only the country from Nordnet.
+- 8A's listed securities come by paste (tabs or semicolons, the form's columns) rather than an importer in Tilari
+  (SCOPE.md). tilari-bank-import's `nordnet-tax-forms` writes that file. A pasted row with no business ID keeps the ID
+  of the earlier row with the same name, so Finnish IDs are typed once.
+- Form 73's "Onko yhtiö julkisesti noteerattu?" is a compulsory yes/no like the 6B's questions (owner's rule of
+  2026-11-02); "Jakajayhtiö on listattu" stays a checkbox, as OmaVero's own default reads "Ei tai jakajayhtiöitä on
+  useita".
+
 ## 2026-11-02 - Forms 8A, 71B and 62, and a debt's term by choice
 
 - Back-tested on real filed returns, read in place and printed as pass/fail. It found two things the unit tests had

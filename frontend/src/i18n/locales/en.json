@@ -1877,7 +1877,11 @@
       "form62_tax": "Tax depreciation on form 62 and Vähennettävät poistot differ by {amount} euros.",
       "form62_book": "Book depreciation on form 62 and Vähennettävät poistot differ by {amount} euros.",
       "form62_limit": "Regular depreciation is over the Tax Administration's maximum in {count} sections of form 62.",
-      "form62_limit_one": "Regular depreciation is over the Tax Administration's maximum in {count} section of form 62."
+      "form62_limit_one": "Regular depreciation is over the Tax Administration's maximum in {count} section of form 62.",
+      "form73_listed": "Answer form 73's question whether the company is publicly listed. It is under Attached forms.",
+      "form73_gap": "Dividends on form 73 differ from Saadut osingot ja ylijäämät by {amount} euros. Split the dividends under Attached forms.",
+      "form73_tax": "The taxable share typed by hand differs from the taxable share on form 73 by {amount} euros.",
+      "tax_free_answer": "You answered that all dividend income is from Finland and tax-free, but taxable or foreign dividends come to {amount} euros."
     },
     "checkOk": {
       "result_ties": "book result",
@@ -1886,7 +1890,9 @@
       "sale_gap": "sale gains and losses",
       "form8a_gap": "securities and form 8A",
       "form62_tax": "tax depreciation and form 62",
-      "form62_book": "book depreciation and form 62"
+      "form62_book": "book depreciation and form 62",
+      "form73_gap": "dividends and form 73",
+      "form73_tax": "taxable dividends and form 73"
     },
     "fact": {
       "lead": "The books do not hold these. They are saved in the book file. The personal ID is not saved.",
@@ -1951,7 +1957,9 @@
       "holding_cost": "The cost on form 8A is negative: {row}.",
       "sale_fields": "A row on form 71B has no name or date: {row}.",
       "sale_id": "The ID on form 71B does not match its type: {row}.",
-      "sale_share": "The ownership share on form 71B is not valid: {row}."
+      "sale_share": "The ownership share on form 71B is not valid: {row}.",
+      "form73_listed": "Answer form 73's question whether the company is publicly listed.",
+      "form73_ownership": "The ownership share on form 73 is not valid: {row}. At most 100, two decimals."
     },
     "notice": {
       "form": "Form {form} belongs in the same file and is not generated yet.",
@@ -1984,9 +1992,9 @@
     },
     "attached": {
       "lead": "These forms belong to the tax return. They go into both the OmaVero text and the Ilmoitin file.",
-      "none": "The figures do not call for forms 8A, 71B or 62.",
+      "none": "The figures do not call for forms 8A, 71B, 73 or 62.",
       "holdingsEra": "The cost comes from the balance sheet item. Rows with the same name and business ID make one row on the form, so write the count on only one of them.",
-      "holdingsTyped": "These securities are not in the ledger one by one, so type the rows yourself.",
+      "holdingsTyped": "These securities are not in the ledger one by one, so type the rows yourself or paste them from a spreadsheet.",
       "fromEra": "Balance sheet item: {text}",
       "addRow": "Add a row",
       "field": "{field}: {amount} euros",
@@ -2001,7 +2009,18 @@
       "showAll": "Show all sections",
       "fromLedger": "As in the ledger",
       "housingValue": "Housing shares acquired in 2006 or later have no separate comparison value, so leave it empty.",
-      "noFinnishId": "If the company has no Finnish business ID, write 0000000-0: OmaVero does not accept an empty field."
+      "noFinnishId": "If the company has no Finnish business ID, write 0000000-0: OmaVero does not accept an empty field.",
+      "dividendsLead": "The ledger holds dividends as one figure. Split them by the payer's country and tax treatment: a listed company's dividend, for example, is taxable when the company owns less than 10 % of it. The taxable share goes from here to the 6B.",
+      "dividendsLeft": "{amount} euros not split",
+      "pasteOpen": "Paste rows from a spreadsheet",
+      "pasteLead": "One security per line, columns in the order of the form: name, business ID, count, cost and comparison value per share, and the total comparison value if wanted. Tabs separate the columns, as when copying from a spreadsheet, or semicolons. The rows replace this group's typed rows. An empty business ID is kept from an earlier row of the same name.",
+      "pasteFile": "Or read from a file",
+      "pasteReplace": "Replace the typed rows",
+      "pasteResult": "Read {count} rows.",
+      "pasteResult_one": "Read {count} row.",
+      "pasteKept": "The business ID was kept for {count} rows.",
+      "pasteKept_one": "The business ID was kept for {count} row.",
+      "pasteSkipped": "Skipped the lines that could not be read: {lines}."
     },
     "rowHint": "Open a row to see the accounts behind the figure."
   }

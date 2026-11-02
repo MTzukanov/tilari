@@ -1877,7 +1877,11 @@
       "form62_tax": "Lomakkeen 62 verotuksen poistot ja Vähennettävät poistot eroavat {amount} euroa.",
       "form62_book": "Lomakkeen 62 kirjanpidon poistot ja Vähennettävät poistot eroavat {amount} euroa.",
       "form62_limit": "Säännönmukainen poisto ylittää Verohallinnon enimmäismäärän {count} osiossa lomakkeella 62.",
-      "form62_limit_one": "Säännönmukainen poisto ylittää Verohallinnon enimmäismäärän {count} osiossa lomakkeella 62."
+      "form62_limit_one": "Säännönmukainen poisto ylittää Verohallinnon enimmäismäärän {count} osiossa lomakkeella 62.",
+      "form73_listed": "Vastaa lomakkeen 73 kysymykseen, onko yhtiö julkisesti noteerattu. Se on kohdassa Liitelomakkeet.",
+      "form73_gap": "Lomakkeen 73 osingot yhteensä eroavat kentästä Saadut osingot ja ylijäämät {amount} euroa. Jaa osingot kohdassa Liitelomakkeet.",
+      "form73_tax": "Käsin annettu veronalainen osuus eroaa lomakkeen 73 veronalaisesta osuudesta {amount} euroa.",
+      "tax_free_answer": "Vastasit, että kaikki osinkotulot ovat Suomesta saatuja ja verovapaita, mutta veronalaisia tai ulkomaisia osinkoja on {amount} euroa."
     },
     "checkOk": {
       "result_ties": "kirjanpidon tulos",
@@ -1886,7 +1890,9 @@
       "sale_gap": "myyntivoitot ja -tappiot",
       "form8a_gap": "arvopaperit ja lomake 8A",
       "form62_tax": "verotuksen poistot ja lomake 62",
-      "form62_book": "kirjanpidon poistot ja lomake 62"
+      "form62_book": "kirjanpidon poistot ja lomake 62",
+      "form73_gap": "osingot ja lomake 73",
+      "form73_tax": "veronalaiset osingot ja lomake 73"
     },
     "fact": {
       "lead": "Näitä tietoja ei ole kirjanpidossa. Ne tallentuvat kirjanpitotiedostoon. Henkilötunnusta ei tallenneta.",
@@ -1951,7 +1957,9 @@
       "holding_cost": "Lomakkeen 8A hankintameno on negatiivinen: {row}.",
       "sale_fields": "Lomakkeen 71B riviltä puuttuu nimi tai päivä: {row}.",
       "sale_id": "Lomakkeen 71B tunnus ei vastaa sen tyyppiä: {row}.",
-      "sale_share": "Lomakkeen 71B omistusosuus ei kelpaa: {row}."
+      "sale_share": "Lomakkeen 71B omistusosuus ei kelpaa: {row}.",
+      "form73_listed": "Vastaa lomakkeen 73 kysymykseen, onko yhtiö julkisesti noteerattu.",
+      "form73_ownership": "Lomakkeen 73 omistusosuus ei kelpaa: {row}. Enintään 100, kaksi desimaalia."
     },
     "notice": {
       "form": "Lomake {form} kuuluu samaan tiedostoon, eikä sitä vielä muodosteta.",
@@ -1984,9 +1992,9 @@
     },
     "attached": {
       "lead": "Nämä lomakkeet kuuluvat veroilmoitukseen. Ne tulevat sekä OmaVero-tekstiin että Ilmoitin-tiedostoon.",
-      "none": "Luvut eivät vaadi lomakkeita 8A, 71B tai 62.",
+      "none": "Luvut eivät vaadi lomakkeita 8A, 71B, 73 tai 62.",
       "holdingsEra": "Hankintameno tulee tase-erästä. Rivit, joilla on sama nimi ja Y-tunnus, yhdistyvät lomakkeella yhdeksi riviksi, joten kirjoita lukumäärä vain yhdelle.",
-      "holdingsTyped": "Nämä arvopaperit eivät ole kirjanpidossa yksitellen, joten kirjoita rivit itse.",
+      "holdingsTyped": "Nämä arvopaperit eivät ole kirjanpidossa yksitellen, joten kirjoita rivit itse tai liitä ne taulukosta.",
       "fromEra": "Tase-erä: {text}",
       "addRow": "Lisää rivi",
       "field": "{field}: {amount} euroa",
@@ -2001,7 +2009,18 @@
       "showAll": "Näytä kaikki osiot",
       "fromLedger": "Kirjanpidon mukaan",
       "housingValue": "Vuonna 2006 tai sen jälkeen hankituilla huoneisto-osakkeilla ei ole erillistä vertailuarvoa, joten jätä se tyhjäksi.",
-      "noFinnishId": "Jos yhtiöllä ei ole suomalaista Y-tunnusta, kirjoita 0000000-0: OmaVero ei hyväksy tyhjää kenttää."
+      "noFinnishId": "Jos yhtiöllä ei ole suomalaista Y-tunnusta, kirjoita 0000000-0: OmaVero ei hyväksy tyhjää kenttää.",
+      "dividendsLead": "Kirjanpidossa osingot ovat yhtenä lukuna. Jaa ne maksajan kotimaan ja verokohtelun mukaan: esimerkiksi pörssiyhtiön osinko on veronalainen, kun yhtiö omistaa siitä alle 10 %. Veronalainen osuus siirtyy tästä 6B-lomakkeelle.",
+      "dividendsLeft": "Jakamatta {amount} euroa",
+      "pasteOpen": "Liitä rivit taulukosta",
+      "pasteLead": "Yksi arvopaperi riviltä, sarakkeet lomakkeen järjestyksessä: nimi, Y-tunnus, lukumäärä, hankintameno ja vertailuarvo kappaleelta, halutessasi myös vertailuarvo yhteensä. Sarakkeet erotetaan sarkaimella, kuten taulukosta kopioitaessa, tai puolipisteellä. Rivit korvaavat tämän ryhmän käsin kirjoitetut rivit. Tyhjä Y-tunnus säilyy samannimiseltä aiemmalta riviltä.",
+      "pasteFile": "Tai lue tiedostosta",
+      "pasteReplace": "Korvaa käsin kirjoitetut rivit",
+      "pasteResult": "Luettiin {count} riviä.",
+      "pasteResult_one": "Luettiin {count} rivi.",
+      "pasteKept": "Y-tunnus säilyi {count} riville.",
+      "pasteKept_one": "Y-tunnus säilyi {count} riville.",
+      "pasteSkipped": "Ohitettiin rivit, joita ei voitu lukea: {lines}."
     },
     "rowHint": "Avaa rivi nähdäksesi tilit, joista luku koostuu."
   }

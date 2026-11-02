@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ALL_NO, buildTaxFixture, check, type TaxFixture } from '../testFixture'
-import { formatShares, parseShares, parseUnitValue } from './form8a'
+import { formatShares, parseHoldingTable, parseShares, parseUnitValue } from './form8a'
 import { ilmoitinFile } from './ilmoitinFile'
 import { sanitizeInputs } from './inputs'
 import { omaVeroText } from './omaVeroText'
@@ -267,5 +267,48 @@ describe('in the outputs', () => {
     expect(text).toContain('Muun omaisuuden hankintamenot yhteensä: 50 000,00')
     expect(text).toContain('Rahoitusomaisuuden vertailuarvot yhteensä: 3 255,00')
     expect(text).toContain('Tuloverotuksen poistamattomat hankintamenot yhteensä: 53 000,00')
+  })
+})
+
+describe('rows pasted from a spreadsheet or a file', () => {
+  const earlier: HoldingInput[] = [
+    { ...typed, name: 'Esimerkki Oyj', business_id: '4567890-7' },
+    { ...typed, group: 'other', name: 'Kuvitteellinen Oyj', business_id: '7654321-6' },
+  ]
+
+  it('reads tab-separated rows in the order of the form, and takes a header for one', () => {
+    const text = [
+      'Nimi\tY-tunnus\tLukumäärä\tHankintameno\tVertailuarvo kappaleelta',
+      'Esimerkki Oyj\t4567890-7\t150\t3 000,00\t21,70',
+      'Example Corp\t0000000-0\t12,5\t1234.5\t8,123\t101,54',
+      '',
+    ].join('\r\n')
+    expect(parseHoldingTable(text, 'financial', [])).toEqual({
+      rows: [
+        { era: null, group: 'financial', name: 'Esimerkki Oyj', business_id: '4567890-7', shares: '150', cost_cents: 300_000, unit_value: '21,70', total_value_cents: null },
+        { era: null, group: 'financial', name: 'Example Corp', business_id: '0000000-0', shares: '12,5', cost_cents: 123_450, unit_value: '8,123', total_value_cents: 10_154 },
+      ],
+      skipped: [],
+      kept_ids: 0,
+    })
+  })
+
+  it('takes semicolons too', () => {
+    const { rows } = parseHoldingTable('Esimerkki Oyj;4567890-7;150;3000;21,70', 'financial', [])
+    expect(rows.map((row) => [row.name, row.cost_cents])).toEqual([['Esimerkki Oyj', 300_000]])
+  })
+
+  it("keeps an earlier row's business ID for a row of the same name in the same group", () => {
+    const text = 'esimerkki oyj\t\t160\t3200\t22,00\nKuvitteellinen Oyj\t\t10\t100\t1,000'
+    const pasted = parseHoldingTable(text, 'financial', earlier)
+    expect(pasted.rows.map((row) => row.business_id)).toEqual(['4567890-7', ''])
+    expect(pasted.kept_ids).toBe(1)
+  })
+
+  it('lists the lines it could not read, after the first', () => {
+    const text = ['Esimerkki Oyj\t\t150\t3000\t21,70', 'Ei lukua\t\tpaljon\t3000\t1', 'Ei hankintamenoa\t\t1\t\t1', 'Liian tarkka\t\t1\t1\t12,345'].join('\n')
+    const pasted = parseHoldingTable(text, 'financial', [])
+    expect(pasted.rows).toHaveLength(1)
+    expect(pasted.skipped).toEqual([2, 3, 4])
   })
 })

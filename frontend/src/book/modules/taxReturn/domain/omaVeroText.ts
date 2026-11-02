@@ -106,6 +106,36 @@ function form71bText(view: TaxReturnView): string[] {
   return out
 }
 
+function form73Text(view: TaxReturnView): string[] {
+  const form = view.form73
+  if (!view.forms.some((item) => item.form === '73')) return []
+  const out = [
+    '',
+    'Erittely osinkotuloista ja muista voitonjaon luonteisista eristä (lomake 73)',
+    `Onko yhtiö julkisesti noteerattu? ${form.company_listed == null ? 'täytä itse' : yesNo(form.company_listed)}`,
+  ]
+  const part = (title: string, taxable: boolean) => {
+    const rows = form.classes.filter((row) => row.taxable === taxable && row.cents)
+    if (!rows.length) return
+    out.push('', title)
+    for (const row of rows) {
+      out.push(row.title, `Osingot ja ylijäämät yhteensä: ${plainAmount(row.cents)}`)
+      if (row.codes.listed != null) out.push(`Onko jakajayhtiö listattu? ${row.listed ? 'Kyllä' : 'Ei tai jakajayhtiöitä on useita'}`)
+      if (row.codes.ownership != null && row.ownership) out.push(`Omistusosuus: ${row.ownership} %`)
+    }
+  }
+  part('Verovapaat osingot ja ylijäämät', false)
+  part('Veronalaiset osingot ja ylijäämät (100 %)', true)
+  if (!form.typed) out.push('', 'Osingot ja ylijäämät: täytä itse')
+  out.push(
+    '',
+    `Osingot ja ylijäämät yhteensä: ${plainAmount(form.total_cents)}`,
+    `Osinkojen ja ylijäämien verovapaa osuus yhteensä: ${plainAmount(form.taxfree_cents)}`,
+    `Osinkojen ja ylijäämien veronalainen osuus yhteensä: ${plainAmount(form.taxable_cents)}`,
+  )
+  return out
+}
+
 function form62Text(view: TaxReturnView): string[] {
   if (!view.form62.used) return []
   const out = ['', 'Erittely varauksista, arvonmuutoksista ja poistoista (lomake 62)']
@@ -195,6 +225,6 @@ export function omaVeroText(view: TaxReturnView): string {
 
   const forms = view.forms.map((f) => f.form)
   out.push('', `Liitelomakkeet ja muut ilmoitukset: ${forms.length ? forms.join(', ') : 'ei lukujen perusteella'}`)
-  out.push(...form62Text(view), ...form8aText(view), ...form71bText(view))
+  out.push(...form62Text(view), ...form73Text(view), ...form8aText(view), ...form71bText(view))
   return out.join('\n')
 }

@@ -16,7 +16,7 @@ A button on a period's card on the company page (`#/company`) opens a dialog wit
   neither is preselected, a question left open is not a no, and answers do not carry over to the next period (the
   contact and share counts do). The form saves with questions open, so typed work is not lost; the return then
   shows them as a check, and no file is made. "Onko tilinpäätös laadittu?" is yes unless the owner says otherwise.
-- **Liitelomakkeet**: forms 62, 8A and 71B, as far as the figures call for them.
+- **Liitelomakkeet**: forms 62, 73, 8A and 71B, as far as the figures call for them.
 - **Ilmoitin-tiedosto**: the same figures as a file for Ilmoitin.fi.
 
 Leaving a tab with typed figures saves them, so moving on to the file does not lose them.
@@ -27,7 +27,8 @@ ledger is read, and only the owner's inputs are written, to `TilariData` (`tax-r
 ## Sources
 
 - Fields, money types and formulas: Vero's record descriptions `VSY06B26` v1.1 "Elinkeinotoiminnan veroilmoitus,
-  yhteisö (6B)", `VSY08A26`, `VSY71B26` and `VSY06226`.
+  yhteisö (6B)", `VSY07326`, `VSY08A26`, `VSY71B26` and `VSY06226`.
+- Form 73's classes: Vero's guide to form 73 ("Erittely osinkotuloista ja voitonjaon luonteisista eristä").
 - File format: Vero's "Electronic filing of information returns, general description".
 - Attachments: Vero's "Enclosures to the electronically submitted income tax return".
 - Order and wording: OmaVero's print of a filed return.
@@ -80,6 +81,27 @@ Where past filings of a book differ from the chart, the chart decides and the ow
   on the balance sheet date, a fund unit's 70 % of its value at the end of the calendar year, and housing shares
   bought since 1.1.2006 have none. So only Muu omaisuus goes without a remark when it is empty.
 - Names, IDs and counts carry over to the next year; comparison values do not.
+- **Pasting rows** (any group): one holding per line in the form's order (name, business ID, count, cost, comparison
+  value per share, and the total if wanted), separated by tabs as a spreadsheet copies them, or by semicolons, typed
+  or read from a file. The lines replace the group's typed rows, a first line that cannot be read is a header, and
+  other unreadable lines are listed. A row without a business ID keeps the ID of an earlier row of the same name, so
+  a Finnish ID is typed once. Tilari reads no broker's files itself: a tool that does writes this format, as
+  tilari-bank-import's `nordnet-tax-forms` does for Nordnet.
+
+**73, dividends** (`domain/form73.ts`). The ledger has one figure, Saadut osingot ja ylijäämät; the classes are typed.
+
+- Classes, from Vero's guide: tax-free from Finland, another EU or EEA state, or outside; taxable in full from the same
+  three; and REITs. A class is wholly tax-free or wholly taxable, so its share equals its total. Listed shares the
+  company owns under 10 % of are taxable; a tax-free class needs the conditions in Vero's guide.
+- Once a class has an amount, the form's taxable share is Veronalainen osuus on the 6B, as Vero says to carry it.
+  Until then the 6B follows the ledger (a tax-free dividend account, `9090` or `9270`, counts as tax-free).
+- The total must equal Saadut osingot ja ylijäämät in the Kirjanpito column, which is the book's figure: gross, a
+  foreign dividend converted as booked.
+- "Onko yhtiö julkisesti noteerattu?" takes a yes or a no, like the 6B's questions. Each class's "Jakajayhtiö on
+  listattu" is a checkbox: off is OmaVero's "Ei tai jakajayhtiöitä on useita". Omistusosuus is optional.
+- Not needed when every dividend is tax-free and from Finland, which OmaVero asks as a question. A yes there while the
+  figures show taxable or foreign dividends is a check to fix.
+- Amounts do not carry over to the next year.
 
 **71B, sales** (`domain/form71b.ts`). Sections 2, 4 and 5, for other assets.
 
@@ -111,23 +133,29 @@ Exact, with no tolerance; differences are shown to the cent.
 | `form8a_gap` | A group's costs on 8A differ from its 6B field |
 | `form62_tax`, `form62_book` | Depreciation on 62 differs from Vähennettävät poistot |
 | `form62_limit` | Regular depreciation is over Vero's limit |
+| `form73_listed` | Form 73 is needed and its listing question has no answer |
+| `form73_gap` | Form 73's total differs from Saadut osingot ja ylijäämät |
+| `form73_tax` | A typed Veronalainen osuus differs from form 73's taxable share |
+| `tax_free_answer` | The answer says every dividend is tax-free and from Finland, but the figures disagree |
 
-`unplaced`, `result_ties`, `net_wealth`, `negative`, `sale_gap` and the form checks stop a file from being called ready.
+`unplaced`, `result_ties`, `net_wealth`, `negative`, `sale_gap`, `tax_free_answer` and the form checks stop a file from
+being called ready.
 Warnings: `custom_accounts`, `drafts`, `not_ended`, `income_tax`, `dividend_answer`, `sale_split`, `manual`, `to_check`.
 
 ## The file
 
 `domain/ilmoitinFile.ts`. ISO-8859-1 `name:value` lines joined by CRLF, starting `000:VSY06Byy` and ending
 `999:n` with no line break after it. The forms follow one another, each with its own header and `999:` running in
-sequence: 6B, then 62, 8A and 71B as far as they have rows. Comma decimals; zero fields left out, except 478 and whichever of 500/505
+sequence: 6B, then 62, 73, 8A and 71B as far as they have rows (73 once a class has an amount). Comma decimals; zero fields left out, except 478 and whichever of 500/505
 and 573/574 applies. Repeating groups go between `001:n` and `009:i`.
 
 - **014** is the book's business ID plus `_TL`: Vero's rule for software a filer has developed itself. **048** is
   `Tilari`. **045** is left out: Vero says the operator that transmits the file adds it.
 - **The personal ID** is required in 703. It is typed on the file tab, next to the download button, and kept only in the dialog's state. The file
   is built in the browser, also on the Node engine, so the ID never reaches the book or a server.
-- **Stopped** (no bytes): missing required answers, an OmaVero question left open, characters outside ISO-8859-1, too long a text, a negative in an
-  `R13,2` field, an answer needing fields the file does not produce, a form row missing what Vero requires.
+- **Stopped** (no bytes): missing required answers, an OmaVero question left open (form 73's too), characters outside
+  ISO-8859-1, too long a text, a negative in an `R13,2` field, an ownership share on 73 over 100 or with more than two
+  decimals, an answer needing fields the file does not produce, a form row missing what Vero requires.
 - **Check only** (bytes, but not to send): a form in the same file that is not generated, a failed check, or a year
   other than the record description's.
 - **Remarks** (no effect on the file): an 8A row without a business ID or comparison value. Vero only remarks on these.
@@ -138,8 +166,8 @@ nothing itself.
 
 ## Left for later
 
-- Form 73. Until it exists a file for a company with dividends can be checked but not sent. It and 8A's listed
-  securities need detail per security that lives in the bank import, not the ledger.
+- On 73: dividends that were deductible for the payer (listed by country) and the partly taxable classes of credit,
+  insurance and pension institutions. These go by hand in OmaVero; a credit institution's 6B already stops the file.
 - 71B for fixed-asset shares and partnership interests, losses with restricted deduction, and earlier years' confirmed
   losses: these go by hand in OmaVero. The dialog says so when the figures call for the first.
 - 62 does not carry typed figures over: where tax differs from the book, next year's opening balance is typed again.

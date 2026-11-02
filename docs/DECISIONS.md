@@ -701,6 +701,12 @@ correction would change the open year's income statement lines. The rental-objec
   and 62 asset movements; what the ledger cannot know is typed. Nothing is guessed from a voucher's partner, who on a
   purchase is usually the seller: back-tested on a real book, it named the filed company in no case. A row or field
   left empty says so rather than holding a plausible wrong value.
+- **Form 73 says which dividends are taxable** (2026-11-02). The ledger has one dividend figure and cannot know the
+  payer's country or listing, so the classes are typed and must add up to the book's figure. Once they have amounts,
+  their taxable share goes to the 6B, as Vero's guide says.
+- **Rows from a broker come as pasted text** (2026-11-02). Tilari reads no broker's files (SCOPE.md: bank and CSV
+  importers stay outside). 8A takes rows pasted or read from a file in the form's own columns, which any spreadsheet
+  can make; tilari-bank-import writes them for Nordnet. A Finnish business ID typed once is kept by name.
 - **OmaVero's wording in the UI.** Vero's file codes appear only in code and the file: OmaVero does not show them.
 - **A file is only called ready when complete.** Forms in the same file must exist, since a corrected return replaces
   the earlier one. It can still be format-checked at every step.

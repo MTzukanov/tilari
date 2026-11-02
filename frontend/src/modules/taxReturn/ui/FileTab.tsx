@@ -25,6 +25,7 @@ function problemText(t: (key: string, params?: Record<string, string | number>) 
     case 'sale_fields':
     case 'sale_id':
     case 'sale_share':
+    case 'form73_ownership':
       return t(`taxReturn.problem.${problem.key}`, { row: problem.row })
     default:
       return t(`taxReturn.problem.${problem.key}`)

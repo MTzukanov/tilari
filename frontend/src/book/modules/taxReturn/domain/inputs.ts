@@ -2,8 +2,21 @@
 import { readTilariData, readTilariDataPrefix, writeTilariData } from '../../../kernel/tilariData'
 import { parseJson } from '../../../json'
 import type { SqliteDb } from '../../../sqlite'
+import { DIVIDEND_CLASSES, emptyForm73 } from './form73'
 import { SALE, type Overrides, type Target } from './mapping'
-import type { AuditAnswer, DebtTerm, DistributionInput, HoldingGroup, HoldingInput, SaleIdType, SaleInput, ShareholderInput, TaxReturnInputs } from './types'
+import type {
+  AuditAnswer,
+  DebtTerm,
+  DistributionInput,
+  DividendInput,
+  Form73Input,
+  HoldingGroup,
+  HoldingInput,
+  SaleIdType,
+  SaleInput,
+  ShareholderInput,
+  TaxReturnInputs,
+} from './types'
 
 export const MAPPING_KEY = 'tax-return/mapping'
 const PERIOD_PREFIX = 'tax-return/'
@@ -30,6 +43,7 @@ export function emptyInputs(): TaxReturnInputs {
     holdings: [],
     sale_rows: null,
     form62: {},
+    form73: emptyForm73(),
     answers: {},
     manual: {},
   }
@@ -123,6 +137,24 @@ function sale(raw: unknown): SaleInput | null {
   }
 }
 
+function dividend(raw: unknown): DividendInput | null {
+  if (!raw || typeof raw !== 'object') return null
+  const row = raw as Record<string, unknown>
+  const out = { cents: count(row.cents), listed: row.listed === true, ownership: text(row.ownership) }
+  return out.cents || out.listed || out.ownership ? out : null
+}
+
+function form73(raw: unknown): Form73Input {
+  const data = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+  const stored = data.classes && typeof data.classes === 'object' ? (data.classes as Record<string, unknown>) : {}
+  const classes: Form73Input['classes'] = {}
+  for (const def of DIVIDEND_CLASSES) {
+    const row = dividend(stored[def.key])
+    if (row) classes[def.key] = row
+  }
+  return { company_listed: typeof data.company_listed === 'boolean' ? data.company_listed : null, classes }
+}
+
 function booleans(raw: unknown): Record<string, boolean> {
   const out: Record<string, boolean> = {}
   if (!raw || typeof raw !== 'object') return out
@@ -162,15 +194,16 @@ export function sanitizeInputs(raw: unknown): TaxReturnInputs {
     holdings: Array.isArray(data.holdings) ? data.holdings.flatMap((row) => holding(row) ?? []) : [],
     sale_rows: Array.isArray(data.sale_rows) ? data.sale_rows.flatMap((row) => sale(row) ?? []) : null,
     form62: manualFigures(data.form62),
+    form73: form73(data.form73),
     answers: booleans(data.answers),
     manual: manualFigures(data.manual),
   }
 }
 
 /**
- * The contact and share counts stay from year to year, and so do holdings' names, IDs and counts. Payments, figures
- * and comparison values do not, and neither do the yes/no answers: a carried answer would look considered for a year
- * nobody has thought about yet.
+ * The contact and share counts stay from year to year, and so do holdings' names, IDs and counts. Payments, figures,
+ * comparison values and dividends do not, and neither do the yes/no answers: a carried answer would look considered for
+ * a year nobody has thought about yet.
  */
 function carryOver(earlier: TaxReturnInputs): TaxReturnInputs {
   return {

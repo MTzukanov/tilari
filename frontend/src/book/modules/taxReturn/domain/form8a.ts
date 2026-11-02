@@ -94,6 +94,58 @@ export function parseUnitValue(text: string): number | null {
   return euros * 1000 + Number(decimals.padEnd(3, '0'))
 }
 
+/** A euro amount as a spreadsheet or a file writes it: `1 234,56`, `1234.56` or `1234`. Empty is not an amount. */
+function parseTableEuros(text: string): number | null {
+  const match = /^(\d+)(?:[.,](\d{1,2}))?$/.exec(text.replace(/[\s\u00a0\u202f€]/g, ''))
+  return match ? Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0')) : null
+}
+
+export type PastedHoldings = {
+  rows: HoldingInput[]
+  /** Lines, counted from 1, that could not be read. A first line that cannot be read is a header and is not listed. */
+  skipped: number[]
+  /** Rows whose empty business ID came from an earlier row of the same name. */
+  kept_ids: number
+}
+
+/**
+ * Rows copied from a spreadsheet or read from a file, one holding per line, in the form's order: name, business ID,
+ * count, cost, comparison value per share and, if wanted, the total. Tabs separate the columns, or semicolons. A row
+ * without a business ID takes the one an earlier row of the same name has, so a Finnish ID is typed only once.
+ */
+export function parseHoldingTable(text: string, group: HoldingGroup, earlier: HoldingInput[]): PastedHoldings {
+  const known = new Map<string, string>()
+  for (const row of earlier) {
+    const name = row.name.trim().toLowerCase()
+    if (row.group === group && name && row.business_id.trim() && !known.has(name)) known.set(name, row.business_id.trim())
+  }
+  const rows: HoldingInput[] = []
+  const skipped: number[] = []
+  let keptIds = 0
+  let first = true
+  text.split(/\r?\n/).forEach((raw, index) => {
+    if (!raw.trim()) return
+    const header = first
+    first = false
+    const cells = (raw.includes('\t') ? raw.split('\t') : raw.split(';')).map((cell) => cell.trim().replace(/^"(.*)"$/, '$1').trim())
+    const [name = '', id = '', shares = '', cost = '', unit = '', total = ''] = cells
+    const costCents = parseTableEuros(cost)
+    const totalCents = total ? parseTableEuros(total) : null
+    const readable = Boolean(name) && parseShares(shares) != null && costCents != null && (!unit || parseUnitValue(unit) != null) && (!total || totalCents != null)
+    if (!readable || costCents == null) {
+      if (!header) skipped.push(index + 1)
+      return
+    }
+    let businessId = id
+    if (!businessId) {
+      businessId = known.get(name.toLowerCase()) ?? ''
+      if (businessId) keptIds += 1
+    }
+    rows.push({ era: null, group, name, business_id: businessId, shares, cost_cents: costCents, unit_value: unit, total_value_cents: totalCents })
+  })
+  return { rows, skipped, kept_ids: keptIds }
+}
+
 /** Count times unit value, rounded to the cent. */
 function shareValue(shares: number, unit: number): number {
   return Number((BigInt(shares) * BigInt(unit) + 50_000n) / 100_000n)

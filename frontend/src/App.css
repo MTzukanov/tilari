@@ -7051,6 +7051,49 @@ button.due-tile:hover {
   font-size: 0.9rem;
 }
 
+.tax-return-attached-row > label.tax-return-toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  padding-bottom: 0.3rem;
+}
+
+.tax-return-dividend-title {
+  grid-column: span 3;
+  align-self: center;
+  font-size: 0.9rem;
+}
+
+.tax-return-paste {
+  margin: 0 0 0.6rem;
+}
+
+.tax-return-paste summary {
+  cursor: pointer;
+}
+
+.tax-return-paste textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--mono, monospace);
+  font-size: 0.85rem;
+}
+
+.tax-return-paste-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem 1rem;
+}
+
+.tax-return-paste-actions label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+}
+
 .tax-return-form62 td:last-child {
   width: 10rem;
 }
@@ -7065,7 +7108,8 @@ button.due-tile:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .tax-return-attached-wide {
+  .tax-return-attached-wide,
+  .tax-return-dividend-title {
     grid-column: 1 / -1;
   }
 }
