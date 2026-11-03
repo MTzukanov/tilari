@@ -7,6 +7,12 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-03 - CI: the e2e step has 20 minutes (`ci/e2e-timeout-20`)
+
+- The Chromium e2e step in `test.yml` ran 9-10 minutes on one worker and hit its 10-minute limit now and then
+  with every test passed (a rerun went green). The step now has 20 minutes and the `frontend` job 25, so the
+  step's own limit is the one that stops a hung run.
+
 ## 2026-11-03 - Rental objects: lease and water panels on the shared parts (`feature/property-lease-docs`)
 
 - Second move from `docs/UI_PATTERNS.md`. A linked voucher in a lease or water panel is its purple pill, its title
