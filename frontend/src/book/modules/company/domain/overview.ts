@@ -274,6 +274,7 @@ function documentView(d: CompanyDocument, voucher: VoucherRow | undefined): Docu
     doc_number: gone ? null : voucher.doc_number,
     series: gone ? '' : voucher.series,
     note: d.note ?? null,
+    calculation: d.calculation === true,
     state,
     files,
   }
@@ -372,7 +373,7 @@ function buildPeriod(
   const reportOverdue = dividend?.paid != null && dividendReportDue(dividend.paid) < asOf
   const slots: SlotView[] = PERIOD_KINDS.flatMap((kind) => {
     const documents = views.filter((v) => v.kind === kind)
-    const filled = documents.some((v) => v.state === 'ok')
+    const filled = documents.some((v) => v.state === 'ok' && !v.calculation)
     const required = requiredKind(kind, doc, dividend)
     const isReport = kind === 'dividend_annual_report'
     const ownSuggestions = suggestions.filter((s) => s.kind === kind)
@@ -391,7 +392,7 @@ function buildPeriod(
       },
     ]
   })
-  const filled = (kind: PeriodKind) => views.some((v) => v.kind === kind && v.state === 'ok')
+  const filled = (kind: PeriodKind) => views.some((v) => v.kind === kind && v.state === 'ok' && !v.calculation)
   const counted = slots.filter((s) => s.required && s.status !== 'not_needed')
   const meetings = (dividend?.dividends ?? []).map((d, i) => meetingOf(d, views, i === 0))
   const extraCount = meetings.filter((m) => m === 'extra').length
@@ -554,7 +555,7 @@ export function computeAlerts(db: SqliteDb, query: { today: string; asOf?: strin
   const vouchers = loadVouchers(db, doc.documents.map((d) => d.voucher_id))
   const usable = new Set(
     doc.documents
-      .filter((d) => documentView(d, vouchers.get(d.voucher_id)).state === 'ok')
+      .filter((d) => d.calculation !== true && documentView(d, vouchers.get(d.voucher_id)).state === 'ok')
       .map((d) => `${d.period_ends}|${d.kind}`),
   )
   const periods = loadPeriods(db)

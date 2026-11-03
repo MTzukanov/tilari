@@ -101,7 +101,8 @@ the owner rejected: `era:{eraid}`, `doc:{voucherId}`).
 `company` (ADR-031): `v`, `rev`, `updated_at`; `settings` (`audited`, `annual_report`, `balance_sheet_specs`, `prh_receipt`, only when on);
 `documents[]`, one link each: `key` (stable, `d12`), `kind`, `period_ends` (`Tilikausi.loppuu`, null
 for the company's own), `voucher_id`, `attachment_id` (one file of a voucher with several),
-`doc_date` (the document's own date when the voucher's differs), `note`; `not_needed[]`
+`doc_date` (the document's own date when the voucher's differs), `note`, `calculation` (`true` only: a
+calculation kept with the slot's document, such as the tax return's, which does not fill the slot); `not_needed[]`
 (`period_ends`, `kind`: a slot marked as needing no document); `dismissed[]` (rejected suggestions:
 `{voucherId}:{attachmentId}:{kind}`); `shareholders[]`: `key` (`s3`), `partner_id` (`Kumppani.id`; the
 name stays there, no personal ID numbers), `kind` (`person`, `estate`, `company`), `resident`, `rate_bp`

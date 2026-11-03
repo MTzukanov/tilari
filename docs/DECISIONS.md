@@ -714,3 +714,42 @@ correction would change the open year's income statement lines. The rental-objec
   pays from the bank. Tilari has the ledger in-process and one table, and a payment can turn the dividend into
   a debt to the shareholder, which later bank lines repay. Dividends come later, on those steps.
 
+## ADR-032 Annual tax return: one calculation, two outputs (2026-11-01)
+
+**Status:** accepted. Details in [TAX_RETURN.md](TAX_RETURN.md).
+
+- **Both routes** (owner, 2026-11-01). The owner has filed by hand in OmaVero because the figures were worked out
+  by hand. An Ilmoitin file should be quicker, but full control needs the numbers for OmaVero as well. Both render
+  `computeTaxReturn`, so they cannot disagree.
+- **Read-only for the ledger.** A button on the period's card, in a module of its own (`taxReturn`). Only the owner's
+  inputs and account choices are written, to `TilariData` (ADR-023), never computed figures.
+- **The personal ID is never stored.** The file needs it, so it is typed at download and the file is built in the
+  browser, also on the Node engine. A self-hosted server does not see it.
+- **The chart decides where past filings differ.** Filed returns placed some accounts differently from year to year.
+  Defaults follow the statutory chart, and the owner overrides per account. An account outside the standard chart
+  is a guess from its heading, so it stays listed until confirmed.
+- **No tolerance.** Each reconciliation shows its difference to the cent ([MEMORY.md](../MEMORY.md), exact figures).
+- **Every question answered, every year** (owner, 2026-11-02). OmaVero's questions take an explicit yes or no, so a
+  question considered can be told from one missed. Answers do not carry over: a carried no would look considered.
+  The form still saves with questions open, since refusing would lose typed work; the check and the stopped file say
+  what is left.
+- **Forms start from the ledger, and are tied to it to the cent** (2026-11-02). 8A follows tase-eriä, 71B sale vouchers
+  and 62 asset movements; what the ledger cannot know is typed. Nothing is guessed from a voucher's partner, who on a
+  purchase is usually the seller: back-tested on a real book, it named the filed company in no case. A row or field
+  left empty says so rather than holding a plausible wrong value.
+- **Form 73 says which dividends are taxable** (2026-11-02). The ledger has one dividend figure and cannot know the
+  payer's country or listing, so the classes are typed and must add up to the book's figure. Once they have amounts,
+  their taxable share goes to the 6B, as Vero's guide says.
+- **Rows from a broker come as pasted text** (2026-11-02). Tilari reads no broker's files (SCOPE.md: bank and CSV
+  importers stay outside). 8A takes rows pasted or read from a file in the form's own columns, which any spreadsheet
+  can make; tilari-bank-import writes them for Nordnet. A Finnish business ID typed once is kept by name.
+- **The calculation is kept with the 6B, not as it** (2026-11-02). The owner wants the result kept for later
+  reference. It is a PDF on a Liitetieto voucher, like the rental letters, linked to the period's 6B row with the flag
+  `calculation`, so the row and the deadline wait for the filed return. The figures stay in the voucher's file, not in
+  `TilariData` (ADR-023). A new save replaces the kept one's file in place rather than adding a voucher (owner, 2026-11-03).
+- **A check says where it is fixed** (owner, 2026-11-02). The list's heading is text, not a pill, and each item links
+  to its tab and section.
+- **OmaVero's wording in the UI.** Vero's file codes appear only in code and the file: OmaVero does not show them.
+- **A file is only called ready when complete.** Forms in the same file must exist, since a corrected return replaces
+  the earlier one. It can still be format-checked at every step.
+

@@ -157,6 +157,20 @@ describe('the company overview', () => {
     expect(period('2031-12-31').deadlines.find((d) => d.key === 'tax_return')!.state).toBe('not_needed')
   })
 
+  it('lists a calculation with the tax return, but it neither fills the slot nor meets the deadline', () => {
+    const alerts = computeAlerts(fx.db, { today: AS_OF, asOf: AS_OF }).deadlines
+    save({ add: [{ kind: 'tax_return_6b', period_ends: '2032-12-31', voucher_id: fx.vouchers.board2033, calculation: true }] })
+    const listed = slot('2032-12-31', 'tax_return_6b')
+    expect(listed.documents.map((d) => [d.voucher_id, d.calculation])).toEqual([[fx.vouchers.board2033, true]])
+    expect(listed.status).toBe('missing')
+    expect(period('2032-12-31').deadlines.find((d) => d.key === 'tax_return')!.state).not.toBe('done')
+    expect(computeAlerts(fx.db, { today: AS_OF, asOf: AS_OF }).deadlines).toBe(alerts)
+
+    save({ add: [{ kind: 'tax_return_6b', period_ends: '2032-12-31', voucher_id: fx.vouchers.decision2033 }] })
+    expect(slot('2032-12-31', 'tax_return_6b').status).toBe('complete')
+    expect(period('2032-12-31').deadlines.find((d) => d.key === 'tax_return')!.state).toBe('done')
+  })
+
   it('links one file of a voucher, and each file to its own slot', () => {
     save({ add: [{ kind: 'audit_report', period_ends: '2032-12-31', voucher_id: fx.vouchers.decision2033, attachment_id: fx.files['Signeerattu tt-kertomus 2032.pdf'] }] })
     const doc = slot('2032-12-31', 'audit_report').documents[0]

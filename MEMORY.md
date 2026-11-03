@@ -7,6 +7,14 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-03 - Tax return: a new calculation replaces the kept one
+
+- Owner's test of "Tallenna laskelma asiakirjoihin": each save added another voucher and PDF to the 6B row. Now a save
+  writes over the newest kept calculation (voucher date and title to the day, new file uploaded, old files deleted),
+  deletes the other kept ones (`tila 0`, like any delete) with their links, and unlinks those already deleted. A
+  calculation dated on or before the lock date cannot change, so it stays and the save makes a new voucher.
+- Books saved before this keep their extra calculations until the next save, which folds the open ones into one.
+
 ## 2026-11-03 - Company page: a period's sections fold
 
 - Owner: Määräajat, Asiakirjat and the dividends fold, and only Määräajat is open at first. What is opened or
@@ -80,6 +88,61 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   said there is no document ("Ei asiakirjaa"), and not on a water suggestion, which has no stored slot.
 - A lease's state and a tenant's water status are `Pill`s (`.property-water-status` went); a suggestion's source
   is a `Pill doc` whose span keeps the hover text.
+## 2026-11-02 - Checks link to their place, form 73 always findable, the calculation kept as a PDF
+
+- Owner's look at form 73 on a real book: form 73 was not on the Liitelomakkeet tab. The dividend account had been
+  added to the chart, so the heading above its number placed it with interest; the 6B dividend field stayed empty and
+  73 was never asked for. An added `9...` income account named for dividends now goes to the dividend field (still to
+  confirm), and 73 is always on the tab, closed with the reason when the figures do not call for it.
+- The checks' heading was a pill and read as one more check; it is a heading now (owner). Each item links to its tab
+  and section; a 6B field's row opens on its accounts.
+- The passed list said "arvopaperit ja lomake 8A" while a failed 8A check named Rahoitusomaisuusarvopaperit: two 8A
+  groups, one tied and one not. The passed text now names the group's field.
+- The calculation is kept as a PDF on a Liitetieto voucher linked to the 6B row (owner asked to keep the result for later
+  reference). No library: `shared/textPdf.ts` already writes the rental letters. The link is flagged `calculation` so
+  the 6B row and its deadline stay open until the filed return is linked.
+- WebKit e2e: "a deleted voucher shows as deleted" (company spec) reloads with `page.goto` and WebKit then has no book
+  open. Not from this change; PR CI runs Chromium only, so it shows only in the release matrix.
+
+## 2026-11-02 - Form 73, and 8A rows pasted from a spreadsheet
+
+- Form 73 is typed by class, because the ledger has one dividend figure. Its total must equal the 6B's Saadut osingot ja
+  ylijäämät, and its taxable share becomes the 6B's Veronalainen osuus (Vero's guide to 73). A filed return checked
+  against the bank import's year-end report: the class totals were the payer's country sums, all taxable.
+- The book's figure is the one that counts. Nordnet's own EUR for a foreign dividend can differ by cents from the ECB
+  rate the monthly vouchers use, so the bank import splits the booked amounts and takes only the country from Nordnet.
+- 8A's listed securities come by paste (tabs or semicolons, the form's columns) rather than an importer in Tilari
+  (SCOPE.md). tilari-bank-import's `nordnet-tax-forms` writes that file. A pasted row with no business ID keeps the ID
+  of the earlier row with the same name, so Finnish IDs are typed once.
+- Form 73's "Onko yhtiö julkisesti noteerattu?" is a compulsory yes/no like the 6B's questions (owner's rule of
+  2026-11-02); "Jakajayhtiö on listattu" stays a checkbox, as OmaVero's own default reads "Ei tai jakajayhtiöitä on
+  useita".
+
+## 2026-11-02 - Forms 8A, 71B and 62, and a debt's term by choice
+
+- Back-tested on real filed returns, read in place and printed as pass/fail. It found two things the unit tests had
+  not: a fully depreciated asset vanished from 62, because accounts came from those with a closing balance; and a
+  tase-erä's partner is the seller, not the company, so it was dropped as a source of names and business IDs.
+- In financial assets one tase-erä can hold many securities, so 8A's rows there are typed until the bank import brings
+  them. Other assets follow tase-eriä, and two can make one filed row: rows with one business ID combine.
+- An 8A filing can give many securities one business ID: OmaVero takes no empty ID, so a company without a Finnish one
+  gets 0000000-0. Rows therefore combine only when the name matches too. Combining by ID alone would have merged them, and only a back-test against the filing showed it.
+- A filed 71B row's cost can differ from the booked cost, so a suggestion stays editable, and `sale_gap` shows what is
+  left. Sale fees are booked on their own vouchers, with nothing linking them to a sale.
+- Leaving a tab with typed figures saves them. With these forms too much could be lost by moving to the file to check it.
+- A very long patch hits the sandbox's limit on one shell argument, and a script mentioning `rm` inside `bash -c` is
+  stopped by a safety check. Scratch browser tests can live outside the repo, with a config that imports the repo's and
+  a `node_modules` link beside it, so nothing needs removing afterwards.
+
+## 2026-11-02 - 6B questions take a yes or a no; counted messages have a singular
+
+- Owner: a single checkbox cannot tell "no" from "not thought about", so OmaVero's questions became compulsory yes/no
+  answers, and they no longer carry over (ADR-032). "Tilinpäätös on laadittu" is on by default.
+- `audit_remarks` had the same flaw and worse: an untouched checkbox stopped the file, and "no" took two clicks.
+- The i18n engine had no plurals, so counts read "1 luonnosta". A message can now have `key_one`. Finnish changes the
+  noun, not the verb: "1 luonnos jää", "2 luonnosta jää".
+- Whether a custom account's guess matters: placed by heading alone, a dividend account landed in Muut rahoitustuotot,
+  which also hid form 73 from the list of forms needed. Confirming accounts is not a formality.
 ## 2026-11-02 - Company page: dividends read from the ledger
 
 - Owner approved the steps after the annual report row. Each period's card gets "Osingot tämän tilikauden
@@ -128,6 +191,22 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 - Owner: too many similar buttons too close, and separators after a single item. A row's actions are now quiet
   links, with only a missing document's upload or a suggestion's "Lisää" a real button. That replaced fading a
   finished row's buttons until hover, so the `done` tone went too. Separators are only between documents.
+
+## 2026-11-01 - Annual tax return (6B): figures for OmaVero and an Ilmoitin file
+
+- Owner asked for a button with the annual return's data, for OmaVero by hand or Ilmoitin. Both outputs render one
+  calculation (ADR-032, [docs/TAX_RETURN.md](docs/TAX_RETURN.md)). 8A, 71B, 73 and 62 come next; until then a file
+  for a company with such figures can be format-checked but not sent.
+- Back-tested on real filed returns against the book, read in place and printed as pass/fail: the book's result and
+  equity match every year, and the differences were accounts placed differently between years and a few figures typed
+  by hand. The rules alone gave almost every field. Account types are today's, so a type changed later moves earlier years too.
+- Kitsas keeps the tax contact in `VeroYhteysHenkilo` and `VeroYhteysPuhelin`, and Tilari has no field for them. A
+  message pointing to the book's settings was a dead end, so the dialog takes them too and never writes `Asetus`.
+- A select does not fire for the value it already shows, so confirming a guessed field needs its own button.
+- `createBook.ts` imports `luo.sql?raw`, which only Vite understands: anything using it runs under Vitest, not
+  `node --import tsx`.
+- Vero's 6B record description v1.1 is dated 24.11.2026 on its own page, later than this entry. Taken as current; its
+  only change from 1.0 is the optional field 179.
 
 ## 2026-11-01 - Company page: a period's rows follow the year's closing
 

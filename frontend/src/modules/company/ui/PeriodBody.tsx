@@ -1,15 +1,28 @@
 import { Fragment, useState } from 'react'
+import { deleteAttachment, deleteVoucher, saveVoucher, uploadAttachment } from '../../../api'
+import { replaceCalculation, voucherDateFor } from '../../../book/modules/company/domain/upload'
+import { TYPE_ATTACHMENT_NOTE } from '../../../book/vouchers'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { DocLine, DocLines, DocRow, DocRows } from '../../../shared/DocRows'
 import { formatCents } from '../../../shared/money'
 import { FilePill, Pill } from '../../../shared/Pill'
+import { TaxReturnButton } from '../../taxReturn/ui/TaxReturnButton'
 import type { CompanyOverview, PeriodView, TaxSettlementView } from '../api'
 import { DeadlineTiles } from './Deadlines'
 import { DividendSection } from './Dividends'
 import { Fold } from './Fold'
 import { errorText, periodShort } from './format'
 import { AttachSelect, OpenVoucher, SlotRow, UnlinkedRow, type SlotActions } from './Slot'
+
+function taxDocuments(period: PeriodView) {
+  const held = (kind: string) => period.slots.some((slot) => slot.kind === kind && slot.documents.length > 0)
+  return {
+    statements: held('financial_statements') || Boolean(period.kitsas_statement),
+    audit_report: held('audit_report'),
+    minutes: held('agm_minutes'),
+  }
+}
 
 /**
  * After the tax decision: what the income tax booking left to pay or to get back, and the vouchers that settled
@@ -53,6 +66,32 @@ export function PeriodBody({
   const { t } = useI18n()
   const [rowError, setRowError] = useState<string | null>(null)
   const kindLabel = (kind: string) => t(`company.kind.${kind}`)
+
+  /**
+   * The tax return's calculation on a Liitetieto voucher, listed with the 6B but not filling it.
+   * A new one replaces the kept one's file in place, so the slot holds one calculation.
+   */
+  async function storeCalculation(file: File, title: string) {
+    const when = voucherDateFor(today, today, overview.lock_date, overview.periods)
+    if (!when.ok) throw new Error(t('company.upload.noOpenYear'))
+    const plan = replaceCalculation(period.slots.find((s) => s.kind === 'tax_return_6b')?.documents ?? [], overview.lock_date)
+    let voucherId = plan.update?.voucher_id
+    if (voucherId) {
+      await saveVoucher({ date: when.date, title }, voucherId)
+      await uploadAttachment(voucherId, file)
+      for (const old of plan.update?.files ?? []) await deleteAttachment(old.id)
+    } else {
+      voucherId = (await saveVoucher({ date: when.date, type: TYPE_ATTACHMENT_NOTE, status: 100, title, entries: [] })).id
+      await uploadAttachment(voucherId, file)
+    }
+    for (const old of plan.drop) await deleteVoucher(old.voucher_id)
+    await actions.apply({
+      add: plan.update ? [] : [{ kind: 'tax_return_6b', period_ends: period.ends, voucher_id: voucherId, doc_date: when.doc_date ?? null, calculation: true }],
+      remove: [...plan.drop, ...plan.unlink].map((d) => d.key),
+    })
+    return plan.update ? 'replaced' : 'new'
+  }
+
   // The report goes by the year the dividend was paid, which is not this period's: it is due the January after.
   const reportDue = period.deadlines.find((d) => d.key === 'dividend_report')?.due
   const reportYear = reportDue ? Number(reportDue.slice(0, 4)) - 1 : null
@@ -78,6 +117,11 @@ export function PeriodBody({
         <p className="muted company-footnote">{t('company.deadlines.footnote')}</p>
       </Fold>
       {rowError ? <p className="error">{rowError}</p> : null}
+      <TaxReturnButton
+        ends={period.ends}
+        documents={taxDocuments(period)}
+        calculation={overview.read_only ? undefined : { today, store: storeCalculation }}
+      />
 
       <Fold id="documents" label={t('company.period.documents')}>
         <DocRows>

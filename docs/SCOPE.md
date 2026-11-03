@@ -54,6 +54,7 @@ On start, Tilari can create a new Finnish business-chart book in the browser. De
 | Allocations | In | List, P&L, lines; add in settings |
 | Rental objects | Partial | Tilari addition. Portfolio, object page, setup from ledger evidence, documents. Leases, rent arrears, housing-company loan share and forecast come next; a picker for an object's sale vouchers is not built yet |
 | Company documents and deadlines | Partial | Tilari addition (`#/company`). Period and company documents on normal vouchers, suggestions from the book, statutory deadlines. Dividends read from the ledger: decision, payment, withholding and annual report, with their deadlines. Shareholders with dated holdings, each dividend's recipients and withholding, and decision and payment vouchers as drafts, the meeting's minutes kept once on the decision; extraordinary meetings on their own row; the income tax left after the closing and what settled it ([DIVIDENDS.md](DIVIDENDS.md)). No SVOP returns, interim dividends or cancellation yet. ADR-031 |
+| Annual tax return (6B) | Partial | Tilari addition, on the company page. Figures for OmaVero and an Ilmoitin file, traced to accounts and reconciled to the cent, with forms 62, 73, 8A and 71B (other assets). Some rarer sections go by hand in OmaVero. See [TAX_RETURN.md](TAX_RETURN.md) |
 | Company settings | Partial | Name, business id, city, VAT period, practice flag. Not a full Kitsas settings dialog |
 | Billing | Not yet | Type 210 is read-only |
 | Approval workflow | Not yet | Stub only (`#/workflow`, API 501) |

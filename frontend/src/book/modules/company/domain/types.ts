@@ -64,6 +64,8 @@ export type CompanyDocument = {
   /** The document's own date, when the voucher's differs (a closed year cannot carry it). */
   doc_date?: string
   note?: string
+  /** A calculation behind the slot's document, such as the tax return's: kept with it, does not fill the slot. */
+  calculation?: true
   [extra: string]: unknown
 }
 
@@ -118,6 +120,7 @@ export type CompanyChanges = {
     attachment_id?: number | null
     doc_date?: string | null
     note?: string | null
+    calculation?: boolean
   }[]
   /** `CompanyDocument.key`s to unlink; the vouchers stay. */
   remove?: string[]
@@ -149,6 +152,8 @@ export type DocumentView = {
   doc_number: number | null
   series: string
   note: string | null
+  /** A calculation kept with the slot's document: listed there, but does not fill the slot. */
+  calculation: boolean
   state: LinkState
   /** The linked file, or the voucher's files. */
   files: DocumentFile[]

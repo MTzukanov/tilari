@@ -59,16 +59,20 @@ function interpolate(template: string, vars?: Record<string, string | number>): 
   )
 }
 
-export function t(key: string, vars?: Record<string, string | number>): string {
-  const raw = lookup(catalogs[current], key) ?? lookup(fallback, key)
+/** A message counting things can have its singular in `key_one`, used when `count` is 1. */
+function message(locale: Locale, key: string, vars?: Record<string, string | number>): string {
+  const one = vars?.count === 1 ? (lookup(catalogs[locale], `${key}_one`) ?? lookup(fallback, `${key}_one`)) : undefined
+  const raw = one ?? lookup(catalogs[locale], key) ?? lookup(fallback, key)
   if (raw == null) return key
   return interpolate(raw, vars)
 }
 
+export function t(key: string, vars?: Record<string, string | number>): string {
+  return message(current, key, vars)
+}
+
 export function tIn(locale: Locale, key: string, vars?: Record<string, string | number>): string {
-  const raw = lookup(catalogs[locale], key) ?? lookup(fallback, key)
-  if (raw == null) return key
-  return interpolate(raw, vars)
+  return message(locale, key, vars)
 }
 
 export function getLocale(): Locale {

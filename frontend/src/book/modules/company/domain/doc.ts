@@ -75,6 +75,8 @@ function normalizeDocument(input: unknown, path: string): CompanyDocument {
   else delete out.doc_date
   if (typeof input.note === 'string' && input.note.trim()) out.note = input.note.trim().slice(0, MAX_NOTE)
   else delete out.note
+  if (input.calculation === true) out.calculation = true
+  else delete out.calculation
   return out
 }
 

@@ -46,6 +46,7 @@ function sessionChangeHref(change: SessionChange): string | null {
     case 'property_settings':
       return '#/properties'
     case 'company':
+    case 'tax_return':
       return '#/company'
     default:
       return null
