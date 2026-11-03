@@ -1,4 +1,5 @@
 /** A new document's voucher date. Pure, so the form can say what will happen before it saves. */
+import type { DocumentView } from './types'
 
 export type PeriodRange = { starts: string; ends: string }
 
@@ -22,4 +23,26 @@ export function voucherDateFor(docDate: string, today: string, lockDate: string 
   if (open(docDate, lockDate, periods)) return { ok: true, date: docDate }
   if (open(today, lockDate, periods)) return { ok: true, date: today, doc_date: docDate }
   return { ok: false }
+}
+
+/** What a new calculation does to the ones already kept with a slot. */
+export type CalculationPlan = {
+  /** The voucher that takes the new file in place of its own; none means a new voucher. */
+  update: DocumentView | null
+  /** Older calculations, deleted with their links. */
+  drop: DocumentView[]
+  /** Links whose voucher is already gone. */
+  unlink: DocumentView[]
+}
+
+/**
+ * A slot keeps one calculation: a new one replaces the newest still open to change, and the
+ * other open ones go. One dated on or before the lock date cannot change and stays.
+ */
+export function replaceCalculation(documents: DocumentView[], lockDate: string | null): CalculationPlan {
+  const kept = documents.filter((d) => d.calculation)
+  const open = kept
+    .filter((d) => d.state !== 'missing' && d.voucher_date && !(lockDate && d.voucher_date <= lockDate))
+    .sort((a, b) => (b.voucher_date ?? '').localeCompare(a.voucher_date ?? '') || b.voucher_id - a.voucher_id)
+  return { update: open[0] ?? null, drop: open.slice(1), unlink: kept.filter((d) => d.state === 'missing') }
 }

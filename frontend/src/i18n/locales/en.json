@@ -2031,6 +2031,7 @@
     "calc": {
       "store": "Save the calculation to documents",
       "stored": "The calculation is saved as a PDF on the Company page under Tax return 6B. It does not mark the return as filed.",
+      "replaced": "The calculation is updated: the new PDF replaced the earlier one on the Company page under Tax return 6B. It does not mark the return as filed.",
       "heading": "Tax return calculation {year}",
       "title": "Tax return calculation {year}, made {date}",
       "made": "Made {date} from the posted vouchers of the book. The personal IDs of the Ilmoitin file are not in it.",

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { saveVoucher, uploadAttachment } from '../../../api'
-import { voucherDateFor } from '../../../book/modules/company/domain/upload'
+import { deleteAttachment, deleteVoucher, saveVoucher, uploadAttachment } from '../../../api'
+import { replaceCalculation, voucherDateFor } from '../../../book/modules/company/domain/upload'
 import { TYPE_ATTACHMENT_NOTE } from '../../../book/vouchers'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
@@ -36,15 +36,29 @@ export function PeriodBody({
   const [rowError, setRowError] = useState<string | null>(null)
   const kindLabel = (kind: string) => t(`company.kind.${kind}`)
 
-  /** The tax return's calculation as a new Liitetieto voucher, listed with the 6B but not filling it. */
+  /**
+   * The tax return's calculation on a Liitetieto voucher, listed with the 6B but not filling it.
+   * A new one replaces the kept one's file in place, so the slot holds one calculation.
+   */
   async function storeCalculation(file: File, title: string) {
     const when = voucherDateFor(today, today, overview.lock_date, overview.periods)
     if (!when.ok) throw new Error(t('company.upload.noOpenYear'))
-    const saved = await saveVoucher({ date: when.date, type: TYPE_ATTACHMENT_NOTE, status: 100, title, entries: [] })
-    await uploadAttachment(saved.id, file)
+    const plan = replaceCalculation(period.slots.find((s) => s.kind === 'tax_return_6b')?.documents ?? [], overview.lock_date)
+    let voucherId = plan.update?.voucher_id
+    if (voucherId) {
+      await saveVoucher({ date: when.date, title }, voucherId)
+      await uploadAttachment(voucherId, file)
+      for (const old of plan.update?.files ?? []) await deleteAttachment(old.id)
+    } else {
+      voucherId = (await saveVoucher({ date: when.date, type: TYPE_ATTACHMENT_NOTE, status: 100, title, entries: [] })).id
+      await uploadAttachment(voucherId, file)
+    }
+    for (const old of plan.drop) await deleteVoucher(old.voucher_id)
     await actions.apply({
-      add: [{ kind: 'tax_return_6b', period_ends: period.ends, voucher_id: saved.id, doc_date: when.doc_date ?? null, calculation: true }],
+      add: plan.update ? [] : [{ kind: 'tax_return_6b', period_ends: period.ends, voucher_id: voucherId, doc_date: when.doc_date ?? null, calculation: true }],
+      remove: [...plan.drop, ...plan.unlink].map((d) => d.key),
     })
+    return plan.update ? 'replaced' : 'new'
   }
 
   return (

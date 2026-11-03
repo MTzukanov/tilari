@@ -2031,6 +2031,7 @@
     "calc": {
       "store": "Berechnung bei den Dokumenten speichern",
       "stored": "Die Berechnung ist als PDF auf der Seite Unternehmen unter Steuererklärung 6B gespeichert. Sie markiert die Erklärung nicht als abgegeben.",
+      "replaced": "Die Berechnung ist aktualisiert: Das neue PDF hat das frühere auf der Seite Unternehmen unter Steuererklärung 6B ersetzt. Sie markiert die Erklärung nicht als abgegeben.",
       "heading": "Berechnung zur Steuererklärung {year}",
       "title": "Berechnung zur Steuererklärung {year}, erstellt {date}",
       "made": "Erstellt am {date} aus den gebuchten Belegen. Die Personenkennungen der Ilmoitin-Datei sind nicht enthalten.",

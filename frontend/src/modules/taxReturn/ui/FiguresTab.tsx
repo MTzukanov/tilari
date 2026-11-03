@@ -117,7 +117,7 @@ function Group({ group, view, showZero, actions, opened }: { group: GroupView; v
 /** Writes the calculation as a PDF and keeps it with the period's tax return documents. */
 function StoreCalculation({ view, calculation }: { view: TaxReturnView; calculation: CalculationStore }) {
   const { t } = useI18n()
-  const [state, setState] = useState<'idle' | 'busy' | 'done'>('idle')
+  const [state, setState] = useState<'idle' | 'busy' | 'new' | 'replaced'>('idle')
   const [error, setError] = useState<string | null>(null)
   return (
     <>
@@ -133,7 +133,7 @@ function StoreCalculation({ view, calculation }: { view: TaxReturnView; calculat
           setError(null)
           calculation
             .store(file, calculationTitle(t, view, today))
-            .then(() => setState('done'))
+            .then(setState)
             .catch((err: unknown) => {
               setState('idle')
               setError(err instanceof Error ? err.message : String(err))
@@ -142,9 +142,9 @@ function StoreCalculation({ view, calculation }: { view: TaxReturnView; calculat
       >
         {t('taxReturn.calc.store')}
       </button>
-      {state === 'done' ? (
+      {state === 'new' || state === 'replaced' ? (
         <span className="muted tax-return-actions-note" role="status">
-          {t('taxReturn.calc.stored')}
+          {t(state === 'new' ? 'taxReturn.calc.stored' : 'taxReturn.calc.replaced')}
         </span>
       ) : null}
       {error ? <span className="error tax-return-actions-note">{error}</span> : null}

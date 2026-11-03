@@ -178,13 +178,15 @@ nothing itself.
 ## The stored calculation
 
 "Tallenna laskelma asiakirjoihin" writes the return as it stands into a PDF (`ui/calculationPdf.ts`, with the
-letters' `shared/textPdf.ts`: text only, A4, no library) and keeps it as a new Liitetieto voucher of the day, linked to
+letters' `shared/textPdf.ts`: text only, A4, no library) and keeps it on a Liitetieto voucher of the day, linked to
 the period's Veroilmoitus 6B row on the company page. The PDF holds the checks, every 6B figure with the accounts it
 comes from, and the rest of the return in OmaVero's wording. The personal IDs typed for the file are not in it.
 
 The link is marked `calculation`: the row lists it with a "Laskelma" tag, but it does not fill the row or meet the
-tax return's deadline. Only the filed return does. Each save adds a dated voucher; an old one is unlinked or deleted
-like any document.
+tax return's deadline. Only the filed return does. The row keeps one calculation (owner, 2026-11-03): a new save
+writes over the newest kept one in place (date, title, its file replaced), deletes the other kept ones with their
+links and unlinks those already deleted (`replaceCalculation` in `company/domain/upload.ts`). One dated on or before
+the lock date cannot change and stays; the save then makes a new voucher.
 
 ## Left for later
 

@@ -2031,6 +2031,7 @@
     "calc": {
       "store": "Tallenna laskelma asiakirjoihin",
       "stored": "Laskelma on tallennettu PDF:nä Yhtiö-sivulle kohtaan Veroilmoitus 6B. Se ei merkitse ilmoitusta annetuksi.",
+      "replaced": "Laskelma on päivitetty: uusi PDF korvasi aiemman Yhtiö-sivun kohdassa Veroilmoitus 6B. Se ei merkitse ilmoitusta annetuksi.",
       "heading": "Veroilmoituksen laskelma {year}",
       "title": "Veroilmoituksen laskelma {year}, laadittu {date}",
       "made": "Laadittu {date} kirjanpidon kirjatuista tositteista. Ilmoitin-tiedoston henkilötunnukset eivät ole mukana.",

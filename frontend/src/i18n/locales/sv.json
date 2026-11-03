@@ -2031,6 +2031,7 @@
     "calc": {
       "store": "Spara kalkylen bland dokumenten",
       "stored": "Kalkylen är sparad som PDF på sidan Bolag under Skattedeklaration 6B. Den markerar inte deklarationen som inlämnad.",
+      "replaced": "Kalkylen är uppdaterad: den nya PDF:en ersatte den tidigare på sidan Bolag under Skattedeklaration 6B. Den markerar inte deklarationen som inlämnad.",
       "heading": "Kalkyl för skattedeklarationen {year}",
       "title": "Kalkyl för skattedeklarationen {year}, gjord {date}",
       "made": "Gjord {date} av bokföringens bokförda verifikat. Ilmoitin-filens personbeteckningar finns inte med.",

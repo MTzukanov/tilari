@@ -148,12 +148,16 @@ test.describe('annual tax return data', () => {
 
     await dialog.getByRole('button', { name: 'Tallenna laskelma asiakirjoihin' }).click()
     await expect(dialog.getByRole('status')).toContainText('Laskelma on tallennettu')
+    // A second save writes over the first: still one voucher with one file.
+    await dialog.getByRole('button', { name: 'Tallenna laskelma asiakirjoihin' }).click()
+    await expect(dialog.getByRole('status')).toContainText('Laskelma on päivitetty')
     await dialog.getByRole('button', { name: 'Sulje' }).click()
 
     const taxReturn = page.locator('.doc-row', { has: page.locator('.doc-row-name', { hasText: /^Veroilmoitus 6B$/ }) })
     await expect(taxReturn).toContainText('Veroilmoituksen laskelma 2024, laadittu 15.12.2025')
     await expect(taxReturn.getByText('Laskelma', { exact: true })).toBeVisible()
-    await expect(taxReturn.getByRole('link', { name: '6B-laskelma-2024-2025-12-15.pdf' })).toBeVisible()
+    await expect(taxReturn.getByRole('link', { name: '6B-laskelma-2024-2025-12-15.pdf' })).toHaveCount(1)
+    await expect(taxReturn.getByText('Laskelma', { exact: true })).toHaveCount(1)
     // A calculation is not the filed return.
     await expect(taxReturn.locator('.doc-row-head .pill')).toHaveText('Puuttuu')
   })

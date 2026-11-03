@@ -7,6 +7,14 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-03 - Tax return: a new calculation replaces the kept one
+
+- Owner's test of "Tallenna laskelma asiakirjoihin": each save added another voucher and PDF to the 6B row. Now a save
+  writes over the newest kept calculation (voucher date and title to the day, new file uploaded, old files deleted),
+  deletes the other kept ones (`tila 0`, like any delete) with their links, and unlinks those already deleted. A
+  calculation dated on or before the lock date cannot change, so it stays and the save makes a new voucher.
+- Books saved before this keep their extra calculations until the next save, which folds the open ones into one.
+
 ## 2026-11-02 - Checks link to their place, form 73 always findable, the calculation kept as a PDF
 
 - Owner's look at form 73 on a real book: form 73 was not on the Liitelomakkeet tab. The dividend account had been

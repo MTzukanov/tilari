@@ -14,8 +14,8 @@ import { anchorId, type Jump, type Tab } from './jump'
 /** What the company page knows about this period's documents. */
 export type PeriodDocuments = { statements: boolean; audit_report: boolean; minutes: boolean }
 
-/** Keeps the calculation with the period's tax return documents, dated `today`. */
-export type CalculationStore = { today: string; store: (file: File, title: string) => Promise<void> }
+/** Keeps the calculation with the period's tax return documents, dated `today`; says whether it replaced a kept one. */
+export type CalculationStore = { today: string; store: (file: File, title: string) => Promise<'new' | 'replaced'> }
 
 const TABS: Tab[] = ['figures', 'facts', 'forms', 'file']
 
