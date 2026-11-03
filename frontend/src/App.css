@@ -6788,6 +6788,47 @@ button.due-tile:hover {
   background: var(--crit-soft);
 }
 
+.dividend-recipients {
+  margin-top: 0.6rem;
+}
+
+.dividend-recipients > summary {
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.dividend-scroll {
+  max-width: 100%;
+  margin-top: 0.4rem;
+  overflow-x: auto;
+}
+
+.dividend-actions {
+  margin: 0.6rem 0 0;
+}
+
+.dividend-draft-note {
+  margin: 0.35rem 0;
+  font-size: 0.85rem;
+}
+
+.company-shareholders {
+  margin-top: 1rem;
+}
+
+.company-shareholders > .muted {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+}
+
+.company-shareholder {
+  min-width: 0;
+  margin: 0 0 0.6rem;
+  padding: 0 0 0.6rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+
 .company-unlinked > summary {
   cursor: pointer;
 }

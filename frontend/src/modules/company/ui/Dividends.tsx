@@ -1,10 +1,30 @@
+import { useEffect, useState } from 'react'
+import { fetchAccounts, saveVoucher, uploadAttachment } from '../../../api'
+import type { Account, SaveVoucherInput } from '../../../book/types'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { DocLine, DocLines } from '../../../shared/DocRows'
-import { formatCents } from '../../../shared/money'
+import { formatCents, parseEurInput } from '../../../shared/money'
+import { formatBp } from '../../../shared/percent'
 import { FilePill, Pill, type PillTone } from '../../../shared/Pill'
 import { StepRail, type StepTone } from '../../../shared/StepRail'
-import type { DividendStepState, DividendView } from '../api'
+import {
+  decisionDraft,
+  DISTRIBUTION_ACCOUNT,
+  lastEndedBefore,
+  PAYABLE_ACCOUNT,
+  paymentDraft,
+  RETAINED_ACCOUNT,
+  voucherDateFor,
+  WITHHOLDING_ACCOUNT,
+  type CompanyOverview,
+  type DividendStepState,
+  type DividendView,
+  type PeriodView,
+  type RecipientView,
+  type VoucherRef,
+} from '../api'
+import { errorText, periodShort } from './format'
 import { OpenVoucher, type SlotActions } from './Slot'
 
 const STEP_TONE: Record<DividendStepState, StepTone> = {
@@ -18,22 +38,307 @@ const STEP_TONE: Record<DividendStepState, StepTone> = {
   no_contract: 'crit',
 }
 
-/** Dividends from the period's profit: one card each, read from the ledger. */
-export function DividendSection({ dividends, actions }: { dividends: DividendView[]; actions: SlotActions }) {
+type FormProps = { overview: CompanyOverview; today: string; actions: SlotActions; onClose: () => void }
+
+/** A day a voucher can carry: inside a fiscal year and after the lock date. */
+function openDay(date: string, overview: CompanyOverview): boolean {
+  const when = voucherDateFor(date, date, overview.lock_date, overview.periods)
+  return when.ok && !when.doc_date
+}
+
+/** Saves a draft and its file, then shows the page again. A draft that saved stays even if the file fails. */
+async function saveDraft(draft: SaveVoucherInput, file: File | null, actions: SlotActions): Promise<number> {
+  const saved = await saveVoucher(draft)
+  try {
+    if (file) await uploadAttachment(saved.id, file)
+  } finally {
+    await actions.refresh()
+  }
+  return saved.id
+}
+
+/** A draft's lines, as the voucher will show them. */
+function LinePreview({ lines, names }: { lines: SaveVoucherInput['entries']; names: Map<number, string> }) {
   const { t } = useI18n()
-  if (!dividends.length) return null
+  return (
+    <div className="dividend-scroll">
+      <table className="ledger-table dense">
+        <thead>
+          <tr>
+            <th>{t('company.dividend.form.account')}</th>
+            <th>{t('company.dividend.form.partner')}</th>
+            <th className="num">{t('company.dividend.form.debit')}</th>
+            <th className="num">{t('company.dividend.form.credit')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(lines ?? []).map((line, i) => (
+            <tr key={i}>
+              <td>{line.account}</td>
+              <td>{typeof line.partner === 'object' && line.partner?.id ? (names.get(line.partner.id) ?? '') : ''}</td>
+              <td className="num">{formatCents(line.debit_cents ?? 0, { emptyZero: true })}</td>
+              <td className="num">{formatCents(line.credit_cents ?? 0, { emptyZero: true })}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function DecisionForm({ period, overview, today, actions, onClose }: FormProps & { period: PeriodView }) {
+  const { t } = useI18n()
+  const [date, setDate] = useState(today)
+  const [amount, setAmount] = useState('')
+  const [title, setTitle] = useState(t('company.dividend.decision.defaultTitle', { period: periodShort(period) }))
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const cents = parseEurInput(amount)
+  const dayOpen = Boolean(date) && openDay(date, overview)
+  const distributes = date ? lastEndedBefore(overview.periods, date) : null
+  const draft = decisionDraft({ date, amount_snt: cents, title: title.trim() })
+  const ready = dayOpen && cents > 0 && title.trim() !== ''
+
+  return (
+    <div className="company-panel">
+      <div className="property-form-grid">
+        <label>
+          {t('company.dividend.decision.date')}
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </label>
+        <label>
+          {t('company.dividend.decision.amount')}
+          <input type="text" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        </label>
+        <label>
+          {t('company.upload.titleField')}
+          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
+        </label>
+      </div>
+      {date && !dayOpen ? <p className="error">{t('company.dividend.form.dayClosed')}</p> : null}
+      {dayOpen && distributes !== period.ends ? <p className="company-note">{t('company.dividend.decision.otherPeriod')}</p> : null}
+      {period.dividends.length || period.dividend_drafts.length ? <p className="company-note">{t('company.dividend.decision.another')}</p> : null}
+      {cents > 0 ? <LinePreview lines={draft.entries} names={new Map()} /> : null}
+      <p className="muted">
+        {t('company.dividend.decision.accounts', { retained: RETAINED_ACCOUNT, distribution: DISTRIBUTION_ACCOUNT })} {t('company.dividend.form.draftNote')}
+      </p>
+      {error ? <p className="error">{error}</p> : null}
+      <div className="company-panel-actions">
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={busy || !ready}
+          onClick={() => {
+            setBusy(true)
+            setError(null)
+            saveDraft(draft, null, actions)
+              .then(onClose)
+              .catch((err) => setError(errorText(t, err)))
+              .finally(() => setBusy(false))
+          }}
+        >
+          {t('company.dividend.form.create')}
+        </button>
+        <button type="button" className="btn-secondary" disabled={busy} onClick={onClose}>
+          {t('company.upload.cancel')}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function PaymentForm({ dividend, overview, today, actions, onClose }: FormProps & { dividend: DividendView }) {
+  const { t } = useI18n()
+  const [date, setDate] = useState(today)
+  const [title, setTitle] = useState(t('company.dividend.payment.defaultTitle'))
+  const [banks, setBanks] = useState<Account[]>([])
+  const [payable, setPayable] = useState<string>(t('company.dividend.payment.payableName'))
+  const [account, setAccount] = useState(PAYABLE_ACCOUNT)
+  const [file, setFile] = useState<File | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let live = true
+    fetchAccounts()
+      .then(({ accounts }) => {
+        if (!live) return
+        setBanks(accounts.filter((a) => a.type === 'ARP'))
+        const named = accounts.find((a) => a.number === PAYABLE_ACCOUNT)
+        if (named) setPayable(named.name)
+      })
+      .catch(() => undefined)
+    return () => {
+      live = false
+    }
+  }, [])
+
+  const dayOpen = Boolean(date) && openDay(date, overview)
+  const draft = paymentDraft({ date, title: title.trim(), withholding: t('company.dividend.payment.withholdingLine'), recipients: dividend.open_recipients, account })
+  const names = new Map(dividend.open_recipients.map((r) => [r.partner_id, r.name]))
+  const debt = account === PAYABLE_ACCOUNT
+  const ready = dayOpen && title.trim() !== '' && dividend.open_recipients.length > 0 && !dividend.split_problem
+
+  return (
+    <div className="company-panel">
+      <div className="property-form-grid">
+        <label>
+          {t('company.dividend.payment.date')}
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </label>
+        <label>
+          {t('company.dividend.payment.paidAs')}
+          <select value={account} onChange={(e) => setAccount(Number(e.target.value))}>
+            <option value={PAYABLE_ACCOUNT}>{t('company.dividend.payment.asDebt', { account: PAYABLE_ACCOUNT, name: payable })}</option>
+            {banks.map((b) => (
+              <option key={b.number} value={b.number}>
+                {t('company.dividend.payment.fromBank', { account: b.number, name: b.name })}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          {t('company.upload.titleField')}
+          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
+        </label>
+        {debt ? (
+          <label>
+            {t('company.dividend.payment.contract')}
+            <input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          </label>
+        ) : null}
+      </div>
+      {date && !dayOpen ? <p className="error">{t('company.dividend.form.dayClosed')}</p> : null}
+      {dividend.payment_drafts.length ? <p className="company-note">{t('company.dividend.payment.draftExists')}</p> : null}
+      <LinePreview lines={draft.entries} names={names} />
+      <p className="muted">
+        {t('company.dividend.payment.accounts', { distribution: DISTRIBUTION_ACCOUNT, withholding: WITHHOLDING_ACCOUNT })} {t('company.dividend.form.draftNote')}
+      </p>
+      {debt && !file ? <p className="muted">{t('company.dividend.payment.contractNote')}</p> : null}
+      {error ? <p className="error">{error}</p> : null}
+      <div className="company-panel-actions">
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={busy || !ready}
+          onClick={() => {
+            setBusy(true)
+            setError(null)
+            saveDraft(draft, debt ? file : null, actions)
+              .then(onClose)
+              .catch((err) => setError(errorText(t, err)))
+              .finally(() => setBusy(false))
+          }}
+        >
+          {t('company.dividend.form.create')}
+        </button>
+        <button type="button" className="btn-secondary" disabled={busy} onClick={onClose}>
+          {t('company.upload.cancel')}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** Who gets what, from the shareholders kept on the company's own card. */
+function Recipients({ dividend: d }: { dividend: DividendView }) {
+  const { t } = useI18n()
+  const rate = (r: RecipientView) =>
+    r.rate_bp == null ? t('company.shareholders.rateMissing') : r.over_limit_snt ? t('company.dividend.recipients.overLimit', { rate: formatBp(r.rate_bp) }) : formatBp(r.rate_bp)
+  const sum = (pick: (r: RecipientView) => number) => d.recipients.reduce((s, r) => s + pick(r), 0)
+  return (
+    <details className="dividend-recipients">
+      <summary>{t('company.dividend.recipients.title', { n: d.recipients.length })}</summary>
+      {d.split_problem && d.split_problem !== 'rate_missing' ? (
+        <p className="muted">{t(`company.dividend.recipients.problem.${d.split_problem}`)}</p>
+      ) : (
+        <div className="dividend-scroll">
+          <table className="ledger-table zebra dense">
+            <thead>
+              <tr>
+                <th>{t('company.shareholders.name')}</th>
+                <th className="num">{t('company.shareholders.shares')}</th>
+                <th className="num">{t('company.dividend.recipients.gross')}</th>
+                <th className="num">{t('company.dividend.recipients.rate')}</th>
+                <th className="num">{t('company.dividend.recipients.withholding')}</th>
+                <th className="num">{t('company.dividend.recipients.net')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {d.recipients.map((r) => (
+                <tr key={r.key}>
+                  <td>{r.name}</td>
+                  <td className="num">{r.shares}</td>
+                  <td className="num">{formatCents(r.gross_snt)}</td>
+                  <td className="num">{rate(r)}</td>
+                  <td className="num">{formatCents(r.withholding_snt)}</td>
+                  <td className="num">{formatCents(r.net_snt)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={2}>{t('company.dividend.recipients.total')}</td>
+                <td className="num">{formatCents(sum((r) => r.gross_snt))}</td>
+                <td />
+                <td className="num">{formatCents(sum((r) => r.withholding_snt))}</td>
+                <td className="num">{formatCents(sum((r) => r.net_snt))}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+      {d.split_problem === 'rate_missing' ? <p className="error">{t('company.dividend.recipients.problem.rate_missing')}</p> : null}
+    </details>
+  )
+}
+
+/** Drafts on Osingonjako, each to open and post in the voucher editor. */
+function DraftLines({ drafts, label, actions }: { drafts: VoucherRef[]; label: string; actions: SlotActions }) {
+  const { t } = useI18n()
+  if (!drafts.length) return null
+  return (
+    <DocLines>
+      {drafts.map((v) => (
+        <DocLine key={v.voucher_id} voucher={<OpenVoucher voucher={v} actions={actions} />} title={v.title || label} mark={<Pill tone="warn">{t('company.dividend.draft')}</Pill>}>
+          {v.files.map((f) => (
+            <FilePill key={f.id} id={f.id} name={f.name} />
+          ))}
+        </DocLine>
+      ))}
+    </DocLines>
+  )
+}
+
+/** Dividends from the period's profit: one card each, read from the ledger, and drafts for the next step. */
+export function DividendSection({ period, overview, today, actions }: { period: PeriodView; overview: CompanyOverview; today: string; actions: SlotActions }) {
+  const { t } = useI18n()
+  const [deciding, setDeciding] = useState(false)
+  const canDecide = period.decide_here && !overview.read_only
+  if (!period.dividends.length && !period.dividend_drafts.length && !canDecide) return null
   return (
     <>
       <h3 className="section-label">{t('company.dividend.title')}</h3>
-      {dividends.map((d) => (
-        <DividendCard key={`${d.decided_on}-${d.vouchers[0]?.voucher_id ?? ''}`} dividend={d} actions={actions} />
+      {period.dividends.map((d) => (
+        <DividendCard key={`${d.decided_on}-${d.vouchers[0]?.voucher_id ?? ''}`} dividend={d} overview={overview} today={today} actions={actions} />
       ))}
+      <DraftLines drafts={period.dividend_drafts} label={t('company.dividend.voucher.decision')} actions={actions} />
+      {period.dividend_drafts.length ? <p className="muted dividend-draft-note">{t('company.dividend.draftNote')}</p> : null}
+      {canDecide && !deciding ? (
+        <p>
+          <button type="button" className="btn-secondary" onClick={() => setDeciding(true)}>
+            {t('company.dividend.decision.open')}
+          </button>
+        </p>
+      ) : null}
+      {deciding ? <DecisionForm period={period} overview={overview} today={today} actions={actions} onClose={() => setDeciding(false)} /> : null}
     </>
   )
 }
 
-function DividendCard({ dividend: d, actions }: { dividend: DividendView; actions: SlotActions }) {
+function DividendCard({ dividend: d, overview, today, actions }: { dividend: DividendView; overview: CompanyOverview; today: string; actions: SlotActions }) {
   const { t } = useI18n()
+  const [paying, setPaying] = useState(false)
   const tones = d.steps.map((s) => STEP_TONE[s.state])
   // The card's state is the last step reached in order, red when any step has a problem.
   const reached = d.steps.findIndex((s) => STEP_TONE[s.state] !== 'ok')
@@ -89,6 +394,19 @@ function DividendCard({ dividend: d, actions }: { dividend: DividendView; action
           </DocLine>
         ))}
       </DocLines>
+      <DraftLines drafts={d.payment_drafts} label={t('company.dividend.voucher.payment')} actions={actions} />
+
+      <Recipients dividend={d} />
+
+      {unpaid > 0 && !overview.read_only && !paying ? (
+        <p className="dividend-actions">
+          <button type="button" className="btn-secondary" onClick={() => setPaying(true)} disabled={Boolean(d.split_problem)}>
+            {t('company.dividend.payment.open')}
+          </button>
+          {d.split_problem ? <span className="muted"> {t('company.dividend.payment.needsRecipients')}</span> : null}
+        </p>
+      ) : null}
+      {paying ? <PaymentForm dividend={d} overview={overview} today={today} actions={actions} onClose={() => setPaying(false)} /> : null}
     </section>
   )
 }

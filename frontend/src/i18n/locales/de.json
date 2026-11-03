@@ -1773,6 +1773,89 @@
         "noContract": "Die Dividende wurde zur Schuld gegenüber dem Aktionär, aber der Beleg der Zahlung hat keinen Anhang wie den Darlehensvertrag.",
         "unpaid": "Nicht ausgezahlt {amount}",
         "withholdingOpen": "Quellensteuer nicht abgeführt {amount}, fällig {date}"
+      },
+      "form": {
+        "account": "Konto",
+        "partner": "Empfänger",
+        "debit": "Soll",
+        "credit": "Haben",
+        "dayClosed": "Der Tag liegt in keinem offenen Geschäftsjahr.",
+        "draftNote": "Der Beleg wird als Entwurf angelegt: öffnen und buchen, sobald es erledigt ist.",
+        "create": "Entwurf anlegen"
+      },
+      "decision": {
+        "open": "Gewinnausschüttungsbeschluss buchen",
+        "defaultTitle": "Gewinnausschüttung für das Geschäftsjahr {period}",
+        "date": "Beschlusstag",
+        "amount": "Dividende gesamt, €",
+        "otherPeriod": "Ein Beschluss an diesem Tag schüttet den Gewinn eines anderen Geschäftsjahres aus und erscheint daher auf dessen Karte.",
+        "another": "Für dieses Geschäftsjahr gibt es bereits einen Beschluss oder Entwurf. Ein neuer Beschluss ist eine Zusatzdividende.",
+        "accounts": "Soll {retained} Gewinnvortrag, Haben {distribution} Gewinnausschüttung."
+      },
+      "payment": {
+        "open": "Zahlungsbeleg anlegen",
+        "defaultTitle": "Auszahlung der Dividende",
+        "payableName": "Verbindlichkeiten aus Gewinnausschüttung",
+        "date": "Zahlungstag",
+        "paidAs": "Gezahlt",
+        "asDebt": "Als Schuld an die Gesellschafter ({account} {name})",
+        "fromBank": "Von der Bank ({account} {name})",
+        "contract": "Darlehensvertrag (optional)",
+        "contractNote": "Eine als Schuld stehen gelassene Dividende braucht den Vertrag als Anhang zum Beleg. Er kann auch später hinzugefügt werden.",
+        "draftExists": "Für diese Dividende gibt es bereits einen Zahlungsentwurf.",
+        "accounts": "Soll {distribution} Gewinnausschüttung mit dem offenen Betrag, Haben {withholding} Quellenabzug und Nettobetrag je Empfänger.",
+        "withholdingLine": "Quellenabzug auf Dividende",
+        "needsRecipients": "Zuerst die Gesellschafter auf der eigenen Karte der Gesellschaft erfassen."
+      },
+      "recipients": {
+        "title": "Empfänger ({n})",
+        "gross": "Brutto",
+        "rate": "Satz",
+        "withholding": "Abzug",
+        "net": "Netto",
+        "total": "Summe",
+        "overLimit": "{rate}, 28 % auf den Teil über 150.000 Euro",
+        "problem": {
+          "no_shareholders": "Keine Gesellschafter erfasst. Auf der eigenen Karte der Gesellschaft erfassen, um die Dividende aufzuteilen.",
+          "no_holders": "Am Beschlusstag hielt niemand Anteile.",
+          "rate_missing": "Für einen im Ausland wohnenden Empfänger fehlt der Abzugssatz."
+        }
+      },
+      "draft": "Entwurf",
+      "draftNote": "Ein Entwurf erscheint noch nicht als Dividende. Öffnen und buchen, sobald der Beschluss gefasst ist."
+    },
+    "shareholders": {
+      "title": "Gesellschafter",
+      "lead": "Wer die Anteile hält und wie viele. Eine Dividende wird nach den Beständen am Beschlusstag aufgeteilt. Die Namen stehen bei den Kitsas-Partnern; Personenkennungen werden nicht gespeichert.",
+      "name": "Name",
+      "kindLabel": "Art",
+      "kind": {
+        "person": "Person",
+        "estate": "Nachlass",
+        "company": "Gesellschaft"
+      },
+      "sharesNow": "Anteile {date}",
+      "rate": "Quellenabzug",
+      "abroad": "wohnt im Ausland",
+      "rateMissing": "Satz fehlt",
+      "rateVero": "Regel der Steuerverwaltung",
+      "empty": "Keine Gesellschafter erfasst.",
+      "edit": "Gesellschafter bearbeiten",
+      "nameInKitsas": "Der Name wird bei den Kitsas-Partnern geändert.",
+      "resident": "In Finnland unbeschränkt steuerpflichtig",
+      "rateOverride": "Abzugssatz, falls nicht die Regel der Steuerverwaltung",
+      "from": "Ab",
+      "shares": "Anteile",
+      "removeHolding": "Änderung entfernen",
+      "addHolding": "Änderung im Bestand hinzufügen",
+      "remove": "Gesellschafter entfernen",
+      "ratesNote": "Regel der Steuerverwaltung: Bei einer Person und einem Nachlass werden 7,5 % der gesamten Dividende bis 150.000 Euro im Jahr einbehalten und 28 % vom übersteigenden Teil. Bei einer Dividende an eine Gesellschaft wird nichts einbehalten. Für im Ausland Wohnende den Quellensteuersatz eingeben.",
+      "add": "Gesellschafter hinzufügen",
+      "save": "Gesellschafter speichern",
+      "error": {
+        "name": "Namen des Gesellschafters angeben.",
+        "rate": "Der Abzugssatz muss 0-100 sein.",
+        "holding": "Für jeden Bestand Datum und Anzahl der Anteile angeben."
       }
     },
     "incomeTax": {
@@ -1801,7 +1884,9 @@
       "newer_version": "Diese Daten wurden mit einem neueren Tilari gespeichert.",
       "too_large": "Die Unternehmensdaten sind zu groß zum Speichern.",
       "invalid_field": "Speichern fehlgeschlagen: ungültige Angabe.",
-      "partial": "Das Dokument wurde erstellt, konnte aber nicht abgeschlossen werden ({reason}). Es steht bei den Belegen und unter Nicht verknüpft."
+      "partial": "Das Dokument wurde erstellt, konnte aber nicht abgeschlossen werden ({reason}). Es steht bei den Belegen und unter Nicht verknüpft.",
+      "duplicate_shareholder": "Derselbe Gesellschafter steht zweimal in der Liste.",
+      "unknown_partner": "Der Gesellschafter ist nicht bei den Kitsas-Partnern."
     },
     "kind": {
       "financial_statements": "Unterzeichneter Jahresabschluss",

@@ -1773,6 +1773,89 @@
         "noContract": "The dividend was left as a debt to the shareholder, but the payment's voucher has no attachment, such as the loan agreement.",
         "unpaid": "Unpaid {amount}",
         "withholdingOpen": "Withholding not paid {amount}, due {date}"
+      },
+      "form": {
+        "account": "Account",
+        "partner": "Recipient",
+        "debit": "Debit",
+        "credit": "Credit",
+        "dayClosed": "The day is not in an open financial period.",
+        "draftNote": "The voucher is made as a draft: open and post it once it is done.",
+        "create": "Make draft"
+      },
+      "decision": {
+        "open": "Book a dividend decision",
+        "defaultTitle": "Dividend for the financial period {period}",
+        "date": "Decision day",
+        "amount": "Dividend in total, €",
+        "otherPeriod": "A decision on this day distributes another period's profit, so it shows on that period's card.",
+        "another": "This period already has a decision or a draft. A new decision is an extra dividend.",
+        "accounts": "Debit {retained} Retained earnings, credit {distribution} Dividend distribution."
+      },
+      "payment": {
+        "open": "Make payment voucher",
+        "defaultTitle": "Dividend payment",
+        "payableName": "Dividends payable",
+        "date": "Payment day",
+        "paidAs": "Paid",
+        "asDebt": "As a debt to shareholders ({account} {name})",
+        "fromBank": "From the bank ({account} {name})",
+        "contract": "Loan agreement (optional)",
+        "contractNote": "A dividend left as a debt needs its agreement attached to the voucher. It can also be added later.",
+        "draftExists": "This dividend already has a payment draft.",
+        "accounts": "Debit {distribution} Dividend distribution by the unpaid amount, credit {withholding} withholding and the net amount for each recipient.",
+        "withholdingLine": "Withholding on dividend",
+        "needsRecipients": "First add the shareholders on the company's own card."
+      },
+      "recipients": {
+        "title": "Recipients ({n})",
+        "gross": "Gross",
+        "rate": "Rate",
+        "withholding": "Withheld",
+        "net": "Net",
+        "total": "Total",
+        "overLimit": "{rate}, 28 % on the part above 150,000 euros",
+        "problem": {
+          "no_shareholders": "No shareholders added. Add them on the company's own card to split the dividend.",
+          "no_holders": "Nobody held shares on the decision day.",
+          "rate_missing": "A recipient living abroad has no withholding rate."
+        }
+      },
+      "draft": "Draft",
+      "draftNote": "A draft does not show as a dividend yet. Open and post it once the decision is made."
+    },
+    "shareholders": {
+      "title": "Shareholders",
+      "lead": "Who owns the shares and how many. A dividend is split by the holdings on the decision day. Names live in Kitsas partners; no personal ID numbers are kept.",
+      "name": "Name",
+      "kindLabel": "Type",
+      "kind": {
+        "person": "Person",
+        "estate": "Estate",
+        "company": "Company"
+      },
+      "sharesNow": "Shares {date}",
+      "rate": "Withholding",
+      "abroad": "lives abroad",
+      "rateMissing": "No rate",
+      "rateVero": "Vero's rule",
+      "empty": "No shareholders added.",
+      "edit": "Edit shareholders",
+      "nameInKitsas": "The name is changed in Kitsas partners.",
+      "resident": "Resident taxpayer in Finland",
+      "rateOverride": "Withholding rate, if not Vero's rule",
+      "from": "From",
+      "shares": "Shares",
+      "removeHolding": "Remove change",
+      "addHolding": "Add a change in holding",
+      "remove": "Remove shareholder",
+      "ratesNote": "Vero's rule: 7.5 % is withheld from a person or an estate on the whole dividend up to 150,000 euros a year, and 28 % on the part above. Nothing is withheld from a dividend to a company. For someone living abroad, type the source tax rate.",
+      "add": "Add shareholder",
+      "save": "Save shareholders",
+      "error": {
+        "name": "Enter the shareholder's name.",
+        "rate": "The withholding rate must be 0-100.",
+        "holding": "Give every holding a date and a number of shares."
       }
     },
     "incomeTax": {
@@ -1801,7 +1884,9 @@
       "newer_version": "This data was saved by a newer Tilari.",
       "too_large": "The company data is too large to save.",
       "invalid_field": "Saving failed: invalid data.",
-      "partial": "The document was created but could not be finished ({reason}). It is among the vouchers and under Not linked."
+      "partial": "The document was created but could not be finished ({reason}). It is among the vouchers and under Not linked.",
+      "duplicate_shareholder": "The same shareholder is listed twice.",
+      "unknown_partner": "The shareholder is not in Kitsas partners."
     },
     "kind": {
       "financial_statements": "Signed financial statements",

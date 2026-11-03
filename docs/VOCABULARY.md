@@ -198,6 +198,11 @@ not this.
 | Tilintarkastuskertomus | Revisionsberättelse | Audit report | Prüfungsbericht |
 | Verotuspäätös | Beskattningsbeslut | Tax decision | Steuerbescheid |
 | Osinkojen vuosi-ilmoitus | Årsanmälan om dividender | Annual information return on dividends | Jahresmeldung über Dividenden |
+| Osakas | Aktieägare | Shareholder | Gesellschafter |
+| Kuolinpesä | Dödsbo | Estate | Nachlass |
+| Osingonjakopäätös | Beslut om dividendutdelning | Dividend decision | Gewinnausschüttungsbeschluss |
+| Ennakonpidätys osingosta | Förskottsinnehållning på dividend | Withholding on dividend | Quellenabzug auf Dividende |
+| Voitonjakovelat | Skulder för vinstutdelning | Dividends payable | Verbindlichkeiten aus Gewinnausschüttung |
 | Yhtiöjärjestys | Bolagsordning | Articles of association | Satzung |
 | Kaupparekisteriote | Handelsregisterutdrag | Trade register extract | Handelsregisterauszug |
 | Osakasluettelo | Aktieägarförteckning | Shareholder list | Aktionärsliste |

@@ -1773,6 +1773,89 @@
         "noContract": "Dividenden blev en skuld till aktieägaren, men betalningens verifikat har ingen bilaga, till exempel skuldavtalet.",
         "unpaid": "Obetalt {amount}",
         "withholdingOpen": "Innehållning oredovisad {amount}, förfallodag {date}"
+      },
+      "form": {
+        "account": "Konto",
+        "partner": "Mottagare",
+        "debit": "Debet",
+        "credit": "Kredit",
+        "dayClosed": "Dagen ligger inte i en öppen räkenskapsperiod.",
+        "draftNote": "Verifikatet görs som utkast: öppna och bokför det när saken är gjord.",
+        "create": "Gör utkast"
+      },
+      "decision": {
+        "open": "Bokför beslut om dividend",
+        "defaultTitle": "Dividendutdelning för räkenskapsperioden {period}",
+        "date": "Beslutsdag",
+        "amount": "Dividend totalt, €",
+        "otherPeriod": "Ett beslut denna dag delar ut en annan periods vinst, så det syns på dess kort.",
+        "another": "För denna period finns redan ett beslut eller utkast. Ett nytt beslut är en extra dividend.",
+        "accounts": "Debet {retained} Vinst från tidigare räkenskapsperioder, kredit {distribution} Dividendutdelning."
+      },
+      "payment": {
+        "open": "Gör betalningsverifikat",
+        "defaultTitle": "Betalning av dividend",
+        "payableName": "Skulder för vinstutdelning",
+        "date": "Betalningsdag",
+        "paidAs": "Betalas",
+        "asDebt": "Som skuld till aktieägarna ({account} {name})",
+        "fromBank": "Från banken ({account} {name})",
+        "contract": "Skuldebrev (valfritt)",
+        "contractNote": "En dividend som blir skuld behöver avtalet som bilaga till verifikatet. Det kan också läggas till senare.",
+        "draftExists": "Det finns redan ett betalningsutkast för denna dividend.",
+        "accounts": "Debet {distribution} Dividendutdelning med det obetalda beloppet, kredit {withholding} förskottsinnehållning och nettobelopp för varje mottagare.",
+        "withholdingLine": "Förskottsinnehållning på dividend",
+        "needsRecipients": "Lägg först till aktieägarna på bolagets eget kort."
+      },
+      "recipients": {
+        "title": "Mottagare ({n})",
+        "gross": "Brutto",
+        "rate": "Procent",
+        "withholding": "Innehållning",
+        "net": "Netto",
+        "total": "Totalt",
+        "overLimit": "{rate}, 28 % på det som överstiger 150 000 euro",
+        "problem": {
+          "no_shareholders": "Inga aktieägare har lagts till. Lägg till dem på bolagets eget kort, så delas dividenden på mottagarna.",
+          "no_holders": "Ingen ägde aktier på beslutsdagen.",
+          "rate_missing": "En mottagare som bor utomlands saknar innehållningsprocent."
+        }
+      },
+      "draft": "Utkast",
+      "draftNote": "Ett utkast syns ännu inte som dividend. Öppna och bokför det när beslutet är fattat."
+    },
+    "shareholders": {
+      "title": "Aktieägare",
+      "lead": "Vem äger aktierna och hur många. Dividenden delas enligt innehaven på beslutsdagen. Namnen finns bland Kitsas kontakter, personbeteckningar sparas inte.",
+      "name": "Namn",
+      "kindLabel": "Typ",
+      "kind": {
+        "person": "Person",
+        "estate": "Dödsbo",
+        "company": "Bolag"
+      },
+      "sharesNow": "Aktier {date}",
+      "rate": "Förskottsinnehållning",
+      "abroad": "bor utomlands",
+      "rateMissing": "Procent saknas",
+      "rateVero": "Skatteförvaltningens regel",
+      "empty": "Inga aktieägare har lagts till.",
+      "edit": "Redigera aktieägare",
+      "nameInKitsas": "Namnet ändras bland Kitsas kontakter.",
+      "resident": "Allmänt skattskyldig i Finland",
+      "rateOverride": "Innehållningsprocent, om inte Skatteförvaltningens regel",
+      "from": "Från",
+      "shares": "Aktier",
+      "removeHolding": "Ta bort ändringen",
+      "addHolding": "Lägg till en ändring i innehavet",
+      "remove": "Ta bort aktieägaren",
+      "ratesNote": "Skatteförvaltningens regel: av en person och ett dödsbo innehålls 7,5 % av hela dividenden upp till 150 000 euro per år och 28 % av det som överstiger. Av dividend till ett bolag innehålls inget. För den som bor utomlands, skriv källskattens procent.",
+      "add": "Lägg till aktieägare",
+      "save": "Spara aktieägarna",
+      "error": {
+        "name": "Ange aktieägarens namn.",
+        "rate": "Innehållningsprocenten ska vara 0-100.",
+        "holding": "Ange datum och antal aktier för varje innehav."
       }
     },
     "incomeTax": {
@@ -1801,7 +1884,9 @@
       "newer_version": "Uppgifterna har sparats med en nyare Tilari.",
       "too_large": "Bolagets uppgifter är för stora för att sparas.",
       "invalid_field": "Det gick inte att spara: felaktig uppgift.",
-      "partial": "Dokumentet skapades, men det gick inte att slutföra ({reason}). Det finns bland verifikaten och under Olänkade."
+      "partial": "Dokumentet skapades, men det gick inte att slutföra ({reason}). Det finns bland verifikaten och under Olänkade.",
+      "duplicate_shareholder": "Samma aktieägare finns två gånger i listan.",
+      "unknown_partner": "Aktieägaren finns inte bland Kitsas kontakter."
     },
     "kind": {
       "financial_statements": "Undertecknat bokslut",

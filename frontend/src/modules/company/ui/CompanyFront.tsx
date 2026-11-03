@@ -9,6 +9,7 @@ import { Pill } from '../../../shared/Pill'
 import { COMPANY_KINDS, KIND_SETTINGS, type CompanyOverview, type PeriodView, type Suggestion } from '../api'
 import { allSuggestions, deadlineStateText, deadlineTone, errorText, periodLabel, periodRange, suggestionAdd, useCompany } from './format'
 import { PeriodBody } from './PeriodBody'
+import { Shareholders } from './Shareholders'
 import { DocumentRow, SlotRow, SuggestionRows, type SlotActions } from './Slot'
 
 /** What is open: a period by its end date, the company's own documents, or nothing asked for. */
@@ -226,6 +227,7 @@ export function CompanyFront({
             onToggle={() => toggle('own', shown === 'own')}
           >
             <OwnDocuments overview={data} today={dayOf(data)} actions={actions} />
+            <Shareholders overview={data} today={dayOf(data)} actions={actions} />
           </Binder>
 
           <h3 className="section-label">{t('company.periods.title')}</h3>

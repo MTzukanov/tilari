@@ -11,8 +11,8 @@ import { nextWorkingDay } from './deadlines'
 import { lastEndedBefore, type PeriodRange } from './suggest'
 
 /** Osingonjako and Ennakonpidätysvelka in Kitsas's chart. `statementTemplate.ts` reads 2261 too. */
-const DISTRIBUTION_ACCOUNT = 2261
-const WITHHOLDING_ACCOUNT = 2921
+export const DISTRIBUTION_ACCOUNT = 2261
+export const WITHHOLDING_ACCOUNT = 2921
 
 export type DividendPayment = {
   voucher_id: number

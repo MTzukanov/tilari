@@ -3,16 +3,17 @@ import { getSettings } from '../../../access'
 import { fiscalPeriodJson } from '../../../fiscalPeriod'
 import { readTilariData, writeTilariData } from '../../../kernel/tilariData'
 import { addDays } from '../../../months'
-import { lockDate } from '../../../posting'
+import { lockDate, resolvePartner } from '../../../posting'
 import { SQL_POSTED } from '../../../kernel/sqlFragments'
 import type { SqliteDb } from '../../../sqlite'
-import { TYPE_ATTACHMENT_NOTE, TYPE_INCOME_TAX } from '../../../vouchers'
+import { STATUS_DRAFT, TYPE_ATTACHMENT_NOTE, TYPE_INCOME_TAX } from '../../../vouchers'
 import { isUserAttachment } from '../../properties/domain/documents'
 import { loadVoucherFiles, propertyVoucherIds, selectCandidates } from './candidates'
 import { deadlineAlerts, dividendReportDue, periodDeadlines } from './deadlines'
-import { dividendsByPeriod, type Dividend, type PeriodDividend } from './dividends'
+import { DISTRIBUTION_ACCOUNT, dividendsByPeriod, type Dividend, type PeriodDividend } from './dividends'
+import { sharesOn, splitDividend, type Recipient } from './recipients'
 import { applyChanges, CompanyDocError, parseCompanyDoc, serializeCompanyDoc, type ParsedCompanyDoc } from './doc'
-import { suggestDocuments } from './suggest'
+import { lastEndedBefore, suggestDocuments } from './suggest'
 import {
   COMPANY_KEY,
   COMPANY_KINDS,
@@ -35,8 +36,11 @@ import {
   type NextDeadline,
   type PeriodKind,
   type PeriodView,
+  type RecipientView,
+  type Shareholder,
   type SlotStatus,
   type SlotView,
+  type SplitProblem,
   type Suggestion,
   type VoucherRef,
 } from './types'
@@ -94,6 +98,87 @@ function voucherRef(row: VoucherRow): VoucherRef {
   return { voucher_id: row.id, date: row.date, doc_number: row.doc_number, series: row.series, title: row.title, files: row.files }
 }
 
+/** A dividend's recipients and the drafts that would pay it. */
+type DividendExtras = {
+  recipients: RecipientView[]
+  open: RecipientView[]
+  problem: SplitProblem | null
+  drafts: VoucherRef[]
+}
+
+/**
+ * Each dividend split over the shareholders kept. The 150 000 euro limit counts what a recipient got
+ * earlier in the payment's year: the first payment's year, or the as-of year while nothing is paid.
+ * The open amount is split for a payment made in the as-of year.
+ */
+function splitDividends(all: Dividend[], shareholders: Shareholder[], names: Map<number, string>, asOf: string): Map<Dividend, DividendExtras> {
+  const out = new Map<Dividend, DividendExtras>()
+  const byYear = new Map<string, Map<number, number>>()
+  const earlierIn = (year: string) => {
+    const seen = byYear.get(year) ?? new Map<number, number>()
+    byYear.set(year, seen)
+    return seen
+  }
+  const named = (r: Recipient): RecipientView => ({ ...r, name: names.get(r.partner_id) ?? '' })
+  const sorted = [...all].sort((a, b) => a.decision.date.localeCompare(b.decision.date) || a.decision.voucher_id - b.decision.voucher_id)
+  for (const d of sorted) {
+    const seen = earlierIn((d.payments[0]?.date ?? asOf).slice(0, 4))
+    const recipients = splitDividend(d.decision.amount_snt, d.decision.date, shareholders, seen)
+    const unpaid = d.decision.amount_snt - d.paid_snt
+    const open = unpaid > 0 ? splitDividend(unpaid, d.decision.date, shareholders, earlierIn(asOf.slice(0, 4))) : []
+    for (const r of recipients) seen.set(r.partner_id, (seen.get(r.partner_id) ?? 0) + r.gross_snt)
+    const problem: SplitProblem | null = !shareholders.length
+      ? 'no_shareholders'
+      : !recipients.length
+        ? 'no_holders'
+        : recipients.some((r) => r.rate_bp == null)
+          ? 'rate_missing'
+          : null
+    out.set(d, { recipients: recipients.map(named), open: open.map(named), problem, drafts: [] })
+  }
+  return out
+}
+
+/**
+ * Drafts on Osingonjako. One crediting it is a decision, shown on the period a decision of its date
+ * distributes; one debiting it pays the oldest dividend open on its date, as a posted one would.
+ */
+function placeDividendDrafts(
+  db: SqliteDb,
+  periods: Period[],
+  extras: Map<Dividend, DividendExtras>,
+  vouchers: (ids: number[]) => Map<number, VoucherRow>,
+): Map<string, VoucherRef[]> {
+  const rows = db.all<{ id: number; pvm: string; credit: number }>(
+    `SELECT Tosite.id AS id, Tosite.pvm AS pvm, SUM(COALESCE(Vienti.kreditsnt, 0)) AS credit
+     FROM Vienti JOIN Tosite ON Tosite.id = Vienti.tosite
+     WHERE Vienti.tili = ? AND Tosite.tila = ?
+     GROUP BY Tosite.id ORDER BY Tosite.pvm, Tosite.id`,
+    [DISTRIBUTION_ACCOUNT, STATUS_DRAFT],
+  )
+  const loaded = vouchers(rows.map((r) => Number(r.id)))
+  const byPeriod = new Map<string, VoucherRef[]>()
+  const dividends = [...extras.keys()]
+  for (const row of rows) {
+    const voucher = loaded.get(Number(row.id))
+    if (!voucher) continue
+    const open = Number(row.credit) > 0 ? undefined : dividends.find((d) => d.decision.date <= voucher.date && d.paid_snt < d.decision.amount_snt)
+    if (open) {
+      extras.get(open)!.drafts.push(voucherRef(voucher))
+      continue
+    }
+    const ends = lastEndedBefore(periods, voucher.date)
+    if (ends) byPeriod.set(ends, [...(byPeriod.get(ends) ?? []), voucherRef(voucher)])
+  }
+  return byPeriod
+}
+
+/** `Kumppani.nimi` by id. */
+function partnerNames(db: SqliteDb, ids: number[]): Map<number, string> {
+  if (!ids.length) return new Map()
+  return new Map(db.all<{ id: number; nimi: string | null }>(`SELECT id, nimi FROM Kumppani WHERE id IN (${idList(ids)})`).map((r) => [Number(r.id), String(r.nimi ?? '')]))
+}
+
 type DividendContext = {
   asOf: string
   vouchers: Map<number, VoucherRow>
@@ -101,6 +186,7 @@ type DividendContext = {
   minutesFiled: boolean
   report: SlotView | undefined
   reportDue: string | null
+  extras: DividendExtras | undefined
 }
 
 /** The five steps, each read from the book or from the period's rows. Exact to the cent. */
@@ -141,6 +227,10 @@ function dividendView(d: Dividend, ctx: DividendContext): DividendView {
     remitted_snt: d.remitted_snt,
     withholding_due: d.withholding_due,
     no_contract: noContract,
+    recipients: ctx.extras?.recipients ?? [],
+    open_recipients: ctx.extras?.open ?? [],
+    split_problem: ctx.extras ? ctx.extras.problem : 'no_shareholders',
+    payment_drafts: ctx.extras?.drafts ?? [],
     steps: [
       // The minutes are often a file on the decision's own voucher.
       { key: 'decided', state: ctx.minutesFiled || decision?.files.length ? 'done' : 'no_minutes', date: d.decision.date },
@@ -237,11 +327,14 @@ type PeriodParts = {
   /** The vouchers the dividends and the income tax rows name. */
   vouchers: Map<number, VoucherRow>
   incomeTax: number[]
+  extras: Map<Dividend, DividendExtras>
+  drafts: VoucherRef[]
+  decideHere: boolean
 }
 
 function buildPeriod(
   doc: CompanyDoc,
-  { period, views, statement, asOf, lock, suggestions, unlinked, dividend, vouchers, incomeTax }: PeriodParts,
+  { period, views, statement, asOf, lock, suggestions, unlinked, dividend, vouchers, incomeTax, extras, drafts, decideHere }: PeriodParts,
 ): PeriodView {
   const ended = period.ends < asOf
   const reportOverdue = dividend?.paid != null && dividendReportDue(dividend.paid) < asOf
@@ -272,6 +365,7 @@ function buildPeriod(
       minutesFiled: filled('agm_minutes'),
       report: slots.find((s) => s.kind === 'dividend_annual_report'),
       reportDue: dividend?.paid ? dividendReportDue(dividend.paid) : null,
+      extras: extras.get(d),
     }),
   )
   // Late deadlines count on their own badge; these have no date to be late by.
@@ -300,6 +394,8 @@ function buildPeriod(
       const row = vouchers.get(id)
       return row ? [voucherRef(row)] : []
     }),
+    dividend_drafts: drafts,
+    decide_here: decideHere,
     unlinked,
   }
 }
@@ -346,6 +442,11 @@ export function computeOverview(db: SqliteDb, query: { today: string; asOf?: str
     p.dividends.flatMap((d) => [d.decision.voucher_id, ...d.payments.map((x) => x.voucher_id), ...d.remittances.map((x) => x.voucher_id)]),
   )
   const shownVouchers = loadVouchers(db, [...dividendVouchers, ...[...incomeTax.values()].flat()])
+  const shareholders = doc.shareholders ?? []
+  const names = partnerNames(db, shareholders.map((s) => s.partner_id))
+  const extras = splitDividends([...dividends.values()].flatMap((p) => p.dividends), shareholders, names, asOf)
+  const drafts = placeDividendDrafts(db, periods, extras, (ids) => loadVouchers(db, ids))
+  const decideOn = lastEndedBefore(periods, asOf)
   const periodViews = periods.map((period) =>
     buildPeriod(doc, {
       period,
@@ -359,6 +460,9 @@ export function computeOverview(db: SqliteDb, query: { today: string; asOf?: str
       dividend: dividends.get(period.ends),
       vouchers: shownVouchers,
       incomeTax: incomeTax.get(period.ends) ?? [],
+      extras,
+      drafts: drafts.get(period.ends) ?? [],
+      decideHere: period.ends === decideOn,
     }),
   )
 
@@ -386,6 +490,7 @@ export function computeOverview(db: SqliteDb, query: { today: string; asOf?: str
     suggestion_count: [...companySlots, ...periodViews.flatMap((p) => p.slots)].reduce((n, s) => n + s.suggestions.length, 0),
     documents: views,
     unlinked,
+    shareholders: shareholders.map((s) => ({ ...s, name: names.get(s.partner_id) ?? '', shares: sharesOn(s, asOf) })),
   }
 }
 
@@ -430,7 +535,7 @@ export function fetchCandidates(db: SqliteDb, all: boolean): DocCandidate[] {
 
 /** Checks what a save links against the book: the page may be older than the book. */
 function checkChanges(db: SqliteDb, stored: ParsedCompanyDoc, changes: CompanyChanges): void {
-  for (const key of ['add', 'remove', 'not_needed', 'dismissed'] as const) {
+  for (const key of ['add', 'remove', 'not_needed', 'dismissed', 'shareholders'] as const) {
     if (changes[key] != null && !Array.isArray(changes[key])) throw new CompanyDocError('invalid_field', key)
   }
   const adds = changes.add ?? []
@@ -458,10 +563,30 @@ function checkChanges(db: SqliteDb, stored: ParsedCompanyDoc, changes: CompanyCh
   }
 }
 
-/** One write. Returns whether the book changed. Touches only `TilariData`, also on closed years. */
-export function saveChanges(db: SqliteDb, changes: CompanyChanges, now: string): boolean {
+/**
+ * Shareholders by `Kumppani.id`. A new name gets its `Kumppani` row, as a voucher save makes one; an
+ * id must exist.
+ */
+function resolveShareholders(db: SqliteDb, changes: CompanyChanges): CompanyChanges {
+  if (changes.shareholders == null) return changes
+  if (!Array.isArray(changes.shareholders)) throw new CompanyDocError('invalid_field', 'shareholders')
+  const shareholders = changes.shareholders.map((input, i) => {
+    if (input.partner_id != null) {
+      if (!db.get('SELECT id FROM Kumppani WHERE id = ?', [input.partner_id])) throw new CompanyDocError('unknown_partner', `shareholders[${i}].partner_id`)
+      return input
+    }
+    const name = typeof input.partner_name === 'string' ? input.partner_name.trim() : ''
+    if (!name) throw new CompanyDocError('invalid_field', `shareholders[${i}].partner_name`)
+    return { ...input, partner_id: resolvePartner(db, { name }) ?? undefined }
+  })
+  return { ...changes, shareholders }
+}
+
+/** One write. Returns whether the book changed. Touches `TilariData`, also on closed years, and `Kumppani` for a new shareholder. */
+export function saveChanges(db: SqliteDb, input: CompanyChanges, now: string): boolean {
   const stored = parseCompanyDoc(readTilariData(db, COMPANY_KEY))
-  checkChanges(db, stored, changes)
+  checkChanges(db, stored, input)
+  const changes = resolveShareholders(db, input)
   const next = applyChanges(stored, changes, now)
   if (!next) return false
   return writeTilariData(db, COMPANY_KEY, serializeCompanyDoc(next), now)

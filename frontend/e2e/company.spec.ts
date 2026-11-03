@@ -335,3 +335,54 @@ test.describe('company documents', () => {
     await expect(page.getByText('Ei asiakirjoja.')).toBeVisible()
   })
 })
+
+test.describe('dividend drafts', () => {
+  test('a shareholder, a decision draft posted, and the payment drafted for the recipient', async ({ page }) => {
+    await openCompany(page)
+
+    // The shareholder is kept on the company's own card.
+    await page.locator('.binder-head', { hasText: 'Yhtiön asiakirjat' }).click()
+    const holders = page.locator('.company-shareholders')
+    await expect(holders).toContainText('Osakkaita ei ole lisätty.')
+    await holders.getByRole('button', { name: 'Muokkaa osakkaita' }).click()
+    await holders.getByRole('button', { name: 'Lisää osakas' }).click()
+    await holders.getByLabel('Nimi').fill('Testi Osakas')
+    await holders.getByLabel('Alkaen').fill('2020-01-01')
+    await holders.getByLabel('Osakkeita').fill('10')
+    await holders.getByRole('button', { name: 'Tallenna osakkaat' }).click()
+    await expect(holders.getByRole('cell', { name: 'Testi Osakas' })).toBeVisible()
+    await expect(holders.getByRole('cell', { name: 'Veron sääntö' })).toBeVisible()
+
+    // A decision made now distributes the newest ended period's profit.
+    await periodCard(page, '2024').click()
+    const section = page.locator('.binder-body')
+    await section.getByRole('button', { name: 'Kirjaa osingonjakopäätös' }).click()
+    await section.getByLabel('Osinko yhteensä, €').fill('1000')
+    await expect(section.locator('.company-panel')).toContainText('2251')
+    await section.getByRole('button', { name: 'Tee luonnos' }).click()
+    const draft = section.locator('.doc-line', { hasText: 'Osingonjako tilikaudelta 2024' })
+    await expect(draft.getByText('Luonnos', { exact: true })).toBeVisible()
+
+    // Posted in the editor as it is, it becomes the dividend.
+    await draft.getByRole('button', { name: /^Tosite/ }).click()
+    await expectVoucherEditorOpen(page, 'Osingonjako tilikaudelta 2024')
+    await page.locator('.editor-footer').getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Tallenna luonnos' })).toHaveCount(0)
+    await page.goBack()
+    const card = page.locator('.dividend-card')
+    await expect(card).toContainText('1 000,00')
+    await card.getByText('Saajat (1)').click()
+    const row = card.getByRole('row', { name: /Testi Osakas/ })
+    await expect(row).toContainText('75,00')
+    await expect(row).toContainText('925,00')
+
+    // The payment draft leaves the net as a debt to the shareholder and withholds 7.5 %.
+    await card.getByRole('button', { name: 'Tee maksutosite' }).click()
+    const preview = card.locator('.company-panel table')
+    await expect(preview.getByRole('row', { name: /2921/ })).toContainText('75,00')
+    await expect(preview.getByRole('row', { name: /2943/ })).toContainText('Testi Osakas')
+    await card.getByRole('button', { name: 'Tee luonnos' }).click()
+    await expect(card.locator('.doc-line', { hasText: 'Osingon maksu' }).getByText('Luonnos', { exact: true })).toBeVisible()
+    await expect(card.getByRole('button', { name: 'Tee maksutosite' })).toBeVisible()
+  })
+})

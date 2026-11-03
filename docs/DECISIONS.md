@@ -686,6 +686,16 @@ correction would change the open year's income statement lines. The rental-objec
   The account numbers are the chart's; a book on others shows no dividend until they become a setting.
 - **Income tax bookings are shown, not linked.** The period's type 9930 vouchers lead its documents as a row
   with nothing to upload, since the book already says where they are.
+- **Shareholders are inputs, recipients are computed, vouchers are drafts** (owner, 2026-11-03). The owner keeps
+  the shareholders and their dated share counts in `company.shareholders[]` (names in `Kumppani`, no personal
+  IDs). A dividend's recipients are split from the holdings on its decision day, largest remainder to the cent,
+  and never stored. Withholding follows Vero's guide on dividends (in force from 1.1.2023): 7.5 % of the whole
+  dividend to a person or a domestic estate up to 150 000 euros a recipient (counted over the payment's calendar
+  year), 28 % above, none to a company; a non-resident waits for a typed rate. Tilari writes the decision
+  (D 2251 / C 2261, type 300) and "Osingon maksu" (D 2261; per recipient C 2921 and C 2943 or a bank account,
+  each line naming the recipient, type 0) as drafts with the ordinary voucher save, the way the book has
+  always booked them; the owner posts them. Drafts on 2261 show in the section, so a second one is not made
+  by mistake. The withholding remittance stays with the bank import.
 - **Why not the dossier as designed elsewhere:** the first design assumed a Kitsas HTTP API, its own
   SQL tables, a dossier inside Tilikaudet, documents only on type 800, and a payment voucher that
   pays from the bank. Tilari has the ledger in-process and one table, and a payment can turn the dividend into

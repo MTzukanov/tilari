@@ -1773,6 +1773,89 @@
         "noContract": "Osinko jäi velaksi osakkaalle, mutta maksun tositteella ei ole liitettä, kuten velkasopimusta.",
         "unpaid": "Maksamatta {amount}",
         "withholdingOpen": "Pidätys tilittämättä {amount}, eräpäivä {date}"
+      },
+      "form": {
+        "account": "Tili",
+        "partner": "Saaja",
+        "debit": "Debet",
+        "credit": "Kredit",
+        "dayClosed": "Päivä ei ole avoimella tilikaudella.",
+        "draftNote": "Tosite tehdään luonnoksena: avaa se ja kirjaa, kun asia on tehty.",
+        "create": "Tee luonnos"
+      },
+      "decision": {
+        "open": "Kirjaa osingonjakopäätös",
+        "defaultTitle": "Osingonjako tilikaudelta {period}",
+        "date": "Päätöspäivä",
+        "amount": "Osinko yhteensä, €",
+        "otherPeriod": "Tämän päivän päätös jakaa toisen tilikauden voittoa, joten se näkyy sen kortilla.",
+        "another": "Tältä tilikaudelta on jo päätös tai luonnos. Uusi päätös on lisäosinko.",
+        "accounts": "Debet {retained} Edellisten tilikausien voitto, kredit {distribution} Osingonjako."
+      },
+      "payment": {
+        "open": "Tee maksutosite",
+        "defaultTitle": "Osingon maksu",
+        "payableName": "Voitonjakovelat",
+        "date": "Maksupäivä",
+        "paidAs": "Maksetaan",
+        "asDebt": "Velaksi osakkaille ({account} {name})",
+        "fromBank": "Pankista ({account} {name})",
+        "contract": "Velkasopimus (valinnainen)",
+        "contractNote": "Velaksi jäävä osinko tarvitsee sopimuksen tositteen liitteeksi. Sen voi lisätä myös myöhemmin.",
+        "draftExists": "Tälle osingolle on jo maksun luonnos.",
+        "accounts": "Debet {distribution} Osingonjako maksamattomalla määrällä, kredit {withholding} ennakonpidätys ja nettomäärä kullekin saajalle.",
+        "withholdingLine": "Ennakonpidätys osingosta",
+        "needsRecipients": "Lisää ensin osakkaat yhtiön omalle kortille."
+      },
+      "recipients": {
+        "title": "Saajat ({n})",
+        "gross": "Brutto",
+        "rate": "Prosentti",
+        "withholding": "Pidätys",
+        "net": "Netto",
+        "total": "Yhteensä",
+        "overLimit": "{rate}, yli 150 000 euron osasta 28 %",
+        "problem": {
+          "no_shareholders": "Osakkaita ei ole lisätty. Lisää ne yhtiön omalle kortille, niin osinko jaetaan saajille.",
+          "no_holders": "Kenelläkään ei ollut osakkeita päätöspäivänä.",
+          "rate_missing": "Ulkomailla asuvalta saajalta puuttuu pidätysprosentti."
+        }
+      },
+      "draft": "Luonnos",
+      "draftNote": "Luonnos ei vielä näy osinkona. Avaa se ja kirjaa, kun päätös on tehty."
+    },
+    "shareholders": {
+      "title": "Osakkaat",
+      "lead": "Kuka omistaa osakkeet ja kuinka monta. Osinko jaetaan päätöspäivän omistusten mukaan. Nimet ovat Kitsaksen kumppaneissa, henkilötunnuksia ei tallenneta.",
+      "name": "Nimi",
+      "kindLabel": "Laji",
+      "kind": {
+        "person": "Henkilö",
+        "estate": "Kuolinpesä",
+        "company": "Yhtiö"
+      },
+      "sharesNow": "Osakkeita {date}",
+      "rate": "Ennakonpidätys",
+      "abroad": "asuu ulkomailla",
+      "rateMissing": "Prosentti puuttuu",
+      "rateVero": "Veron sääntö",
+      "empty": "Osakkaita ei ole lisätty.",
+      "edit": "Muokkaa osakkaita",
+      "nameInKitsas": "Nimeä muutetaan Kitsaksen kumppaneissa.",
+      "resident": "Yleisesti verovelvollinen Suomessa",
+      "rateOverride": "Pidätysprosentti, jos ei Veron sääntö",
+      "from": "Alkaen",
+      "shares": "Osakkeita",
+      "removeHolding": "Poista muutos",
+      "addHolding": "Lisää omistuksen muutos",
+      "remove": "Poista osakas",
+      "ratesNote": "Veron sääntö: henkilöltä ja kuolinpesältä pidätetään 7,5 % koko osingosta 150 000 euroon asti vuodessa ja 28 % sen ylittävästä osasta. Yhtiölle maksettavasta osingosta ei pidätetä. Ulkomailla asuvalle kirjoita lähdeveron prosentti.",
+      "add": "Lisää osakas",
+      "save": "Tallenna osakkaat",
+      "error": {
+        "name": "Anna osakkaan nimi.",
+        "rate": "Pidätysprosentin on oltava 0-100.",
+        "holding": "Anna jokaiselle omistukselle päivä ja osakemäärä."
       }
     },
     "incomeTax": {
@@ -1801,7 +1884,9 @@
       "newer_version": "Tiedot on tallennettu uudemmalla Tilarilla.",
       "too_large": "Yhtiön tiedot ovat liian suuret tallennettaviksi.",
       "invalid_field": "Tallennus ei onnistunut: virheellinen tieto.",
-      "partial": "Asiakirja luotiin, mutta sen viimeistely ei onnistunut ({reason}). Se löytyy tositteista ja kohdasta Linkittämättä."
+      "partial": "Asiakirja luotiin, mutta sen viimeistely ei onnistunut ({reason}). Se löytyy tositteista ja kohdasta Linkittämättä.",
+      "duplicate_shareholder": "Sama osakas on listassa kahdesti.",
+      "unknown_partner": "Osakasta ei löydy Kitsaksen kumppaneista."
     },
     "kind": {
       "financial_statements": "Allekirjoitettu tilinpäätös",

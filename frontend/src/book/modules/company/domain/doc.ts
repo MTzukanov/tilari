@@ -7,11 +7,15 @@ import {
   COMPANY_KINDS,
   KIND_SETTINGS,
   PERIOD_KINDS,
+  SHAREHOLDER_KINDS,
   type CompanyChanges,
   type CompanyDoc,
   type CompanyDocument,
   type CompanySettings,
   type NotNeeded,
+  type Shareholder,
+  type ShareholderInput,
+  type Shareholding,
 } from './types'
 
 export const MAX_DOC_BYTES = 256 * 1024
@@ -74,6 +78,49 @@ function normalizeDocument(input: unknown, path: string): CompanyDocument {
   return out
 }
 
+function normalizeHoldings(input: unknown, path: string): Shareholding[] {
+  if (!Array.isArray(input) || !input.length) fail(path)
+  const holdings = input.map((h, i): Shareholding => {
+    if (!isObject(h)) fail(`${path}[${i}]`)
+    const shares = h.shares
+    if (typeof shares !== 'number' || !Number.isSafeInteger(shares) || shares < 0) fail(`${path}[${i}].shares`)
+    return { from: dateOf(h.from, `${path}[${i}].from`), shares }
+  })
+  holdings.sort((a, b) => a.from.localeCompare(b.from))
+  if (holdings.some((h, i) => i > 0 && h.from === holdings[i - 1].from)) fail(path)
+  return holdings
+}
+
+function normalizeShareholder(input: unknown, path: string): Shareholder {
+  if (!isObject(input)) fail(path)
+  const kind = input.kind
+  if (typeof kind !== 'string' || !(SHAREHOLDER_KINDS as readonly string[]).includes(kind)) fail(`${path}.kind`)
+  if (typeof input.resident !== 'boolean') fail(`${path}.resident`)
+  const out: Shareholder = {
+    ...input,
+    key: typeof input.key === 'string' && input.key ? input.key : fail(`${path}.key`),
+    partner_id: voucherIdOf(input.partner_id, `${path}.partner_id`),
+    kind: kind as Shareholder['kind'],
+    resident: input.resident,
+    holdings: normalizeHoldings(input.holdings, `${path}.holdings`),
+  }
+  delete out.partner_name
+  const rate = input.rate_bp
+  if (rate == null) delete out.rate_bp
+  else if (typeof rate !== 'number' || !Number.isSafeInteger(rate) || rate < 0 || rate > 10000) fail(`${path}.rate_bp`)
+  return out
+}
+
+function normalizeShareholders(input: unknown): Shareholder[] {
+  if (!Array.isArray(input)) return []
+  const out = input.map((s, i) => normalizeShareholder(s, `shareholders[${i}]`))
+  out.forEach((s, i) => {
+    if (out.findIndex((o) => o.partner_id === s.partner_id) !== i) throw new CompanyDocError('duplicate_shareholder', `shareholders[${i}].partner_id`)
+    if (out.findIndex((o) => o.key === s.key) !== i) fail(`shareholders[${i}].key`)
+  })
+  return out
+}
+
 function normalizeSettings(input: unknown): CompanySettings | undefined {
   if (!isObject(input)) return undefined
   const out: CompanySettings = { ...input }
@@ -112,6 +159,9 @@ export function normalizeCompanyDoc(input: unknown): CompanyDoc {
     : []
   if (dismissed.length) out.dismissed = [...new Set(dismissed)].sort()
   else delete out.dismissed
+  const shareholders = normalizeShareholders(input.shareholders)
+  if (shareholders.length) out.shareholders = shareholders
+  else delete out.shareholders
   return out
 }
 
@@ -142,6 +192,16 @@ function nextKey(doc: CompanyDoc): (offset: number) => string {
   }, 0)
   const start = Math.max(highest, doc.rev)
   return (offset) => `d${start + offset + 1}`
+}
+
+/** A key for each shareholder sent without one. */
+function withShareholderKeys(before: CompanyDoc, inputs: ShareholderInput[]): Record<string, unknown>[] {
+  const used = [...(before.shareholders ?? []), ...inputs].reduce((max, s) => {
+    const m = typeof s.key === 'string' ? /^s(\d+)$/.exec(s.key) : null
+    return m ? Math.max(max, Number(m[1])) : max
+  }, 0)
+  let next = used
+  return inputs.map((input) => ({ ...input, key: input.key || `s${++next}` }))
 }
 
 function sameTarget(a: CompanyDocument, b: CompanyDocument): boolean {
@@ -185,6 +245,7 @@ export function applyChanges(stored: ParsedCompanyDoc, changes: CompanyChanges, 
     not_needed: notNeeded,
     dismissed: [...(before.dismissed ?? []), ...(changes.dismissed ?? [])],
     settings: changes.settings ? { ...before.settings, ...changes.settings } : before.settings,
+    shareholders: changes.shareholders ? withShareholderKeys(before, changes.shareholders) : before.shareholders,
   })
   if (stored.exists && sameContent(next, before)) return null
   if (!stored.exists && !hasContent(next)) return null
@@ -206,7 +267,7 @@ function sameContent(a: CompanyDoc, b: CompanyDoc): boolean {
 }
 
 function hasContent(doc: CompanyDoc): boolean {
-  return Boolean(doc.documents.length || doc.not_needed?.length || doc.dismissed?.length || doc.settings)
+  return Boolean(doc.documents.length || doc.not_needed?.length || doc.dismissed?.length || doc.settings || doc.shareholders?.length)
 }
 
 /** Stored form: stable key order, so equal content gives equal text. */

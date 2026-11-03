@@ -68,6 +68,32 @@ export type CompanyDocument = {
 
 export type NotNeeded = { period_ends: string; kind: string }
 
+/** Who holds shares, for the dividend split and its withholding. */
+export const SHAREHOLDER_KINDS = ['person', 'estate', 'company'] as const
+export type ShareholderKind = (typeof SHAREHOLDER_KINDS)[number]
+
+/** A share count from a day on: the latest on or before a day counts, 0 when all were sold. */
+export type Shareholding = { from: string; shares: number }
+
+/** A shareholder. The name stays in `Kumppani`; no personal ID numbers are kept. */
+export type Shareholder = {
+  /** Stable within the doc ("s3"). */
+  key: string
+  /** `Kumppani.id`. */
+  partner_id: number
+  kind: ShareholderKind
+  /** Taxed in Finland: withholding by Vero's rule. Otherwise source tax, at `rate_bp`. */
+  resident: boolean
+  /** Withholding in basis points (750 = 7.5 %) when Vero's rule does not apply, such as under a tax treaty. */
+  rate_bp?: number
+  /** Oldest first. */
+  holdings: Shareholding[]
+  [extra: string]: unknown
+}
+
+/** A shareholder as a change sends it: a new name instead of `partner_id` creates the `Kumppani` row. */
+export type ShareholderInput = Omit<Shareholder, 'key' | 'partner_id'> & { key?: string; partner_id?: number; partner_name?: string }
+
 export type CompanyDoc = {
   v: number
   rev: number
@@ -78,6 +104,7 @@ export type CompanyDoc = {
   not_needed?: NotNeeded[]
   /** Suggestions the owner rejected (`Suggestion.key`). */
   dismissed?: string[]
+  shareholders?: Shareholder[]
   [extra: string]: unknown
 }
 
@@ -97,6 +124,8 @@ export type CompanyChanges = {
   /** Suggestion keys to reject. */
   dismissed?: string[]
   settings?: CompanySettings
+  /** The whole list, replacing the stored one. */
+  shareholders?: ShareholderInput[]
 }
 
 /** `ok`; `missing` no voucher or a deleted one; `draft` does not fill a slot; `file_missing` the linked file is gone. */
@@ -203,6 +232,27 @@ export type DividendStep = { key: DividendStepKey; state: DividendStepState; dat
 
 export type DividendVoucher = VoucherRef & { role: 'decision' | 'payment' | 'remittance'; amount_snt: number }
 
+/** A recipient of a dividend, split from the shareholders kept (`domain/recipients.ts`). */
+export type RecipientView = {
+  key: string
+  partner_id: number
+  name: string
+  kind: ShareholderKind
+  shares: number
+  gross_snt: number
+  /** Null when a non-resident has no rate typed. */
+  rate_bp: number | null
+  over_limit_snt: number
+  withholding_snt: number
+  net_snt: number
+}
+
+/** Why a dividend has no recipients: none kept, none held shares on the decision day, a non-resident without a rate. */
+export type SplitProblem = 'no_shareholders' | 'no_holders' | 'rate_missing'
+
+/** A shareholder with its name from `Kumppani` and its shares on the as-of date. */
+export type ShareholderView = Shareholder & { name: string; shares: number }
+
 /** One dividend, read from the ledger on every load (`domain/dividends.ts`). */
 export type DividendView = {
   decided_on: string
@@ -216,6 +266,13 @@ export type DividendView = {
   steps: DividendStep[]
   /** Oldest first. */
   vouchers: DividendVoucher[]
+  /** The whole amount split by the holdings on the decision day; empty with a `split_problem`. */
+  recipients: RecipientView[]
+  /** What is still unpaid, split the same way, for the payment draft. */
+  open_recipients: RecipientView[]
+  split_problem: SplitProblem | null
+  /** Draft payments debiting Osingonjako that will pay this dividend once posted. */
+  payment_drafts: VoucherRef[]
 }
 
 export type PeriodView = {
@@ -236,6 +293,10 @@ export type PeriodView = {
   dividends: DividendView[]
   /** The period's income tax vouchers (type 9930). */
   income_tax: VoucherRef[]
+  /** Draft decisions crediting Osingonjako that will count for this period once posted. */
+  dividend_drafts: VoucherRef[]
+  /** The newest ended period: a decision made now distributes its profit. */
+  decide_here: boolean
   /** Posted type-800 vouchers dated in the year after the period's end, linked nowhere. */
   unlinked: DocCandidate[]
 }
@@ -262,6 +323,7 @@ export type CompanyOverview = {
   documents: DocumentView[]
   /** Every posted type-800 voucher linked nowhere. */
   unlinked: DocCandidate[]
+  shareholders: ShareholderView[]
 }
 
 /** `applicable`: the book is a limited company's, so the menu item shows. */

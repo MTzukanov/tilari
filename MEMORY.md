@@ -7,6 +7,22 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-03 - Company page: shareholders, recipients and dividend drafts
+
+- Owner: "continue with what is still not built" after seeing the dividend cards. Built increment 3 of the plan:
+  shareholders on the company's own card, "Saajat" on each dividend, "Kirjaa osingonjakopäätös" on the newest
+  ended period and "Tee maksutosite" on a dividend with an unpaid part. Both write drafts; the owner posts them.
+- Vero's guide on withholding from dividends (7.12.2022, in force from 1.1.2023) was read again on 2026-11-03:
+  7.5 % of the whole dividend, tax-free and earned-income parts included, to a person or domestic estate up to
+  150 000 euros a recipient, 28 % above; none to a company; non-residents under the source tax rules. The
+  guide does not say over which period the 150 000 is counted; Tilari counts the payment's calendar year.
+- Withholding is rounded half up per recipient. The payment draft splits the unpaid amount, so a partly paid
+  dividend's second draft pays only the rest.
+- A decision dated today goes on the newest ended period (the rule from 2026-11-02), so the button is only
+  there; the form warns when its date would land the decision on another period.
+- The e2e posts the decision draft as it is in the editor: the test book has no 2261, and an unchanged draft
+  posts without an account check, so it runs on the golden book without changing it.
+
 ## 2026-11-02 - Company page: dividends read from the ledger
 
 - Owner approved the steps after the annual report row. Each period's card gets "Osingot tämän tilikauden

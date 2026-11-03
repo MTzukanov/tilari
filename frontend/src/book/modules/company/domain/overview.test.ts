@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { readTilariData } from '../../../kernel/tilariData'
+import { saveVoucher } from '../../../posting'
 import { TYPE_BANK_STATEMENT, TYPE_INCOME_TAX, TYPE_OPENING, TYPE_OTHER, TYPE_TRANSFER } from '../../../vouchers'
 import { buildCompanyFixture, type CompanyFixture } from '../testFixture'
+import { decisionDraft, paymentDraft } from './dividendVouchers'
 import { parseCompanyDoc } from './doc'
 import { computeAlerts, computeOverview, fetchCandidates, isLimitedCompany, saveChanges } from './overview'
 import { COMPANY_KEY, type CompanyChanges, type CompanyOverview, type PeriodView } from './types'
@@ -549,5 +551,101 @@ describe('dividends from the ledger', () => {
     book('incomeTax', '2032-12-31', TYPE_INCOME_TAX, [[9960, 500, 0], [2968, 0, 500]])
     expect(period('2032-12-31', AS_OF).income_tax.map((v) => v.voucher_id)).toEqual([fx.vouchers.incomeTax])
     expect(period('2033-12-31', AS_OF).income_tax).toEqual([])
+  })
+})
+
+describe('shareholders and dividend drafts', () => {
+  type LineSpec = [account: number, debit: number, credit: number]
+
+  function book(key: string, date: string, type: number, lines: LineSpec[], files: string[] = []) {
+    const voucher = fx.voucher(key, date, type, key, files)
+    lines.forEach(([account, debit, credit], i) =>
+      fx.db.run('INSERT INTO Vienti (rivi, tosite, pvm, tili, debetsnt, kreditsnt) VALUES (?, ?, ?, ?, ?, ?)', [i + 1, voucher, date, account, debit || null, credit || null]),
+    )
+    return voucher
+  }
+
+  /** Two people: one with 3 shares, one from 2033 with 1. */
+  function holders() {
+    save({
+      shareholders: [
+        { partner_name: 'Osakas Yksi', kind: 'person', resident: true, holdings: [{ from: '2031-01-01', shares: 3 }] },
+        { partner_name: 'Osakas Kaksi', kind: 'estate', resident: true, holdings: [{ from: '2033-01-01', shares: 1 }] },
+      ],
+    })
+  }
+
+  it('keeps shareholders by Kumppani, making a new one from a name', () => {
+    holders()
+    const list = overview().shareholders
+    expect(list.map((s) => [s.key, s.name, s.kind, s.shares])).toEqual([
+      ['s1', 'Osakas Yksi', 'person', 3],
+      ['s2', 'Osakas Kaksi', 'estate', 1],
+    ])
+    const ids = list.map((s) => s.partner_id)
+    expect(fx.db.all('SELECT nimi FROM Kumppani WHERE id IN (?, ?) ORDER BY id', ids)).toEqual([{ nimi: 'Osakas Yksi' }, { nimi: 'Osakas Kaksi' }])
+    // Saved again under its key, a name already known is not made twice.
+    save({ shareholders: [{ key: 's1', partner_name: 'Osakas Yksi', kind: 'person', resident: true, holdings: [{ from: '2031-01-01', shares: 5 }] }] })
+    expect(overview().shareholders.map((s) => [s.key, s.partner_id, s.shares])).toEqual([['s1', ids[0], 5]])
+  })
+
+  it('refuses a shareholder twice, an unknown partner and a bad holding', () => {
+    holders()
+    const id = overview().shareholders[0].partner_id
+    const one = { kind: 'person' as const, resident: true, holdings: [{ from: '2031-01-01', shares: 1 }] }
+    expect(() => save({ shareholders: [{ ...one, partner_id: id }, { ...one, partner_id: id }] })).toThrow(/duplicate_shareholder/)
+    expect(() => save({ shareholders: [{ ...one, partner_id: 999999 }] })).toThrow(/unknown_partner/)
+    expect(() => save({ shareholders: [{ ...one, partner_id: id, holdings: [{ from: '2031-01-01', shares: -1 }] }] })).toThrow(/invalid_field/)
+    expect(() => save({ shareholders: [{ ...one, partner_id: id, rate_bp: 10001 }] })).toThrow(/invalid_field/)
+  })
+
+  it('splits a dividend over the holders of its decision day', () => {
+    book('decision', '2033-05-02', TYPE_TRANSFER, [[2251, 1000_00, 0], [2261, 0, 1000_00]])
+    expect(period('2032-12-31', '2033-06-01').dividends[0].split_problem).toBe('no_shareholders')
+    holders()
+    const d = period('2032-12-31', '2033-06-01').dividends[0]
+    expect(d.split_problem).toBeNull()
+    expect(d.recipients.map((r) => [r.name, r.shares, r.gross_snt, r.withholding_snt, r.net_snt])).toEqual([
+      ['Osakas Yksi', 3, 750_00, 56_25, 693_75],
+      ['Osakas Kaksi', 1, 250_00, 18_75, 231_25],
+    ])
+    expect(d.open_recipients.map((r) => r.gross_snt)).toEqual([750_00, 250_00])
+  })
+
+  it('waits for a rate when a shareholder lives abroad', () => {
+    save({ shareholders: [{ partner_name: 'Ulkomainen', kind: 'person', resident: false, holdings: [{ from: '2031-01-01', shares: 1 }] }] })
+    book('decision', '2033-05-02', TYPE_TRANSFER, [[2251, 1000_00, 0], [2261, 0, 1000_00]])
+    expect(period('2032-12-31', '2033-06-01').dividends[0].split_problem).toBe('rate_missing')
+  })
+
+  it('lists draft decisions on the period they distribute, and offers the newest ended period', () => {
+    const id = saveVoucher(fx.db, decisionDraft({ date: '2033-05-02', amount_snt: 500_00, title: 'Osingonjako' }))
+    const p = period('2032-12-31', '2033-06-01')
+    expect(p.dividend_drafts.map((v) => v.voucher_id)).toEqual([id])
+    // A draft is no decision yet.
+    expect(p.dividends).toEqual([])
+    expect(p.decide_here).toBe(true)
+    expect(period('2031-12-31', '2033-06-01').decide_here).toBe(false)
+  })
+
+  it('puts a draft payment on the dividend it would pay, with the withholding and net per recipient', () => {
+    holders()
+    book('decision', '2033-05-02', TYPE_TRANSFER, [[2251, 1000_00, 0], [2261, 0, 1000_00]])
+    const open = period('2032-12-31', '2033-06-01').dividends[0].open_recipients
+    const draft = paymentDraft({ date: '2033-06-15', title: 'Osingon maksu', withholding: 'Ennakonpidätys', recipients: open, account: 2943 })
+    expect(draft.entries!.map((e) => [e.account, e.debit_cents ?? 0, e.credit_cents ?? 0])).toEqual([
+      [2261, 1000_00, 0],
+      [2921, 0, 56_25],
+      [2943, 0, 693_75],
+      [2921, 0, 18_75],
+      [2943, 0, 231_25],
+    ])
+    const id = saveVoucher(fx.db, draft)
+    const d = period('2032-12-31', '2033-06-01').dividends[0]
+    expect(d.payment_drafts.map((v) => v.voucher_id)).toEqual([id])
+    expect(d.paid_snt).toBe(0)
+    expect(period('2032-12-31', '2033-06-01').dividend_drafts).toEqual([])
+    const partners = fx.db.all<{ kumppani: number }>('SELECT kumppani FROM Vienti WHERE tosite = ? AND tili = 2943 ORDER BY id', [id])
+    expect(partners.map((p) => p.kumppani)).toEqual(open.map((r) => r.partner_id))
   })
 })

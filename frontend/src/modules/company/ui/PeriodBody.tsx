@@ -84,7 +84,7 @@ export function PeriodBody({
         ))}
       </DocRows>
 
-      <DividendSection dividends={period.dividends} actions={actions} />
+      <DividendSection period={period} overview={overview} today={today} actions={actions} />
 
       {period.unlinked.length ? (
         <details className="company-unlinked">
