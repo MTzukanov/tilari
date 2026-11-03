@@ -264,6 +264,18 @@ export type Form73View = {
   ledger_cents: number
 }
 
+/** A file of form rows on a voucher of the period (`rowFiles.ts`). */
+export type RowFile = {
+  attachment_id: number
+  name: string
+  voucher_id: number
+  voucher_title: string
+  date: string
+  posted: boolean
+}
+
+export type RowFiles = { form8a: RowFile | null; form73: RowFile | null }
+
 export type TaxReturnView = {
   starts: string
   ends: string
@@ -283,4 +295,6 @@ export type TaxReturnView = {
   form71b: Form71bView
   form62: Form62View
   form73: Form73View
+  /** Rows for 8A and 73 attached to a voucher of the period, for the dialog to read. */
+  row_files: RowFiles
 }

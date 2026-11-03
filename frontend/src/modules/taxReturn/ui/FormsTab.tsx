@@ -4,8 +4,10 @@ import { Pill } from '../../../shared/Pill'
 import { formatEurInput, parseEurInput, sanitizeEurInput } from '../../../shared/money'
 import {
   computeForm73,
+  decodeTable,
   emptyDividend,
   fieldName,
+  parseDividendTable,
   parseHoldingTable,
   saleResult,
   type DividendClassView,
@@ -24,6 +26,7 @@ import { EurField, YesNo } from './FactsTab'
 import { CopyFigure } from './FiguresTab'
 import { formatFigure } from './format'
 import { anchorId, type Jump } from './jump'
+import { RowFileRead } from './RowFileRead'
 
 /** An amount that can stay empty, so that "not typed" differs from a typed zero. */
 function OptionalEur({ label, cents, placeholder, onChange }: { label: string; cents: number | null | undefined; placeholder?: string; onChange: (cents: number | null) => void }) {
@@ -242,8 +245,8 @@ function PasteRows({ onRows }: { onRows: (text: string) => { count: number; kept
             onChange={(e) => {
               const file = e.target.files?.[0]
               if (!file) return
-              void file.text().then((content) => {
-                setText(content)
+              void file.arrayBuffer().then((content) => {
+                setText(decodeTable(new Uint8Array(content)))
                 setResult(null)
               })
               e.target.value = ''
@@ -281,6 +284,11 @@ export function FormsTab({ view, onSave, onJump }: { view: TaxReturnView; onSave
   const [dirty, setDirty] = useState(false)
   const [saved, setSaved] = useState(false)
   const [showAll62, setShowAll62] = useState(false)
+  // A file of rows on a voucher fills a form by itself only when nothing was saved there before.
+  const [autoRead] = useState(() => ({
+    form8a: !view.inputs.holdings.some((row) => row.group === 'financial' && row.era == null),
+    form73: !view.form73.typed,
+  }))
 
   // A saved view replaces the draft, and the fields follow: their own text state starts from these values.
   const [revision, setRevision] = useState(0)
@@ -346,6 +354,23 @@ export function FormsTab({ view, onSave, onJump }: { view: TaxReturnView; onSave
     }
     return { count: pasted.rows.length, kept: pasted.kept_ids, skipped: pasted.skipped }
   }
+  // The file's classes replace those classes' amounts; a class it does not have keeps what was typed.
+  const readDividends = (text: string) => {
+    const table = parseDividendTable(text)
+    if (table.rows) {
+      setForm73((old) => {
+        const classes = { ...old.classes }
+        for (const [key, cents] of Object.entries(table.classes) as [keyof typeof classes, number][]) {
+          classes[key] = { ...(classes[key] ?? emptyDividend()), cents }
+        }
+        return { ...old, classes }
+      })
+      setRevision((n) => n + 1)
+      touch()
+    }
+    return { count: table.rows, kept: 0, skipped: table.skipped }
+  }
+  const typedFinancial = holdings.some((row) => row.group === 'financial' && row.era == null)
 
   const groups = view.form8a.groups.filter((group) => group.rows.length || group.field_cents)
   const needs = (form: string) => view.forms.some((item) => item.form === form)
@@ -361,6 +386,9 @@ export function FormsTab({ view, onSave, onJump }: { view: TaxReturnView; onSave
   const body73 = (
     <>
       <p className="muted">{t('taxReturn.attached.dividendsLead')}</p>
+      {view.row_files.form73 ? (
+        <RowFileRead file={view.row_files.form73} auto={autoRead.form73 && !dividends.typed} onText={readDividends} />
+      ) : null}
       <YesNo
         question="Onko yhtiö julkisesti noteerattu?"
         value={form73.company_listed}
@@ -472,6 +500,9 @@ export function FormsTab({ view, onSave, onJump }: { view: TaxReturnView; onSave
                 >
                   {t('taxReturn.attached.addRow')}
                 </button>
+                {typedGroup && view.row_files.form8a ? (
+                  <RowFileRead file={view.row_files.form8a} auto={autoRead.form8a && !typedFinancial} onText={(text) => pasteRows(group.key, text)} />
+                ) : null}
                 <PasteRows onRows={(text) => pasteRows(group.key, text)} />
                 <p className="tax-return-attached-totals">
                   <span>{t('taxReturn.attached.field', { field: fieldName(group.field), amount: formatFigure(group.field_cents) })}</span>

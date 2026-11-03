@@ -94,8 +94,11 @@ Where past filings of a book differ from the chart, the chart decides and the ow
   value per share, and the total if wanted), separated by tabs as a spreadsheet copies them, or by semicolons, typed
   or read from a file. The lines replace the group's typed rows, a first line that cannot be read is a header, and
   other unreadable lines are listed. A row without a business ID keeps the ID of an earlier row of the same name, so
-  a Finnish ID is typed once. Tilari reads no broker's files itself: a tool that does writes this format, as
-  tilari-bank-import's `nordnet-tax-forms` does for Nordnet.
+  a Finnish ID is typed once. A file is read as UTF-16 with a byte order mark (Nordnet's and Kitsas's CSV) or UTF-8.
+- **Rows on a voucher** (`domain/rowFiles.ts`, owner 2026-11-03): an attachment named `8a-YYYY.csv` on a draft or
+  posted voucher dated in the period is read into Rahoitusomaisuus like pasted rows, at once when that group has no
+  typed rows, otherwise with the button beside it. The newest such voucher counts. Tilari reads no broker's files
+  itself: tilari-bank-import's Nordnet year end attaches this file to `Nordnet 31.12.YYYY`, so the owner copies nothing.
 
 **73, dividends** (`domain/form73.ts`). The ledger has one figure, Saadut osingot ja ylijäämät; the classes are typed.
 The form is always on the tab: when not needed it is closed and says why (no euros in the field, with a link to the
@@ -108,6 +111,10 @@ figures, or the answer that all dividends are Finnish and tax-free), and it can 
   Until then the 6B follows the ledger (a tax-free dividend account, `9090` or `9270`, counts as tax-free).
 - The total must equal Saadut osingot ja ylijäämät in the Kirjanpito column, which is the book's figure: gross, a
   foreign dividend converted as booked.
+- **Rows on a voucher** (`domain/rowFiles.ts`): an attachment named `73-YYYY.csv` holds one row per country (country,
+  class in OmaVero's wording, dividends, tax withheld). Its dividends add up by class and replace those classes'
+  amounts; a class it lacks keeps what was typed. It is read at once when no class has an amount, otherwise with the
+  button. tilari-bank-import's Nordnet year end writes it beside the 8A file. The listing question stays the owner's.
 - "Onko yhtiö julkisesti noteerattu?" takes a yes or a no, like the 6B's questions. Each class's "Jakajayhtiö on
   listattu" is a checkbox: off is OmaVero's "Ei tai jakajayhtiöitä on useita". Omistusosuus is optional.
 - Not needed when every dividend is tax-free and from Finland, which OmaVero asks as a question. A yes there while the

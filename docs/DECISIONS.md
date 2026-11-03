@@ -743,6 +743,11 @@ correction would change the open year's income statement lines. The rental-objec
 - **Rows from a broker come as pasted text** (2026-11-02). Tilari reads no broker's files (SCOPE.md: bank and CSV
   importers stay outside). 8A takes rows pasted or read from a file in the form's own columns, which any spreadsheet
   can make; tilari-bank-import writes them for Nordnet. A Finnish business ID typed once is kept by name.
+- **...or as attachments on a voucher of the period** (owner, 2026-11-03). Running a separate command and picking its
+  file was an extra step. tilari-bank-import's Nordnet year end now attaches `8a-YYYY.csv` and `73-YYYY.csv` to the
+  voucher it drafts anyway, and the dialog reads them from the period's vouchers by name. The book carries the rows
+  behind its 8A and 73, and Kitsas shows them as tables. Domain code only finds the files: in a lean book their bytes
+  are in the attachment store, so the dialog fetches them.
 - **The calculation is kept with the 6B, not as it** (2026-11-02). The owner wants the result kept for later
   reference. It is a PDF on a Liitetieto voucher, like the rental letters, linked to the period's 6B row with the flag
   `calculation`, so the row and the deadline wait for the filed return. The figures stay in the voucher's file, not in

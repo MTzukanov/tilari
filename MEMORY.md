@@ -7,6 +7,17 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-03 - Tax return: 8A and 73 rows read from a voucher's attachments
+
+- Owner: running tilari-bank-import's `nordnet-tax-forms` and then picking its file in the 8A paste was an extra
+  step. The bank import's Nordnet year end now attaches `8a-YYYY.csv` and `73-YYYY.csv` to `Nordnet 31.12.YYYY`
+  (that command is gone), and the dialog finds them on the period's draft or posted vouchers by name
+  (`domain/rowFiles.ts`). They fill Rahoitusomaisuus and the 73 classes by themselves while nothing is typed there;
+  otherwise a button reads them again. Files are UTF-16 with a byte order mark (Kitsas previews no other CSV as a
+  table), so the paste's own file input decodes that too.
+- When form 73 is not needed (no euros in Saadut osingot), an automatic read fills it and the form moves from the
+  closed section to the open one, which drops the "Luettiin N riviä" line; the amounts are there.
+
 ## 2026-11-03 - Tax return: a new calculation replaces the kept one
 
 - Owner's test of "Tallenna laskelma asiakirjoihin": each save added another voucher and PDF to the 6B row. Now a save
