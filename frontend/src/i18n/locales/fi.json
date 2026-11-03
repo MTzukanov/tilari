@@ -1203,6 +1203,7 @@
       "empty": "Ei liitteitä.",
       "missing": "Tosite {id} on poistettu",
       "deleted": "Poistettu",
+      "absent": "Puuttuu",
       "voucher": "Tosite {id}",
       "voucherNoId": "Tosite",
       "showBank": "Näytä tiliotteet ({n})",

@@ -19,6 +19,7 @@ export type {
   LeaseIncrease,
   LeaseIncreaseKind,
   LeaseRent,
+  LeaseState,
   LeaseSuggestionView,
   LeaseView,
   LeaseVoucher,

@@ -1203,6 +1203,7 @@
       "empty": "Keine Anhänge.",
       "missing": "Beleg {id} wurde gelöscht",
       "deleted": "Gelöscht",
+      "absent": "Fehlt",
       "voucher": "Beleg {id}",
       "voucherNoId": "Beleg",
       "showBank": "Kontoauszüge anzeigen ({n})",

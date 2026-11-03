@@ -37,7 +37,7 @@ describe('rent', () => {
 
   it('the view names the tenant and labels the vouchers; an ended lease shows its last rent', () => {
     const refs = new Map<number, VoucherRef>([
-      [31, { id: 31, date: '2025-11-15', type: 800, title: 'Vuokrankorotus', posted: true, doc_number: 4, series: null }],
+      [31, { id: 31, date: '2025-11-15', type: 800, title: 'Vuokrankorotus', posted: true, doc_number: 4, series: null, files: [{ id: 9, name: 'ilmoitus.pdf' }] }],
     ])
     const partners = new Map([[7, { name: 'Vuokralainen Virtanen', address: ['Mallikatu 1 A 2', '00100 Helsinki'] }]])
     const ended = leaseView(lease, '2026-06-30', partners, refs)
@@ -49,7 +49,14 @@ describe('rent', () => {
       contract: null,
     })
     expect(rentTotal(ended.rent!)).toBe(72_000)
-    expect(ended.steps[1].voucher).toEqual({ voucher_id: 31, date: '2025-11-15', doc_number: 4, series: null, title: 'Vuokrankorotus' })
+    expect(ended.steps[1].voucher).toEqual({
+      voucher_id: 31,
+      date: '2025-11-15',
+      doc_number: 4,
+      series: null,
+      title: 'Vuokrankorotus',
+      files: [{ id: 9, name: 'ilmoitus.pdf' }],
+    })
     const upcoming = leaseView(lease, '2025-01-01', new Map(), refs)
     expect(upcoming).toMatchObject({ tenant: null, state: 'upcoming', rent: { rent_snt: 65_500 } })
     expect(leaseView({ ...lease, tenant_partner_id: undefined, tenant_name: 'Ei kumppani' }, '2025-06-01', new Map(), refs).tenant).toBe(

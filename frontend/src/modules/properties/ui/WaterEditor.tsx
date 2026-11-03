@@ -7,8 +7,8 @@ import { formatCents, parseEurInput } from '../../../shared/money'
 import type { DocCandidate, Lease, WaterBookedLine, WaterSettlement, WaterSuggestionView } from '../api'
 import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
-import { companyResultText, periodText, waterBalanceText, waterStatusText } from './format'
-import { LineLink, NoDocumentCheck, Shown } from './FormParts'
+import { companyResultText, periodText, waterBalanceText } from './format'
+import { LineLink, NoDocumentCheck, Shown, WaterStatusPill } from './FormParts'
 import { SuggestionSource } from './LeasesPanel'
 import {
   draftDifference,
@@ -201,11 +201,7 @@ export function WaterEditor({
                           ))}
                         </span>
                       ) : null}
-                      {share.status !== 'none' ? (
-                        <span className={`property-water-status property-water-status-${share.status}`}>
-                          {waterStatusText(t, share.status, share.balance_snt, share.settled_snt)}
-                        </span>
-                      ) : null}
+                      <WaterStatusPill share={share} />
                     </p>
                   ) : null}
                   <div className="property-lease-notice">

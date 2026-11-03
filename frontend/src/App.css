@@ -5581,8 +5581,26 @@ tr.tax-total td {
 /* A suggestion's source: hover tells what it was built from. */
 .property-lease-source {
   cursor: help;
-  text-decoration: underline dotted;
-  text-underline-offset: 3px;
+}
+
+/* A lease's contract and a settlement's statement, between the card's lines of text. */
+.property-lease-card > .doc-lines {
+  margin: 0.3rem 0;
+}
+
+/* The card's document lines have no actions, so no column is kept for them. */
+.property-lease-card .doc-lines {
+  --doc-end: 0rem;
+}
+
+/* A linked voucher in a row: its pill, its title, its files. */
+.property-voucher {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .property-lease-others {
@@ -5662,7 +5680,7 @@ tr.tax-total td {
   cursor: help;
 }
 
-/* Water settlements: one card per period, a tenant's status as a small badge. */
+/* Water settlements: one card per period. */
 .property-water-card + .property-water-card {
   margin-top: 0.9rem;
 }
@@ -5674,27 +5692,6 @@ tr.tax-total td {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.25rem 0.75rem;
-}
-
-.property-water-status {
-  display: inline-block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.05rem 0.45rem;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-}
-
-.property-water-status-settled {
-  color: #2f8f5b;
-  border-color: color-mix(in srgb, #2f8f5b 40%, var(--line));
-}
-
-.property-water-status-open,
-.property-water-status-partial {
-  color: #8a5a00;
-  border-color: color-mix(in srgb, #c98a00 40%, var(--line));
-  background: color-mix(in srgb, #f6e7c4 50%, var(--surface));
 }
 
 .property-section h3 {

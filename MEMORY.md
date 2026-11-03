@@ -7,6 +7,18 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-03 - Rental objects: lease and water panels on the shared parts (`feature/property-lease-docs`)
+
+- Second move from `docs/UI_PATTERNS.md`. A linked voucher in a lease or water panel is its purple pill, its title
+  and a blue pill per file: `loadVoucherRefs` reads each voucher's own `Liite` rows (id and name only, never
+  `data`, Kitsas's system attachments left out), passed on as `LeaseVoucher.files`. Computed, nothing stored.
+- The contract and a settlement's statement are `DocLine`s; increases and exceptions are `DocLines` with the day
+  they apply from in the date column, since that says more than the notice's date. An empty slot reads "Puuttuu"
+  by the same rules as the reminders' `missingDocuments`: only while the object is held, not where the owner
+  said there is no document ("Ei asiakirjaa"), and not on a water suggestion, which has no stored slot.
+- A lease's state and a tenant's water status are `Pill`s (`.property-water-status` went); a suggestion's source
+  is a `Pill doc` whose span keeps the hover text.
+
 ## 2026-11-02 - Rental objects: the object page's documents as lines (`feature/property-doc-lines`)
 
 - First of the moves listed in `docs/UI_PATTERNS.md` "Next: rental objects"; each is its own demo. The
