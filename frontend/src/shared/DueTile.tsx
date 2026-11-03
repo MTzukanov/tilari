@@ -15,6 +15,7 @@ export function DueTile({
   state,
   tone = 'neutral',
   action,
+  title,
   onOpen,
 }: {
   label: string
@@ -23,6 +24,8 @@ export function DueTile({
   tone?: DueTone
   /** A quiet link after the state. Not with `onOpen`: the whole tile is a button then. */
   action?: ReactNode
+  /** The whole sentence behind the tile, on hover. */
+  title?: string
   onOpen?: () => void
 }) {
   const body = (
@@ -36,9 +39,14 @@ export function DueTile({
     </>
   )
   const className = `due-tile due-tile-${tone}`
-  if (!onOpen) return <div className={className}>{body}</div>
+  if (!onOpen)
+    return (
+      <div className={className} title={title}>
+        {body}
+      </div>
+    )
   return (
-    <button type="button" className={className} onClick={onOpen}>
+    <button type="button" className={className} title={title} onClick={onOpen}>
       {body}
     </button>
   )

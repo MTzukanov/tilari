@@ -374,13 +374,22 @@ test.describe('rental object reminders', () => {
     await lease.getByLabel('Korotus € / v').fill('15')
     await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
 
-    // On the as-of date (31.12.2025).
+    // On the as-of date (30.11.2025).
     await expect(page).toHaveURL(/#\/property\/4$/)
     const warnings = page.locator('.property-warnings')
-    await expect(warnings).toContainText('Vuokrasopimus (Testi Vuokralainen) päättyy 28.2.2026, eikä seuraavaa ole kirjattu.')
-    await expect(warnings).toContainText('Vuokrankorotusta 1.1.2026 (Testi Vuokralainen) ei ole kirjattu.')
-    await expect(warnings).toContainText('Vesitasauksia ei ole lisätty, vaikka vuokralainen maksaa vesiennakkoa (1.1.2024 alkaen).')
-    await expect(warnings).toContainText('Vuokrasopimus puuttuu (Testi Vuokralainen, 1.1.2024 alkaen): liitä sopimus vuokrasuhteeseen.')
+    // The two reminders with a day are tiles, the whole sentence on hover; the others are lines led by a pill.
+    const ending = warnings.locator('.due-tile', { hasText: 'Vuokrasopimus päättyy · Testi Vuokralainen' })
+    await expect(ending).toContainText('28.2.2026')
+    await expect(ending.locator('.pill-warn')).toHaveText('90 pv jäljellä')
+    await expect(ending).toHaveAttribute('title', 'Vuokrasopimus (Testi Vuokralainen) päättyy 28.2.2026, eikä seuraavaa ole kirjattu.')
+    const increase = warnings.locator('.due-tile', { hasText: 'Vuokrankorotus · Testi Vuokralainen' })
+    await expect(increase).toContainText('1.1.2026')
+    await expect(increase.locator('.pill-warn')).toHaveText('32 pv jäljellä')
+    await expect(increase).toHaveAttribute('title', /^Vuokrankorotusta 1\.1\.2026 \(Testi Vuokralainen\) ei ole kirjattu\./)
+    const water = warnings.locator('li', { hasText: 'Vesitasauksia ei ole lisätty, vaikka vuokralainen maksaa vesiennakkoa (1.1.2024 alkaen).' })
+    await expect(water.locator('.pill-warn')).toHaveText('Hoidettava')
+    const contract = warnings.locator('li', { hasText: 'Vuokrasopimus puuttuu (Testi Vuokralainen, 1.1.2024 alkaen): liitä sopimus vuokrasuhteeseen.' })
+    await expect(contract.locator('.pill-crit')).toHaveText('Puuttuu')
 
     await page.goto('/#/properties')
     const row = page.locator('.property-table').first().locator('tr', { hasText: 'Testi Vuokralainen' })
@@ -390,7 +399,7 @@ test.describe('rental object reminders', () => {
 
     // Every object's warnings in one list after the figures, each object opening its page.
     const alerts = page.locator('.property-alerts')
-    await expect(alerts).toContainText('Vuokrankorotusta 1.1.2026 (Testi Vuokralainen) ei ole kirjattu.')
+    await expect(alerts.locator('.due-tile', { hasText: 'Vuokrankorotus · Testi Vuokralainen' })).toContainText('32 pv jäljellä')
     await expect(alerts.getByRole('button', { name: 'Asunto', exact: true })).toBeVisible()
 
     // The header's ⚠ counts them and opens the list from anywhere.
@@ -402,6 +411,10 @@ test.describe('rental object reminders', () => {
     await expect(page.locator('.property-alerts')).toBeInViewport()
     await page.locator('.property-alerts').getByRole('button', { name: 'Asunto', exact: true }).click()
     await expect(page).toHaveURL(/#\/property\/4$/)
+
+    // A tile on the object's page opens its edit page, where the lease is.
+    await page.locator('.property-warnings .due-tile', { hasText: 'Vuokrankorotus' }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/edit$/)
   })
 })
 

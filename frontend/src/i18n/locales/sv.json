@@ -1411,7 +1411,20 @@
       "summary": "Anmärkningar {count} · objekt {objects}",
       "header": "Anmärkningar om hyresobjekt ({count}): öppna listan",
       "skip": "Hoppa över",
-      "skipHint": "Det finns inget dokument för detta: påminn inte. Du kan ångra det när du redigerar objektet (Inget dokument)."
+      "skipHint": "Det finns inget dokument för detta: påminn inte. Du kan ångra det när du redigerar objektet (Inget dokument).",
+      "word": {
+        "error": "Fel",
+        "missing": "Saknas",
+        "todo": "Att göra",
+        "suggestion": "Förslag",
+        "note": "Obs"
+      },
+      "due": {
+        "leaseEnding": "Hyresavtalet upphör · {tenant}",
+        "increase": "Hyreshöjning · {tenant}",
+        "left": "{days} d kvar",
+        "late": "Försenad {days} d"
+      }
     },
     "error": {
       "invalid_field": "Kontrollera fältet {path}.",

@@ -1,8 +1,8 @@
 # UI patterns: documents and status
 
 For anyone building or restyling a page that lists documents, deadlines or things that need doing.
-The company page (`#/company`) is the reference. Rental objects are next; see
-[Next: rental objects](#next-rental-objects).
+The company page (`#/company`) is the reference; rental objects use the same parts (see
+[Rental objects](#rental-objects)).
 
 ## The problem it solves
 
@@ -102,31 +102,26 @@ CSS, in the "Documents and status" part of `App.css`:
 </DocRows>
 ```
 
-## Next: rental objects
+## Rental objects
 
-Not done yet: the owner asked to consider it after the company page. It is visual only, so no change to
-`property/{id}` data, `doc_voucher_ids` or `PropertyEdit.createDoc`. Work on a local branch and demo it
-first, as for any feature.
+Moved onto these parts in four steps (2026-11-02 and -03), visual only: no change to `property/{id}` data,
+`doc_voucher_ids` or `PropertyEdit.createDoc`.
 
-| Where | Now | Change to |
-|---|---|---|
-| `PropertyView.tsx` `Documents` | Panel with `h4` groups and `.property-doc-list`; a long voucher link, then `.property-attachment` | `.section-label` per group, `DocLines` and `DocLine` with `FilePill` and `VoucherPill`. Keep "show all" and the bank toggle |
-| `PropertyEdit.tsx`, linked documents | `.property-linked-list` with a small remove button | `DocLine`, the remove button in `end` |
-| `DocPicker.tsx` | A "view" link styled as `btn-small` | `FilePill` for the picked document; the search stays |
-| `FormParts.tsx` `VoucherLink` | Underlined number and title | `VoucherPill`, or the title plus a pill. This one change reaches every lease panel. `LineLink` shows an amount, so keep it a link |
-| `LeasesPanel.tsx` `LeaseList`, `LeaseCard` | Lease state as plain text | `Pill`, tone by state |
-| `LeasesEditor.tsx`, `WaterEditor.tsx` suggestions | `.property-lease-suggestions` | The suggestion banner moved to `shared/`, with `DocLine` and `mark` |
-| `PortfolioView.tsx` `AlertsList`, `PropertyView.tsx` warnings | Text lists | `DueTile` where there is a due day (lease reminders), `Pill` for the rest |
+| Where | Now |
+|---|---|
+| `PropertyView.tsx` `Documents` | `.section-label` per group, `DocLines` and `DocLine` with `VoucherOpen` and `FilePill`; "show all" and the bank toggle stay |
+| `FormParts.tsx` `VoucherLink` | The voucher's pill, its title and the files as `FilePill`s; reaches every lease and water panel |
+| `LeasesPanel.tsx`, `WaterPanel.tsx` | A lease's state and a tenant's water status are `Pill`s |
+| `PropertyEdit.tsx`, `DocPicker.tsx` | Linked documents are `DocLine`s with the remove as a quiet link; the picked document shows its `FilePill`s |
+| `LeasesEditor.tsx`, `WaterEditor.tsx` | Suggestions in `shared/SuggestBanner`, each a `DocLine` |
+| `ui/Warnings.tsx` (object page and the portfolio's "Huomioitavaa") | A lease ending or a rent increase is a `DueTile` (days left, or "Myöhässä" once past); every other warning is a line led by a `Pill`: Virhe and Puuttuu red, Hoidettava amber, Ehdotus blue, Huomio grey (`warningTone` in `format.ts`) |
 
-Suggested order: `Documents` first, since it is the most visible, then `VoucherLink`, lease states and
-the editors. Each is a separate demo.
+What stayed a link, and why:
 
-Check before starting:
+- `LineLink` and a deposit's movements: they show a date and an amount, a figure taken from the ledger, not a
+  document.
+- An object's name in the portfolio's warnings, "Muokkaa", the month panel's links: navigation inside Tilari.
+- "Ohita" and "Poista": quiet links, so the document's own pills stay the loudest thing on the line.
 
-- `e2e/properties.spec.ts` selects `.property-doc-list` in two places.
-- A rental object has its own page, and its month panel opens through the address. Do not turn those into
-  `Binder`s unless the owner asks: this is about how a document reads, not about navigation.
-- Remove `.property-attachment` and its 📎 once nothing uses it.
+A rental object keeps its own page, and its month panel opens through the address: these are not `Binder`s.
 
-Done when no document on a rental object's pages uses an underlined link for a file or voucher, and the
-e2e still passes.

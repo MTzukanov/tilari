@@ -5108,9 +5108,10 @@ tr.tax-total td {
   margin-top: 0.6rem;
 }
 
-.property-alerts-list ul {
-  margin: 0.2rem 0 0;
-  padding-left: 1.4rem;
+/* An object's tiles and warning lines, under its name. */
+.property-alerts-list .due-tiles,
+.property-alerts-list .property-warning-lines {
+  margin-top: 0.35rem;
 }
 
 .property-alerts-object {
@@ -5213,11 +5214,43 @@ tr.tax-total td {
 
 .property-warnings {
   margin: 0.5rem 0 1rem;
-  padding: 0.6rem 1rem 0.6rem 2rem;
+  padding: 0.6rem 1rem;
   border: 1px solid color-mix(in srgb, #c98a00 40%, var(--line));
   background: color-mix(in srgb, #f6e7c4 45%, var(--surface));
   border-radius: 8px;
   font-size: 0.88rem;
+}
+
+/* A reminder's tile keeps its size when it is the only one. */
+.property-warnings .due-tiles,
+.property-alerts-list .due-tiles {
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 18rem));
+}
+
+/* A warning's pill has a column of its own, so the sentences start at one place. */
+.property-warning-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.property-warning-lines li {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.property-warning-lines li + li {
+  margin-top: 0.3rem;
+}
+
+.property-warning-lines .pill {
+  justify-self: start;
+}
+
+.due-tiles + .property-warning-lines {
+  margin-top: 0.6rem;
 }
 
 .property-breakeven-main {
