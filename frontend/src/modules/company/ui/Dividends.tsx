@@ -27,6 +27,7 @@ import {
   type RecipientView,
   type VoucherRef,
 } from '../api'
+import { Fold } from './Fold'
 import { errorText, periodShort } from './format'
 import { OpenVoucher, type SlotActions } from './Slot'
 
@@ -437,8 +438,7 @@ export function DividendSection({ period, overview, today, actions }: { period: 
   const canDecide = period.decide_here && !overview.read_only
   if (!period.dividends.length && !period.dividend_drafts.length && !canDecide) return null
   return (
-    <>
-      <h3 className="section-label">{t('company.dividend.title')}</h3>
+    <Fold id="dividends" label={t('company.dividend.title')}>
       <HowItGoes />
       {period.dividends.map((d) => (
         <DividendCard key={`${d.decided_on}-${d.vouchers[0]?.voucher_id ?? ''}`} dividend={d} overview={overview} today={today} actions={actions} />
@@ -453,7 +453,7 @@ export function DividendSection({ period, overview, today, actions }: { period: 
         </p>
       ) : null}
       {deciding ? <DecisionForm period={period} overview={overview} today={today} actions={actions} onClose={() => setDeciding(false)} /> : null}
-    </>
+    </Fold>
   )
 }
 

@@ -7,6 +7,12 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-03 - Company page: a period's sections fold
+
+- Owner: Määräajat, Asiakirjat and the dividends fold, and only Määräajat is open at first. What is opened or
+  folded holds for the session and for every period, or opening a voucher and coming back would fold the
+  documents again. The e2e helper unfolds Asiakirjat once per test.
+
 ## 2026-11-03 - Company page: one meeting, one file; extraordinary meetings; income tax payment
 
 - Owner's look at the drafts: account names were missing next to the numbers; a step for paying the tax after

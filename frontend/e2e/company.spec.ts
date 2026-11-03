@@ -5,11 +5,27 @@ const AGM = 'Varsinaisen yhtiökokouksen pöytäkirja'
 const PDF = { mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 asiakirja') }
 
 /** The test book has periods 2024 and 2025, closed through 2023; this day falls in 2025. */
-async function openCompany(page: Page) {
+async function arrive(page: Page) {
   await openBook(page)
   await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
   await page.locator('.sidenav').getByRole('link', { name: 'Yhtiö' }).click()
   await expect(page.getByRole('heading', { name: 'Yhtiö', exact: true })).toBeVisible()
+}
+
+function fold(page: Page, label: string): Locator {
+  return page.locator('details.company-fold', { has: page.locator('> summary', { hasText: label }) })
+}
+
+/** Opens a folded section of the open card; it then stays open for the session, in every card. */
+async function unfold(page: Page, label: string) {
+  await fold(page, label).locator('> summary').click()
+  await expect(fold(page, label)).toHaveAttribute('open', '')
+}
+
+/** With the documents unfolded, as most tests work on them. */
+async function openCompany(page: Page) {
+  await arrive(page)
+  await unfold(page, 'Asiakirjat')
 }
 
 /** The newest ended period is open on arrival. */
@@ -42,6 +58,22 @@ async function upload(page: Page, target: Locator, name: string) {
 }
 
 test.describe('company documents', () => {
+  test('only the deadlines are open at first, and a section opened stays open after a voucher', async ({ page }) => {
+    await arrive(page)
+    await expect(fold(page, 'Määräajat')).toHaveAttribute('open', '')
+    await expect(fold(page, 'Asiakirjat')).not.toHaveAttribute('open', '')
+    await expect(fold(page, 'Osingot tämän tilikauden voitosta')).not.toHaveAttribute('open', '')
+    await expect(page.getByRole('button', { name: 'Kirjaa osingonjakopäätös' })).toBeHidden()
+
+    await unfold(page, 'Asiakirjat')
+    await fold(page, 'Määräajat').locator('> summary').click()
+    await expect(fold(page, 'Määräajat')).not.toHaveAttribute('open', '')
+    await page.locator('.sidenav').getByRole('link', { name: 'Selaa' }).click()
+    await page.locator('.sidenav').getByRole('link', { name: 'Yhtiö' }).click()
+    await expect(fold(page, 'Asiakirjat')).toHaveAttribute('open', '')
+    await expect(fold(page, 'Määräajat')).not.toHaveAttribute('open', '')
+  })
+
   test('a document uploaded to a slot is a type-800 voucher that fills the slot and its deadline', async ({ page }) => {
     await openCompany(page)
     await openPeriod2024(page)
@@ -343,6 +375,7 @@ test.describe('dividend drafts', () => {
     // A decision made now distributes the newest ended period's profit, whose card is open on arrival; the
     // minutes go onto the decision's voucher.
     const section = page.locator('.binder-body')
+    await unfold(page, 'Osingot tämän tilikauden voitosta')
     await section.getByRole('button', { name: 'Kirjaa osingonjakopäätös' }).click()
     await expect(section.getByLabel('Päättänyt kokous')).toHaveValue('agm')
     await section.getByLabel('Osinko yhteensä, €').fill('1000')

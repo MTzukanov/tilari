@@ -68,7 +68,10 @@ stand out. Here colour and a filled button mark what needs doing, and everything
 
 CSS, in the "Documents and status" part of `App.css`:
 
-- `.section-label`: the small uppercase heading inside a page or card.
+- `.section-label`: the small uppercase heading inside a page or card. In a period's card on the company page
+  each section folds under it as a `summary` (`modules/company/ui/Fold.tsx`): Määräajat open, Asiakirjat and
+  Osingot folded at first (owner, 2026-11-03); what the owner opens or folds holds for every period during the
+  session (`sessionStorage`), so a voucher's round trip keeps it.
 - `.num-text`: a date or code in `--font-num`.
 - `.btn-small.is-primary`: the row's filled button.
 - `.btn-link.btn-quiet`: a secondary action such as "Poista linkki" or "Ei tarvita".

@@ -6852,7 +6852,8 @@ button.due-tile:hover {
   border-bottom: 1px solid var(--line);
 }
 
-.company-unlinked > summary {
+.company-unlinked > summary,
+.company-fold > summary {
   cursor: pointer;
 }
 

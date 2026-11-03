@@ -7,6 +7,7 @@ import { FilePill, Pill } from '../../../shared/Pill'
 import type { CompanyOverview, PeriodView, TaxSettlementView } from '../api'
 import { DeadlineTiles } from './Deadlines'
 import { DividendSection } from './Dividends'
+import { Fold } from './Fold'
 import { errorText, periodShort } from './format'
 import { AttachSelect, OpenVoucher, SlotRow, UnlinkedRow, type SlotActions } from './Slot'
 
@@ -61,58 +62,60 @@ export function PeriodBody({
     <>
       {period.confirmed_at ? <p className="muted company-confirmed">{t('company.period.confirmed', { date: formatDate(period.confirmed_at) })}</p> : null}
 
-      <h3 className="section-label">{t('company.deadlines.title')}</h3>
-      <DeadlineTiles
-        deadlines={period.deadlines}
-        listed={(kind) => period.slots.some((s) => s.kind === kind)}
-        onSetHandled={
-          overview.read_only || !period.ended
-            ? undefined
-            : (kind, value) => {
-                setRowError(null)
-                actions.apply({ not_needed: [{ period_ends: period.ends, kind, value }] }).catch((err) => setRowError(errorText(t, err)))
-              }
-        }
-      />
+      <Fold id="deadlines" label={t('company.deadlines.title')}>
+        <DeadlineTiles
+          deadlines={period.deadlines}
+          listed={(kind) => period.slots.some((s) => s.kind === kind)}
+          onSetHandled={
+            overview.read_only || !period.ended
+              ? undefined
+              : (kind, value) => {
+                  setRowError(null)
+                  actions.apply({ not_needed: [{ period_ends: period.ends, kind, value }] }).catch((err) => setRowError(errorText(t, err)))
+                }
+          }
+        />
+        <p className="muted company-footnote">{t('company.deadlines.footnote')}</p>
+      </Fold>
       {rowError ? <p className="error">{rowError}</p> : null}
-      <p className="muted company-footnote">{t('company.deadlines.footnote')}</p>
 
-      <h3 className="section-label">{t('company.period.documents')}</h3>
-      <DocRows>
-        {period.income_tax.length ? (
-          // Booked on the period's last day, so it leads. Read from the book: nothing to upload or link.
-          <DocRow name={t('company.incomeTax.title')} status={<Pill tone="ok">{t('company.incomeTax.booked')}</Pill>}>
-            <DocLines>
-              {period.income_tax.map((v) => (
-                <DocLine key={v.voucher_id} voucher={<OpenVoucher voucher={v} actions={actions} />} title={v.title || t('company.incomeTax.title')}>
-                  {v.files.map((f) => (
-                    <FilePill key={f.id} id={f.id} name={f.name} />
-                  ))}
-                </DocLine>
-              ))}
-            </DocLines>
-          </DocRow>
-        ) : null}
-        {period.slots.map((slot) => (
-          <Fragment key={slot.kind}>
-            <SlotRow
-              kind={slot.kind}
-              label={rowLabel(slot.kind)}
-              status={slot.status}
-              documents={slot.documents}
-              suggestions={slot.suggestions}
-              periodEnds={period.ends}
-              defaultTitle={rowTitle(slot.kind)}
-              overview={overview}
-              today={today}
-              actions={actions}
-              kitsasStatement={slot.kind === 'financial_statements' ? period.kitsas_statement : undefined}
-              notNeededToggle={slot.required}
-            />
-            {slot.kind === 'tax_decision' ? period.tax_settlements.map((s) => <TaxSettlementRow key={s.direction} settlement={s} actions={actions} />) : null}
-          </Fragment>
-        ))}
-      </DocRows>
+      <Fold id="documents" label={t('company.period.documents')}>
+        <DocRows>
+          {period.income_tax.length ? (
+            // Booked on the period's last day, so it leads. Read from the book: nothing to upload or link.
+            <DocRow name={t('company.incomeTax.title')} status={<Pill tone="ok">{t('company.incomeTax.booked')}</Pill>}>
+              <DocLines>
+                {period.income_tax.map((v) => (
+                  <DocLine key={v.voucher_id} voucher={<OpenVoucher voucher={v} actions={actions} />} title={v.title || t('company.incomeTax.title')}>
+                    {v.files.map((f) => (
+                      <FilePill key={f.id} id={f.id} name={f.name} />
+                    ))}
+                  </DocLine>
+                ))}
+              </DocLines>
+            </DocRow>
+          ) : null}
+          {period.slots.map((slot) => (
+            <Fragment key={slot.kind}>
+              <SlotRow
+                kind={slot.kind}
+                label={rowLabel(slot.kind)}
+                status={slot.status}
+                documents={slot.documents}
+                suggestions={slot.suggestions}
+                periodEnds={period.ends}
+                defaultTitle={rowTitle(slot.kind)}
+                overview={overview}
+                today={today}
+                actions={actions}
+                kitsasStatement={slot.kind === 'financial_statements' ? period.kitsas_statement : undefined}
+                notNeededToggle={slot.required}
+              />
+              {slot.kind === 'tax_decision' ? period.tax_settlements.map((s) => <TaxSettlementRow key={s.direction} settlement={s} actions={actions} />) : null}
+            </Fragment>
+          ))}
+        </DocRows>
+      </Fold>
 
       <DividendSection period={period} overview={overview} today={today} actions={actions} />
 
