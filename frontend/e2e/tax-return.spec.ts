@@ -153,6 +153,8 @@ test.describe('annual tax return data', () => {
     await expect(dialog.getByRole('status')).toContainText('Laskelma on päivitetty')
     await dialog.getByRole('button', { name: 'Sulje' }).click()
 
+    // The period's documents are folded at first.
+    await page.locator('details.company-fold > summary', { hasText: 'Asiakirjat' }).click()
     const taxReturn = page.locator('.doc-row', { has: page.locator('.doc-row-name', { hasText: /^Veroilmoitus 6B$/ }) })
     await expect(taxReturn).toContainText('Veroilmoituksen laskelma 2024, laadittu 15.12.2025')
     await expect(taxReturn.getByText('Laskelma', { exact: true })).toBeVisible()
