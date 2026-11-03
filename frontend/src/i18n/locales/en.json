@@ -1744,8 +1744,14 @@
     },
     "dividend": {
       "title": "Dividends from this period's profit",
-      "name": "Dividend",
-      "decided": "Decided {date}",
+      "name": {
+        "agm": "Dividend",
+        "extra": "Extra dividend"
+      },
+      "decided": {
+        "agm": "Annual general meeting {date}",
+        "extra": "Extraordinary general meeting {date}"
+      },
       "step": {
         "decided": "Decided",
         "booked": "Booked",
@@ -1772,7 +1778,8 @@
         "difference": "Paid {paid}, decided {decided}.",
         "noContract": "The dividend was left as a debt to the shareholder, but the payment's voucher has no attachment, such as the loan agreement.",
         "unpaid": "Unpaid {amount}",
-        "withholdingOpen": "Withholding not paid {amount}, due {date}"
+        "withholdingOpen": "Withholding not paid {amount}, due {date}",
+        "noMinutes": "The decision has no minutes of the meeting. Add them to the decision's voucher or to the row {row}."
       },
       "form": {
         "account": "Account",
@@ -1785,12 +1792,19 @@
       },
       "decision": {
         "open": "Book a dividend decision",
-        "defaultTitle": "Dividend for the financial period {period}",
+        "defaultTitle": {
+          "agm": "Dividend for the financial period {period}",
+          "extra": "Extra dividend for the financial period {period}"
+        },
         "date": "Decision day",
         "amount": "Dividend in total, €",
         "otherPeriod": "A decision on this day distributes another period's profit, so it shows on that period's card.",
-        "another": "This period already has a decision or a draft. A new decision is an extra dividend.",
-        "accounts": "Debit {retained} Retained earnings, credit {distribution} Dividend distribution."
+        "another": "This period already has a dividend decision or a draft of one. A second one is usually decided by an extraordinary general meeting.",
+        "accounts": "Debit {retained} Retained earnings, credit {distribution} Dividend distribution.",
+        "meeting": "Deciding meeting",
+        "minutes": "Minutes of the meeting",
+        "minutesNote": "The minutes are attached to the decision's voucher and show as the same file on the row {row}. They can also be added later.",
+        "minutesStored": "The minutes are already on the row {row}. The decision is booked on their voucher, so the file is in the books only once:"
       },
       "payment": {
         "open": "Make payment voucher",
@@ -1805,7 +1819,11 @@
         "draftExists": "This dividend already has a payment draft.",
         "accounts": "Debit {distribution} Dividend distribution by the unpaid amount, credit {withholding} withholding and the net amount for each recipient.",
         "withholdingLine": "Withholding on dividend",
-        "needsRecipients": "First add the shareholders on the company's own card."
+        "needs": {
+          "no_shareholders": "First add the shareholders on the company's own card.",
+          "no_holders": "Check the shareholders' holdings.",
+          "rate_missing": "Add the withholding rate of the shareholder living abroad."
+        }
       },
       "recipients": {
         "title": "Recipients ({n})",
@@ -1819,10 +1837,25 @@
           "no_shareholders": "No shareholders added. Add them on the company's own card to split the dividend.",
           "no_holders": "Nobody held shares on the decision day.",
           "rate_missing": "A recipient living abroad has no withholding rate."
-        }
+        },
+        "toShareholders": "Go to the shareholders"
       },
       "draft": "Draft",
-      "draftNote": "A draft does not show as a dividend yet. Open and post it once the decision is made."
+      "draftNote": "A draft does not show as a dividend yet. Open and post it once the decision is made.",
+      "meeting": {
+        "agm": "Annual general meeting",
+        "extra": "Extraordinary general meeting"
+      },
+      "howto": {
+        "title": "How a dividend goes",
+        "meeting": "The general meeting decides the dividend: the annual general meeting adopts the financial statements and, on the board's proposal, decides the amount and the payment day.",
+        "decision": "Book the dividend decision: give the meeting's date, the amount and the minutes. Tilari makes a draft with the minutes attached, and the same file shows on the meeting's row among the period's documents.",
+        "post": "Open the draft and post it. The dividend then gets its own card, and Recipients shows what each shareholder gets.",
+        "pay": "On the payment day, make the payment voucher: the dividend is paid from the bank or left as a debt to the shareholder (then attach the loan contract). The voucher books the withholding and the net amount per recipient.",
+        "withhold": "Pay the withholding to the Tax Administration by the 12th of the month after the payment. Booking the bank transaction settles it.",
+        "report": "File the annual information return on dividends with the Tax Administration by the end of the January after the payment year, and store it on its row.",
+        "extra": "An extra dividend is decided by an extraordinary general meeting. Pick it as the meeting, and its minutes get their own row among the period's documents and the dividend its own card. The steps are the same."
+      }
     },
     "shareholders": {
       "title": "Shareholders",
@@ -1877,7 +1910,6 @@
     "error": {
       "unknown_kind": "Unknown document kind.",
       "unknown_period": "That fiscal period no longer exists.",
-      "voucher_not_posted": "The voucher to link is a draft or deleted.",
       "attachment_not_on_voucher": "The file does not belong to this voucher.",
       "unknown_link": "The link was already removed.",
       "corrupt": "The saved data cannot be read.",
@@ -1886,7 +1918,8 @@
       "invalid_field": "Saving failed: invalid data.",
       "partial": "The document was created but could not be finished ({reason}). It is among the vouchers and under Not linked.",
       "duplicate_shareholder": "The same shareholder is listed twice.",
-      "unknown_partner": "The shareholder is not in Kitsas partners."
+      "unknown_partner": "The shareholder is not in Kitsas partners.",
+      "voucher_missing": "The voucher to link is deleted."
     },
     "kind": {
       "financial_statements": "Signed financial statements",
@@ -1903,7 +1936,22 @@
       "articles": "Articles of association",
       "trade_register_extract": "Trade register extract",
       "shareholder_register": "Shareholder list",
-      "shareholder_agreement": "Shareholder agreement"
+      "shareholder_agreement": "Shareholder agreement",
+      "extra_agm_minutes": "Minutes of an extraordinary general meeting"
+    },
+    "taxPayment": {
+      "pay": {
+        "title": "Income tax payment",
+        "done": "Paid",
+        "open": "Unpaid {amount}",
+        "booked": "The income tax booking left {amount} to pay. A payment or a correction by the tax decision settles it."
+      },
+      "refund": {
+        "title": "Tax refund",
+        "done": "Received",
+        "open": "Not received {amount}",
+        "booked": "The income tax booking left {amount} to get back. The refund or a correction by the tax decision settles it."
+      }
     }
   }
 }

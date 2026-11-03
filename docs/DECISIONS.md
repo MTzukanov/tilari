@@ -696,6 +696,19 @@ correction would change the open year's income statement lines. The rental-objec
   each line naming the recipient, type 0) as drafts with the ordinary voucher save, the way the book has
   always booked them; the owner posts them. Drafts on 2261 show in the section, so a second one is not made
   by mistake. The withholding remittance stays with the bank import.
+- **One meeting, one file** (owner, 2026-11-03: "it is the same attachment for both"). The meeting's minutes
+  are the decision voucher's attachment, and the meeting's row links that file, as the book has always done.
+  The decision form uploads them onto the draft and links it, or books the decision on the type-800 voucher
+  the minutes were stored on. So a link may name a draft: it shows "Luonnos" in amber, does not fill its row
+  until posted, and is not counted as a problem. A deleted voucher is still refused.
+- **An extraordinary meeting has its own row** (`extra_agm_minutes`, owner 2026-11-03): an extra dividend's
+  minutes belong with the period it distributes. Listed once there is a document, a file named so, or a second
+  dividend, which makes it required; such files were suggested under "Muut" before. A card's meeting is the
+  row whose minutes sit on its voucher or carry its date, else the first dividend is the AGM's.
+- **Income tax after the tax decision is read from the book** (owner 2026-11-03): "Tuloveron maksu" follows
+  "Verotuspäätös", with what the period's lines put on Tuloverosiirtovelat (Kitsas's setting, 2968) or
+  Tuloverosiirtosaamiset (1813) and the later lines that settled it, oldest first. Nothing to upload or link.
+  The whole process is in `docs/DIVIDENDS.md`.
 - **Why not the dossier as designed elsewhere:** the first design assumed a Kitsas HTTP API, its own
   SQL tables, a dossier inside Tilikaudet, documents only on type 800, and a payment voucher that
   pays from the bank. Tilari has the ledger in-process and one table, and a payment can turn the dividend into

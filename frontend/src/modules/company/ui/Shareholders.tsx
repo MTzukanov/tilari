@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fetchPartners } from '../../../api'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
@@ -45,9 +45,27 @@ function toInput(rows: Row[], partners: { id: number; name: string }[]): Shareho
   return out
 }
 
-/** Who holds the shares, for splitting a dividend. Names stay in Kitsas's partner list. */
-export function Shareholders({ overview, today, actions }: { overview: CompanyOverview; today: string; actions: SlotActions }) {
+const newRow = (today: string): Row => ({ name: '', kind: 'person', resident: true, rate: '', holdings: [{ from: today, shares: '' }] })
+
+/**
+ * Who holds the shares, for splitting a dividend. Names stay in Kitsas's partner list. `focus`: a dividend sent
+ * the owner here, so the section comes into view, with a first row to fill when there is none.
+ */
+export function Shareholders({
+  overview,
+  today,
+  actions,
+  focus = false,
+  onFocused,
+}: {
+  overview: CompanyOverview
+  today: string
+  actions: SlotActions
+  focus?: boolean
+  onFocused?: () => void
+}) {
   const { t } = useI18n()
+  const section = useRef<HTMLElement>(null)
   const [rows, setRows] = useState<Row[] | null>(null)
   const [partners, setPartners] = useState<{ id: number; name: string }[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -65,6 +83,14 @@ export function Shareholders({ overview, today, actions }: { overview: CompanyOv
       live = false
     }
   }, [rows])
+
+  useEffect(() => {
+    if (!focus) return
+    onFocused?.()
+    if (!overview.shareholders.length && !overview.read_only) setRows([newRow(today)])
+    // After the card has brought itself to the top. Not cancelled: clearing `focus` re-runs this effect.
+    requestAnimationFrame(() => section.current?.scrollIntoView({ block: 'start' }))
+  }, [focus, overview, today, onFocused])
 
   const kindText = (kind: ShareholderKind) => t(`company.shareholders.kind.${kind}`)
   const rateText = (bp: number | undefined, resident: boolean, kind: ShareholderKind) =>
@@ -94,7 +120,7 @@ export function Shareholders({ overview, today, actions }: { overview: CompanyOv
     update(i, { holdings: rows![i].holdings.map((x, k) => (k === h ? { ...x, ...patch } : x)) })
 
   return (
-    <section className="company-shareholders">
+    <section ref={section} className="company-shareholders">
       <h3 className="section-label">{t('company.shareholders.title')}</h3>
       <p className="muted">{t('company.shareholders.lead')}</p>
       {!rows ? (
@@ -203,7 +229,7 @@ export function Shareholders({ overview, today, actions }: { overview: CompanyOv
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => setRows([...rows, { name: '', kind: 'person', resident: true, rate: '', holdings: [{ from: today, shares: '' }] }])}
+              onClick={() => setRows([...rows, newRow(today)])}
             >
               {t('company.shareholders.add')}
             </button>

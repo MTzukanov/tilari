@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { readTilariData } from '../../../kernel/tilariData'
 import { saveVoucher } from '../../../posting'
-import { TYPE_BANK_STATEMENT, TYPE_INCOME_TAX, TYPE_OPENING, TYPE_OTHER, TYPE_TRANSFER } from '../../../vouchers'
+import { TYPE_ATTACHMENT_NOTE, TYPE_BANK_STATEMENT, TYPE_INCOME_TAX, TYPE_OPENING, TYPE_OTHER, TYPE_TRANSFER } from '../../../vouchers'
 import { buildCompanyFixture, type CompanyFixture } from '../testFixture'
 import { decisionDraft, paymentDraft } from './dividendVouchers'
 import { parseCompanyDoc } from './doc'
@@ -60,7 +60,7 @@ describe('the company overview', () => {
     expect(slot('2032-12-31', 'financial_statements').suggestions.map((s) => s.file_name)).toEqual(['Signeerattu tilinpäätös 2032.pdf'])
     expect(slot('2032-12-31', 'agm_minutes').suggestions.map((s) => s.file_name)).toEqual(['Yhtiokokouksen poytakirja 2033.pdf'])
     expect(slot('2032-12-31', 'board_minutes').suggestions.map((s) => s.file_name)).toEqual(['Hallituksen poytakirja.pdf'])
-    expect(slot('2032-12-31', 'other').suggestions.map((s) => s.file_name)).toEqual(['Ylimaarainen yhtiokokous poytakirja 2033.pdf'])
+    expect(slot('2032-12-31', 'extra_agm_minutes').suggestions.map((s) => s.file_name)).toEqual(['Ylimaarainen yhtiokokous poytakirja 2033.pdf'])
     expect(slot('2032-12-31', 'tax_decision').suggestions.map((s) => s.voucher_id)).toEqual([fx.vouchers.taxDecision])
     const data = overview()
     expect(data.company_slots.find((s) => s.kind === 'articles')!.suggestions.map((s) => s.voucher_id)).toEqual([fx.vouchers.articles])
@@ -345,11 +345,18 @@ describe('saving changes', () => {
     expect(() => save({ add: [{ ...add, voucher_id: fx.vouchers.agm2032 }] })).toThrow(code)
   })
 
-  it('refuses a draft, a deleted voucher and one that is not there', () => {
+  it('refuses a deleted voucher and one that is not there', () => {
     const add = { kind: 'agm_minutes', period_ends: '2031-12-31' }
-    expect(() => save({ add: [{ ...add, voucher_id: fx.vouchers.draft }] })).toThrow('voucher_not_posted')
-    expect(() => save({ add: [{ ...add, voucher_id: fx.vouchers.deleted }] })).toThrow('voucher_not_posted')
-    expect(() => save({ add: [{ ...add, voucher_id: 99999 }] })).toThrow('voucher_not_posted')
+    expect(() => save({ add: [{ ...add, voucher_id: fx.vouchers.deleted }] })).toThrow('voucher_missing')
+    expect(() => save({ add: [{ ...add, voucher_id: 99999 }] })).toThrow('voucher_missing')
+  })
+
+  it('links a draft, which waits to be posted without filling its row or counting as a problem', () => {
+    save({ add: [{ kind: 'agm_minutes', period_ends: '2031-12-31', voucher_id: fx.vouchers.draft }] })
+    const row = slot('2031-12-31', 'agm_minutes')
+    expect(row.documents.map((d) => d.state)).toEqual(['draft'])
+    expect(row.status).toBe('missing')
+    expect(period('2031-12-31').problems).toBe(0)
   })
 
   it("refuses another voucher's file and a system file", () => {
@@ -547,10 +554,95 @@ describe('dividends from the ledger', () => {
     expect(steps('2033-06-01').paid).toBe('waiting')
   })
 
+  it('names an extra dividend by its own meeting, and lists that row once there is one', () => {
+    book('decision', '2033-05-02', TYPE_TRANSFER, [[2251, 100000, 0], [2261, 0, 100000]], ['poytakirja.pdf'])
+    // Without a document, a file named so or a second dividend, the row is not there.
+    expect(period('2031-12-31', '2033-06-01').slots.map((s) => s.kind)).not.toContain('extra_agm_minutes')
+    book('extra', '2033-10-02', TYPE_TRANSFER, [[2251, 20000, 0], [2261, 0, 20000]])
+    const p = period('2032-12-31', '2033-11-01')
+    expect(p.dividends.map((d) => [d.meeting, d.steps[0].state])).toEqual([
+      ['agm', 'done'],
+      ['extra', 'no_minutes'],
+    ])
+    // A second dividend wants a second meeting's minutes.
+    expect(p.slots.find((s) => s.kind === 'extra_agm_minutes')).toMatchObject({ required: true, status: 'missing' })
+    save({ add: [{ kind: 'extra_agm_minutes', period_ends: '2032-12-31', voucher_id: fx.vouchers.plain, doc_date: '2033-10-02' }] })
+    expect(period('2032-12-31', '2033-11-01').dividends[1].steps[0].state).toBe('done')
+  })
+
+  it('takes the meeting from the row its minutes are linked to, also for a draft decision', () => {
+    const id = saveVoucher(fx.db, decisionDraft({ date: '2033-05-02', amount_snt: 500_00, title: 'Lisäosinko' }))
+    fx.addFile(id, 'ylimaarainen.pdf')
+    save({ add: [{ kind: 'extra_agm_minutes', period_ends: '2032-12-31', voucher_id: id, attachment_id: fx.files['ylimaarainen.pdf'] }] })
+    expect(slot('2032-12-31', 'extra_agm_minutes').documents.map((d) => d.state)).toEqual(['draft'])
+    fx.db.run('UPDATE Tosite SET tila = 100 WHERE id = ?', [id])
+    const d = period('2032-12-31', '2033-06-01').dividends[0]
+    expect([d.meeting, d.steps[0].state]).toEqual(['extra', 'done'])
+  })
+
+  it('books a decision on the voucher its stored minutes are on, so the file is kept once', () => {
+    const minutes = fx.voucher('minutes', '2033-05-02', TYPE_ATTACHMENT_NOTE, 'Yhtiökokous', ['kokous.pdf'])
+    save({ add: [{ kind: 'agm_minutes', period_ends: '2032-12-31', voucher_id: minutes }] })
+    saveVoucher(fx.db, decisionDraft({ date: '2033-05-02', amount_snt: 500_00, title: 'Osingonjako' }), minutes)
+    expect(slot('2032-12-31', 'agm_minutes').documents.map((d) => [d.voucher_id, d.state, d.files.map((f) => f.name)])).toEqual([[minutes, 'draft', ['kokous.pdf']]])
+    fx.db.run('UPDATE Tosite SET tila = 100 WHERE id = ?', [minutes])
+    const d = period('2032-12-31', '2033-06-01').dividends[0]
+    expect([d.meeting, d.steps[0].state, d.vouchers[0].files.map((f) => f.name)]).toEqual(['agm', 'done', ['kokous.pdf']])
+  })
+
   it('lists the income tax vouchers of the period', () => {
     book('incomeTax', '2032-12-31', TYPE_INCOME_TAX, [[9960, 500, 0], [2968, 0, 500]])
     expect(period('2032-12-31', AS_OF).income_tax.map((v) => v.voucher_id)).toEqual([fx.vouchers.incomeTax])
     expect(period('2033-12-31', AS_OF).income_tax).toEqual([])
+  })
+})
+
+describe('the income tax after the tax decision', () => {
+  type LineSpec = [account: number, debit: number, credit: number]
+
+  function book(key: string, date: string, type: number, lines: LineSpec[]) {
+    const voucher = fx.voucher(key, date, type, key, [])
+    lines.forEach(([account, debit, credit], i) =>
+      fx.db.run('INSERT INTO Vienti (rivi, tosite, pvm, tili, debetsnt, kreditsnt) VALUES (?, ?, ?, ?, ?, ?)', [i + 1, voucher, date, account, debit || null, credit || null]),
+    )
+    return voucher
+  }
+
+  const settlements = (ends: string) => period(ends, AS_OF).tax_settlements
+
+  it('waits for the tax the closing left to pay, and settles it oldest first', () => {
+    book('tax2032', '2032-12-31', TYPE_INCOME_TAX, [[9940, 400_00, 0], [2968, 0, 400_00]])
+    book('tax2033', '2033-12-31', TYPE_INCOME_TAX, [[9940, 300_00, 0], [2968, 0, 300_00]])
+    expect(settlements('2032-12-31')).toEqual([{ direction: 'pay', booked_snt: 400_00, settled_snt: 0, vouchers: [] }])
+    book('paid', '2033-09-01', TYPE_OTHER, [[2968, 450_00, 0], [1910, 0, 450_00]])
+    expect(settlements('2032-12-31')[0]).toMatchObject({ settled_snt: 400_00, vouchers: [{ voucher_id: fx.vouchers.paid, amount_snt: 400_00 }] })
+    // What paid more goes to the next booking, even when it came first.
+    expect(settlements('2033-12-31')[0]).toMatchObject({ booked_snt: 300_00, settled_snt: 50_00, vouchers: [{ voucher_id: fx.vouchers.paid, amount_snt: 50_00 }] })
+  })
+
+  it('adds a correction after the period to the period it corrects', () => {
+    book('tax2032', '2032-12-31', TYPE_INCOME_TAX, [[9940, 400_00, 0], [2968, 0, 400_00]])
+    book('decision', '2033-08-20', TYPE_OTHER, [[8740, 25_50, 0], [2968, 0, 25_50]])
+    book('paid', '2033-09-01', TYPE_OTHER, [[2968, 425_50, 0], [1910, 0, 425_50]])
+    expect(settlements('2032-12-31')).toEqual([
+      { direction: 'pay', booked_snt: 425_50, settled_snt: 425_50, vouchers: [expect.objectContaining({ voucher_id: fx.vouchers.paid, amount_snt: 425_50 })] },
+    ])
+  })
+
+  it('waits for a refund on the receivable', () => {
+    book('tax2032', '2032-12-31', TYPE_INCOME_TAX, [[1813, 120_00, 0], [9940, 0, 120_00]])
+    expect(settlements('2032-12-31')).toEqual([{ direction: 'refund', booked_snt: 120_00, settled_snt: 0, vouchers: [] }])
+    book('refund', '2033-10-01', TYPE_BANK_STATEMENT, [[1910, 120_00, 0], [1813, 0, 120_00]])
+    expect(settlements('2032-12-31')[0]).toMatchObject({ settled_snt: 120_00 })
+  })
+
+  it('reads the accounts from Kitsas\'s settings, and leaves the opening balance to the first payments', () => {
+    fx.db.run("INSERT OR REPLACE INTO Asetus (avain, arvo) VALUES ('Tuloverosiirtovelat', '2969')")
+    book('opening', '2031-01-01', TYPE_OPENING, [[2969, 0, 100_00]])
+    book('tax2032', '2032-12-31', TYPE_INCOME_TAX, [[9940, 400_00, 0], [2969, 0, 400_00]])
+    book('paid', '2033-09-01', TYPE_OTHER, [[2969, 400_00, 0], [1910, 0, 400_00]])
+    expect(settlements('2032-12-31')[0]).toMatchObject({ booked_snt: 400_00, settled_snt: 300_00 })
+    expect(settlements('2031-12-31')).toEqual([])
   })
 })
 

@@ -11,6 +11,7 @@ import { isUserAttachment } from '../../properties/domain/documents'
 import { loadVoucherFiles, propertyVoucherIds, selectCandidates } from './candidates'
 import { deadlineAlerts, dividendReportDue, periodDeadlines } from './deadlines'
 import { DISTRIBUTION_ACCOUNT, dividendsByPeriod, type Dividend, type PeriodDividend } from './dividends'
+import { taxSettlementsByPeriod, type TaxSettlement } from './incomeTax'
 import { sharesOn, splitDividend, type Recipient } from './recipients'
 import { applyChanges, CompanyDocError, parseCompanyDoc, serializeCompanyDoc, type ParsedCompanyDoc } from './doc'
 import { lastEndedBefore, suggestDocuments } from './suggest'
@@ -25,6 +26,7 @@ import {
   type CompanyDocument,
   type CompanyOverview,
   type CompanySlotView,
+  type DividendMeeting,
   type DividendStep,
   type DividendVoucher,
   type DividendView,
@@ -42,6 +44,7 @@ import {
   type SlotView,
   type SplitProblem,
   type Suggestion,
+  type TaxSettlementView,
   type VoucherRef,
 } from './types'
 
@@ -182,7 +185,8 @@ function partnerNames(db: SqliteDb, ids: number[]): Map<number, string> {
 type DividendContext = {
   asOf: string
   vouchers: Map<number, VoucherRow>
-  /** The period's AGM minutes are stored here. */
+  meeting: DividendMeeting
+  /** The minutes of the meeting that decided it are stored here. */
   minutesFiled: boolean
   report: SlotView | undefined
   reportDue: string | null
@@ -221,6 +225,7 @@ function dividendView(d: Dividend, ctx: DividendContext): DividendView {
   ]
   return {
     decided_on: d.decision.date,
+    meeting: ctx.meeting,
     amount_snt: amount,
     paid_snt: d.paid_snt,
     withheld_snt: d.withheld_snt,
@@ -232,7 +237,7 @@ function dividendView(d: Dividend, ctx: DividendContext): DividendView {
     split_problem: ctx.extras ? ctx.extras.problem : 'no_shareholders',
     payment_drafts: ctx.extras?.drafts ?? [],
     steps: [
-      // The minutes are often a file on the decision's own voucher.
+      // The minutes are usually a file on the decision's own voucher.
       { key: 'decided', state: ctx.minutesFiled || decision?.files.length ? 'done' : 'no_minutes', date: d.decision.date },
       { key: 'booked', state: 'done', date: d.decision.date },
       paid,
@@ -276,6 +281,8 @@ function documentView(d: CompanyDocument, voucher: VoucherRow | undefined): Docu
 
 function requiredKind(kind: PeriodKind, doc: CompanyDoc, dividend: PeriodDividend | undefined): boolean {
   if (kind === 'dividend_annual_report') return dividend != null
+  // A second dividend from the same profit needs a second meeting.
+  if (kind === 'extra_agm_minutes') return (dividend?.dividends.length ?? 0) > 1
   if (kind in KIND_SETTINGS) return doc.settings?.[KIND_SETTINGS[kind as keyof typeof KIND_SETTINGS]] === true
   return kind !== 'board_minutes' && kind !== 'other'
 }
@@ -330,11 +337,36 @@ type PeriodParts = {
   extras: Map<Dividend, DividendExtras>
   drafts: VoucherRef[]
   decideHere: boolean
+  taxes: TaxSettlement[]
+}
+
+/** Which meeting decided a dividend: the one whose minutes sit on its voucher or carry its date, else the AGM for the first. */
+function meetingOf(d: Dividend, views: DocumentView[], first: boolean): DividendMeeting {
+  const minutes = (kind: PeriodKind) => views.filter((v) => v.kind === kind && v.state !== 'missing')
+  const agm = minutes('agm_minutes')
+  const extra = minutes('extra_agm_minutes')
+  const on = (docs: DocumentView[]) => docs.some((v) => v.voucher_id === d.decision.voucher_id)
+  const dated = (docs: DocumentView[]) => docs.some((v) => v.date === d.decision.date)
+  if (on(extra)) return 'extra'
+  if (on(agm)) return 'agm'
+  if (dated(extra)) return 'extra'
+  if (dated(agm)) return 'agm'
+  return first ? 'agm' : 'extra'
+}
+
+/**
+ * The meeting's minutes are filed: on the decision's voucher or of its date, else the AGM's row filled for
+ * the AGM, and as many extraordinary minutes as extra dividends for one of those.
+ */
+function minutesFiled(d: Dividend, meeting: DividendMeeting, views: DocumentView[], extraCount: number): boolean {
+  const filed = views.filter((v) => v.kind === (meeting === 'agm' ? 'agm_minutes' : 'extra_agm_minutes') && v.state === 'ok')
+  if (filed.some((v) => v.voucher_id === d.decision.voucher_id || v.date === d.decision.date)) return true
+  return meeting === 'agm' ? filed.length > 0 : filed.length >= extraCount
 }
 
 function buildPeriod(
   doc: CompanyDoc,
-  { period, views, statement, asOf, lock, suggestions, unlinked, dividend, vouchers, incomeTax, extras, drafts, decideHere }: PeriodParts,
+  { period, views, statement, asOf, lock, suggestions, unlinked, dividend, vouchers, incomeTax, extras, drafts, decideHere, taxes }: PeriodParts,
 ): PeriodView {
   const ended = period.ends < asOf
   const reportOverdue = dividend?.paid != null && dividendReportDue(dividend.paid) < asOf
@@ -343,26 +375,32 @@ function buildPeriod(
     const filled = documents.some((v) => v.state === 'ok')
     const required = requiredKind(kind, doc, dividend)
     const isReport = kind === 'dividend_annual_report'
+    const ownSuggestions = suggestions.filter((s) => s.kind === kind)
     // A row with a document stays even when unticked: unticking must not hide what was attached.
     // The annual report is listed like a ticked document, for a period the book shows a dividend from.
     if ((kind in KIND_SETTINGS || isReport) && !required && !documents.length) return []
+    // An extraordinary meeting's row shows once the book has one: a document, a file named so, or a second dividend.
+    if (kind === 'extra_agm_minutes' && !required && !documents.length && !ownSuggestions.length) return []
     return [
       {
         kind,
         required,
         status: slotStatus(kind, required, filled, isNotNeeded(doc, period.ends, kind), isReport ? reportOverdue : ended),
         documents,
-        suggestions: suggestions.filter((s) => s.kind === kind),
+        suggestions: ownSuggestions,
       },
     ]
   })
   const filled = (kind: PeriodKind) => views.some((v) => v.kind === kind && v.state === 'ok')
   const counted = slots.filter((s) => s.required && s.status !== 'not_needed')
-  const dividends = (dividend?.dividends ?? []).map((d) =>
+  const meetings = (dividend?.dividends ?? []).map((d, i) => meetingOf(d, views, i === 0))
+  const extraCount = meetings.filter((m) => m === 'extra').length
+  const dividends = (dividend?.dividends ?? []).map((d, i) =>
     dividendView(d, {
       asOf,
       vouchers,
-      minutesFiled: filled('agm_minutes'),
+      meeting: meetings[i],
+      minutesFiled: minutesFiled(d, meetings[i], views, extraCount),
       report: slots.find((s) => s.kind === 'dividend_annual_report'),
       reportDue: dividend?.paid ? dividendReportDue(dividend.paid) : null,
       extras: extras.get(d),
@@ -377,7 +415,8 @@ function buildPeriod(
     confirmed_at: period.confirmed_at,
     ended,
     docs: { done: counted.filter((s) => s.status === 'complete').length, required: counted.length },
-    problems: views.filter((v) => v.state !== 'ok').length + dividendProblems,
+    // A linked draft waits to be posted, as a decision made here does; it is not broken.
+    problems: views.filter((v) => v.state === 'missing' || v.state === 'file_missing').length + dividendProblems,
     kitsas_statement: statement,
     deadlines: periodDeadlines({
       ends: period.ends,
@@ -394,6 +433,15 @@ function buildPeriod(
       const row = vouchers.get(id)
       return row ? [voucherRef(row)] : []
     }),
+    tax_settlements: taxes.map((s): TaxSettlementView => ({
+      direction: s.direction,
+      booked_snt: s.booked_snt,
+      settled_snt: s.settled_snt,
+      vouchers: s.settlements.flatMap((x) => {
+        const row = vouchers.get(x.voucher_id)
+        return row ? [{ ...voucherRef(row), amount_snt: x.amount_snt }] : []
+      }),
+    })),
     dividend_drafts: drafts,
     decide_here: decideHere,
     unlinked,
@@ -438,10 +486,12 @@ export function computeOverview(db: SqliteDb, query: { today: string; asOf?: str
 
   const dividends = dividendsByPeriod(db, periods)
   const incomeTax = incomeTaxVouchers(db, periods)
+  const taxes = taxSettlementsByPeriod(db, periods)
   const dividendVouchers = [...dividends.values()].flatMap((p) =>
     p.dividends.flatMap((d) => [d.decision.voucher_id, ...d.payments.map((x) => x.voucher_id), ...d.remittances.map((x) => x.voucher_id)]),
   )
-  const shownVouchers = loadVouchers(db, [...dividendVouchers, ...[...incomeTax.values()].flat()])
+  const taxVouchers = [...taxes.values()].flatMap((list) => list.flatMap((s) => s.settlements.map((x) => x.voucher_id)))
+  const shownVouchers = loadVouchers(db, [...dividendVouchers, ...[...incomeTax.values()].flat(), ...taxVouchers])
   const shareholders = doc.shareholders ?? []
   const names = partnerNames(db, shareholders.map((s) => s.partner_id))
   const extras = splitDividends([...dividends.values()].flatMap((p) => p.dividends), shareholders, names, asOf)
@@ -463,6 +513,7 @@ export function computeOverview(db: SqliteDb, query: { today: string; asOf?: str
       extras,
       drafts: drafts.get(period.ends) ?? [],
       decideHere: period.ends === decideOn,
+      taxes: taxes.get(period.ends) ?? [],
     }),
   )
 
@@ -540,14 +591,15 @@ function checkChanges(db: SqliteDb, stored: ParsedCompanyDoc, changes: CompanyCh
   }
   const adds = changes.add ?? []
   const ends = new Set(db.all<{ loppuu: string }>('SELECT loppuu FROM Tilikausi').map((r) => String(r.loppuu)))
-  const posted = new Set(
+  // A draft can be linked: a dividend decision is made as one, with the meeting's minutes on it.
+  const kept = new Set(
     db
-      .all<{ id: number }>(`SELECT id FROM Tosite WHERE ${SQL_POSTED} AND id IN (${idList(adds.map((a) => a.voucher_id))})`)
+      .all<{ id: number }>(`SELECT id FROM Tosite WHERE tila >= ${STATUS_DRAFT} AND id IN (${idList(adds.map((a) => a.voucher_id))})`)
       .map((r) => Number(r.id)),
   )
   adds.forEach((add, i) => {
     if (add.period_ends != null && !ends.has(add.period_ends)) throw new CompanyDocError('unknown_period', `add[${i}].period_ends`)
-    if (!posted.has(add.voucher_id)) throw new CompanyDocError('voucher_not_posted', `add[${i}].voucher_id`)
+    if (!kept.has(add.voucher_id)) throw new CompanyDocError('voucher_missing', `add[${i}].voucher_id`)
     if (add.attachment_id != null) {
       const file = db.get<{ tosite: number; roolinimi: string | null }>('SELECT tosite, roolinimi FROM Liite WHERE id = ?', [add.attachment_id])
       if (!file || Number(file.tosite) !== add.voucher_id || !isUserAttachment(file.roolinimi)) {

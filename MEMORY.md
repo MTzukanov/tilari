@@ -7,6 +7,21 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-03 - Company page: one meeting, one file; extraordinary meetings; income tax payment
+
+- Owner's look at the drafts: account names were missing next to the numbers; a step for paying the tax after
+  the tax decision; the "add shareholders first" text should lead there; the process was confusing; the AGM
+  decides, so its minutes are the decision's attachment too; an extra dividend's extraordinary meeting belongs
+  among the period's documents. `docs/DIVIDENDS.md` now writes the whole process down, and the section has a
+  "Näin osinko etenee" list.
+- The minutes are kept once, on the decision's voucher, and the meeting's row links that file. This needed
+  links to drafts: the company writes no longer refuse one (`voucher_missing` replaces `voucher_not_posted`);
+  a linked draft is amber and is not a problem.
+- "Tuloveron maksu" reads 2968 oldest first. Checked read-only on the owner's book (only settled or not per
+  year): the closed years come out settled and the newest open, as expected. A residual tax paid through the
+  bank import's tax account rule (2920) would leave 2968 open; the owner's book clears 2968 with its own voucher.
+- Extraordinary meeting files used to be suggested under "Muut"; they now go to their own row.
+
 ## 2026-11-03 - Company page: shareholders, recipients and dividend drafts
 
 - Owner: "continue with what is still not built" after seeing the dividend cards. Built increment 3 of the plan:

@@ -1744,8 +1744,14 @@
     },
     "dividend": {
       "title": "Osingot tämän tilikauden voitosta",
-      "name": "Osinko",
-      "decided": "Päätös {date}",
+      "name": {
+        "agm": "Osinko",
+        "extra": "Lisäosinko"
+      },
+      "decided": {
+        "agm": "Varsinainen yhtiökokous {date}",
+        "extra": "Ylimääräinen yhtiökokous {date}"
+      },
       "step": {
         "decided": "Päätetty",
         "booked": "Kirjattu",
@@ -1772,7 +1778,8 @@
         "difference": "Maksettu {paid}, päätetty {decided}.",
         "noContract": "Osinko jäi velaksi osakkaalle, mutta maksun tositteella ei ole liitettä, kuten velkasopimusta.",
         "unpaid": "Maksamatta {amount}",
-        "withholdingOpen": "Pidätys tilittämättä {amount}, eräpäivä {date}"
+        "withholdingOpen": "Pidätys tilittämättä {amount}, eräpäivä {date}",
+        "noMinutes": "Päätökseltä puuttuu kokouksen pöytäkirja. Lisää se päätöksen tositteelle tai riville {row}."
       },
       "form": {
         "account": "Tili",
@@ -1785,12 +1792,19 @@
       },
       "decision": {
         "open": "Kirjaa osingonjakopäätös",
-        "defaultTitle": "Osingonjako tilikaudelta {period}",
+        "defaultTitle": {
+          "agm": "Osingonjako tilikaudelta {period}",
+          "extra": "Lisäosinko tilikaudelta {period}"
+        },
         "date": "Päätöspäivä",
         "amount": "Osinko yhteensä, €",
         "otherPeriod": "Tämän päivän päätös jakaa toisen tilikauden voittoa, joten se näkyy sen kortilla.",
-        "another": "Tältä tilikaudelta on jo päätös tai luonnos. Uusi päätös on lisäosinko.",
-        "accounts": "Debet {retained} Edellisten tilikausien voitto, kredit {distribution} Osingonjako."
+        "another": "Tältä tilikaudelta on jo osingonjakopäätös tai sen luonnos. Toisesta päättää yleensä ylimääräinen yhtiökokous.",
+        "accounts": "Debet {retained} Edellisten tilikausien voitto, kredit {distribution} Osingonjako.",
+        "meeting": "Päättänyt kokous",
+        "minutes": "Kokouksen pöytäkirja",
+        "minutesNote": "Pöytäkirja liitetään päätöksen tositteelle ja näkyy samana tiedostona rivillä {row}. Sen voi lisätä myöhemminkin.",
+        "minutesStored": "Pöytäkirja on jo rivillä {row}. Päätös kirjataan sen tositteelle, joten tiedosto on kirjanpidossa vain kerran:"
       },
       "payment": {
         "open": "Tee maksutosite",
@@ -1805,7 +1819,11 @@
         "draftExists": "Tälle osingolle on jo maksun luonnos.",
         "accounts": "Debet {distribution} Osingonjako maksamattomalla määrällä, kredit {withholding} ennakonpidätys ja nettomäärä kullekin saajalle.",
         "withholdingLine": "Ennakonpidätys osingosta",
-        "needsRecipients": "Lisää ensin osakkaat yhtiön omalle kortille."
+        "needs": {
+          "no_shareholders": "Lisää ensin osakkaat yhtiön omalle kortille.",
+          "no_holders": "Tarkista osakkaiden omistukset.",
+          "rate_missing": "Lisää ulkomailla asuvan osakkaan pidätysprosentti."
+        }
       },
       "recipients": {
         "title": "Saajat ({n})",
@@ -1819,10 +1837,25 @@
           "no_shareholders": "Osakkaita ei ole lisätty. Lisää ne yhtiön omalle kortille, niin osinko jaetaan saajille.",
           "no_holders": "Kenelläkään ei ollut osakkeita päätöspäivänä.",
           "rate_missing": "Ulkomailla asuvalta saajalta puuttuu pidätysprosentti."
-        }
+        },
+        "toShareholders": "Siirry osakkaisiin"
       },
       "draft": "Luonnos",
-      "draftNote": "Luonnos ei vielä näy osinkona. Avaa se ja kirjaa, kun päätös on tehty."
+      "draftNote": "Luonnos ei vielä näy osinkona. Avaa se ja kirjaa, kun päätös on tehty.",
+      "meeting": {
+        "agm": "Varsinainen yhtiökokous",
+        "extra": "Ylimääräinen yhtiökokous"
+      },
+      "howto": {
+        "title": "Näin osinko etenee",
+        "meeting": "Yhtiökokous päättää osingosta: varsinainen yhtiökokous vahvistaa tilinpäätöksen ja päättää hallituksen ehdotuksesta osingon määrän ja maksupäivän.",
+        "decision": "Kirjaa osingonjakopäätös: anna kokouksen päivä, osingon määrä ja pöytäkirja. Tilari tekee päätöksestä luonnoksen, jonka liitteenä on pöytäkirja, ja sama tiedosto näkyy tilikauden asiakirjoissa kokouksen rivillä.",
+        "post": "Avaa luonnos ja kirjaa se. Osinko saa silloin oman korttinsa, ja Saajat näyttää, mitä kukin osakas saa.",
+        "pay": "Maksupäivänä tee maksutosite: osinko maksetaan pankista tai jätetään velaksi osakkaalle (silloin velkasopimus liitteeksi). Tosite kirjaa ennakonpidätyksen ja nettomäärän saajittain.",
+        "withhold": "Tilitä ennakonpidätys Verohallinnolle maksua seuraavan kuun 12. päivään mennessä. Pankkitapahtuman kirjaus kuittaa sen.",
+        "report": "Anna osinkojen vuosi-ilmoitus Verohallinnolle maksuvuotta seuraavan tammikuun loppuun mennessä ja tallenna se sen riville.",
+        "extra": "Lisäosingosta päättää ylimääräinen yhtiökokous. Valitse se kokoukseksi, niin sen pöytäkirja tulee tilikauden asiakirjoihin omalle rivilleen ja osinko omalle kortilleen. Vaiheet ovat samat."
+      }
     },
     "shareholders": {
       "title": "Osakkaat",
@@ -1877,7 +1910,6 @@
     "error": {
       "unknown_kind": "Tuntematon asiakirjan laji.",
       "unknown_period": "Tilikautta ei ole enää.",
-      "voucher_not_posted": "Linkitettävä tosite on luonnos tai poistettu.",
       "attachment_not_on_voucher": "Tiedosto ei kuulu tähän tositteeseen.",
       "unknown_link": "Linkki on jo poistettu.",
       "corrupt": "Tallennettuja tietoja ei voi lukea.",
@@ -1886,7 +1918,8 @@
       "invalid_field": "Tallennus ei onnistunut: virheellinen tieto.",
       "partial": "Asiakirja luotiin, mutta sen viimeistely ei onnistunut ({reason}). Se löytyy tositteista ja kohdasta Linkittämättä.",
       "duplicate_shareholder": "Sama osakas on listassa kahdesti.",
-      "unknown_partner": "Osakasta ei löydy Kitsaksen kumppaneista."
+      "unknown_partner": "Osakasta ei löydy Kitsaksen kumppaneista.",
+      "voucher_missing": "Linkitettävä tosite on poistettu."
     },
     "kind": {
       "financial_statements": "Allekirjoitettu tilinpäätös",
@@ -1903,7 +1936,22 @@
       "articles": "Yhtiöjärjestys",
       "trade_register_extract": "Kaupparekisteriote",
       "shareholder_register": "Osakasluettelo",
-      "shareholder_agreement": "Osakassopimus"
+      "shareholder_agreement": "Osakassopimus",
+      "extra_agm_minutes": "Ylimääräisen yhtiökokouksen pöytäkirja"
+    },
+    "taxPayment": {
+      "pay": {
+        "title": "Tuloveron maksu",
+        "done": "Maksettu",
+        "open": "Maksamatta {amount}",
+        "booked": "Tuloverojen kirjaus jätti maksettavaksi {amount}. Maksu tai verotuspäätöksen mukainen korjaus kuittaa sen."
+      },
+      "refund": {
+        "title": "Veronpalautus",
+        "done": "Saatu",
+        "open": "Saamatta {amount}",
+        "booked": "Tuloverojen kirjaus jätti saatavaksi {amount}. Palautus tai verotuspäätöksen mukainen korjaus kuittaa sen."
+      }
     }
   }
 }

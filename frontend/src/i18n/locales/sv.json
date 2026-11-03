@@ -1744,8 +1744,14 @@
     },
     "dividend": {
       "title": "Dividender ur räkenskapsperiodens vinst",
-      "name": "Dividend",
-      "decided": "Beslut {date}",
+      "name": {
+        "agm": "Dividend",
+        "extra": "Extra dividend"
+      },
+      "decided": {
+        "agm": "Ordinarie bolagsstämma {date}",
+        "extra": "Extra bolagsstämma {date}"
+      },
       "step": {
         "decided": "Beslutad",
         "booked": "Bokförd",
@@ -1772,7 +1778,8 @@
         "difference": "Betalt {paid}, beslutat {decided}.",
         "noContract": "Dividenden blev en skuld till aktieägaren, men betalningens verifikat har ingen bilaga, till exempel skuldavtalet.",
         "unpaid": "Obetalt {amount}",
-        "withholdingOpen": "Innehållning oredovisad {amount}, förfallodag {date}"
+        "withholdingOpen": "Innehållning oredovisad {amount}, förfallodag {date}",
+        "noMinutes": "Beslutet saknar stämmans protokoll. Lägg till det på beslutets verifikat eller på raden {row}."
       },
       "form": {
         "account": "Konto",
@@ -1785,12 +1792,19 @@
       },
       "decision": {
         "open": "Bokför beslut om dividend",
-        "defaultTitle": "Dividendutdelning för räkenskapsperioden {period}",
+        "defaultTitle": {
+          "agm": "Dividendutdelning för räkenskapsperioden {period}",
+          "extra": "Extra dividend för räkenskapsperioden {period}"
+        },
         "date": "Beslutsdag",
         "amount": "Dividend totalt, €",
         "otherPeriod": "Ett beslut denna dag delar ut en annan periods vinst, så det syns på dess kort.",
-        "another": "För denna period finns redan ett beslut eller utkast. Ett nytt beslut är en extra dividend.",
-        "accounts": "Debet {retained} Vinst från tidigare räkenskapsperioder, kredit {distribution} Dividendutdelning."
+        "another": "För denna period finns redan ett utdelningsbeslut eller ett utkast. Ett andra beslutas vanligen av en extra bolagsstämma.",
+        "accounts": "Debet {retained} Vinst från tidigare räkenskapsperioder, kredit {distribution} Dividendutdelning.",
+        "meeting": "Beslutande stämma",
+        "minutes": "Stämmans protokoll",
+        "minutesNote": "Protokollet läggs som bilaga till beslutets verifikat och visas som samma fil på raden {row}. Det kan också läggas till senare.",
+        "minutesStored": "Protokollet finns redan på raden {row}. Beslutet bokförs på dess verifikat, så filen finns bara en gång i bokföringen:"
       },
       "payment": {
         "open": "Gör betalningsverifikat",
@@ -1805,7 +1819,11 @@
         "draftExists": "Det finns redan ett betalningsutkast för denna dividend.",
         "accounts": "Debet {distribution} Dividendutdelning med det obetalda beloppet, kredit {withholding} förskottsinnehållning och nettobelopp för varje mottagare.",
         "withholdingLine": "Förskottsinnehållning på dividend",
-        "needsRecipients": "Lägg först till aktieägarna på bolagets eget kort."
+        "needs": {
+          "no_shareholders": "Lägg först till aktieägarna på bolagets eget kort.",
+          "no_holders": "Kontrollera aktieägarnas innehav.",
+          "rate_missing": "Lägg till innehållningsprocenten för aktieägaren som bor utomlands."
+        }
       },
       "recipients": {
         "title": "Mottagare ({n})",
@@ -1819,10 +1837,25 @@
           "no_shareholders": "Inga aktieägare har lagts till. Lägg till dem på bolagets eget kort, så delas dividenden på mottagarna.",
           "no_holders": "Ingen ägde aktier på beslutsdagen.",
           "rate_missing": "En mottagare som bor utomlands saknar innehållningsprocent."
-        }
+        },
+        "toShareholders": "Gå till aktieägarna"
       },
       "draft": "Utkast",
-      "draftNote": "Ett utkast syns ännu inte som dividend. Öppna och bokför det när beslutet är fattat."
+      "draftNote": "Ett utkast syns ännu inte som dividend. Öppna och bokför det när beslutet är fattat.",
+      "meeting": {
+        "agm": "Ordinarie bolagsstämma",
+        "extra": "Extra bolagsstämma"
+      },
+      "howto": {
+        "title": "Så går en dividend till",
+        "meeting": "Bolagsstämman beslutar om dividenden: den ordinarie stämman fastställer bokslutet och beslutar på styrelsens förslag om belopp och betalningsdag.",
+        "decision": "Bokför utdelningsbeslutet: ange stämmans datum, beloppet och protokollet. Tilari gör ett utkast med protokollet som bilaga, och samma fil visas på stämmans rad bland periodens dokument.",
+        "post": "Öppna utkastet och bokför det. Dividenden får då ett eget kort, och Mottagare visar vad varje aktieägare får.",
+        "pay": "På betalningsdagen gör du betalningsverifikatet: dividenden betalas från banken eller lämnas som skuld till aktieägaren (bifoga då skuldebrevet). Verifikatet bokför förskottsinnehållningen och nettobeloppet per mottagare.",
+        "withhold": "Redovisa förskottsinnehållningen till Skatteförvaltningen senast den 12 i månaden efter betalningen. Bokningen av banktransaktionen kvitterar den.",
+        "report": "Lämna årsanmälan om dividender till Skatteförvaltningen senast i slutet av januari året efter betalningen och spara den på dess rad.",
+        "extra": "En extra dividend beslutas av en extra bolagsstämma. Välj den som stämma, så får protokollet en egen rad bland periodens dokument och dividenden ett eget kort. Stegen är desamma."
+      }
     },
     "shareholders": {
       "title": "Aktieägare",
@@ -1877,7 +1910,6 @@
     "error": {
       "unknown_kind": "Okänd dokumenttyp.",
       "unknown_period": "Perioden finns inte längre.",
-      "voucher_not_posted": "Verifikatet som ska länkas är ett utkast eller borttaget.",
       "attachment_not_on_voucher": "Filen hör inte till detta verifikat.",
       "unknown_link": "Länken är redan borttagen.",
       "corrupt": "De sparade uppgifterna kan inte läsas.",
@@ -1886,7 +1918,8 @@
       "invalid_field": "Det gick inte att spara: felaktig uppgift.",
       "partial": "Dokumentet skapades, men det gick inte att slutföra ({reason}). Det finns bland verifikaten och under Olänkade.",
       "duplicate_shareholder": "Samma aktieägare finns två gånger i listan.",
-      "unknown_partner": "Aktieägaren finns inte bland Kitsas kontakter."
+      "unknown_partner": "Aktieägaren finns inte bland Kitsas kontakter.",
+      "voucher_missing": "Verifikatet som ska länkas är borttaget."
     },
     "kind": {
       "financial_statements": "Undertecknat bokslut",
@@ -1903,7 +1936,22 @@
       "articles": "Bolagsordning",
       "trade_register_extract": "Handelsregisterutdrag",
       "shareholder_register": "Aktieägarförteckning",
-      "shareholder_agreement": "Aktieägaravtal"
+      "shareholder_agreement": "Aktieägaravtal",
+      "extra_agm_minutes": "Protokoll från extra bolagsstämma"
+    },
+    "taxPayment": {
+      "pay": {
+        "title": "Betalning av inkomstskatt",
+        "done": "Betald",
+        "open": "Obetalt {amount}",
+        "booked": "Bokföringen av inkomstskatt lämnade {amount} att betala. En betalning eller en rättelse enligt beskattningsbeslutet kvitterar det."
+      },
+      "refund": {
+        "title": "Skatteåterbäring",
+        "done": "Mottagen",
+        "open": "Inte mottagen {amount}",
+        "booked": "Bokföringen av inkomstskatt lämnade {amount} att få tillbaka. Återbäringen eller en rättelse enligt beskattningsbeslutet kvitterar det."
+      }
     }
   }
 }

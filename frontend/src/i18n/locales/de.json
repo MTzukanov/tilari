@@ -1744,8 +1744,14 @@
     },
     "dividend": {
       "title": "Dividenden aus dem Gewinn dieses Geschäftsjahres",
-      "name": "Dividende",
-      "decided": "Beschluss {date}",
+      "name": {
+        "agm": "Dividende",
+        "extra": "Zusatzdividende"
+      },
+      "decided": {
+        "agm": "Ordentliche Hauptversammlung {date}",
+        "extra": "Außerordentliche Hauptversammlung {date}"
+      },
       "step": {
         "decided": "Beschlossen",
         "booked": "Gebucht",
@@ -1772,7 +1778,8 @@
         "difference": "Ausgezahlt {paid}, beschlossen {decided}.",
         "noContract": "Die Dividende wurde zur Schuld gegenüber dem Aktionär, aber der Beleg der Zahlung hat keinen Anhang wie den Darlehensvertrag.",
         "unpaid": "Nicht ausgezahlt {amount}",
-        "withholdingOpen": "Quellensteuer nicht abgeführt {amount}, fällig {date}"
+        "withholdingOpen": "Quellensteuer nicht abgeführt {amount}, fällig {date}",
+        "noMinutes": "Dem Beschluss fehlt das Protokoll der Versammlung. Es an den Beleg des Beschlusses oder in der Zeile {row} hinzufügen."
       },
       "form": {
         "account": "Konto",
@@ -1785,12 +1792,19 @@
       },
       "decision": {
         "open": "Gewinnausschüttungsbeschluss buchen",
-        "defaultTitle": "Gewinnausschüttung für das Geschäftsjahr {period}",
+        "defaultTitle": {
+          "agm": "Gewinnausschüttung für das Geschäftsjahr {period}",
+          "extra": "Zusatzdividende für das Geschäftsjahr {period}"
+        },
         "date": "Beschlusstag",
         "amount": "Dividende gesamt, €",
         "otherPeriod": "Ein Beschluss an diesem Tag schüttet den Gewinn eines anderen Geschäftsjahres aus und erscheint daher auf dessen Karte.",
-        "another": "Für dieses Geschäftsjahr gibt es bereits einen Beschluss oder Entwurf. Ein neuer Beschluss ist eine Zusatzdividende.",
-        "accounts": "Soll {retained} Gewinnvortrag, Haben {distribution} Gewinnausschüttung."
+        "another": "Für dieses Geschäftsjahr gibt es bereits einen Ausschüttungsbeschluss oder einen Entwurf. Über einen zweiten beschließt meist eine außerordentliche Hauptversammlung.",
+        "accounts": "Soll {retained} Gewinnvortrag, Haben {distribution} Gewinnausschüttung.",
+        "meeting": "Beschließende Versammlung",
+        "minutes": "Protokoll der Versammlung",
+        "minutesNote": "Das Protokoll wird an den Beleg des Beschlusses angehängt und erscheint als dieselbe Datei in der Zeile {row}. Es kann auch später hinzugefügt werden.",
+        "minutesStored": "Das Protokoll liegt bereits in der Zeile {row}. Der Beschluss wird auf seinem Beleg gebucht, so ist die Datei nur einmal in der Buchhaltung:"
       },
       "payment": {
         "open": "Zahlungsbeleg anlegen",
@@ -1805,7 +1819,11 @@
         "draftExists": "Für diese Dividende gibt es bereits einen Zahlungsentwurf.",
         "accounts": "Soll {distribution} Gewinnausschüttung mit dem offenen Betrag, Haben {withholding} Quellenabzug und Nettobetrag je Empfänger.",
         "withholdingLine": "Quellenabzug auf Dividende",
-        "needsRecipients": "Zuerst die Gesellschafter auf der eigenen Karte der Gesellschaft erfassen."
+        "needs": {
+          "no_shareholders": "Zuerst die Gesellschafter auf der eigenen Karte der Gesellschaft erfassen.",
+          "no_holders": "Die Anteile der Gesellschafter prüfen.",
+          "rate_missing": "Den Quellensteuersatz des im Ausland wohnenden Gesellschafters erfassen."
+        }
       },
       "recipients": {
         "title": "Empfänger ({n})",
@@ -1819,10 +1837,25 @@
           "no_shareholders": "Keine Gesellschafter erfasst. Auf der eigenen Karte der Gesellschaft erfassen, um die Dividende aufzuteilen.",
           "no_holders": "Am Beschlusstag hielt niemand Anteile.",
           "rate_missing": "Für einen im Ausland wohnenden Empfänger fehlt der Abzugssatz."
-        }
+        },
+        "toShareholders": "Zu den Gesellschaftern"
       },
       "draft": "Entwurf",
-      "draftNote": "Ein Entwurf erscheint noch nicht als Dividende. Öffnen und buchen, sobald der Beschluss gefasst ist."
+      "draftNote": "Ein Entwurf erscheint noch nicht als Dividende. Öffnen und buchen, sobald der Beschluss gefasst ist.",
+      "meeting": {
+        "agm": "Ordentliche Hauptversammlung",
+        "extra": "Außerordentliche Hauptversammlung"
+      },
+      "howto": {
+        "title": "So läuft eine Dividende ab",
+        "meeting": "Die Hauptversammlung beschließt die Dividende: die ordentliche Hauptversammlung stellt den Jahresabschluss fest und beschließt auf Vorschlag des Vorstands Betrag und Zahltag.",
+        "decision": "Den Ausschüttungsbeschluss buchen: Datum der Versammlung, Betrag und Protokoll angeben. Tilari erstellt einen Entwurf mit dem Protokoll als Anhang, und dieselbe Datei erscheint in der Zeile der Versammlung bei den Dokumenten des Geschäftsjahres.",
+        "post": "Den Entwurf öffnen und buchen. Die Dividende erhält dann eine eigene Karte, und Empfänger zeigt, was jeder Gesellschafter erhält.",
+        "pay": "Am Zahltag den Zahlungsbeleg erstellen: die Dividende wird von der Bank gezahlt oder als Schuld gegenüber dem Gesellschafter belassen (dann den Darlehensvertrag anhängen). Der Beleg bucht die Quellensteuer und den Nettobetrag je Empfänger.",
+        "withhold": "Die Quellensteuer bis zum 12. des Monats nach der Zahlung an die Steuerverwaltung abführen. Die Buchung der Banktransaktion gleicht sie aus.",
+        "report": "Die Jahresmeldung über Dividenden bis Ende Januar nach dem Zahlungsjahr bei der Steuerverwaltung abgeben und in ihrer Zeile speichern.",
+        "extra": "Über eine Zusatzdividende beschließt eine außerordentliche Hauptversammlung. Diese als Versammlung wählen, dann erhält ihr Protokoll eine eigene Zeile bei den Dokumenten des Geschäftsjahres und die Dividende eine eigene Karte. Die Schritte sind dieselben."
+      }
     },
     "shareholders": {
       "title": "Gesellschafter",
@@ -1877,7 +1910,6 @@
     "error": {
       "unknown_kind": "Unbekannte Dokumentart.",
       "unknown_period": "Dieses Geschäftsjahr gibt es nicht mehr.",
-      "voucher_not_posted": "Der zu verknüpfende Beleg ist ein Entwurf oder gelöscht.",
       "attachment_not_on_voucher": "Die Datei gehört nicht zu diesem Beleg.",
       "unknown_link": "Die Verknüpfung wurde bereits entfernt.",
       "corrupt": "Die gespeicherten Daten sind nicht lesbar.",
@@ -1886,7 +1918,8 @@
       "invalid_field": "Speichern fehlgeschlagen: ungültige Angabe.",
       "partial": "Das Dokument wurde erstellt, konnte aber nicht abgeschlossen werden ({reason}). Es steht bei den Belegen und unter Nicht verknüpft.",
       "duplicate_shareholder": "Derselbe Gesellschafter steht zweimal in der Liste.",
-      "unknown_partner": "Der Gesellschafter ist nicht bei den Kitsas-Partnern."
+      "unknown_partner": "Der Gesellschafter ist nicht bei den Kitsas-Partnern.",
+      "voucher_missing": "Der zu verknüpfende Beleg ist gelöscht."
     },
     "kind": {
       "financial_statements": "Unterzeichneter Jahresabschluss",
@@ -1903,7 +1936,22 @@
       "articles": "Satzung",
       "trade_register_extract": "Handelsregisterauszug",
       "shareholder_register": "Aktionärsliste",
-      "shareholder_agreement": "Aktionärsvereinbarung"
+      "shareholder_agreement": "Aktionärsvereinbarung",
+      "extra_agm_minutes": "Protokoll der außerordentlichen Hauptversammlung"
+    },
+    "taxPayment": {
+      "pay": {
+        "title": "Zahlung der Ertragsteuer",
+        "done": "Bezahlt",
+        "open": "Offen {amount}",
+        "booked": "Die Ertragsteuerbuchung ließ {amount} zu zahlen. Eine Zahlung oder eine Korrektur nach dem Steuerbescheid gleicht es aus."
+      },
+      "refund": {
+        "title": "Steuererstattung",
+        "done": "Erhalten",
+        "open": "Nicht erhalten {amount}",
+        "booked": "Die Ertragsteuerbuchung ließ {amount} zu erhalten. Die Erstattung oder eine Korrektur nach dem Steuerbescheid gleicht es aus."
+      }
     }
   }
 }

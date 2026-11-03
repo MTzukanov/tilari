@@ -7,6 +7,7 @@ export type {
   CompanyOverview,
   CompanySlotView,
   DeadlineView,
+  DividendMeeting,
   DividendStepState,
   DividendView,
   DocCandidate,
@@ -22,6 +23,7 @@ export type {
   SlotView,
   SplitProblem,
   Suggestion,
+  TaxSettlementView,
   VoucherRef,
 } from '../../book/modules/company/domain/types'
 export { COMPANY_KINDS, KIND_SETTINGS, PERIOD_KINDS, SHAREHOLDER_KINDS } from '../../book/modules/company/domain/types'

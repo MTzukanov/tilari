@@ -6812,6 +6812,29 @@ button.due-tile:hover {
   font-size: 0.85rem;
 }
 
+.company-row-note {
+  margin: 0.1rem 0 0;
+  font-size: 0.85rem;
+}
+
+.dividend-howto {
+  margin: 0 0 0.6rem;
+  font-size: 0.9rem;
+}
+
+.dividend-howto > summary {
+  cursor: pointer;
+}
+
+.dividend-howto ol {
+  margin: 0.4rem 0;
+  padding-left: 1.4rem;
+}
+
+.dividend-howto li + li {
+  margin-top: 0.25rem;
+}
+
 .company-shareholders {
   margin-top: 1rem;
 }

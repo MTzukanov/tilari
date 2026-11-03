@@ -337,33 +337,27 @@ test.describe('company documents', () => {
 })
 
 test.describe('dividend drafts', () => {
-  test('a shareholder, a decision draft posted, and the payment drafted for the recipient', async ({ page }) => {
+  test('a decision with its minutes, the shareholders it asks for, and the payment drafted for them', async ({ page }) => {
     await openCompany(page)
 
-    // The shareholder is kept on the company's own card.
-    await page.locator('.binder-head', { hasText: 'Yhtiön asiakirjat' }).click()
-    const holders = page.locator('.company-shareholders')
-    await expect(holders).toContainText('Osakkaita ei ole lisätty.')
-    await holders.getByRole('button', { name: 'Muokkaa osakkaita' }).click()
-    await holders.getByRole('button', { name: 'Lisää osakas' }).click()
-    await holders.getByLabel('Nimi').fill('Testi Osakas')
-    await holders.getByLabel('Alkaen').fill('2020-01-01')
-    await holders.getByLabel('Osakkeita').fill('10')
-    await holders.getByRole('button', { name: 'Tallenna osakkaat' }).click()
-    await expect(holders.getByRole('cell', { name: 'Testi Osakas' })).toBeVisible()
-    await expect(holders.getByRole('cell', { name: 'Veron sääntö' })).toBeVisible()
-
-    // A decision made now distributes the newest ended period's profit.
-    await periodCard(page, '2024').click()
+    // A decision made now distributes the newest ended period's profit, whose card is open on arrival; the
+    // minutes go onto the decision's voucher.
     const section = page.locator('.binder-body')
     await section.getByRole('button', { name: 'Kirjaa osingonjakopäätös' }).click()
+    await expect(section.getByLabel('Päättänyt kokous')).toHaveValue('agm')
     await section.getByLabel('Osinko yhteensä, €').fill('1000')
+    await section.getByLabel('Kokouksen pöytäkirja').setInputFiles({ ...PDF, name: 'kokous-testi.pdf' })
     await expect(section.locator('.company-panel')).toContainText('2251')
     await section.getByRole('button', { name: 'Tee luonnos' }).click()
-    const draft = section.locator('.doc-line', { hasText: 'Osingonjako tilikaudelta 2024' })
+    const draft = section.locator('.doc-line', { hasText: 'Osingonjako tilikaudelta 2024' }).last()
     await expect(draft.getByText('Luonnos', { exact: true })).toBeVisible()
 
-    // Posted in the editor as it is, it becomes the dividend.
+    // The same file is the meeting's row, waiting for the decision to be posted.
+    const minutes = slot(page, 'Varsinaisen yhtiökokouksen pöytäkirja')
+    await expect(minutes).toContainText('kokous-testi.pdf')
+    await expect(minutes.getByText('Luonnos', { exact: true })).toBeVisible()
+
+    // Posted in the editor as it is, it becomes the dividend, and the row is filled.
     await draft.getByRole('button', { name: /^Tosite/ }).click()
     await expectVoucherEditorOpen(page, 'Osingonjako tilikaudelta 2024')
     await page.locator('.editor-footer').getByRole('button', { name: 'Tallenna', exact: true }).click()
@@ -371,6 +365,21 @@ test.describe('dividend drafts', () => {
     await page.goBack()
     const card = page.locator('.dividend-card')
     await expect(card).toContainText('1 000,00')
+    await expect(card).toContainText('Varsinainen yhtiökokous')
+    await expect(minutes.getByText('Luonnos', { exact: true })).toHaveCount(0)
+
+    // Without shareholders, the card sends the owner to them, with a row to fill.
+    await card.getByText('Saajat (0)').click()
+    await card.getByRole('button', { name: 'Siirry osakkaisiin' }).click()
+    const holders = page.locator('.company-shareholders')
+    await holders.getByLabel('Nimi').fill('Testi Osakas')
+    await holders.getByLabel('Alkaen').fill('2020-01-01')
+    await holders.getByLabel('Osakkeita').fill('10')
+    await holders.getByRole('button', { name: 'Tallenna osakkaat' }).click()
+    await expect(holders.getByRole('cell', { name: 'Testi Osakas' })).toBeVisible()
+    await expect(holders.getByRole('cell', { name: 'Veron sääntö' })).toBeVisible()
+
+    await periodCard(page, '2024').click()
     await card.getByText('Saajat (1)').click()
     const row = card.getByRole('row', { name: /Testi Osakas/ })
     await expect(row).toContainText('75,00')

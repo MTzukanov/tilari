@@ -106,8 +106,8 @@ for the company's own), `voucher_id`, `attachment_id` (one file of a voucher wit
 `{voucherId}:{attachmentId}:{kind}`); `shareholders[]`: `key` (`s3`), `partner_id` (`Kumppani.id`; the
 name stays there, no personal ID numbers), `kind` (`person`, `estate`, `company`), `resident`, `rate_bp`
 (withholding in basis points when Vero's rule does not apply), `holdings[]` (`from`, `shares`; the latest
-on or before a day counts). Writes refuse a voucher that is not posted, a file of another
-voucher, and a period that does not exist; a shareholder sent with a new name gets its `Kumppani` row.
+on or before a day counts). A link may name a draft (a dividend decision with its meeting's minutes, ADR-031).
+Writes refuse a deleted or missing voucher, a file of another voucher, and a period that does not exist; a shareholder sent with a new name gets its `Kumppani` row.
 Links are read fresh: a voucher deleted later shows as missing. Nothing computed is stored; deadlines come
 from the period's end, and a dividend's recipients from the holdings on its decision day.
 

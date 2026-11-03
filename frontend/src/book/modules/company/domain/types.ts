@@ -16,6 +16,7 @@ export const PERIOD_KINDS = [
   'audit_report',
   'tax_return_6b',
   'agm_minutes',
+  'extra_agm_minutes',
   'prh_filing_receipt',
   'tax_decision',
   'dividend_annual_report',
@@ -232,6 +233,9 @@ export type DividendStep = { key: DividendStepKey; state: DividendStepState; dat
 
 export type DividendVoucher = VoucherRef & { role: 'decision' | 'payment' | 'remittance'; amount_snt: number }
 
+/** The meeting that decided a dividend: the annual one, or an extraordinary one for an extra dividend. */
+export type DividendMeeting = 'agm' | 'extra'
+
 /** A recipient of a dividend, split from the shareholders kept (`domain/recipients.ts`). */
 export type RecipientView = {
   key: string
@@ -256,6 +260,7 @@ export type ShareholderView = Shareholder & { name: string; shares: number }
 /** One dividend, read from the ledger on every load (`domain/dividends.ts`). */
 export type DividendView = {
   decided_on: string
+  meeting: DividendMeeting
   amount_snt: number
   paid_snt: number
   withheld_snt: number
@@ -293,12 +298,23 @@ export type PeriodView = {
   dividends: DividendView[]
   /** The period's income tax vouchers (type 9930). */
   income_tax: VoucherRef[]
+  /** What the income tax booking left to pay or to get back, and what settled it (`domain/incomeTax.ts`). */
+  tax_settlements: TaxSettlementView[]
   /** Draft decisions crediting Osingonjako that will count for this period once posted. */
   dividend_drafts: VoucherRef[]
   /** The newest ended period: a decision made now distributes its profit. */
   decide_here: boolean
   /** Posted type-800 vouchers dated in the year after the period's end, linked nowhere. */
   unlinked: DocCandidate[]
+}
+
+/** The tax left to pay (`pay`) or to get back (`refund`) after a period's closing, and the vouchers that settled it. */
+export type TaxSettlementView = {
+  direction: 'pay' | 'refund'
+  booked_snt: number
+  settled_snt: number
+  /** Oldest first, each with the part it settled. */
+  vouchers: (VoucherRef & { amount_snt: number })[]
 }
 
 export type CompanySlotView = { kind: string; documents: DocumentView[]; suggestions: Suggestion[] }

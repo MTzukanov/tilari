@@ -1,13 +1,41 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { DocLine, DocLines, DocRow, DocRows } from '../../../shared/DocRows'
+import { formatCents } from '../../../shared/money'
 import { FilePill, Pill } from '../../../shared/Pill'
-import type { CompanyOverview, PeriodView } from '../api'
+import type { CompanyOverview, PeriodView, TaxSettlementView } from '../api'
 import { DeadlineTiles } from './Deadlines'
 import { DividendSection } from './Dividends'
 import { errorText, periodShort } from './format'
 import { AttachSelect, OpenVoucher, SlotRow, UnlinkedRow, type SlotActions } from './Slot'
+
+/**
+ * After the tax decision: what the income tax booking left to pay or to get back, and the vouchers that settled
+ * it. Read from the book, so there is nothing to upload or link here.
+ */
+function TaxSettlementRow({ settlement: s, actions }: { settlement: TaxSettlementView; actions: SlotActions }) {
+  const { t } = useI18n()
+  const open = s.booked_snt - s.settled_snt
+  const key = `company.taxPayment.${s.direction}`
+  return (
+    <DocRow
+      name={t(`${key}.title`)}
+      status={<Pill tone={open > 0 ? 'warn' : 'ok'}>{open > 0 ? t(`${key}.open`, { amount: formatCents(open) }) : t(`${key}.done`)}</Pill>}
+    >
+      <p className="muted company-row-note">{t(`${key}.booked`, { amount: formatCents(s.booked_snt) })}</p>
+      <DocLines>
+        {s.vouchers.map((v) => (
+          <DocLine key={v.voucher_id} voucher={<OpenVoucher voucher={v} actions={actions} />} title={`${v.title || t(`${key}.title`)} · ${formatCents(v.amount_snt)}`}>
+            {v.files.map((f) => (
+              <FilePill key={f.id} id={f.id} name={f.name} />
+            ))}
+          </DocLine>
+        ))}
+      </DocLines>
+    </DocRow>
+  )
+}
 
 /** What an open period's card holds: its deadlines, documents and dividends. */
 export function PeriodBody({
@@ -66,21 +94,23 @@ export function PeriodBody({
           </DocRow>
         ) : null}
         {period.slots.map((slot) => (
-          <SlotRow
-            key={slot.kind}
-            kind={slot.kind}
-            label={rowLabel(slot.kind)}
-            status={slot.status}
-            documents={slot.documents}
-            suggestions={slot.suggestions}
-            periodEnds={period.ends}
-            defaultTitle={rowTitle(slot.kind)}
-            overview={overview}
-            today={today}
-            actions={actions}
-            kitsasStatement={slot.kind === 'financial_statements' ? period.kitsas_statement : undefined}
-            notNeededToggle={slot.required}
-          />
+          <Fragment key={slot.kind}>
+            <SlotRow
+              kind={slot.kind}
+              label={rowLabel(slot.kind)}
+              status={slot.status}
+              documents={slot.documents}
+              suggestions={slot.suggestions}
+              periodEnds={period.ends}
+              defaultTitle={rowTitle(slot.kind)}
+              overview={overview}
+              today={today}
+              actions={actions}
+              kitsasStatement={slot.kind === 'financial_statements' ? period.kitsas_statement : undefined}
+              notNeededToggle={slot.required}
+            />
+            {slot.kind === 'tax_decision' ? period.tax_settlements.map((s) => <TaxSettlementRow key={s.direction} settlement={s} actions={actions} />) : null}
+          </Fragment>
         ))}
       </DocRows>
 
