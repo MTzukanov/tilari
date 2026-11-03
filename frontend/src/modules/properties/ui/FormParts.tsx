@@ -54,7 +54,7 @@ export function SkipDocumentButton({ onSkip }: { onSkip: () => Promise<unknown> 
   return (
     <>
       {' '}
-      <button type="button" className="btn-link property-skip-doc" title={t('properties.alerts.skipHint')} disabled={busy} onClick={() => void skip()}>
+      <button type="button" className="btn-link btn-quiet property-skip-doc" title={t('properties.alerts.skipHint')} disabled={busy} onClick={() => void skip()}>
         {t('properties.alerts.skip')}
       </button>
       {error ? <span className="error"> {error}</span> : null}

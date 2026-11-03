@@ -7,6 +7,16 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-03 - Rental objects: warnings as tiles and pills (`feature/property-warnings`)
+
+- Last move from `docs/UI_PATTERNS.md`. `ui/Warnings.tsx` renders an object's warnings the same on its page and in
+  the portfolio's "Huomioitavaa": `lease_ending` and `increase_due` are `DueTile`s (the tenant in the label, the
+  day, days left in amber or "Myöhässä" in red once past, the whole sentence on hover), counted with `dayCount`
+  like the company page's deadlines. A tile opens the edit page from the object page, and the object from the
+  portfolio. Every other warning is a line led by a `Pill` word; `WARNING_WORDS` in `format.ts` lists every
+  `properties.warn.*` code and a unit test keeps the two whole. Lines sort errors first, notes last.
+- "Ohita" is a quiet link. `DueTile` takes a `title` for the hover text.
+- The e2e's as-of date for the reminders is 30.11.2025, not the 31.12.2025 its comment said.
 ## 2026-11-03 - Tax return: 8A and 73 rows read from a voucher's attachments
 
 - Owner: running tilari-bank-import's `nordnet-tax-forms` and then picking its file in the 8A paste was an extra

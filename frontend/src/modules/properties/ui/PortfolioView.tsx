@@ -10,7 +10,7 @@ import { fetchPortfolio, savePortfolioSettings, skipPropertyDocument, type Docum
 import { rowAlerts } from '../../../book/modules/properties/domain/reminders'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
 import { formatEuro, holdingText, periodLabel, saveErrorText, statusClass, tenantSide, warningText } from './format'
-import { SkipDocumentButton } from './FormParts'
+import { Warnings } from './Warnings'
 
 function Kpi({ label, value, neg, hint }: { label: string; value: string; neg?: boolean; hint?: string }) {
   return (
@@ -123,12 +123,14 @@ function readAlertsOpen(): boolean {
 function AlertsList({
   t,
   rows,
+  asOf,
   focus,
   onOpen,
   onSkip,
 }: {
   t: T
   rows: PropertyRow[]
+  asOf: string
   focus: boolean
   onOpen: (id: number) => void
   onSkip: (id: number, skip: DocumentSkip) => Promise<unknown>
@@ -166,14 +168,7 @@ function AlertsList({
             <button type="button" className="btn-link property-alerts-object" onClick={() => onOpen(row.id)}>
               {row.name}
             </button>
-            <ul>
-              {warnings.map((w, i) => (
-                <li key={`${w.code}-${i}`}>
-                  {warningText(t, w)}
-                  {w.skip ? <SkipDocumentButton onSkip={() => onSkip(row.id, w.skip!)} /> : null}
-                </li>
-              ))}
-            </ul>
+            <Warnings warnings={warnings} asOf={asOf} onOpenDue={() => onOpen(row.id)} onSkip={(skip) => onSkip(row.id, skip)} />
           </li>
         ))}
       </ul>
@@ -517,6 +512,7 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
           <AlertsList
             t={t}
             rows={[...held, ...sold]}
+            asOf={data.as_of}
             focus={focusAlerts}
             onOpen={onOpen}
             onSkip={async (id, skip) => {

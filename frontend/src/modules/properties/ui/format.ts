@@ -1,7 +1,10 @@
+import { dayCount } from '../../../book/months'
 import { getBcp47 } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
+import type { DueTone } from '../../../shared/DueTile'
 import { formatCents } from '../../../shared/money'
 import { formatBp } from '../../../shared/percent'
+import type { PillTone } from '../../../shared/Pill'
 import type { DepositCandidate, DepositView, LeaseIncrease, LeaseView, MonthLine, PropertyStatus, Warning, WaterShareStatus } from '../api'
 
 const wholeEuro = new Map<string, Intl.NumberFormat>()
@@ -43,6 +46,76 @@ export function warningText(t: T, w: Warning): string {
   )
   const text = t(key, params)
   return text === key ? w.code : text
+}
+
+/** The word on a warning's pill (`properties.alerts.word.*`); each has one tone, as everywhere (UI_PATTERNS rule 1). */
+export type WarningWord = 'error' | 'missing' | 'todo' | 'suggestion' | 'note'
+
+const WORD_TONE: Record<WarningWord, PillTone> = { error: 'crit', missing: 'crit', todo: 'warn', suggestion: 'doc', note: 'neutral' }
+
+/** Every `properties.warn.*` code: a dated reminder (`due`) is a tile, the rest a line with a pill. A test keeps it whole. */
+export const WARNING_WORDS: Record<string, WarningWord | 'due'> = {
+  lease_ending: 'due',
+  increase_due: 'due',
+  doc_corrupt: 'error',
+  lease_overlap: 'error',
+  water_overlap: 'error',
+  loan_shared: 'error',
+  deposit_over: 'error',
+  lease_contract_missing: 'missing',
+  increase_notice_missing: 'missing',
+  exception_agreement_missing: 'missing',
+  water_statement_missing: 'missing',
+  water_letter_missing: 'missing',
+  era_missing: 'missing',
+  no_capital: 'missing',
+  rent_arrears: 'todo',
+  former_owes: 'todo',
+  former_paid_ahead: 'todo',
+  deposit_open: 'todo',
+  water_tenant_owes: 'todo',
+  water_refund_due: 'todo',
+  vacant: 'todo',
+  vacant_until: 'todo',
+  water_settlement_missing: 'todo',
+  water_settlement_none: 'todo',
+  lease_suggestions: 'suggestion',
+  water_suggestions: 'suggestion',
+  deposits_unlinked: 'suggestion',
+  sale_costs_unset: 'note',
+  sale_line_split: 'note',
+  sale_carried: 'note',
+  doc_newer: 'note',
+}
+
+/** A warning line's pill; a code not listed reads as something to handle. */
+export function warningTone(code: string): { tone: PillTone; word: WarningWord } {
+  const listed = WARNING_WORDS[code]
+  const word = listed && listed !== 'due' ? listed : 'todo'
+  return { tone: WORD_TONE[word], word }
+}
+
+/** Errors first, notes last; the order within a word stays the domain's. */
+export function sortWarnings<W extends { code: string }>(warnings: W[]): W[] {
+  const order: WarningWord[] = ['error', 'missing', 'todo', 'suggestion', 'note']
+  return [...warnings].sort((a, b) => order.indexOf(warningTone(a.code).word) - order.indexOf(warningTone(b.code).word))
+}
+
+/**
+ * A dated reminder as a tile: what and whose, the day, and the days left (warn) or past it (crit),
+ * counted like the company page's deadlines. Null for any other warning.
+ */
+export function dueTile(t: T, w: Warning, asOf: string): { label: string; due: string; state: string; tone: DueTone } | null {
+  const date = w.code === 'lease_ending' ? w.params?.ends_date : w.code === 'increase_due' ? w.params?.from_date : undefined
+  if (typeof date !== 'string') return null
+  const tenant = String(w.params?.tenant ?? '') || t('properties.lease.tenantUnknown')
+  const days = dayCount(asOf, date) - 1
+  return {
+    label: t(w.code === 'lease_ending' ? 'properties.alerts.due.leaseEnding' : 'properties.alerts.due.increase', { tenant }),
+    due: formatDate(date),
+    state: days < 0 ? t('properties.alerts.due.late', { days: -days }) : t('properties.alerts.due.left', { days }),
+    tone: days < 0 ? 'crit' : 'warn',
+  }
 }
 
 /** Field paths from save errors (`invalid_field:valuations[0].date`) as a readable line. */

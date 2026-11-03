@@ -1412,7 +1412,20 @@
       "summary": "Notes {count} · objects {objects}",
       "header": "Rental object notes ({count}): open the list",
       "skip": "Skip",
-      "skipHint": "There is no document for this: do not remind. You can undo it when editing the object (No document)."
+      "skipHint": "There is no document for this: do not remind. You can undo it when editing the object (No document).",
+      "word": {
+        "error": "Error",
+        "missing": "Missing",
+        "todo": "To do",
+        "suggestion": "Suggestion",
+        "note": "Note"
+      },
+      "due": {
+        "leaseEnding": "Lease ends · {tenant}",
+        "increase": "Rent increase · {tenant}",
+        "left": "{days} d left",
+        "late": "{days} d late"
+      }
     },
     "error": {
       "invalid_field": "Check the field {path}.",

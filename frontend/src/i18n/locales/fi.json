@@ -1412,7 +1412,20 @@
       "summary": "Huomautuksia {count} · kohteita {objects}",
       "header": "Vuokrakohteiden huomautukset ({count}): avaa lista",
       "skip": "Ohita",
-      "skipHint": "Tälle ei ole asiakirjaa: älä muistuta. Voit perua sen kohteen muokkauksessa (Ei asiakirjaa)."
+      "skipHint": "Tälle ei ole asiakirjaa: älä muistuta. Voit perua sen kohteen muokkauksessa (Ei asiakirjaa).",
+      "word": {
+        "error": "Virhe",
+        "missing": "Puuttuu",
+        "todo": "Hoidettava",
+        "suggestion": "Ehdotus",
+        "note": "Huomio"
+      },
+      "due": {
+        "leaseEnding": "Vuokrasopimus päättyy · {tenant}",
+        "increase": "Vuokrankorotus · {tenant}",
+        "left": "{days} pv jäljellä",
+        "late": "Myöhässä {days} pv"
+      }
     },
     "error": {
       "invalid_field": "Tarkista kenttä {path}.",

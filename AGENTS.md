@@ -168,7 +168,7 @@ Rules already encoded:
 - i18n **keys** and TypeScript identifiers are English. Finnish UI strings stay in `fi.json` values. Kitsas schema names (`Tosite`, `Vienti`, `Asetus.tilinpaatos`, …) stay as stored; comment the English meaning on first use.
 - Pages that list documents, deadlines or things to do use the parts in [docs/UI_PATTERNS.md](docs/UI_PATTERNS.md)
   (`shared/Pill`, `DueTile`, `DocRows`, `Binder`): a colour means one thing everywhere, blue opens a file,
-  purple opens a voucher. Rental objects' documents are the next page to move; the steps are in that file.
+  purple opens a voucher. The company page and rental objects use them; that file says what stayed a link and why.
 - Tables with resizable columns cut long cells with an ellipsis: give them `onMouseOver={showCutText}`
   (`shared/cutText.ts`; `SortableTable` has it) so a cut cell shows its full text on hover. No generic
   row tooltips such as "Avaa tosite" there - the full text is more useful.

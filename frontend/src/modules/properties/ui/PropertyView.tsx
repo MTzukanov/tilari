@@ -26,10 +26,11 @@ import {
   type YearRow,
 } from '../api'
 import { CashFlowChart, PaybackChart } from './Charts'
-import { SkipDocumentButton, VoucherOpen } from './FormParts'
+import { VoucherOpen } from './FormParts'
 import { LeasesPanel } from './LeasesPanel'
-import { formatEuro, statusClass, tenantSide, warningText } from './format'
+import { formatEuro, statusClass, tenantSide } from './format'
 import { MonthLinesPanel } from './MonthLines'
+import { Warnings } from './Warnings'
 import { WaterPanel } from './WaterPanel'
 
 function Kpi({ label, value, neg, hint, title }: { label: string; value: string; neg?: boolean; hint?: string; title?: string }) {
@@ -386,14 +387,9 @@ export function PropertyView({
           </div>
 
           {d.warnings.length ? (
-            <ul className="property-warnings">
-              {d.warnings.map((w, i) => (
-                <li key={`${w.code}-${i}`}>
-                  {warningText(t, w)}
-                  {w.skip && !d.read_only ? <SkipDocumentButton onSkip={() => skipDoc(d, w.skip!)} /> : null}
-                </li>
-              ))}
-            </ul>
+            <div className="property-warnings">
+              <Warnings warnings={d.warnings} asOf={d.as_of} onOpenDue={onEdit} onSkip={d.read_only ? undefined : (skip) => skipDoc(d, skip)} />
+            </div>
           ) : null}
 
           <div className="overview-kpis">

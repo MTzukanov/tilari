@@ -1412,7 +1412,20 @@
       "summary": "Hinweise {count} · Objekte {objects}",
       "header": "Hinweise zu Mietobjekten ({count}): Liste öffnen",
       "skip": "Überspringen",
-      "skipHint": "Dafür gibt es kein Dokument: nicht erinnern. Beim Bearbeiten des Objekts rückgängig zu machen (Kein Dokument)."
+      "skipHint": "Dafür gibt es kein Dokument: nicht erinnern. Beim Bearbeiten des Objekts rückgängig zu machen (Kein Dokument).",
+      "word": {
+        "error": "Fehler",
+        "missing": "Fehlt",
+        "todo": "Zu erledigen",
+        "suggestion": "Vorschlag",
+        "note": "Hinweis"
+      },
+      "due": {
+        "leaseEnding": "Mietvertrag endet · {tenant}",
+        "increase": "Mieterhöhung · {tenant}",
+        "left": "Noch {days} T",
+        "late": "{days} T verspätet"
+      }
     },
     "error": {
       "invalid_field": "Feld {path} prüfen.",
