@@ -1203,6 +1203,7 @@
       "empty": "Inga bilagor.",
       "missing": "Verifikat {id} har raderats",
       "deleted": "Borttaget",
+      "absent": "Saknas",
       "voucher": "Verifikat {id}",
       "voucherNoId": "Verifikat",
       "showBank": "Visa kontoutdrag ({n})",

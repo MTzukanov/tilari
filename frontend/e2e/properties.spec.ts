@@ -485,7 +485,7 @@ test.describe('rental object water settlements', () => {
     await expect(share).toContainText('palautetaan 24,40 €')
     // The form shows what the book has for the period, as the page will: nothing yet.
     await expect(water).toContainText('Taloyhtiön tasausta ei löydy kirjanpidosta.')
-    await expect(share.locator('.property-water-status')).toHaveText('avoin')
+    await expect(share.locator('.pill-warn')).toHaveText('avoin')
     // With the actual use: 60,00 € by days is 40,44 €, less 80,00 € of advances.
     await water.getByLabel('Toteutunut kulutus €').fill('60')
     await expect(share).toContainText('palautetaan 39,56 €')
@@ -504,11 +504,14 @@ test.describe('rental object water settlements', () => {
     const row = panel.locator('.property-water-shares li').first()
     await expect(row).toContainText('Testi Vuokralainen')
     await expect(row).toContainText('palautetaan 39,56 €')
-    await expect(row.locator('.property-water-status')).toHaveText('avoin')
+    await expect(row.locator('.pill-warn')).toHaveText('avoin')
     await expect(row.getByRole('button', { name: /Vesitasaus Asunto/ })).toBeVisible()
+    // No statement linked: the settlement's place for it says so.
+    await expect(panel.locator('.doc-line', { hasText: 'Tasauslaskelma' }).locator('.pill-crit')).toHaveText('Puuttuu')
     const card = page.locator('.property-lease-card').first()
     await expect(card).toContainText('vesimaksu tasataan kulutuksen mukaan')
-    await expect(card).toContainText('Vesitasaus 1.1.2025–30.6.2025: palautetaan 39,56 € · avoin')
+    const latest = card.locator('.property-lease-terms', { hasText: 'Vesitasaus 1.1.2025–30.6.2025: palautetaan 39,56 €' })
+    await expect(latest.locator('.pill-warn')).toHaveText('avoin')
     // The lease's own rent account on the as-of date: the test book has no rent on the object,
     // so all nine months are owed; the letter's refund is due after the as-of date.
     await expect(card).toContainText(/Vuokrasaldo 30\.11\.2025: vuokrarästi 6\s030,00\s€/)

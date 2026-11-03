@@ -459,6 +459,7 @@ export function PropertyView({
               unassigned={d.rent_account?.unassigned}
               period={{ start: d.rent_start, end: d.rent_end }}
               asOf={d.as_of}
+              held={d.status !== 'sold'}
               onEdit={onEdit}
               onOpenVoucher={(v) => openVoucher(v)}
               onSaveException={d.read_only ? undefined : (leaseKey, exception, replaces) => saveException(d, leaseKey, exception, replaces)}
@@ -466,7 +467,7 @@ export function PropertyView({
           ) : null}
 
           {d.status !== 'sold' || d.water.settlements.length || d.water.suggestions.length ? (
-            <WaterPanel water={d.water} onEdit={onEdit} onOpenVoucher={(v) => openVoucher(v)} />
+            <WaterPanel water={d.water} held={d.status !== 'sold'} onEdit={onEdit} onOpenVoucher={(v) => openVoucher(v)} />
           ) : null}
 
           <BreakEvenPanel key={d.target?.rate_bp ?? 'none'} d={d} onTarget={setTargetBp} />
