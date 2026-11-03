@@ -137,6 +137,58 @@ test.describe('rental object leases', () => {
   })
 })
 
+test.describe('rental object documents', () => {
+  test('a linked document is a line: its voucher and its file open from pills, and it fits a phone', async ({ page }) => {
+    await openBook(page)
+    await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
+    // An uploaded contract is a Liitetieto voucher; linked to the object as well, it lists under Asiakirjat.
+    await page.goto('/#/property/4/edit')
+    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
+    const lease = page.locator('.property-lease-edit').first()
+    const tenant = lease.getByRole('combobox', { name: 'Vuokralainen' }).or(lease.getByLabel('Vuokralainen'))
+    await tenant.first().fill('Testi Vuokralainen')
+    await tenant.first().press('Escape')
+    await lease.getByLabel('Alkaa', { exact: true }).fill('2025-01-01')
+    await lease.getByLabel('Vuokra €/kk').first().fill('650')
+    const chooser = page.waitForEvent('filechooser')
+    await lease.locator('label', { hasText: 'Lataa sopimus' }).click()
+    await (await chooser).setFiles({ name: 'sopimus.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 sopimus') })
+    await expect(lease.getByRole('textbox', { name: 'Sopimus' })).toHaveValue(/Vuokrasopimus Asunto/)
+    const add = page.getByRole('textbox', { name: 'Lisää Liitetieto-tosite…' })
+    await add.click()
+    await add.fill('Vuokrasopimus')
+    await page.getByRole('option', { name: /Vuokrasopimus Asunto/ }).click()
+    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(page).toHaveURL(/#\/property\/4$/)
+
+    const docs = page.locator('.property-docs')
+    await expect(docs.locator('.section-label')).toHaveText(['Linkitetyt (sopimukset ja ilmoitukset)'])
+    const line = docs.locator('.doc-line', { hasText: 'Vuokrasopimus Asunto' })
+    const file = line.getByRole('link', { name: 'sopimus.pdf' })
+    await expect(file).toBeVisible()
+    // The purple pill opens the voucher, and the way back returns to the object.
+    await line.getByRole('button', { name: /^Vuokrasopimus Asunto .*, 15\.12\.2025$/ }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/voucher\/\d+/)
+    await page.getByRole('button', { name: 'Sulje' }).click()
+    await expect(page).toHaveURL(/#\/property\/4$/)
+
+    const title = line.locator('.doc-line-title')
+    for (const [width, rows] of [
+      [1500, 1],
+      [900, 2],
+    ]) {
+      await page.setViewportSize({ width, height: 900 })
+      const titleBox = (await title.boundingBox())!
+      const fileBox = (await file.boundingBox())!
+      expect(fileBox.y >= titleBox.y + titleBox.height - 1 ? 2 : 1, `rows at ${width}`).toBe(rows)
+    }
+    await page.setViewportSize({ width: 360, height: 740 })
+    await expect(line.locator('.pill-date')).toBeVisible()
+    await expect(line.locator('.pill-number')).toBeHidden()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360)
+  })
+})
+
 test.describe('rental object deposits', () => {
   test('a deposit booked for the object is offered for its lease, linked and shown with its balance', async ({ page }) => {
     await openBook(page)

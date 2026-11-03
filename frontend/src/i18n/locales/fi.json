@@ -1202,6 +1202,9 @@
       "linkedTitle": "Linkitetyt asiakirjat",
       "empty": "Ei liitteitä.",
       "missing": "Tosite {id} on poistettu",
+      "deleted": "Poistettu",
+      "voucher": "Tosite {id}",
+      "voucherNoId": "Tosite",
       "showBank": "Näytä tiliotteet ({n})",
       "group": {
         "linked": "Linkitetyt (sopimukset ja ilmoitukset)",
