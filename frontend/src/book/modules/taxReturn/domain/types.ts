@@ -1,0 +1,286 @@
+import type { PlacementSource, Target } from './mapping'
+
+export type ShareholderInput = {
+  name: string
+  shares: number
+  /** Accrued to the shareholder and their family during the period. Salaries and dividends do not go here. */
+  rents_cents: number
+  interest_cents: number
+  sales_cents: number
+  other_cents: number
+  loans_cents: number
+}
+
+export type DistributionInput = { decided: string; payable: string; amount_cents: number }
+
+/** 1 yes, 2 no and done later, 3 no auditor elected. */
+export type AuditAnswer = 1 | 2 | 3
+
+export type HoldingGroup = 'fixed' | 'financial' | 'other'
+
+/** A row of form 8A as typed. */
+export type HoldingInput = {
+  /** The tase-erä whose balance is the cost; `null` for a row typed by hand. */
+  era: number | null
+  group: HoldingGroup
+  name: string
+  business_id: string
+  /** As written, up to four decimals. */
+  shares: string
+  /** Only for a row typed by hand: otherwise the ledger's figure. */
+  cost_cents: number
+  /** Vertailuarvo kappaleelta: three decimals under 10 euros, so kept as written. */
+  unit_value: string
+  /** Vertailuarvo yhteensä. `null`: count times unit value. */
+  total_value_cents: number | null
+}
+
+/** 1 business ID, 2 property ID, 3 country code. */
+export type SaleIdType = 1 | 2 | 3
+
+/** A row of form 71B as typed. */
+export type SaleInput = {
+  /** The sale voucher that suggested the row. */
+  voucher: number | null
+  id_type: SaleIdType
+  name: string
+  id_code: string
+  apartment: string
+  acquired: string
+  sold: string
+  /** Omistusosuus luovutuksen jälkeen, as written. */
+  share_after: string
+  price_cents: number
+  cost_cents: number
+  expenses_cents: number
+}
+
+export type DebtTerm = 'long' | 'short'
+
+/** Form 73's classes: tax-free or taxable, by the payer's country, and dividends from REITs. */
+export type DividendClass = 'taxfree_fi' | 'taxfree_eu' | 'taxfree_other' | 'taxable_fi' | 'taxable_eu' | 'taxable_other' | 'reit'
+
+/** A class of form 73 as typed. */
+export type DividendInput = {
+  cents: number
+  /** Jakajayhtiö on listattu. Off: not listed, or several payers. */
+  listed: boolean
+  /** Omistusosuus (%), as written; empty leaves it out. */
+  ownership: string
+}
+
+export type Form73Input = {
+  /** OmaVero's "Onko yhtiö julkisesti noteerattu?": `null` until answered. */
+  company_listed: boolean | null
+  classes: Partial<Record<DividendClass, DividendInput>>
+}
+
+/** What the book cannot know. Links and inputs only (ADR-023); the personal ID is never here. */
+export type TaxReturnInputs = {
+  /** Empty: the book's `VeroYhteysHenkilo` and `VeroYhteysPuhelin`, if Kitsas has them. */
+  contact_name: string
+  contact_phone: string
+  contact_email: string
+  all_below_10_percent: boolean
+  shareholders: ShareholderInput[]
+  own_shares: number
+  dividend: DistributionInput | null
+  free_equity: DistributionInput | null
+  audit: AuditAnswer | null
+  audit_remarks: boolean | null
+  /** Yes unless the owner says otherwise: a return normally rests on finished statements. */
+  statements_prepared: boolean
+  ownership_change_year: number | null
+  holdings: HoldingInput[]
+  /** Form 71B's rows. `null`: not saved yet, so the sale vouchers suggest them. */
+  sale_rows: SaleInput[] | null
+  /** Figures typed on form 62, by code, replacing what the ledger gives. */
+  form62: Record<string, number>
+  form73: Form73Input
+  /** OmaVero's questions, for this period. A question missing here has not been answered. */
+  answers: Record<string, boolean>
+  /** Hand-entered figures by field code, replacing what the ledger gives. */
+  manual: Record<string, number>
+}
+
+export type AccountLine = {
+  account: number
+  name: string
+  cents: number
+  source: PlacementSource | null
+  /** Not in the standard chart, so its heading is only a guess until the owner picks a field. */
+  custom: boolean
+  /** For a debt: which total it counts in. */
+  term?: DebtTerm
+}
+
+export type RowState = 'zero' | 'ledger' | 'manual'
+
+export type RowView = {
+  code: number
+  tax_code: number | null
+  label: string
+  book_cents: number
+  tax_cents: number
+  signed: boolean
+  state: RowState
+  /** Book and tax can differ here. */
+  check: boolean
+  accounts: AccountLine[]
+  /** Earlier periods' results, for Edellisten tilikausien voitto or tappio. */
+  prior_results_cents: number | null
+  manual_only: boolean
+}
+
+export type TotalView = { code: number; label: string; cents: number }
+
+export type GroupView = {
+  key: string
+  title: string
+  rows: RowView[]
+  totals: TotalView[]
+}
+
+export type CheckState = 'ok' | 'warn' | 'crit'
+
+export type CheckKey =
+  | 'unplaced'
+  | 'unanswered'
+  | 'custom_accounts'
+  | 'result_ties'
+  | 'net_wealth'
+  | 'estimate'
+  | 'negative'
+  | 'income_tax'
+  | 'drafts'
+  | 'not_ended'
+  | 'dividend_answer'
+  | 'sale_split'
+  | 'sale_gap'
+  | 'form8a_gap'
+  | 'form62_tax'
+  | 'form62_book'
+  | 'form62_limit'
+  | 'form73_listed'
+  | 'form73_gap'
+  | 'form73_tax'
+  | 'tax_free_answer'
+  | 'manual'
+  | 'to_check'
+
+export type CheckView = {
+  key: CheckKey
+  state: CheckState
+  /** The exact difference or amount, where the check has one. */
+  cents?: number
+  count?: number
+  date?: string
+  codes?: number[]
+}
+
+export type FormNeed = {
+  form: string
+  /** The fields or answer that call for it. */
+  codes: number[]
+  /** Generated by this version. Forms in the same file are required before it can be sent. */
+  built: boolean
+  /** Goes in the same file as the 6B; otherwise it is a separate return. */
+  in_file: boolean
+}
+
+export type HoldingRow = HoldingInput & {
+  account: number | null
+  era_text: string
+  value_cents: number
+}
+
+/** A row as it goes on the form: rows of one company combined. */
+export type HoldingLine = {
+  name: string
+  business_id: string
+  shares: string
+  cost_cents: number
+  unit_value: string
+  value_cents: number
+}
+
+export type HoldingGroupView = {
+  key: HoldingGroup
+  title: string
+  /** The 6B field the costs must equal. */
+  field: number
+  field_cents: number
+  rows: HoldingRow[]
+  lines: HoldingLine[]
+  shares_total: string
+  cost_cents: number
+  value_cents: number
+}
+
+export type Form8aView = { groups: HoldingGroupView[]; cost_cents: number; value_cents: number }
+
+export type SaleRow = SaleInput & { result_cents: number }
+
+export type Form71bView = {
+  rows: SaleRow[]
+  saved: boolean
+  /** Sale vouchers not on the saved rows. */
+  suggestions: SaleInput[]
+  gains_cents: number
+  losses_cents: number
+}
+
+export type Form62Row = {
+  code: number
+  label: string
+  role: string
+  cents: number
+  /** What the ledger and the formulas give, shown when nothing is typed. */
+  computed_cents: number
+  typed: boolean
+}
+
+export type Form62Section = { key: string; title: string; rows: Form62Row[]; has_values: boolean }
+
+export type Form62View = { sections: Form62Section[]; used: boolean }
+
+export type DividendClassView = DividendInput & {
+  key: DividendClass
+  title: string
+  taxable: boolean
+  codes: { total: number; share: number; listed?: number; ownership?: number }
+  share_cents: number
+}
+
+export type Form73View = {
+  company_listed: boolean | null
+  classes: DividendClassView[]
+  /** Some class has an amount. */
+  typed: boolean
+  total_cents: number
+  taxfree_cents: number
+  taxable_cents: number
+  /** Saadut osingot ja ylijäämät in the 6B's Kirjanpito column, which the total must equal. */
+  ledger_cents: number
+}
+
+export type TaxReturnView = {
+  starts: string
+  ends: string
+  company: { name: string; business_id: string; contact_name: string; contact_phone: string }
+  groups: GroupView[]
+  /** Final figures by file code, totals included. */
+  values: Record<string, number>
+  unplaced: AccountLine[]
+  checks: CheckView[]
+  forms: FormNeed[]
+  inputs: TaxReturnInputs
+  /** The earlier period the contact and share counts came from, until these are saved. */
+  carried_from: string | null
+  saved: boolean
+  overrides: Record<string, Target>
+  form8a: Form8aView
+  form71b: Form71bView
+  form62: Form62View
+  form73: Form73View
+}

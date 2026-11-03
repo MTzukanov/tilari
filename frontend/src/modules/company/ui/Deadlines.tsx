@@ -19,10 +19,12 @@ export function DeadlineTiles({
 }) {
   const { t } = useI18n()
   const action = (d: DeadlineView) => {
-    if (!onSetHandled || listed?.(d.kind) !== false || d.state === 'done') return null
+    const kind = d.kind
+    // Without a slot the ledger answers it: nothing to mark.
+    if (!onSetHandled || !kind || listed?.(kind) !== false || d.state === 'done') return null
     const handled = d.state === 'not_needed'
     return (
-      <button type="button" className="btn-link btn-quiet" onClick={() => onSetHandled(d.kind, !handled)}>
+      <button type="button" className="btn-link btn-quiet" onClick={() => onSetHandled(kind, !handled)}>
         {t(handled ? 'company.deadlines.unmark' : 'company.deadlines.markHandled')}
       </button>
     )

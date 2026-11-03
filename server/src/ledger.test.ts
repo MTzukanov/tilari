@@ -20,6 +20,7 @@ import {
   fetchCandidates as fetchCompanyCandidates,
   saveChanges as saveCompanyChanges,
 } from '../../frontend/src/book/modules/company/domain/overview.ts'
+import { computeTaxReturn } from '../../frontend/src/book/modules/taxReturn/domain/compute.ts'
 
 const GOLDEN = join(
   fileURLToPath(new URL('../../testdb/tilari-test.kitsas', import.meta.url)),
@@ -325,6 +326,44 @@ describe('ledger http', () => {
     assert.equal(refused.status, 400)
     assert.match(await refused.text(), /unknown_period/)
     assert.equal((await fetch(`${base}/api/company/nothing`)).status, 404)
+    local.close()
+  })
+
+  it('the tax return over HTTP matches the in-browser engine', async () => {
+    await fetch(`${base}/api/close`, { method: 'POST' })
+    const openRes = await fetch(`${base}/api/open-path`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: GOLDEN }),
+    })
+    assert.equal(openRes.status, 200, await openRes.text())
+    const local = await SqliteDb.fromBytes(readFileSync(GOLDEN))
+    const ends = '2024-12-31'
+    const same = { today: '2099-01-01' }
+    const post = (path: string, body: unknown) =>
+      fetch(`${base}/api/tax-return/${path}?ends=${ends}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    const figures = (view: { values: unknown; groups: unknown }) => JSON.parse(JSON.stringify({ values: view.values, groups: view.groups }))
+
+    const before = (await fetch(`${base}/api/tax-return?ends=${ends}`).then((r) => r.json())) as { values: unknown; groups: unknown }
+    assert.deepEqual(figures(before), figures(computeTaxReturn(local, ends, same)))
+
+    const saved = await post('inputs', { own_shares: 3, shareholders: [{ name: 'Essi Esimerkki', shares: 100, id: '010101-0101' }] })
+    const savedText = await saved.text()
+    assert.equal(saved.status, 200, savedText)
+    assert.equal(JSON.parse(savedText).inputs.own_shares, 3)
+    assert.doesNotMatch(savedText, /010101-0101/)
+
+    const placed = await post('mapping', { 3000: 336 })
+    const placedText = await placed.text()
+    assert.equal(placed.status, 200, placedText)
+    assert.deepEqual(JSON.parse(placedText).overrides, { 3000: 336 })
+
+    assert.equal((await fetch(`${base}/api/tax-return?ends=2099-12-31`)).status, 404)
+    assert.equal((await fetch(`${base}/api/tax-return/nothing`)).status, 404)
     local.close()
   })
 })

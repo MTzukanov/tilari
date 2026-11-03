@@ -5,11 +5,27 @@ const AGM = 'Varsinaisen yhtiökokouksen pöytäkirja'
 const PDF = { mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 asiakirja') }
 
 /** The test book has periods 2024 and 2025, closed through 2023; this day falls in 2025. */
-async function openCompany(page: Page) {
+async function arrive(page: Page) {
   await openBook(page)
   await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
   await page.locator('.sidenav').getByRole('link', { name: 'Yhtiö' }).click()
   await expect(page.getByRole('heading', { name: 'Yhtiö', exact: true })).toBeVisible()
+}
+
+function fold(page: Page, label: string): Locator {
+  return page.locator('details.company-fold', { has: page.locator('> summary', { hasText: label }) })
+}
+
+/** Opens a folded section of the open card; it then stays open for the session, in every card. */
+async function unfold(page: Page, label: string) {
+  await fold(page, label).locator('> summary').click()
+  await expect(fold(page, label)).toHaveAttribute('open', '')
+}
+
+/** With the documents unfolded, as most tests work on them. */
+async function openCompany(page: Page) {
+  await arrive(page)
+  await unfold(page, 'Asiakirjat')
 }
 
 /** The newest ended period is open on arrival. */
@@ -42,6 +58,22 @@ async function upload(page: Page, target: Locator, name: string) {
 }
 
 test.describe('company documents', () => {
+  test('only the deadlines are open at first, and a section opened stays open after a voucher', async ({ page }) => {
+    await arrive(page)
+    await expect(fold(page, 'Määräajat')).toHaveAttribute('open', '')
+    await expect(fold(page, 'Asiakirjat')).not.toHaveAttribute('open', '')
+    await expect(fold(page, 'Osingot tämän tilikauden voitosta')).not.toHaveAttribute('open', '')
+    await expect(page.getByRole('button', { name: 'Kirjaa osingonjakopäätös' })).toBeHidden()
+
+    await unfold(page, 'Asiakirjat')
+    await fold(page, 'Määräajat').locator('> summary').click()
+    await expect(fold(page, 'Määräajat')).not.toHaveAttribute('open', '')
+    await page.locator('.sidenav').getByRole('link', { name: 'Selaa' }).click()
+    await page.locator('.sidenav').getByRole('link', { name: 'Yhtiö' }).click()
+    await expect(fold(page, 'Asiakirjat')).toHaveAttribute('open', '')
+    await expect(fold(page, 'Määräajat')).not.toHaveAttribute('open', '')
+  })
+
   test('a document uploaded to a slot is a type-800 voucher that fills the slot and its deadline', async ({ page }) => {
     await openCompany(page)
     await openPeriod2024(page)
@@ -333,5 +365,66 @@ test.describe('company documents', () => {
     await expect(page.getByRole('cell', { name: 'Yhtiöjärjestys' }).first()).toBeVisible()
     await page.getByLabel('Hae otsikkoa, lajia, tilikautta tai päivää').fill('ei tällaista')
     await expect(page.getByText('Ei asiakirjoja.')).toBeVisible()
+  })
+})
+
+test.describe('dividend drafts', () => {
+  test('a decision with its minutes, the shareholders it asks for, and the payment drafted for them', async ({ page }) => {
+    await openCompany(page)
+
+    // A decision made now distributes the newest ended period's profit, whose card is open on arrival; the
+    // minutes go onto the decision's voucher.
+    const section = page.locator('.binder-body')
+    await unfold(page, 'Osingot tämän tilikauden voitosta')
+    await section.getByRole('button', { name: 'Kirjaa osingonjakopäätös' }).click()
+    await expect(section.getByLabel('Päättänyt kokous')).toHaveValue('agm')
+    await section.getByLabel('Osinko yhteensä, €').fill('1000')
+    await section.getByLabel('Kokouksen pöytäkirja').setInputFiles({ ...PDF, name: 'kokous-testi.pdf' })
+    await expect(section.locator('.company-panel')).toContainText('2251')
+    await section.getByRole('button', { name: 'Tee luonnos' }).click()
+    const draft = section.locator('.doc-line', { hasText: 'Osingonjako tilikaudelta 2024' }).last()
+    await expect(draft.getByText('Luonnos', { exact: true })).toBeVisible()
+
+    // The same file is the meeting's row, waiting for the decision to be posted.
+    const minutes = slot(page, 'Varsinaisen yhtiökokouksen pöytäkirja')
+    await expect(minutes).toContainText('kokous-testi.pdf')
+    await expect(minutes.getByText('Luonnos', { exact: true })).toBeVisible()
+
+    // Posted in the editor as it is, it becomes the dividend, and the row is filled.
+    await draft.getByRole('button', { name: /^Tosite/ }).click()
+    await expectVoucherEditorOpen(page, 'Osingonjako tilikaudelta 2024')
+    await page.locator('.editor-footer').getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Tallenna luonnos' })).toHaveCount(0)
+    await page.goBack()
+    const card = page.locator('.dividend-card')
+    await expect(card).toContainText('1 000,00')
+    await expect(card).toContainText('Varsinainen yhtiökokous')
+    await expect(minutes.getByText('Luonnos', { exact: true })).toHaveCount(0)
+
+    // Without shareholders, the card sends the owner to them, with a row to fill.
+    await card.getByText('Saajat (0)').click()
+    await card.getByRole('button', { name: 'Siirry osakkaisiin' }).click()
+    const holders = page.locator('.company-shareholders')
+    await holders.getByLabel('Nimi').fill('Testi Osakas')
+    await holders.getByLabel('Alkaen').fill('2020-01-01')
+    await holders.getByLabel('Osakkeita').fill('10')
+    await holders.getByRole('button', { name: 'Tallenna osakkaat' }).click()
+    await expect(holders.getByRole('cell', { name: 'Testi Osakas' })).toBeVisible()
+    await expect(holders.getByRole('cell', { name: 'Veron sääntö' })).toBeVisible()
+
+    await periodCard(page, '2024').click()
+    await card.getByText('Saajat (1)').click()
+    const row = card.getByRole('row', { name: /Testi Osakas/ })
+    await expect(row).toContainText('75,00')
+    await expect(row).toContainText('925,00')
+
+    // The payment draft leaves the net as a debt to the shareholder and withholds 7.5 %.
+    await card.getByRole('button', { name: 'Tee maksutosite' }).click()
+    const preview = card.locator('.company-panel table')
+    await expect(preview.getByRole('row', { name: /2921/ })).toContainText('75,00')
+    await expect(preview.getByRole('row', { name: /2943/ })).toContainText('Testi Osakas')
+    await card.getByRole('button', { name: 'Tee luonnos' }).click()
+    await expect(card.locator('.doc-line', { hasText: 'Osingon maksu' }).getByText('Luonnos', { exact: true })).toBeVisible()
+    await expect(card.getByRole('button', { name: 'Tee maksutosite' })).toBeVisible()
   })
 })

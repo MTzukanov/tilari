@@ -669,12 +669,87 @@ correction would change the open year's income statement lines. The rental-objec
 - **Deadlines are computed** (`domain/deadlines.ts`), on the as-of date, indicative, and answered by
   a slot's document or by the owner's word ("Ei tarvita" on the row, or on the tile when the row is not
   listed), which shows as "Hoidettu". Rules and sources are in that file.
-  Only the 6B moves past days off (laki 150/1930, 5 §), holidays included: the act covers deadlines at an
-  authority, and PRH's text names no such rule, so its date stays the earlier, safer one. The header counts those due within 30 days
+  Only the 6B and the dividends' annual report move past days off (laki 150/1930, 5 §), holidays included: the
+  act covers deadlines at an authority, and PRH's text names no such rule, so its date stays the earlier, safer one. The header counts those due within 30 days
   or overdue by at most a year: older gaps show on their period's row, or old years would keep it
   lit. Like ADR-030 they cannot be dismissed, only answered.
+- **The dividends' annual report is a row of the period whose profit was distributed** (owner, 2026-11-02),
+  listed only when the book shows a dividend from that period: a posted credit on Osingonjako after the
+  period's end. It is the row the dividend's "reported" step will read. Its date comes from the payment, the
+  first debit after that credit, and its name gives that year.
+- **A dividend is read from the ledger, nothing is stored** (`domain/dividends.ts`, 2026-11-02). A posted
+  credit on Osingonjako (2261) is a decision, and debits on it pay the oldest open decision first. Each
+  payment voucher's credit on Ennakonpidätysvelka (2921) is withheld, and debits on that account remit the
+  oldest withholding first, whatever it came from, by the 12th of the next month moved past days off. A
+  payment that credits another liability left the dividend as a debt, so its voucher should hold the contract.
+  The card's five steps (decided, booked, paid, withholding paid, reported) compare these figures to the cent.
+  The account numbers are the chart's; a book on others shows no dividend until they become a setting.
+- **Income tax bookings are shown, not linked.** The period's type 9930 vouchers lead its documents as a row
+  with nothing to upload, since the book already says where they are.
+- **Shareholders are inputs, recipients are computed, vouchers are drafts** (owner, 2026-11-03). The owner keeps
+  the shareholders and their dated share counts in `company.shareholders[]` (names in `Kumppani`, no personal
+  IDs). A dividend's recipients are split from the holdings on its decision day, largest remainder to the cent,
+  and never stored. Withholding follows Vero's guide on dividends (in force from 1.1.2023): 7.5 % of the whole
+  dividend to a person or a domestic estate up to 150 000 euros a recipient (counted over the payment's calendar
+  year), 28 % above, none to a company; a non-resident waits for a typed rate. Tilari writes the decision
+  (D 2251 / C 2261, type 300) and "Osingon maksu" (D 2261; per recipient C 2921 and C 2943 or a bank account,
+  each line naming the recipient, type 0) as drafts with the ordinary voucher save, the way the book has
+  always booked them; the owner posts them. Drafts on 2261 show in the section, so a second one is not made
+  by mistake. The withholding remittance stays with the bank import.
+- **One meeting, one file** (owner, 2026-11-03: "it is the same attachment for both"). The meeting's minutes
+  are the decision voucher's attachment, and the meeting's row links that file, as the book has always done.
+  The decision form uploads them onto the draft and links it, or books the decision on the type-800 voucher
+  the minutes were stored on. So a link may name a draft: it shows "Luonnos" in amber, does not fill its row
+  until posted, and is not counted as a problem. A deleted voucher is still refused.
+- **An extraordinary meeting has its own row** (`extra_agm_minutes`, owner 2026-11-03): an extra dividend's
+  minutes belong with the period it distributes. Listed once there is a document, a file named so, or a second
+  dividend, which makes it required; such files were suggested under "Muut" before. A card's meeting is the
+  row whose minutes sit on its voucher or carry its date, else the first dividend is the AGM's.
+- **Income tax after the tax decision is read from the book** (owner 2026-11-03): "Tuloveron maksu" follows
+  "Verotuspäätös", with what the period's lines put on Tuloverosiirtovelat (Kitsas's setting, 2968) or
+  Tuloverosiirtosaamiset (1813) and the later lines that settled it, oldest first. Nothing to upload or link.
+  The whole process is in `docs/DIVIDENDS.md`.
 - **Why not the dossier as designed elsewhere:** the first design assumed a Kitsas HTTP API, its own
-  SQL tables, a dossier inside Tilikaudet, documents only on type 800, and one payment voucher per
-  dividend. Tilari has the ledger in-process and one table, and a dividend can go in steps through a
-  payable account and bank statements. Dividends come later, on those steps.
+  SQL tables, a dossier inside Tilikaudet, documents only on type 800, and a payment voucher that
+  pays from the bank. Tilari has the ledger in-process and one table, and a payment can turn the dividend into
+  a debt to the shareholder, which later bank lines repay. Dividends come later, on those steps.
+
+## ADR-032 Annual tax return: one calculation, two outputs (2026-11-01)
+
+**Status:** accepted. Details in [TAX_RETURN.md](TAX_RETURN.md).
+
+- **Both routes** (owner, 2026-11-01). The owner has filed by hand in OmaVero because the figures were worked out
+  by hand. An Ilmoitin file should be quicker, but full control needs the numbers for OmaVero as well. Both render
+  `computeTaxReturn`, so they cannot disagree.
+- **Read-only for the ledger.** A button on the period's card, in a module of its own (`taxReturn`). Only the owner's
+  inputs and account choices are written, to `TilariData` (ADR-023), never computed figures.
+- **The personal ID is never stored.** The file needs it, so it is typed at download and the file is built in the
+  browser, also on the Node engine. A self-hosted server does not see it.
+- **The chart decides where past filings differ.** Filed returns placed some accounts differently from year to year.
+  Defaults follow the statutory chart, and the owner overrides per account. An account outside the standard chart
+  is a guess from its heading, so it stays listed until confirmed.
+- **No tolerance.** Each reconciliation shows its difference to the cent ([MEMORY.md](../MEMORY.md), exact figures).
+- **Every question answered, every year** (owner, 2026-11-02). OmaVero's questions take an explicit yes or no, so a
+  question considered can be told from one missed. Answers do not carry over: a carried no would look considered.
+  The form still saves with questions open, since refusing would lose typed work; the check and the stopped file say
+  what is left.
+- **Forms start from the ledger, and are tied to it to the cent** (2026-11-02). 8A follows tase-eriä, 71B sale vouchers
+  and 62 asset movements; what the ledger cannot know is typed. Nothing is guessed from a voucher's partner, who on a
+  purchase is usually the seller: back-tested on a real book, it named the filed company in no case. A row or field
+  left empty says so rather than holding a plausible wrong value.
+- **Form 73 says which dividends are taxable** (2026-11-02). The ledger has one dividend figure and cannot know the
+  payer's country or listing, so the classes are typed and must add up to the book's figure. Once they have amounts,
+  their taxable share goes to the 6B, as Vero's guide says.
+- **Rows from a broker come as pasted text** (2026-11-02). Tilari reads no broker's files (SCOPE.md: bank and CSV
+  importers stay outside). 8A takes rows pasted or read from a file in the form's own columns, which any spreadsheet
+  can make; tilari-bank-import writes them for Nordnet. A Finnish business ID typed once is kept by name.
+- **The calculation is kept with the 6B, not as it** (2026-11-02). The owner wants the result kept for later
+  reference. It is a PDF on a Liitetieto voucher, like the rental letters, linked to the period's 6B row with the flag
+  `calculation`, so the row and the deadline wait for the filed return. The figures stay in the voucher's file, not in
+  `TilariData` (ADR-023). A new save replaces the kept one's file in place rather than adding a voucher (owner, 2026-11-03).
+- **A check says where it is fixed** (owner, 2026-11-02). The list's heading is text, not a pill, and each item links
+  to its tab and section.
+- **OmaVero's wording in the UI.** Vero's file codes appear only in code and the file: OmaVero does not show them.
+- **A file is only called ready when complete.** Forms in the same file must exist, since a corrected return replaces
+  the earlier one. It can still be format-checked at every step.
 

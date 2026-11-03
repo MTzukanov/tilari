@@ -6134,6 +6134,114 @@ button.due-tile:hover {
   color: var(--muted);
 }
 
+.step-rail-box {
+  container: step-rail / inline-size;
+  margin: 0.9rem 0 0.6rem;
+}
+
+.step-rail {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+/* The line from the step before; green into a step that is done. */
+.step + .step::before {
+  position: absolute;
+  top: calc(0.8rem - 1px);
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  content: '';
+  background: var(--line);
+}
+
+.step-ok + .step-ok::before {
+  background: var(--ok);
+}
+
+.step-dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 50%;
+}
+
+.step-ok .step-dot {
+  color: #fff;
+  background: var(--ok);
+  border-color: var(--ok);
+}
+
+.step-crit .step-dot {
+  color: #fff;
+  background: var(--crit);
+  border-color: var(--crit);
+}
+
+.step-warn .step-dot {
+  color: var(--warn);
+  border-color: #c98a00;
+}
+
+.step-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.step-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.4rem;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+@container step-rail (max-width: 34rem) {
+  .step-rail {
+    grid-auto-flow: row;
+    gap: 0.45rem;
+  }
+
+  .step {
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    justify-items: start;
+    gap: 0.6rem;
+    text-align: left;
+  }
+
+  .step + .step::before {
+    display: none;
+  }
+
+  .step-meta {
+    justify-content: start;
+  }
+}
+
 .doc-rows {
   container: doc-rows / inline-size;
   background: var(--card);
@@ -6663,7 +6771,126 @@ button.due-tile:hover {
   margin-top: 1rem;
 }
 
-.company-unlinked > summary {
+.dividend-card {
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 0.6rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.dividend-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.dividend-head .muted {
+  margin-top: 0.15rem;
+  font-size: 0.85rem;
+}
+
+.dividend-name {
+  font-size: 1rem;
+}
+
+.dividend-amount {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.dividend-alerts {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  list-style: none;
+}
+
+.dividend-alert {
+  padding: 0.45rem 0.7rem;
+  font-size: 0.88rem;
+  border-radius: 6px;
+}
+
+.dividend-alert-warn {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.dividend-alert-crit {
+  color: var(--crit);
+  background: var(--crit-soft);
+}
+
+.dividend-recipients {
+  margin-top: 0.6rem;
+}
+
+.dividend-recipients > summary {
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.dividend-scroll {
+  max-width: 100%;
+  margin-top: 0.4rem;
+  overflow-x: auto;
+}
+
+.dividend-actions {
+  margin: 0.6rem 0 0;
+}
+
+.dividend-draft-note {
+  margin: 0.35rem 0;
+  font-size: 0.85rem;
+}
+
+.company-row-note {
+  margin: 0.1rem 0 0;
+  font-size: 0.85rem;
+}
+
+.dividend-howto {
+  margin: 0 0 0.6rem;
+  font-size: 0.9rem;
+}
+
+.dividend-howto > summary {
+  cursor: pointer;
+}
+
+.dividend-howto ol {
+  margin: 0.4rem 0;
+  padding-left: 1.4rem;
+}
+
+.dividend-howto li + li {
+  margin-top: 0.25rem;
+}
+
+.company-shareholders {
+  margin-top: 1rem;
+}
+
+.company-shareholders > .muted {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+}
+
+.company-shareholder {
+  min-width: 0;
+  margin: 0 0 0.6rem;
+  padding: 0 0 0.6rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.company-unlinked > summary,
+.company-fold > summary {
   cursor: pointer;
 }
 
@@ -6722,4 +6949,479 @@ button.due-tile:hover {
   display: block;
   font-size: 0.82rem;
   color: var(--muted);
+}
+
+/* Annual tax return data (6B) */
+.tax-return-open {
+  margin: 0.5rem 0 0.25rem;
+}
+
+.tax-return-dialog {
+  max-height: 92vh;
+}
+
+.tax-return-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.6rem;
+}
+
+.tax-return-tab {
+  padding: 0.3rem 0.8rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.tax-return-tab-active {
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+
+.tax-return-body {
+  overflow: auto;
+  padding: 0.85rem 1.1rem;
+  background: var(--panel, #fff);
+}
+
+.tax-return-checks {
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--rule, #ccd);
+}
+
+.tax-return-checks > p {
+  margin: 0 0 0.4rem;
+}
+
+.tax-return-checks-title {
+  margin: 0 0 0.45rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.tax-return-check-list .tax-return-jump {
+  text-align: left;
+}
+
+/* Where a check's link lands: shown, so the eye finds it after the scroll. */
+[id^='tax-return-at-'] {
+  scroll-margin-top: 0.9rem;
+}
+
+[id^='tax-return-at-']:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A note on what a button did: on its own line, after the row's buttons. */
+.tax-return-actions .tax-return-actions-note {
+  order: 1;
+  flex-basis: 100%;
+}
+
+.tax-return-optional > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.tax-return-optional[open] > summary {
+  margin-bottom: 0.5rem;
+}
+
+.tax-return-check-list {
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.tax-return-check-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.tax-return-check-list .pill {
+  flex: none;
+}
+
+.tax-return-passed {
+  font-size: 0.85rem;
+}
+
+.tax-return-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.tax-return-toggle {
+  display: block;
+  margin: 0.25rem 0;
+}
+
+.tax-return-yesno {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin: 0.15rem -0.4rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 0.3rem;
+}
+
+.tax-return-yesno-open {
+  background: color-mix(in srgb, var(--crit-soft) 50%, transparent);
+}
+
+.tax-return-yesno-question {
+  flex: 1 1 20rem;
+}
+
+.tax-return-yesno-choices {
+  display: flex;
+  flex: none;
+  gap: 1rem;
+}
+
+.tax-return-yesno-choices label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.tax-return-table {
+  width: 100%;
+  margin-bottom: 0.9rem;
+  border-collapse: collapse;
+}
+
+.tax-return-table caption {
+  padding: 0.3rem 0;
+  font-weight: 600;
+  text-align: left;
+}
+
+.tax-return-table th {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.tax-return-table th,
+.tax-return-table td {
+  padding: 0.15rem 0.4rem;
+  border-bottom: 1px solid var(--rule, #dde);
+}
+
+.tax-return-table .amount,
+.tax-return-accounts .amount,
+.tax-return-unplaced .amount {
+  width: 8.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tax-return-row-name {
+  margin-right: 0.4rem;
+  text-align: left;
+}
+
+.tax-return-chevron {
+  margin-right: 0.3rem;
+  vertical-align: -1px;
+  transition: transform 0.15s;
+}
+
+.tax-return-row-name[aria-expanded='true'] .tax-return-chevron {
+  transform: rotate(90deg);
+}
+
+.tax-return-figure {
+  padding: 0.05rem 0.25rem;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 0.2rem;
+  cursor: copy;
+}
+
+.tax-return-figure:hover,
+.tax-return-figure:focus-visible {
+  background: var(--accent-soft);
+}
+
+.tax-return-zero {
+  color: var(--muted);
+}
+
+.tax-return-total td {
+  font-weight: 600;
+}
+
+.tax-return-detail > td {
+  padding: 0.4rem 0.6rem 0.6rem;
+  background: var(--paper);
+}
+
+.tax-return-accounts,
+.tax-return-unplaced ul {
+  margin: 0 0 0.4rem;
+  padding: 0;
+  list-style: none;
+}
+
+.tax-return-accounts li,
+.tax-return-unplaced li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.tax-return-accounts li > span:first-child,
+.tax-return-unplaced li > span:first-child {
+  flex: 1 1 12rem;
+}
+
+.tax-return-place {
+  max-width: 17rem;
+  font-size: 0.85rem;
+}
+
+.tax-return-manuals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.tax-return-manual {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.tax-return-manual input {
+  width: 8rem;
+}
+
+.tax-return-unplaced {
+  margin-bottom: 0.9rem;
+}
+
+.tax-return-fieldset {
+  margin: 0 0 0.9rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--rule, #ccd);
+  border-radius: 0.3rem;
+}
+
+.tax-return-fieldset legend {
+  padding: 0 0.3rem;
+  font-weight: 600;
+}
+
+.tax-return-fieldset > label:not(.tax-return-toggle),
+.tax-return-holder > label {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0 0.75rem 0.5rem 0;
+  font-size: 0.85rem;
+}
+
+.tax-return-holder > label {
+  margin: 0;
+}
+
+.tax-return-holder {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  align-items: end;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed var(--rule, #ccd);
+}
+
+.tax-return-holder-name {
+  grid-column: span 3;
+}
+
+.tax-return-holder-delete {
+  justify-self: end;
+  padding-bottom: 0.2rem;
+}
+
+@media (max-width: 40rem) {
+  .tax-return-holder {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tax-return-holder-name {
+    grid-column: 1 / -1;
+  }
+}
+
+.tax-return-attached-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  align-items: end;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed var(--rule, #ccd);
+}
+
+.tax-return-attached-row > label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  font-size: 0.85rem;
+}
+
+.tax-return-attached-row input,
+.tax-return-attached-row select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tax-return-attached-wide {
+  grid-column: span 2;
+}
+
+.tax-return-attached-source {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.tax-return-attached-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+}
+
+.tax-return-attached-end {
+  justify-self: end;
+  padding-bottom: 0.2rem;
+}
+
+.tax-return-attached-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+.tax-return-attached-row > label.tax-return-toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  padding-bottom: 0.3rem;
+}
+
+.tax-return-dividend-title {
+  grid-column: span 3;
+  align-self: center;
+  font-size: 0.9rem;
+}
+
+.tax-return-paste {
+  margin: 0 0 0.6rem;
+}
+
+.tax-return-paste summary {
+  cursor: pointer;
+}
+
+.tax-return-paste textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--mono, monospace);
+  font-size: 0.85rem;
+}
+
+.tax-return-paste-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem 1rem;
+}
+
+.tax-return-paste-actions label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+}
+
+.tax-return-form62 td:last-child {
+  width: 10rem;
+}
+
+.tax-return-form62 input {
+  width: 8.5rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 40rem) {
+  .tax-return-attached-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tax-return-attached-wide,
+  .tax-return-dividend-title {
+    grid-column: 1 / -1;
+  }
+}
+
+.tax-return-ids > label {
+  display: flex;
+  margin: 0.15rem -0.4rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 0.3rem;
+}
+
+.tax-return-ids > label.tax-return-id-open {
+  background: color-mix(in srgb, var(--crit-soft) 50%, transparent);
+}
+
+.tax-return-ids input {
+  width: 15rem;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.tax-return-holder input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tax-return-confirm {
+  padding: 0.1rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.tax-return-fieldset > .btn-secondary {
+  display: block;
+  margin-bottom: 0.6rem;
 }

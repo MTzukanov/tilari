@@ -953,7 +953,8 @@
       "property": "Muokattiin vuokrakohdetta {id}",
       "property_setup": "Vuokrakohteiden määritys ({count} kohdetta)",
       "property_settings": "Muokattiin vuokrakohteiden oletuksia",
-      "company": "Muokattiin yhtiön asiakirjoja"
+      "company": "Muokattiin yhtiön asiakirjoja",
+      "tax_return": "Muokattiin veroilmoituksen tietoja"
     }
   },
   "voucherStatus": {
@@ -1728,7 +1729,8 @@
         "draft": "Luonnos",
         "file_missing": "Tiedosto poistettu",
         "ok": "OK"
-      }
+      },
+      "calculation": "Laskelma"
     },
     "upload": {
       "date": "Asiakirjan päivä",
@@ -1751,7 +1753,162 @@
       "statements_prepared": "Tilinpäätös laadittu",
       "agm": "Varsinainen yhtiökokous",
       "tax_return": "Veroilmoitus 6B",
-      "prh_filing": "Tilinpäätös PRH:lle"
+      "prh_filing": "Tilinpäätös PRH:lle",
+      "dividend_withholding": "Osingon ennakonpidätys",
+      "dividend_report": "Osinkojen vuosi-ilmoitus"
+    },
+    "dividend": {
+      "title": "Osingot tämän tilikauden voitosta",
+      "name": {
+        "agm": "Osinko",
+        "extra": "Lisäosinko"
+      },
+      "decided": {
+        "agm": "Varsinainen yhtiökokous {date}",
+        "extra": "Ylimääräinen yhtiökokous {date}"
+      },
+      "step": {
+        "decided": "Päätetty",
+        "booked": "Kirjattu",
+        "paid": "Maksettu",
+        "withheld": "Pidätys tilitetty",
+        "reported": "Ilmoitettu"
+      },
+      "state": {
+        "done": "Valmis",
+        "waiting": "Odottaa",
+        "overdue": "Myöhässä",
+        "missing": "Puuttuu",
+        "no_minutes": "Ei pöytäkirjaa",
+        "difference": "Ero",
+        "no_contract": "Ei sopimusta",
+        "not_applicable": "Ei tarvita"
+      },
+      "voucher": {
+        "decision": "Päätös",
+        "payment": "Maksu",
+        "remittance": "Pidätyksen tilitys"
+      },
+      "alert": {
+        "difference": "Maksettu {paid}, päätetty {decided}.",
+        "noContract": "Osinko jäi velaksi osakkaalle, mutta maksun tositteella ei ole liitettä, kuten velkasopimusta.",
+        "unpaid": "Maksamatta {amount}",
+        "withholdingOpen": "Pidätys tilittämättä {amount}, eräpäivä {date}",
+        "noMinutes": "Päätökseltä puuttuu kokouksen pöytäkirja. Lisää se päätöksen tositteelle tai riville {row}."
+      },
+      "form": {
+        "account": "Tili",
+        "partner": "Saaja",
+        "debit": "Debet",
+        "credit": "Kredit",
+        "dayClosed": "Päivä ei ole avoimella tilikaudella.",
+        "draftNote": "Tosite tehdään luonnoksena: avaa se ja kirjaa, kun asia on tehty.",
+        "create": "Tee luonnos"
+      },
+      "decision": {
+        "open": "Kirjaa osingonjakopäätös",
+        "defaultTitle": {
+          "agm": "Osingonjako tilikaudelta {period}",
+          "extra": "Lisäosinko tilikaudelta {period}"
+        },
+        "date": "Päätöspäivä",
+        "amount": "Osinko yhteensä, €",
+        "otherPeriod": "Tämän päivän päätös jakaa toisen tilikauden voittoa, joten se näkyy sen kortilla.",
+        "another": "Tältä tilikaudelta on jo osingonjakopäätös tai sen luonnos. Toisesta päättää yleensä ylimääräinen yhtiökokous.",
+        "accounts": "Debet {retained} Edellisten tilikausien voitto, kredit {distribution} Osingonjako.",
+        "meeting": "Päättänyt kokous",
+        "minutes": "Kokouksen pöytäkirja",
+        "minutesNote": "Pöytäkirja liitetään päätöksen tositteelle ja näkyy samana tiedostona rivillä {row}. Sen voi lisätä myöhemminkin.",
+        "minutesStored": "Pöytäkirja on jo rivillä {row}. Päätös kirjataan sen tositteelle, joten tiedosto on kirjanpidossa vain kerran:"
+      },
+      "payment": {
+        "open": "Tee maksutosite",
+        "defaultTitle": "Osingon maksu",
+        "payableName": "Voitonjakovelat",
+        "date": "Maksupäivä",
+        "paidAs": "Maksetaan",
+        "asDebt": "Velaksi osakkaille ({account} {name})",
+        "fromBank": "Pankista ({account} {name})",
+        "contract": "Velkasopimus (valinnainen)",
+        "contractNote": "Velaksi jäävä osinko tarvitsee sopimuksen tositteen liitteeksi. Sen voi lisätä myös myöhemmin.",
+        "draftExists": "Tälle osingolle on jo maksun luonnos.",
+        "accounts": "Debet {distribution} Osingonjako maksamattomalla määrällä, kredit {withholding} ennakonpidätys ja nettomäärä kullekin saajalle.",
+        "withholdingLine": "Ennakonpidätys osingosta",
+        "needs": {
+          "no_shareholders": "Lisää ensin osakkaat yhtiön omalle kortille.",
+          "no_holders": "Tarkista osakkaiden omistukset.",
+          "rate_missing": "Lisää ulkomailla asuvan osakkaan pidätysprosentti."
+        }
+      },
+      "recipients": {
+        "title": "Saajat ({n})",
+        "gross": "Brutto",
+        "rate": "Prosentti",
+        "withholding": "Pidätys",
+        "net": "Netto",
+        "total": "Yhteensä",
+        "overLimit": "{rate}, yli 150 000 euron osasta 28 %",
+        "problem": {
+          "no_shareholders": "Osakkaita ei ole lisätty. Lisää ne yhtiön omalle kortille, niin osinko jaetaan saajille.",
+          "no_holders": "Kenelläkään ei ollut osakkeita päätöspäivänä.",
+          "rate_missing": "Ulkomailla asuvalta saajalta puuttuu pidätysprosentti."
+        },
+        "toShareholders": "Siirry osakkaisiin"
+      },
+      "draft": "Luonnos",
+      "draftNote": "Luonnos ei vielä näy osinkona. Avaa se ja kirjaa, kun päätös on tehty.",
+      "meeting": {
+        "agm": "Varsinainen yhtiökokous",
+        "extra": "Ylimääräinen yhtiökokous"
+      },
+      "howto": {
+        "title": "Näin osinko etenee",
+        "meeting": "Yhtiökokous päättää osingosta: varsinainen yhtiökokous vahvistaa tilinpäätöksen ja päättää hallituksen ehdotuksesta osingon määrän ja maksupäivän.",
+        "decision": "Kirjaa osingonjakopäätös: anna kokouksen päivä, osingon määrä ja pöytäkirja. Tilari tekee päätöksestä luonnoksen, jonka liitteenä on pöytäkirja, ja sama tiedosto näkyy tilikauden asiakirjoissa kokouksen rivillä.",
+        "post": "Avaa luonnos ja kirjaa se. Osinko saa silloin oman korttinsa, ja Saajat näyttää, mitä kukin osakas saa.",
+        "pay": "Maksupäivänä tee maksutosite: osinko maksetaan pankista tai jätetään velaksi osakkaalle (silloin velkasopimus liitteeksi). Tosite kirjaa ennakonpidätyksen ja nettomäärän saajittain.",
+        "withhold": "Tilitä ennakonpidätys Verohallinnolle maksua seuraavan kuun 12. päivään mennessä. Pankkitapahtuman kirjaus kuittaa sen.",
+        "report": "Anna osinkojen vuosi-ilmoitus Verohallinnolle maksuvuotta seuraavan tammikuun loppuun mennessä ja tallenna se sen riville.",
+        "extra": "Lisäosingosta päättää ylimääräinen yhtiökokous. Valitse se kokoukseksi, niin sen pöytäkirja tulee tilikauden asiakirjoihin omalle rivilleen ja osinko omalle kortilleen. Vaiheet ovat samat."
+      }
+    },
+    "shareholders": {
+      "title": "Osakkaat",
+      "lead": "Kuka omistaa osakkeet ja kuinka monta. Osinko jaetaan päätöspäivän omistusten mukaan. Nimet ovat Kitsaksen kumppaneissa, henkilötunnuksia ei tallenneta.",
+      "name": "Nimi",
+      "kindLabel": "Laji",
+      "kind": {
+        "person": "Henkilö",
+        "estate": "Kuolinpesä",
+        "company": "Yhtiö"
+      },
+      "sharesNow": "Osakkeita {date}",
+      "rate": "Ennakonpidätys",
+      "abroad": "asuu ulkomailla",
+      "rateMissing": "Prosentti puuttuu",
+      "rateVero": "Veron sääntö",
+      "empty": "Osakkaita ei ole lisätty.",
+      "edit": "Muokkaa osakkaita",
+      "nameInKitsas": "Nimeä muutetaan Kitsaksen kumppaneissa.",
+      "resident": "Yleisesti verovelvollinen Suomessa",
+      "rateOverride": "Pidätysprosentti, jos ei Veron sääntö",
+      "from": "Alkaen",
+      "shares": "Osakkeita",
+      "removeHolding": "Poista muutos",
+      "addHolding": "Lisää omistuksen muutos",
+      "remove": "Poista osakas",
+      "ratesNote": "Veron sääntö: henkilöltä ja kuolinpesältä pidätetään 7,5 % koko osingosta 150 000 euroon asti vuodessa ja 28 % sen ylittävästä osasta. Yhtiölle maksettavasta osingosta ei pidätetä. Ulkomailla asuvalle kirjoita lähdeveron prosentti.",
+      "add": "Lisää osakas",
+      "save": "Tallenna osakkaat",
+      "error": {
+        "name": "Anna osakkaan nimi.",
+        "rate": "Pidätysprosentin on oltava 0-100.",
+        "holding": "Anna jokaiselle omistukselle päivä ja osakemäärä."
+      }
+    },
+    "incomeTax": {
+      "title": "Tuloverojen kirjaus",
+      "booked": "Kirjattu"
     },
     "deadlineState": {
       "done": "Tehty",
@@ -1768,14 +1925,16 @@
     "error": {
       "unknown_kind": "Tuntematon asiakirjan laji.",
       "unknown_period": "Tilikautta ei ole enää.",
-      "voucher_not_posted": "Linkitettävä tosite on luonnos tai poistettu.",
       "attachment_not_on_voucher": "Tiedosto ei kuulu tähän tositteeseen.",
       "unknown_link": "Linkki on jo poistettu.",
       "corrupt": "Tallennettuja tietoja ei voi lukea.",
       "newer_version": "Tiedot on tallennettu uudemmalla Tilarilla.",
       "too_large": "Yhtiön tiedot ovat liian suuret tallennettaviksi.",
       "invalid_field": "Tallennus ei onnistunut: virheellinen tieto.",
-      "partial": "Asiakirja luotiin, mutta sen viimeistely ei onnistunut ({reason}). Se löytyy tositteista ja kohdasta Linkittämättä."
+      "partial": "Asiakirja luotiin, mutta sen viimeistely ei onnistunut ({reason}). Se löytyy tositteista ja kohdasta Linkittämättä.",
+      "duplicate_shareholder": "Sama osakas on listassa kahdesti.",
+      "unknown_partner": "Osakasta ei löydy Kitsaksen kumppaneista.",
+      "voucher_missing": "Linkitettävä tosite on poistettu."
     },
     "kind": {
       "financial_statements": "Allekirjoitettu tilinpäätös",
@@ -1787,11 +1946,288 @@
       "prh_filing_receipt": "PRH:n ote rekisteröidystä tilinpäätöksestä",
       "tax_return_6b": "Veroilmoitus 6B",
       "tax_decision": "Verotuspäätös",
+      "dividend_annual_report": "Osinkojen vuosi-ilmoitus",
       "other": "Muut",
       "articles": "Yhtiöjärjestys",
       "trade_register_extract": "Kaupparekisteriote",
       "shareholder_register": "Osakasluettelo",
-      "shareholder_agreement": "Osakassopimus"
+      "shareholder_agreement": "Osakassopimus",
+      "extra_agm_minutes": "Ylimääräisen yhtiökokouksen pöytäkirja"
+    },
+    "taxPayment": {
+      "pay": {
+        "title": "Tuloveron maksu",
+        "done": "Maksettu",
+        "open": "Maksamatta {amount}",
+        "booked": "Tuloverojen kirjaus jätti maksettavaksi {amount}. Maksu tai verotuspäätöksen mukainen korjaus kuittaa sen."
+      },
+      "refund": {
+        "title": "Veronpalautus",
+        "done": "Saatu",
+        "open": "Saamatta {amount}",
+        "booked": "Tuloverojen kirjaus jätti saatavaksi {amount}. Palautus tai verotuspäätöksen mukainen korjaus kuittaa sen."
+      }
+    }
+  },
+  "taxReturn": {
+    "open": "Veroilmoituksen tiedot (6B)",
+    "title": "Veroilmoituksen tiedot (6B), tilikausi {date}",
+    "loading": "Lasketaan…",
+    "tab": {
+      "figures": "OmaVero-luvut",
+      "facts": "Täytettävät tiedot",
+      "forms": "Liitelomakkeet",
+      "file": "Ilmoitin-tiedosto"
+    },
+    "copied": "Kopioitu",
+    "copyFigure": "Kopioi luku",
+    "copyAll": "Kopioi kaikki",
+    "downloadText": "Lataa tekstinä",
+    "showZero": "Näytä nollarivit",
+    "fieldColumn": "Kenttä",
+    "bookColumn": "Kirjanpito",
+    "taxColumn": "Verotus",
+    "manualTag": "Käsin",
+    "checkTag": "Tarkista",
+    "movedTag": "Siirretty velkoihin",
+    "unplaced": "Tilit ilman kenttää",
+    "forms": "Liitelomakkeet ja muut ilmoitukset",
+    "formOpen": "Ei vielä mukana",
+    "noForms": "Luvut eivät vaadi liitelomakkeita.",
+    "form": {
+      "62": "62 Erittely varauksista, arvonmuutoksista ja poistoista",
+      "73": "73 Erittely osinkotuloista",
+      "8A": "8A Luettelo arvopapereista ja arvo-osuuksista",
+      "18": "18 Käyttöomaisuuskiinteistöt",
+      "71B": "71A tai 71B Luovutusvoitot ja -tappiot",
+      "65": "65 Omistukset ja konserniavustukset",
+      "66": "66 Selvitys tytäryhtiöistä",
+      "70": "70 Hyvitys ulkomaisista veroista",
+      "74": "74 Väliyhteisön tulo-osuus",
+      "75": "75 Kiinteä toimipaikka ulkomailla",
+      "78": "78 Siirtohinnoittelu",
+      "81": "81 Nettokorkomenot",
+      "67A": "67A Tutkimus- ja kehittämistoiminnan väliaikainen lisävähennys",
+      "67Y": "67Y Tutkimus- ja kehittämistoiminnan lisävähennys",
+      "7812": "7812 Vuosi-ilmoitus osingoista (erillinen ilmoitus, ei tässä tiedostossa)",
+      "7851": "7851 Vuosi-ilmoitus osakaslainoista (erillinen ilmoitus, ei tässä tiedostossa)"
+    },
+    "attachments": "Liitteet",
+    "docPresent": "Yhtiö-sivulla",
+    "docMissing": "Ei Yhtiö-sivulla",
+    "attachment": {
+      "statements": "Tilinpäätös",
+      "audit_report": "Tilintarkastuskertomus, jos tilintarkastus on tehty",
+      "minutes": "Yhtiökokouksen pöytäkirja tai ote"
+    },
+    "placeAccount": "Tilin {account} kenttä",
+    "placeChoose": "Valitse kenttä",
+    "placeDefault": "Palauta oletuskenttä",
+    "placeSale": "Myyntitili: voitot ja tappiot erikseen",
+    "fromResult": "Luku tulee tilikauden tuloksesta.",
+    "priorResults": "Aiempien tilikausien tulokset",
+    "manualEmpty": "Kirjanpidon mukaan",
+    "manualBook": "Kirjanpito käsin",
+    "manualTax": "Verotus käsin",
+    "manualValue": "Luku käsin",
+    "carried": "Yhteystiedot ja osakemäärät on tuotu tilikaudelta {date}. Tarkista ja tallenna.",
+    "checks": {
+      "title": "Täsmäytykset",
+      "blocked": "Korjattavaa ennen ilmoittamista",
+      "review": "Tarkistettavaa",
+      "clean": "Kaikki täsmää",
+      "passed": "Täsmää sentilleen"
+    },
+    "state": {
+      "ok": "Kunnossa",
+      "warn": "Tarkista",
+      "crit": "Korjaa"
+    },
+    "check": {
+      "unplaced": "{count} tiliä ilman kenttää. Valitse niille kenttä alta.",
+      "unplaced_one": "{count} tili ilman kenttää. Valitse sille kenttä alta.",
+      "unanswered": "{count} OmaVeron kysymystä on vastaamatta. Vastaa niihin kohdassa Täytettävät tiedot.",
+      "unanswered_one": "{count} OmaVeron kysymys on vastaamatta. Vastaa siihen kohdassa Täytettävät tiedot.",
+      "custom_accounts": "{count} tiliä on lisätty kirjanpitoon vakiotilikartan ulkopuolelta. Tilari päätteli niiden kentän tilinumerosta tai nimestä, joten se voi olla väärä. Vahvista tai vaihda kenttä alta.",
+      "custom_accounts_one": "{count} tili on lisätty kirjanpitoon vakiotilikartan ulkopuolelta. Tilari päätteli sen kentän tilinumerosta tai nimestä, joten se voi olla väärä. Vahvista tai vaihda kenttä alta.",
+      "result_ties": "Lomakkeen kirjanpitoluvut eroavat kirjanpidon tuloksesta {amount} euroa.",
+      "net_wealth": "Nettovarallisuus eroaa omasta pääomasta {amount} euroa.",
+      "estimate": "Elinkeinotoiminnan tulos eroaa tuloverolaskelmasta {amount} euroa.",
+      "negative": "Negatiivinen luku kentässä, joka ei sitä salli: {fields}.",
+      "income_tax": "Tuloveroa ei ole kirjattu tälle tilikaudelle.",
+      "drafts": "{count} luonnosta jää pois: mukana ovat vain kirjatut tositteet.",
+      "drafts_one": "{count} luonnos jää pois: mukana ovat vain kirjatut tositteet.",
+      "not_ended": "Tilikausi päättyy {date}, joten luvut voivat vielä muuttua.",
+      "dividend_answer": "Osingonjako {amount} euroa on kirjattu {date}, mutta päätöstä ei ole täytetty. Täytä se, tai jos ilmoitus on jo annettu, ilmoita päätös samaa kanavaa käyttäen.",
+      "sale_split": "Myyntitilien netto {amount} euroa on yhdessä kentässä. Täytä myyntirivit kohdassa Liitelomakkeet.",
+      "sale_gap": "Voitot miinus tappiot eroaa myyntitilien netosta {amount} euroa.",
+      "manual": "Käsin annetut luvut: {fields}.",
+      "to_check": "Kirjanpito ja verotus voivat erota, tarkista: {fields}.",
+      "form8a_gap": "Lomakkeen 8A hankintamenot ja {fields} eroavat {amount} euroa.",
+      "form62_tax": "Lomakkeen 62 verotuksen poistot ja Vähennettävät poistot eroavat {amount} euroa.",
+      "form62_book": "Lomakkeen 62 kirjanpidon poistot ja Vähennettävät poistot eroavat {amount} euroa.",
+      "form62_limit": "Säännönmukainen poisto ylittää Verohallinnon enimmäismäärän {count} osiossa lomakkeella 62.",
+      "form62_limit_one": "Säännönmukainen poisto ylittää Verohallinnon enimmäismäärän {count} osiossa lomakkeella 62.",
+      "form73_listed": "Vastaa lomakkeen 73 kysymykseen, onko yhtiö julkisesti noteerattu. Se on kohdassa Liitelomakkeet.",
+      "form73_gap": "Lomakkeen 73 osingot yhteensä eroavat kentästä Saadut osingot ja ylijäämät {amount} euroa. Jaa osingot kohdassa Liitelomakkeet.",
+      "form73_tax": "Käsin annettu veronalainen osuus eroaa lomakkeen 73 veronalaisesta osuudesta {amount} euroa.",
+      "tax_free_answer": "Vastasit, että kaikki osinkotulot ovat Suomesta saatuja ja verovapaita, mutta veronalaisia tai ulkomaisia osinkoja on {amount} euroa."
+    },
+    "checkOk": {
+      "result_ties": "kirjanpidon tulos",
+      "net_wealth": "nettovarallisuus ja oma pääoma",
+      "estimate": "tuloverolaskelma",
+      "sale_gap": "myyntivoitot ja -tappiot",
+      "form8a_gap": "{fields} ja lomake 8A",
+      "form62_tax": "verotuksen poistot ja lomake 62",
+      "form62_book": "kirjanpidon poistot ja lomake 62",
+      "form73_gap": "osingot ja lomake 73",
+      "form73_tax": "veronalaiset osingot ja lomake 73"
+    },
+    "fact": {
+      "lead": "Näitä tietoja ei ole kirjanpidossa. Ne tallentuvat kirjanpitotiedostoon. Henkilötunnusta ei tallenneta.",
+      "contact": "Yhteystiedot",
+      "email": "Sähköposti",
+      "shareholders": "Osakkeenomistajat",
+      "shareholdersLead": "Omistajat, joilla on vähintään 10 %, tai kaikki, jos heitä on enintään 10. Palkkoja ja osinkoja ei ilmoiteta tässä.",
+      "allBelow10": "Kaikkien osakkaiden omistusosuus on alle 10 %",
+      "holderName": "Nimi",
+      "shares": "Osakkeiden lukumäärä",
+      "rents": "Vuokrat",
+      "interest": "Korot",
+      "sales": "Luovutukset",
+      "other": "Muut suoritukset",
+      "loans": "Osakaslainat",
+      "addHolder": "Lisää osakkeenomistaja",
+      "ownShares": "Yhtiön hallussa olevat omat osakkeet tilikauden päättyessä",
+      "dividend": "Osingonjakopäätös",
+      "freeEquity": "Varojen jako vapaan oman pääoman rahastosta",
+      "decided": "Päätöspäivä",
+      "payable": "Nostettavissa",
+      "amount": "Määrä yhteensä",
+      "statements": "Tilinpäätös ja tilintarkastus",
+      "audit": "Onko tilintarkastus tehty?",
+      "choose": "Valitse",
+      "audit1": "Kyllä",
+      "audit2": "Ei, tehdään myöhemmin",
+      "audit3": "Ei, tilintarkastaja on jätetty valitsematta",
+      "auditRemarks": "Sisältääkö kertomus kielteisiä lausuntoja, huomautuksia tai lisätietoja?",
+      "prepared": "Tilinpäätös on laadittu",
+      "ownershipYear": "Verovuosi, jolloin yli puolet osakkeista vaihtoi omistajaa",
+      "answers": "OmaVeron kysymykset",
+      "answersLead": "Vastaa jokaiseen kysymykseen. Vastaukset koskevat tätä tilikautta, eivätkä ne siirry seuraavalle.",
+      "saved": "Tallennettu",
+      "contactName": "Yhteyshenkilö",
+      "contactPhone": "Puhelinnumero",
+      "contactLead": "Tyhjä kenttä käyttää kirjanpidon asetuksia, jos niissä on tieto.",
+      "yes": "Kyllä",
+      "no": "Ei",
+      "unanswered": "Vastaamatta: {count}",
+      "idLater": "Henkilö- tai Y-tunnus kirjoitetaan vasta Ilmoitin-tiedostoa ladattaessa, eikä sitä tallenneta."
+    },
+    "problem": {
+      "business_id": "Kirjanpidon asetuksista puuttuu Y-tunnus tai se on väärässä muodossa.",
+      "contact_name": "Täytä yhteyshenkilö.",
+      "contact_phone": "Täytä yhteyshenkilön puhelinnumero.",
+      "audit": "Täytä, onko tilintarkastus tehty.",
+      "audit_remarks": "Täytä, sisältääkö tilintarkastuskertomus kielteisiä lausuntoja.",
+      "no_shareholders": "Täytä osakkeenomistajat.",
+      "shareholder_id": "Kirjoita henkilö- tai Y-tunnus alla olevaan kenttään: {name}.",
+      "negative": "Negatiivinen luku kentässä, joka ei sitä salli: {field}.",
+      "text": "Liian pitkä teksti tai merkki, jota tiedosto ei salli: {field}.",
+      "distribution": "Täytä päätöspäivä, nostopäivä ja määrä: {field}.",
+      "answer": "Tämä vastaus vaatii tietoja, joita tiedostossa ei vielä ole: {answer}",
+      "unanswered": "{count} OmaVeron kysymystä on vastaamatta.",
+      "unanswered_one": "{count} OmaVeron kysymys on vastaamatta.",
+      "form62_negative": "Lomakkeen 62 luku on negatiivinen: {row}.",
+      "holding_name": "Lomakkeen 8A riviltä puuttuu nimi: {row}.",
+      "holding_id": "Lomakkeen 8A Y-tunnus ei kelpaa: {row}.",
+      "holding_shares": "Lomakkeen 8A lukumäärä ei kelpaa: {row}. Enintään neljä desimaalia.",
+      "holding_unit": "Lomakkeen 8A vertailuarvo kappaleelta ei kelpaa: {row}. Alle 10 euron arvossa enintään kolme desimaalia, muuten kaksi.",
+      "holding_cost": "Lomakkeen 8A hankintameno on negatiivinen: {row}.",
+      "sale_fields": "Lomakkeen 71B riviltä puuttuu nimi tai päivä: {row}.",
+      "sale_id": "Lomakkeen 71B tunnus ei vastaa sen tyyppiä: {row}.",
+      "sale_share": "Lomakkeen 71B omistusosuus ei kelpaa: {row}.",
+      "form73_listed": "Vastaa lomakkeen 73 kysymykseen, onko yhtiö julkisesti noteerattu.",
+      "form73_ownership": "Lomakkeen 73 omistusosuus ei kelpaa: {row}. Enintään 100, kaksi desimaalia."
+    },
+    "notice": {
+      "form": "Lomake {form} kuuluu samaan tiedostoon, eikä sitä vielä muodosteta.",
+      "checks": "Täsmäytyksissä on korjattavaa.",
+      "spec_year": "Tiedoston muoto on tarkistettu vuoden 2026 tietuekuvauksesta. Tarkista vuoden {year} muutokset."
+    },
+    "file": {
+      "lead": "Tiedosto muodostetaan samoista luvuista kuin OmaVero-luvut, ja se syntyy tässä selaimessa.",
+      "ids": "Henkilö- tai Y-tunnukset",
+      "idsLead": "Tunnukset menevät vain ladattavaan tiedostoon. Niitä ei tallenneta.",
+      "stopped": "Tiedostoa ei voi vielä muodostaa",
+      "ready": "Valmis tarkistettavaksi ja lähetettäväksi",
+      "checkOnly": "Vain muodon tarkistukseen, ei vielä lähetettäväksi",
+      "download": "Lataa Ilmoitin-tiedosto",
+      "after": "Tarkista tiedosto Ilmoitin.fi-palvelun aineiston tarkastuksella ennen lähettämistä. Testipalveluun testi.ilmoitin.fi ei saa lähettää oikeita tietoja. Tiedosto sisältää henkilötunnuksen, joten säilytä se huolellisesti.",
+      "idLabel": "{name}: henkilö- tai Y-tunnus"
+    },
+    "toConfirm": "Vahvista tilien kentät",
+    "confirmField": "Vahvista",
+    "formBuilt": "Mukana",
+    "remarkTag": "Huomautus",
+    "termAccount": "Tilin {account} velan pituus",
+    "termLong": "Pitkäaikainen",
+    "termShort": "Lyhytaikainen",
+    "remark": {
+      "holding_no_id": "{count} lomakkeen 8A riviltä puuttuu Y-tunnus.",
+      "holding_no_id_one": "{count} lomakkeen 8A riviltä puuttuu Y-tunnus.",
+      "holding_no_value": "{count} lomakkeen 8A riviltä puuttuu vertailuarvo.",
+      "holding_no_value_one": "{count} lomakkeen 8A riviltä puuttuu vertailuarvo."
+    },
+    "attached": {
+      "lead": "Nämä lomakkeet kuuluvat veroilmoitukseen. Ne tulevat sekä OmaVero-tekstiin että Ilmoitin-tiedostoon.",
+      "none": "Luvut eivät vaadi lomakkeita 8A, 71B, 73 tai 62.",
+      "holdingsEra": "Hankintameno tulee tase-erästä. Rivit, joilla on sama nimi ja Y-tunnus, yhdistyvät lomakkeella yhdeksi riviksi, joten kirjoita lukumäärä vain yhdelle.",
+      "holdingsTyped": "Nämä arvopaperit eivät ole kirjanpidossa yksitellen, joten kirjoita rivit itse tai liitä ne taulukosta.",
+      "fromEra": "Tase-erä: {text}",
+      "addRow": "Lisää rivi",
+      "field": "{field}: {amount} euroa",
+      "salesLead": "Vain muun omaisuuden luovutukset. Tappio ilmoitetaan rajoittamattomasti vähennyskelpoisena, kuten asunto- ja kiinteistöosakkeissa.",
+      "salesSuggested": "Rivit on ehdotettu myyntitositteista. Tarkista ne ja täydennä puuttuvat tiedot.",
+      "salesFixed": "Käyttöomaisuusosakkeiden luovutukset täytetään toistaiseksi suoraan OmaVerossa.",
+      "suggestions": "Myyntitositteet, jotka eivät ole riveillä",
+      "noSales": "Ei luovutusrivejä.",
+      "gain": "Voitto",
+      "loss": "Tappio",
+      "depreciationLead": "Luvut tulevat kirjanpidosta, ja verotus seuraa kirjanpitoa. Kirjoita luku, jos verotuksessa on muuta.",
+      "showAll": "Näytä kaikki osiot",
+      "fromLedger": "Kirjanpidon mukaan",
+      "housingValue": "Vuonna 2006 tai sen jälkeen hankituilla huoneisto-osakkeilla ei ole erillistä vertailuarvoa, joten jätä se tyhjäksi.",
+      "noFinnishId": "Jos yhtiöllä ei ole suomalaista Y-tunnusta, kirjoita 0000000-0: OmaVero ei hyväksy tyhjää kenttää.",
+      "dividendsLead": "Kirjanpidossa osingot ovat yhtenä lukuna. Jaa ne maksajan kotimaan ja verokohtelun mukaan: esimerkiksi pörssiyhtiön osinko on veronalainen, kun yhtiö omistaa siitä alle 10 %. Veronalainen osuus siirtyy tästä 6B-lomakkeelle.",
+      "dividendsLeft": "Jakamatta {amount} euroa",
+      "pasteOpen": "Liitä rivit taulukosta",
+      "pasteLead": "Yksi arvopaperi riviltä, sarakkeet lomakkeen järjestyksessä: nimi, Y-tunnus, lukumäärä, hankintameno ja vertailuarvo kappaleelta, halutessasi myös vertailuarvo yhteensä. Sarakkeet erotetaan sarkaimella, kuten taulukosta kopioitaessa, tai puolipisteellä. Rivit korvaavat tämän ryhmän käsin kirjoitetut rivit. Tyhjä Y-tunnus säilyy samannimiseltä aiemmalta riviltä.",
+      "pasteFile": "Tai lue tiedostosta",
+      "pasteReplace": "Korvaa käsin kirjoitetut rivit",
+      "pasteResult": "Luettiin {count} riviä.",
+      "pasteResult_one": "Luettiin {count} rivi.",
+      "pasteKept": "Y-tunnus säilyi {count} riville.",
+      "pasteKept_one": "Y-tunnus säilyi {count} riville.",
+      "pasteSkipped": "Ohitettiin rivit, joita ei voitu lukea: {lines}.",
+      "notNeeded": "ei tarvita näillä luvuilla",
+      "dividendsTaxFree": "Lomaketta ei tarvita, koska vastasit kohdassa Täytettävät tiedot, että kaikki osinkotulot ovat Suomesta saatuja ja verovapaita.",
+      "dividendsNone": "Kentässä {field} ei ole euroja, joten lomaketta ei tarvita. Jos yhtiö on saanut osinkoja, valitse niiden tilille kenttä {field}.",
+      "toFigures": "Avaa OmaVero-luvut"
+    },
+    "rowHint": "Avaa rivi nähdäksesi tilit, joista luku koostuu.",
+    "calc": {
+      "store": "Tallenna laskelma asiakirjoihin",
+      "stored": "Laskelma on tallennettu PDF:nä Yhtiö-sivulle kohtaan Veroilmoitus 6B. Se ei merkitse ilmoitusta annetuksi.",
+      "replaced": "Laskelma on päivitetty: uusi PDF korvasi aiemman Yhtiö-sivun kohdassa Veroilmoitus 6B. Se ei merkitse ilmoitusta annetuksi.",
+      "heading": "Veroilmoituksen laskelma {year}",
+      "title": "Veroilmoituksen laskelma {year}, laadittu {date}",
+      "made": "Laadittu {date} kirjanpidon kirjatuista tositteista. Ilmoitin-tiedoston henkilötunnukset eivät ole mukana.",
+      "figures": "Luvut ja tilit",
+      "figuresLead": "Jokaisen kentän alla ovat tilit, joista sen luku tulee.",
+      "priorResults": "Aiempien tilikausien tulokset",
+      "page": "Sivu {page}/{pages}"
     }
   }
 }

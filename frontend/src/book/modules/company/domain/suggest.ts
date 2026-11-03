@@ -37,7 +37,7 @@ function isOpaqueName(name: string): boolean {
 /** Taxes that have returns of their own; "veroilmoitus" in them is not the 6B. */
 const OTHER_TAX = /arvonlisavero|varainsiirtovero|\balv\b/
 
-/** An extraordinary meeting is not the AGM, and must not answer its deadline. */
+/** An extraordinary meeting is not the AGM, and must not answer its deadline: it has a row of its own. */
 const EXTRAORDINARY = /\bylim+a+r/
 
 const PERIOD_RULES: { kind: PeriodKind; pattern: RegExp }[] = [
@@ -84,7 +84,7 @@ export function yearIn(text: string): number | null {
 
 export type PeriodRange = { starts: string; ends: string }
 
-function lastEndedBefore(periods: PeriodRange[], date: string): string | null {
+export function lastEndedBefore(periods: PeriodRange[], date: string): string | null {
   let found: string | null = null
   for (const p of periods) if (p.ends < date && (found == null || p.ends > found)) found = p.ends
   return found
@@ -96,7 +96,7 @@ function periodNamed(periods: PeriodRange[], year: number | null): string | null
 }
 
 /** Minutes name the meeting's year, not the period's: only the date tells. */
-const BY_DATE_ONLY: ReadonlySet<string> = new Set<PeriodKind>(['agm_minutes', 'board_minutes', 'other'])
+const BY_DATE_ONLY: ReadonlySet<string> = new Set<PeriodKind>(['agm_minutes', 'extra_agm_minutes', 'board_minutes', 'other'])
 
 function periodFor(kind: string, years: (number | null)[], periods: PeriodRange[], date: string): string | null {
   if (!BY_DATE_ONLY.has(kind)) {
@@ -162,8 +162,8 @@ export function suggestDocuments({ rows, periods, excludedVouchers, dismissed }:
       if (ends) add(kind, ends)
     }
     if (extraordinary) {
-      const ends = periodFor('other', [], periods, row.date)
-      if (ends) add('other', ends)
+      const ends = periodFor('extra_agm_minutes', [], periods, row.date)
+      if (ends) add('extra_agm_minutes', ends)
     }
   }
   return out.sort((a, b) => b.date.localeCompare(a.date) || a.voucher_id - b.voucher_id || a.kind.localeCompare(b.kind))
