@@ -1,18 +1,21 @@
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
-import type { BookedLine, DepositView, LeaseException, LeaseRentAccount, LeaseView, RentPeriod } from '../api'
+import { DocLine, DocLines } from '../../../shared/DocRows'
+import { Pill } from '../../../shared/Pill'
+import { SuggestBanner } from '../../../shared/SuggestBanner'
+import type { BookedLine, DepositView, LeaseException, LeaseRentAccount, LeaseState, LeaseView, RentPeriod } from '../api'
 import {
   deductedText,
   depositText,
+  exceptionLineText,
   exceptionText,
   increaseText,
   leasePeriod,
   leaseRentText,
   periodText,
   waterBalanceText,
-  waterStatusText,
 } from './format'
-import { LineLink, LineSources, VoucherLink } from './FormParts'
+import { DocSlot, DocSlotLine, LineLink, LineSources, VoucherLink, WaterStatusPill } from './FormParts'
 import { RentAccountView } from './RentAccount'
 
 /**
@@ -22,14 +25,26 @@ import { RentAccountView } from './RentAccount'
 export function SuggestionSource({ source }: { source: 'contract' | 'payments' | 'waterCompany' | 'waterTenant' }) {
   const { t } = useI18n()
   return (
-    <span className="muted property-lease-source" title={t(`properties.lease.sourceHint.${source}`)}>
-      {t(`properties.lease.source.${source}`)}
+    <span className="property-lease-source" title={t(`properties.lease.sourceHint.${source}`)}>
+      <Pill tone="doc">{t(`properties.lease.source.${source}`)}</Pill>
     </span>
   )
 }
 
+/** A lease's state on the as-of date: running, or a plain fact. */
+function LeaseStatePill({ state }: { state: LeaseState }) {
+  const { t } = useI18n()
+  return <Pill tone={state === 'current' ? 'accent' : 'neutral'}>{t(`properties.lease.state.${state}`)}</Pill>
+}
+
+/** "Puuttuu" in a closed list's summary when a line in it has no document, so it shows without opening. */
+function AbsentMark({ items, held }: { items: { voucher: unknown; no_document?: true }[]; held: boolean }) {
+  const { t } = useI18n()
+  return held && items.some((i) => !i.voucher && !i.no_document) ? <Pill tone="crit">{t('properties.docs.absent')}</Pill> : null
+}
+
 /** What a suggested lease was read from, each to open: the contract, the increase notices, the rent payments. */
-export function LeaseSources({ lease, onOpen }: { lease: LeaseView; onOpen: (voucherId: number) => void }) {
+function LeaseSources({ lease, onOpen }: { lease: LeaseView; onOpen: (voucherId: number) => void }) {
   const { t } = useI18n()
   const notices = lease.steps.flatMap((step) => (step.voucher ? [step.voucher] : []))
   const payments = lease.sources ?? []
@@ -86,6 +101,7 @@ function LeaseCard({
   account,
   period,
   asOf,
+  held,
   onEdit,
   onOpenVoucher,
   onSaveException,
@@ -94,6 +110,8 @@ function LeaseCard({
   account: LeaseRentAccount | undefined
   period: RentPeriod
   asOf: string
+  /** Not sold: only then is a document with no voucher flagged as missing. */
+  held: boolean
   /** Opens the edit page, where the lease's increases and exceptions are entered. */
   onEdit: () => void
   onOpenVoucher: (voucherId: number) => void
@@ -113,6 +131,7 @@ function LeaseCard({
       <p className="property-lease-head">
         <strong>{lease.tenant ?? t('properties.lease.tenantUnknown')}</strong>
         <span className="muted">{leasePeriod(t, lease)}</span>
+        <LeaseStatePill state={lease.state} />
       </p>
       {terms.length ? <p className="property-lease-terms">{terms.join(' · ')}</p> : null}
       {exceptionNow ? (
@@ -120,10 +139,8 @@ function LeaseCard({
           {t('properties.lease.exceptionNow')}: {exceptionText(t, exceptionNow)}
         </p>
       ) : null}
-      {lease.contract ? (
-        <p className="property-lease-terms">
-          {t('properties.lease.contract')}: <VoucherLink voucher={lease.contract} onOpen={onOpenVoucher} />
-        </p>
+      {lease.contract || held ? (
+        <DocSlotLine label={t('properties.lease.contract')} voucher={lease.contract} onOpen={onOpenVoucher} />
       ) : null}
       {account ? (
         <RentAccountView
@@ -137,39 +154,38 @@ function LeaseCard({
       ) : null}
       {latest ? (
         <p className="property-lease-terms">
-          {t('properties.water.latest', { period: periodText(t, latest.from, latest.to) })}: {waterBalanceText(t, latest.balance_snt)}
-          {latest.status !== 'none' ? ` · ${waterStatusText(t, latest.status, latest.balance_snt, latest.settled_snt)}` : ''}
+          {t('properties.water.latest', { period: periodText(t, latest.from, latest.to) })}: {waterBalanceText(t, latest.balance_snt)}{' '}
+          <WaterStatusPill share={latest} />
         </p>
       ) : null}
       {lease.deposit ? <DepositSummary deposit={lease.deposit} onOpen={onOpenVoucher} /> : null}
       {lease.steps.length > 1 ? (
         <details>
           <summary>
-            {t('properties.lease.increases')} ({lease.steps.length - 1})
+            {t('properties.lease.increases')} ({lease.steps.length - 1}) <AbsentMark items={lease.steps.slice(1)} held={held} />
           </summary>
-          <ul className="property-doc-list">
+          {/* The day an increase applies from says more than its notice's date, which its pill shows. */}
+          <DocLines>
             {lease.steps.slice(1).map((step) => (
-              <li key={step.from}>
-                {formatDate(step.from)} · {leaseRentText(t, step)}
-                {step.voucher ? <VoucherLink voucher={step.voucher} onOpen={onOpenVoucher} /> : null}
-              </li>
+              <DocLine key={step.from} date={formatDate(step.from)} title={leaseRentText(t, step)}>
+                <DocSlot voucher={step.voucher} noDocument={step.no_document} held={held} onOpen={onOpenVoucher} />
+              </DocLine>
             ))}
-          </ul>
+          </DocLines>
         </details>
       ) : null}
       {lease.exceptions.length ? (
         <details>
           <summary>
-            {t('properties.lease.exceptions')} ({lease.exceptions.length})
+            {t('properties.lease.exceptions')} ({lease.exceptions.length}) <AbsentMark items={lease.exceptions} held={held} />
           </summary>
-          <ul className="property-doc-list">
+          <DocLines>
             {lease.exceptions.map((e) => (
-              <li key={e.from}>
-                {exceptionText(t, e)}
-                {e.voucher ? <VoucherLink voucher={e.voucher} onOpen={onOpenVoucher} /> : null}
-              </li>
+              <DocLine key={e.from} date={formatDate(e.from)} title={exceptionLineText(t, e)}>
+                <DocSlot voucher={e.voucher} noDocument={e.no_document} held={held} onOpen={onOpenVoucher} />
+              </DocLine>
             ))}
-          </ul>
+          </DocLines>
         </details>
       ) : null}
       <p className="property-lease-terms">
@@ -190,6 +206,7 @@ export function LeasesPanel({
   accounts = [],
   unassigned = [],
   period,
+  held,
   onEdit,
   onOpenVoucher,
   onSaveException,
@@ -204,6 +221,8 @@ export function LeasesPanel({
   /** The owner's rent days on the object. */
   period: RentPeriod
   asOf: string
+  /** Not sold: only then is a document with no voucher flagged as missing. */
+  held: boolean
   onEdit: () => void
   onOpenVoucher: (voucherId: number) => void
   /** Saves an agreed exception to a stored lease from its month table; none when the document is read-only. */
@@ -230,6 +249,7 @@ export function LeasesPanel({
           account={accounts.find((a) => a.lease_key === stored.key)}
           period={period}
           asOf={asOf}
+          held={held}
           onEdit={onEdit}
           onOpenVoucher={onOpenVoucher}
           onSaveException={onSaveException}
@@ -254,14 +274,18 @@ export function LeasesPanel({
         </div>
       ) : null}
       {suggestions.length ? (
-        <div className="property-lease-suggestions">
-          <h4 className="property-lease-others">{t('properties.lease.suggestions', { n: suggestions.length })}</h4>
-          <p className="muted">{t('properties.lease.suggestionsLead')}</p>
+        <SuggestBanner
+          heading="h4"
+          title={t('properties.lease.suggestions', { n: suggestions.length })}
+          lead={t('properties.lease.suggestionsLead')}
+          action={
+            <button type="button" className="btn-primary" onClick={onEdit}>
+              {t('properties.lease.review')}
+            </button>
+          }
+        >
           <LeaseList leases={suggestions} onOpenVoucher={onOpenVoucher} />
-          <button type="button" className="btn-secondary" onClick={onEdit}>
-            {t('properties.lease.review')}
-          </button>
-        </div>
+        </SuggestBanner>
       ) : null}
     </section>
   )
@@ -288,7 +312,7 @@ function LeaseList({
     <ul className="property-doc-list">
       {leases.map((lease, i) => (
         <li key={`${lease.key}-${lease.starts}-${i}`}>
-          <span>{t(`properties.lease.state.${lease.state}`)}</span>
+          <LeaseStatePill state={lease.state} />
           <span>{lease.tenant ?? t('properties.lease.tenantUnknown')}</span>
           <span className="muted">{leasePeriod(t, lease)}</span>
           <span>{leaseRentText(t, lease.rent)}</span>

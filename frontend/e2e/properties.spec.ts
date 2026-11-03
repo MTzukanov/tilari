@@ -78,13 +78,14 @@ test.describe('rental object leases', () => {
     await increase.getByRole('button', { name: 'Luo korotusilmoitus' }).click()
     expect((await download).suggestedFilename()).toMatch(/^vuokrankorotusilmoitus-.*-2026-01-01\.pdf$/)
     await expect(notice).toHaveValue(/Vuokrankorotusilmoitus Asunto 1\.1\.2026/)
-    await expect(increase.getByRole('link', { name: 'Näytä' })).toBeVisible()
+    // The picked notice's file opens from its pill.
+    await expect(increase.locator('.pill-doc')).toHaveText(/^vuokrankorotusilmoitus-.*-2026-01-01\.pdf$/)
 
     // Undo deletes the voucher again; then write it once more and keep it.
     page.once('dialog', (dialog) => void dialog.accept())
     await increase.getByRole('button', { name: 'Poista korotusilmoitus' }).click()
     await expect(notice).toHaveValue('–')
-    await expect(increase.getByRole('link', { name: 'Näytä' })).toBeHidden()
+    await expect(increase.locator('.pill-doc')).toHaveCount(0)
     const again = page.waitForEvent('download')
     await increase.getByRole('button', { name: 'Luo korotusilmoitus' }).click()
     await again
@@ -109,7 +110,7 @@ test.describe('rental object leases', () => {
 
     // A linked document opens its voucher; the way back restores the unsaved form.
     await page.getByLabel('Eräpäivä').first().fill('9')
-    await page.locator('.property-doc-list').getByRole('button', { name: /Vuokrankorotusilmoitus Asunto/ }).click()
+    await page.locator('.doc-lines').getByRole('button', { name: /Vuokrankorotusilmoitus Asunto/ }).click()
     await expect(page).toHaveURL(/#\/property\/4\/edit\/voucher\/\d+\/edit$/)
     await expect(page.getByRole('textbox', { name: 'Otsikko' })).toHaveValue(/Vuokrankorotusilmoitus Asunto/)
     await page.getByRole('button', { name: 'Sulje' }).click()
@@ -134,6 +135,58 @@ test.describe('rental object leases', () => {
 
     await page.goto('/#/properties')
     await expect(page.locator('.property-table').first()).toContainText('Testi Vuokralainen · 650,00 €/kk')
+  })
+})
+
+test.describe('rental object documents', () => {
+  test('a linked document is a line: its voucher and its file open from pills, and it fits a phone', async ({ page }) => {
+    await openBook(page)
+    await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
+    // An uploaded contract is a Liitetieto voucher; linked to the object as well, it lists under Asiakirjat.
+    await page.goto('/#/property/4/edit')
+    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
+    const lease = page.locator('.property-lease-edit').first()
+    const tenant = lease.getByRole('combobox', { name: 'Vuokralainen' }).or(lease.getByLabel('Vuokralainen'))
+    await tenant.first().fill('Testi Vuokralainen')
+    await tenant.first().press('Escape')
+    await lease.getByLabel('Alkaa', { exact: true }).fill('2025-01-01')
+    await lease.getByLabel('Vuokra €/kk').first().fill('650')
+    const chooser = page.waitForEvent('filechooser')
+    await lease.locator('label', { hasText: 'Lataa sopimus' }).click()
+    await (await chooser).setFiles({ name: 'sopimus.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 sopimus') })
+    await expect(lease.getByRole('textbox', { name: 'Sopimus' })).toHaveValue(/Vuokrasopimus Asunto/)
+    const add = page.getByRole('textbox', { name: 'Lisää Liitetieto-tosite…' })
+    await add.click()
+    await add.fill('Vuokrasopimus')
+    await page.getByRole('option', { name: /Vuokrasopimus Asunto/ }).click()
+    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(page).toHaveURL(/#\/property\/4$/)
+
+    const docs = page.locator('.property-docs')
+    await expect(docs.locator('.section-label')).toHaveText(['Linkitetyt (sopimukset ja ilmoitukset)'])
+    const line = docs.locator('.doc-line', { hasText: 'Vuokrasopimus Asunto' })
+    const file = line.getByRole('link', { name: 'sopimus.pdf' })
+    await expect(file).toBeVisible()
+    // The purple pill opens the voucher, and the way back returns to the object.
+    await line.getByRole('button', { name: /^Vuokrasopimus Asunto .*, 15\.12\.2025$/ }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/voucher\/\d+/)
+    await page.getByRole('button', { name: 'Sulje' }).click()
+    await expect(page).toHaveURL(/#\/property\/4$/)
+
+    const title = line.locator('.doc-line-title')
+    for (const [width, rows] of [
+      [1500, 1],
+      [900, 2],
+    ]) {
+      await page.setViewportSize({ width, height: 900 })
+      const titleBox = (await title.boundingBox())!
+      const fileBox = (await file.boundingBox())!
+      expect(fileBox.y >= titleBox.y + titleBox.height - 1 ? 2 : 1, `rows at ${width}`).toBe(rows)
+    }
+    await page.setViewportSize({ width: 360, height: 740 })
+    await expect(line.locator('.pill-date')).toBeVisible()
+    await expect(line.locator('.pill-number')).toBeHidden()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360)
   })
 })
 
@@ -433,7 +486,7 @@ test.describe('rental object water settlements', () => {
     await expect(share).toContainText('palautetaan 24,40 €')
     // The form shows what the book has for the period, as the page will: nothing yet.
     await expect(water).toContainText('Taloyhtiön tasausta ei löydy kirjanpidosta.')
-    await expect(share.locator('.property-water-status')).toHaveText('avoin')
+    await expect(share.locator('.pill-warn')).toHaveText('avoin')
     // With the actual use: 60,00 € by days is 40,44 €, less 80,00 € of advances.
     await water.getByLabel('Toteutunut kulutus €').fill('60')
     await expect(share).toContainText('palautetaan 39,56 €')
@@ -452,11 +505,14 @@ test.describe('rental object water settlements', () => {
     const row = panel.locator('.property-water-shares li').first()
     await expect(row).toContainText('Testi Vuokralainen')
     await expect(row).toContainText('palautetaan 39,56 €')
-    await expect(row.locator('.property-water-status')).toHaveText('avoin')
+    await expect(row.locator('.pill-warn')).toHaveText('avoin')
     await expect(row.getByRole('button', { name: /Vesitasaus Asunto/ })).toBeVisible()
+    // No statement linked: the settlement's place for it says so.
+    await expect(panel.locator('.property-doc-slot', { hasText: 'Tasauslaskelma' }).locator('.pill-crit')).toHaveText('Puuttuu')
     const card = page.locator('.property-lease-card').first()
     await expect(card).toContainText('vesimaksu tasataan kulutuksen mukaan')
-    await expect(card).toContainText('Vesitasaus 1.1.2025–30.6.2025: palautetaan 39,56 € · avoin')
+    const latest = card.locator('.property-lease-terms', { hasText: 'Vesitasaus 1.1.2025–30.6.2025: palautetaan 39,56 €' })
+    await expect(latest.locator('.pill-warn')).toHaveText('avoin')
     // The lease's own rent account on the as-of date: the test book has no rent on the object,
     // so all nine months are owed; the letter's refund is due after the as-of date.
     await expect(card).toContainText(/Vuokrasaldo 30\.11\.2025: vuokrarästi 6\s030,00\s€/)

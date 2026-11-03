@@ -9,12 +9,18 @@
  *   30.4. was a Sunday and 1.5. Vappu, and Vero's own notice said 2.5.
  * - Statements to PRH: 8 months from the period's end, the day itself and not its month's end
  *   (PRH's late fee). Osakeyhtiölaki 8:10 also says 2 months from adoption.
+ * - Dividends' annual report: the end of the January after the year they were paid (Vero), moved like
+ *   the 6B. It has a date only once a dividend is paid.
+ * - Withholding on a dividend: the 12th of the month after the payment (Vero), moved like the 6B. The
+ *   ledger answers it, not a document (`dividends.ts`).
  *
- * Only the 6B moves. The first two are not deadlines at an authority, which is what the act covers
- * (1 §). PRH's text names no day-off rule and a late fee is at stake, so its date stays the earlier one.
+ * Only the 6B and the two dividend deadlines move. The first two are not deadlines at an authority, which is what
+ * the act covers (1 §). PRH's text names no day-off rule and a late fee is at stake, so its date stays the
+ * earlier one.
  */
 import { addDays, addMonths, dayCount, monthEnd } from '../../../months'
 import { addMonthsIso } from '../../vat/domain/vatPeriod'
+import type { PeriodDividend } from './dividends'
 import type { DeadlineKey, DeadlineState, DeadlineView, PeriodKind } from './types'
 
 /** How close a deadline is before the header and the front page mention it. */
@@ -55,10 +61,14 @@ export function isDayOff(date: string): boolean {
   return date === addDays(easter, -2) || date === addDays(easter, 1) || date === addDays(easter, 39)
 }
 
-function nextWorkingDay(date: string): string {
+export function nextWorkingDay(date: string): string {
   let day = date
   while (isDayOff(day)) day = addDays(day, 1)
   return day
+}
+
+export function dividendReportDue(paid: string): string {
+  return nextWorkingDay(`${Number(paid.slice(0, 4)) + 1}-01-31`)
 }
 
 const RULES: { key: DeadlineKey; kind: PeriodKind; due: (ends: string) => string }[] = [
@@ -78,19 +88,23 @@ export type DeadlineInputs = {
   required: (kind: PeriodKind) => boolean
   /** Kitsas has its own statement PDF, which shows the statements were prepared. */
   kitsasStatement: boolean
+  /** Dividends from this period's profit, as the ledger shows them. */
+  dividend?: PeriodDividend
 }
 
-export function periodDeadlines({ ends, asOf, filled, notNeeded, required, kitsasStatement }: DeadlineInputs): DeadlineView[] {
-  return RULES.map((rule) => {
-    const due = rule.due(ends)
+export function periodDeadlines({ ends, asOf, filled, notNeeded, required, kitsasStatement, dividend }: DeadlineInputs): DeadlineView[] {
+  const rules: { key: DeadlineKey; kind?: PeriodKind; due: string; done?: boolean }[] = RULES.map((rule) => ({ ...rule, due: rule.due(ends) }))
+  if (dividend?.withholding) rules.push({ key: 'dividend_withholding', due: dividend.withholding.due, done: dividend.withholding.open_snt === 0 })
+  if (dividend?.paid) rules.push({ key: 'dividend_report', kind: 'dividend_annual_report', due: dividendReportDue(dividend.paid) })
+  return rules.map(({ key, kind, due, done }) => {
     const days = dayCount(asOf, due) - 1
     let state: DeadlineState
-    if (filled(rule.kind) || (rule.key === 'statements_prepared' && kitsasStatement)) state = 'done'
-    else if (notNeeded(rule.kind)) state = 'not_needed'
-    else if (days < 0) state = required(rule.kind) ? 'overdue' : 'unverified'
+    if (done || (kind && filled(kind)) || (key === 'statements_prepared' && kitsasStatement)) state = 'done'
+    else if (kind && notNeeded(kind)) state = 'not_needed'
+    else if (days < 0) state = !kind || required(kind) ? 'overdue' : 'unverified'
     else if (days <= UPCOMING_DAYS) state = 'upcoming'
     else state = 'later'
-    return { key: rule.key, kind: rule.kind, due, state, days }
+    return { key, ...(kind ? { kind } : {}), due, state, days }
   })
 }
 

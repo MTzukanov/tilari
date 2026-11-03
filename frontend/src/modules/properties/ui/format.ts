@@ -104,10 +104,19 @@ export function leaseRentText(t: T, rent: { rent_snt: number; water_snt?: number
 }
 
 /** An exception as the lease card lists it: "1.3.2025–31.3.2025 · 470,00 €/kk, normaali 670,00 € · Remonttihyvitys". */
-export function exceptionText(t: T, e: { from: string; to: string; rent_snt: number; water_snt?: number; parking_snt?: number; normal_snt: number; note?: string }): string {
-  return [periodText(t, e.from, e.to), `${leaseRentText(t, e)}, ${t('properties.lease.normal', { amount: formatCents(e.normal_snt) })}`, e.note ?? '']
-    .filter(Boolean)
-    .join(' · ')
+type ExceptionFigures = { from: string; to: string; rent_snt: number; water_snt?: number; parking_snt?: number; normal_snt: number; note?: string }
+
+export function exceptionText(t: T, e: ExceptionFigures): string {
+  return [periodText(t, e.from, e.to), exceptionTerms(t, e)].join(' · ')
+}
+
+/** An exception's line, whose first day is in the date column: "–31.5.2025 · 470,00 €/kk (...), normaali 670,00 € · Remonttihyvitys". */
+export function exceptionLineText(t: T, e: ExceptionFigures): string {
+  return [untilText(t, e.to), exceptionTerms(t, e)].join(' · ')
+}
+
+function exceptionTerms(t: T, e: ExceptionFigures): string {
+  return [`${leaseRentText(t, e)}, ${t('properties.lease.normal', { amount: formatCents(e.normal_snt) })}`, e.note ?? ''].filter(Boolean).join(' · ')
 }
 
 function longMonth(month: number): string {
@@ -135,6 +144,11 @@ export function clauseText(t: T, rule: LeaseIncrease | null | undefined): string
 /** "1.11.2023–31.10.2024". */
 export function periodText(t: T, from: string, to: string): string {
   return t('properties.lease.period', { from: formatDate(from), to: formatDate(to) })
+}
+
+/** A period whose first day is in the line's date column: "–30.6.2025". */
+export function untilText(t: T, to: string): string {
+  return t('properties.lease.period', { from: '', to: formatDate(to) })
 }
 
 /** A rent balance as the tenant stands: arrears negative, paid ahead positive (never -0). */

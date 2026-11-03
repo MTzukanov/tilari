@@ -1203,6 +1203,10 @@
       "linkedTitle": "Verknüpfte Dokumente",
       "empty": "Keine Anhänge.",
       "missing": "Beleg {id} wurde gelöscht",
+      "deleted": "Gelöscht",
+      "absent": "Fehlt",
+      "voucher": "Beleg {id}",
+      "voucherNoId": "Beleg",
       "showBank": "Kontoauszüge anzeigen ({n})",
       "group": {
         "linked": "Verknüpft (Verträge und Mitteilungen)",
@@ -1317,12 +1321,11 @@
       "leasesLead": "Mieter, Bedingungen, Anfangsmiete und Erhöhungen. Die Erhöhungsklausel füllt die nächste Erhöhung vor; Tilari ändert die Miete nie selbst. Vertrag und Erhöhungsmitteilungen sind Liitetieto-Belege und daher auch in Kitsas auffindbar.",
       "addLease": "Mietvertrag hinzufügen",
       "removeLease": "Mietvertrag entfernen",
-      "suggestions": "Die Buchhaltung schlägt {n} Mietverhältnisse vor. Ins Formular übernehmen, prüfen und speichern.",
+      "suggestions": "Ins Formular übernehmen, prüfen und speichern.",
       "addSuggestion": "Hinzufügen",
       "addAllSuggestions": "Alle hinzufügen",
       "addIncrease": "Erhöhung hinzufügen",
       "createNotice": "Erhöhungsmitteilung erstellen",
-      "viewDoc": "Anzeigen",
       "confirmDeleteUnsaved": "Auf dieser Seite wurden {n} Erhöhungsmitteilungen erstellt, aber nicht beim Objekt gespeichert. Aus der Buchhaltung löschen? Abbrechen behält sie (sie wurden evtl. schon versandt).",
       "restored": "Ungespeicherte Änderungen wurden wiederhergestellt.",
       "deleteDoc": "Beleg löschen",
@@ -1524,7 +1527,7 @@
       "latest": "Wasserabrechnung {period}",
       "editTitle": "Wasserabrechnungen",
       "editLead": "Die Wasserabrechnungen der Wohnungsgesellschaft je Zeitraum. Die Anteile der Mieter ergeben sich aus den Mietverträgen: Verbrauch nach Wohntagen, abzüglich der Wasservorauszahlungen.",
-      "editSuggestions": "Die Buchhaltung enthält {n} Wasserabrechnungen, die nicht im Formular sind.",
+      "editSuggestions": "Auf das Objekt gebuchte Wasserabrechnungen, die nicht im Formular sind.",
       "direction": {
         "refund": "Gutschrift an den Eigentümer",
         "charge": "Nachzahlung des Eigentümers"
@@ -1737,7 +1740,162 @@
       "statements_prepared": "Jahresabschluss erstellt",
       "agm": "Ordentliche Hauptversammlung",
       "tax_return": "Steuererklärung 6B",
-      "prh_filing": "Jahresabschluss an PRH"
+      "prh_filing": "Jahresabschluss an PRH",
+      "dividend_withholding": "Quellensteuer auf Dividenden",
+      "dividend_report": "Jahresmeldung über Dividenden"
+    },
+    "dividend": {
+      "title": "Dividenden aus dem Gewinn dieses Geschäftsjahres",
+      "name": {
+        "agm": "Dividende",
+        "extra": "Zusatzdividende"
+      },
+      "decided": {
+        "agm": "Ordentliche Hauptversammlung {date}",
+        "extra": "Außerordentliche Hauptversammlung {date}"
+      },
+      "step": {
+        "decided": "Beschlossen",
+        "booked": "Gebucht",
+        "paid": "Ausgezahlt",
+        "withheld": "Quellensteuer abgeführt",
+        "reported": "Gemeldet"
+      },
+      "state": {
+        "done": "Erledigt",
+        "waiting": "Ausstehend",
+        "overdue": "Verspätet",
+        "missing": "Fehlt",
+        "no_minutes": "Kein Protokoll",
+        "difference": "Differenz",
+        "no_contract": "Kein Vertrag",
+        "not_applicable": "Nicht nötig"
+      },
+      "voucher": {
+        "decision": "Beschluss",
+        "payment": "Zahlung",
+        "remittance": "Abführung der Quellensteuer"
+      },
+      "alert": {
+        "difference": "Ausgezahlt {paid}, beschlossen {decided}.",
+        "noContract": "Die Dividende wurde zur Schuld gegenüber dem Aktionär, aber der Beleg der Zahlung hat keinen Anhang wie den Darlehensvertrag.",
+        "unpaid": "Nicht ausgezahlt {amount}",
+        "withholdingOpen": "Quellensteuer nicht abgeführt {amount}, fällig {date}",
+        "noMinutes": "Dem Beschluss fehlt das Protokoll der Versammlung. Es an den Beleg des Beschlusses oder in der Zeile {row} hinzufügen."
+      },
+      "form": {
+        "account": "Konto",
+        "partner": "Empfänger",
+        "debit": "Soll",
+        "credit": "Haben",
+        "dayClosed": "Der Tag liegt in keinem offenen Geschäftsjahr.",
+        "draftNote": "Der Beleg wird als Entwurf angelegt: öffnen und buchen, sobald es erledigt ist.",
+        "create": "Entwurf anlegen"
+      },
+      "decision": {
+        "open": "Gewinnausschüttungsbeschluss buchen",
+        "defaultTitle": {
+          "agm": "Gewinnausschüttung für das Geschäftsjahr {period}",
+          "extra": "Zusatzdividende für das Geschäftsjahr {period}"
+        },
+        "date": "Beschlusstag",
+        "amount": "Dividende gesamt, €",
+        "otherPeriod": "Ein Beschluss an diesem Tag schüttet den Gewinn eines anderen Geschäftsjahres aus und erscheint daher auf dessen Karte.",
+        "another": "Für dieses Geschäftsjahr gibt es bereits einen Ausschüttungsbeschluss oder einen Entwurf. Über einen zweiten beschließt meist eine außerordentliche Hauptversammlung.",
+        "accounts": "Soll {retained} Gewinnvortrag, Haben {distribution} Gewinnausschüttung.",
+        "meeting": "Beschließende Versammlung",
+        "minutes": "Protokoll der Versammlung",
+        "minutesNote": "Das Protokoll wird an den Beleg des Beschlusses angehängt und erscheint als dieselbe Datei in der Zeile {row}. Es kann auch später hinzugefügt werden.",
+        "minutesStored": "Das Protokoll liegt bereits in der Zeile {row}. Der Beschluss wird auf seinem Beleg gebucht, so ist die Datei nur einmal in der Buchhaltung:"
+      },
+      "payment": {
+        "open": "Zahlungsbeleg anlegen",
+        "defaultTitle": "Auszahlung der Dividende",
+        "payableName": "Verbindlichkeiten aus Gewinnausschüttung",
+        "date": "Zahlungstag",
+        "paidAs": "Gezahlt",
+        "asDebt": "Als Schuld an die Gesellschafter ({account} {name})",
+        "fromBank": "Von der Bank ({account} {name})",
+        "contract": "Darlehensvertrag (optional)",
+        "contractNote": "Eine als Schuld stehen gelassene Dividende braucht den Vertrag als Anhang zum Beleg. Er kann auch später hinzugefügt werden.",
+        "draftExists": "Für diese Dividende gibt es bereits einen Zahlungsentwurf.",
+        "accounts": "Soll {distribution} Gewinnausschüttung mit dem offenen Betrag, Haben {withholding} Quellenabzug und Nettobetrag je Empfänger.",
+        "withholdingLine": "Quellenabzug auf Dividende",
+        "needs": {
+          "no_shareholders": "Zuerst die Gesellschafter auf der eigenen Karte der Gesellschaft erfassen.",
+          "no_holders": "Die Anteile der Gesellschafter prüfen.",
+          "rate_missing": "Den Quellensteuersatz des im Ausland wohnenden Gesellschafters erfassen."
+        }
+      },
+      "recipients": {
+        "title": "Empfänger ({n})",
+        "gross": "Brutto",
+        "rate": "Satz",
+        "withholding": "Abzug",
+        "net": "Netto",
+        "total": "Summe",
+        "overLimit": "{rate}, 28 % auf den Teil über 150.000 Euro",
+        "problem": {
+          "no_shareholders": "Keine Gesellschafter erfasst. Auf der eigenen Karte der Gesellschaft erfassen, um die Dividende aufzuteilen.",
+          "no_holders": "Am Beschlusstag hielt niemand Anteile.",
+          "rate_missing": "Für einen im Ausland wohnenden Empfänger fehlt der Abzugssatz."
+        },
+        "toShareholders": "Zu den Gesellschaftern"
+      },
+      "draft": "Entwurf",
+      "draftNote": "Ein Entwurf erscheint noch nicht als Dividende. Öffnen und buchen, sobald der Beschluss gefasst ist.",
+      "meeting": {
+        "agm": "Ordentliche Hauptversammlung",
+        "extra": "Außerordentliche Hauptversammlung"
+      },
+      "howto": {
+        "title": "So läuft eine Dividende ab",
+        "meeting": "Die Hauptversammlung beschließt die Dividende: die ordentliche Hauptversammlung stellt den Jahresabschluss fest und beschließt auf Vorschlag des Vorstands Betrag und Zahltag.",
+        "decision": "Den Ausschüttungsbeschluss buchen: Datum der Versammlung, Betrag und Protokoll angeben. Tilari erstellt einen Entwurf mit dem Protokoll als Anhang, und dieselbe Datei erscheint in der Zeile der Versammlung bei den Dokumenten des Geschäftsjahres.",
+        "post": "Den Entwurf öffnen und buchen. Die Dividende erhält dann eine eigene Karte, und Empfänger zeigt, was jeder Gesellschafter erhält.",
+        "pay": "Am Zahltag den Zahlungsbeleg erstellen: die Dividende wird von der Bank gezahlt oder als Schuld gegenüber dem Gesellschafter belassen (dann den Darlehensvertrag anhängen). Der Beleg bucht die Quellensteuer und den Nettobetrag je Empfänger.",
+        "withhold": "Die Quellensteuer bis zum 12. des Monats nach der Zahlung an die Steuerverwaltung abführen. Die Buchung der Banktransaktion gleicht sie aus.",
+        "report": "Die Jahresmeldung über Dividenden bis Ende Januar nach dem Zahlungsjahr bei der Steuerverwaltung abgeben und in ihrer Zeile speichern.",
+        "extra": "Über eine Zusatzdividende beschließt eine außerordentliche Hauptversammlung. Diese als Versammlung wählen, dann erhält ihr Protokoll eine eigene Zeile bei den Dokumenten des Geschäftsjahres und die Dividende eine eigene Karte. Die Schritte sind dieselben."
+      }
+    },
+    "shareholders": {
+      "title": "Gesellschafter",
+      "lead": "Wer die Anteile hält und wie viele. Eine Dividende wird nach den Beständen am Beschlusstag aufgeteilt. Die Namen stehen bei den Kitsas-Partnern; Personenkennungen werden nicht gespeichert.",
+      "name": "Name",
+      "kindLabel": "Art",
+      "kind": {
+        "person": "Person",
+        "estate": "Nachlass",
+        "company": "Gesellschaft"
+      },
+      "sharesNow": "Anteile {date}",
+      "rate": "Quellenabzug",
+      "abroad": "wohnt im Ausland",
+      "rateMissing": "Satz fehlt",
+      "rateVero": "Regel der Steuerverwaltung",
+      "empty": "Keine Gesellschafter erfasst.",
+      "edit": "Gesellschafter bearbeiten",
+      "nameInKitsas": "Der Name wird bei den Kitsas-Partnern geändert.",
+      "resident": "In Finnland unbeschränkt steuerpflichtig",
+      "rateOverride": "Abzugssatz, falls nicht die Regel der Steuerverwaltung",
+      "from": "Ab",
+      "shares": "Anteile",
+      "removeHolding": "Änderung entfernen",
+      "addHolding": "Änderung im Bestand hinzufügen",
+      "remove": "Gesellschafter entfernen",
+      "ratesNote": "Regel der Steuerverwaltung: Bei einer Person und einem Nachlass werden 7,5 % der gesamten Dividende bis 150.000 Euro im Jahr einbehalten und 28 % vom übersteigenden Teil. Bei einer Dividende an eine Gesellschaft wird nichts einbehalten. Für im Ausland Wohnende den Quellensteuersatz eingeben.",
+      "add": "Gesellschafter hinzufügen",
+      "save": "Gesellschafter speichern",
+      "error": {
+        "name": "Namen des Gesellschafters angeben.",
+        "rate": "Der Abzugssatz muss 0-100 sein.",
+        "holding": "Für jeden Bestand Datum und Anzahl der Anteile angeben."
+      }
+    },
+    "incomeTax": {
+      "title": "Ertragsteuerbuchung",
+      "booked": "Gebucht"
     },
     "deadlineState": {
       "done": "Erledigt",
@@ -1754,14 +1912,16 @@
     "error": {
       "unknown_kind": "Unbekannte Dokumentart.",
       "unknown_period": "Dieses Geschäftsjahr gibt es nicht mehr.",
-      "voucher_not_posted": "Der zu verknüpfende Beleg ist ein Entwurf oder gelöscht.",
       "attachment_not_on_voucher": "Die Datei gehört nicht zu diesem Beleg.",
       "unknown_link": "Die Verknüpfung wurde bereits entfernt.",
       "corrupt": "Die gespeicherten Daten sind nicht lesbar.",
       "newer_version": "Diese Daten wurden mit einem neueren Tilari gespeichert.",
       "too_large": "Die Unternehmensdaten sind zu groß zum Speichern.",
       "invalid_field": "Speichern fehlgeschlagen: ungültige Angabe.",
-      "partial": "Das Dokument wurde erstellt, konnte aber nicht abgeschlossen werden ({reason}). Es steht bei den Belegen und unter Nicht verknüpft."
+      "partial": "Das Dokument wurde erstellt, konnte aber nicht abgeschlossen werden ({reason}). Es steht bei den Belegen und unter Nicht verknüpft.",
+      "duplicate_shareholder": "Derselbe Gesellschafter steht zweimal in der Liste.",
+      "unknown_partner": "Der Gesellschafter ist nicht bei den Kitsas-Partnern.",
+      "voucher_missing": "Der zu verknüpfende Beleg ist gelöscht."
     },
     "kind": {
       "financial_statements": "Unterzeichneter Jahresabschluss",
@@ -1773,11 +1933,27 @@
       "prh_filing_receipt": "PRH-Auszug zum eingetragenen Abschluss",
       "tax_return_6b": "Steuererklärung 6B",
       "tax_decision": "Steuerbescheid",
+      "dividend_annual_report": "Jahresmeldung über Dividenden",
       "other": "Sonstige",
       "articles": "Satzung",
       "trade_register_extract": "Handelsregisterauszug",
       "shareholder_register": "Aktionärsliste",
-      "shareholder_agreement": "Aktionärsvereinbarung"
+      "shareholder_agreement": "Aktionärsvereinbarung",
+      "extra_agm_minutes": "Protokoll der außerordentlichen Hauptversammlung"
+    },
+    "taxPayment": {
+      "pay": {
+        "title": "Zahlung der Ertragsteuer",
+        "done": "Bezahlt",
+        "open": "Offen {amount}",
+        "booked": "Die Ertragsteuerbuchung ließ {amount} zu zahlen. Eine Zahlung oder eine Korrektur nach dem Steuerbescheid gleicht es aus."
+      },
+      "refund": {
+        "title": "Steuererstattung",
+        "done": "Erhalten",
+        "open": "Nicht erhalten {amount}",
+        "booked": "Die Ertragsteuerbuchung ließ {amount} zu erhalten. Die Erstattung oder eine Korrektur nach dem Steuerbescheid gleicht es aus."
+      }
     }
   },
   "taxReturn": {

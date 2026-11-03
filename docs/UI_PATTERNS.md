@@ -49,7 +49,8 @@ stand out. Here colour and a filled button mark what needs doing, and everything
    the voucher pill with the date, the title, the files, the actions. A mark such as "Ehdotus" sits at the
    title's far side, so it moves nothing. A row's status starts at one place and its buttons end at one,
    with the quiet link in front of them. Where one row does not fit (a list under 60rem), a line folds into
-   two: date and title, then files and actions. On a phone (under 30rem) the voucher number and "Ehdotus" go
+   two: date and title, then files, with the actions centred at the side of both. On a phone (under 30rem)
+   the actions move to the files' row, the voucher number and "Ehdotus" go,
    and the title wraps to two lines, since there is no hover to show it in full. A thin line separates
    documents from each other; none goes under a row's name or after its last document.
 
@@ -64,19 +65,22 @@ stand out. Here colour and a filled button mark what needs doing, and everything
 | `DocRows`, `DocRow` | `shared/DocRows.tsx` | A framed list of things that hold documents; `onFiles` makes a row take dropped files |
 | `DocLines`, `DocLine` | `shared/DocRows.tsx` | One document as a table row: `voucher` (or a plain `date` if it has none), title, `mark` at the title's far side, the files as children, and `end` |
 | `Binder` | `shared/Binder.tsx` | A card that opens in place, with badges that show its state while closed |
+| `StepRail` | `shared/StepRail.tsx` | Steps that follow each other, each with its state as a `Pill` and a date; the line turns green between steps done. Under 34rem it lists them one under the other. The company page's dividend card uses it |
+| `SuggestBanner` | `shared/SuggestBanner.tsx` | Suggestions from the book: a blue banner with a title, a line on where they come from, one `action` for all of them (add them all, or review them) and the suggestions below, as `DocLine`s with a filled "Lisää" in `end` |
 
 CSS, in the "Documents and status" part of `App.css`:
 
-- `.section-label`: the small uppercase heading inside a page or card.
+- `.section-label`: the small uppercase heading inside a page or card. In a period's card on the company page
+  each section folds under it as a `summary` (`modules/company/ui/Fold.tsx`): Määräajat open, Asiakirjat and
+  Osingot folded at first (owner, 2026-11-03); what the owner opens or folds holds for every period during the
+  session (`sessionStorage`), so a voucher's round trip keeps it.
 - `.num-text`: a date or code in `--font-num`.
 - `.btn-small.is-primary`: the row's filled button.
 - `.btn-link.btn-quiet`: a secondary action such as "Poista linkki" or "Ei tarvita".
+- `.suggest-banner`: the banner; `.suggest-banner-list` folds a long list of suggestions under it (the company page).
 - Tokens on `:root`: `--ok`, `--warn`, `--crit`, `--doc`, `--voucher`, each with a `-soft` background;
   `--card`, `--sunk` and `--font-num`. Each text and soft pair has at least 4.5:1 contrast. Keep that
   when changing one.
-
-`.company-suggest`, the blue "Ehdotuksia kirjanpidosta" banner, still lives with the company page. Move
-it to `shared/` when a second page uses it.
 
 ## Example
 

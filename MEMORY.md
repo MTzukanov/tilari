@@ -15,6 +15,79 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   calculation dated on or before the lock date cannot change, so it stays and the save makes a new voucher.
 - Books saved before this keep their extra calculations until the next save, which folds the open ones into one.
 
+## 2026-11-03 - Company page: a period's sections fold
+
+- Owner: Määräajat, Asiakirjat and the dividends fold, and only Määräajat is open at first. What is opened or
+  folded holds for the session and for every period, or opening a voucher and coming back would fold the
+  documents again. The e2e helper unfolds Asiakirjat once per test.
+
+## 2026-11-03 - Company page: one meeting, one file; extraordinary meetings; income tax payment
+
+- Owner's look at the drafts: account names were missing next to the numbers; a step for paying the tax after
+  the tax decision; the "add shareholders first" text should lead there; the process was confusing; the AGM
+  decides, so its minutes are the decision's attachment too; an extra dividend's extraordinary meeting belongs
+  among the period's documents. `docs/DIVIDENDS.md` now writes the whole process down, and the section has a
+  "Näin osinko etenee" list.
+- The minutes are kept once, on the decision's voucher, and the meeting's row links that file. This needed
+  links to drafts: the company writes no longer refuse one (`voucher_missing` replaces `voucher_not_posted`);
+  a linked draft is amber and is not a problem.
+- "Tuloveron maksu" reads 2968 oldest first. Checked read-only on the owner's book (only settled or not per
+  year): the closed years come out settled and the newest open, as expected. A residual tax paid through the
+  bank import's tax account rule (2920) would leave 2968 open; the owner's book clears 2968 with its own voucher.
+- Extraordinary meeting files used to be suggested under "Muut"; they now go to their own row.
+
+## 2026-11-03 - Company page: shareholders, recipients and dividend drafts
+
+- Owner: "continue with what is still not built" after seeing the dividend cards. Built increment 3 of the plan:
+  shareholders on the company's own card, "Saajat" on each dividend, "Kirjaa osingonjakopäätös" on the newest
+  ended period and "Tee maksutosite" on a dividend with an unpaid part. Both write drafts; the owner posts them.
+- Vero's guide on withholding from dividends (7.12.2022, in force from 1.1.2023) was read again on 2026-11-03:
+  7.5 % of the whole dividend, tax-free and earned-income parts included, to a person or domestic estate up to
+  150 000 euros a recipient, 28 % above; none to a company; non-residents under the source tax rules. The
+  guide does not say over which period the 150 000 is counted; Tilari counts the payment's calendar year.
+- Withholding is rounded half up per recipient. The payment draft splits the unpaid amount, so a partly paid
+  dividend's second draft pays only the rest.
+- A decision dated today goes on the newest ended period (the rule from 2026-11-02), so the button is only
+  there; the form warns when its date would land the decision on another period.
+- The e2e posts the decision draft as it is in the editor: the test book has no 2261, and an unchanged draft
+  posts without an account check, so it runs on the golden book without changing it.
+
+## 2026-11-03 - Rental objects: the edit page's documents and a shared suggestion banner (`feature/property-edit-docs`)
+
+- Third move from `docs/UI_PATTERNS.md`. The edit page's linked documents and balance-sheet items are `DocLine`s
+  with their remove or delete as a quiet link; a balance-sheet item's pill has a date and no number, since a
+  tase-erä has none. `DocPicker` shows the picked document's files as pills in place of "Näytä"
+  (`properties.edit.viewDoc` went). `DocCandidate` carries `series` and `files` (read by `voucherFiles`, shared
+  with `loadVoucherRefs`) in place of `first_attachment`; nothing stored changed.
+- The company page's "Ehdotuksia kirjanpidosta" banner is `shared/SuggestBanner` (`.company-suggest*` became
+  `.suggest-banner*`), now also on the object page's lease and water panels and in both editors. An editor's
+  suggestion is a `DocLine`: its first day in the date column, its source in `mark`, a filled "Lisää" in `end`.
+  The banner's lead and paragraph rules have their own classes, since a plain `p` rule reached the water
+  settlement cards inside it.
+- A lease card's missing contract and a settlement's missing statement are a line of text again ("Tasauslaskelma
+  Puuttuu" from the card's left edge, `.property-doc-slot`), not a `DocLine` with an empty date column: the
+  owner wanted them aligned left like the card's other lines. A linked one stays a `DocLine`.
+- A folded `DocLine` (list under 60rem, as on the edit page) keeps its actions at the side of both rows,
+  centred: a quiet "Poista" alone on the second row of a line with no files looked broken. The phone layout
+  is unchanged.
+
+## 2026-11-03 - CI: the e2e step has 20 minutes (`ci/e2e-timeout-20`)
+
+- The Chromium e2e step in `test.yml` ran 9-10 minutes on one worker and hit its 10-minute limit now and then
+  with every test passed (a rerun went green). The step now has 20 minutes and the `frontend` job 25, so the
+  step's own limit is the one that stops a hung run.
+
+## 2026-11-03 - Rental objects: lease and water panels on the shared parts (`feature/property-lease-docs`)
+
+- Second move from `docs/UI_PATTERNS.md`. A linked voucher in a lease or water panel is its purple pill, its title
+  and a blue pill per file: `loadVoucherRefs` reads each voucher's own `Liite` rows (id and name only, never
+  `data`, Kitsas's system attachments left out), passed on as `LeaseVoucher.files`. Computed, nothing stored.
+- The contract and a settlement's statement are `DocLine`s; increases and exceptions are `DocLines` with the day
+  they apply from in the date column, since that says more than the notice's date. An empty slot reads "Puuttuu"
+  by the same rules as the reminders' `missingDocuments`: only while the object is held, not where the owner
+  said there is no document ("Ei asiakirjaa"), and not on a water suggestion, which has no stored slot.
+- A lease's state and a tenant's water status are `Pill`s (`.property-water-status` went); a suggestion's source
+  is a `Pill doc` whose span keeps the hover text.
 ## 2026-11-02 - Checks link to their place, form 73 always findable, the calculation kept as a PDF
 
 - Owner's look at form 73 on a real book: form 73 was not on the Liitelomakkeet tab. The dividend account had been
@@ -70,6 +143,42 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   noun, not the verb: "1 luonnos jää", "2 luonnosta jää".
 - Whether a custom account's guess matters: placed by heading alone, a dividend account landed in Muut rahoitustuotot,
   which also hid form 73 from the list of forms needed. Confirming accounts is not a formality.
+## 2026-11-02 - Company page: dividends read from the ledger
+
+- Owner approved the steps after the annual report row. Each period's card gets "Osingot tämän tilikauden
+  voitosta": one card per decision with five steps, the vouchers behind them and their files, and rows for what
+  is unpaid or unremitted. Nothing is stored; ADR-031 has the rules.
+- Problems with no date (a payment over the decision, a debt without a contract) count in the card's
+  "Huomioita"; a late withholding counts in "Määräaikoja", and in the header like any deadline.
+- Withholding is matched oldest first across the whole account, so a book whose payroll also uses 2921 still
+  comes out exact as long as each remittance clears what came before it.
+- No e2e for the card: the test books have no dividend accounts, and adding them would change the golden
+  books. Unit tests cover the figures; the look was checked on an invented book at 1280px and 380px.
+
+## 2026-11-02 - Company page: the dividends' annual report; what a dividend payment is
+
+- Owner: the report is filed with Vero but was never stored in the book, and past and future ones should be
+  here. So it is a required row, listed only for a period the book shows a dividend from. It goes on the period
+  whose profit was distributed, where the dividend's own section will go, and its name gives the year paid,
+  since that is the year the report covers.
+- Its date is the end of the January after the year paid (Vero), moved past days off like the 6B. It is
+  "Odottaa" until that date, then "Puuttuu". A past report goes through the row's upload, with its own date kept
+  when the year is closed. No suggestions for it: nothing in a book names one yet.
+- Read from Osingonjako (2261, the chart's number, as the statement template reads it): a posted credit is the
+  decision, and the first debit after it the payment. A draft payment does not count. Nothing is stored. The
+  accounts become a setting with the dividends themselves.
+- Correction to the 2026-10-31 entry and ADR-031: "cash payments keep coming from the bank import" was the
+  agent's wording inside a question, never the owner's decision. A payment is a voucher, whether or not money
+  leaves the bank that day: it can turn the dividend into a debt to the shareholder, with the contract attached.
+  Later lines on the payable repay that debt and are no dividend step, so nothing allocates them to dividends.
+
+## 2026-11-02 - Rental objects: the object page's documents as lines (`feature/property-doc-lines`)
+
+- First of the moves listed in `docs/UI_PATTERNS.md` "Next: rental objects"; each is its own demo. The
+  Asiakirjat panel lists a document as a `DocLine`: the purple pill opens the voucher, the blue pills open its
+  files. A linked voucher deleted in Kitsas reads "Poistettu", as on the company page. A sale's vouchers use the
+  same pill. Nothing stored changed.
+- `.property-doc-group h4` outranked `.section-label`, so the group names kept the old look until it went.
 
 ## 2026-11-02 - Company page: document lines as a table
 
@@ -158,12 +267,10 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   data in `TilariData` (ADR-031). A design from a session without access to this repo was the
   starting point; its concepts carried over, its Kitsas API, SQL tables and dividend model did not.
 - Owner decisions: documents and deadlines first, dividends next after the review; company-level
-  documents get their own section; dividend vouchers will be drafts the owner posts, cash payments
-  keep coming from the bank import.
+  documents get their own section; dividend vouchers will be drafts the owner posts.
 - What the model has to allow: documents on normal vouchers, several documents on one voucher, the
-  same file on two vouchers. A dividend can go in steps: decided on one voucher, moved to withholding
-  and a payable on a second, paid later through bank statements, where not every line on the payable
-  is a dividend.
+  same file on two vouchers. A dividend is decided on one voucher and paid on a second, which moves it
+  to withholding and a payable (corrected 2026-11-02, see that entry).
 - Matching notes: `osinko` inflects to `osingon`; `veroilmoitus` is inside VAT and transfer-tax
   returns; `6b` is inside hex file names; a file name's date is not the period's year.
 - Checked on a copy of a real book (pass/fail only): the suggestions put each file of a voucher with

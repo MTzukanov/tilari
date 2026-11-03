@@ -1,10 +1,27 @@
 import { useState } from 'react'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
+import { DocLine, DocLines } from '../../../shared/DocRows'
 import { formatVoucherId } from '../../../shared/formatVoucherId'
 import { formatCents } from '../../../shared/money'
-import type { BookedLine, LeaseVoucher } from '../api'
-import { saveErrorText } from './format'
+import { FilePill, Pill, VoucherPill } from '../../../shared/Pill'
+import type { BookedLine, LeaseVoucher, WaterShareView } from '../api'
+import { saveErrorText, waterStatusText } from './format'
+
+/** A voucher's pill: its date and Kitsas number, its title on hover and for screen readers. Opens the voucher. */
+export function VoucherOpen({
+  voucher,
+  onOpen,
+}: {
+  voucher: { voucher_id: number; date: string; doc_number: number | null; series: string | null; title: string }
+  onOpen: (voucherId: number) => void
+}) {
+  const { t } = useI18n()
+  // An empty fallback: the default one is truthy and would show as a number.
+  const number = formatVoucherId(voucher.series, voucher.doc_number, voucher.date, { fallback: '' })
+  const label = voucher.title || (number ? t('properties.docs.voucher', { id: number }) : t('properties.docs.voucherNoId'))
+  return <VoucherPill label={label} date={formatDate(voucher.date)} number={number} onOpen={() => onOpen(voucher.voucher_id)} />
+}
 
 /** The owner's word that a document slot stays empty, so no reminder asks for it (ADR-030); shown while none is picked. */
 export function NoDocumentCheck({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) {
@@ -55,13 +72,88 @@ export function Shown({ label, value, strong = false, title }: { label: string; 
   )
 }
 
-/** A linked voucher as Kitsas numbers it, with its title; opens the voucher. */
+/** A linked voucher: its pill opens it, then its title and a pill per file. */
 export function VoucherLink({ voucher, onOpen }: { voucher: LeaseVoucher; onOpen: (voucherId: number) => void }) {
   return (
-    <button type="button" className="btn-link" onClick={() => onOpen(voucher.voucher_id)}>
-      {formatVoucherId(voucher.series, voucher.doc_number, voucher.date)} · {voucher.title}
-    </button>
+    <span className="property-voucher">
+      <VoucherOpen voucher={voucher} onOpen={onOpen} />
+      {voucher.title ? <span>{voucher.title}</span> : null}
+      {voucher.files.map((f) => (
+        <FilePill key={f.id} id={f.id} name={f.name} />
+      ))}
+    </span>
   )
+}
+
+/**
+ * What a lease or water settlement holds in a document's place: the voucher's pill and its files;
+ * with none, "Ei asiakirjaa" when the owner said there is none (ADR-030), else "Puuttuu" while the
+ * object is held, as the reminders' `missingDocuments` flags it.
+ */
+export function DocSlot({
+  voucher,
+  noDocument,
+  held = true,
+  onOpen,
+}: {
+  voucher: LeaseVoucher | null
+  noDocument?: boolean
+  held?: boolean
+  onOpen: (voucherId: number) => void
+}) {
+  const { t } = useI18n()
+  if (!voucher) {
+    if (noDocument) return <Pill>{t('properties.edit.noDocument')}</Pill>
+    return held ? <Pill tone="crit">{t('properties.docs.absent')}</Pill> : null
+  }
+  return (
+    <>
+      <VoucherOpen voucher={voucher} onOpen={onOpen} />
+      {voucher.files.map((f) => (
+        <FilePill key={f.id} id={f.id} name={f.name} />
+      ))}
+    </>
+  )
+}
+
+/**
+ * A document such as the contract in a card: a line with its voucher, its title and what it is, its
+ * files. With no voucher, a line of text like the card's others, what it is and the slot's state.
+ */
+export function DocSlotLine({
+  label,
+  voucher,
+  noDocument,
+  onOpen,
+}: {
+  label: string
+  voucher: LeaseVoucher | null
+  noDocument?: boolean
+  onOpen: (voucherId: number) => void
+}) {
+  if (!voucher) {
+    return (
+      <p className="property-lease-terms property-doc-slot">
+        {label} <DocSlot voucher={null} noDocument={noDocument} onOpen={onOpen} />
+      </p>
+    )
+  }
+  return (
+    <DocLines>
+      <DocLine voucher={<VoucherOpen voucher={voucher} onOpen={onOpen} />} title={voucher.title || label} mark={<Pill>{label}</Pill>}>
+        {voucher.files.map((f) => (
+          <FilePill key={f.id} id={f.id} name={f.name} />
+        ))}
+      </DocLine>
+    </DocLines>
+  )
+}
+
+/** Whether a tenant's water share is settled: done, or still to do. */
+export function WaterStatusPill({ share }: { share: Pick<WaterShareView, 'status' | 'balance_snt' | 'settled_snt'> }) {
+  const { t } = useI18n()
+  if (share.status === 'none') return null
+  return <Pill tone={share.status === 'settled' ? 'ok' : 'warn'}>{waterStatusText(t, share.status, share.balance_snt, share.settled_snt)}</Pill>
 }
 
 /** A booked line: its date and the amount that counts; the payer and the line's text on hover. Opens its voucher. */

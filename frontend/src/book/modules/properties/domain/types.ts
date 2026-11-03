@@ -402,8 +402,11 @@ export type RentAccount = {
 
 export type LeaseState = 'upcoming' | 'current' | 'ended'
 
+/** A voucher's own file, to open from the page; Kitsas's system attachments are not listed. */
+export type VoucherFile = { id: number; name: string }
+
 /** A voucher a lease links to, as the object page shows it. */
-export type LeaseVoucher = { voucher_id: number; date: string; doc_number: number | null; series: string | null; title: string }
+export type LeaseVoucher = { voucher_id: number; date: string; doc_number: number | null; series: string | null; title: string; files: VoucherFile[] }
 
 /** A lease as the object page shows it, on the as-of date. */
 export type LeaseView = {
@@ -534,6 +537,8 @@ export type WaterSettlementView = {
   /** The company's advances for the period: use less difference, when the use is known. */
   advance_snt: number | null
   statement: LeaseVoucher | null
+  /** The owner's word that there is no statement (ADR-030). */
+  no_document: boolean
   /** The company's settlement as booked on the object (vastike account). */
   booked: BookedLine[]
   shares: WaterShareView[]
@@ -674,9 +679,10 @@ export type DocCandidate = {
   date: string
   title: string
   doc_number: number | null
+  series: string | null
   attachments: number
-  /** The first attachment, to open the document from a form. */
-  first_attachment: number | null
+  /** Its own files, to open from a form. */
+  files: VoucherFile[]
   linked_to: number[]
   suggestion: { cost_centre_id: number | null; candidates: number[] } | null
 }

@@ -153,8 +153,8 @@ describe('suggestions from the book', () => {
     expect(pairs([row({ date: '2031-03-01', title: 'Yhtiökokous', file_name: 'a.pdf' })])).toEqual([])
   })
 
-  it('files an extraordinary meeting under other', () => {
-    expect(pairs([row({ date: '2032-09-01', title: 'Ylimääräinen yhtiökokous', file_name: 'a.pdf' })])).toEqual([['other', '2031-12-31']])
+  it('files an extraordinary meeting on its own row', () => {
+    expect(pairs([row({ date: '2032-09-01', title: 'Ylimääräinen yhtiökokous', file_name: 'a.pdf' })])).toEqual([['extra_agm_minutes', '2031-12-31']])
   })
 
   it('leaves out purchases and statements, wherever the words are', () => {

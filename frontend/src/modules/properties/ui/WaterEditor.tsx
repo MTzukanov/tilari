@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import { fromBookedLines, settlementViews } from '../../../book/modules/properties/domain/water'
 import { useI18n } from '../../../i18n'
+import { formatDate } from '../../../shared/dates'
+import { DocLine, DocLines } from '../../../shared/DocRows'
 import { EuroInput } from '../../../shared/EuroInput'
 import { FileButton } from '../../../shared/FileButton'
 import { formatCents, parseEurInput } from '../../../shared/money'
+import { SuggestBanner } from '../../../shared/SuggestBanner'
 import type { DocCandidate, Lease, WaterBookedLine, WaterSettlement, WaterSuggestionView } from '../api'
 import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
-import { companyResultText, periodText, waterBalanceText, waterStatusText } from './format'
-import { LineLink, NoDocumentCheck, Shown } from './FormParts'
+import { companyResultText, periodText, untilText, waterBalanceText } from './format'
+import { LineLink, NoDocumentCheck, Shown, WaterStatusPill } from './FormParts'
 import { SuggestionSource } from './LeasesPanel'
 import {
   draftDifference,
@@ -87,31 +90,44 @@ export function WaterEditor({
   return (
     <>
       {pending.length ? (
-        <div className="property-lease-suggestions">
-          <p className="muted">{t('properties.water.editSuggestions', { n: pending.length })}</p>
-          <ul className="property-doc-list">
+        <SuggestBanner
+          heading="h4"
+          title={t('properties.water.suggestions', { n: pending.length })}
+          lead={t('properties.water.editSuggestions')}
+          action={
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => onChange([...drafts, ...settlementDrafts(pending.map((s) => s.settlement))])}
+            >
+              {t('properties.edit.addAllSuggestions')}
+            </button>
+          }
+        >
+          <DocLines>
             {pending.map((s) => (
-              <li key={`${s.settlement.from}-${s.settlement.to}`}>
-                <span>{periodText(t, s.settlement.from, s.settlement.to)}</span>
-                <span>{companyResultText(t, s.settlement.difference_snt)}</span>
-                <SuggestionSource source={s.source === 'company' ? 'waterCompany' : 'waterTenant'} />
+              <DocLine
+                key={`${s.settlement.from}-${s.settlement.to}`}
+                date={formatDate(s.settlement.from)}
+                title={`${untilText(t, s.settlement.to)} · ${companyResultText(t, s.settlement.difference_snt)}`}
+                mark={<SuggestionSource source={s.source === 'company' ? 'waterCompany' : 'waterTenant'} />}
+                end={
+                  <button
+                    type="button"
+                    className="btn-small is-primary"
+                    onClick={() => onChange([...drafts, ...settlementDrafts([s.settlement])])}
+                  >
+                    {t('properties.edit.addSuggestion')}
+                  </button>
+                }
+              >
                 {s.lines.map((line) => (
                   <LineLink key={line.line_id} line={line} onOpen={onOpenVoucher} />
                 ))}
-                <button type="button" className="btn-small" onClick={() => onChange([...drafts, ...settlementDrafts([s.settlement])])}>
-                  {t('properties.edit.addSuggestion')}
-                </button>
-              </li>
+              </DocLine>
             ))}
-          </ul>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => onChange([...drafts, ...settlementDrafts(pending.map((s) => s.settlement))])}
-          >
-            {t('properties.edit.addAllSuggestions')}
-          </button>
-        </div>
+          </DocLines>
+        </SuggestBanner>
       ) : null}
 
       {drafts.map((d, i) => {
@@ -201,11 +217,7 @@ export function WaterEditor({
                           ))}
                         </span>
                       ) : null}
-                      {share.status !== 'none' ? (
-                        <span className={`property-water-status property-water-status-${share.status}`}>
-                          {waterStatusText(t, share.status, share.balance_snt, share.settled_snt)}
-                        </span>
-                      ) : null}
+                      <WaterStatusPill share={share} />
                     </p>
                   ) : null}
                   <div className="property-lease-notice">

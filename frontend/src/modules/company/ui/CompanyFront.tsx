@@ -6,9 +6,11 @@ import { formatDate } from '../../../shared/dates'
 import { DocLines, DocRows } from '../../../shared/DocRows'
 import { DueTile, DueTiles } from '../../../shared/DueTile'
 import { Pill } from '../../../shared/Pill'
+import { SuggestBanner } from '../../../shared/SuggestBanner'
 import { COMPANY_KINDS, KIND_SETTINGS, type CompanyOverview, type PeriodView, type Suggestion } from '../api'
 import { allSuggestions, deadlineStateText, deadlineTone, errorText, periodLabel, periodRange, suggestionAdd, useCompany } from './format'
 import { PeriodBody } from './PeriodBody'
+import { Shareholders } from './Shareholders'
 import { DocumentRow, SlotRow, SuggestionRows, type SlotActions } from './Slot'
 
 /** What is open: a period by its end date, the company's own documents, or nothing asked for. */
@@ -70,13 +72,11 @@ function SuggestionsPanel({ overview, actions }: { overview: CompanyOverview; ac
     return [t(`company.kind.${s.kind}`), period ? periodLabel(period, t) : t('company.documents.companyLevel')].join(' · ')
   }
   return (
-    <section className="company-suggest">
-      <div className="company-suggest-head">
-        <div>
-          <h3>{t('company.suggest.title')}</h3>
-          <p>{t('company.suggest.lead')}</p>
-        </div>
-        {overview.read_only ? null : (
+    <SuggestBanner
+      title={t('company.suggest.title')}
+      lead={t('company.suggest.lead')}
+      action={
+        overview.read_only ? null : (
           <button
             type="button"
             className="btn-primary"
@@ -84,14 +84,15 @@ function SuggestionsPanel({ overview, actions }: { overview: CompanyOverview; ac
           >
             {t('company.suggest.addAll', { n: suggestions.length })}
           </button>
-        )}
-      </div>
+        )
+      }
+    >
       {error ? <p className="error">{error}</p> : null}
-      <details className="company-suggest-list">
+      <details className="suggest-banner-list">
         <summary>{t('company.suggest.show')}</summary>
         <SuggestionRows suggestions={suggestions} actions={actions} readOnly={overview.read_only} onError={setError} showTarget={target} />
       </details>
-    </section>
+    </SuggestBanner>
   )
 }
 
@@ -175,14 +176,24 @@ export function CompanyFront({
   const [rowError, setRowError] = useState<string | null>(null)
   const [closed, setClosed] = useState(false)
   const [jump, setJump] = useState(0)
+  const [toShareholders, setToShareholders] = useState(false)
 
   const newestEnded = data?.periods.find((p) => p.ended) ?? data?.periods[0]
   const shown: CompanyOpen = open ?? (!closed && newestEnded ? { ends: newestEnded.ends } : null)
-  const actions: SlotActions = { apply, refresh, onOpenVoucher: (voucherId) => onOpenVoucher(shown, voucherId) }
   const dayOf = (overview: CompanyOverview) => today ?? overview.as_of
   const toggle = (target: Exclude<CompanyOpen, null>, isOpen: boolean) => {
     setClosed(isOpen)
     onOpen(isOpen ? null : target)
+  }
+  const actions: SlotActions = {
+    apply,
+    refresh,
+    onOpenVoucher: (voucherId) => onOpenVoucher(shown, voucherId),
+    onOpenShareholders: () => {
+      setToShareholders(true)
+      setJump(jump + 1)
+      toggle('own', false)
+    },
   }
   // The default on arriving stays where the page starts; asking for a card goes to it.
   const scrollKey = open === null ? null : jump
@@ -226,6 +237,7 @@ export function CompanyFront({
             onToggle={() => toggle('own', shown === 'own')}
           >
             <OwnDocuments overview={data} today={dayOf(data)} actions={actions} />
+            <Shareholders overview={data} today={dayOf(data)} actions={actions} focus={toShareholders} onFocused={() => setToShareholders(false)} />
           </Binder>
 
           <h3 className="section-label">{t('company.periods.title')}</h3>

@@ -2,7 +2,7 @@
 # this workflow succeeds (workflow_run). VPS still calls this via workflow_call
 # on tags so a tag is not tested twice on main.
 #
-# PR / push: fast gate (frontend lint+unit+chromium e2e, server unit) ~1–3 min.
+# PR / push: fast gate (frontend lint+unit+chromium e2e, server unit) ~11 min, nearly all of it e2e.
 # Release (tags + workflow_call): also firefox/webkit + desktop e2e.
 name: Test
 
@@ -33,7 +33,7 @@ jobs:
   # -------------------------------------------------------------------------
   frontend:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -76,7 +76,7 @@ jobs:
 
       - name: Frontend e2e (Chromium + Vite + wasm)
         working-directory: frontend
-        timeout-minutes: 10
+        timeout-minutes: 20
         env:
           # One browser on the fast path; full matrix is job `e2e-full`.
           TILARI_E2E_BROWSERS: chromium
