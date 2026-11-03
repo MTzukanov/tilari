@@ -7344,6 +7344,18 @@ button.due-tile:hover {
   font-size: 0.9rem;
 }
 
+.tax-return-row-file {
+  margin: 0 0 0.6rem;
+}
+
+.tax-return-row-file-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  margin: 0;
+}
+
 .tax-return-paste {
   margin: 0 0 0.6rem;
 }

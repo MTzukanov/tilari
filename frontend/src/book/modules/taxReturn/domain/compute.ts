@@ -43,6 +43,7 @@ import {
   placeIncomeStatement,
   type Placement,
 } from './mapping'
+import { findRowFiles } from './rowFiles'
 import type {
   AccountLine,
   CheckView,
@@ -364,6 +365,7 @@ export function computeTaxReturn(db: SqliteDb, ends: string, options: ComputeOpt
     form71b,
     form62,
     form73,
+    row_files: findRowFiles(db, starts, ends),
   }
 }
 
