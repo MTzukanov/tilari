@@ -95,7 +95,7 @@ export function parseUnitValue(text: string): number | null {
 }
 
 /** A euro amount as a spreadsheet or a file writes it: `1 234,56`, `1234.56` or `1234`. Empty is not an amount. */
-function parseTableEuros(text: string): number | null {
+export function parseTableEuros(text: string): number | null {
   const match = /^(\d+)(?:[.,](\d{1,2}))?$/.exec(text.replace(/[\s\u00a0\u202f€]/g, ''))
   return match ? Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0')) : null
 }

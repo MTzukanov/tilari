@@ -20,6 +20,7 @@ export type {
   HoldingRow,
   SaleIdType,
   SaleInput,
+  RowFile,
   RowView,
   ShareholderInput,
   TaxReturnInputs,
@@ -30,6 +31,7 @@ export { SALE, type Target } from '../../book/modules/taxReturn/domain/mapping'
 export { saleResult } from '../../book/modules/taxReturn/domain/form71b'
 export { computeForm73, emptyDividend } from '../../book/modules/taxReturn/domain/form73'
 export { parseHoldingTable } from '../../book/modules/taxReturn/domain/form8a'
+export { decodeTable, parseDividendTable } from '../../book/modules/taxReturn/domain/rowFiles'
 export { ilmoitinFile, type FileNotice, type FileProblem, type FileRemark } from '../../book/modules/taxReturn/domain/ilmoitinFile'
 export { omaVeroParts, omaVeroText, plainAmount, typedAmount } from '../../book/modules/taxReturn/domain/omaVeroText'
 
