@@ -2,6 +2,7 @@ import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { DocLine, DocLines } from '../../../shared/DocRows'
 import { Pill } from '../../../shared/Pill'
+import { SuggestBanner } from '../../../shared/SuggestBanner'
 import type { BookedLine, DepositView, LeaseException, LeaseRentAccount, LeaseState, LeaseView, RentPeriod } from '../api'
 import {
   deductedText,
@@ -43,7 +44,7 @@ function AbsentMark({ items, held }: { items: { voucher: unknown; no_document?: 
 }
 
 /** What a suggested lease was read from, each to open: the contract, the increase notices, the rent payments. */
-export function LeaseSources({ lease, onOpen }: { lease: LeaseView; onOpen: (voucherId: number) => void }) {
+function LeaseSources({ lease, onOpen }: { lease: LeaseView; onOpen: (voucherId: number) => void }) {
   const { t } = useI18n()
   const notices = lease.steps.flatMap((step) => (step.voucher ? [step.voucher] : []))
   const payments = lease.sources ?? []
@@ -139,9 +140,7 @@ function LeaseCard({
         </p>
       ) : null}
       {lease.contract || held ? (
-        <DocLines>
-          <DocSlotLine label={t('properties.lease.contract')} voucher={lease.contract} onOpen={onOpenVoucher} />
-        </DocLines>
+        <DocSlotLine label={t('properties.lease.contract')} voucher={lease.contract} onOpen={onOpenVoucher} />
       ) : null}
       {account ? (
         <RentAccountView
@@ -275,14 +274,18 @@ export function LeasesPanel({
         </div>
       ) : null}
       {suggestions.length ? (
-        <div className="property-lease-suggestions">
-          <h4 className="property-lease-others">{t('properties.lease.suggestions', { n: suggestions.length })}</h4>
-          <p className="muted">{t('properties.lease.suggestionsLead')}</p>
+        <SuggestBanner
+          heading="h4"
+          title={t('properties.lease.suggestions', { n: suggestions.length })}
+          lead={t('properties.lease.suggestionsLead')}
+          action={
+            <button type="button" className="btn-primary" onClick={onEdit}>
+              {t('properties.lease.review')}
+            </button>
+          }
+        >
           <LeaseList leases={suggestions} onOpenVoucher={onOpenVoucher} />
-          <button type="button" className="btn-secondary" onClick={onEdit}>
-            {t('properties.lease.review')}
-          </button>
-        </div>
+        </SuggestBanner>
       ) : null}
     </section>
   )

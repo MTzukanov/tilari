@@ -7,6 +7,25 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-03 - Rental objects: the edit page's documents and a shared suggestion banner (`feature/property-edit-docs`)
+
+- Third move from `docs/UI_PATTERNS.md`. The edit page's linked documents and balance-sheet items are `DocLine`s
+  with their remove or delete as a quiet link; a balance-sheet item's pill has a date and no number, since a
+  tase-erä has none. `DocPicker` shows the picked document's files as pills in place of "Näytä"
+  (`properties.edit.viewDoc` went). `DocCandidate` carries `series` and `files` (read by `voucherFiles`, shared
+  with `loadVoucherRefs`) in place of `first_attachment`; nothing stored changed.
+- The company page's "Ehdotuksia kirjanpidosta" banner is `shared/SuggestBanner` (`.company-suggest*` became
+  `.suggest-banner*`), now also on the object page's lease and water panels and in both editors. An editor's
+  suggestion is a `DocLine`: its first day in the date column, its source in `mark`, a filled "Lisää" in `end`.
+  The banner's lead and paragraph rules have their own classes, since a plain `p` rule reached the water
+  settlement cards inside it.
+- A lease card's missing contract and a settlement's missing statement are a line of text again ("Tasauslaskelma
+  Puuttuu" from the card's left edge, `.property-doc-slot`), not a `DocLine` with an empty date column: the
+  owner wanted them aligned left like the card's other lines. A linked one stays a `DocLine`.
+- A folded `DocLine` (list under 60rem, as on the edit page) keeps its actions at the side of both rows,
+  centred: a quiet "Poista" alone on the second row of a line with no files looked broken. The phone layout
+  is unchanged.
+
 ## 2026-11-03 - CI: the e2e step has 20 minutes (`ci/e2e-timeout-20`)
 
 - The Chromium e2e step in `test.yml` ran 9-10 minutes on one worker and hit its 10-minute limit now and then

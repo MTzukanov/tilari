@@ -679,9 +679,10 @@ export type DocCandidate = {
   date: string
   title: string
   doc_number: number | null
+  series: string | null
   attachments: number
-  /** The first attachment, to open the document from a form. */
-  first_attachment: number | null
+  /** Its own files, to open from a form. */
+  files: VoucherFile[]
   linked_to: number[]
   suggestion: { cost_centre_id: number | null; candidates: number[] } | null
 }

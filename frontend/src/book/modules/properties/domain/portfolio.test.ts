@@ -81,6 +81,9 @@ describe('rental objects: setup suggestions', () => {
     expect(doc(vouchers.lease)?.suggestion?.cost_centre_id).toBe(CC.bundle)
     expect(doc(vouchers.leaseGarage)?.suggestion?.cost_centre_id).toBe(CC.garage)
     expect(doc(vouchers.leaseOld)).toBeUndefined() // deleted voucher
+    // The edit page's pills: a document's own files by name.
+    expect(doc(vouchers.lease)?.files.map((f) => f.name)).toEqual(['vuokrasopimus.pdf'])
+    expect(doc(vouchers.leaseGarage)?.files).toEqual([])
     expect(setup.cost_centres.every((c) => !c.configured)).toBe(true)
     const kind = (id: number) => setup.cost_centres.find((c) => c.id === id)?.suggested_kind
     expect([kind(CC.bundle), kind(CC.garage), kind(CC.commercial), kind(CC.parkingA)]).toEqual([

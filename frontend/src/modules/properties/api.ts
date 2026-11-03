@@ -46,6 +46,7 @@ export type {
   SetupApplyInput,
   SetupResponse,
   Valuation,
+  VoucherFile,
   Warning,
   WaterBookedLine,
   WaterDetail,

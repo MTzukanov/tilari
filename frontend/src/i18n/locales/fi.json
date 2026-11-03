@@ -1320,12 +1320,11 @@
       "leasesLead": "Vuokralainen, ehdot, vuokra alussa ja korotukset. Korotussääntö esitäyttää seuraavan korotuksen; Tilari ei muuta vuokraa itse. Sopimus ja korotusilmoitukset ovat Liitetieto-tositteita, joten ne löytyvät myös Kitsasista.",
       "addLease": "Lisää vuokrasopimus",
       "removeLease": "Poista vuokrasopimus",
-      "suggestions": "Kirjanpidosta löytyi {n} vuokrasuhde-ehdotusta. Lisää ne lomakkeelle, tarkista ja tallenna.",
+      "suggestions": "Lisää ne lomakkeelle, tarkista ja tallenna.",
       "addSuggestion": "Lisää",
       "addAllSuggestions": "Lisää kaikki",
       "addIncrease": "Lisää korotus",
       "createNotice": "Luo korotusilmoitus",
-      "viewDoc": "Näytä",
       "confirmDeleteUnsaved": "Tällä sivulla luotiin {n} korotusilmoitusta, joita ei tallennettu kohteelle. Poistetaanko ne kirjanpidosta? Peruuta säilyttää ne (ne on ehkä jo lähetetty).",
       "restored": "Tallentamattomat muutokset palautettiin.",
       "deleteDoc": "Poista tosite",
@@ -1527,7 +1526,7 @@
       "latest": "Vesitasaus {period}",
       "editTitle": "Vesitasaukset",
       "editLead": "Taloyhtiön vesitasaukset jaksoittain. Vuokralaisten osuudet lasketaan vuokrasopimuksista: kulutus asumispäivien mukaan, vähennettynä vesimaksuennakoilla.",
-      "editSuggestions": "Kirjanpidosta löytyi {n} vesitasausta, joita ei ole lomakkeella.",
+      "editSuggestions": "Kohteelle kirjatut vesitasaukset, joita ei ole lomakkeella.",
       "direction": {
         "refund": "Hyvitys omistajalle",
         "charge": "Lisälasku omistajalle"

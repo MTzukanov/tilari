@@ -1320,12 +1320,11 @@
       "leasesLead": "Tenant, terms, starting rent and increases. The increase clause prefills the next increase; Tilari never changes rent by itself. The contract and increase notices are Liitetieto vouchers, so Kitsas finds them too.",
       "addLease": "Add lease",
       "removeLease": "Remove lease",
-      "suggestions": "The books suggest {n} tenancies. Add them to the form, review and save.",
+      "suggestions": "Add them to the form, review and save.",
       "addSuggestion": "Add",
       "addAllSuggestions": "Add all",
       "addIncrease": "Add increase",
       "createNotice": "Create increase notice",
-      "viewDoc": "View",
       "confirmDeleteUnsaved": "{n} increase notices were created on this page but not saved to the object. Delete them from the books? Cancel keeps them (they may have been sent already).",
       "restored": "Unsaved changes were restored.",
       "deleteDoc": "Delete voucher",
@@ -1527,7 +1526,7 @@
       "latest": "Water settlement {period}",
       "editTitle": "Water settlements",
       "editLead": "The housing company's water settlements by period. The tenants' shares come from the leases: the use by days lived there, less the water advances.",
-      "editSuggestions": "The books have {n} water settlements that are not in the form.",
+      "editSuggestions": "Water settlements booked on the object that are not in the form.",
       "direction": {
         "refund": "Refund to the owner",
         "charge": "Extra charge to the owner"
