@@ -78,13 +78,14 @@ test.describe('rental object leases', () => {
     await increase.getByRole('button', { name: 'Luo korotusilmoitus' }).click()
     expect((await download).suggestedFilename()).toMatch(/^vuokrankorotusilmoitus-.*-2026-01-01\.pdf$/)
     await expect(notice).toHaveValue(/Vuokrankorotusilmoitus Asunto 1\.1\.2026/)
-    await expect(increase.getByRole('link', { name: 'Näytä' })).toBeVisible()
+    // The picked notice's file opens from its pill.
+    await expect(increase.locator('.pill-doc')).toHaveText(/^vuokrankorotusilmoitus-.*-2026-01-01\.pdf$/)
 
     // Undo deletes the voucher again; then write it once more and keep it.
     page.once('dialog', (dialog) => void dialog.accept())
     await increase.getByRole('button', { name: 'Poista korotusilmoitus' }).click()
     await expect(notice).toHaveValue('–')
-    await expect(increase.getByRole('link', { name: 'Näytä' })).toBeHidden()
+    await expect(increase.locator('.pill-doc')).toHaveCount(0)
     const again = page.waitForEvent('download')
     await increase.getByRole('button', { name: 'Luo korotusilmoitus' }).click()
     await again
@@ -109,7 +110,7 @@ test.describe('rental object leases', () => {
 
     // A linked document opens its voucher; the way back restores the unsaved form.
     await page.getByLabel('Eräpäivä').first().fill('9')
-    await page.locator('.property-doc-list').getByRole('button', { name: /Vuokrankorotusilmoitus Asunto/ }).click()
+    await page.locator('.doc-lines').getByRole('button', { name: /Vuokrankorotusilmoitus Asunto/ }).click()
     await expect(page).toHaveURL(/#\/property\/4\/edit\/voucher\/\d+\/edit$/)
     await expect(page.getByRole('textbox', { name: 'Otsikko' })).toHaveValue(/Vuokrankorotusilmoitus Asunto/)
     await page.getByRole('button', { name: 'Sulje' }).click()
@@ -507,7 +508,7 @@ test.describe('rental object water settlements', () => {
     await expect(row.locator('.pill-warn')).toHaveText('avoin')
     await expect(row.getByRole('button', { name: /Vesitasaus Asunto/ })).toBeVisible()
     // No statement linked: the settlement's place for it says so.
-    await expect(panel.locator('.doc-line', { hasText: 'Tasauslaskelma' }).locator('.pill-crit')).toHaveText('Puuttuu')
+    await expect(panel.locator('.property-doc-slot', { hasText: 'Tasauslaskelma' }).locator('.pill-crit')).toHaveText('Puuttuu')
     const card = page.locator('.property-lease-card').first()
     await expect(card).toContainText('vesimaksu tasataan kulutuksen mukaan')
     const latest = card.locator('.property-lease-terms', { hasText: 'Vesitasaus 1.1.2025–30.6.2025: palautetaan 39,56 €' })

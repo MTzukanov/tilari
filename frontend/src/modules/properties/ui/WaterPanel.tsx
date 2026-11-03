@@ -1,6 +1,6 @@
 import { useI18n } from '../../../i18n'
-import { DocLines } from '../../../shared/DocRows'
 import { formatCents } from '../../../shared/money'
+import { SuggestBanner } from '../../../shared/SuggestBanner'
 import type { WaterDetail, WaterSettlementView } from '../api'
 import { companyResultText, periodText, waterBalanceText } from './format'
 import { DocSlotLine, LineLink, VoucherLink, WaterStatusPill } from './FormParts'
@@ -33,9 +33,7 @@ function SettlementCard({
       </p>
       {/* A suggestion is not stored, so it has no place for a statement to be missing from. */}
       {s.statement || (!source && held) ? (
-        <DocLines>
-          <DocSlotLine label={t('properties.water.statement')} voucher={s.statement} noDocument={s.no_document} onOpen={onOpenVoucher} />
-        </DocLines>
+        <DocSlotLine label={t('properties.water.statement')} voucher={s.statement} noDocument={s.no_document} onOpen={onOpenVoucher} />
       ) : null}
       <p className="property-lease-terms">
         {s.booked.length ? (
@@ -115,16 +113,20 @@ export function WaterPanel({
         <SettlementCard key={s.key} s={s} held={held} onOpenVoucher={onOpenVoucher} />
       ))}
       {water.suggestions.length ? (
-        <div className="property-lease-suggestions">
-          <h4 className="property-lease-others">{t('properties.water.suggestions', { n: water.suggestions.length })}</h4>
-          <p className="muted">{t('properties.water.suggestionsLead')}</p>
+        <SuggestBanner
+          heading="h4"
+          title={t('properties.water.suggestions', { n: water.suggestions.length })}
+          lead={t('properties.water.suggestionsLead')}
+          action={
+            <button type="button" className="btn-primary" onClick={onEdit}>
+              {t('properties.lease.review')}
+            </button>
+          }
+        >
           {water.suggestions.map((s) => (
             <SettlementCard key={`${s.settlement.from}-${s.settlement.to}`} s={s.view} source={s.source} onOpenVoucher={onOpenVoucher} />
           ))}
-          <button type="button" className="btn-secondary" onClick={onEdit}>
-            {t('properties.lease.review')}
-          </button>
-        </div>
+        </SuggestBanner>
       ) : null}
     </section>
   )

@@ -1320,12 +1320,11 @@
       "leasesLead": "Mieter, Bedingungen, Anfangsmiete und Erhöhungen. Die Erhöhungsklausel füllt die nächste Erhöhung vor; Tilari ändert die Miete nie selbst. Vertrag und Erhöhungsmitteilungen sind Liitetieto-Belege und daher auch in Kitsas auffindbar.",
       "addLease": "Mietvertrag hinzufügen",
       "removeLease": "Mietvertrag entfernen",
-      "suggestions": "Die Buchhaltung schlägt {n} Mietverhältnisse vor. Ins Formular übernehmen, prüfen und speichern.",
+      "suggestions": "Ins Formular übernehmen, prüfen und speichern.",
       "addSuggestion": "Hinzufügen",
       "addAllSuggestions": "Alle hinzufügen",
       "addIncrease": "Erhöhung hinzufügen",
       "createNotice": "Erhöhungsmitteilung erstellen",
-      "viewDoc": "Anzeigen",
       "confirmDeleteUnsaved": "Auf dieser Seite wurden {n} Erhöhungsmitteilungen erstellt, aber nicht beim Objekt gespeichert. Aus der Buchhaltung löschen? Abbrechen behält sie (sie wurden evtl. schon versandt).",
       "restored": "Ungespeicherte Änderungen wurden wiederhergestellt.",
       "deleteDoc": "Beleg löschen",
@@ -1527,7 +1526,7 @@
       "latest": "Wasserabrechnung {period}",
       "editTitle": "Wasserabrechnungen",
       "editLead": "Die Wasserabrechnungen der Wohnungsgesellschaft je Zeitraum. Die Anteile der Mieter ergeben sich aus den Mietverträgen: Verbrauch nach Wohntagen, abzüglich der Wasservorauszahlungen.",
-      "editSuggestions": "Die Buchhaltung enthält {n} Wasserabrechnungen, die nicht im Formular sind.",
+      "editSuggestions": "Auf das Objekt gebuchte Wasserabrechnungen, die nicht im Formular sind.",
       "direction": {
         "refund": "Gutschrift an den Eigentümer",
         "charge": "Nachzahlung des Eigentümers"

@@ -7,7 +7,7 @@
 import { SQL_POSTED } from '../../../kernel/sqlFragments'
 import type { SqliteDb } from '../../../sqlite'
 import { TYPE_ATTACHMENT_NOTE, TYPE_BANK_STATEMENT } from '../../../vouchers'
-import type { DocumentGroupKind, DocumentVoucher, PropertyDocuments } from './types'
+import type { DocumentGroupKind, DocumentVoucher, PropertyDocuments, VoucherFile } from './types'
 
 /** Kitsas system attachments (VAT report, statements, tax calculations) are not documents. */
 export function isUserAttachment(role: string | null): boolean {
@@ -17,6 +17,21 @@ export function isUserAttachment(role: string | null): boolean {
 function idList(ids: number[]): string {
   const safe = ids.filter((id) => Number.isSafeInteger(id))
   return safe.length ? safe.join(',') : 'NULL'
+}
+
+/** The vouchers' own files, by voucher, in the order they were added; names only. */
+export function voucherFiles(db: SqliteDb, voucherIds: number[]): Map<number, VoucherFile[]> {
+  const files = new Map<number, VoucherFile[]>()
+  for (const row of db.all<{ id: number; tosite: number; nimi: string | null; roolinimi: string | null }>(
+    `SELECT id, tosite, nimi, roolinimi FROM Liite WHERE tosite IN (${idList(voucherIds)}) ORDER BY id`,
+  )) {
+    if (!isUserAttachment(row.roolinimi)) continue
+    const id = Number(row.tosite)
+    const list = files.get(id) ?? []
+    list.push({ id: Number(row.id), name: String(row.nimi || row.roolinimi || `liite-${row.id}`) })
+    files.set(id, list)
+  }
+  return files
 }
 
 export function listPropertyDocuments(
@@ -112,29 +127,30 @@ export function listPropertyDocuments(
   }
 }
 
-/** Posted type-800 vouchers (Liitetieto) with their attachment counts, for setup. */
+/** Posted type-800 vouchers (Liitetieto) with their attachment counts and files, for setup. */
 export function listNoteVouchers(db: SqliteDb): {
   voucher_id: number
   date: string
   title: string
   doc_number: number | null
+  series: string | null
   attachments: number
-  first_attachment: number | null
+  files: VoucherFile[]
 }[] {
-  return db
-    .all<{ id: number; pvm: string; otsikko: string | null; tunniste: number | null; n: number; first: number | null }>(
-      `SELECT Tosite.id AS id, Tosite.pvm AS pvm, Tosite.otsikko AS otsikko, Tosite.tunniste AS tunniste,
-              (SELECT COUNT(*) FROM Liite WHERE Liite.tosite = Tosite.id) AS n,
-              (SELECT MIN(Liite.id) FROM Liite WHERE Liite.tosite = Tosite.id) AS first
-       FROM Tosite WHERE ${SQL_POSTED} AND Tosite.tyyppi = ${TYPE_ATTACHMENT_NOTE}
-       ORDER BY Tosite.pvm DESC, Tosite.id DESC`,
-    )
-    .map((row) => ({
-      voucher_id: Number(row.id),
-      date: String(row.pvm),
-      title: String(row.otsikko || ''),
-      doc_number: row.tunniste == null || Number(row.tunniste) === 0 ? null : Number(row.tunniste),
-      attachments: Number(row.n || 0),
-      first_attachment: row.first == null ? null : Number(row.first),
-    }))
+  const rows = db.all<{ id: number; pvm: string; otsikko: string | null; tunniste: number | null; sarja: string | null; n: number }>(
+    `SELECT Tosite.id AS id, Tosite.pvm AS pvm, Tosite.otsikko AS otsikko, Tosite.tunniste AS tunniste, Tosite.sarja AS sarja,
+            (SELECT COUNT(*) FROM Liite WHERE Liite.tosite = Tosite.id) AS n
+     FROM Tosite WHERE ${SQL_POSTED} AND Tosite.tyyppi = ${TYPE_ATTACHMENT_NOTE}
+     ORDER BY Tosite.pvm DESC, Tosite.id DESC`,
+  )
+  const files = voucherFiles(db, rows.map((row) => Number(row.id)))
+  return rows.map((row) => ({
+    voucher_id: Number(row.id),
+    date: String(row.pvm),
+    title: String(row.otsikko || ''),
+    doc_number: row.tunniste == null || Number(row.tunniste) === 0 ? null : Number(row.tunniste),
+    series: row.sarja || null,
+    attachments: Number(row.n || 0),
+    files: files.get(Number(row.id)) ?? [],
+  }))
 }

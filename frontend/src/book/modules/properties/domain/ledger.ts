@@ -6,7 +6,7 @@ import { pnlAccount, SQL_POSTED } from '../../../kernel/sqlFragments'
 import type { SqliteDb } from '../../../sqlite'
 import type { BrowseEntry } from '../../../types'
 import { TYPE_BANK_STATEMENT } from '../../../vouchers'
-import { isUserAttachment } from './documents'
+import { voucherFiles } from './documents'
 import type { VoucherFile } from './types'
 
 /** Kitsas brutto VAT codes: the line amount includes VAT (sales 12, purchases 22). */
@@ -537,14 +537,7 @@ export type VoucherRef = {
 export function loadVoucherRefs(db: SqliteDb, voucherIds: Iterable<number>): Map<number, VoucherRef> {
   const ids = [...voucherIds]
   // Names only: `Liite.data` is NULL in a lean working copy.
-  const files = new Map<number, VoucherFile[]>()
-  for (const row of db.all<{ id: number; tosite: number; nimi: string | null; roolinimi: string | null }>(
-    `SELECT id, tosite, nimi, roolinimi FROM Liite WHERE tosite IN (${inList(ids)}) ORDER BY id`,
-  )) {
-    if (!isUserAttachment(row.roolinimi)) continue
-    const list = files.get(Number(row.tosite)) ?? files.set(Number(row.tosite), []).get(Number(row.tosite))!
-    list.push({ id: Number(row.id), name: String(row.nimi || `liite-${row.id}`) })
-  }
+  const files = voucherFiles(db, ids)
   const rows = db.all<{
     id: number
     pvm: string
