@@ -2,16 +2,26 @@ import { useState } from 'react'
 import { candidateKey, depositFits } from '../../../book/modules/properties/domain/deposits'
 import { getBcp47, useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
+import { DocLine, DocLines } from '../../../shared/DocRows'
 import { EuroInput } from '../../../shared/EuroInput'
 import { FileButton } from '../../../shared/FileButton'
 import { formatCents } from '../../../shared/money'
 import { SearchSelect } from '../../../shared/SearchSelect'
-import { LEASE_INCREASE_KINDS, type DepositCandidate, type DocCandidate, type Lease, type LeaseIncreaseKind, type LeaseSuggestionView } from '../api'
+import { SuggestBanner } from '../../../shared/SuggestBanner'
+import {
+  LEASE_INCREASE_KINDS,
+  type DepositCandidate,
+  type DocCandidate,
+  type Lease,
+  type LeaseIncreaseKind,
+  type LeaseSuggestionView,
+  type LeaseView,
+} from '../api'
 import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
-import { NoDocumentCheck, Shown } from './FormParts'
-import { depositOptionText, leasePeriod, leaseRentText } from './format'
-import { LeaseSources, SuggestionSource } from './LeasesPanel'
+import { DocSlot, LineSources, NoDocumentCheck, Shown } from './FormParts'
+import { depositOptionText, leaseRentText, untilText } from './format'
+import { SuggestionSource } from './LeasesPanel'
 import {
   draftStepAt,
   draftTotal,
@@ -128,7 +138,7 @@ function DepositField({
                 ) : (
                   <span className="muted">{t('properties.deposit.missing', { id: key.slice(2) })}</span>
                 )}{' '}
-                <button type="button" className="btn-small" onClick={() => onChange(draft.deposits.filter((k) => k !== key))}>
+                <button type="button" className="btn-link btn-quiet" onClick={() => onChange(draft.deposits.filter((k) => k !== key))}>
                   {t('properties.edit.remove')}
                 </button>
               </li>
@@ -146,6 +156,23 @@ function DepositField({
         />
       ) : null}
     </div>
+  )
+}
+
+/** What a suggested lease was read from, as pills: the contract and the increase notices with their files, then the rent payments. */
+function SuggestionPills({ lease, onOpen }: { lease: LeaseView; onOpen: (voucherId: number) => void }) {
+  const { t } = useI18n()
+  const vouchers = [lease.contract, ...lease.steps.map((step) => step.voucher)].filter((v) => v != null)
+  const payments = lease.sources ?? []
+  return (
+    <>
+      {vouchers.map((v) => (
+        <span key={v.voucher_id} className="property-voucher">
+          <DocSlot voucher={v} onOpen={onOpen} />
+        </span>
+      ))}
+      <LineSources label={t('properties.lease.payments', { n: payments.length })} lines={payments} onOpen={onOpen} />
+    </>
   )
 }
 
@@ -238,26 +265,36 @@ export function LeasesEditor({
   return (
     <>
       {pending.length ? (
-        <div className="property-lease-suggestions">
-          <p className="muted">{t('properties.edit.suggestions', { n: pending.length })}</p>
-          <ul className="property-doc-list">
+        <SuggestBanner
+          heading="h4"
+          title={t('properties.lease.suggestions', { n: pending.length })}
+          lead={t('properties.edit.suggestions')}
+          action={
+            <button type="button" className="btn-primary" onClick={() => addSuggestions(pending.map((p) => p.i))}>
+              {t('properties.edit.addAllSuggestions')}
+            </button>
+          }
+        >
+          <DocLines>
             {pending.map(({ s, i }) => (
-              <li key={i}>
-                <span>{s.view.tenant ?? t('properties.lease.tenantUnknown')}</span>
-                <span className="muted">{leasePeriod(t, s.view)}</span>
-                <span>{leaseRentText(t, s.view.rent)}</span>
-                {s.view.suggested ? <SuggestionSource source={s.view.suggested} /> : null}
-                <LeaseSources lease={s.view} onOpen={onOpenVoucher} />
-                <button type="button" className="btn-small" onClick={() => addSuggestions([i])}>
-                  {t('properties.edit.addSuggestion')}
-                </button>
-              </li>
+              <DocLine
+                key={i}
+                date={formatDate(s.view.starts)}
+                title={[s.view.tenant ?? t('properties.lease.tenantUnknown'), s.view.ends ? untilText(t, s.view.ends) : '', leaseRentText(t, s.view.rent)]
+                  .filter(Boolean)
+                  .join(' · ')}
+                mark={s.view.suggested ? <SuggestionSource source={s.view.suggested} /> : null}
+                end={
+                  <button type="button" className="btn-small is-primary" onClick={() => addSuggestions([i])}>
+                    {t('properties.edit.addSuggestion')}
+                  </button>
+                }
+              >
+                <SuggestionPills lease={s.view} onOpen={onOpenVoucher} />
+              </DocLine>
             ))}
-          </ul>
-          <button type="button" className="btn-secondary" onClick={() => addSuggestions(pending.map((p) => p.i))}>
-            {t('properties.edit.addAllSuggestions')}
-          </button>
-        </div>
+          </DocLines>
+        </SuggestBanner>
       ) : null}
 
       {drafts.map((d, i) => (

@@ -6,6 +6,8 @@ import { pnlAccount, SQL_POSTED } from '../../../kernel/sqlFragments'
 import type { SqliteDb } from '../../../sqlite'
 import type { BrowseEntry } from '../../../types'
 import { TYPE_BANK_STATEMENT } from '../../../vouchers'
+import { voucherFiles } from './documents'
+import type { VoucherFile } from './types'
 
 /** Kitsas brutto VAT codes: the line amount includes VAT (sales 12, purchases 22). */
 const BRUTTO_CODES = new Set([12, 22])
@@ -528,9 +530,14 @@ export type VoucherRef = {
   posted: boolean
   doc_number: number | null
   series: string | null
+  /** Its own files, by id (`loadVoucherRefs` always gives them). */
+  files?: VoucherFile[]
 }
 
 export function loadVoucherRefs(db: SqliteDb, voucherIds: Iterable<number>): Map<number, VoucherRef> {
+  const ids = [...voucherIds]
+  // Names only: `Liite.data` is NULL in a lean working copy.
+  const files = voucherFiles(db, ids)
   const rows = db.all<{
     id: number
     pvm: string
@@ -539,7 +546,7 @@ export function loadVoucherRefs(db: SqliteDb, voucherIds: Iterable<number>): Map
     tila: number
     tunniste: number | null
     sarja: string | null
-  }>(`SELECT id, pvm, tyyppi, otsikko, tila, tunniste, sarja FROM Tosite WHERE id IN (${inList(voucherIds)})`)
+  }>(`SELECT id, pvm, tyyppi, otsikko, tila, tunniste, sarja FROM Tosite WHERE id IN (${inList(ids)})`)
   return new Map(
     rows.map((row) => [
       Number(row.id),
@@ -552,6 +559,7 @@ export function loadVoucherRefs(db: SqliteDb, voucherIds: Iterable<number>): Map
         // Drafts have 0 (see AGENTS.md, voucher numbers).
         doc_number: row.tunniste ? Number(row.tunniste) : null,
         series: row.sarja || null,
+        files: files.get(Number(row.id)) ?? [],
       },
     ]),
   )

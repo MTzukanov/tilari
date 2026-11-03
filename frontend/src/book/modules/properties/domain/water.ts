@@ -210,7 +210,7 @@ export function shareStatus(balance: number, settled: number): WaterShareStatus 
 }
 
 /** What a voucher shows as. */
-type VoucherLabel = Pick<VoucherRef, 'id' | 'date' | 'doc_number' | 'series' | 'title'>
+type VoucherLabel = Pick<VoucherRef, 'id' | 'date' | 'doc_number' | 'series' | 'title' | 'files'>
 
 export type WaterViewContext = {
   tenantName: (lease: Lease) => string | null
@@ -221,7 +221,7 @@ export type WaterViewContext = {
 
 function voucherOf(refs: Map<number, VoucherLabel>, id: number | undefined): LeaseVoucher | null {
   const ref = id != null ? refs.get(id) : undefined
-  return ref ? { voucher_id: ref.id, date: ref.date, doc_number: ref.doc_number, series: ref.series, title: ref.title } : null
+  return ref ? { voucher_id: ref.id, date: ref.date, doc_number: ref.doc_number, series: ref.series, title: ref.title, files: ref.files ?? [] } : null
 }
 
 /** A line to show and open: `amount` is the part that counts. */
@@ -237,7 +237,7 @@ export function bookedLine(
     line_snt: line.net_snt,
     text: line.text ?? '',
     partner: ctx.partnerName(line.partner_id),
-    voucher: voucherOf(ctx.refs, line.voucher_id) ?? { voucher_id: line.voucher_id, date: line.date, doc_number: null, series: null, title: '' },
+    voucher: voucherOf(ctx.refs, line.voucher_id) ?? { voucher_id: line.voucher_id, date: line.date, doc_number: null, series: null, title: '', files: [] },
   }
 }
 
@@ -290,6 +290,7 @@ export function settlementView(
     usage_snt: usage,
     advance_snt: usage != null ? usage - settlement.difference_snt : null,
     statement: voucherOf(ctx.refs, settlement.voucher_id),
+    no_document: settlement.no_document === true,
     booked: company.map((l) => bookedLine(l, l.net_snt, ctx)),
     shares: views,
     owner_snt: views.reduce((sum, v) => sum + v.balance_snt, 0) - settlement.difference_snt,
@@ -314,7 +315,9 @@ export function waterBookedLine(line: WaterLine, ctx: Pick<WaterViewContext, 'pa
 /** The lines back from `waterBookedLine`, with their payers' names and their vouchers' labels. */
 export function fromBookedLines(booked: WaterBookedLine[]): { lines: WaterLine[]; ctx: Pick<WaterViewContext, 'partnerName' | 'refs'> } {
   const partners = new Map(booked.map((b) => [b.partner_id, b.partner]))
-  const refs = new Map(booked.map(({ voucher: v }) => [v.voucher_id, { id: v.voucher_id, date: v.date, doc_number: v.doc_number, series: v.series, title: v.title }]))
+  const refs = new Map(
+    booked.map(({ voucher: v }) => [v.voucher_id, { id: v.voucher_id, date: v.date, doc_number: v.doc_number, series: v.series, title: v.title, files: v.files }]),
+  )
   return {
     lines: booked.map((b) => ({
       id: b.line_id,

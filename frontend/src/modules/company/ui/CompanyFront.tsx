@@ -6,6 +6,7 @@ import { formatDate } from '../../../shared/dates'
 import { DocLines, DocRows } from '../../../shared/DocRows'
 import { DueTile, DueTiles } from '../../../shared/DueTile'
 import { Pill } from '../../../shared/Pill'
+import { SuggestBanner } from '../../../shared/SuggestBanner'
 import { COMPANY_KINDS, KIND_SETTINGS, type CompanyOverview, type PeriodView, type Suggestion } from '../api'
 import { allSuggestions, deadlineStateText, deadlineTone, errorText, periodLabel, periodRange, suggestionAdd, useCompany } from './format'
 import { PeriodBody } from './PeriodBody'
@@ -71,13 +72,11 @@ function SuggestionsPanel({ overview, actions }: { overview: CompanyOverview; ac
     return [t(`company.kind.${s.kind}`), period ? periodLabel(period, t) : t('company.documents.companyLevel')].join(' · ')
   }
   return (
-    <section className="company-suggest">
-      <div className="company-suggest-head">
-        <div>
-          <h3>{t('company.suggest.title')}</h3>
-          <p>{t('company.suggest.lead')}</p>
-        </div>
-        {overview.read_only ? null : (
+    <SuggestBanner
+      title={t('company.suggest.title')}
+      lead={t('company.suggest.lead')}
+      action={
+        overview.read_only ? null : (
           <button
             type="button"
             className="btn-primary"
@@ -85,14 +84,15 @@ function SuggestionsPanel({ overview, actions }: { overview: CompanyOverview; ac
           >
             {t('company.suggest.addAll', { n: suggestions.length })}
           </button>
-        )}
-      </div>
+        )
+      }
+    >
       {error ? <p className="error">{error}</p> : null}
-      <details className="company-suggest-list">
+      <details className="suggest-banner-list">
         <summary>{t('company.suggest.show')}</summary>
         <SuggestionRows suggestions={suggestions} actions={actions} readOnly={overview.read_only} onError={setError} showTarget={target} />
       </details>
-    </section>
+    </SuggestBanner>
   )
 }
 

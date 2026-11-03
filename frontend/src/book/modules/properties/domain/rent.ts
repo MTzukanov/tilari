@@ -93,7 +93,7 @@ export function leasePartnerIds(leases: Lease[]): number[] {
 function voucherOf(refs: Map<number, VoucherRef>, id: number | undefined): LeaseVoucher | null {
   const ref = id != null ? refs.get(id) : undefined
   if (!ref) return null
-  return { voucher_id: ref.id, date: ref.date, doc_number: ref.doc_number, series: ref.series, title: ref.title }
+  return { voucher_id: ref.id, date: ref.date, doc_number: ref.doc_number, series: ref.series, title: ref.title, files: ref.files ?? [] }
 }
 
 /** A lease as the object page shows it on `asOf`, with names and voucher labels resolved. */

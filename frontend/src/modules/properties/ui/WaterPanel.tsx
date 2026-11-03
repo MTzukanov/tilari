@@ -1,17 +1,21 @@
 import { useI18n } from '../../../i18n'
 import { formatCents } from '../../../shared/money'
+import { SuggestBanner } from '../../../shared/SuggestBanner'
 import type { WaterDetail, WaterSettlementView } from '../api'
-import { companyResultText, periodText, waterBalanceText, waterStatusText } from './format'
-import { LineLink, VoucherLink } from './FormParts'
+import { companyResultText, periodText, waterBalanceText } from './format'
+import { DocSlotLine, LineLink, VoucherLink, WaterStatusPill } from './FormParts'
 import { SuggestionSource } from './LeasesPanel'
 
 function SettlementCard({
   s,
   source,
+  held = true,
   onOpenVoucher,
 }: {
   s: WaterSettlementView
   source?: 'company' | 'tenant'
+  /** Not sold: only then is a statement with no voucher flagged as missing. */
+  held?: boolean
   onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
@@ -27,12 +31,11 @@ function SettlementCard({
         <span className="muted">{t('properties.water.company', { text: company.join(', ') })}</span>
         {source ? <SuggestionSource source={source === 'company' ? 'waterCompany' : 'waterTenant'} /> : null}
       </p>
+      {/* A suggestion is not stored, so it has no place for a statement to be missing from. */}
+      {s.statement || (!source && held) ? (
+        <DocSlotLine label={t('properties.water.statement')} voucher={s.statement} noDocument={s.no_document} onOpen={onOpenVoucher} />
+      ) : null}
       <p className="property-lease-terms">
-        {s.statement ? (
-          <>
-            {t('properties.water.statement')}: <VoucherLink voucher={s.statement} onOpen={onOpenVoucher} />{' '}
-          </>
-        ) : null}
         {s.booked.length ? (
           <>
             {t('properties.water.booked')}:{' '}
@@ -53,11 +56,7 @@ function SettlementCard({
                 {t('properties.water.stay', { period: periodText(t, share.from, share.to), days: share.days })}
               </span>
               <span>{waterBalanceText(t, share.balance_snt)}</span>
-              {share.status !== 'none' ? (
-                <span className={`property-water-status property-water-status-${share.status}`}>
-                  {waterStatusText(t, share.status, share.balance_snt, share.settled_snt)}
-                </span>
-              ) : null}
+              <WaterStatusPill share={share} />
               {share.letter ? <VoucherLink voucher={share.letter} onOpen={onOpenVoucher} /> : null}
               {share.movements.map((m) => (
                 <LineLink key={m.line_id} line={m} onOpen={onOpenVoucher} />
@@ -88,10 +87,13 @@ function SettlementCard({
 /** Water settlements on the object page: the stored ones, newest first, then the book's suggestions. */
 export function WaterPanel({
   water,
+  held,
   onEdit,
   onOpenVoucher,
 }: {
   water: WaterDetail
+  /** Not sold: only then is a statement with no voucher flagged as missing. */
+  held: boolean
   onEdit: () => void
   onOpenVoucher: (voucherId: number) => void
 }) {
@@ -108,19 +110,23 @@ export function WaterPanel({
         </p>
       ) : null}
       {water.settlements.map((s) => (
-        <SettlementCard key={s.key} s={s} onOpenVoucher={onOpenVoucher} />
+        <SettlementCard key={s.key} s={s} held={held} onOpenVoucher={onOpenVoucher} />
       ))}
       {water.suggestions.length ? (
-        <div className="property-lease-suggestions">
-          <h4 className="property-lease-others">{t('properties.water.suggestions', { n: water.suggestions.length })}</h4>
-          <p className="muted">{t('properties.water.suggestionsLead')}</p>
+        <SuggestBanner
+          heading="h4"
+          title={t('properties.water.suggestions', { n: water.suggestions.length })}
+          lead={t('properties.water.suggestionsLead')}
+          action={
+            <button type="button" className="btn-primary" onClick={onEdit}>
+              {t('properties.lease.review')}
+            </button>
+          }
+        >
           {water.suggestions.map((s) => (
             <SettlementCard key={`${s.settlement.from}-${s.settlement.to}`} s={s.view} source={s.source} onOpenVoucher={onOpenVoucher} />
           ))}
-          <button type="button" className="btn-secondary" onClick={onEdit}>
-            {t('properties.lease.review')}
-          </button>
-        </div>
+        </SuggestBanner>
       ) : null}
     </section>
   )

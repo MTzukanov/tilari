@@ -8,6 +8,7 @@ import type { SqliteDb } from '../../../sqlite'
 import { buildPropertyFixture, CC, type PropertyFixture } from '../testFixture'
 import { propertyKey, serializeDoc } from './doc'
 import { listPropertyDocuments } from './documents'
+import { loadVoucherRefs } from './ledger'
 import {
   applySetup,
   buildSetup,
@@ -80,6 +81,9 @@ describe('rental objects: setup suggestions', () => {
     expect(doc(vouchers.lease)?.suggestion?.cost_centre_id).toBe(CC.bundle)
     expect(doc(vouchers.leaseGarage)?.suggestion?.cost_centre_id).toBe(CC.garage)
     expect(doc(vouchers.leaseOld)).toBeUndefined() // deleted voucher
+    // The edit page's pills: a document's own files by name.
+    expect(doc(vouchers.lease)?.files.map((f) => f.name)).toEqual(['vuokrasopimus.pdf'])
+    expect(doc(vouchers.leaseGarage)?.files).toEqual([])
     expect(setup.cost_centres.every((c) => !c.configured)).toBe(true)
     const kind = (id: number) => setup.cost_centres.find((c) => c.id === id)?.suggested_kind
     expect([kind(CC.bundle), kind(CC.garage), kind(CC.commercial), kind(CC.parkingA)]).toEqual([
@@ -400,6 +404,9 @@ describe('rental objects: figures', () => {
       rent: { from: '2025-03-01', water_snt: 20 * E },
       contract: { voucher_id: vouchers.lease, title: 'Vuokrasopimus As Oy Esimerkkikatu 1 A 1 1.3.2023-' },
     })
+    // The contract's file opens from the card; the notice has none.
+    expect(after.leases[0].contract?.files.map((f) => f.name)).toEqual(['vuokrasopimus.pdf'])
+    expect(after.leases[0].steps[1].voucher?.files).toEqual([])
     expect(after.lease?.key).toBe('l1')
     // The stored lease stands for the suggestion now.
     expect(after.lease_suggestions).toEqual([])
@@ -797,6 +804,16 @@ describe('rental objects: documents', () => {
     })
     expect(withBank.groups.find((g) => g.kind === 'bank')?.vouchers).toHaveLength(1)
     expect(withBank.groups.find((g) => g.kind === 'linked')?.vouchers[0]).toMatchObject({ voucher_id: 999_999, missing: true })
+  })
+
+  it("a voucher's label lists its own files by name, not Kitsas's system attachments", async () => {
+    const { db, vouchers } = await setUp()
+    db.run("INSERT INTO Liite (tosite, nimi, roolinimi, tyyppi, data) VALUES (?, 'alv.pdf', 'alv', 'application/pdf', NULL)", [vouchers.lease])
+    db.run("INSERT INTO Liite (tosite, nimi, roolinimi, tyyppi, data) VALUES (?, NULL, NULL, 'application/pdf', NULL)", [vouchers.leaseGarage])
+    const refs = loadVoucherRefs(db, [vouchers.lease, vouchers.leaseGarage, vouchers.rentRise])
+    expect(refs.get(vouchers.lease)?.files?.map((f) => f.name)).toEqual(['vuokrasopimus.pdf'])
+    expect(refs.get(vouchers.leaseGarage)?.files?.map((f) => f.name)).toEqual([expect.stringMatching(/^liite-\d+$/)])
+    expect(refs.get(vouchers.rentRise)?.files).toEqual([])
   })
 })
 

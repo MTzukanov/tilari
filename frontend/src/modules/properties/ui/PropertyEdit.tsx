@@ -3,10 +3,12 @@ import { deleteVoucher, fetchPartners, fetchSettings, saveVoucher, uploadAttachm
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { downloadFile, localToday } from '../../../shared/downloadFile'
+import { DocLine, DocLines } from '../../../shared/DocRows'
 import { EuroInput } from '../../../shared/EuroInput'
 import { SearchSelect } from '../../../shared/SearchSelect'
 import { formatCents, parseEurInput } from '../../../shared/money'
 import { parsePercentInput } from '../../../shared/percent'
+import { FilePill, Pill, VoucherPill } from '../../../shared/Pill'
 import {
   deleteProperty,
   fetchProperty,
@@ -19,6 +21,7 @@ import {
   type PropertyDoc,
   type PropertyKind,
   type SetupResponse,
+  type VoucherFile,
 } from '../api'
 import { settlementShares } from '../../../book/modules/properties/domain/water'
 import { DocPicker } from './DocPicker'
@@ -33,6 +36,7 @@ import {
   type ValuationDraft,
 } from './editDraft'
 import { clauseText, saveErrorText } from './format'
+import { VoucherOpen } from './FormParts'
 import { increaseNoticePdf, noticeTitle, type NoticeAmounts } from './increaseNotice'
 import type { LetterCompany } from './letter'
 import { buildLeases, withKeys, type AmountsDraft, type Partner } from './leaseDrafts'
@@ -229,14 +233,24 @@ function EditForm({
       partner: partner ? partner.id : tenant.trim() || null,
       entries: [],
     })
-    let first: number | null = null
+    const uploaded: VoucherFile[] = []
     for (const file of files) {
       const attachment = await uploadAttachment(saved.id, file)
-      first ??= attachment.id
+      uploaded.push({ id: attachment.id, name: file.name })
     }
     setNewDocs((prev) => [
       ...prev,
-      { voucher_id: saved.id, date: today, title, doc_number: null, attachments: files.length, first_attachment: first, linked_to: [], suggestion: null },
+      {
+        voucher_id: saved.id,
+        date: today,
+        title,
+        doc_number: saved.doc_number || null,
+        series: saved.series || null,
+        attachments: files.length,
+        files: uploaded,
+        linked_to: [],
+        suggestion: null,
+      },
     ])
     return saved.id
   }
@@ -612,25 +626,36 @@ function EditForm({
         <h3>{t('properties.eras.title')}</h3>
         <p className="muted">{t('properties.edit.erasLead')}</p>
         <p className="property-legend">{t('properties.setup.starLegendEdit')}</p>
-        <ul className="property-doc-list property-linked-list">
+        <DocLines>
           {eras.map((eraid) => {
             const e = eraById.get(eraid)
+            const remove = (
+              <button type="button" className="btn-link btn-quiet" onClick={() => setEras(eras.filter((x) => x !== eraid))}>
+                {t('properties.edit.remove')}
+              </button>
+            )
+            if (!e) {
+              return (
+                <DocLine
+                  key={eraid}
+                  title={<span className="muted">{t('properties.eras.missing', { id: eraid })}</span>}
+                  mark={<Pill tone="crit">{t('properties.docs.deleted')}</Pill>}
+                  end={remove}
+                />
+              )
+            }
+            // A balance-sheet item has no voucher number of its own: its pill shows the date only.
+            const title = `${e.account} · ${e.description} · ${formatCents(e.balance_snt)}`
             return (
-              <li key={eraid}>
-                {e ? (
-                  <button type="button" className="btn-link" onClick={() => openVoucher(e.voucher_id)}>
-                    {e.account} · {formatDate(e.date)} · {e.description} · {formatCents(e.balance_snt)}
-                  </button>
-                ) : (
-                  <span className="muted">{t('properties.eras.missing', { id: eraid })}</span>
-                )}{' '}
-                <button type="button" className="btn-small" onClick={() => setEras(eras.filter((x) => x !== eraid))}>
-                  {t('properties.edit.remove')}
-                </button>
-              </li>
+              <DocLine
+                key={eraid}
+                voucher={<VoucherPill label={`${e.account} · ${e.description}`} date={formatDate(e.date)} onOpen={() => openVoucher(e.voucher_id)} />}
+                title={title}
+                end={remove}
+              />
             )
           })}
-        </ul>
+        </DocLines>
         {availableEras.length ? (
           <SearchSelect
             aria-label={t('properties.edit.addEra')}
@@ -647,31 +672,37 @@ function EditForm({
 
       <section className="property-section">
         <h3>{t('properties.docs.linkedTitle')}</h3>
-        <ul className="property-doc-list property-linked-list">
+        <DocLines>
           {docs.map((voucherId) => {
             const d = docById.get(voucherId)
+            const end = isCreated(voucherId) ? (
+              <button type="button" className="btn-link btn-quiet" onClick={() => void deleteDocs([voucherId])}>
+                {t('properties.edit.deleteDoc')}
+              </button>
+            ) : (
+              <button type="button" className="btn-link btn-quiet" onClick={() => setDocs(docs.filter((x) => x !== voucherId))}>
+                {t('properties.edit.remove')}
+              </button>
+            )
+            if (!d) {
+              return (
+                <DocLine
+                  key={voucherId}
+                  title={<span className="muted">{t('properties.docs.missing', { id: voucherId })}</span>}
+                  mark={<Pill tone="crit">{t('properties.docs.deleted')}</Pill>}
+                  end={end}
+                />
+              )
+            }
             return (
-              <li key={voucherId}>
-                {d ? (
-                  <button type="button" className="btn-link" onClick={() => openVoucher(voucherId)}>
-                    {formatDate(d.date)} · {d.title}
-                  </button>
-                ) : (
-                  <span className="muted">{t('properties.docs.missing', { id: voucherId })}</span>
-                )}{' '}
-                {isCreated(voucherId) ? (
-                  <button type="button" className="btn-small" onClick={() => void deleteDocs([voucherId])}>
-                    {t('properties.edit.deleteDoc')}
-                  </button>
-                ) : (
-                  <button type="button" className="btn-small" onClick={() => setDocs(docs.filter((x) => x !== voucherId))}>
-                    {t('properties.edit.remove')}
-                  </button>
-                )}
-              </li>
+              <DocLine key={voucherId} voucher={<VoucherOpen voucher={d} onOpen={openVoucher} />} title={d.title} end={end}>
+                {d.files.map((f) => (
+                  <FilePill key={f.id} id={f.id} name={f.name} />
+                ))}
+              </DocLine>
             )
           })}
-        </ul>
+        </DocLines>
         {availableDocs.length ? (
           <DocPicker
             docs={availableDocs}

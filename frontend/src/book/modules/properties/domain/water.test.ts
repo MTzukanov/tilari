@@ -131,7 +131,8 @@ describe('water settlements', () => {
     ]
     const view = settlementView(settlement, lines, leases, ctx)
     expect(view.booked.map((m) => [m.line_id, m.amount_snt])).toEqual([[1, 12_345]])
-    expect(view.statement).toEqual({ voucher_id: 101, date: '2023-11-30', doc_number: 12, series: null, title: 'Tiliote 11/2023' })
+    expect(view.statement).toEqual({ voucher_id: 101, date: '2023-11-30', doc_number: 12, series: null, title: 'Tiliote 11/2023', files: [] })
+    expect(view.no_document).toBe(false)
     expect(view.shares).toHaveLength(1)
     expect(view.shares[0]).toMatchObject({
       lease_key: 'l1',
