@@ -10,6 +10,7 @@ import { SuggestBanner } from '../../../shared/SuggestBanner'
 import { COMPANY_KINDS, KIND_SETTINGS, type CompanyOverview, type PeriodView, type Suggestion } from '../api'
 import { allSuggestions, deadlineStateText, deadlineTone, errorText, periodLabel, periodRange, suggestionAdd, useCompany } from './format'
 import { PeriodBody } from './PeriodBody'
+import { Shareholders } from './Shareholders'
 import { DocumentRow, SlotRow, SuggestionRows, type SlotActions } from './Slot'
 
 /** What is open: a period by its end date, the company's own documents, or nothing asked for. */
@@ -175,14 +176,24 @@ export function CompanyFront({
   const [rowError, setRowError] = useState<string | null>(null)
   const [closed, setClosed] = useState(false)
   const [jump, setJump] = useState(0)
+  const [toShareholders, setToShareholders] = useState(false)
 
   const newestEnded = data?.periods.find((p) => p.ended) ?? data?.periods[0]
   const shown: CompanyOpen = open ?? (!closed && newestEnded ? { ends: newestEnded.ends } : null)
-  const actions: SlotActions = { apply, refresh, onOpenVoucher: (voucherId) => onOpenVoucher(shown, voucherId) }
   const dayOf = (overview: CompanyOverview) => today ?? overview.as_of
   const toggle = (target: Exclude<CompanyOpen, null>, isOpen: boolean) => {
     setClosed(isOpen)
     onOpen(isOpen ? null : target)
+  }
+  const actions: SlotActions = {
+    apply,
+    refresh,
+    onOpenVoucher: (voucherId) => onOpenVoucher(shown, voucherId),
+    onOpenShareholders: () => {
+      setToShareholders(true)
+      setJump(jump + 1)
+      toggle('own', false)
+    },
   }
   // The default on arriving stays where the page starts; asking for a card goes to it.
   const scrollKey = open === null ? null : jump
@@ -226,6 +237,7 @@ export function CompanyFront({
             onToggle={() => toggle('own', shown === 'own')}
           >
             <OwnDocuments overview={data} today={dayOf(data)} actions={actions} />
+            <Shareholders overview={data} today={dayOf(data)} actions={actions} focus={toShareholders} onFocused={() => setToShareholders(false)} />
           </Binder>
 
           <h3 className="section-label">{t('company.periods.title')}</h3>

@@ -1738,7 +1738,162 @@
       "statements_prepared": "Tilinpäätös laadittu",
       "agm": "Varsinainen yhtiökokous",
       "tax_return": "Veroilmoitus 6B",
-      "prh_filing": "Tilinpäätös PRH:lle"
+      "prh_filing": "Tilinpäätös PRH:lle",
+      "dividend_withholding": "Osingon ennakonpidätys",
+      "dividend_report": "Osinkojen vuosi-ilmoitus"
+    },
+    "dividend": {
+      "title": "Osingot tämän tilikauden voitosta",
+      "name": {
+        "agm": "Osinko",
+        "extra": "Lisäosinko"
+      },
+      "decided": {
+        "agm": "Varsinainen yhtiökokous {date}",
+        "extra": "Ylimääräinen yhtiökokous {date}"
+      },
+      "step": {
+        "decided": "Päätetty",
+        "booked": "Kirjattu",
+        "paid": "Maksettu",
+        "withheld": "Pidätys tilitetty",
+        "reported": "Ilmoitettu"
+      },
+      "state": {
+        "done": "Valmis",
+        "waiting": "Odottaa",
+        "overdue": "Myöhässä",
+        "missing": "Puuttuu",
+        "no_minutes": "Ei pöytäkirjaa",
+        "difference": "Ero",
+        "no_contract": "Ei sopimusta",
+        "not_applicable": "Ei tarvita"
+      },
+      "voucher": {
+        "decision": "Päätös",
+        "payment": "Maksu",
+        "remittance": "Pidätyksen tilitys"
+      },
+      "alert": {
+        "difference": "Maksettu {paid}, päätetty {decided}.",
+        "noContract": "Osinko jäi velaksi osakkaalle, mutta maksun tositteella ei ole liitettä, kuten velkasopimusta.",
+        "unpaid": "Maksamatta {amount}",
+        "withholdingOpen": "Pidätys tilittämättä {amount}, eräpäivä {date}",
+        "noMinutes": "Päätökseltä puuttuu kokouksen pöytäkirja. Lisää se päätöksen tositteelle tai riville {row}."
+      },
+      "form": {
+        "account": "Tili",
+        "partner": "Saaja",
+        "debit": "Debet",
+        "credit": "Kredit",
+        "dayClosed": "Päivä ei ole avoimella tilikaudella.",
+        "draftNote": "Tosite tehdään luonnoksena: avaa se ja kirjaa, kun asia on tehty.",
+        "create": "Tee luonnos"
+      },
+      "decision": {
+        "open": "Kirjaa osingonjakopäätös",
+        "defaultTitle": {
+          "agm": "Osingonjako tilikaudelta {period}",
+          "extra": "Lisäosinko tilikaudelta {period}"
+        },
+        "date": "Päätöspäivä",
+        "amount": "Osinko yhteensä, €",
+        "otherPeriod": "Tämän päivän päätös jakaa toisen tilikauden voittoa, joten se näkyy sen kortilla.",
+        "another": "Tältä tilikaudelta on jo osingonjakopäätös tai sen luonnos. Toisesta päättää yleensä ylimääräinen yhtiökokous.",
+        "accounts": "Debet {retained} Edellisten tilikausien voitto, kredit {distribution} Osingonjako.",
+        "meeting": "Päättänyt kokous",
+        "minutes": "Kokouksen pöytäkirja",
+        "minutesNote": "Pöytäkirja liitetään päätöksen tositteelle ja näkyy samana tiedostona rivillä {row}. Sen voi lisätä myöhemminkin.",
+        "minutesStored": "Pöytäkirja on jo rivillä {row}. Päätös kirjataan sen tositteelle, joten tiedosto on kirjanpidossa vain kerran:"
+      },
+      "payment": {
+        "open": "Tee maksutosite",
+        "defaultTitle": "Osingon maksu",
+        "payableName": "Voitonjakovelat",
+        "date": "Maksupäivä",
+        "paidAs": "Maksetaan",
+        "asDebt": "Velaksi osakkaille ({account} {name})",
+        "fromBank": "Pankista ({account} {name})",
+        "contract": "Velkasopimus (valinnainen)",
+        "contractNote": "Velaksi jäävä osinko tarvitsee sopimuksen tositteen liitteeksi. Sen voi lisätä myös myöhemmin.",
+        "draftExists": "Tälle osingolle on jo maksun luonnos.",
+        "accounts": "Debet {distribution} Osingonjako maksamattomalla määrällä, kredit {withholding} ennakonpidätys ja nettomäärä kullekin saajalle.",
+        "withholdingLine": "Ennakonpidätys osingosta",
+        "needs": {
+          "no_shareholders": "Lisää ensin osakkaat yhtiön omalle kortille.",
+          "no_holders": "Tarkista osakkaiden omistukset.",
+          "rate_missing": "Lisää ulkomailla asuvan osakkaan pidätysprosentti."
+        }
+      },
+      "recipients": {
+        "title": "Saajat ({n})",
+        "gross": "Brutto",
+        "rate": "Prosentti",
+        "withholding": "Pidätys",
+        "net": "Netto",
+        "total": "Yhteensä",
+        "overLimit": "{rate}, yli 150 000 euron osasta 28 %",
+        "problem": {
+          "no_shareholders": "Osakkaita ei ole lisätty. Lisää ne yhtiön omalle kortille, niin osinko jaetaan saajille.",
+          "no_holders": "Kenelläkään ei ollut osakkeita päätöspäivänä.",
+          "rate_missing": "Ulkomailla asuvalta saajalta puuttuu pidätysprosentti."
+        },
+        "toShareholders": "Siirry osakkaisiin"
+      },
+      "draft": "Luonnos",
+      "draftNote": "Luonnos ei vielä näy osinkona. Avaa se ja kirjaa, kun päätös on tehty.",
+      "meeting": {
+        "agm": "Varsinainen yhtiökokous",
+        "extra": "Ylimääräinen yhtiökokous"
+      },
+      "howto": {
+        "title": "Näin osinko etenee",
+        "meeting": "Yhtiökokous päättää osingosta: varsinainen yhtiökokous vahvistaa tilinpäätöksen ja päättää hallituksen ehdotuksesta osingon määrän ja maksupäivän.",
+        "decision": "Kirjaa osingonjakopäätös: anna kokouksen päivä, osingon määrä ja pöytäkirja. Tilari tekee päätöksestä luonnoksen, jonka liitteenä on pöytäkirja, ja sama tiedosto näkyy tilikauden asiakirjoissa kokouksen rivillä.",
+        "post": "Avaa luonnos ja kirjaa se. Osinko saa silloin oman korttinsa, ja Saajat näyttää, mitä kukin osakas saa.",
+        "pay": "Maksupäivänä tee maksutosite: osinko maksetaan pankista tai jätetään velaksi osakkaalle (silloin velkasopimus liitteeksi). Tosite kirjaa ennakonpidätyksen ja nettomäärän saajittain.",
+        "withhold": "Tilitä ennakonpidätys Verohallinnolle maksua seuraavan kuun 12. päivään mennessä. Pankkitapahtuman kirjaus kuittaa sen.",
+        "report": "Anna osinkojen vuosi-ilmoitus Verohallinnolle maksuvuotta seuraavan tammikuun loppuun mennessä ja tallenna se sen riville.",
+        "extra": "Lisäosingosta päättää ylimääräinen yhtiökokous. Valitse se kokoukseksi, niin sen pöytäkirja tulee tilikauden asiakirjoihin omalle rivilleen ja osinko omalle kortilleen. Vaiheet ovat samat."
+      }
+    },
+    "shareholders": {
+      "title": "Osakkaat",
+      "lead": "Kuka omistaa osakkeet ja kuinka monta. Osinko jaetaan päätöspäivän omistusten mukaan. Nimet ovat Kitsaksen kumppaneissa, henkilötunnuksia ei tallenneta.",
+      "name": "Nimi",
+      "kindLabel": "Laji",
+      "kind": {
+        "person": "Henkilö",
+        "estate": "Kuolinpesä",
+        "company": "Yhtiö"
+      },
+      "sharesNow": "Osakkeita {date}",
+      "rate": "Ennakonpidätys",
+      "abroad": "asuu ulkomailla",
+      "rateMissing": "Prosentti puuttuu",
+      "rateVero": "Veron sääntö",
+      "empty": "Osakkaita ei ole lisätty.",
+      "edit": "Muokkaa osakkaita",
+      "nameInKitsas": "Nimeä muutetaan Kitsaksen kumppaneissa.",
+      "resident": "Yleisesti verovelvollinen Suomessa",
+      "rateOverride": "Pidätysprosentti, jos ei Veron sääntö",
+      "from": "Alkaen",
+      "shares": "Osakkeita",
+      "removeHolding": "Poista muutos",
+      "addHolding": "Lisää omistuksen muutos",
+      "remove": "Poista osakas",
+      "ratesNote": "Veron sääntö: henkilöltä ja kuolinpesältä pidätetään 7,5 % koko osingosta 150 000 euroon asti vuodessa ja 28 % sen ylittävästä osasta. Yhtiölle maksettavasta osingosta ei pidätetä. Ulkomailla asuvalle kirjoita lähdeveron prosentti.",
+      "add": "Lisää osakas",
+      "save": "Tallenna osakkaat",
+      "error": {
+        "name": "Anna osakkaan nimi.",
+        "rate": "Pidätysprosentin on oltava 0-100.",
+        "holding": "Anna jokaiselle omistukselle päivä ja osakemäärä."
+      }
+    },
+    "incomeTax": {
+      "title": "Tuloverojen kirjaus",
+      "booked": "Kirjattu"
     },
     "deadlineState": {
       "done": "Tehty",
@@ -1755,14 +1910,16 @@
     "error": {
       "unknown_kind": "Tuntematon asiakirjan laji.",
       "unknown_period": "Tilikautta ei ole enää.",
-      "voucher_not_posted": "Linkitettävä tosite on luonnos tai poistettu.",
       "attachment_not_on_voucher": "Tiedosto ei kuulu tähän tositteeseen.",
       "unknown_link": "Linkki on jo poistettu.",
       "corrupt": "Tallennettuja tietoja ei voi lukea.",
       "newer_version": "Tiedot on tallennettu uudemmalla Tilarilla.",
       "too_large": "Yhtiön tiedot ovat liian suuret tallennettaviksi.",
       "invalid_field": "Tallennus ei onnistunut: virheellinen tieto.",
-      "partial": "Asiakirja luotiin, mutta sen viimeistely ei onnistunut ({reason}). Se löytyy tositteista ja kohdasta Linkittämättä."
+      "partial": "Asiakirja luotiin, mutta sen viimeistely ei onnistunut ({reason}). Se löytyy tositteista ja kohdasta Linkittämättä.",
+      "duplicate_shareholder": "Sama osakas on listassa kahdesti.",
+      "unknown_partner": "Osakasta ei löydy Kitsaksen kumppaneista.",
+      "voucher_missing": "Linkitettävä tosite on poistettu."
     },
     "kind": {
       "financial_statements": "Allekirjoitettu tilinpäätös",
@@ -1774,11 +1931,27 @@
       "prh_filing_receipt": "PRH:n ote rekisteröidystä tilinpäätöksestä",
       "tax_return_6b": "Veroilmoitus 6B",
       "tax_decision": "Verotuspäätös",
+      "dividend_annual_report": "Osinkojen vuosi-ilmoitus",
       "other": "Muut",
       "articles": "Yhtiöjärjestys",
       "trade_register_extract": "Kaupparekisteriote",
       "shareholder_register": "Osakasluettelo",
-      "shareholder_agreement": "Osakassopimus"
+      "shareholder_agreement": "Osakassopimus",
+      "extra_agm_minutes": "Ylimääräisen yhtiökokouksen pöytäkirja"
+    },
+    "taxPayment": {
+      "pay": {
+        "title": "Tuloveron maksu",
+        "done": "Maksettu",
+        "open": "Maksamatta {amount}",
+        "booked": "Tuloverojen kirjaus jätti maksettavaksi {amount}. Maksu tai verotuspäätöksen mukainen korjaus kuittaa sen."
+      },
+      "refund": {
+        "title": "Veronpalautus",
+        "done": "Saatu",
+        "open": "Saamatta {amount}",
+        "booked": "Tuloverojen kirjaus jätti saatavaksi {amount}. Palautus tai verotuspäätöksen mukainen korjaus kuittaa sen."
+      }
     }
   }
 }

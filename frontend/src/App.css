@@ -6101,6 +6101,114 @@ button.due-tile:hover {
   color: var(--muted);
 }
 
+.step-rail-box {
+  container: step-rail / inline-size;
+  margin: 0.9rem 0 0.6rem;
+}
+
+.step-rail {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+/* The line from the step before; green into a step that is done. */
+.step + .step::before {
+  position: absolute;
+  top: calc(0.8rem - 1px);
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  content: '';
+  background: var(--line);
+}
+
+.step-ok + .step-ok::before {
+  background: var(--ok);
+}
+
+.step-dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 50%;
+}
+
+.step-ok .step-dot {
+  color: #fff;
+  background: var(--ok);
+  border-color: var(--ok);
+}
+
+.step-crit .step-dot {
+  color: #fff;
+  background: var(--crit);
+  border-color: var(--crit);
+}
+
+.step-warn .step-dot {
+  color: var(--warn);
+  border-color: #c98a00;
+}
+
+.step-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.step-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.4rem;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+@container step-rail (max-width: 34rem) {
+  .step-rail {
+    grid-auto-flow: row;
+    gap: 0.45rem;
+  }
+
+  .step {
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    justify-items: start;
+    gap: 0.6rem;
+    text-align: left;
+  }
+
+  .step + .step::before {
+    display: none;
+  }
+
+  .step-meta {
+    justify-content: start;
+  }
+}
+
 .doc-rows {
   container: doc-rows / inline-size;
   background: var(--card);
@@ -6630,7 +6738,126 @@ button.due-tile:hover {
   margin-top: 1rem;
 }
 
-.company-unlinked > summary {
+.dividend-card {
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 0.6rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.dividend-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.dividend-head .muted {
+  margin-top: 0.15rem;
+  font-size: 0.85rem;
+}
+
+.dividend-name {
+  font-size: 1rem;
+}
+
+.dividend-amount {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.dividend-alerts {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  list-style: none;
+}
+
+.dividend-alert {
+  padding: 0.45rem 0.7rem;
+  font-size: 0.88rem;
+  border-radius: 6px;
+}
+
+.dividend-alert-warn {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.dividend-alert-crit {
+  color: var(--crit);
+  background: var(--crit-soft);
+}
+
+.dividend-recipients {
+  margin-top: 0.6rem;
+}
+
+.dividend-recipients > summary {
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.dividend-scroll {
+  max-width: 100%;
+  margin-top: 0.4rem;
+  overflow-x: auto;
+}
+
+.dividend-actions {
+  margin: 0.6rem 0 0;
+}
+
+.dividend-draft-note {
+  margin: 0.35rem 0;
+  font-size: 0.85rem;
+}
+
+.company-row-note {
+  margin: 0.1rem 0 0;
+  font-size: 0.85rem;
+}
+
+.dividend-howto {
+  margin: 0 0 0.6rem;
+  font-size: 0.9rem;
+}
+
+.dividend-howto > summary {
+  cursor: pointer;
+}
+
+.dividend-howto ol {
+  margin: 0.4rem 0;
+  padding-left: 1.4rem;
+}
+
+.dividend-howto li + li {
+  margin-top: 0.25rem;
+}
+
+.company-shareholders {
+  margin-top: 1rem;
+}
+
+.company-shareholders > .muted {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+}
+
+.company-shareholder {
+  min-width: 0;
+  margin: 0 0 0.6rem;
+  padding: 0 0 0.6rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.company-unlinked > summary,
+.company-fold > summary {
   cursor: pointer;
 }
 
