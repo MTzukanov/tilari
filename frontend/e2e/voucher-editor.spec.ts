@@ -180,6 +180,33 @@ test.describe('voucher editor', () => {
     expect(overlap).toBe(false)
   })
 
+  test('Viennit VAT picker stays in its cell; a long file name wraps with a title', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1100, height: 900 })
+    await openBook(page)
+    await page.goto('/#/voucher/new/200')
+    const longName = 'esimerkkilasku_2024_pitka_tiedostonimi_liite.pdf'
+    await page.locator('.dropzone input[type=file]').setInputFiles({
+      name: longName,
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4\n'),
+    })
+    const card = page.getByRole('link', { name: longName })
+    await expect(card).toHaveAttribute('title', longName)
+    const nameBox = await card.locator('.att-name').boundingBox()
+    expect(nameBox!.height).toBeGreaterThan(25)
+
+    await page.getByRole('tab', { name: 'Viennit' }).click()
+    const row = page.locator('table.editor-table tbody tr').first()
+    await row.locator('.vat-select-type button').click()
+    await page.locator('.icon-select-list li', { hasText: 'Verollinen myynti' }).first().click()
+    const rateBox = await row.locator('.vat-select-rate').boundingBox()
+    const cellBox = await row.locator('td').nth(4).boundingBox()
+    expect(rateBox && cellBox).toBeTruthy()
+    expect(rateBox!.x + rateBox!.width).toBeLessThanOrEqual(cellBox!.x + cellBox!.width)
+  })
+
   test('siirto uses a different Kirjaa form', async ({ page }) => {
     await openBook(page)
     await page.goto('/#/voucher/new/300')

@@ -47,6 +47,7 @@ import { vatFromKey, vatKey } from '../../vat/ui/vatCodes'
 import { parseEurInput, formatEurInput } from '../../../shared/money'
 import { SearchSelect, type SearchItem } from '../../../shared/SearchSelect'
 import { EuroInput } from '../../../shared/EuroInput'
+import { showCutText } from '../../../shared/cutText'
 import { useLeaveGuard } from '../../../app/leaveGuard'
 import { getBcp47, useI18n } from '../../../i18n'
 import { nativePickerFocusProps } from '../../../shared/nativePicker'
@@ -987,7 +988,17 @@ export function VoucherEditor({
   const linesTable = type !== 800 ? (
         <section className="entries-edit">
           {entriesOnly && existing ? <p className="hint">{t('editor.assistantUnavailable')}</p> : null}
-          <table className="ledger-table editor-table">
+          <table className="ledger-table editor-table" onMouseOver={showCutText}>
+            {/* Fixed layout: the VAT pickers get their own width instead of a sixth of the row. */}
+            <colgroup>
+              <col />
+              <col />
+              <col className="editor-col-amount" />
+              <col className="editor-col-amount" />
+              {vatLiable ? <col className="editor-col-vat" /> : null}
+              <col className="editor-col-allocation" />
+              {type === 400 ? <col className="editor-col-split" /> : null}
+            </colgroup>
             <thead>
               <tr>
                 <th>{t('table.account')}</th>

@@ -949,8 +949,9 @@ button.status-chip:focus-visible {
   min-width: 0;
 }
 
-.editor-table .vat-select {
-  min-width: 12rem;
+/* .editor-col-vat fixes the column width; a narrower rate leaves the VAT type more of it. */
+.editor-table .vat-select-rate {
+  width: 4.75rem;
 }
 
 .statement-table .vat-select {
@@ -3364,6 +3365,24 @@ tr.is-ended td {
 .editor-table {
   table-layout: fixed;
   width: 100%;
+  /* Narrower than this, .entries-edit scrolls sideways instead of squeezing cells together. */
+  min-width: 52rem;
+}
+
+.editor-table .editor-col-amount {
+  width: 7.5rem;
+}
+
+.editor-table .editor-col-vat {
+  width: 16rem;
+}
+
+.editor-table .editor-col-allocation {
+  width: 10rem;
+}
+
+.editor-table .editor-col-split {
+  width: 7rem;
 }
 
 .editor-table th,
@@ -4520,11 +4539,17 @@ tr.is-ended td {
     var(--paper-deep);
 }
 
+/* Up to three lines, broken anywhere (file names seldom have spaces), then an ellipsis;
+   the card link's title has the full name. */
 .att-name {
   font-size: 0.8rem;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .dropzone {
@@ -4542,10 +4567,11 @@ tr.is-ended td {
 }
 
 .dropzone .att-gallery > li {
-  width: 3.75rem;
+  width: 5.25rem;
 }
 
 .dropzone .att-thumb {
+  width: 3.75rem;
   max-height: 3.75rem;
 }
 
@@ -4553,7 +4579,8 @@ tr.is-ended td {
   font-size: 0.72rem;
 }
 
-.dropzone .att-card-pending .linkish {
+.dropzone .att-card .linkish {
+  align-self: flex-start;
   font-size: 0.72rem;
   padding: 0;
 }
