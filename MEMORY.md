@@ -7,6 +7,17 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-07 - Viennit VAT picker overlap; attachment names wrap (`fix/voucher-rows-and-attachment-names`)
+
+- Owner: on the Viennit table the VAT picker of a taxed line ran into Kohdennus. The table is `table-layout: fixed`,
+  so its six columns shared the row evenly, and `.editor-table .vat-select { min-width: 12rem }` (plus the rate)
+  could only spill out of the cell. A `<colgroup>` now fixes the amount, VAT, allocation and split widths, the rate
+  is narrower in this table, and below `min-width: 52rem` the section scrolls sideways. `showCutText` gives a cut
+  VAT label its full text on hover.
+- Attachment names wrap to three lines, broken anywhere, before the ellipsis; the card link's `title` has the full
+  name. Dropzone tiles are wider than their thumbnail, and a saved attachment's "Poista" is as small as a new one's.
+  Breaking only after `_`, `-` and `.` read better but showed about a third less of the name, so it was dropped.
+
 ## 2026-11-03 - Rental objects: warnings as tiles and pills (`feature/property-warnings`)
 
 - Last move from `docs/UI_PATTERNS.md`. `ui/Warnings.tsx` renders an object's warnings the same on its page and in

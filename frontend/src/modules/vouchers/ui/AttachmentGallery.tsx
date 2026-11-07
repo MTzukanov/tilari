@@ -61,7 +61,13 @@ function ExistingThumb({
   if (!href) return <span className="muted">{name}</span>
   return (
     <div className="att-card att-card-existing">
-      <a className="att-thumb-link" href={href} target="_blank" rel="noopener noreferrer">
+      <a
+        className="att-thumb-link"
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={name}
+      >
         <span className="att-thumb">
           <FileThumb href={href} file={new File([], name, { type })} />
         </span>
@@ -120,7 +126,13 @@ function PendingCard({ file, onRemove }: { file: File; onRemove?: () => void }) 
   useEffect(() => () => URL.revokeObjectURL(href), [href])
   return (
     <div className="att-card att-card-pending">
-      <a className="att-thumb-link" href={href} target="_blank" rel="noopener noreferrer">
+      <a
+        className="att-thumb-link"
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={file.name}
+      >
         <span className="att-thumb">
           <FileThumb file={file} href={href} />
         </span>
