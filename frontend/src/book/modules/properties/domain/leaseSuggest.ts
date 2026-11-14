@@ -39,7 +39,7 @@ export type SuggestInput = {
   names: Map<number, string>
   /** The cost centre's name: its words never identify a tenant. */
   centreName: string
-  /** A parking space or garage: what it earns is its rent, whatever the line says. */
+  /** A parking space or garage (`isParkingKind`): what it earns is its rent, whatever the line says. */
   parkingObject: boolean
   asOf: string
 }
@@ -162,12 +162,14 @@ export function mentionsRent(text: string | undefined): boolean {
 
 /**
  * Which part of the payment a line is. Most tenants pay one line ("vuokra + vesi"), which is
- * rent; a line about water only is water, about parking only is parking.
+ * rent; a line about water only is water, about parking only is parking. On a parking space or
+ * garage every line is rent.
  */
 function partOf(row: SuggestIncome, parkingObject: boolean): Part {
+  if (parkingObject) return 'rent'
   const text = (row.text ?? '').toLowerCase()
   if (WATER.test(text) && !RENT.test(text)) return 'water'
-  if (!parkingObject && PARKING.test(text) && !RENT.test(text)) return 'parking'
+  if (PARKING.test(text) && !RENT.test(text)) return 'parking'
   return 'rent'
 }
 

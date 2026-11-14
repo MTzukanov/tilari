@@ -25,6 +25,7 @@ import { DocSlot, LineSources, NoDocumentCheck, Shown } from './FormParts'
 import { depositOptionText, leaseRentText, untilText, vatPctText } from './format'
 import { SuggestionSource } from './LeasesPanel'
 import {
+  draftExtras,
   draftStepAt,
   draftTotal,
   leaseDrafts,
@@ -43,13 +44,16 @@ function monthNames(): string[] {
   return Array.from({ length: 12 }, (_, m) => fmt.format(new Date(2024, m, 1)))
 }
 
-/** Rent, water and (when the lease has the extra) parking inputs: one grid cell each. */
+/** Rent, (water) and (when the lease has the extra) parking inputs: one grid cell each. */
 function Amounts({
   value,
+  water,
   parking,
   onChange,
 }: {
   value: AmountsDraft
+  /** Off on a parking space or garage (`draftExtras`). */
+  water: boolean
   parking: boolean
   onChange: (patch: Partial<AmountsDraft>) => void
 }) {
@@ -60,10 +64,12 @@ function Amounts({
         {t('properties.field.rent')}
         <EuroInput value={value.rent} onChange={(rent) => onChange({ rent })} />
       </label>
-      <label>
-        {t('properties.field.water')}
-        <EuroInput value={value.water} onChange={(water) => onChange({ water })} />
-      </label>
+      {water ? (
+        <label>
+          {t('properties.field.water')}
+          <EuroInput value={value.water} onChange={(water) => onChange({ water })} />
+        </label>
+      ) : null}
       {parking ? (
         <label>
           {t('properties.field.parking')}
@@ -85,8 +91,9 @@ function draftVatText(t: (key: string, vars?: Record<string, string | number>) =
   return t('properties.lease.vatHint', { pct: vatPctText(pct), amount: formatCents(vat), total: formatCents(draftTotal(a, parking) + vat) })
 }
 
-/** The amounts rows: Alkaen, rent, water, (parking), total; four columns without parking. */
-const amountsClass = (d: LeaseDraft) => `property-lease-grid property-lease-amounts${d.parking ? '' : ' no-parking'}`
+/** The amounts rows: Alkaen, rent, (water), (parking), total; a column less for each left out. */
+const amountsClass = (d: LeaseDraft, water: boolean) =>
+  `property-lease-grid property-lease-amounts${d.parking ? '' : ' no-parking'}${water ? '' : ' no-water'}`
 
 /** An exception's total and how far it is from the step it stands for: "470,00 € (−150,00 €)". */
 function exceptionTotal(e: ExceptionDraft, d: LeaseDraft): { text: string; normal: number } {
@@ -204,6 +211,7 @@ export function LeasesEditor({
   isCreated,
   onDeleteDocs,
   onOpenVoucher,
+  parkingObject,
 }: {
   drafts: LeaseDraft[]
   onChange: (drafts: LeaseDraft[]) => void
@@ -228,6 +236,8 @@ export function LeasesEditor({
   onDeleteDocs: (voucherIds: number[], edit?: DocEdit) => Promise<void>
   /** Opens a suggestion's source; the unsaved form waits for the way back. */
   onOpenVoucher: (voucherId: number) => void
+  /** A parking space or garage: no water and no parking extra to offer (`draftExtras`). */
+  parkingObject: boolean
 }) {
   const { t } = useI18n()
   const [creating, setCreating] = useState<string | null>(null)
@@ -244,6 +254,7 @@ export function LeasesEditor({
   const pending = suggestions.flatMap((s, i) => (inForm(s.lease) ? [] : [{ s, i }]))
   const addSuggestions = (indices: number[]) => onChange([...drafts, ...leaseDrafts(indices.map((i) => suggestions[i].lease), partners)])
   const partnerItems = partners.map((p) => ({ value: p.name, label: p.name }))
+  const extras = drafts.map((d) => draftExtras(d, parkingObject))
   const months = monthNames()
   const set = (i: number, patch: Partial<LeaseDraft>) => onChange(drafts.map((d, j) => (j === i ? { ...d, ...patch } : d)))
   const setIncrease = (i: number, k: number, patch: Partial<IncreaseDraft>) =>
@@ -360,23 +371,32 @@ export function LeasesEditor({
             <h4>{t('properties.lease.initial')}</h4>
             <span className="property-lease-extras">
               <span>{t('properties.lease.extras')}</span>
-              <label className="allocation-check">
-                <input type="checkbox" checked={d.parking} onChange={() => set(i, { parking: !d.parking })} />
-                {t('properties.field.parkingExtra')}
-              </label>
+              {extras[i].parking ? (
+                <label className="allocation-check">
+                  <input type="checkbox" checked={d.parking} onChange={() => set(i, { parking: !d.parking })} />
+                  {t('properties.field.parkingExtra')}
+                </label>
+              ) : null}
               <label className="allocation-check" title={t('properties.field.vatExtraHint')}>
                 <input type="checkbox" checked={d.vat} onChange={() => set(i, { vat: !d.vat })} />
                 {t('properties.field.vatExtra')}
               </label>
             </span>
-            <label className="allocation-check property-lease-extras">
-              <input type="checkbox" checked={!d.waterFlat} onChange={() => set(i, { waterFlat: !d.waterFlat })} />
-              {t('properties.field.waterSettled')}
-            </label>
+            {extras[i].water ? (
+              <label className="allocation-check property-lease-extras">
+                <input type="checkbox" checked={!d.waterFlat} onChange={() => set(i, { waterFlat: !d.waterFlat })} />
+                {t('properties.field.waterSettled')}
+              </label>
+            ) : null}
           </div>
-          <div className={amountsClass(d)}>
+          <div className={amountsClass(d, extras[i].water)}>
             <Shown label={t('properties.field.increaseFrom')} value={d.starts ? formatDate(d.starts) : '–'} />
-            <Amounts value={d.initial} parking={d.parking} onChange={(patch) => set(i, { initial: { ...d.initial, ...patch } })} />
+            <Amounts
+              value={d.initial}
+              water={extras[i].water}
+              parking={d.parking}
+              onChange={(patch) => set(i, { initial: { ...d.initial, ...patch } })}
+            />
             <Shown label={t('properties.field.total')} value={formatCents(draftTotal(d.initial, d.parking))} strong />
           </div>
           {d.vat ? <p className="muted property-lease-hint">{draftVatText(t, d.initial, d.parking, d.starts)}</p> : null}
@@ -417,12 +437,12 @@ export function LeasesEditor({
 
           <h4>{t('properties.lease.increases')}</h4>
           {d.increases.map((r, k) => (
-            <div key={k} className={`${amountsClass(d)} property-lease-increase`}>
+            <div key={k} className={`${amountsClass(d, extras[i].water)} property-lease-increase`}>
               <label>
                 {t('properties.field.increaseFrom')}
                 <input type="date" value={r.from} onChange={(e) => setIncrease(i, k, { from: e.target.value })} />
               </label>
-              <Amounts value={r} parking={d.parking} onChange={(patch) => setIncrease(i, k, patch)} />
+              <Amounts value={r} water={extras[i].water} parking={d.parking} onChange={(patch) => setIncrease(i, k, patch)} />
               <Shown label={t('properties.field.total')} value={formatCents(draftTotal(r, d.parking))} strong />
               <div className="property-lease-notice">
                 <DocPicker
@@ -464,7 +484,7 @@ export function LeasesEditor({
           {d.exceptions.map((e, k) => {
             const total = exceptionTotal(e, d)
             return (
-              <div key={k} className={`${amountsClass(d)} property-lease-exception property-lease-increase`}>
+              <div key={k} className={`${amountsClass(d, extras[i].water)} property-lease-exception property-lease-increase`}>
                 <label>
                   {t('properties.field.exceptionFrom')}
                   <input type="date" value={e.from} onChange={(ev) => setException(i, k, { from: ev.target.value })} />
@@ -473,7 +493,7 @@ export function LeasesEditor({
                   {t('properties.field.exceptionTo')}
                   <input type="date" value={e.to} onChange={(ev) => setException(i, k, { to: ev.target.value })} />
                 </label>
-                <Amounts value={e} parking={d.parking} onChange={(patch) => setException(i, k, patch)} />
+                <Amounts value={e} water={extras[i].water} parking={d.parking} onChange={(patch) => setException(i, k, patch)} />
                 <Shown
                   label={t('properties.field.total')}
                   value={total.text}

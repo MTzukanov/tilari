@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { restoreLocationHash } from '../../../app/leaveGuard'
 import { parseRoute, propertyHash } from '../../../app/routing'
+import { isParkingKind } from '../../../book/modules/properties/domain/kind'
 import { skipDocument } from '../../../book/modules/properties/domain/reminders'
 import { grossPriceFor } from '../../../book/modules/properties/domain/returns'
 import { getBcp47, useI18n } from '../../../i18n'
@@ -459,10 +460,12 @@ export function PropertyView({
               onEdit={onEdit}
               onOpenVoucher={(v) => openVoucher(v)}
               onSaveException={d.read_only ? undefined : (leaseKey, exception, replaces) => saveException(d, leaseKey, exception, replaces)}
+              parkingObject={isParkingKind(d.kind)}
             />
           ) : null}
 
-          {d.status !== 'sold' || d.water.settlements.length || d.water.suggestions.length ? (
+          {/* A parking space or garage has no water to settle: the panel shows only what is stored there. */}
+          {(d.status !== 'sold' && !isParkingKind(d.kind)) || d.water.settlements.length || d.water.suggestions.length ? (
             <WaterPanel water={d.water} held={d.status !== 'sold'} onEdit={onEdit} onOpenVoucher={(v) => openVoucher(v)} />
           ) : null}
 

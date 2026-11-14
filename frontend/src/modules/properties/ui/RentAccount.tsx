@@ -20,6 +20,7 @@ function ExceptionForm({
   onSave,
   onRemove,
   onClose,
+  parkingObject,
 }: {
   month: RentMonth
   prefill: LeaseException
@@ -27,6 +28,8 @@ function ExceptionForm({
   /** Given when `prefill` is the lease's own exception: the save replaces it, and it can be removed. */
   onRemove?: () => Promise<void>
   onClose: () => void
+  /** A parking space or garage: water only when the lease has it. */
+  parkingObject: boolean
 }) {
   const { t } = useI18n()
   const stored = Boolean(onRemove)
@@ -41,6 +44,7 @@ function ExceptionForm({
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const parking = prefill.parking_snt != null
+  const withWater = !parkingObject || prefill.water_snt != null
   const set = (patch: Partial<typeof draft>) => setDraft((d) => ({ ...d, ...patch }))
   const total = parseEurInput(draft.rent) + parseEurInput(draft.water) + (parking ? parseEurInput(draft.parking) : 0)
 
@@ -80,7 +84,7 @@ function ExceptionForm({
           ? t('properties.rent.editLead')
           : t('properties.rent.prefillLead', { month: monthName(month.key, getBcp47()), paid: formatCents(month.received_snt) })}
       </p>
-      <div className={`property-lease-grid property-lease-amounts property-lease-exception${parking ? '' : ' no-parking'}`}>
+      <div className={`property-lease-grid property-lease-amounts property-lease-exception${parking ? '' : ' no-parking'}${withWater ? '' : ' no-water'}`}>
         <label>
           {t('properties.field.exceptionFrom')}
           <input type="date" value={draft.from} onChange={(e) => set({ from: e.target.value })} />
@@ -93,10 +97,12 @@ function ExceptionForm({
           {t('properties.field.rent')}
           <EuroInput value={draft.rent} onChange={(rent) => set({ rent })} />
         </label>
-        <label>
-          {t('properties.field.water')}
-          <EuroInput value={draft.water} onChange={(water) => set({ water })} />
-        </label>
+        {withWater ? (
+          <label>
+            {t('properties.field.water')}
+            <EuroInput value={draft.water} onChange={(water) => set({ water })} />
+          </label>
+        ) : null}
         {parking ? (
           <label>
             {t('properties.field.parking')}
@@ -141,6 +147,7 @@ export function RentAccountView({
   period,
   onOpen,
   onSaveException,
+  parkingObject,
 }: {
   account: LeaseRentAccount
   asOf: string
@@ -153,6 +160,8 @@ export function RentAccountView({
    * page then shows the account again.
    */
   onSaveException?: (exception: LeaseException | null, replaces?: LeaseException) => Promise<void>
+  /** A parking space or garage: its exceptions have no water to give. */
+  parkingObject: boolean
 }) {
   const { t } = useI18n()
   /** The month whose form is open, and the stored exception it changes (none: a new one). */
@@ -269,6 +278,7 @@ export function RentAccountView({
                             onSave={saveOpen}
                             onRemove={open?.stored ? () => saveOpen(null) : undefined}
                             onClose={() => setOpen(null)}
+                            parkingObject={parkingObject}
                           />
                         </td>
                       </tr>
