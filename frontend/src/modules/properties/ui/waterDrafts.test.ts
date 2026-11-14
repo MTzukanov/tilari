@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { WaterSettlement } from '../api'
-import { buildSettlements, draftSettlement, newSettlement, settlementDrafts, withShare } from './waterDrafts'
+import type { WaterStatementCandidate } from '../api'
+import { buildSettlements, draftSettlement, newSettlement, pickStatement, settlementDrafts, withShare } from './waterDrafts'
 
 const t = (key: string, vars?: Record<string, string | number>) => `${key}${vars ? JSON.stringify(vars) : ''}`
 
@@ -78,5 +79,30 @@ describe('water settlement drafts', () => {
     expect(buildSettlements(t, [{ ...newSettlement(), from: '2024-11-01', to: '2024-10-31' }], new Set())).toBe(
       'properties.error.invalid_field{"path":"water_settlements[0].to"}',
     )
+  })
+
+  it('a picked invoice fills the amount, its direction and an estimated period where the owner has not', () => {
+    const candidate = (id: number, date: string, line_snt: number): WaterStatementCandidate => {
+      const voucher = { voucher_id: id, date, doc_number: null, series: null, title: 'IBAN-maksu viitteellä 55501234', files: [] }
+      return {
+        voucher,
+        lines: [{ line_id: id, date, amount_snt: line_snt, line_snt, text: voucher.title, partner: null, voucher, income: false, partner_id: 5 }],
+        suspect: 'reference',
+      }
+    }
+    const candidates = [candidate(31, '2027-12-22', -37_90), candidate(32, '2028-03-05', 12_40)]
+    const empty = newSettlement()
+    const charge = pickStatement(empty, '31', candidates, [])
+    expect(charge).toMatchObject({ voucherId: '31', direction: 'charge', amount: '37,90', from: '2026-12-01', to: '2027-11-30' })
+    // Another pick replaces what the first one filled; a credit is a refund.
+    expect(pickStatement(charge, '32', candidates, [])).toMatchObject({ direction: 'refund', amount: '12,40', from: '2027-03-01', to: '2028-02-29' })
+    // None picked: what the pick filled goes again.
+    expect(pickStatement(charge, '', candidates, [])).toMatchObject({ voucherId: '', amount: '', from: '', to: '' })
+    // The owner's own amount and period stay; a Liitetieto document fills nothing.
+    const own = { ...empty, from: '2027-01-01', to: '2027-12-31', amount: '40,00', direction: 'charge' as const }
+    expect(pickStatement(own, '31', candidates, [])).toEqual({ ...own, voucherId: '31' })
+    expect(pickStatement(empty, '99', candidates, [])).toEqual({ ...empty, voucherId: '99' })
+    // After the form's earlier settlement: the year after it.
+    expect(pickStatement(empty, '31', candidates, [{ from: '2026-01-01', to: '2026-12-31' }])).toMatchObject({ from: '2027-01-01', to: '2027-12-31' })
   })
 })

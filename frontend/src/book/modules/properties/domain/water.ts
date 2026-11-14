@@ -347,6 +347,49 @@ export function fromBookedLines(booked: WaterBookedLine[]): { lines: WaterLine[]
 
 export type SettlementSuggestion = { settlement: WaterSettlement; lines: WaterLine[]; source: 'company' | 'tenant' }
 
+/** The period a text names, or the year up to the end a text names. */
+function namedPeriod(texts: string[]): { from: string; to: string } | null {
+  const full = texts.map(titlePeriod).find((p) => p.starts && p.ends && p.starts < p.ends)
+  if (full) return { from: full.starts!, to: full.ends! }
+  const end = texts.map(namedEnd).find((e) => e != null)
+  return end ? yearBefore(end) : null
+}
+
+/**
+ * A settlement's period from its lines' texts and the first one's date: the period a text names,
+ * the year up to the end a text names, or the year up to the end of the month before the date.
+ */
+function periodOf(texts: string[], date: string): { from: string; to: string } {
+  return namedPeriod(texts) ?? yearBefore(monthEnd(addMonths(date.slice(0, 7), -1)))
+}
+
+/** The year from `from`: 1.1.2025 gives 1.1.-31.12.2025, 1.3.2023 gives 1.3.2023-29.2.2024. */
+export function yearFrom(from: string): { from: string; to: string } {
+  const key = `${Number(from.slice(0, 4)) + 1}-${from.slice(5, 7)}`
+  const day = Math.min(Number(from.slice(8, 10)), daysInMonth(key))
+  const same = `${key}-${String(day).padStart(2, '0')}`
+  // 29.2. has no day a year on: the year ends on 28.2.
+  return { from, to: day < Number(from.slice(8, 10)) ? same : addDays(same, -1) }
+}
+
+/**
+ * The period of a settlement whose statement is a voucher booked on `date`, an estimate for the
+ * owner to check against the statement: the period its water texts name (a statement import's
+ * "Tiliote 1.4.-30.4." is none); else the year after the latest earlier settlement, when the
+ * voucher is dated within `GUESS_DAYS` after its end (so the two never share days); else the
+ * year up to the end of the month before it, as a suggestion's.
+ */
+export function statementPeriod(date: string, texts: string[], others: { from: string; to: string }[]): { from: string; to: string } {
+  const named = namedPeriod(texts.filter((t) => isWaterSettlementText(t)))
+  if (named) return named
+  const before = others.filter((o) => o.to < date).sort((a, b) => a.to.localeCompare(b.to)).at(-1)
+  if (before) {
+    const next = yearFrom(addDays(before.to, 1))
+    if (date <= addDays(next.to, GUESS_DAYS)) return next
+  }
+  return periodOf([], date)
+}
+
 /**
  * Settlements from booked lines that no stored settlement takes. Lines within 100 days of each
  * other (and naming the same period end, if they name one) make one settlement:
@@ -373,10 +416,7 @@ export function suggestSettlements(lines: WaterLine[], stored: WaterSettlement[]
   }
   const out: SettlementSuggestion[] = []
   for (const group of groups) {
-    const full = group.lines.map((l) => titlePeriod(l.text)).find((p) => p.starts && p.ends && p.starts < p.ends)
-    const period = full
-      ? { from: full.starts!, to: full.ends! }
-      : yearBefore(group.end ?? monthEnd(addMonths(group.lines[0].date.slice(0, 7), -1)))
+    const period = periodOf(group.lines.map((l) => l.text), group.lines[0].date)
     const expense = group.lines.find((l) => !l.income)
     let difference: number
     if (expense) {

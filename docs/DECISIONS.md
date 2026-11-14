@@ -462,6 +462,9 @@ correction would change the open year's income statement lines. The rental-objec
   amount never repeated. A booking a later correction moved away does not count (the correction
   pairing of the month figures). Guesses only order the list: nothing is linked or suggested
   without the owner: vastike changes and one-off charges make too many of them to remind of.
+  Picked, an invoice fills the fields the owner left empty: the amount and its direction from its
+  lines, and a period estimated from its date (the year after the previous settlement, else the
+  year up to the month before), marked as an estimate.
 - Why not book the shares: the settlement is already in the ledger as cash. The split between
   tenants is a calculation over the leases, and storing it would go stale when a lease changes.
 

@@ -1572,6 +1572,7 @@
       "uploadStatement": "Upload statement",
       "guessExact": "★ The amount matches this settlement to the cent.",
       "guessSuspect": "★ Paid to the housing company but not the monthly charge: with the apartment's payment reference, or an amount that does not repeat monthly.",
+      "periodEstimated": "The period is estimated from the voucher's date: check it against the statement.",
       "statementTitle": "Housing company water settlement {object} {from}–{to}",
       "letter": {
         "voucherTitle": "Water settlement {object} {from}–{to}",

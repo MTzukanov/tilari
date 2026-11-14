@@ -14,12 +14,15 @@ import { companyResultText, periodText, untilText, waterBalanceText } from './fo
 import { LineLink, NoDocumentCheck, Shown, WaterStatusPill } from './FormParts'
 import { SuggestionSource } from './LeasesPanel'
 import {
+  candidateAmount,
   candidateDoc,
   draftDifference,
   draftSettlement,
   newSettlement,
+  pickStatement,
   settlementDrafts,
   shareDraft,
+  statementFill,
   withShare,
   type SettlementDraft,
   type ShareDraft,
@@ -77,6 +80,9 @@ export function WaterEditor({
   const views = settlementViews(dated, booked.lines, leases, { ...booked.ctx, tenantName })
   const set = (i: number, patch: Partial<SettlementDraft>) => onChange(drafts.map((d, j) => (j === i ? { ...d, ...patch } : d)))
   const setShare = (i: number, leaseKey: string, patch: Partial<ShareDraft>) => set(i, { shares: withShare(drafts[i].shares, leaseKey, patch) })
+  /** The form's other periods: a filled one starts after them. */
+  const othersOf = (i: number) => drafts.flatMap((x, j) => (j !== i && x.from && x.to ? [{ from: x.from, to: x.to }] : []))
+  const amounts = new Map(candidates.map((c) => [c.voucher.voucher_id, candidateAmount(c)]))
   const created = (ids: string[]) => ids.filter((id) => id && isCreated(Number(id))).map(Number)
   const removeSettlement = (i: number) =>
     onDeleteDocs(created([drafts[i].voucherId, ...drafts[i].shares.map((s) => s.voucherId)]), {
@@ -154,6 +160,8 @@ export function WaterEditor({
         const shares = view?.shares ?? []
         const usage = d.usage.trim() ? Math.abs(parseEurInput(d.usage)) : null
         const pick = statementPick(d)
+        const picked = candidates.find((c) => String(c.voucher.voucher_id) === d.voucherId)
+        const fill = picked ? statementFill(picked, othersOf(i)) : null
         return (
           <div key={d.base?.key || `new-${i}`} className="property-lease-edit property-water-edit">
             <div className="property-lease-grid">
@@ -190,7 +198,8 @@ export function WaterEditor({
                   docs={pick.docs}
                   value={d.voucherId}
                   starred={(doc) => pick.guesses.vouchers.has(doc.voucher_id)}
-                  onChange={(voucherId) => set(i, { voucherId })}
+                  amount={(doc) => amounts.get(doc.voucher_id) ?? null}
+                  onChange={(voucherId) => onChange(drafts.map((x, j) => (j === i ? pickStatement(x, voucherId, candidates, othersOf(i)) : x)))}
                 />
                 {!d.voucherId ? <NoDocumentCheck checked={d.noDocument} onChange={(noDocument) => set(i, { noDocument })} /> : null}
                 {d.voucherId && isCreated(Number(d.voucherId)) ? (
@@ -204,6 +213,7 @@ export function WaterEditor({
             {pick.guesses.vouchers.size && !d.voucherId ? (
               <p className="muted property-lease-hint">{t(pick.guesses.exact ? 'properties.water.guessExact' : 'properties.water.guessSuspect')}</p>
             ) : null}
+            {fill && d.from === fill.from && d.to === fill.to ? <p className="muted property-lease-hint">{t('properties.water.periodEstimated')}</p> : null}
             {view ? (
               <p className="property-lease-terms">
                 {view.booked.length ? (

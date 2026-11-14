@@ -1572,6 +1572,7 @@
       "uploadStatement": "Abrechnung der Gesellschaft hochladen",
       "guessExact": "★ Der Betrag stimmt auf den Cent mit diesem Ausgleich überein.",
       "guessSuspect": "★ An die Gesellschaft gezahlt, aber nicht das Hausgeld: mit der Referenz der Wohnung oder einem Betrag, der sich nicht monatlich wiederholt.",
+      "periodEstimated": "Der Zeitraum ist aus dem Belegdatum geschätzt: mit der Abrechnung der Gesellschaft prüfen.",
       "statementTitle": "Wasserabrechnung der Gesellschaft {object} {from}–{to}",
       "letter": {
         "voucherTitle": "Wasserabrechnung {object} {from}–{to}",

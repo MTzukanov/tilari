@@ -25,6 +25,13 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   (`Computed.reversed`) stay out of the suspects and candidates; the owner's misallocated vastike payments that
   the reference found were already moved by bank-import's correction voucher, which Tilari pairs this way.
 - `DocPicker` labels show the Kitsas number (`date · 12/2025 · title`), so a voucher can be searched by number.
+- Owner's review on the real book: the guesses found the right invoices; asked for the amount in the list and for
+  a pick to fill what it can. Rows of vouchers with the object's lines show their amount as booked (`−` for a
+  charge, as "Kirjattu"). A pick fills the amount and charge/refund from the lines and an estimated period
+  (`statementPeriod`): the period a water text names; else the year after the form's latest earlier settlement
+  when the voucher is within 400 days of its end; else the year up to the month before (as suggestions). Only
+  fields the owner left empty, or that the previous pick filled, change; "–" clears what a pick filled. A note
+  says the period is an estimate while it is unchanged.
 - Left out: a warning for a line with another object's reference (not decided), `Tosite.viite` (rarely filled),
   and an invoice moved onto the object by a correction is not offered there (the correction voucher has no file).
 

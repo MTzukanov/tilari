@@ -12,6 +12,8 @@ import {
   settlementViews,
   shareStatus,
   statementGuesses,
+  statementPeriod,
+  yearFrom,
   statementSuspects,
   suggestSettlements,
   tenantSettlementLines,
@@ -339,6 +341,26 @@ describe('water settlements: the company\'s statement without water in its text'
     const refund = { ...settlement, difference_snt: -37_90 }
     expect(settlementView(refund, lines, leases, { ...ctx, refs }).booked.map((m) => m.line_id)).toEqual([30])
     expect(tenantSettlementLines(waterLines(rows, [refund]), [refund], leases)).toEqual([])
+  })
+
+  it('a statement voucher\'s period: as its water text names it, else the year after an earlier one, else the year to the month before', () => {
+    // Nothing named: the year up to the end of the month before the payment, as a suggestion.
+    expect(statementPeriod('2027-12-22', [REF], [])).toEqual({ from: '2026-12-01', to: '2027-11-30' })
+    // A statement import's line names its own dates: not a water period.
+    expect(statementPeriod('2027-12-22', ['Tiliote 01.12.2027 - 31.12.2027 Pankkitili'], [])).toEqual({ from: '2026-12-01', to: '2027-11-30' })
+    expect(statementPeriod('2027-12-22', ['Vesitasaus 1.1.2027-31.10.2027'], [])).toEqual({ from: '2027-01-01', to: '2027-10-31' })
+    expect(statementPeriod('2027-12-22', ['Vesitasaus 30.9.2027'], [])).toEqual({ from: '2026-10-01', to: '2027-09-30' })
+    // After an earlier settlement: the year after it, also when paid before that year ends.
+    expect(statementPeriod('2027-12-22', [REF], [{ from: '2026-01-01', to: '2026-12-31' }])).toEqual({ from: '2027-01-01', to: '2027-12-31' })
+    expect(statementPeriod('2028-04-10', [REF], [{ from: '2026-01-01', to: '2026-12-31' }, { from: '2025-01-01', to: '2025-12-31' }])).toEqual({
+      from: '2027-01-01',
+      to: '2027-12-31',
+    })
+    // Too long after it: the year to the month before; a later settlement does not count.
+    expect(statementPeriod('2027-12-22', [REF], [{ from: '2024-01-01', to: '2024-12-31' }])).toEqual({ from: '2026-12-01', to: '2027-11-30' })
+    expect(statementPeriod('2027-12-22', [REF], [{ from: '2027-06-01', to: '2028-05-31' }])).toEqual({ from: '2026-12-01', to: '2027-11-30' })
+    expect(yearFrom('2023-03-01')).toEqual({ from: '2023-03-01', to: '2024-02-29' })
+    expect(yearFrom('2024-02-29')).toEqual({ from: '2024-02-29', to: '2025-02-28' })
   })
 
   it('the edit form adds the picked statement\'s lines and gives each settlement the same as the page', () => {
