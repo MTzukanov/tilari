@@ -38,6 +38,7 @@ export type {
   RentAccount,
   RentBalance,
   LeaseRentAccount,
+  VatIssueKind,
   RentEnd,
   RentMonth,
   RentPeriod,

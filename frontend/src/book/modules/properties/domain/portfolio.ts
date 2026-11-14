@@ -1,6 +1,6 @@
 /** Loads ledger + stored documents and assembles the portfolio, one object, or the setup view. */
 import { getPeriods } from '../../../access'
-import { rentAccount, rentBalance, rentEnd, rentStart, waterCharges, type RentLine } from './arrears'
+import { rentAccount, rentBalance, rentEnd, rentStart, vatWarnings, waterCharges, type RentLine } from './arrears'
 import { BookError } from '../../../errors'
 import { readTilariData, readTilariDataPrefix, writeTilariData } from '../../../kernel/tilariData'
 import type { SqliteDb } from '../../../sqlite'
@@ -31,6 +31,7 @@ import {
 import { listNoteVouchers } from './documents'
 import { kindFromName } from './kind'
 import {
+  attachVat,
   loadAccountNumbers,
   loadCapitalEraRoots,
   loadCorrectionDates,
@@ -163,7 +164,7 @@ function computeObjects(
   const allocations = new Set<number>()
   for (const c of centres) for (const a of allocationSet(c)) allocations.add(a)
   const recounted = loadRecountedLines(db)
-  const pnlByAllocation = groupBy(recountLines(loadPnlRows(db, allocations), recounted), (r) => r.allocation)
+  const pnlByAllocation = groupBy(recountLines(attachVat(db, loadPnlRows(db, allocations)), recounted), (r) => r.allocation)
 
   const linkedEraids = [...loaded.owner.keys()]
   const allEraRows = loadEraRows(db, linkedEraids)
@@ -256,7 +257,7 @@ function depositPool(db: SqliteDb, loaded: Loaded): DepositPool {
 function incomeOf(c: Computed): SuggestIncome[] {
   return c.result.classified.operating
     .filter(isIncome)
-    .map((r) => ({ date: r.date, partner_id: r.partner_id, amount_snt: r.net_snt, text: r.text, id: r.id, voucher_id: r.voucher_id }))
+    .map((r) => ({ date: r.date, partner_id: r.partner_id, amount_snt: r.net_snt, text: r.text, id: r.id, voucher_id: r.voucher_id, vat_code: r.vat_code ?? 0 }))
 }
 
 function leaseContext(db: SqliteDb, loaded: Loaded, computed: Computed[], asOf: string): LeaseContext {
@@ -322,14 +323,17 @@ function rentLines(c: Computed): RentLine[] {
   const operating = c.result.classified.operating
   const settled = tenantSettlementLines(waterLines(operating), c.parsed.doc.water_settlements ?? [], c.parsed.doc.leases ?? [])
   const leaseOfLine = new Map(settled.map((s) => [s.line.id, s.lease_key]))
-  const line = (r: { id: number; date: string; voucher_id: number; net_snt: number; partner_id: number | null; text?: string }): RentLine => {
+  const vatOf = new Map(operating.map((r) => [r.id, r]))
+  const line = (r: { id: number; date: string; voucher_id: number; net_snt: number; partner_id: number | null; text?: string }, income: boolean): RentLine => {
     const out: RentLine = { id: r.id, date: r.date, voucher_id: r.voucher_id, net_snt: r.net_snt, partner_id: r.partner_id, text: r.text ?? '' }
     const key = leaseOfLine.get(r.id)
     if (key) out.lease_key = key
+    const booked = vatOf.get(r.id)
+    out.vat = { code: booked?.vat_code ?? 0, pct: booked?.vat_pct ?? 0, snt: booked?.vat_snt === undefined ? 0 : booked.vat_snt, income }
     return out
   }
-  const income = operating.filter(isIncome).map(line)
-  const passed = settled.filter((s) => !s.line.income).map((s) => line(s.line))
+  const income = operating.filter(isIncome).map((r) => line(r, true))
+  const passed = settled.filter((s) => !s.line.income).map((s) => line(s.line, false))
   return [...income, ...passed]
 }
 
@@ -367,6 +371,10 @@ function toRow(c: Computed, ctx: LeaseContext, account: RentAccount | null = ren
   if (rent?.current_snt && rent.current_snt > 0) warnings.push({ code: 'rent_arrears', params: { amount_snt: rent.current_snt } })
   if (rent && rent.others_snt > 0) warnings.push({ code: 'former_owes', params: { amount_snt: rent.others_snt } })
   if (rent && rent.others_snt < 0) warnings.push({ code: 'former_paid_ahead', params: { amount_snt: -rent.others_snt } })
+  for (const a of account?.leases ?? []) {
+    const lease = (parsed.doc.leases ?? []).find((l) => l.key === a.lease_key)
+    if (lease) warnings.push(...vatWarnings(a, tenantName(ctx)(lease) ?? ''))
+  }
   // Saved before saving checked it: each day in two leases or two settlements counts twice.
   const [leases] = leaseOverlaps(parsed.doc.leases ?? [])
   if (leases) warnings.push({ code: 'lease_overlap', params: { from_date: leases[1].starts } })

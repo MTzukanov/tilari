@@ -27,9 +27,15 @@ export function statusClass(status: PropertyStatus): string {
 
 type T = (key: string, vars?: Record<string, string | number>) => string
 
+/** A VAT rate as the page writes it: "25,5 %", "24 %". */
+export function vatPctText(pct: number): string {
+  return new Intl.NumberFormat(getBcp47(), { style: 'percent', maximumFractionDigits: 2 }).format(pct / 100)
+}
+
 /**
- * Warning text; unknown codes fall back to the code itself. A `*_snt` param is money and a `*_date`
- * param a date, each named without the suffix; an empty `tenant` is an unknown tenant.
+ * Warning text; unknown codes fall back to the code itself. A `*_snt` param is money, a `*_date`
+ * param a date and a `*_pct` param a percentage, each named without the suffix; an empty `tenant`
+ * is an unknown tenant.
  */
 export function warningText(t: T, w: Warning): string {
   const key = `properties.warn.${w.code}`
@@ -39,7 +45,9 @@ export function warningText(t: T, w: Warning): string {
         ? [k.slice(0, -4), formatCents(v)]
         : k.endsWith('_date') && typeof v === 'string'
           ? [k.slice(0, -5), formatDate(v)]
-          : k === 'tenant' && v === ''
+          : k.endsWith('_pct') && typeof v === 'number'
+            ? [k.slice(0, -4), vatPctText(v)]
+            : k === 'tenant' && v === ''
             ? [k, t('properties.lease.tenantUnknown')]
             : [k, v],
     ),
@@ -69,6 +77,10 @@ export const WARNING_WORDS: Record<string, WarningWord | 'due'> = {
   water_letter_missing: 'missing',
   era_missing: 'missing',
   no_capital: 'missing',
+  rent_vat_missing: 'error',
+  rent_vat_unexpected: 'error',
+  rent_vat_row_missing: 'error',
+  rent_vat_rate: 'error',
   rent_arrears: 'todo',
   former_owes: 'todo',
   former_paid_ahead: 'todo',
@@ -164,8 +176,15 @@ export function leasePeriod(t: T, lease: LeaseView): string {
     : t('properties.lease.since', { date: formatDate(lease.starts) })
 }
 
-/** "690,00 €/kk (vuokra 655,00 €, vesi 20,00 €, autopaikka 15,00 €)" for a step. */
-export function leaseRentText(t: T, rent: { rent_snt: number; water_snt?: number; parking_snt?: number } | null): string {
+/**
+ * "690,00 €/kk (vuokra 655,00 €, vesi 20,00 €, autopaikka 15,00 €)" for a step; with a VAT lease's
+ * VAT on it, "+ ALV 25,5 % 175,95 € = 865,95 €/kk" after it (ADR-033).
+ */
+export function leaseRentText(
+  t: T,
+  rent: { rent_snt: number; water_snt?: number; parking_snt?: number } | null,
+  vat?: { pct: number; snt: number } | null,
+): string {
   if (!rent) return ''
   const total = rent.rent_snt + (rent.water_snt ?? 0) + (rent.parking_snt ?? 0)
   const parts = [
@@ -173,7 +192,8 @@ export function leaseRentText(t: T, rent: { rent_snt: number; water_snt?: number
     rent.parking_snt ? t('properties.lease.parking', { amount: formatCents(rent.parking_snt) }) : '',
   ].filter(Boolean)
   const base = t('properties.lease.perMonth', { amount: formatCents(total) })
-  return parts.length ? `${base} (${t('properties.lease.rentPart', { amount: formatCents(rent.rent_snt) })}, ${parts.join(', ')})` : base
+  const text = parts.length ? `${base} (${t('properties.lease.rentPart', { amount: formatCents(rent.rent_snt) })}, ${parts.join(', ')})` : base
+  return vat ? `${text} ${t('properties.lease.vat', { pct: vatPctText(vat.pct), amount: formatCents(vat.snt), total: formatCents(total + vat.snt) })}` : text
 }
 
 /** An exception as the lease card lists it: "1.3.2025–31.3.2025 · 470,00 €/kk, normaali 670,00 € · Remonttihyvitys". */

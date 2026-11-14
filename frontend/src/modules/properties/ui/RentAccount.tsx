@@ -191,6 +191,11 @@ export function RentAccountView({
                 <th>{t('properties.rent.col.month')}</th>
                 <th className="amount">{t('properties.rent.col.rent')}</th>
                 <th className="amount">{t('properties.rent.col.water')}</th>
+                {account.vat ? (
+                  <th className="amount" title={t('properties.rent.col.vatHint')}>
+                    {t('properties.rent.col.vat')}
+                  </th>
+                ) : null}
                 <th className="amount">{t('properties.rent.col.received')}</th>
                 <th className="amount" title={t('properties.rent.col.changeHint')}>
                   {t('properties.rent.col.change')}
@@ -204,7 +209,7 @@ export function RentAccountView({
             </thead>
             <tbody>
               {[...account.months].reverse().map((m) => {
-                const change = m.received_snt - m.rent_snt - m.water_snt
+                const change = m.received_snt - m.rent_snt - m.water_snt - (m.vat_snt ?? 0)
                 const balance = tenantSide(m.balance_snt)
                 const formFrom = open?.key === m.key ? (open.stored ?? m.exception_prefill) : undefined
                 return (
@@ -219,7 +224,10 @@ export function RentAccountView({
                         <td className="amount">{formatCents(m.rent_snt)}</td>
                       )}
                       <td className="amount">{m.water_snt ? formatCents(m.water_snt) : ''}</td>
-                      <td className="amount">{formatCents(m.received_snt)}</td>
+                      {account.vat ? <td className="amount">{formatCents(m.vat_snt ?? 0, { emptyZero: true })}</td> : null}
+                      <td className="amount" title={m.received_vat_snt ? t('properties.rent.vatPart', { amount: formatCents(m.received_vat_snt) }) : undefined}>
+                        {formatCents(m.received_snt)}
+                      </td>
                       <td className={`amount ${change < 0 ? 'neg' : ''}`}>
                         {change > 0 ? '+' : ''}
                         {formatCents(change, { emptyZero: true })}
@@ -254,7 +262,7 @@ export function RentAccountView({
                     </tr>
                     {onSaveException && formFrom ? (
                       <tr className="property-rent-form-row">
-                        <td colSpan={8}>
+                        <td colSpan={account.vat ? 9 : 8}>
                           <ExceptionForm
                             month={m}
                             prefill={formFrom}

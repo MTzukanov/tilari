@@ -5,8 +5,23 @@
  * at zero, and an ended lease keeps what it left. Pure.
  */
 import { addDays, addMonths, dayCount, monthEnd, monthKeys } from '../../../months'
+import { generalVatPercent, SALES_VAT_CODES, vatOf } from '../../vat/domain/vatRates'
 import { leaseState, rentSegments, rentTotal, termsAt } from './rent'
-import type { Lease, LeaseException, LeaseRentAccount, RentAccount, RentBalance, RentEnd, RentMonth, RentStart, WaterSettlement } from './types'
+import type {
+  BookedLine,
+  Lease,
+  LeaseException,
+  LeaseRentAccount,
+  RentAccount,
+  RentBalance,
+  RentEnd,
+  RentMonth,
+  RentStart,
+  VatIssue,
+  VatIssueKind,
+  Warning,
+  WaterSettlement,
+} from './types'
 import { bookedLine, settlementShares } from './water'
 
 /** A booked line paid for rent (income) or a water refund passed on; `lease_key` when already known. */
@@ -18,6 +33,11 @@ export type RentLine = {
   partner_id: number | null
   text: string
   lease_key?: string
+  /**
+   * As booked (ADR-033): the VAT code and rate, the VAT the sale carries (null: its VAT row is
+   * missing), and whether it is an income line (not a water refund passed on).
+   */
+  vat?: { code: number; pct: number; snt: number | null; income: boolean }
 }
 
 /** A water settlement share due from (+) or to (-) a lease's tenant. */
@@ -45,6 +65,61 @@ export function expectedRent(lease: Lease, from: string, until: string): Map<str
       amount += part.from === first && part.to === last ? total : Math.round((total * dayCount(part.from, part.to)) / dayCount(first, last))
     }
     out.set(key, amount)
+  }
+  return out
+}
+
+/**
+ * The VAT a VAT lease expects per month on what `expectedRent` gives (ADR-033): each part - rent,
+ * water advance, parking - of each stretch on its own, rounded like an invoice row, at the
+ * general rate of the stretch's first day.
+ */
+export function expectedVat(lease: Lease, from: string, until: string): Map<string, number> {
+  const out = new Map<string, number>()
+  if (!lease.vat) return out
+  const start = lease.starts > from ? lease.starts : from
+  const end = lease.ends && lease.ends < until ? lease.ends : until
+  if (end < start) return out
+  for (const key of monthKeys(start, end)) {
+    const first = `${key}-01`
+    const last = monthEnd(key)
+    let vat = 0
+    for (const part of rentSegments(lease, start > first ? start : first, end < last ? end : last)) {
+      const whole = part.from === first && part.to === last
+      const pct = generalVatPercent(part.from)
+      for (const amount of [part.terms.rent_snt, part.terms.water_snt ?? 0, part.terms.parking_snt ?? 0]) {
+        const counted = whole ? amount : Math.round((amount * dayCount(part.from, part.to)) / dayCount(first, last))
+        vat += vatOf(counted, pct)
+      }
+    }
+    out.set(key, vat)
+  }
+  return out
+}
+
+/** What is wrong with a rent line's VAT for its lease (ADR-033), if anything. */
+export function vatIssueOf(lease: Lease, line: RentLine): VatIssueKind | null {
+  if (!line.vat?.income) return null
+  const taxed = SALES_VAT_CODES.has(line.vat.code)
+  if (!lease.vat) return taxed ? 'unexpected' : null
+  if (!taxed) return line.net_snt ? 'missing' : null
+  if (line.vat.snt == null) return 'row_missing'
+  return line.vat.pct !== generalVatPercent(line.date) ? 'rate' : null
+}
+
+/**
+ * A lease's VAT issues as warnings (ADR-033), one per kind: how many lines, the first one's day,
+ * and for a wrong rate the booked and the general one.
+ */
+export function vatWarnings(account: LeaseRentAccount, tenant: string): Warning[] {
+  const out: Warning[] = []
+  for (const kind of ['missing', 'unexpected', 'row_missing', 'rate'] as const) {
+    const list = (account.vat_issues ?? []).filter((i) => i.kind === kind)
+    if (!list.length) continue
+    const first = list[0]
+    const params: Record<string, string | number> = { tenant, count: list.length, from_date: first.date }
+    if (kind === 'rate') Object.assign(params, { booked_pct: first.pct, general_pct: generalVatPercent(first.date) })
+    out.push({ code: `rent_vat_${kind}`, params })
   }
   return out
 }
@@ -159,28 +234,58 @@ type LineContext = Parameters<typeof bookedLine>[2]
 /** The period the owner's rent accounts cover: from `rentStart`, to the sale or the as-of date. */
 export type RentWindow = { from: string; until: string; asOf: string }
 
+/**
+ * A lease's rent account. A VAT lease (ADR-033) counts with VAT: each month expects VAT on its
+ * rent and water shares, and each payment counts with its own VAT row; the exception prefill
+ * stays on the amounts without VAT.
+ */
 function leaseAccount(lease: Lease, lines: RentLine[], charges: WaterCharge[], window: RentWindow, ctx: LineContext): LeaseRentAccount {
   const { asOf } = window
   const rent = expectedRent(lease, window.from, window.until)
+  const rentVat = expectedVat(lease, window.from, window.until)
   const normal = lease.exceptions?.length ? expectedRent({ ...lease, exceptions: [] }, window.from, window.until) : null
   const water = new Map<string, number>()
-  for (const c of charges) if (c.date <= asOf) water.set(monthOf(c.date), (water.get(monthOf(c.date)) ?? 0) + c.amount_snt)
+  const waterVat = new Map<string, number>()
+  for (const c of charges) {
+    if (c.date > asOf) continue
+    water.set(monthOf(c.date), (water.get(monthOf(c.date)) ?? 0) + c.amount_snt)
+    if (lease.vat) waterVat.set(monthOf(c.date), (waterVat.get(monthOf(c.date)) ?? 0) + vatOf(c.amount_snt, generalVatPercent(c.date)))
+  }
   const paid = new Map<string, RentLine[]>()
   for (const l of lines) paid.set(monthOf(l.date), [...(paid.get(monthOf(l.date)) ?? []), l])
+  const lineVat = (l: RentLine) => (lease.vat ? (l.vat?.snt ?? 0) : 0)
+  const issues: VatIssue[] = []
+  const booked = (l: RentLine): BookedLine => {
+    const vat = lineVat(l)
+    const out = bookedLine(l, l.net_snt + vat, ctx)
+    if (vat) out.vat_snt = vat
+    const issue = vatIssueOf(lease, l)
+    if (issue) {
+      out.vat_issue = issue
+      issues.push({ line_id: l.id, date: l.date, kind: issue, pct: l.vat?.pct ?? 0 })
+    }
+    return out
+  }
   const keys = [...rent.keys(), ...water.keys(), ...paid.keys()].sort()
   const months: RentMonth[] = []
   let balance = 0
   let expected = 0
   let received = 0
+  let expectedVatTotal = 0
+  let receivedVatTotal = 0
   if (keys.length) {
     for (const key of monthKeys(`${keys[0]}-01`, `${keys[keys.length - 1]}-01`)) {
       const monthRent = rent.get(key) ?? 0
       const monthWater = water.get(key) ?? 0
+      const monthVat = (rentVat.get(key) ?? 0) + (waterVat.get(key) ?? 0)
       const monthLines = (paid.get(key) ?? []).sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id)
       const monthPaid = monthLines.reduce((s, l) => s + l.net_snt, 0)
-      expected += monthRent + monthWater
-      received += monthPaid
-      balance += monthRent + monthWater - monthPaid
+      const monthPaidVat = monthLines.reduce((s, l) => s + lineVat(l), 0)
+      expected += monthRent + monthWater + monthVat
+      received += monthPaid + monthPaidVat
+      expectedVatTotal += monthVat
+      receivedVatTotal += monthPaidVat
+      balance += monthRent + monthWater + monthVat - monthPaid - monthPaidVat
       const exceptions = normal && rent.has(key) ? exceptionsIn(lease, key, window.from, window.until) : []
       months.push({
         key,
@@ -189,9 +294,10 @@ function leaseAccount(lease: Lease, lines: RentLine[], charges: WaterCharge[], w
           ? { exception: { normal_snt: normal!.get(key) ?? 0, agreed: exceptions } }
           : {}),
         water_snt: monthWater,
-        received_snt: monthPaid,
+        ...(lease.vat ? { vat_snt: monthVat, received_vat_snt: monthPaidVat } : {}),
+        received_snt: monthPaid + monthPaidVat,
         balance_snt: balance,
-        lines: monthLines.map((l) => bookedLine(l, l.net_snt, ctx)),
+        lines: monthLines.map(booked),
       })
       const prefill = monthRent + monthWater !== monthPaid ? exceptionPrefill(lease, key, monthPaid - monthWater, window) : null
       if (prefill) months[months.length - 1].exception_prefill = prefill
@@ -205,6 +311,8 @@ function leaseAccount(lease: Lease, lines: RentLine[], charges: WaterCharge[], w
     expected_snt: expected,
     received_snt: received,
     balance_snt: balance,
+    ...(lease.vat ? { vat: true as const, expected_vat_snt: expectedVatTotal, received_vat_snt: receivedVatTotal } : {}),
+    ...(issues.length ? { vat_issues: issues } : {}),
   }
 }
 

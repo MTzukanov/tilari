@@ -121,6 +121,17 @@ describe('lease drafts', () => {
     expect(withKeys(keyed)).toEqual(keyed)
   })
 
+  it('VAT is an extra the lease has or not; off drops it on save', () => {
+    const stored: Lease = { key: 'l1', starts: '2025-01-01', due_day: 5, rents: [{ from: '2025-01-01', rent_snt: 100_000 }], vat: true }
+    const [draft] = leaseDrafts([stored], partners)
+    expect(draft.vat).toBe(true)
+    expect(newLease().vat).toBe(false)
+    expect(buildLeases(t, [draft], partners)).toEqual([stored])
+    expect(buildLeases(t, [{ ...draft, vat: false }], partners)).toEqual([
+      { key: 'l1', starts: '2025-01-01', due_day: 5, rents: [{ from: '2025-01-01', rent_snt: 100_000 }] },
+    ])
+  })
+
   it('a bad number names its field', () => {
     const lease = { ...newLease(), starts: '2025-01-01', dueDay: 'toinen' }
     expect(buildLeases(t, [lease], partners)).toBe('properties.error.invalid_field{"path":"leases[0].due_day"}')

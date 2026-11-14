@@ -1120,6 +1120,8 @@
       "increaseFrom": "Ab",
       "increaseNotice": "Erhöhungsmitteilung",
       "parkingExtra": "Stellplatz",
+      "vatExtra": "USt",
+      "vatExtraHint": "Auf die Miete kommt USt: Beträge ohne USt eingeben; der Regelsatz des jeweiligen Tages wird aufgeschlagen.",
       "waterFrom": "Zeitraum beginnt",
       "waterTo": "Zeitraum endet",
       "waterResult": "Abrechnung der Gesellschaft",
@@ -1223,6 +1225,8 @@
       "since": "ab {date}",
       "period": "{from}–{to}",
       "perMonth": "{amount}/Monat",
+      "vat": "+ USt {pct} {amount} = {total}/Monat",
+      "vatHint": "Beträge ohne USt · USt {pct} {amount} · gesamt {total}/Monat",
       "due": "fällig am {day}.",
       "increase": {
         "percent": "Erhöhung {pct} pro Jahr",
@@ -1383,6 +1387,14 @@
       "doc_newer": "Die Daten wurden mit einem neueren Tilari gespeichert.",
       "loan_shared": "Darlehenskonto {account} ist auch das Bankdarlehen eines anderen Objekts, daher zählen die Zinsen für beide. Bei einem Objekt entfernen.",
       "rent_arrears": "Mietrückstand {amount}.",
+      "rent_vat_missing": "In der Miete fehlt die USt ({tenant}): {count} Zahlungen sind ohne USt gebucht, die erste am {from}. Das Mietverhältnis ist umsatzsteuerpflichtig.",
+      "rent_vat_missing_one": "In der Miete fehlt die USt ({tenant}): die Zahlung vom {from} ist ohne USt gebucht. Das Mietverhältnis ist umsatzsteuerpflichtig.",
+      "rent_vat_unexpected": "Das Mietverhältnis ({tenant}) ist ohne USt, aber {count} Zahlungen sind mit USt gebucht, die erste am {from}: USt am Mietverhältnis setzen oder die Buchung korrigieren.",
+      "rent_vat_unexpected_one": "Das Mietverhältnis ({tenant}) ist ohne USt, aber die Zahlung vom {from} ist mit USt gebucht: USt am Mietverhältnis setzen oder die Buchung korrigieren.",
+      "rent_vat_row_missing": "USt-Zeile der Miete fehlt ({tenant}): {count} Zahlungen haben einen USt-Code ohne eigene USt-Zeile, die erste am {from}.",
+      "rent_vat_row_missing_one": "USt-Zeile der Miete fehlt ({tenant}): die Zahlung vom {from} hat einen USt-Code ohne eigene USt-Zeile.",
+      "rent_vat_rate": "USt-Satz der Miete weicht ab ({tenant}): {count} Zahlungen sind mit {booked} gebucht, die erste am {from}; der Regelsatz war damals {general}.",
+      "rent_vat_rate_one": "USt-Satz der Miete weicht ab ({tenant}): die Zahlung vom {from} ist mit {booked} gebucht; der Regelsatz war damals {general}.",
       "former_owes": "Aus beendeten Mietverhältnissen stehen {amount} aus.",
       "former_paid_ahead": "In beendeten Mietverhältnissen wurden {amount} mehr als die Miete gezahlt.",
       "deposit_open": "Ein beendetes Mietverhältnis hält noch eine Kaution von {amount}.",
@@ -1595,6 +1607,8 @@
         "month": "Monat",
         "rent": "Miete",
         "water": "Wasserabrechnung",
+        "vat": "USt",
+        "vatHint": "Auf Miete und Wasserabrechnung des Monats fällige USt. Bezahlt enthält die eigene USt-Zeile jeder Zahlung.",
         "received": "Bezahlt",
         "change": "Veränderung",
         "changeHint": "Bezahlt − Miete − Wasserabrechnung: − zu wenig bezahlt, + mehr bezahlt.",
@@ -1619,7 +1633,14 @@
       "editLead": "Die Änderung gilt für die ganze Ausnahme, alle ihre Tage. Die reguläre Miete und ihre Erhöhungen bleiben; eine angehängte Vereinbarung bleibt erhalten.",
       "removeException": "Ausnahme entfernen",
       "removeExceptionConfirm": "Ausnahme {period} entfernen? An ihren Tagen wird wieder die reguläre Miete erwartet.",
-      "prefillLead": "Vorausgefüllt, sodass {month} das Gezahlte erwartet ({paid}). Die reguläre Miete und ihre Erhöhungen bleiben. Tage und Beträge prüfen und den Grund angeben; die Vereinbarung lässt sich auf der Bearbeitungsseite anhängen."
+      "prefillLead": "Vorausgefüllt, sodass {month} das Gezahlte erwartet ({paid}). Die reguläre Miete und ihre Erhöhungen bleiben. Tage und Beträge prüfen und den Grund angeben; die Vereinbarung lässt sich auf der Bearbeitungsseite anhängen.",
+      "vatPart": "davon USt {amount}",
+      "vatIssue": {
+        "missing": "ohne USt gebucht, obwohl das Mietverhältnis umsatzsteuerpflichtig ist",
+        "unexpected": "mit USt gebucht, obwohl das Mietverhältnis ohne USt ist",
+        "row_missing": "USt-Code ohne eigene USt-Zeile",
+        "rate": "anderer USt-Satz als der Regelsatz des Tages"
+      }
     }
   },
   "company": {

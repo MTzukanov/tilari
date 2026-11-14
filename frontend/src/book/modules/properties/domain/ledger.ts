@@ -12,6 +12,16 @@ import type { VoucherFile } from './types'
 /** Kitsas brutto VAT codes: the line amount includes VAT (sales 12, purchases 22). */
 const BRUTTO_CODES = new Set([12, 22])
 
+/**
+ * Sales VAT codes whose VAT Kitsas books on a row of its own (ALVKIRJAUS, no cost centre), and
+ * that row's code: netto 11 -> 111 on the VAT account, cash-basis 18 -> 418 on the unpaid VAT
+ * account (`tositeviennit.cpp`).
+ */
+const VAT_ROW_CODES = new Map([
+  [11, 111],
+  [18, 418],
+])
+
 export type CostCentre = {
   id: number
   name: string
@@ -33,6 +43,17 @@ export type PnlRow = {
   gross_snt: number
   /** gross without VAT for brutto-coded lines. */
   net_snt: number
+  /** Vienti.rivi: the line's place on its voucher. */
+  row?: number
+  /** Vienti.alvkoodi / alvprosentti; 0 when none. */
+  vat_code?: number
+  vat_pct?: number
+  /**
+   * The VAT the line's sale carries (credit - debit like `gross_snt`), set by `attachVat`: its own
+   * VAT row for netto codes, gross - net for brutto, 0 without a sales VAT code; null when a
+   * netto-coded line has no VAT row.
+   */
+  vat_snt?: number | null
   partner_id: number | null
   /** The line's text (Vienti.selite). */
   text?: string
@@ -108,6 +129,7 @@ const PNL_SELECT = `SELECT
     Vienti.id AS id,
     Vienti.pvm AS date,
     Vienti.tosite AS voucher_id,
+    Vienti.rivi AS rivi,
     Tosite.tyyppi AS voucher_type,
     COALESCE(Vienti.kohdennus, 0) AS allocation,
     Vienti.tili AS account,
@@ -127,6 +149,7 @@ type RawPnl = {
   id: number
   date: string
   voucher_id: number
+  rivi: number | null
   voucher_type: number
   allocation: number
   account: number
@@ -153,6 +176,9 @@ function mapPnl(row: RawPnl): PnlRow {
     account_type: String(row.account_type || ''),
     gross_snt: gross,
     net_snt: netOf(gross, code, pct),
+    row: Number(row.rivi ?? 0),
+    vat_code: code ?? 0,
+    vat_pct: pct ?? 0,
     partner_id: row.partner_id == null ? null : Number(row.partner_id),
     text: String(row.text || ''),
   }
@@ -214,6 +240,88 @@ export function loadPnlRows(db: SqliteDb, allocationIds: Iterable<number>): PnlR
        ORDER BY Vienti.pvm, Vienti.tosite, Vienti.rivi, Vienti.id`,
     )
     .map(mapPnl)
+}
+
+/** A VAT row (ALVKIRJAUS) of a sale: on a balance-sheet account, without a cost centre. */
+export type VatRow = {
+  id: number
+  voucher_id: number
+  row: number
+  date: string
+  vat_code: number
+  vat_pct: number
+  partner_id: number | null
+  /** credit - debit. */
+  amount_snt: number
+}
+
+/** Posted sales VAT rows (codes 111 and 418) without a cost centre on the given vouchers. */
+export function loadVatRows(db: SqliteDb, voucherIds: Iterable<number>): VatRow[] {
+  return db
+    .all<Record<string, unknown>>(
+      `SELECT Vienti.id AS id, Vienti.tosite AS voucher_id, Vienti.rivi AS rivi, Vienti.pvm AS date,
+              Vienti.alvkoodi AS vat_code, Vienti.alvprosentti AS vat_pct, Vienti.kumppani AS partner_id,
+              COALESCE(Vienti.kreditsnt, 0) - COALESCE(Vienti.debetsnt, 0) AS amount
+       FROM Vienti JOIN Tosite ON Vienti.tosite = Tosite.id
+       WHERE ${SQL_POSTED} AND Vienti.tosite IN (${inList(voucherIds)})
+         AND COALESCE(Vienti.kohdennus, 0) = 0 AND CAST(Vienti.tili AS text) < '3'
+         AND Vienti.alvkoodi IN (${[...VAT_ROW_CODES.values()].join(',')})
+       ORDER BY Vienti.tosite, Vienti.rivi, Vienti.id`,
+    )
+    .map((r) => ({
+      id: Number(r.id),
+      voucher_id: Number(r.voucher_id),
+      row: Number(r.rivi ?? 0),
+      date: String(r.date),
+      vat_code: Number(r.vat_code),
+      vat_pct: Number(r.vat_pct ?? 0),
+      partner_id: r.partner_id == null || Number(r.partner_id) === 0 ? null : Number(r.partner_id),
+      amount_snt: asCents(r.amount),
+    }))
+}
+
+/**
+ * Each line's VAT (`vat_snt`). A netto-coded line takes its own VAT row: on the same voucher and
+ * date, with the matching code and rate, the same partner when both have one, and the nearest
+ * after it (Kitsas, Tilari's statement and bank-import all put it right after its line), else the
+ * nearest before; each row goes to one line. Pure.
+ */
+export function pairVatRows(lines: PnlRow[], vatRows: VatRow[]): PnlRow[] {
+  const used = new Set<number>()
+  const byVoucher = new Map<number, VatRow[]>()
+  for (const r of vatRows) byVoucher.set(r.voucher_id, [...(byVoucher.get(r.voucher_id) ?? []), r])
+  const own = new Map<number, number | null>()
+  const netto = lines
+    .filter((l) => VAT_ROW_CODES.has(l.vat_code ?? 0))
+    .sort((a, b) => a.voucher_id - b.voucher_id || (a.row ?? 0) - (b.row ?? 0) || a.id - b.id)
+  for (const line of netto) {
+    const rowCode = VAT_ROW_CODES.get(line.vat_code ?? 0)
+    const candidates = (byVoucher.get(line.voucher_id) ?? []).filter(
+      (r) =>
+        !used.has(r.id) &&
+        r.vat_code === rowCode &&
+        r.date === line.date &&
+        r.vat_pct === (line.vat_pct ?? 0) &&
+        (r.partner_id == null || line.partner_id == null || r.partner_id === line.partner_id),
+    )
+    const at = line.row ?? 0
+    const after = candidates.filter((r) => r.row > at).sort((a, b) => a.row - b.row)[0]
+    const before = candidates.filter((r) => r.row <= at).sort((a, b) => b.row - a.row)[0]
+    const found = after ?? before
+    if (found) used.add(found.id)
+    own.set(line.id, found ? found.amount_snt : null)
+  }
+  return lines.map((line) => {
+    const code = line.vat_code ?? 0
+    const vat = own.has(line.id) ? own.get(line.id)! : code === 12 ? line.gross_snt - line.net_snt : 0
+    return { ...line, vat_snt: vat }
+  })
+}
+
+/** The lines with their VAT (`pairVatRows`), loading the VAT rows of their vouchers. */
+export function attachVat(db: SqliteDb, lines: PnlRow[]): PnlRow[] {
+  const vouchers = new Set(lines.filter((l) => VAT_ROW_CODES.has(l.vat_code ?? 0)).map((l) => l.voucher_id))
+  return pairVatRows(lines, vouchers.size ? loadVatRows(db, vouchers) : [])
 }
 
 /** Every posted P&L line on the given vouchers, whatever its cost centre. */
