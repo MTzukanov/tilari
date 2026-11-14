@@ -44,6 +44,8 @@ describe('water settlement drafts', () => {
     expect(buildSettlements(t, [draft], new Set())).toEqual([stored])
     const plain = { key: 'w1', from: '2023-11-01', to: '2024-10-31', difference_snt: -1_000 }
     expect(buildSettlements(t, [{ ...draft, voucherId: '40' }], new Set())).toEqual([{ ...plain, voucher_id: 40 }])
+    // While editing too: the picked statement's lines are the company's (an invoice that does not say water).
+    expect(draftSettlement({ ...draft, voucherId: '40' })).toEqual({ ...plain, voucher_id: 40 })
     expect(buildSettlements(t, [{ ...draft, noDocument: false }], new Set())).toEqual([plain])
   })
 

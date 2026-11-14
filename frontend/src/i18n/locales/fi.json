@@ -1570,6 +1570,8 @@
       "deleteLetter": "Poista laskelma",
       "uploadLetter": "Lataa laskelma",
       "uploadStatement": "Lataa tasauslaskelma",
+      "guessExact": "★ Summa täsmää tähän tasaukseen sentilleen.",
+      "guessSuspect": "★ Taloyhtiölle maksettu muu kuin vastike: asunnon viitteellä, tai summa, joka ei toistu kuukausittain.",
       "statementTitle": "Taloyhtiön vesitasaus {object} {from}–{to}",
       "letter": {
         "voucherTitle": "Vesitasaus {object} {from}–{to}",

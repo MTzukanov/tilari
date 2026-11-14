@@ -451,6 +451,17 @@ correction would change the open year's income statement lines. The rental-objec
   rent. A share is settled only when its lines add up to its balance exactly; any difference,
   however small, shows to the cent (less is partial, more is over). Lines no stored period
   takes are suggested as settlements; they make no rent step in the lease suggestions.
+- **The statement can be the company's invoice (2026-11-14).** An extra charge often comes as a
+  plain invoice from the housing company, paid with the vastike's reference, that says "water"
+  only in its file. The statement picker offers, besides Liitetieto documents, the object's
+  vouchers with expense lines and files (bank statements left out). A linked voucher's expense
+  lines on the object are that settlement's company lines, whatever their text or sign, and never
+  a tenant's. The best guesses are starred: a voucher that matches the difference to the cent;
+  else payments to the housing company that are not its vastike (a partner the object pays
+  repeating amounts on one account), first those with the reference the vastike uses, then an
+  amount never repeated. A booking a later correction moved away does not count (the correction
+  pairing of the month figures). Guesses only order the list: nothing is linked or suggested
+  without the owner: vastike changes and one-off charges make too many of them to remind of.
 - Why not book the shares: the settlement is already in the ledger as cash. The split between
   tenants is a calculation over the leases, and storing it would go stale when a lease changes.
 

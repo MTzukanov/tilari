@@ -7,6 +7,27 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-14 - Rental objects: a water statement can be the housing company's invoice (`feature/water-statement-guess`, ADR-025)
+
+- Owner reported: an extra water charge paid as a plain invoice (an expense voucher with the vastike's reference;
+  "water" only in its PDF) could not be picked as the settlement's statement. The picker listed Liitetieto only
+  (`listNoteVouchers`); nothing else required it (storage and reminders take any voucher).
+- The statement picker now also offers the object's vouchers with expense lines and files, bank statements left
+  out (`WaterDetail.statement_candidates`). Linked, such a voucher's expense lines are the settlement's company
+  lines (`waterLines(rows, settlements)`, `WaterLine.statement`), never a tenant's; `draftSettlement` carries the
+  picked voucher so the form shows them as booked before saving.
+- Stars: an exact match to the difference first; else `statementSuspects`, the owner's suggestion: payments to the
+  partner the object pays repeating amounts (the housing company) that are not the vastike, the vastike's own
+  reference first. Checked read-only in the owner's book (no copy): some companies keep one reference for years
+  (a new one when the property manager changes), others send a new one every month, and statement-imported lines
+  carry none, so an amount never repeated is the fallback. Too many hits to remind of: guesses only order the list.
+- `loadCorrectionDates` became `loadCorrections`: the line that takes a booking away gets `reverses`. Both sides
+  (`Computed.reversed`) stay out of the suspects and candidates; the owner's misallocated vastike payments that
+  the reference found were already moved by bank-import's correction voucher, which Tilari pairs this way.
+- `DocPicker` labels show the Kitsas number (`date · 12/2025 · title`), so a voucher can be searched by number.
+- Left out: a warning for a line with another object's reference (not decided), `Tosite.viite` (rarely filled),
+  and an invoice moved onto the object by a correction is not offered there (the correction voucher has no file).
+
 ## 2026-11-14 - Rental objects: VAT leases (`feature/lease-vat`, ADR-033)
 
 - Owner: VAT rent invoiced from Holvi reaches the book at payment; the payment is split into a net income line and

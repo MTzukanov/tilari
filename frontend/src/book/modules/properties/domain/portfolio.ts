@@ -4,6 +4,7 @@ import { rentAccount, rentBalance, rentEnd, rentStart, vatWarnings, waterCharges
 import { BookError } from '../../../errors'
 import { readTilariData, readTilariDataPrefix, writeTilariData } from '../../../kernel/tilariData'
 import type { SqliteDb } from '../../../sqlite'
+import { TYPE_BANK_STATEMENT } from '../../../vouchers'
 import { disposalCandidates, saleShares } from './classify'
 import {
   checkRanges,
@@ -34,7 +35,7 @@ import {
   attachVat,
   loadAccountNumbers,
   loadCapitalEraRoots,
-  loadCorrectionDates,
+  loadCorrections,
   loadCostCentres,
   loadDataThrough,
   loadDeductionLines,
@@ -69,7 +70,9 @@ import {
   tenantSettlementLines,
   settlementView,
   settlementViews,
+  statementSuspects,
   suggestSettlements,
+  toWaterLine,
   waterBookedLine,
   waterLines,
   waterVoucherIds,
@@ -101,6 +104,7 @@ import {
   type DepositView,
   type RentAccount,
   type WaterDetail,
+  type WaterStatementCandidate,
 } from './types'
 
 type Loaded = {
@@ -152,7 +156,13 @@ function groupBy<T>(items: T[], key: (item: T) => number): Map<number, T[]> {
   return out
 }
 
-type Computed = { centre: CostCentre; parsed: ParsedDoc<PropertyDoc>; result: ObjectResult }
+type Computed = {
+  centre: CostCentre
+  parsed: ParsedDoc<PropertyDoc>
+  result: ObjectResult
+  /** Line ids of bookings a later correction moved away, and of the correction lines that did it. */
+  reversed: Set<number>
+}
 
 function computeObjects(
   db: SqliteDb,
@@ -178,10 +188,13 @@ function computeObjects(
   const centreInfo = new Map(loaded.centres.map((c) => [c.id, { name: c.name, allocations: allocationSet(c) }]))
   const shares = saleShares(allEraRows, loaded.owner, centreInfo, voucherPnl)
   const allPnl = [...pnlByAllocation.values()].flat()
-  const correctionDates = loadCorrectionDates(
+  const corrections = loadCorrections(
     db,
     new Set(allPnl.filter((r) => r.voucher_type === 0).map((r) => r.voucher_id)),
   )
+  const correctionDates = new Map([...corrections].map(([id, c]) => [id, c.date]))
+  // Bookings a correction moved away, and the correction lines that did it.
+  const reversed = new Set([...corrections].flatMap(([id, c]) => (c.reverses != null ? [id, c.reverses] : [])))
   const periods = getPeriods(db).map((p) => ({ starts: p.starts, ends: p.ends }))
 
   return centres.map((centre) => {
@@ -210,7 +223,7 @@ function computeObjects(
     })
     const shared = (financing?.loan_accounts ?? []).find((a) => (loaded.loanOwners.get(a) ?? []).some((o) => o !== centre.id))
     if (shared != null) result.warnings.push({ code: 'loan_shared', params: { account: shared } })
-    return { centre, parsed, result }
+    return { centre, parsed, result, reversed }
   })
 }
 
@@ -321,7 +334,8 @@ function rowLease(c: Computed, ctx: LeaseContext): LeaseView | null {
  */
 function rentLines(c: Computed): RentLine[] {
   const operating = c.result.classified.operating
-  const settled = tenantSettlementLines(waterLines(operating), c.parsed.doc.water_settlements ?? [], c.parsed.doc.leases ?? [])
+  const settlements = c.parsed.doc.water_settlements ?? []
+  const settled = tenantSettlementLines(waterLines(operating, settlements), settlements, c.parsed.doc.leases ?? [])
   const leaseOfLine = new Map(settled.map((s) => [s.line.id, s.lease_key]))
   const vatOf = new Map(operating.map((r) => [r.id, r]))
   const line = (r: { id: number; date: string; voucher_id: number; net_snt: number; partner_id: number | null; text?: string }, income: boolean): RentLine => {
@@ -416,7 +430,7 @@ function remindersOf(c: Computed, ctx: LeaseContext): Warning[] {
   const leases = c.parsed.doc.leases ?? []
   const settlements = c.parsed.doc.water_settlements ?? []
   const held = c.result.status !== 'sold'
-  const lines = waterLines(c.result.classified.operating.filter((r) => r.date <= ctx.asOf))
+  const lines = waterLines(c.result.classified.operating.filter((r) => r.date <= ctx.asOf), settlements)
   const views = settlementViews(settlements, lines, leases, { tenantName: tenantName(ctx), partnerName: partnerName(ctx), refs: ctx.refs })
   const suggested = (ctx.suggestions.get(c.centre.id) ?? []).map((s, i) => ({ ...s.lease, key: `s${i + 1}` }))
   const deposits = depositCandidatesOf(c, ctx).filter((d) => d.related && !d.linked_to && d.kind === 'item' && d.balance_snt > 0)
@@ -629,7 +643,9 @@ type WaterLatest = NonNullable<LeaseView['water_latest']>
 function waterDetail(db: SqliteDb, c: Computed, ctx: LeaseContext): { water: WaterDetail; latest: Map<string, WaterLatest> } {
   const leases = c.parsed.doc.leases ?? []
   const settlements = c.parsed.doc.water_settlements ?? []
-  const lines = waterLines(c.result.classified.operating)
+  // The settlements take their statements' lines too; the edit form gets those with the candidates.
+  const lines = waterLines(c.result.classified.operating, settlements)
+  const byText = waterLines(c.result.classified.operating)
   const suggested = (ctx.suggestions.get(c.centre.id) ?? []).map((s, i) => ({ ...s.lease, key: `s${i + 1}` }))
   const refs = loadVoucherRefs(db, new Set([...waterVoucherIds(settlements), ...lines.map((l) => l.voucher_id)]))
   const wctx: WaterViewContext = {
@@ -654,10 +670,41 @@ function waterDetail(db: SqliteDb, c: Computed, ctx: LeaseContext): { water: Wat
     water: {
       settlements: views.sort(newestFirst),
       suggestions: suggestions.sort((a, b) => newestFirst(a.settlement, b.settlement)),
-      lines: lines.map((l) => waterBookedLine(l, wctx)),
+      lines: byText.map((l) => waterBookedLine(l, wctx)),
+      statement_candidates: statementCandidates(db, c, wctx),
     },
     latest,
   }
+}
+
+/**
+ * The vouchers a settlement's statement can be besides Liitetieto documents: those with the
+ * object's expense lines and files (and the stored statements), bank statements left out, with
+ * the housing company's suspects marked (`statementSuspects`). Newest first.
+ */
+function statementCandidates(db: SqliteDb, c: Computed, wctx: WaterViewContext): WaterStatementCandidate[] {
+  const operating = c.result.classified.operating
+  const stored = new Set((c.parsed.doc.water_settlements ?? []).flatMap((s) => (s.voucher_id != null ? [s.voucher_id] : [])))
+  const byVoucher = groupBy(
+    operating.filter((r) => !isIncome(r) && !c.reversed.has(r.id) && r.voucher_type !== TYPE_BANK_STATEMENT),
+    (r) => r.voucher_id,
+  )
+  const refs = loadVoucherRefs(db, byVoucher.keys())
+  const suspects = statementSuspects(operating, c.reversed)
+  // The payees (the housing company) by name: the context knows the tenants.
+  const payees = loadPartners(db, new Set([...byVoucher.values()].flat().flatMap((r) => (r.partner_id != null ? [r.partner_id] : []))))
+  const ctx = { partnerName: (id: number | null) => (id != null ? (payees.get(id)?.name ?? wctx.partnerName(id)) : null), refs }
+  const out: WaterStatementCandidate[] = []
+  for (const [id, rows] of byVoucher) {
+    const ref = refs.get(id)
+    if (!ref || !(ref.files?.length || stored.has(id))) continue
+    out.push({
+      voucher: { voucher_id: id, date: ref.date, doc_number: ref.doc_number, series: ref.series, title: ref.title, files: ref.files ?? [] },
+      lines: rows.map((r) => waterBookedLine({ ...toWaterLine(r), statement: true }, ctx)),
+      suspect: suspects.get(id) ?? null,
+    })
+  }
+  return out.sort((a, b) => b.voucher.date.localeCompare(a.voucher.date) || b.voucher.voucher_id - a.voucher.voucher_id)
 }
 
 /** Kitsas number and title of each sale voucher and its cost vouchers, for links on the object page. */

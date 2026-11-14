@@ -1,7 +1,7 @@
 /** Water settlement form drafts: strings while editing, the stored settlements on save. */
 import { settlementOverlaps } from '../../../book/modules/properties/domain/ranges'
 import { formatEurInput, parseEurInput } from '../../../shared/money'
-import type { WaterSettlement, WaterShare } from '../api'
+import type { DocCandidate, WaterSettlement, WaterShare, WaterStatementCandidate } from '../api'
 import { periodText, saveErrorText } from './format'
 
 type T = (key: string, vars?: Record<string, string | number>) => string
@@ -66,6 +66,12 @@ export function settlementDrafts(list: WaterSettlement[] | undefined): Settlemen
   }))
 }
 
+/** A statement candidate (a voucher with the object's lines) as a document to pick. */
+export function candidateDoc(c: WaterStatementCandidate): DocCandidate {
+  const { voucher } = c
+  return { ...voucher, attachments: voucher.files.length, linked_to: [], suggestion: null }
+}
+
 export function newSettlement(): SettlementDraft {
   return { base: null, from: '', to: '', direction: 'refund', amount: '', usage: '', voucherId: '', noDocument: false, shares: [] }
 }
@@ -90,11 +96,15 @@ function buildShare(d: ShareDraft): WaterShare | null {
   return Object.keys(share).length > 1 ? share : null
 }
 
-/** The settlement as the shares are computed from it while editing; null until it has a period. */
+/**
+ * The settlement as the shares are computed from it while editing, with its statement (whose lines
+ * are the company's); null until it has a period.
+ */
 export function draftSettlement(d: SettlementDraft): WaterSettlement | null {
   if (!d.from || !d.to || d.to < d.from) return null
   const out: WaterSettlement = { key: d.base?.key ?? '', from: d.from, to: d.to, difference_snt: draftDifference(d) }
   if (d.usage.trim()) out.usage_snt = Math.abs(parseEurInput(d.usage))
+  if (d.voucherId) out.voucher_id = Number(d.voucherId)
   const shares = d.shares.flatMap((s) => buildShare(s) ?? [])
   if (shares.length) out.shares = shares
   return out

@@ -1,18 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import { dayCount } from '../../../months'
-import type { VoucherRef } from './ledger'
-import type { Lease, WaterSettlement } from './types'
+import type { PnlRow, VoucherRef } from './ledger'
+import type { Lease, WaterSettlement, WaterStatementCandidate } from './types'
 import {
   advanceBetween,
   fromBookedLines,
+  referenceOf,
   settlementFor,
   settlementShares,
   settlementView,
   settlementViews,
   shareStatus,
+  statementGuesses,
+  statementSuspects,
   suggestSettlements,
+  tenantSettlementLines,
   waterBookedLine,
   waterLines,
+  withStatementLines,
   yearBefore,
   type WaterLine,
 } from './water'
@@ -223,5 +228,134 @@ describe('water settlements', () => {
     })
     expect(advanceBetween(l, '2024-01-01', '2024-03-31')).toBe(6_000)
     expect(advanceBetween({ ...l, exceptions: [{ from: '2024-02-01', to: '2024-02-29', rent_snt: 0, water_snt: 3_000 }] }, '2024-01-01', '2024-03-31')).toBe(9_000)
+  })
+})
+
+/** An expense line on the object (debit as a negative `net`), on its own voucher unless given. */
+function pnl(id: number, date: string, net: number, text: string, opts: Partial<PnlRow> = {}): PnlRow {
+  return {
+    id,
+    date,
+    voucher_id: 500 + id,
+    voucher_type: 100,
+    allocation: 1,
+    account: 7300,
+    account_type: 'D',
+    gross_snt: net,
+    net_snt: net,
+    partner_id: 5,
+    text,
+    ...opts,
+  }
+}
+
+const REF = 'IBAN-maksu viitteellä 55501234'
+
+/** Twelve months of vastike to partner 5 with one reference, from March 2027. */
+function vastike(): PnlRow[] {
+  return Array.from({ length: 12 }, (_, i) => {
+    const month = String(((i + 2) % 12) + 1).padStart(2, '0')
+    const year = i < 10 ? 2027 : 2028
+    return pnl(i + 1, `${year}-${month}-05`, -412_30, REF)
+  })
+}
+
+describe('water settlements: the company\'s statement without water in its text', () => {
+  it('reads the reference a payment names', () => {
+    expect(referenceOf('IBAN-maksu viitteellä 55501234')).toBe('55501234')
+    expect(referenceOf('Maksu VIITTEELLÄ RF18539007547034')).toBe('rf18539007547034')
+    expect(referenceOf('Tiliote 02.05.2027 - 31.05.2027')).toBeNull()
+  })
+
+  it('suspects: the housing company\'s payments that are not its vastike, by reference or by an amount never repeated', () => {
+    const rows = [
+      ...vastike(),
+      // A raise from January: the new amount repeats, so it is vastike too.
+      pnl(20, '2029-01-05', -420_10, REF),
+      pnl(21, '2029-02-05', -420_10, REF),
+      // An extra payment with the apartment's reference, and one without a reference.
+      pnl(30, '2027-12-22', -37_90, REF),
+      pnl(31, '2028-06-05', -15_00, 'Tiliote 01.06.2028 - 30.06.2028'),
+      // A one-off supplier: two lines are no vastike, so nothing is suspected.
+      pnl(40, '2027-09-10', -250_00, 'Putkimies', { partner_id: 8 }),
+      pnl(41, '2027-10-10', -90_00, 'Putkimies', { partner_id: 8 }),
+      // Income is never the company's charge.
+      pnl(50, '2027-04-01', 650_00, 'Vuokra', { account: 3760, account_type: 'C' }),
+    ]
+    expect([...statementSuspects(rows)]).toEqual([
+      [530, 'reference'],
+      [531, 'amount'],
+    ])
+    // A booking a later correction moved to another object is not a suspect, nor the correction line.
+    const moved = [...rows, pnl(60, '2028-01-05', -398_00, REF), pnl(61, '2028-01-05', 398_00, 'Oikaisu', { voucher_type: 0 })]
+    expect([...statementSuspects(moved, new Set([60, 61]))].map(([voucher]) => voucher)).toEqual([530, 531])
+    expect([...statementSuspects(moved)].map(([voucher]) => voucher)).toEqual([530, 531, 560, 561])
+  })
+
+  it('guesses: the voucher that matches the difference to the cent, else the suspects near the period', () => {
+    const candidate = (voucher_id: number, date: string, line_snt: number, suspect: WaterStatementCandidate['suspect']): WaterStatementCandidate => ({
+      voucher: { voucher_id, date, doc_number: null, series: null, title: '', files: [] },
+      lines: [{ line_id: voucher_id, date, amount_snt: line_snt, line_snt, text: '', partner: null, voucher: { voucher_id, date, doc_number: null, series: null, title: '', files: [] }, income: false, partner_id: 5 }],
+      suspect,
+    })
+    const candidates = [
+      candidate(1, '2027-12-22', -37_90, 'reference'),
+      candidate(2, '2028-12-05', -61_20, 'amount'),
+      candidate(3, '2027-12-05', -412_30, null),
+      candidate(4, '2026-11-20', -37_90, 'reference'),
+    ]
+    const guess = (from: string, to: string, difference_snt: number) => {
+      const g = statementGuesses({ from, to, difference_snt }, candidates)
+      return [[...g.vouchers], g.exact]
+    }
+    // An extra charge of 37,90: the debit of exactly that, from the period's start.
+    expect(guess('2027-01-01', '2027-12-31', 37_90)).toEqual([[1], true])
+    // A cent off, or a refund of the same amount: no exact match, so the suspects of the period's year after.
+    expect(guess('2027-01-01', '2027-12-31', 37_91)).toEqual([[1, 2], false])
+    expect(guess('2027-01-01', '2027-12-31', -37_90)).toEqual([[1, 2], false])
+    // The next period: the earlier year's extra is before its start.
+    expect(guess('2028-01-01', '2028-12-31', 0)).toEqual([[2], false])
+    // Nothing entered yet: every suspect.
+    expect(guess('', '', 0)).toEqual([[1, 2, 4], false])
+  })
+
+  it('a statement voucher\'s lines are the company\'s, though the text says nothing, and only for the settlement that links it', () => {
+    const leases = [lease('l1', '2026-01-01', null, 2_000, { tenant_partner_id: 7 })]
+    const rows = [...vastike(), pnl(30, '2027-12-22', -37_90, REF)]
+    const settlement: WaterSettlement = { key: 'w1', from: '2027-01-01', to: '2027-12-31', difference_snt: 37_90, voucher_id: 530 }
+    // Without the link the line is no water line at all.
+    expect(waterLines(rows)).toEqual([])
+    const lines = waterLines(rows, [settlement])
+    expect(lines.map((l) => [l.id, l.statement])).toEqual([[30, true]])
+    expect(settlementFor(lines[0], [settlement])).toBe(settlement)
+    // An earlier settlement it does not link does not take it by date.
+    const earlier: WaterSettlement = { key: 'w0', from: '2026-01-01', to: '2026-12-31', difference_snt: 10_00 }
+    expect(settlementFor(lines[0], [earlier])).toBeUndefined()
+    const refs = new Map<number, VoucherRef>([[530, { id: 530, date: '2027-12-22', type: 100, title: 'Lasku', posted: true, doc_number: 74, series: null }]])
+    const view = settlementView(settlement, lines, leases, { ...ctx, refs })
+    expect(view.booked.map((m) => [m.line_id, m.amount_snt, m.voucher.doc_number])).toEqual([[30, -37_90, 74]])
+    expect(view.statement).toMatchObject({ voucher_id: 530, doc_number: 74 })
+    // A refund settlement linking a charge: still the company's line, never a tenant's payment.
+    const refund = { ...settlement, difference_snt: -37_90 }
+    expect(settlementView(refund, lines, leases, { ...ctx, refs }).booked.map((m) => m.line_id)).toEqual([30])
+    expect(tenantSettlementLines(waterLines(rows, [refund]), [refund], leases)).toEqual([])
+  })
+
+  it('the edit form adds the picked statement\'s lines and gives each settlement the same as the page', () => {
+    const leases = [lease('l1', '2026-01-01', null, 2_000, { tenant_partner_id: 7 })]
+    const tenantLine = line(2, '2028-02-05', -37_90, 'Vesitasaus 2027', { income: true, partner_id: 7 })
+    const invoice: WaterLine = { id: 30, date: '2027-12-22', voucher_id: 530, net_snt: -37_90, income: false, text: REF, partner_id: 5, statement: true }
+    const settlement: WaterSettlement = { key: 'w1', from: '2027-01-01', to: '2027-12-31', difference_snt: 37_90, voucher_id: 530 }
+    const pageCtx = { ...ctx, refs: new Map<number, VoucherRef>([[530, { id: 530, date: '2027-12-22', type: 100, title: 'Lasku', posted: true, doc_number: 74, series: null, files: [] }]]) }
+    const page = settlementViews([settlement], [invoice, tenantLine], leases, pageCtx)
+    const form = withStatementLines([waterBookedLine(tenantLine, pageCtx)], [waterBookedLine(invoice, pageCtx)])
+    expect(form.map((l) => [l.line_id, l.statement])).toEqual([
+      [30, true],
+      [2, undefined],
+    ])
+    const back = fromBookedLines(form)
+    expect(settlementViews([settlement], back.lines, leases, { ...back.ctx, tenantName: ctx.tenantName })).toEqual(page)
+    expect(page[0].booked.map((m) => m.line_id)).toEqual([30])
+    expect(page[0].shares[0]).toMatchObject({ settled_snt: -37_90 })
   })
 })
