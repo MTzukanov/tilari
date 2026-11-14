@@ -119,7 +119,7 @@ function LeaseCard({
 }) {
   const { t } = useI18n()
   const terms = [
-    leaseRentText(t, lease.rent),
+    leaseRentText(t, lease.rent, lease.vat),
     lease.due_day != null ? t('properties.lease.due', { day: lease.due_day }) : '',
     increaseText(t, lease.increase),
     t(lease.water === 'flat' ? 'properties.water.flat' : 'properties.water.advance'),
@@ -315,7 +315,7 @@ function LeaseList({
           <LeaseStatePill state={lease.state} />
           <span>{lease.tenant ?? t('properties.lease.tenantUnknown')}</span>
           <span className="muted">{leasePeriod(t, lease)}</span>
-          <span>{leaseRentText(t, lease.rent)}</span>
+          <span>{leaseRentText(t, lease.rent, lease.vat)}</span>
           {lease.suggested ? <SuggestionSource source={lease.suggested} /> : null}
           {lease.suggested ? (
             <LeaseSources lease={lease} onOpen={onOpenVoucher} />

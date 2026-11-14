@@ -1120,6 +1120,8 @@
       "increaseFrom": "Alkaen",
       "increaseNotice": "Korotusilmoitus",
       "parkingExtra": "Autopaikka",
+      "vatExtra": "ALV",
+      "vatExtraHint": "Vuokraan lisätään arvonlisävero: summat syötetään ilman ALV:tä, ja kunkin päivän yleinen verokanta lisätään.",
       "waterFrom": "Jakso alkaa",
       "waterTo": "Jakso päättyy",
       "waterResult": "Taloyhtiön tasaus",
@@ -1223,6 +1225,8 @@
       "since": "{date} alkaen",
       "period": "{from}–{to}",
       "perMonth": "{amount}/kk",
+      "vat": "+ ALV {pct} {amount} = {total}/kk",
+      "vatHint": "Summat ilman ALV:tä · ALV {pct} {amount} · yhteensä {total}/kk",
       "due": "eräpäivä {day}.",
       "increase": {
         "percent": "korotus {pct} vuodessa",
@@ -1383,6 +1387,14 @@
       "doc_newer": "Tiedot on tallennettu uudemmalla Tilarilla.",
       "loan_shared": "Lainatili {account} on myös toisen kohteen pankkilaina, joten sen korot lasketaan molemmille. Poista se toiselta kohteelta.",
       "rent_arrears": "Vuokrarästiä {amount}.",
+      "rent_vat_missing": "Vuokrasta puuttuu ALV ({tenant}): {count} suoritusta on kirjattu ilman ALV:tä, ensimmäinen {from}. Vuokrasuhde on arvonlisäverollinen.",
+      "rent_vat_missing_one": "Vuokrasta puuttuu ALV ({tenant}): suoritus {from} on kirjattu ilman ALV:tä. Vuokrasuhde on arvonlisäverollinen.",
+      "rent_vat_unexpected": "Vuokrasuhde ({tenant}) on ilman ALV:tä, mutta {count} suoritusta on kirjattu ALV:n kanssa, ensimmäinen {from}: merkitse vuokrasuhteeseen ALV tai korjaa kirjaus.",
+      "rent_vat_unexpected_one": "Vuokrasuhde ({tenant}) on ilman ALV:tä, mutta suoritus {from} on kirjattu ALV:n kanssa: merkitse vuokrasuhteeseen ALV tai korjaa kirjaus.",
+      "rent_vat_row_missing": "Vuokran ALV-rivi puuttuu ({tenant}): {count} suoritusta on ALV-koodilla ilman omaa ALV-riviä, ensimmäinen {from}.",
+      "rent_vat_row_missing_one": "Vuokran ALV-rivi puuttuu ({tenant}): suoritus {from} on ALV-koodilla ilman omaa ALV-riviä.",
+      "rent_vat_rate": "Vuokran ALV-kanta poikkeaa ({tenant}): {count} suoritusta on kirjattu kannalla {booked}, ensimmäinen {from}; yleinen kanta oli silloin {general}.",
+      "rent_vat_rate_one": "Vuokran ALV-kanta poikkeaa ({tenant}): suoritus {from} on kirjattu kannalla {booked}; yleinen kanta oli silloin {general}.",
       "former_owes": "Päättyneistä vuokrasuhteista on saamatta {amount}.",
       "former_paid_ahead": "Päättyneissä vuokrasuhteissa on maksettu {amount} enemmän kuin vuokra.",
       "deposit_open": "Päättyneen vuokrasuhteen vakuutta on palauttamatta {amount}.",
@@ -1595,6 +1607,8 @@
         "month": "Kuukausi",
         "rent": "Vuokra",
         "water": "Vesitasaus",
+        "vat": "ALV",
+        "vatHint": "ALV, joka kuukauden vuokrasta ja vesitasauksesta kuuluu maksaa. Maksettu sisältää kunkin suorituksen oman ALV-rivin.",
         "received": "Maksettu",
         "change": "Muutos",
         "changeHint": "Maksettu − vuokra − vesitasaus: − jäi maksamatta, + maksettiin enemmän.",
@@ -1619,7 +1633,14 @@
       "editLead": "Muutos koskee koko poikkeusta, kaikkia sen päiviä. Normaali vuokra ja korotukset eivät muutu; liitetty sopimus säilyy.",
       "removeException": "Poista poikkeus",
       "removeExceptionConfirm": "Poistetaanko poikkeus {period}? Sen päivinä odotetaan taas normaali vuokra.",
-      "prefillLead": "Esitäytetty niin, että {month} odottaa sen, mitä maksettiin ({paid}). Normaali vuokra ja korotukset eivät muutu. Tarkista päivät ja summat ja kirjoita syy; sopimuksen voi liittää muokkaussivulla."
+      "prefillLead": "Esitäytetty niin, että {month} odottaa sen, mitä maksettiin ({paid}). Normaali vuokra ja korotukset eivät muutu. Tarkista päivät ja summat ja kirjoita syy; sopimuksen voi liittää muokkaussivulla.",
+      "vatPart": "josta ALV {amount}",
+      "vatIssue": {
+        "missing": "kirjattu ilman ALV:tä, vaikka vuokrasuhde on arvonlisäverollinen",
+        "unexpected": "kirjattu ALV:n kanssa, vaikka vuokrasuhde on ilman ALV:tä",
+        "row_missing": "ALV-koodi ilman omaa ALV-riviä",
+        "rate": "eri ALV-kanta kuin päivän yleinen kanta"
+      }
     }
   },
   "company": {

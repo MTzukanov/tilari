@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { candidateKey, depositFits } from '../../../book/modules/properties/domain/deposits'
+import { rentVat } from '../../../book/modules/properties/domain/rent'
+import { generalVatPercent } from '../../../book/modules/vat/domain/vatRates'
 import { getBcp47, useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { DocLine, DocLines } from '../../../shared/DocRows'
 import { EuroInput } from '../../../shared/EuroInput'
 import { FileButton } from '../../../shared/FileButton'
-import { formatCents } from '../../../shared/money'
+import { formatCents, parseEurInput } from '../../../shared/money'
 import { SearchSelect } from '../../../shared/SearchSelect'
 import { SuggestBanner } from '../../../shared/SuggestBanner'
 import {
@@ -20,7 +22,7 @@ import {
 import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
 import { DocSlot, LineSources, NoDocumentCheck, Shown } from './FormParts'
-import { depositOptionText, leaseRentText, untilText } from './format'
+import { depositOptionText, leaseRentText, untilText, vatPctText } from './format'
 import { SuggestionSource } from './LeasesPanel'
 import {
   draftStepAt,
@@ -70,6 +72,17 @@ function Amounts({
       ) : null}
     </>
   )
+}
+
+/**
+ * A VAT lease's amounts with VAT (ADR-033): "Summat ilman ALV:tä · ALV 25,5 % 255,00 € · yhteensä
+ * 1 255,00 €/kk", at the general rate of the step's first day (today's while it has none).
+ */
+function draftVatText(t: (key: string, vars?: Record<string, string | number>) => string, a: AmountsDraft, parking: boolean, from: string): string {
+  const pct = generalVatPercent(from || new Date().toISOString().slice(0, 10))
+  const amounts = { rent_snt: parseEurInput(a.rent), water_snt: parseEurInput(a.water), parking_snt: parking ? parseEurInput(a.parking) : 0 }
+  const vat = rentVat(amounts, pct).snt
+  return t('properties.lease.vatHint', { pct: vatPctText(pct), amount: formatCents(vat), total: formatCents(draftTotal(a, parking) + vat) })
 }
 
 /** The amounts rows: Alkaen, rent, water, (parking), total; four columns without parking. */
@@ -280,7 +293,7 @@ export function LeasesEditor({
               <DocLine
                 key={i}
                 date={formatDate(s.view.starts)}
-                title={[s.view.tenant ?? t('properties.lease.tenantUnknown'), s.view.ends ? untilText(t, s.view.ends) : '', leaseRentText(t, s.view.rent)]
+                title={[s.view.tenant ?? t('properties.lease.tenantUnknown'), s.view.ends ? untilText(t, s.view.ends) : '', leaseRentText(t, s.view.rent, s.view.vat)]
                   .filter(Boolean)
                   .join(' · ')}
                 mark={s.view.suggested ? <SuggestionSource source={s.view.suggested} /> : null}
@@ -351,6 +364,10 @@ export function LeasesEditor({
                 <input type="checkbox" checked={d.parking} onChange={() => set(i, { parking: !d.parking })} />
                 {t('properties.field.parkingExtra')}
               </label>
+              <label className="allocation-check" title={t('properties.field.vatExtraHint')}>
+                <input type="checkbox" checked={d.vat} onChange={() => set(i, { vat: !d.vat })} />
+                {t('properties.field.vatExtra')}
+              </label>
             </span>
             <label className="allocation-check property-lease-extras">
               <input type="checkbox" checked={!d.waterFlat} onChange={() => set(i, { waterFlat: !d.waterFlat })} />
@@ -362,6 +379,7 @@ export function LeasesEditor({
             <Amounts value={d.initial} parking={d.parking} onChange={(patch) => set(i, { initial: { ...d.initial, ...patch } })} />
             <Shown label={t('properties.field.total')} value={formatCents(draftTotal(d.initial, d.parking))} strong />
           </div>
+          {d.vat ? <p className="muted property-lease-hint">{draftVatText(t, d.initial, d.parking, d.starts)}</p> : null}
           <div className="property-lease-grid">
             <label>
               {t('properties.field.increaseKind')}

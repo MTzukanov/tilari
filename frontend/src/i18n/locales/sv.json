@@ -1120,6 +1120,8 @@
       "increaseFrom": "Från",
       "increaseNotice": "Höjningsmeddelande",
       "parkingExtra": "Bilplats",
+      "vatExtra": "Moms",
+      "vatExtraHint": "Moms läggs till hyran: ange beloppen utan moms; varje dags allmänna skattesats läggs till.",
       "waterFrom": "Perioden börjar",
       "waterTo": "Perioden slutar",
       "waterResult": "Bolagets utjämning",
@@ -1223,6 +1225,8 @@
       "since": "från {date}",
       "period": "{from}–{to}",
       "perMonth": "{amount}/mån",
+      "vat": "+ moms {pct} {amount} = {total}/mån",
+      "vatHint": "Belopp utan moms · moms {pct} {amount} · totalt {total}/mån",
       "due": "förfallodag {day}.",
       "increase": {
         "percent": "höjning {pct} per år",
@@ -1383,6 +1387,14 @@
       "doc_newer": "Uppgifterna sparades med en nyare Tilari.",
       "loan_shared": "Lånekonto {account} är också ett annat objekts banklån, så räntan räknas för båda. Ta bort det från det ena objektet.",
       "rent_arrears": "Hyresskuld {amount}.",
+      "rent_vat_missing": "Moms saknas i hyran ({tenant}): {count} betalningar är bokförda utan moms, den första {from}. Hyresförhållandet är momspliktigt.",
+      "rent_vat_missing_one": "Moms saknas i hyran ({tenant}): betalningen {from} är bokförd utan moms. Hyresförhållandet är momspliktigt.",
+      "rent_vat_unexpected": "Hyresförhållandet ({tenant}) är utan moms, men {count} betalningar är bokförda med moms, den första {from}: markera moms på hyresförhållandet eller rätta bokföringen.",
+      "rent_vat_unexpected_one": "Hyresförhållandet ({tenant}) är utan moms, men betalningen {from} är bokförd med moms: markera moms på hyresförhållandet eller rätta bokföringen.",
+      "rent_vat_row_missing": "Hyrans momsrad saknas ({tenant}): {count} betalningar har momskod utan egen momsrad, den första {from}.",
+      "rent_vat_row_missing_one": "Hyrans momsrad saknas ({tenant}): betalningen {from} har momskod utan egen momsrad.",
+      "rent_vat_rate": "Hyrans momssats avviker ({tenant}): {count} betalningar är bokförda med {booked}, den första {from}; den allmänna satsen var då {general}.",
+      "rent_vat_rate_one": "Hyrans momssats avviker ({tenant}): betalningen {from} är bokförd med {booked}; den allmänna satsen var då {general}.",
       "former_owes": "Från avslutade hyresförhållanden återstår {amount} att få.",
       "former_paid_ahead": "I avslutade hyresförhållanden har {amount} betalats utöver hyran.",
       "deposit_open": "Ett avslutat hyresförhållande har kvar en deposition på {amount}.",
@@ -1595,6 +1607,8 @@
         "month": "Månad",
         "rent": "Hyra",
         "water": "Vattenutjämning",
+        "vat": "Moms",
+        "vatHint": "Moms som ska betalas på månadens hyra och vattenutjämning. Betalt innehåller varje betalnings egen momsrad.",
         "received": "Betalt",
         "change": "Förändring",
         "changeHint": "Betalt − hyra − vattenutjämning: − betalt för lite, + betalt mer.",
@@ -1619,7 +1633,14 @@
       "editLead": "Ändringen gäller hela undantaget, alla dess dagar. Den normala hyran och höjningarna ändras inte; ett bifogat avtal finns kvar.",
       "removeException": "Ta bort undantaget",
       "removeExceptionConfirm": "Ta bort undantaget {period}? Dess dagar väntar åter den normala hyran.",
-      "prefillLead": "Förifyllt så att {month} väntar det som betalades ({paid}). Den normala hyran och höjningarna ändras inte. Kontrollera dagar och belopp och skriv orsaken; avtalet kan bifogas på redigeringssidan."
+      "prefillLead": "Förifyllt så att {month} väntar det som betalades ({paid}). Den normala hyran och höjningarna ändras inte. Kontrollera dagar och belopp och skriv orsaken; avtalet kan bifogas på redigeringssidan.",
+      "vatPart": "varav moms {amount}",
+      "vatIssue": {
+        "missing": "bokförd utan moms, fast hyresförhållandet är momspliktigt",
+        "unexpected": "bokförd med moms, fast hyresförhållandet är utan moms",
+        "row_missing": "momskod utan egen momsrad",
+        "rate": "annan momssats än dagens allmänna sats"
+      }
     }
   },
   "company": {

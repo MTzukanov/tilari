@@ -12,7 +12,7 @@ export const CC = {
   bundleProject: 11, // renovation project under the bundle
   sold: 20, // bought 2023, sold 2025 (sale voucher + broker invoice later)
   garage: 30, // item on 1453, bought 2024
-  commercial: 40, // VAT-coded rent, one brutto line
+  commercial: 40, // VAT-coded rent with its VAT rows, one brutto line
   office: 50, // not a rental object
   parkingA: 60, // sold with parkingB on one voucher, equal amounts
   parkingB: 61,
@@ -229,7 +229,13 @@ export async function buildPropertyFixture(): Promise<PropertyFixture> {
       // One brutto-coded line: 1 240 incl. 24 % VAT = 1 000 net.
       lines.push({ account: 3790, credit: 1_240 * E, allocation: CC.commercial, vatCode: 12, vatPct: 24, description: 'Liiketilan vuokra' })
     } else {
-      lines.push({ account: 3790, credit: 1_000 * E, allocation: CC.commercial, vatCode: 11, vatPct: 24, description: 'Liiketilan vuokra' })
+      // Netto-coded, its VAT on a row of its own right after it without a cost centre, as Kitsas,
+      // Tilari's statement and bank-import book it; the general rate of the month.
+      const pct = key >= '2024-09' ? 25.5 : 24
+      lines.push(
+        { account: 3790, credit: 1_000 * E, allocation: CC.commercial, vatCode: 11, vatPct: pct, description: 'Liiketilan vuokra' },
+        { account: 2939, credit: pct * 10 * E, vatCode: 111, vatPct: pct, description: `Liiketilan vuokra ALV ${pct.toFixed(2)} %` },
+      )
     }
     const net = lines.reduce((s, l) => s + (l.credit ?? 0) - (l.debit ?? 0), 0)
     lines.push({ account: 1910, debit: net })

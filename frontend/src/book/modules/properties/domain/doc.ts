@@ -154,6 +154,7 @@ const LEASE_KEYS = new Set([
   'doc_voucher_id',
   'water',
   'deposit',
+  'vat',
 ])
 const LEASE_KEY = /^[A-Za-z0-9_-]{1,16}$/
 const MAX_ID = Number.MAX_SAFE_INTEGER
@@ -274,6 +275,10 @@ function lease(item: unknown, path: string): Lease {
   }
   const deposit = leaseDeposit(item.deposit, `${path}.deposit`)
   if (deposit) out.deposit = deposit
+  if (item.vat != null && item.vat !== false) {
+    if (item.vat !== true) fail(`${path}.vat`)
+    out.vat = true
+  }
   return out
 }
 

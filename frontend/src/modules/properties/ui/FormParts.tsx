@@ -157,15 +157,24 @@ export function WaterStatusPill({ share }: { share: Pick<WaterShareView, 'status
 }
 
 /** A booked line: its date and the amount that counts; the payer and the line's text on hover. Opens its voucher. */
+/** A booked line: its date and amount open its voucher; a VAT lease's payment names its VAT, and a VAT that does not fit is marked (ADR-033). */
 export function LineLink({ line, onOpen }: { line: BookedLine; onOpen: (voucherId: number) => void }) {
+  const { t } = useI18n()
+  const title = [
+    line.partner,
+    line.text,
+    line.vat_snt ? t('properties.rent.vatPart', { amount: formatCents(line.vat_snt) }) : '',
+    line.vat_issue ? t(`properties.rent.vatIssue.${line.vat_issue}`) : '',
+  ]
   return (
     <button
       type="button"
-      className="btn-link"
-      title={[line.partner, line.text].filter(Boolean).join(' - ')}
+      className={`btn-link${line.vat_issue ? ' neg' : ''}`}
+      title={title.filter(Boolean).join(' - ')}
       onClick={() => onOpen(line.voucher.voucher_id)}
     >
       {formatDate(line.date)} {formatCents(line.amount_snt)}
+      {line.vat_issue ? ' ⚠' : ''}
     </button>
   )
 }

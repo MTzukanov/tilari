@@ -175,6 +175,8 @@ not this.
 | Vuokrasaldo | Hyressaldo | Rent balance | Mietsaldo |
 | Vuokrarästi | Hyresskuld | Rent arrears | Mietrückstand |
 | Poikkeava vuokra | Avvikande hyra | Agreed rent exception | Abweichende Miete |
+| Arvonlisäverollinen vuokra (ALV) | Momspliktig hyra (moms) | VAT lease (VAT) | Umsatzsteuerpflichtige Miete (USt) |
+| ALV-rivi | Momsrad | VAT row | USt-Zeile |
 | Maksettu ennakkoon | Betalt i förskott | Paid ahead | Im Voraus bezahlt |
 | Vesimaksuennakko | Vattenavgiftsförskott | Water advance | Wasservorauszahlung |
 | Vesitasaus | Vattenutjämning | Water settlement | Wasserabrechnung |

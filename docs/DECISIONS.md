@@ -485,7 +485,8 @@ correction would change the open year's income statement lines. The rental-objec
   and the month's rent, paid in full, showed as paid ahead. A held object runs on to the as-of
   date. When the sale agreed otherwise, the owner gives the day on the edit page (`rent_until`);
   as with `rent_from`, the box shows the default day (empty while held) and only another is stored.
-- **Received:** the object's income lines (without VAT, as booked), each given to one lease: the
+- **Received:** the object's income lines (without VAT, as booked; a VAT lease adds each line's own
+  VAT row, ADR-033), each given to one lease: the
   lease whose tenant paid it (from 31 days before its start, also after its end); else the lease
   running then; else the last that ended before it. A stored water settlement's lines go to the
   lease its share gives them, and refunds passed on through the vastike account count there too.
@@ -758,3 +759,24 @@ correction would change the open year's income statement lines. The rental-objec
 - **A file is only called ready when complete.** Forms in the same file must exist, since a corrected return replaces
   the earlier one. It can still be format-checked at every step.
 
+## ADR-033 A VAT lease counts its rent with VAT (2026-11-14)
+
+**Status:** accepted. Extends ADR-025/026; the ledger is not changed.
+
+- **One flag on the lease** (owner, 2026-11-14): `vat: true`, a checkbox in "Lisät" beside the parking space.
+  The amounts stay without VAT, so rent increases and a change of the general rate (24 % to 25.5 % on
+  2024-09-01) need no new steps. The general rate of each day applies (`vatRates.ts`); a lease that starts
+  carrying VAT midway is not modelled - its earlier payments show as booked without VAT.
+- **The rent account of a VAT lease runs with VAT.** Each month expects VAT on its rent, water advance and
+  parking (each part rounded on its own, like invoice rows) and on its water settlement shares; each payment
+  counts with its own VAT. Object figures (income, years, yields) stay without VAT: VAT is not income.
+- **A line's own VAT row.** Kitsas, Tilari's statement and bank-import book netto VAT (code 11; cash basis 18)
+  on a row of its own right after the line: same voucher and date, code + 100 (418 for 18), same rate and
+  partner, no cost centre. `pairVatRows` takes the nearest such row after the line, else before; each row goes
+  to one line. Brutto lines (12) carry gross - net. A netto line without its row counts no VAT.
+- **What does not fit is a warning** (computed, ADR-030): a VAT lease's payment booked without VAT (a new
+  tenant's first payment, while bank-import has no VAT history for them), VAT on a lease without it, a rate
+  other than the day's general one, a netto line without its VAT row. The month marks the line.
+- **Suggestions:** a lease suggested from payments is a VAT lease when most of them carry a sales VAT code.
+- **Left out** (owner): letters and invoices with VAT (Holvi invoices), water letters, the 10-year review of
+  VAT deducted on property investments (later), VAT in amounts kept from a deposit (a later step).

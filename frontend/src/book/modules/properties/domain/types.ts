@@ -111,6 +111,11 @@ export type Lease = {
   /** Only `flat` is stored; missing means an advance. */
   water?: LeaseWaterKind
   deposit?: LeaseDeposit
+  /**
+   * VAT is added to everything the lease's tenant pays (ADR-033): its amounts stay without VAT,
+   * the general rate of each day applies. Only `true` is stored.
+   */
+  vat?: true
   [key: string]: unknown
 }
 
@@ -359,6 +364,10 @@ export type RentMonth = {
   exception?: { normal_snt: number; agreed: LeaseException[] }
   /** Water settlement shares due in the month: + the tenant pays, - refunded. */
   water_snt: number
+  /** A VAT lease (ADR-033): the VAT expected on the month's rent and water, and the VAT of its payments. */
+  vat_snt?: number
+  received_vat_snt?: number
+  /** What was paid; with VAT for a VAT lease. */
   received_snt: number
   /** At the month's end: + the tenant owes, - paid ahead. */
   balance_snt: number
@@ -375,11 +384,27 @@ export type LeaseRentAccount = {
   /** The last day that counts: the lease's end, the owner's last day of rent (a sale), or the as-of date. */
   counted_until: string
   months: RentMonth[]
+  /** With VAT for a VAT lease (ADR-033), like the balance. */
   expected_snt: number
   received_snt: number
   /** On the as-of date: + the tenant owes, - paid ahead. */
   balance_snt: number
+  /** A VAT lease: its account counts with VAT; the VAT within the expected and received totals. */
+  vat?: true
+  expected_vat_snt?: number
+  received_vat_snt?: number
+  /** Rent lines whose VAT does not fit the lease (ADR-033). */
+  vat_issues?: VatIssue[]
 }
+
+/**
+ * A rent line's VAT against its lease (ADR-033): booked without VAT on a VAT lease (`missing`),
+ * with VAT on a lease without (`unexpected`), at another rate than the general one of its day
+ * (`rate`), or netto-coded without its VAT row (`row_missing`).
+ */
+export type VatIssueKind = 'missing' | 'unexpected' | 'rate' | 'row_missing'
+
+export type VatIssue = { line_id: number; date: string; kind: VatIssueKind; pct: number }
 
 /** Why the owner's rent counts from a day: their own date, the purchase, rent received before it, or the books' start. */
 export type RentStartSource = 'own' | 'purchase' | 'payment' | 'books'
@@ -428,6 +453,8 @@ export type LeaseView = {
   /** Agreed exceptions, oldest first; `normal_snt` is the step's total on the exception's first day. */
   exceptions: (LeaseException & { voucher: LeaseVoucher | null; normal_snt: number })[]
   water: LeaseWaterKind
+  /** A VAT lease (ADR-033): the general rate on the as-of date and the VAT on `rent`. */
+  vat?: { pct: number; snt: number }
   /** The latest water settlement with a share for this lease (object page only). */
   water_latest?: { from: string; to: string; balance_snt: number; settled_snt: number; status: WaterShareStatus } | null
   /** The deposit's movements and balance on the as-of date (object page, stored leases with a deposit). */
@@ -453,6 +480,10 @@ export type BookedLine = {
   /** The line's partner (the payer), when it has one. */
   partner: string | null
   voucher: LeaseVoucher
+  /** A VAT lease's payment (ADR-033): the VAT within `amount_snt`. */
+  vat_snt?: number
+  /** What is wrong with the line's VAT for its lease. */
+  vat_issue?: VatIssueKind
 }
 
 /** A deposit's booked line: received (credit) or returned (debit). */

@@ -4,11 +4,27 @@
  * until the owner adds a suggestion on the edit page and saves.
  */
 import { monthEnd } from '../../../months'
+import { SALES_VAT_CODES } from '../../vat/domain/vatRates'
 import type { Lease, LeaseRent } from './types'
 
 export type SuggestDoc = { voucher_id: number; date: string; title: string }
 /** One income line on the object (corrections already on their booking's date); the ids open it from the page. */
-export type SuggestIncome = { date: string; partner_id: number | null; amount_snt: number; text?: string; id?: number; voucher_id?: number }
+export type SuggestIncome = {
+  date: string
+  partner_id: number | null
+  amount_snt: number
+  text?: string
+  id?: number
+  voucher_id?: number
+  /** Kitsas VAT code as booked; 0 or missing without VAT. */
+  vat_code?: number
+}
+
+/** Most of the payments carry VAT: the suggested lease is a VAT lease (ADR-033). */
+function paidWithVat(rows: SuggestIncome[]): boolean {
+  const paid = rows.filter((r) => r.amount_snt > 0)
+  return paid.filter((r) => SALES_VAT_CODES.has(r.vat_code ?? 0)).length * 2 > paid.length
+}
 
 export type LeaseSuggestion = {
   lease: Lease
@@ -290,6 +306,7 @@ export function suggestLeases(input: SuggestInput): LeaseSuggestion[] {
     }
     const inPeriod = income.filter((r) => within(r.date, draft.starts, ends))
     const lease: Lease = { key: '', starts: draft.starts, due_day: DEFAULT_DUE_DAY, rents: rentSteps(monthlyTotals(inPeriod, input.parkingObject), draft.starts) }
+    if (paidWithVat(inPeriod)) lease.vat = true
     if (ends && ends >= draft.starts) lease.ends = ends
     if (tenant != null) {
       lease.tenant_partner_id = tenant
@@ -322,6 +339,7 @@ export function suggestLeases(input: SuggestInput): LeaseSuggestion[] {
         const starts = firstOfMonth(monthKey(run[0].date))
         const lastKey = monthKey(run[run.length - 1].date)
         const lease: Lease = { key: '', tenant_partner_id: id, starts, due_day: DEFAULT_DUE_DAY, rents: rentSteps(monthlyTotals(run, input.parkingObject), starts) }
+        if (paidWithVat(run)) lease.vat = true
         const nextContract = withTenant.find((d) => d.starts > starts)
         if (nextContract && monthKey(nextContract.starts) > lastKey) lease.ends = dayBefore(nextContract.starts)
         else if (lastKey < monthKey(asOf)) lease.ends = monthEnd(lastKey)

@@ -7,7 +7,8 @@ const t = (key: string, vars?: Record<string, string | number>) => `${key}${vars
 
 describe('warning tones', () => {
   it('gives every warning text a place, and has no place without a text', () => {
-    const codes = Object.keys(fi.properties.warn).sort()
+    // A `_one` key is the singular of its code's text, not a code.
+    const codes = Object.keys(fi.properties.warn).filter((k) => !k.endsWith('_one')).sort()
     expect(Object.keys(WARNING_WORDS).sort()).toEqual(codes)
     for (const word of new Set(Object.values(WARNING_WORDS))) {
       if (word !== 'due') expect(fi.properties.alerts.word).toHaveProperty(word)

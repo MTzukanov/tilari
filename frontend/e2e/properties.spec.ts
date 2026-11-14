@@ -136,6 +136,31 @@ test.describe('rental object leases', () => {
     await page.goto('/#/properties')
     await expect(page.locator('.property-table').first()).toContainText('Testi Vuokralainen · 650,00 €/kk')
   })
+
+  test('a VAT lease shows its VAT on the card and in the months, and warns of rent booked without it', async ({ page }) => {
+    await openBook(page)
+    await page.goto('/#/property/4/edit')
+    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
+    const lease = page.locator('.property-lease-edit').first()
+    const tenant = lease.getByRole('combobox', { name: 'Vuokralainen' }).or(lease.getByLabel('Vuokralainen'))
+    await tenant.first().fill('Testi Yritys Oy')
+    await tenant.first().press('Escape')
+    await lease.getByLabel('Alkaa', { exact: true }).fill('2025-01-01')
+    await lease.getByLabel('Vuokra €/kk').first().fill('500')
+    // VAT is an extra beside the parking space; the amounts stay without it.
+    await lease.getByLabel('ALV', { exact: true }).check()
+    await expect(lease.getByText('Summat ilman ALV:tä · ALV 25,5 % 127,50 € · yhteensä 627,50 €/kk')).toBeVisible()
+    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+
+    await expect(page).toHaveURL(/#\/property\/4$/)
+    const card = page.locator('.property-lease-card')
+    await expect(card).toContainText('500,00 €/kk + ALV 25,5 % 127,50 € = 627,50 €/kk')
+    await card.getByText(/^Kuukausittain/).click()
+    await expect(card.locator('.property-rent-table th', { hasText: /^ALV$/ })).toBeVisible()
+    // The test book's rent is booked without VAT: each such payment is marked, and the object warns.
+    await expect(card.locator('.property-rent-table .btn-link.neg').first()).toContainText('⚠')
+    await expect(page.getByText(/Vuokrasta puuttuu ALV \(Testi Yritys Oy\)/)).toBeVisible()
+  })
 })
 
 test.describe('rental object documents', () => {

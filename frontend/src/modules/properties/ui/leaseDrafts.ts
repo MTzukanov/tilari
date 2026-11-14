@@ -39,6 +39,8 @@ export type LeaseDraft = {
   parking: boolean
   /** Water is a flat fee, never settled; off (the default) means an advance settled against use. */
   waterFlat: boolean
+  /** VAT is added to the amounts (ADR-033); they are entered without it. */
+  vat: boolean
   increaseKind: LeaseIncreaseKind
   /** Percent for `percent`, euros for `amount`. */
   increaseValue: string
@@ -51,7 +53,7 @@ export type LeaseDraft = {
 
 type T = (key: string, vars?: Record<string, string | number>) => string
 
-const OPTIONAL_KEYS = ['tenant_partner_id', 'tenant_name', 'ends', 'due_day', 'exceptions', 'increase', 'doc_voucher_id', 'water', 'deposit']
+const OPTIONAL_KEYS = ['tenant_partner_id', 'tenant_name', 'ends', 'due_day', 'exceptions', 'increase', 'doc_voucher_id', 'water', 'deposit', 'vat']
 
 const eur = (snt: number | undefined) => (snt ? formatEurInput(snt) : '')
 
@@ -72,6 +74,7 @@ export function leaseDrafts(leases: Lease[] | undefined, partners: Partner[]): L
     initial: amounts(l.rents[0]),
     parking: l.rents.some((r) => Boolean(r.parking_snt)) || (l.exceptions ?? []).some((e) => Boolean(e.parking_snt)),
     waterFlat: l.water === 'flat',
+    vat: Boolean(l.vat),
     increaseKind: l.increase?.kind ?? 'none',
     increaseValue:
       l.increase?.kind === 'percent' ? formatPercentInput(l.increase.pct_bp) : l.increase?.kind === 'amount' ? eur(l.increase.amount_snt) : '',
@@ -106,6 +109,7 @@ export function newLease(): LeaseDraft {
     initial: { rent: '', water: '', parking: '' },
     parking: false,
     waterFlat: false,
+    vat: false,
     increaseKind: 'none',
     increaseValue: '',
     increaseMonth: '',
@@ -231,6 +235,7 @@ export function buildLeases(t: T, drafts: LeaseDraft[], partners: Partner[]): Le
     }
     if (d.contractId) lease.doc_voucher_id = Number(d.contractId)
     if (d.waterFlat) lease.water = 'flat'
+    if (d.vat) lease.vat = true
     const eraids = d.deposits.filter((k) => k.startsWith('e:')).map((k) => Number(k.slice(2)))
     const lineIds = d.deposits.filter((k) => k.startsWith('l:')).map((k) => Number(k.slice(2)))
     if (eraids.length || lineIds.length) {

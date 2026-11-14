@@ -1120,6 +1120,8 @@
       "increaseFrom": "From",
       "increaseNotice": "Increase notice",
       "parkingExtra": "Parking space",
+      "vatExtra": "VAT",
+      "vatExtraHint": "VAT is added to the rent: enter the amounts without VAT; the general rate of each day is added.",
       "waterFrom": "Period starts",
       "waterTo": "Period ends",
       "waterResult": "Company settlement",
@@ -1223,6 +1225,8 @@
       "since": "from {date}",
       "period": "{from}–{to}",
       "perMonth": "{amount}/mo",
+      "vat": "+ VAT {pct} {amount} = {total}/month",
+      "vatHint": "Amounts without VAT · VAT {pct} {amount} · total {total}/month",
       "due": "due on day {day}",
       "increase": {
         "percent": "increase {pct} a year",
@@ -1383,6 +1387,14 @@
       "doc_newer": "The data was saved by a newer Tilari.",
       "loan_shared": "Loan account {account} is also another object's bank loan, so its interest counts for both. Remove it from one of them.",
       "rent_arrears": "Rent arrears {amount}.",
+      "rent_vat_missing": "VAT is missing from rent ({tenant}): {count} payments are booked without VAT, the first on {from}. The lease carries VAT.",
+      "rent_vat_missing_one": "VAT is missing from rent ({tenant}): the payment on {from} is booked without VAT. The lease carries VAT.",
+      "rent_vat_unexpected": "The lease ({tenant}) has no VAT, but {count} payments are booked with VAT, the first on {from}: mark the lease with VAT or correct the booking.",
+      "rent_vat_unexpected_one": "The lease ({tenant}) has no VAT, but the payment on {from} is booked with VAT: mark the lease with VAT or correct the booking.",
+      "rent_vat_row_missing": "Rent VAT row missing ({tenant}): {count} payments have a VAT code without their own VAT row, the first on {from}.",
+      "rent_vat_row_missing_one": "Rent VAT row missing ({tenant}): the payment on {from} has a VAT code without its own VAT row.",
+      "rent_vat_rate": "Rent VAT rate differs ({tenant}): {count} payments are booked at {booked}, the first on {from}; the general rate then was {general}.",
+      "rent_vat_rate_one": "Rent VAT rate differs ({tenant}): the payment on {from} is booked at {booked}; the general rate then was {general}.",
       "former_owes": "Ended leases still owe {amount}.",
       "former_paid_ahead": "Ended leases were paid {amount} more than the rent.",
       "deposit_open": "An ended lease still holds a deposit of {amount}.",
@@ -1595,6 +1607,8 @@
         "month": "Month",
         "rent": "Rent",
         "water": "Water settlement",
+        "vat": "VAT",
+        "vatHint": "VAT due on the month's rent and water settlement. Paid includes each payment's own VAT row.",
         "received": "Paid",
         "change": "Change",
         "changeHint": "Paid − rent − water settlement: − paid short, + paid more.",
@@ -1619,7 +1633,14 @@
       "editLead": "The change applies to the whole exception, all its days. The normal rent and its increases do not change; an attached agreement stays.",
       "removeException": "Remove exception",
       "removeExceptionConfirm": "Remove the exception {period}? Its days expect the normal rent again.",
-      "prefillLead": "Prefilled so that {month} expects what was paid ({paid}). The normal rent and its increases do not change. Check the days and amounts and give the reason; the agreement can be attached on the edit page."
+      "prefillLead": "Prefilled so that {month} expects what was paid ({paid}). The normal rent and its increases do not change. Check the days and amounts and give the reason; the agreement can be attached on the edit page.",
+      "vatPart": "of which VAT {amount}",
+      "vatIssue": {
+        "missing": "booked without VAT, though the lease carries VAT",
+        "unexpected": "booked with VAT, though the lease has none",
+        "row_missing": "VAT code without its own VAT row",
+        "rate": "another VAT rate than the day's general rate"
+      }
     }
   },
   "company": {

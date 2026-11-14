@@ -1,5 +1,6 @@
 /** Leases (vuokrasuhteet): which one runs on a date and the rent in effect. Pure. */
 import { addDays } from '../../../months'
+import { generalVatPercent, vatOf } from '../../vat/domain/vatRates'
 import type { PartnerInfo, VoucherRef } from './ledger'
 import type { Lease, LeaseException, LeaseRent, LeaseState, LeaseView, LeaseVoucher } from './types'
 
@@ -129,5 +130,12 @@ export function leaseView(
       return { ...e, voucher: voucherOf(refs, e.voucher_id), normal_snt: step ? rentTotal(step) : 0 }
     }),
     water: lease.water ?? 'advance',
+    ...(lease.vat ? { vat: rentVat(rent, generalVatPercent(state === 'current' ? asOf : state === 'upcoming' ? lease.starts : (lease.ends ?? asOf))) } : {}),
   }
+}
+
+/** The VAT on a month's amounts at `pct` (ADR-033): each part rounded on its own, like invoice rows. */
+export function rentVat(rent: Pick<LeaseRent, 'rent_snt' | 'water_snt' | 'parking_snt'> | null, pct: number): { pct: number; snt: number } {
+  const parts = rent ? [rent.rent_snt, rent.water_snt ?? 0, rent.parking_snt ?? 0] : []
+  return { pct, snt: parts.reduce((sum, amount) => sum + vatOf(amount, pct), 0) }
 }

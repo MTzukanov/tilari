@@ -7,6 +7,20 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-14 - Rental objects: VAT leases (`feature/lease-vat`, ADR-033)
+
+- Owner: VAT rent invoiced from Holvi reaches the book at payment; the payment is split into a net income line and
+  a VAT row on 2939. The rent account saw only the net line (the VAT row has no cost centre), so it could not be
+  followed with VAT. Checked read-only in the owner's book (counts only): every VAT-coded rent line is code 11
+  with its 2939 row at `rivi + 1`, same partner and rate; none is invoiced on 1701.
+- A lease gets `vat: true` ("ALV" in Lisät). Its rent account counts with VAT: expected VAT at the day's general
+  rate, received = each line + its own VAT row (`ledger.ts pairVatRows`). Four computed warnings
+  (`rent_vat_missing`, `_unexpected`, `_row_missing`, `_rate`); the month marks the line with ⚠.
+- The property fixture's netto rent lines now have their VAT rows, as real books do. `format.test.ts` skips `_one`
+  keys when it matches warning codes to `WARNING_WORDS`.
+- Still to confirm in the demo: the expected VAT rounds rent, water and parking each on its own, like invoice rows;
+  if the owner's invoices round the total instead, a lease with several parts can differ by a cent.
+
 ## 2026-11-07 - Viennit VAT picker overlap; attachment names wrap (`fix/voucher-rows-and-attachment-names`)
 
 - Owner: on the Viennit table the VAT picker of a taxed line ran into Kohdennus. The table is `table-layout: fixed`,
