@@ -20,6 +20,9 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   keys when it matches warning codes to `WARNING_WORDS`.
 - Still to confirm in the demo: the expected VAT rounds rent, water and parking each on its own, like invoice rows;
   if the owner's invoices round the total instead, a lease with several parts can differ by a cent.
+- Seen while testing, not from this change: `company.spec.ts` "a slot can be marked not needed, and a deleted voucher
+  shows as deleted" fails every time in WebKit, also on `main` (c216c1c): no "Poistettu" pill after the voucher is
+  deleted. Chromium passes, and CI runs Chromium only.
 
 ## 2026-11-07 - Viennit VAT picker overlap; attachment names wrap (`fix/voucher-rows-and-attachment-names`)
 
