@@ -31,6 +31,10 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   goes above its sentence. Vertical tabs were the owner's idea; wrapping keeps them all in sight in less room.
 - The dated tiles carry the lease they are about (`Warning.lease_key`, computed, never stored) and open
   `#/property/{id}/edit/leases/lease/{key}`.
+- Owner, later the same day: no tabbed edit page. The edit page repeats every lease, settlement and document,
+  so editing moves into the view, per card: a lease card's "Muokkaa" turns only that card into its form with its
+  own Tallenna and Peruuta, and a card save writes the doc with only that card changed (as rent exceptions and
+  "Ohita" already do). Order: leases, water, then documents, Talous and the basics; the edit page goes last.
 
 ## 2026-11-15 - Rental objects: document rows line up by the inputs (`fix/lease-row-align`)
 
