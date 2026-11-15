@@ -32,7 +32,8 @@ import { LeaseCardEdit } from './LeaseCardEdit'
 import { leaseDrafts, type LeaseDraft } from './leaseDrafts'
 import { LeasesPanel } from './LeasesPanel'
 import { saveErrorText, statusClass, tabMarks } from './format'
-import { CashFlowPanel, PropertyFinance, type CashFlowOptions } from './PropertyFinance'
+import { loadCashFlowOptions, saveCashFlowOptions, type CashFlowOptions } from './chartOptions'
+import { CashFlowPanel, PropertyFinance } from './PropertyFinance'
 import { PropertyOverview } from './PropertyOverview'
 import { RentDates } from './RentDates'
 import type { CardInputs } from './useDocWriter'
@@ -196,7 +197,7 @@ export function PropertyView({
 }) {
   const { t } = useI18n()
   const [targetBp, setTargetBp] = useState<number | null>(null)
-  const [chartOptions, setChartOptions] = useState<CashFlowOptions>({ allMonths: false, costsUp: false, net: false })
+  const [chartOptions, setChartOptions] = useState<CashFlowOptions>(loadCashFlowOptions)
   const [tab, setTab] = useState<ViewTab>(tabOf({ month, tab: routeTab }))
   const [selected, setSelected] = useState<string | null>(month ?? null)
   /** The month the address asked for (a new object each time, so the same month shows again). */
@@ -456,7 +457,10 @@ export function PropertyView({
                 <CashFlowPanel
                   d={d}
                   options={chartOptions}
-                  onOptions={setChartOptions}
+                  onOptions={(o) => {
+                    setChartOptions(o)
+                    saveCashFlowOptions(o)
+                  }}
                   selected={selected}
                   onSelectMonth={selectMonth}
                   panelRef={panelRef}

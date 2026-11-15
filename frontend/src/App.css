@@ -5580,6 +5580,27 @@ tr.tax-total td {
   background: #2f6fed;
 }
 
+.property-total .chart-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+.property-total .chart-line-dot {
+  fill: var(--ink);
+  cursor: pointer;
+}
+
+.property-total .overview-y-tick {
+  fill: var(--ink);
+}
+
+.overview-swatch.property-swatch-total {
+  height: 2px;
+  background: var(--ink);
+}
+
 .property-month-net.neg {
   color: var(--neg);
 }

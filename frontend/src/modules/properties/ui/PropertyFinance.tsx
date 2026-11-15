@@ -9,6 +9,7 @@ import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import type { Disposal, PropertyDetail, PropertyDoc, YearRow } from '../api'
 import { CashFlowChart, PaybackChart } from './Charts'
 import { CapitalSection, ErasSection, FinancingSection, SaleSection, ValuationsSection } from './FinanceEdits'
+import { runningTotals, type CashFlowOptions } from './chartOptions'
 import { VoucherOpen } from './FormParts'
 import { formatEuro } from './format'
 import { IrrKpi, Kpi, ResultKpi, T12mKpi } from './Kpi'
@@ -169,9 +170,6 @@ function yearColumns(t: (key: string, vars?: Record<string, string | number>) =>
 /**
  * The cash flow by month, a month's lines under it on a click, and the payback (on the overview).
  */
-/** The cash-flow chart's checkboxes (kept by the page, so they survive a tab switch). */
-export type CashFlowOptions = { allMonths: boolean; costsUp: boolean; net: boolean }
-
 export function CashFlowPanel({
   d,
   options,
@@ -194,47 +192,42 @@ export function CashFlowPanel({
 }) {
   const { t } = useI18n()
   const months = options.allMonths ? d.months : d.months.slice(-24)
-  const toggle = (key: keyof CashFlowOptions) => onOptions({ ...options, [key]: !options[key] })
   if (!d.months.length) return null
+  const check = (key: keyof CashFlowOptions, label: string, swatch?: string, disabled = false) => (
+    <label className="allocation-check">
+      <input
+        type="checkbox"
+        checked={options[key]}
+        disabled={disabled}
+        onChange={() => onOptions({ ...options, [key]: !options[key] })}
+      />
+      {swatch ? <i className={`overview-swatch ${swatch}`} /> : null}
+      {label}
+    </label>
+  )
   return (
     <section className="overview-panel">
       <h3>{t('properties.chart.cashFlow')}</h3>
       <div className="overview-legend">
-        <span>
-          <i className="overview-swatch property-swatch-income" />
-          {t('properties.chart.income')}
-        </span>
-        <span>
-          <i className="overview-swatch property-swatch-expense" />
-          {t('properties.chart.expense')}
-        </span>
-        <label className="allocation-check">
-          <input type="checkbox" checked={options.net} onChange={() => toggle('net')} />
-          <i className="overview-swatch property-swatch-net" />
-          {t('properties.chart.net')}
-        </label>
-        <label className="allocation-check">
-          <input type="checkbox" checked={options.costsUp} onChange={() => toggle('costsUp')} />
-          {t('properties.chart.costsUp')}
-        </label>
-        {d.months.length > 24 ? (
-          <label className="allocation-check">
-            <input type="checkbox" checked={options.allMonths} onChange={() => toggle('allMonths')} />
-            {t('properties.chart.allMonths')}
-          </label>
-        ) : null}
+        {check('income', t('properties.chart.income'), 'property-swatch-income')}
+        {check('expense', t('properties.chart.expense'), 'property-swatch-expense')}
+        {check('net', t('properties.chart.net'), 'property-swatch-net')}
+        {check('total', t('properties.chart.total'), 'property-swatch-total')}
+        {check('costsUp', t('properties.chart.costsUp'), undefined, !options.expense)}
+        {d.months.length > 24 ? check('allMonths', t('properties.chart.allMonths')) : null}
       </div>
       <CashFlowChart
         months={months}
         lines={d.month_lines}
-        costsUp={options.costsUp}
-        net={options.net}
+        options={options}
+        totals={options.total ? runningTotals(d.months).slice(-months.length) : undefined}
         selectedKey={selected}
         onSelect={(key) => onSelectMonth(key === selected ? null : key)}
         labels={{
           income: t('properties.chart.income'),
           expense: t('properties.chart.expense'),
           net: t('properties.chart.net'),
+          total: t('properties.chart.total'),
           clickHint: t('properties.chart.clickHint'),
           more: (n) => t('properties.chart.more', { n }),
         }}

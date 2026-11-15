@@ -1180,6 +1180,7 @@
       "expense": "Costs and interest",
       "allMonths": "Whole ownership",
       "net": "Cash flow",
+      "total": "Cumulative cash flow",
       "costsUp": "Costs upward",
       "payback": "Not yet recovered at month end",
       "clickHint": "Click: the month's entries",

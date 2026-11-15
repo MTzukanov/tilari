@@ -16,3 +16,11 @@ export function niceMax(raw: number): number {
   const nice = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10
   return nice * base
 }
+
+/** The smallest step of 1, 2, 2.5 or 5 times a power of ten that is at least `raw`. */
+export function niceStep(raw: number): number {
+  if (raw <= 0) return 1
+  const base = 10 ** Math.floor(Math.log10(raw))
+  for (const n of [1, 2, 2.5, 5]) if (n * base >= raw) return n * base
+  return 10 * base
+}

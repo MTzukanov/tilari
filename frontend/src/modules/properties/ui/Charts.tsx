@@ -1,9 +1,10 @@
 import { getBcp47 } from '../../../i18n'
-import { BarChart } from '../../../shared/BarChart'
+import { BarChart, type BarSeries } from '../../../shared/BarChart'
 import { formatAxisEur, niceMax } from '../../../shared/chartScale'
 import { formatCents } from '../../../shared/money'
 import { labelEvery, useChartWidth } from '../../../shared/useChartWidth'
 import type { MonthLine, MonthPoint } from '../api'
+import { monthNet, type CashFlowOptions } from './chartOptions'
 import { lineText, monthName } from './format'
 
 const TOOLTIP_LINES = 8
@@ -19,30 +20,26 @@ function shortDate(iso: string): string {
   return `${Number(iso.slice(8, 10))}.${Number(iso.slice(5, 7))}.`
 }
 
-/** Income less expenses and interest: the month's cash flow (the third bar, the month lines' sum). */
-export function monthNet(m: MonthPoint): number {
-  return m.income_snt - m.expense_snt - m.interest_snt
-}
-
 /**
- * Income up, expenses (incl. interest) down, per month; `costsUp` draws the expenses up beside the
- * income, `net` adds the cash flow as a third bar. With `lines` a bar's hover text lists the
- * month's lines; with `onSelect` a click on a month opens them (MonthLinesPanel).
+ * Income up, expenses (incl. interest) down, per month, each when its option is on; `costsUp` draws
+ * the expenses up beside the income, `net` adds the cash flow as a bar and `totals` (one per month)
+ * its running total as a line. With `lines` a bar's hover text lists the month's lines; with
+ * `onSelect` a click on a month opens them (MonthLinesPanel).
  */
 export function CashFlowChart({
   months,
   labels,
   lines,
-  costsUp = false,
-  net = false,
+  options,
+  totals,
   selectedKey,
   onSelect,
 }: {
   months: MonthPoint[]
-  labels: { income: string; expense: string; net: string; clickHint?: string; more?: (n: number) => string }
+  labels: { income: string; expense: string; net: string; total: string; clickHint?: string; more?: (n: number) => string }
   lines?: MonthLine[]
-  costsUp?: boolean
-  net?: boolean
+  options: Pick<CashFlowOptions, 'income' | 'expense' | 'net' | 'costsUp'>
+  totals?: number[]
   selectedKey?: string | null
   onSelect?: (key: string) => void
 }) {
@@ -52,7 +49,7 @@ export function CashFlowChart({
   const points = months.map((m) => ({
     key: m.key,
     income_snt: m.income_snt,
-    expense_snt: (costsUp ? 1 : -1) * (m.expense_snt + m.interest_snt),
+    expense_snt: (options.costsUp ? 1 : -1) * (m.expense_snt + m.interest_snt),
     net_snt: monthNet(m),
   }))
   const tooltip = (key: string, series: { key: string; label: string }) => {
@@ -71,15 +68,26 @@ export function CashFlowChart({
     if (onSelect && labels.clickHint) out.push(labels.clickHint)
     return out.join('\n')
   }
+  const series: BarSeries<'income_snt' | 'expense_snt' | 'net_snt'>[] = [
+    ...(options.income ? [{ key: 'income_snt' as const, className: 'property-bar-income', label: labels.income }] : []),
+    ...(options.expense ? [{ key: 'expense_snt' as const, className: 'property-bar-expense', label: labels.expense }] : []),
+    ...(options.net ? [{ key: 'net_snt' as const, className: 'property-bar-net', label: labels.net }] : []),
+  ]
   return (
     <BarChart
       className="overview-chart property-chart"
       points={points}
-      series={[
-        { key: 'income_snt', className: 'property-bar-income', label: labels.income },
-        { key: 'expense_snt', className: 'property-bar-expense', label: labels.expense },
-        ...(net ? [{ key: 'net_snt' as const, className: 'property-bar-net', label: labels.net }] : []),
-      ]}
+      series={series}
+      line={
+        totals
+          ? {
+              values: totals,
+              className: 'property-total',
+              label: labels.total,
+              tooltip: (key, value) => `${labels.total}, ${monthName(key, locale)}: ${formatCents(value)}`,
+            }
+          : undefined
+      }
       labelFor={(key) => monthLabel(key, locale, points.length > 12)}
       labelGap={points.length > 12 ? 48 : 36}
       locale={locale}
