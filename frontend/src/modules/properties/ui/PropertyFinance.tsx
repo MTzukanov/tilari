@@ -9,6 +9,7 @@ import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import type { Disposal, PropertyDetail, PropertyDoc, YearRow } from '../api'
 import { CashFlowChart, PaybackChart } from './Charts'
 import { CapitalSection, ErasSection, FinancingSection, SaleSection, ValuationsSection } from './FinanceEdits'
+import { runningTotals, type CashFlowOptions } from './chartOptions'
 import { VoucherOpen } from './FormParts'
 import { formatEuro } from './format'
 import { IrrKpi, Kpi, ResultKpi, T12mKpi } from './Kpi'
@@ -171,8 +172,8 @@ function yearColumns(t: (key: string, vars?: Record<string, string | number>) =>
  */
 export function CashFlowPanel({
   d,
-  allMonths,
-  onAllMonths,
+  options,
+  onOptions,
   selected,
   onSelectMonth,
   panelRef,
@@ -180,8 +181,8 @@ export function CashFlowPanel({
   onOpenVoucher,
 }: {
   d: PropertyDetail
-  allMonths: boolean
-  onAllMonths: (all: boolean) => void
+  options: CashFlowOptions
+  onOptions: (options: CashFlowOptions) => void
   /** The month whose lines are open. */
   selected: string | null
   onSelectMonth: (month: string | null) => void
@@ -190,35 +191,43 @@ export function CashFlowPanel({
   onOpenVoucher: (voucherId: number, entryId?: number | null) => void
 }) {
   const { t } = useI18n()
-  const months = allMonths ? d.months : d.months.slice(-24)
+  const months = options.allMonths ? d.months : d.months.slice(-24)
   if (!d.months.length) return null
+  const check = (key: keyof CashFlowOptions, label: string, swatch?: string, disabled = false) => (
+    <label className="allocation-check">
+      <input
+        type="checkbox"
+        checked={options[key]}
+        disabled={disabled}
+        onChange={() => onOptions({ ...options, [key]: !options[key] })}
+      />
+      {swatch ? <i className={`overview-swatch ${swatch}`} /> : null}
+      {label}
+    </label>
+  )
   return (
     <section className="overview-panel">
       <h3>{t('properties.chart.cashFlow')}</h3>
       <div className="overview-legend">
-        <span>
-          <i className="overview-swatch property-swatch-income" />
-          {t('properties.chart.income')}
-        </span>
-        <span>
-          <i className="overview-swatch property-swatch-expense" />
-          {t('properties.chart.expense')}
-        </span>
-        {d.months.length > 24 ? (
-          <label className="allocation-check">
-            <input type="checkbox" checked={allMonths} onChange={() => onAllMonths(!allMonths)} />
-            {t('properties.chart.allMonths')}
-          </label>
-        ) : null}
+        {check('income', t('properties.chart.income'), 'property-swatch-income')}
+        {check('expense', t('properties.chart.expense'), 'property-swatch-expense')}
+        {check('net', t('properties.chart.net'), 'property-swatch-net')}
+        {check('total', t('properties.chart.total'), 'property-swatch-total')}
+        {check('costsUp', t('properties.chart.costsUp'), undefined, !options.expense)}
+        {d.months.length > 24 ? check('allMonths', t('properties.chart.allMonths')) : null}
       </div>
       <CashFlowChart
         months={months}
         lines={d.month_lines}
+        options={options}
+        totals={options.total ? runningTotals(d.months).slice(-months.length) : undefined}
         selectedKey={selected}
         onSelect={(key) => onSelectMonth(key === selected ? null : key)}
         labels={{
           income: t('properties.chart.income'),
           expense: t('properties.chart.expense'),
+          net: t('properties.chart.net'),
+          total: t('properties.chart.total'),
           clickHint: t('properties.chart.clickHint'),
           more: (n) => t('properties.chart.more', { n }),
         }}
@@ -229,7 +238,11 @@ export function CashFlowPanel({
             month={selected}
             lines={d.month_lines.filter((l) => l.month === selected)}
             locale={getBcp47()}
-            labels={{ income: t('properties.chart.income'), expense: t('properties.chart.expense') }}
+            labels={{
+              income: t('properties.chart.income'),
+              expense: t('properties.chart.expense'),
+              net: t('properties.chart.net'),
+            }}
             onClose={() => onSelectMonth(null)}
             onOpenVoucher={onOpenVoucher}
             onOpenAllocation={() => onOpenAllocation(selected)}

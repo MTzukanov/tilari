@@ -1179,6 +1179,9 @@
       "income": "Erträge",
       "expense": "Kosten und Zinsen",
       "allMonths": "Gesamte Besitzdauer",
+      "net": "Cashflow",
+      "total": "Kumulierter Cashflow",
+      "costsUp": "Kosten nach oben",
       "payback": "Noch nicht zurück am Monatsende",
       "clickHint": "Klicken: Buchungen des Monats",
       "more": "… und {n} weitere"

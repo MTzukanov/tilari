@@ -1179,6 +1179,9 @@
       "income": "Tuotot",
       "expense": "Kulut ja korot",
       "allMonths": "Koko omistusaika",
+      "net": "Kassavirta",
+      "total": "Kertynyt kassavirta",
+      "costsUp": "Kulut ylöspäin",
       "payback": "Palauttamatta kuukauden lopussa",
       "clickHint": "Klikkaa: kuukauden viennit",
       "more": "… ja {n} muuta"

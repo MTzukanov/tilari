@@ -1436,10 +1436,24 @@ button.status-chip:focus-visible {
 
 .overview-legend {
   display: flex;
-  gap: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
   font-size: 0.85rem;
   color: var(--muted);
   margin-bottom: 0.75rem;
+}
+
+.overview-legend input[type='checkbox'] {
+  margin: 0;
+}
+
+/* A phone stacks the legend and its checkboxes, one per line. */
+@media (max-width: 640px) {
+  .overview-legend {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
 }
 
 .overview-legend span {
@@ -5558,6 +5572,55 @@ tr.tax-total td {
 .property-swatch-expense {
   fill: #c45c26;
   background: #c45c26;
+}
+
+.property-bar-net,
+.property-swatch-net {
+  fill: #2f6fed;
+  background: #2f6fed;
+}
+
+.property-total .chart-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+.property-total .chart-line-dot {
+  fill: var(--ink);
+  cursor: pointer;
+}
+
+.property-total .overview-y-tick {
+  fill: var(--ink);
+}
+
+.overview-swatch.property-swatch-total {
+  height: 2px;
+  background: var(--ink);
+}
+
+.property-month-net.neg {
+  color: var(--neg);
+}
+
+/* A phone wraps the month's sums under its title instead of pushing past the edge. */
+@media (max-width: 640px) {
+  .property-month-head .browse-count {
+    margin-left: 0;
+    flex-wrap: wrap;
+    white-space: normal;
+    gap: 0.2rem 0.85rem;
+  }
+
+  .property-month-head .browse-count > * {
+    white-space: nowrap;
+  }
+
+  .property-month-head .btn-link {
+    text-align: left;
+  }
 }
 
 .property-payback-line {

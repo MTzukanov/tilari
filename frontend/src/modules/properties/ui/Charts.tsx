@@ -1,8 +1,10 @@
 import { getBcp47 } from '../../../i18n'
-import { BarChart } from '../../../shared/BarChart'
+import { BarChart, type BarSeries } from '../../../shared/BarChart'
 import { formatAxisEur, niceMax } from '../../../shared/chartScale'
 import { formatCents } from '../../../shared/money'
+import { labelEvery, useChartWidth } from '../../../shared/useChartWidth'
 import type { MonthLine, MonthPoint } from '../api'
+import { monthNet, type CashFlowOptions } from './chartOptions'
 import { lineText, monthName } from './format'
 
 const TOOLTIP_LINES = 8
@@ -19,54 +21,75 @@ function shortDate(iso: string): string {
 }
 
 /**
- * Income up, expenses (incl. interest) down, per month. With `lines` a bar's hover text lists
- * the month's lines; with `onSelect` a click on a month opens them (MonthLinesPanel).
+ * Income up, expenses (incl. interest) down, per month, each when its option is on; `costsUp` draws
+ * the expenses up beside the income, `net` adds the cash flow as a bar and `totals` (one per month)
+ * its running total as a line. With `lines` a bar's hover text lists the month's lines; with
+ * `onSelect` a click on a month opens them (MonthLinesPanel).
  */
 export function CashFlowChart({
   months,
   labels,
   lines,
+  options,
+  totals,
   selectedKey,
   onSelect,
 }: {
   months: MonthPoint[]
-  labels: { income: string; expense: string; clickHint?: string; more?: (n: number) => string }
+  labels: { income: string; expense: string; net: string; total: string; clickHint?: string; more?: (n: number) => string }
   lines?: MonthLine[]
+  options: Pick<CashFlowOptions, 'income' | 'expense' | 'net' | 'costsUp'>
+  totals?: number[]
   selectedKey?: string | null
   onSelect?: (key: string) => void
 }) {
   const locale = getBcp47()
   const byMonth = new Map<string, MonthLine[]>()
   for (const line of lines ?? []) byMonth.set(line.month, [...(byMonth.get(line.month) ?? []), line])
-  const tooltip = (key: string, series: { key: string; label: string }, value: number) => {
-    const incomeBar = series.key === 'income_snt'
-    const rows = (byMonth.get(key) ?? []).filter((l) => (l.kind === 'income') === incomeBar)
-    const out = [`${series.label}, ${monthName(key, locale)}: ${formatCents(value)}`]
-    for (const l of rows.slice(0, TOOLTIP_LINES)) {
-      out.push(`${shortDate(l.counted_date)}  ${lineText(l)}  ${formatCents(l.amount_snt)}`)
-    }
-    if (rows.length > TOOLTIP_LINES && labels.more) out.push(labels.more(rows.length - TOOLTIP_LINES))
-    if (onSelect && labels.clickHint) out.push(labels.clickHint)
-    return out.join('\n')
-  }
   const points = months.map((m) => ({
     key: m.key,
     income_snt: m.income_snt,
-    expense_snt: -(m.expense_snt + m.interest_snt),
+    expense_snt: (options.costsUp ? 1 : -1) * (m.expense_snt + m.interest_snt),
+    net_snt: monthNet(m),
   }))
-  const every = Math.ceil(points.length / 12)
+  const tooltip = (key: string, series: { key: string; label: string }) => {
+    const m = months.find((p) => p.key === key)!
+    const signed =
+      series.key === 'income_snt' ? m.income_snt : series.key === 'net_snt' ? monthNet(m) : -(m.expense_snt + m.interest_snt)
+    const out = [`${series.label}, ${monthName(key, locale)}: ${formatCents(signed)}`]
+    if (series.key !== 'net_snt') {
+      const incomeBar = series.key === 'income_snt'
+      const rows = (byMonth.get(key) ?? []).filter((l) => (l.kind === 'income') === incomeBar)
+      for (const l of rows.slice(0, TOOLTIP_LINES)) {
+        out.push(`${shortDate(l.counted_date)}  ${lineText(l)}  ${formatCents(l.amount_snt)}`)
+      }
+      if (rows.length > TOOLTIP_LINES && labels.more) out.push(labels.more(rows.length - TOOLTIP_LINES))
+    }
+    if (onSelect && labels.clickHint) out.push(labels.clickHint)
+    return out.join('\n')
+  }
+  const series: BarSeries<'income_snt' | 'expense_snt' | 'net_snt'>[] = [
+    ...(options.income ? [{ key: 'income_snt' as const, className: 'property-bar-income', label: labels.income }] : []),
+    ...(options.expense ? [{ key: 'expense_snt' as const, className: 'property-bar-expense', label: labels.expense }] : []),
+    ...(options.net ? [{ key: 'net_snt' as const, className: 'property-bar-net', label: labels.net }] : []),
+  ]
   return (
     <BarChart
       className="overview-chart property-chart"
       points={points}
-      series={[
-        { key: 'income_snt', className: 'property-bar-income', label: labels.income },
-        { key: 'expense_snt', className: 'property-bar-expense', label: labels.expense },
-      ]}
-      labelFor={(key) => {
-        const i = points.findIndex((p) => p.key === key)
-        return i % every === 0 ? monthLabel(key, locale, points.length > 12) : ''
-      }}
+      series={series}
+      line={
+        totals
+          ? {
+              values: totals,
+              className: 'property-total',
+              label: labels.total,
+              tooltip: (key, value) => `${labels.total}, ${monthName(key, locale)}: ${formatCents(value)}`,
+            }
+          : undefined
+      }
+      labelFor={(key) => monthLabel(key, locale, points.length > 12)}
+      labelGap={points.length > 12 ? 48 : 36}
       locale={locale}
       tooltip={lines ? tooltip : undefined}
       nameFor={(key) => monthName(key, locale)}
@@ -79,7 +102,7 @@ export function CashFlowChart({
 /** Money still to recover at each month end: falls as rent comes in, drops to zero on a sale. */
 export function PaybackChart({ months, label }: { months: MonthPoint[]; label: string }) {
   const locale = getBcp47()
-  const width = 680
+  const { ref, width } = useChartWidth(680)
   const height = 200
   const padL = 64
   const padR = 14
@@ -96,9 +119,9 @@ export function PaybackChart({ months, label }: { months: MonthPoint[]; label: s
   const y = (v: number) => padT + ((maxV - v) / (maxV - minNice)) * plotH
   const path = months.map((m, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(m.unrecovered_snt).toFixed(1)}`).join(' ')
   const ticks = minNice < 0 ? [minNice, 0, maxV / 2, maxV] : [0, maxV / 2, maxV]
-  const every = Math.ceil(months.length / 10)
+  const every = labelEvery(months.length, plotW, 56)
   return (
-    <svg className="overview-chart property-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label}>
+    <svg ref={ref} className="overview-chart property-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label}>
       {ticks.map((v) => (
         <g key={v}>
           <line x1={padL} x2={width - padR} y1={y(v)} y2={y(v)} className={v === 0 ? 'overview-axis' : 'overview-grid'} />
