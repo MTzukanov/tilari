@@ -167,13 +167,15 @@ export function WaterEditor({
               />
               <div className="property-lease-notice">
                 <DocPicker label={t('properties.field.waterStatement')} docs={docs} value={d.voucherId} onChange={(voucherId) => set(i, { voucherId })} />
-                {!d.voucherId ? <NoDocumentCheck checked={d.noDocument} onChange={(noDocument) => set(i, { noDocument })} /> : null}
-                {d.voucherId && isCreated(Number(d.voucherId)) ? (
-                  <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(d.voucherId)])}>
-                    {t('properties.edit.deleteDoc')}
-                  </button>
-                ) : null}
-                <FileButton onFiles={(files) => void onUpload(i, null, files)}>{t('properties.water.uploadStatement')}</FileButton>
+                <div className="property-lease-actions">
+                  {!d.voucherId ? <NoDocumentCheck checked={d.noDocument} onChange={(noDocument) => set(i, { noDocument })} /> : null}
+                  {d.voucherId && isCreated(Number(d.voucherId)) ? (
+                    <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(d.voucherId)])}>
+                      {t('properties.edit.deleteDoc')}
+                    </button>
+                  ) : null}
+                  <FileButton onFiles={(files) => void onUpload(i, null, files)}>{t('properties.water.uploadStatement')}</FileButton>
+                </div>
               </div>
             </div>
             {view ? (
@@ -241,21 +243,23 @@ export function WaterEditor({
                       value={own.voucherId}
                       onChange={(voucherId) => setShare(i, key, { voucherId })}
                     />
-                    {own.voucherId && isCreated(Number(own.voucherId)) ? (
-                      <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(own.voucherId)])}>
-                        {t('properties.water.deleteLetter')}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        disabled={creating != null || share.balance_snt === 0}
-                        onClick={() => void createLetter(i, key)}
-                      >
-                        {creating === `${i}-${key}` ? t('common.saving') : t('properties.water.createLetter')}
-                      </button>
-                    )}
-                    <FileButton onFiles={(files) => void onUpload(i, key, files)}>{t('properties.water.uploadLetter')}</FileButton>
+                    <div className="property-lease-actions">
+                      {own.voucherId && isCreated(Number(own.voucherId)) ? (
+                        <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(own.voucherId)])}>
+                          {t('properties.water.deleteLetter')}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={creating != null || share.balance_snt === 0}
+                          onClick={() => void createLetter(i, key)}
+                        >
+                          {creating === `${i}-${key}` ? t('common.saving') : t('properties.water.createLetter')}
+                        </button>
+                      )}
+                      <FileButton onFiles={(files) => void onUpload(i, key, files)}>{t('properties.water.uploadLetter')}</FileButton>
+                    </div>
                   </div>
                 </div>
               )
