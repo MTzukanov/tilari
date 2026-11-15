@@ -137,7 +137,10 @@ export type WaterSettlement = {
   to: string
   difference_snt: number
   usage_snt?: number
-  /** The company's statement (a type-800 voucher). */
+  /**
+   * The company's statement: a Liitetieto document, or its invoice, whose expense lines on the
+   * object are then the settlement's company lines (ADR-025).
+   */
   voucher_id?: number
   /** The owner's word that there is no statement to ask for (ADR-030). */
   no_document?: true
@@ -586,14 +589,33 @@ export type WaterSettlementView = {
 export type WaterSuggestionView = { settlement: WaterSettlement; view: WaterSettlementView; source: 'company' | 'tenant'; lines: BookedLine[] }
 
 /** A booked line about a water settlement, with what the edit form needs to share it out again. */
-export type WaterBookedLine = BookedLine & { income: boolean; partner_id: number | null }
+export type WaterBookedLine = BookedLine & {
+  income: boolean
+  partner_id: number | null
+  /** On a settlement's statement voucher: the company's line, though its text may not say so. */
+  statement?: true
+}
+
+/** A voucher with the object's expense lines that may be a settlement's statement (a housing company's invoice). */
+export type WaterStatementCandidate = {
+  voucher: LeaseVoucher
+  /** Its expense lines on the object: the company's lines of the settlement that links it. */
+  lines: WaterBookedLine[]
+  /**
+   * A payment to the housing company that is not its vastike: with the apartment's reference, or
+   * (without one) an amount never repeated. Null for other vouchers.
+   */
+  suspect: 'reference' | 'amount' | null
+}
 
 export type WaterDetail = {
   /** Newest period first. */
   settlements: WaterSettlementView[]
   suggestions: WaterSuggestionView[]
-  /** Every water settlement line on the object, oldest first: the edit form gives them to its settlements. */
+  /** Every water settlement line on the object by its text, oldest first: the edit form gives them to its settlements. */
   lines: WaterBookedLine[]
+  /** Vouchers with files (and the stored statements) whose expense lines are on the object, newest first. */
+  statement_candidates: WaterStatementCandidate[]
 }
 
 export type PortfolioResponse = {

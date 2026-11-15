@@ -56,6 +56,7 @@ export type {
   WaterShare,
   WaterShareStatus,
   WaterShareView,
+  WaterStatementCandidate,
   WaterSuggestionView,
   YearRow,
 } from '../../book/modules/properties/domain/types'

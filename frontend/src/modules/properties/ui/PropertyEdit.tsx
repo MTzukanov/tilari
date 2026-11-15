@@ -43,7 +43,7 @@ import type { LetterCompany } from './letter'
 import { buildLeases, withKeys, type AmountsDraft, type Partner } from './leaseDrafts'
 import { LeasesEditor } from './LeasesEditor'
 import { scrollContainer } from './setupDraft'
-import { buildSettlements, draftSettlement, withShare, type SettlementDraft } from './waterDrafts'
+import { buildSettlements, candidateDoc, draftSettlement, withShare, type SettlementDraft } from './waterDrafts'
 import { WaterEditor } from './WaterEditor'
 import { statementTitle, waterLetterPdf, waterLetterTitle } from './waterLetter'
 
@@ -203,7 +203,8 @@ function EditForm({
     !toDelete.includes(id) && (storedCreated.has(id) || newDocs.some((d) => d.voucher_id === id))
   /** The Liitetieto vouchers to pick from: the book's and this visit's, less those to delete on save. */
   const allDocs = [...setup.docs, ...newDocs].filter((d) => !toDelete.includes(d.voucher_id))
-  const docById = new Map(allDocs.map((d) => [d.voucher_id, d]))
+  // A water settlement's statement can be an invoice: linked, it is one of the object's documents too.
+  const docById = new Map([...detail.water.statement_candidates.map(candidateDoc), ...allDocs].map((d) => [d.voucher_id, d]))
   const availableDocs = allDocs.filter((d) => !docs.includes(d.voucher_id))
 
   const addresses = new Map(
@@ -618,6 +619,7 @@ function EditForm({
             docs={allDocs}
             suggestions={detail.water.suggestions}
             lines={detail.water.lines}
+            candidates={detail.water.statement_candidates}
             onCreateLetter={createLetter}
             onUpload={uploadWater}
             isCreated={isCreated}

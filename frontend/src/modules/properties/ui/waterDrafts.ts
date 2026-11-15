@@ -1,7 +1,8 @@
 /** Water settlement form drafts: strings while editing, the stored settlements on save. */
 import { settlementOverlaps } from '../../../book/modules/properties/domain/ranges'
+import { statementPeriod } from '../../../book/modules/properties/domain/water'
 import { formatEurInput, parseEurInput } from '../../../shared/money'
-import type { WaterSettlement, WaterShare } from '../api'
+import type { DocCandidate, WaterSettlement, WaterShare, WaterStatementCandidate } from '../api'
 import { periodText, saveErrorText } from './format'
 
 type T = (key: string, vars?: Record<string, string | number>) => string
@@ -66,6 +67,61 @@ export function settlementDrafts(list: WaterSettlement[] | undefined): Settlemen
   }))
 }
 
+/** A statement candidate (a voucher with the object's lines) as a document to pick. */
+export function candidateDoc(c: WaterStatementCandidate): DocCandidate {
+  const { voucher } = c
+  return { ...voucher, attachments: voucher.files.length, linked_to: [], suggestion: null }
+}
+
+/** A statement candidate's lines on the object, credit - debit: - for the company's extra charge. */
+export function candidateAmount(c: WaterStatementCandidate): number {
+  return c.lines.reduce((sum, l) => sum + l.line_snt, 0)
+}
+
+type StatementFill = Pick<SettlementDraft, 'direction' | 'amount' | 'from' | 'to'>
+
+/**
+ * What a statement voucher fills: the company's result from its lines (a debit is an extra
+ * charge, a credit a refund) and the period estimated from its date and the form's other periods
+ * (`statementPeriod`).
+ */
+export function statementFill(c: WaterStatementCandidate, others: { from: string; to: string }[]): StatementFill {
+  const difference = -candidateAmount(c)
+  const period = statementPeriod(c.voucher.date, [c.voucher.title, ...c.lines.map((l) => l.text)], others)
+  return { direction: difference > 0 ? 'charge' : 'refund', amount: formatEurInput(Math.abs(difference)), ...period }
+}
+
+/**
+ * The draft with statement `voucherId` picked. A voucher with the object's lines fills the amount
+ * and its direction, and the period, where the owner has not given them: a field still empty, or
+ * still as the previous pick filled it. Picking none clears what the previous pick filled.
+ */
+export function pickStatement(
+  d: SettlementDraft,
+  voucherId: string,
+  candidates: WaterStatementCandidate[],
+  others: { from: string; to: string }[],
+): SettlementDraft {
+  const fillOf = (id: string) => {
+    const c = id ? candidates.find((x) => String(x.voucher.voucher_id) === id) : undefined
+    return c ? statementFill(c, others) : null
+  }
+  const before = fillOf(d.voucherId)
+  const after = fillOf(voucherId)
+  const next: SettlementDraft = { ...d, voucherId }
+  const amountFree = !d.amount.trim() || (before != null && d.amount === before.amount && d.direction === before.direction)
+  const periodFree = (!d.from && !d.to) || (before != null && d.from === before.from && d.to === before.to)
+  if (amountFree) {
+    next.amount = after?.amount ?? (before ? '' : d.amount)
+    if (after) next.direction = after.direction
+  }
+  if (periodFree) {
+    next.from = after?.from ?? (before ? '' : d.from)
+    next.to = after?.to ?? (before ? '' : d.to)
+  }
+  return next
+}
+
 export function newSettlement(): SettlementDraft {
   return { base: null, from: '', to: '', direction: 'refund', amount: '', usage: '', voucherId: '', noDocument: false, shares: [] }
 }
@@ -90,11 +146,15 @@ function buildShare(d: ShareDraft): WaterShare | null {
   return Object.keys(share).length > 1 ? share : null
 }
 
-/** The settlement as the shares are computed from it while editing; null until it has a period. */
+/**
+ * The settlement as the shares are computed from it while editing, with its statement (whose lines
+ * are the company's); null until it has a period.
+ */
 export function draftSettlement(d: SettlementDraft): WaterSettlement | null {
   if (!d.from || !d.to || d.to < d.from) return null
   const out: WaterSettlement = { key: d.base?.key ?? '', from: d.from, to: d.to, difference_snt: draftDifference(d) }
   if (d.usage.trim()) out.usage_snt = Math.abs(parseEurInput(d.usage))
+  if (d.voucherId) out.voucher_id = Number(d.voucherId)
   const shares = d.shares.flatMap((s) => buildShare(s) ?? [])
   if (shares.length) out.shares = shares
   return out

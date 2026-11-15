@@ -1570,6 +1570,9 @@
       "deleteLetter": "Ta bort kalkylen",
       "uploadLetter": "Ladda upp kalkyl",
       "uploadStatement": "Ladda upp utjämningskalkyl",
+      "guessExact": "★ Beloppet stämmer exakt på centen med denna utjämning.",
+      "guessSuspect": "★ Betalt till bostadsbolaget men inte vederlaget: med lägenhetens referens, eller ett belopp som inte återkommer varje månad.",
+      "periodEstimated": "Perioden är uppskattad från verifikatets datum: kontrollera den mot utjämningskalkylen.",
       "statementTitle": "Bostadsbolagets vattenutjämning {object} {from}–{to}",
       "letter": {
         "voucherTitle": "Vattenutjämning {object} {from}–{to}",

@@ -18,6 +18,7 @@ import type {
   WaterSettlementView,
   WaterShareStatus,
   WaterShareView,
+  WaterStatementCandidate,
 } from './types'
 
 const DAY = 86_400_000
@@ -117,20 +118,26 @@ export type WaterLine = {
   income: boolean
   text: string
   partner_id: number | null
+  /** On a settlement's statement voucher: the company's line, though its text may not say so. */
+  statement?: true
 }
 
-export function waterLines(rows: PnlRow[]): WaterLine[] {
+export function toWaterLine(r: PnlRow): WaterLine {
+  return { id: r.id, date: r.date, voucher_id: r.voucher_id, net_snt: r.net_snt, income: isIncome(r), text: r.text ?? '', partner_id: r.partner_id }
+}
+
+/**
+ * The object's water settlement lines: those whose text says so, and the expense lines on the
+ * settlements' statement vouchers (a housing company's invoice may say "water" only in its file).
+ */
+export function waterLines(rows: PnlRow[], settlements: WaterSettlement[] = []): WaterLine[] {
+  const statements = new Set(settlements.flatMap((s) => (s.voucher_id != null ? [s.voucher_id] : [])))
   return rows
-    .filter((r) => isWaterSettlementText(r.text))
-    .map((r) => ({
-      id: r.id,
-      date: r.date,
-      voucher_id: r.voucher_id,
-      net_snt: r.net_snt,
-      income: isIncome(r),
-      text: r.text ?? '',
-      partner_id: r.partner_id,
-    }))
+    .flatMap((r): WaterLine[] => {
+      const onStatement = statements.has(r.voucher_id) && !isIncome(r)
+      if (!onStatement && !isWaterSettlementText(r.text)) return []
+      return [onStatement ? { ...toWaterLine(r), statement: true } : toWaterLine(r)]
+    })
     .sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id)
 }
 
@@ -144,10 +151,13 @@ function namedEnd(text: string): string | undefined {
 }
 
 /**
- * The settlement a line belongs to: the one whose end its text names, else the latest that ended
- * before it (within nine months). A text naming another end belongs to none.
+ * The settlement a line belongs to: the one with the line's voucher as its statement, else the
+ * one whose end its text names, else the latest that ended before it (within nine months). A text
+ * naming another end belongs to none, and so does a statement's line no settlement links.
  */
 export function settlementFor(line: WaterLine, settlements: WaterSettlement[]): WaterSettlement | undefined {
+  const linked = settlements.find((s) => s.voucher_id != null && s.voucher_id === line.voucher_id)
+  if (linked || line.statement) return linked
   const named = namedEnd(line.text)
   if (named) return settlements.find((s) => daysApart(s.to, named) <= 31)
   let best: WaterSettlement | undefined
@@ -159,12 +169,12 @@ export function settlementFor(line: WaterLine, settlements: WaterSettlement[]): 
 
 /**
  * The company's lines and the tenants'. The company's are on expense accounts with the
- * settlement's sign (a debit for an extra charge, a credit for a refund); a refund passed on to
- * the tenant on the same account has the other sign.
+ * settlement's sign (a debit for an extra charge, a credit for a refund), and on its statement
+ * voucher; a refund passed on to the tenant on the same account has the other sign.
  */
 function splitLines(difference: number, lines: WaterLine[]): { company: WaterLine[]; tenant: WaterLine[] } {
   const sign = -Math.sign(difference)
-  const isCompany = (l: WaterLine) => !l.income && (sign === 0 || Math.sign(l.net_snt) === sign)
+  const isCompany = (l: WaterLine) => l.statement === true || (!l.income && (sign === 0 || Math.sign(l.net_snt) === sign))
   return { company: lines.filter(isCompany), tenant: lines.filter((l) => !isCompany(l)) }
 }
 
@@ -309,7 +319,9 @@ export function settlementViews(settlements: WaterSettlement[], lines: WaterLine
 
 /** A line as the edit form gets it: shown as booked, and enough to share it out again (`fromBookedLines`). */
 export function waterBookedLine(line: WaterLine, ctx: Pick<WaterViewContext, 'partnerName' | 'refs'>): WaterBookedLine {
-  return { ...bookedLine(line, line.net_snt, ctx), income: line.income, partner_id: line.partner_id }
+  const out: WaterBookedLine = { ...bookedLine(line, line.net_snt, ctx), income: line.income, partner_id: line.partner_id }
+  if (line.statement) out.statement = true
+  return out
 }
 
 /** The lines back from `waterBookedLine`, with their payers' names and their vouchers' labels. */
@@ -327,12 +339,56 @@ export function fromBookedLines(booked: WaterBookedLine[]): { lines: WaterLine[]
       income: b.income,
       text: b.text,
       partner_id: b.partner_id,
+      ...(b.statement ? { statement: true as const } : {}),
     })),
     ctx: { partnerName: (id) => (id != null ? (partners.get(id) ?? null) : null), refs },
   }
 }
 
 export type SettlementSuggestion = { settlement: WaterSettlement; lines: WaterLine[]; source: 'company' | 'tenant' }
+
+/** The period a text names, or the year up to the end a text names. */
+function namedPeriod(texts: string[]): { from: string; to: string } | null {
+  const full = texts.map(titlePeriod).find((p) => p.starts && p.ends && p.starts < p.ends)
+  if (full) return { from: full.starts!, to: full.ends! }
+  const end = texts.map(namedEnd).find((e) => e != null)
+  return end ? yearBefore(end) : null
+}
+
+/**
+ * A settlement's period from its lines' texts and the first one's date: the period a text names,
+ * the year up to the end a text names, or the year up to the end of the month before the date.
+ */
+function periodOf(texts: string[], date: string): { from: string; to: string } {
+  return namedPeriod(texts) ?? yearBefore(monthEnd(addMonths(date.slice(0, 7), -1)))
+}
+
+/** The year from `from`: 1.1.2025 gives 1.1.-31.12.2025, 1.3.2023 gives 1.3.2023-29.2.2024. */
+export function yearFrom(from: string): { from: string; to: string } {
+  const key = `${Number(from.slice(0, 4)) + 1}-${from.slice(5, 7)}`
+  const day = Math.min(Number(from.slice(8, 10)), daysInMonth(key))
+  const same = `${key}-${String(day).padStart(2, '0')}`
+  // 29.2. has no day a year on: the year ends on 28.2.
+  return { from, to: day < Number(from.slice(8, 10)) ? same : addDays(same, -1) }
+}
+
+/**
+ * The period of a settlement whose statement is a voucher booked on `date`, an estimate for the
+ * owner to check against the statement: the period its water texts name (a statement import's
+ * "Tiliote 1.4.-30.4." is none); else the year after the latest earlier settlement, when the
+ * voucher is dated within `GUESS_DAYS` after its end (so the two never share days); else the
+ * year up to the end of the month before it, as a suggestion's.
+ */
+export function statementPeriod(date: string, texts: string[], others: { from: string; to: string }[]): { from: string; to: string } {
+  const named = namedPeriod(texts.filter((t) => isWaterSettlementText(t)))
+  if (named) return named
+  const before = others.filter((o) => o.to < date).sort((a, b) => a.to.localeCompare(b.to)).at(-1)
+  if (before) {
+    const next = yearFrom(addDays(before.to, 1))
+    if (date <= addDays(next.to, GUESS_DAYS)) return next
+  }
+  return periodOf([], date)
+}
 
 /**
  * Settlements from booked lines that no stored settlement takes. Lines within 100 days of each
@@ -360,10 +416,7 @@ export function suggestSettlements(lines: WaterLine[], stored: WaterSettlement[]
   }
   const out: SettlementSuggestion[] = []
   for (const group of groups) {
-    const full = group.lines.map((l) => titlePeriod(l.text)).find((p) => p.starts && p.ends && p.starts < p.ends)
-    const period = full
-      ? { from: full.starts!, to: full.ends! }
-      : yearBefore(group.end ?? monthEnd(addMonths(group.lines[0].date.slice(0, 7), -1)))
+    const period = periodOf(group.lines.map((l) => l.text), group.lines[0].date)
     const expense = group.lines.find((l) => !l.income)
     let difference: number
     if (expense) {
@@ -408,4 +461,85 @@ export function waterVoucherIds(settlements: WaterSettlement[]): number[] {
     for (const share of s.shares ?? []) if (share.voucher_id != null) ids.add(share.voucher_id)
   }
   return [...ids]
+}
+
+/** "IBAN-maksu viitteellä 55501234": the reference a payment's text names. */
+const REFERENCE = /viitteell[äa]\s+(rf[0-9a-z]+|\d+)/
+
+export function referenceOf(text: string | undefined): string | null {
+  return REFERENCE.exec((text ?? '').toLowerCase())?.[1] ?? null
+}
+
+export type StatementSuspect = WaterStatementCandidate['suspect']
+
+/**
+ * Payments to the housing company that are not its vastike, by voucher. A partner is the housing
+ * company when the object pays it on one expense account amounts it repeats in two or more months
+ * (at least three such lines); a line with an amount it never repeats is a suspect: `reference`
+ * when the line names a reference those repeating payments use in three or more months (the
+ * apartment's own, though the company may change it), else `amount`. Lines in `reversed` (a
+ * booking a correction moved away, and the correction line) are left out.
+ */
+export function statementSuspects(rows: PnlRow[], reversed: ReadonlySet<number> = new Set()): Map<number, NonNullable<StatementSuspect>> {
+  const groups = new Map<string, PnlRow[]>()
+  for (const r of rows) {
+    if (isIncome(r) || r.partner_id == null || reversed.has(r.id)) continue
+    const key = `${r.partner_id}:${r.account}`
+    groups.set(key, [...(groups.get(key) ?? []), r])
+  }
+  const monthsBy = <K>(list: PnlRow[], key: (r: PnlRow) => K | null) => {
+    const out = new Map<K, Set<string>>()
+    for (const r of list) {
+      const k = key(r)
+      if (k != null) out.set(k, (out.get(k) ?? new Set()).add(r.date.slice(0, 7)))
+    }
+    return out
+  }
+  const out = new Map<number, NonNullable<StatementSuspect>>()
+  for (const group of groups.values()) {
+    const amounts = monthsBy(group, (r) => r.net_snt)
+    const repeats = (r: PnlRow) => amounts.get(r.net_snt)!.size >= 2
+    const regular = group.filter(repeats)
+    if (regular.length < 3) continue
+    const own = new Set([...monthsBy(regular, (r) => referenceOf(r.text))].filter(([, months]) => months.size >= 3).map(([ref]) => ref))
+    for (const r of group) {
+      if (repeats(r)) continue
+      const ref = referenceOf(r.text)
+      if (out.get(r.voucher_id) !== 'reference') out.set(r.voucher_id, ref != null && own.has(ref) ? 'reference' : 'amount')
+    }
+  }
+  return out
+}
+
+/** How long after a period's end a suspect is still a guess for its statement. */
+const GUESS_DAYS = 400
+
+/**
+ * The statement vouchers to star for a settlement: those whose lines on the object come to its
+ * difference to the cent (a charge as a debit, a refund as a credit), dated from the period's
+ * start (`exact`); with none, the suspects from the period's start to `GUESS_DAYS` after its end.
+ * An empty date or a zero difference does not narrow the guess.
+ */
+export function statementGuesses(
+  settlement: { from: string; to: string; difference_snt: number },
+  candidates: WaterStatementCandidate[],
+): { vouchers: Set<number>; exact: boolean } {
+  const inPeriod = (date: string, until?: string) =>
+    (!settlement.from || date >= settlement.from) && (!until || date <= until)
+  const exact = candidates.filter(
+    (c) =>
+      settlement.difference_snt !== 0 &&
+      inPeriod(c.voucher.date) &&
+      c.lines.reduce((sum, l) => sum + l.line_snt, 0) === -settlement.difference_snt,
+  )
+  if (exact.length) return { vouchers: new Set(exact.map((c) => c.voucher.voucher_id)), exact: true }
+  const until = settlement.to ? addDays(settlement.to, GUESS_DAYS) : undefined
+  const suspects = candidates.filter((c) => c.suspect != null && inPeriod(c.voucher.date, until))
+  return { vouchers: new Set(suspects.map((c) => c.voucher.voucher_id)), exact: false }
+}
+
+/** The edit form's lines: the object's water lines, and the lines of the statements picked as the company's. */
+export function withStatementLines(lines: WaterBookedLine[], statement: WaterBookedLine[]): WaterBookedLine[] {
+  const ids = new Set(statement.map((l) => l.line_id))
+  return [...lines.filter((l) => !ids.has(l.line_id)), ...statement].sort((a, b) => a.date.localeCompare(b.date) || a.line_id - b.line_id)
 }

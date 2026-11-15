@@ -698,10 +698,11 @@ export function loadAccountNumbers(db: SqliteDb): Set<number> {
  * voucher made of P&L line pairs with opposite amounts and the same text, e.g. an oikaisu for a
  * locked year): line id -> date of the booking it corrects, when that booking is unique (same
  * account, cost centre and amount, earlier). Figures by month then show the money in the month
- * it was paid instead of on the correction date.
+ * it was paid instead of on the correction date. The line that takes the money away from the
+ * booking's cost centre or account has `reverses`: the booking's line id.
  */
-export function loadCorrectionDates(db: SqliteDb, voucherIds: Iterable<number>): Map<number, string> {
-  const out = new Map<number, string>()
+export function loadCorrections(db: SqliteDb, voucherIds: Iterable<number>): Map<number, { date: string; reverses?: number }> {
+  const out = new Map<number, { date: string; reverses?: number }>()
   const rows = db.all<{
     id: number
     voucher_id: number
@@ -736,8 +737,8 @@ export function loadCorrectionDates(db: SqliteDb, voucherIds: Iterable<number>):
       used.add(b.id)
       // The earlier booking sits where one of the two lines takes the money away from.
       const original = (from: typeof a) =>
-        db.all<{ pvm: string }>(
-          `SELECT Vienti.pvm AS pvm FROM Vienti JOIN Tosite ON Vienti.tosite = Tosite.id
+        db.all<{ id: number; pvm: string }>(
+          `SELECT Vienti.id AS id, Vienti.pvm AS pvm FROM Vienti JOIN Tosite ON Vienti.tosite = Tosite.id
            WHERE ${SQL_POSTED} AND Vienti.tosite <> ? AND Vienti.tili = ? AND COALESCE(Vienti.kohdennus, 0) = ?
              AND COALESCE(Vienti.debetsnt, 0) - COALESCE(Vienti.kreditsnt, 0) = ? AND Vienti.pvm <= ?`,
           [from.voucher_id, from.tili, from.k, -Number(from.amt), from.pvm],
@@ -746,10 +747,12 @@ export function loadCorrectionDates(db: SqliteDb, voucherIds: Iterable<number>):
       // bookings of the same amount (monthly vastike), so use the side with exactly one.
       const fromA = original(a)
       const fromB = original(b)
-      const found = fromA.length === 1 && fromB.length !== 1 ? fromA : fromB.length === 1 && fromA.length !== 1 ? fromB : null
-      if (!found) continue
-      out.set(Number(a.id), String(found[0].pvm))
-      out.set(Number(b.id), String(found[0].pvm))
+      const reversing = fromA.length === 1 && fromB.length !== 1 ? a : fromB.length === 1 && fromA.length !== 1 ? b : null
+      if (!reversing) continue
+      const found = reversing === a ? fromA[0] : fromB[0]
+      const date = String(found.pvm)
+      out.set(Number(a.id), reversing === a ? { date, reverses: Number(found.id) } : { date })
+      out.set(Number(b.id), reversing === b ? { date, reverses: Number(found.id) } : { date })
     }
   }
   return out

@@ -420,6 +420,60 @@ describe('rental objects: figures', () => {
     })
   })
 
+  it('water: an invoice that says water only in its file is offered as the statement; linked, it is the booked line', async () => {
+    const fx = await setUp()
+    const { db, vouchers } = fx
+    const ref = 'IBAN-maksu viitteellä 55501234'
+    const attach = (voucherId: number, name: string) =>
+      db.run("INSERT INTO Liite (tosite, nimi, roolinimi, tyyppi, data) VALUES (?, ?, NULL, 'application/pdf', ?)", [
+        voucherId,
+        name,
+        new TextEncoder().encode('%PDF-invoice'),
+      ])
+    const pay = (key: string, date: string, amount: number, text: string) => {
+      const id = fx.voucher(key, date, 100, text, [
+        { account: 7300, debit: amount, allocation: CC.garage, description: text, partner: 'As Oy Testikuja' },
+        { account: 1910, credit: amount, description: text, partner: 'As Oy Testikuja' },
+      ])
+      attach(id, `${key}.pdf`)
+      return id
+    }
+    for (const month of ['01', '02', '03', '04', '05', '06', '07', '08']) pay(`garageVastike${month}`, `2025-${month}-05`, 210 * E, ref)
+    const invoice = pay('waterInvoice', '2025-06-20', 18_40, ref)
+    // Paid for another object and moved there in a later year: neither offered nor suspected.
+    const moved = pay('movedAway', '2025-07-20', 333 * E, 'IBAN-maksu viitteellä 77700001')
+    fx.voucher('movedFix', '2026-01-01', 0, 'Oikaisu', [
+      { account: 7300, credit: 333 * E, allocation: CC.garage, description: 'Oikaisu: toinen kohde' },
+      { account: 7300, debit: 333 * E, allocation: CC.bundle, description: 'Oikaisu: toinen kohde' },
+    ])
+
+    const before = computeDetail(db, CC.garage, { today: TODAY })
+    const candidates = before.water.statement_candidates
+    expect(candidates.filter((c) => c.suspect != null).map((c) => [c.voucher.voucher_id, c.suspect])).toEqual([[invoice, 'reference']])
+    expect(candidates.find((c) => c.voucher.voucher_id === invoice)).toMatchObject({
+      voucher: { date: '2025-06-20', files: [{ name: 'waterInvoice.pdf' }] },
+      lines: [{ date: '2025-06-20', line_snt: -18_40, partner: 'As Oy Testikuja', statement: true }],
+    })
+    // The vastike vouchers are offered too, unstarred; a bank statement or a moved booking never.
+    expect(candidates.some((c) => c.voucher.voucher_id === vouchers.garageVastike03)).toBe(true)
+    expect(candidates.some((c) => c.voucher.voucher_id === moved || c.voucher.voucher_id === vouchers['statement2024-03'])).toBe(false)
+    expect(before.water.lines).toEqual([])
+    expect(before.water.suggestions).toEqual([])
+
+    saveProperty(db, CC.garage, { ...before.doc, water_settlements: [{ from: '2024-01-01', to: '2024-12-31', difference_snt: 18_40, voucher_id: invoice }] }, 'now')
+    const after = computeDetail(db, CC.garage, { today: TODAY })
+    expect(after.water.settlements[0]).toMatchObject({
+      statement: { voucher_id: invoice },
+      booked: [{ date: '2025-06-20', amount_snt: -18_40 }],
+    })
+    expect(after.doc.doc_voucher_ids).toContain(invoice)
+    // The form gets the line with the candidates, not as a water line by its text.
+    expect(after.water.lines).toEqual([])
+    expect(after.water.statement_candidates.find((c) => c.voucher.voucher_id === invoice)?.suspect).toBe('reference')
+    // It still counts as the object's expense in its month.
+    expect(after.months.find((m) => m.key === '2025-06')?.expense_snt).toBe(210 * E + 18_40)
+  })
+
   it('water: the booked settlement suggests one; stored, it is shared by the lease and its lines found', async () => {
     const fx = await setUp()
     const { db, vouchers, partners } = fx

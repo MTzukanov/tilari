@@ -1,11 +1,15 @@
 import { formatDate } from '../../../shared/dates'
+import { formatVoucherId } from '../../../shared/formatVoucherId'
+import { formatCents } from '../../../shared/money'
 import { FilePill } from '../../../shared/Pill'
 import { SearchSelect } from '../../../shared/SearchSelect'
 import type { DocCandidate } from '../api'
 
 /**
  * A searchable pick of a Liitetieto voucher (the shared SearchSelect), newest first, with a pill
- * per file of the picked document that opens it. `starred` (suggested for this object) come first with a ★.
+ * per file of the picked document that opens it. Each shows its date, Kitsas number and title, so
+ * it can be found by any of them, and its `amount` when given (a voucher's lines on the object).
+ * `starred` (suggested for this object) come first with a ★.
  * With a `placeholder` and no `label` it is an "add…" pick: the owner picks, the list resets.
  */
 export function DocPicker({
@@ -15,6 +19,7 @@ export function DocPicker({
   label,
   placeholder,
   starred,
+  amount,
   className,
 }: {
   docs: DocCandidate[]
@@ -23,14 +28,22 @@ export function DocPicker({
   label?: string
   placeholder?: string
   starred?: (doc: DocCandidate) => boolean
+  amount?: (doc: DocCandidate) => number | null
   className?: string
 }) {
   const star = (d: DocCandidate) => (starred?.(d) ? 0 : 1)
+  const amountText = (d: DocCandidate) => {
+    const snt = amount?.(d)
+    return snt != null ? formatCents(snt) : ''
+  }
   const items = [
     ...(placeholder ? [] : [{ value: '', label: '–' }]),
     ...[...docs]
       .sort((a, b) => star(a) - star(b) || b.date.localeCompare(a.date) || b.voucher_id - a.voucher_id)
-      .map((d) => ({ value: String(d.voucher_id), label: `${star(d) ? '' : '★ '}${formatDate(d.date)} · ${d.title}` })),
+      .map((d) => ({
+        value: String(d.voucher_id),
+        label: `${star(d) ? '' : '★ '}${[formatDate(d.date), formatVoucherId(d.series, d.doc_number, d.date, { fallback: '' }), amountText(d), d.title].filter(Boolean).join(' · ')}`,
+      })),
   ]
   const picked = docs.find((d) => String(d.voucher_id) === value)
   const pick = (
