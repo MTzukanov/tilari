@@ -252,7 +252,21 @@ export function CashFlowPanel({
       {d.summary.acquired_on ? (
         <>
           <h3>{t('properties.chart.payback')}</h3>
-          <PaybackChart months={d.months} label={t('properties.chart.payback')} />
+          <div className="overview-legend">
+            <span className="allocation-check">
+              <i className="overview-swatch property-swatch-payback" />
+              {t('properties.chart.paybackLine')}
+            </span>
+            <span className="allocation-check">
+              <i className="overview-swatch property-swatch-total" />
+              {t('properties.chart.total')}
+            </span>
+          </div>
+          <PaybackChart
+            months={d.months}
+            totals={runningTotals(d.months)}
+            labels={{ payback: t('properties.chart.paybackLine'), total: t('properties.chart.total') }}
+          />
         </>
       ) : null}
     </section>

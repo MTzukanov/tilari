@@ -5,8 +5,10 @@ import { fileURLToPath } from 'node:url'
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const testBook = path.join(repoRoot, 'testdb', 'tilari-test.kitsas')
 const periodEndBook = path.join(repoRoot, 'testdb', 'tilari-period-end.kitsas')
+/** Invented rental objects with investments linked (`npm run build:testdb:properties`). */
+const propertiesBook = path.join(repoRoot, 'testdb', 'tilari-properties.kitsas')
 
-export { testBook, periodEndBook }
+export { testBook, periodEndBook, propertiesBook }
 
 /** Editor primary save — scoped so the topbar book "Tallenna" is not matched. */
 export function editorSaveButton(page: Page): Locator {
@@ -183,13 +185,13 @@ export async function openPeriodEndBook(page: Page) {
   await openKitsasFile(page, periodEndBook)
 }
 
-export async function openBook(page: Page) {
+export async function openBook(page: Page, book = testBook, company = 'Testikirja Oy') {
   await clearTilariStorage(page)
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Ei kirjaa auki' })).toBeVisible()
-  await page.locator('input[type=file][accept*=".kitsas"]').setInputFiles(testBook)
+  await page.locator('input[type=file][accept*=".kitsas"]').setInputFiles(book)
   await confirmEngineOpen(page, 'wasm')
-  await expect(page.getByRole('heading', { name: 'Testikirja Oy' })).toBeVisible({
+  await expect(page.getByRole('heading', { name: company })).toBeVisible({
     timeout: 60_000,
   })
 }

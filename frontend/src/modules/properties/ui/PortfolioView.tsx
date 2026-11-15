@@ -10,6 +10,7 @@ import { fetchPortfolio, savePortfolioSettings, skipPropertyDocument, type Docum
 import { rowAlerts } from '../../../book/modules/properties/domain/reminders'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
 import { formatEuro, holdingText, periodLabel, saveErrorText, statusClass, tenantSide, warningText } from './format'
+import { PortfolioCharts } from './PortfolioCharts'
 import { Warnings } from './Warnings'
 
 function Kpi({ label, value, neg, hint }: { label: string; value: string; neg?: boolean; hint?: string }) {
@@ -540,6 +541,8 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
               {data.rows.some((r) => r.lease?.suggested) ? ` ${t('properties.lease.suggestedNote')}` : ''}
             </p>
           </section>
+
+          <PortfolioCharts chart={data.chart} rows={data.rows} />
 
           {all.length ? (
             <section className="property-section">

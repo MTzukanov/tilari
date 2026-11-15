@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "build:testdb:properties": "TILARI_WRITE_TESTDB=1 vitest run src/book/modules/properties/testBook.test.ts",
     "test:e2e": "playwright test",
     "test:desktop": "npm run build && playwright test -c playwright.desktop.config.ts"
   },

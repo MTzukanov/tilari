@@ -1174,6 +1174,14 @@
       "calculate": "Calculate",
       "targetPrice": "Annual return {pct}: selling price {price}"
     },
+    "portfolioChart": {
+      "title": "Objects by month",
+      "cash": "Cumulative cash flow",
+      "unrecovered": "Not yet recovered at month end",
+      "total": "All together",
+      "allMonths": "All months",
+      "lead": "The total line always counts every object: the checkboxes only hide lines. A sold object stays in the cash flow total but leaves the unrecovered total from its sale month."
+    },
     "chart": {
       "cashFlow": "Cash flow by month",
       "income": "Income",
@@ -1182,7 +1190,8 @@
       "net": "Cash flow",
       "total": "Cumulative cash flow",
       "costsUp": "Costs upward",
-      "payback": "Not yet recovered at month end",
+      "payback": "At month end: not yet recovered and cumulative cash flow",
+      "paybackLine": "Not yet recovered",
       "clickHint": "Click: the month's entries",
       "more": "… and {n} more"
     },

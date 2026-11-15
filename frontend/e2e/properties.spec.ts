@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
-import { editorSaveButton, openBook } from './helpers'
+import { editorSaveButton, openBook, propertiesBook } from './helpers'
 
 /** Opens a new lease card in place on object 4's Vuokrasuhteet tab; returns the lease's form on it. */
 async function newLeaseCard(page: Page): Promise<Locator> {
@@ -54,6 +54,45 @@ test.describe('rental objects', () => {
     await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(page).toHaveURL(/#\/property\/4$/)
     await expect(page.locator('.property-detail .lede')).toContainText('Asunto')
+  })
+})
+
+test.describe('rental objects chart', () => {
+  test('every object has a line and a checkbox, the total stays; the choice is remembered; it fits a phone', async ({ page }) => {
+    await openBook(page)
+    await page.goto('/#/properties')
+    const panel = page.locator('section.portfolio-charts')
+    await expect(panel.getByRole('heading', { name: 'Kohteet kuukausittain' })).toBeVisible()
+    const cash = panel.getByRole('img', { name: 'Kertynyt kassavirta' })
+    // The golden book links no investment: a cash flow per object, no unrecovered chart.
+    await expect(cash.locator('.portfolio-line')).toHaveCount(3)
+    await expect(cash.locator('.portfolio-total')).toHaveCount(1)
+    await expect(panel.getByRole('img', { name: 'Palauttamatta kuukauden lopussa' })).toHaveCount(0)
+
+    await panel.getByRole('checkbox', { name: 'Asunto' }).uncheck()
+    await expect(cash.locator('.portfolio-line')).toHaveCount(2)
+    await expect(cash.locator('.portfolio-total')).toHaveCount(1)
+    await page.reload()
+    await expect(panel.getByRole('checkbox', { name: 'Asunto' })).not.toBeChecked()
+    await expect(cash.locator('.portfolio-line')).toHaveCount(2)
+    await panel.getByRole('checkbox', { name: 'Kaikki yhteensä' }).uncheck()
+    await expect(cash.locator('.portfolio-total')).toHaveCount(0)
+
+    await page.setViewportSize({ width: 360, height: 800 })
+    await expect
+      .poll(() => page.evaluate(() => { const w = document.querySelector('main.workspace')!; return w.scrollWidth - w.clientWidth }))
+      .toBe(0)
+  })
+  test('a book with investments linked draws the unrecovered chart too', async ({ page }) => {
+    await openBook(page, propertiesBook, 'Esimerkki Vuokraus Oy')
+    await page.goto('/#/properties')
+    const panel = page.locator('section.portfolio-charts')
+    const unrecovered = panel.getByRole('img', { name: 'Palauttamatta kuukauden lopussa' })
+    await expect(unrecovered).toBeVisible()
+    expect(await unrecovered.locator('.portfolio-line').count()).toBeGreaterThan(3)
+    await expect(unrecovered.locator('.portfolio-total')).toHaveCount(1)
+    // A month's hover lists every shown line, the total first.
+    await expect(unrecovered.locator('.chart-column-hover title').last()).toContainText('Kaikki yhteensä:')
   })
 })
 

@@ -627,6 +627,7 @@ export type PortfolioResponse = {
   /** Fiscal years up to the as-of date, oldest first. */
   periods: { starts: string; ends: string }[]
   rows: PropertyRow[]
+  chart: PortfolioChart
   /** Cost centres with no stored decision yet. */
   undecided: number
   totals: {
@@ -642,6 +643,19 @@ export type PortfolioResponse = {
     /** IRR of the sold objects together (actual flows). */
     sold_irr_bp: number | null
   }
+}
+
+/**
+ * The Properties page's two line charts, month by month over every object's months: each object's
+ * cash flow summed from its first month and its money still to recover (null outside its months,
+ * and always on an object with no investment linked), and both together. The cash flow total keeps a sold object's sum; the unrecovered total leaves a
+ * sold object out from its sale month, so it ends at `totals.unrecovered_snt`.
+ */
+export type PortfolioChart = {
+  keys: string[]
+  objects: { id: number; cash_snt: (number | null)[]; unrecovered_snt: (number | null)[] }[]
+  total_cash_snt: number[]
+  total_unrecovered_snt: number[]
 }
 
 /** The header's count of warnings to act on (ADR-030). */

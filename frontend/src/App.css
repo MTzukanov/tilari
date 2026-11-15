@@ -5623,14 +5623,56 @@ tr.tax-total td {
   }
 }
 
-.property-payback-line {
+.property-payback .chart-line {
   fill: none;
   stroke: #2f6fed;
   stroke-width: 2;
 }
 
-.property-payback-dot {
+.property-payback .chart-line-dot {
   fill: #2f6fed;
+}
+
+.portfolio-line .chart-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.portfolio-total .chart-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.overview-swatch.property-swatch-line {
+  height: 3px;
+  width: 1rem;
+}
+
+.overview-swatch.portfolio-swatch-total {
+  height: 3px;
+  width: 1rem;
+  background: var(--ink);
+}
+
+.chart-column-hover {
+  fill: transparent;
+}
+
+.chart-column-hover:hover {
+  fill: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+.portfolio-charts h4 {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.overview-swatch.property-swatch-payback {
+  height: 2px;
+  background: #2f6fed;
 }
 
 .property-section {

@@ -7,6 +7,46 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-15 - Test book with rental-object investments (`testdb/tilari-properties.kitsas`)
+
+- Owner asked for a book with an acquisition: the golden `tilari-test.kitsas` links none, so neither payback chart
+  was ever drawn in e2e. Rather than change the golden book (its figures are in `expected.ts`), a second book is
+  generated from the invented unit-test fixture (`buildPropertyFixture`) with its suggested links applied
+  (`properties/testBook.test.ts`; `npm run build:testdb:properties` writes it, every run checks the committed file
+  still opens with linked objects and that the chart's unrecovered total ends at the page figure).
+- e2e opens it with `openBook(page, propertiesBook, 'Esimerkki Vuokraus Oy')`.
+- Seen on it: the line charts cut the last month's label in half at the right edge; a label near the edge now ends
+  at its point. Two of the eight hues (slots 2 and 8, orange-red and red) are close on a long legend; they pass the
+  validator as non-adjacent slots and the legend names them.
+
+## 2026-11-15 - Rental objects: the Properties page's charts per object
+
+- Owner chose two charts, not one, and "Palauttamatta" as the investment measure: "Kertynyt kassavirta" and
+  "Palauttamatta kuukauden lopussa", a coloured line per object and a thick black "Kaikki yhteensä", with one row
+  of checkboxes for both (`ui/PortfolioCharts.tsx`, under "Omistuksessa"). One chart was ruled out by scale:
+  tens of thousands to recover beside a few hundred of cash flow flattens the cash lines.
+- Data: `PortfolioResponse.chart` (`portfolioChart` in `domain/series.ts`) puts each object's own months on one month
+  axis, null outside them. The total counts every object whatever is unchecked. A sold object's cash flow stays
+  in the cash total after its sale; it leaves the unrecovered total from its sale month, so the line ends at the
+  "Palauttamatta" KPI (held objects only). An object with no investment linked (`unlinked`) has a cash line and
+  no unrecovered line; with none invested the unrecovered chart is not shown (the golden book).
+- Colours: the dataviz skill's eight categorical hues in fixed order by the object's place in the chart (hiding one
+  repaints none), validated on white; a 9th object repeats them dashed. Three are under 3:1 on the surface, so
+  every line has its name in the legend and the month hover lists the values (a column-wide `<title>`).
+- Choices (hidden objects, total, all months) are kept in this browser (`tilari.properties.portfolioChart`), by
+  object id, not per book.
+
+## 2026-11-15 - Rental objects: the cumulative cash flow on the payback chart
+
+- Owner: the lower chart ("Palauttamatta kuukauden lopussa") gets the cash flow line too. It now draws
+  "Palauttamatta" and "Kertynyt kassavirta" (the upper chart's running total, `runningTotals`) on one axis, with a
+  legend; heading "Kuukauden lopussa: palauttamatta ja kertynyt kassavirta". Both are always shown, over all months.
+- `shared/LineChart.tsx` draws any number of money lines (built for the planned portfolio chart, one line per object).
+  Its ticks share one step (`lineTicks`): the old payback ticks were -niceMax(min), 0, max/2, max, so a small
+  negative part put its tick 3px under zero. Hover titles are one string: mixed JSX children in an SVG `<title>`
+  rendered empty.
+- On a large object the running cash flow hugs zero beside the unrecovered money; that is the honest scale.
+
 ## 2026-11-15 - Rental objects: the object page in tabs (`feature/property-tabs`)
 
 - Owner: the object page and its edit page needed too much scrolling and were hard to move around in. Agreed

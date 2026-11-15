@@ -3,7 +3,7 @@ import { addMonths, monthEnd, monthKeys } from '../../../months'
 import type { CashFlow } from './classify'
 import type { PnlRow } from './ledger'
 import { yieldBp } from './returns'
-import type { MonthPoint, Trailing12, YearRow } from './types'
+import type { MonthPoint, PortfolioChart, PropertyStatus, Trailing12, YearRow } from './types'
 
 /** Income (+) or expense (-) side of a P&L line: account type C/D, else the sign. */
 export function isIncome(row: PnlRow): boolean {
@@ -141,4 +141,38 @@ export function yearTable(
     if (active) rows.push(row)
   }
   return rows
+}
+
+/**
+ * Every object's months on one month axis (`PortfolioChart`): from the earliest object's first
+ * month to the latest month any object has. `months` are each object's own (`monthlySeries`).
+ */
+export function portfolioChart(objects: { id: number; status: PropertyStatus; months: MonthPoint[] }[]): PortfolioChart {
+  const shown = objects.filter((o) => o.months.length && o.status !== 'excluded')
+  if (!shown.length) return { keys: [], objects: [], total_cash_snt: [], total_unrecovered_snt: [] }
+  const from = shown.map((o) => o.months[0].key).sort()[0]
+  const to = shown.map((o) => o.months[o.months.length - 1].key).sort().at(-1)!
+  const keys = monthKeys(`${from}-01`, `${to}-01`)
+  const totalCash = keys.map(() => 0)
+  const totalUnrecovered = keys.map(() => 0)
+  const rows = shown.map((o) => {
+    const at = new Map(o.months.map((m) => [m.key, m]))
+    const sold = o.status === 'sold' ? o.months[o.months.length - 1].key : null
+    // Nothing invested is linked: there is nothing to recover, only a cash flow.
+    const invested = o.status !== 'unlinked'
+    let sum = 0
+    const cash: (number | null)[] = []
+    const unrecovered: (number | null)[] = []
+    keys.forEach((key, i) => {
+      const m = at.get(key)
+      if (m) sum += m.income_snt - m.expense_snt - m.interest_snt
+      // A sold object's cash flow stays in the total after its last month.
+      if (key >= o.months[0].key) totalCash[i] += sum
+      if (m && invested && !(sold && key >= sold)) totalUnrecovered[i] += m.unrecovered_snt
+      cash.push(m ? sum : null)
+      unrecovered.push(m && invested ? m.unrecovered_snt : null)
+    })
+    return { id: o.id, cash_snt: cash, unrecovered_snt: unrecovered }
+  })
+  return { keys, objects: rows, total_cash_snt: totalCash, total_unrecovered_snt: totalUnrecovered }
 }

@@ -1174,6 +1174,14 @@
       "calculate": "Laske",
       "targetPrice": "Vuosituotto {pct}: myyntihinta {price}"
     },
+    "portfolioChart": {
+      "title": "Kohteet kuukausittain",
+      "cash": "Kertynyt kassavirta",
+      "unrecovered": "Palauttamatta kuukauden lopussa",
+      "total": "Kaikki yhteensä",
+      "allMonths": "Kaikki kuukaudet",
+      "lead": "Yhteensä-viiva laskee aina kaikki kohteet: valinnat piilottavat vain viivoja. Myyty kohde jää kassavirran summaan, mutta ei palauttamattomaan myyntikuusta alkaen."
+    },
     "chart": {
       "cashFlow": "Kassavirta kuukausittain",
       "income": "Tuotot",
@@ -1182,7 +1190,8 @@
       "net": "Kassavirta",
       "total": "Kertynyt kassavirta",
       "costsUp": "Kulut ylöspäin",
-      "payback": "Palauttamatta kuukauden lopussa",
+      "payback": "Kuukauden lopussa: palauttamatta ja kertynyt kassavirta",
+      "paybackLine": "Palauttamatta",
       "clickHint": "Klikkaa: kuukauden viennit",
       "more": "… ja {n} muuta"
     },

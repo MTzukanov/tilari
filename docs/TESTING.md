@@ -8,6 +8,9 @@ Layers below run against the golden book in [`testdb/`](../testdb/).
 (committed). Playwright and Vitest load that file. Expected figures live in
 [`frontend/src/book/expected.ts`](../frontend/src/book/expected.ts).
 
+Rental objects with investments linked are in a second, invented book, `testdb/tilari-properties.kitsas`,
+generated from the unit-test fixture (`cd frontend && npm run build:testdb:properties`); see [testdb/README.md](../testdb/README.md).
+
 | What it covers | How |
 |----------------|-----|
 | Two fiscal years | 2024 and 2025 calendar years |

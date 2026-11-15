@@ -1174,6 +1174,14 @@
       "calculate": "Beräkna",
       "targetPrice": "Årsavkastning {pct}: försäljningspris {price}"
     },
+    "portfolioChart": {
+      "title": "Objekt per månad",
+      "cash": "Ackumulerat kassaflöde",
+      "unrecovered": "Ej återfått vid månadens slut",
+      "total": "Alla tillsammans",
+      "allMonths": "Alla månader",
+      "lead": "Totallinjen räknar alltid alla objekt: kryssrutorna döljer bara linjer. Ett sålt objekt stannar i kassaflödets total men lämnar det ej återfångna från försäljningsmånaden."
+    },
     "chart": {
       "cashFlow": "Kassaflöde per månad",
       "income": "Intäkter",
@@ -1182,7 +1190,8 @@
       "net": "Kassaflöde",
       "total": "Ackumulerat kassaflöde",
       "costsUp": "Kostnader uppåt",
-      "payback": "Ej återfått vid månadens slut",
+      "payback": "Vid månadens slut: ej återfått och ackumulerat kassaflöde",
+      "paybackLine": "Ej återfått",
       "clickHint": "Klicka: månadens poster",
       "more": "… och {n} till"
     },
