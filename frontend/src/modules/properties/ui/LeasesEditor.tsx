@@ -212,6 +212,8 @@ export function LeasesEditor({
   onDeleteDocs,
   onOpenVoucher,
   parkingObject,
+  single = false,
+  otherDrafts = [],
 }: {
   drafts: LeaseDraft[]
   onChange: (drafts: LeaseDraft[]) => void
@@ -238,6 +240,10 @@ export function LeasesEditor({
   onOpenVoucher: (voucherId: number) => void
   /** A parking space or garage: no water and no parking extra to offer (`draftExtras`). */
   parkingObject: boolean
+  /** One lease card in edit on the object page: no suggestions and no "+ Lisää vuokrasopimus". */
+  single?: boolean
+  /** With `single`: the object's other leases, whose deposits are not offered here. */
+  otherDrafts?: LeaseDraft[]
 }) {
   const { t } = useI18n()
   const [creating, setCreating] = useState<string | null>(null)
@@ -288,7 +294,7 @@ export function LeasesEditor({
 
   return (
     <>
-      {pending.length ? (
+      {pending.length && !single ? (
         <SuggestBanner
           heading="h4"
           title={t('properties.lease.suggestions', { n: pending.length })}
@@ -361,7 +367,7 @@ export function LeasesEditor({
 
           <DepositField
             draft={d}
-            drafts={drafts}
+            drafts={[...drafts, ...otherDrafts]}
             deposits={deposits}
             objectId={objectId}
             tenantId={partnerIds.get(d.tenant.trim().toLowerCase()) ?? null}
@@ -541,9 +547,11 @@ export function LeasesEditor({
           </div>
         </div>
       ))}
-      <button type="button" className="btn-secondary" onClick={() => onChange([...drafts, newLease()])}>
-        {t('properties.edit.addLease')}
-      </button>
+      {single ? null : (
+        <button type="button" className="btn-secondary" onClick={() => onChange([...drafts, newLease()])}>
+          {t('properties.edit.addLease')}
+        </button>
+      )}
     </>
   )
 }

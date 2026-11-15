@@ -5800,6 +5800,8 @@ tr.tax-total td {
 
 .property-lease-foot {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
   justify-content: space-between;
   align-items: center;
   margin-top: 0.75rem;
@@ -5832,6 +5834,20 @@ tr.tax-total td {
 .property-lease-card {
   border-left: 3px solid color-mix(in srgb, #2f8f5b 55%, var(--line));
   padding: 0.1rem 0 0.1rem 0.8rem;
+}
+
+/* A lease card in edit, in place: the form's own box, with its Tallenna and Peru under it. */
+.property-lease-card.property-lease-card-edit {
+  border-left: 0;
+  padding: 0;
+}
+
+.property-lease-card-edit > .property-lease-edit {
+  margin-top: 0;
+}
+
+.property-doc-list > li.property-lease-row-edit {
+  display: block;
 }
 
 .property-lease-head {

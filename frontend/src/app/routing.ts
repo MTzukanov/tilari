@@ -10,12 +10,18 @@ export type PropertyTab = (typeof PROPERTY_TABS)[number]
  */
 export type PropertyEditIntent = { add: true } | { lease: string }
 
+/**
+ * A card open in edit on a rental object's Vuokrasuhteet tab: a new lease (`/leases/new`) or stored
+ * lease `lease` (`/leases/lease/{key}`). Kept on the way back from a voucher, with its unsaved form.
+ */
+export type PropertyCard = PropertyEditIntent
+
 export type VoucherVia =
   | { kind: 'account'; account: number }
   /** `month` (YYYY-MM): the page was showing that month; back returns to it. */
   | { kind: 'allocation'; id: number; month?: string }
   /** Opened from a rental object's page (`#/property/{id}`), `month` its open month panel, `tab` its open tab. */
-  | { kind: 'property'; id: number; month?: string; tab?: PropertyTab }
+  | { kind: 'property'; id: number; month?: string; tab?: PropertyTab; card?: PropertyCard }
   /** Opened from the rental-object setup (`#/properties/setup`); its unsaved choices are kept. */
   | { kind: 'propertiesSetup' }
   /** Opened from a rental object's edit page (`#/property/{id}/edit`); its unsaved form is kept. */
@@ -39,8 +45,11 @@ export type Route =
   /** `section: 'alerts'` (`#/properties/alerts`): opened on the list of warnings. */
   | { view: 'properties'; section?: 'alerts' }
   | { view: 'propertiesSetup' }
-  /** `month` opens that month's lines under the overview's chart; `tab` another tab than the overview. */
-  | { view: 'property'; id: number; month?: string; tab?: PropertyTab }
+  /**
+   * `month` opens that month's lines under the overview's chart; `tab` another tab than the overview;
+   * `card` a lease card in edit there.
+   */
+  | { view: 'property'; id: number; month?: string; tab?: PropertyTab; card?: PropertyCard }
   | { view: 'propertyEdit'; id: number; tab?: PropertyTab; intent?: PropertyEditIntent }
   /** `documents`: every document, searchable. `own`: the page with the company's own documents open. */
   | { view: 'company'; section?: CompanySection }
@@ -75,16 +84,19 @@ export function allocationHash(id: number, month?: string): string {
  * `#/property/{id}`, `#/property/{id}/{tab}` on another tab than the overview, or
  * `#/property/{id}/month/{YYYY-MM}` with that month's lines open (under the overview's chart).
  */
-export function propertyHash(id: number, at: { month?: string; tab?: PropertyTab } = {}): string {
+export function propertyHash(id: number, at: { month?: string; tab?: PropertyTab; card?: PropertyCard } = {}): string {
   if (at.month) return `#/property/${id}/month/${at.month}`
-  return `#/property/${id}${at.tab ? `/${at.tab}` : ''}`
+  return `#/property/${id}${at.tab ? `/${at.tab}` : ''}${at.tab === 'leases' && at.card ? cardTail(at.card) : ''}`
+}
+
+function cardTail(card: PropertyCard): string {
+  return 'add' in card ? '/new' : `/lease/${encodeURIComponent(card.lease)}`
 }
 
 /** `#/property/{id}/edit`, `.../edit/{tab}`, and with an intent `.../edit/{tab}/new` or `.../edit/leases/lease/{key}`. */
 export function propertyEditHash(id: number, tab?: PropertyTab, intent?: PropertyEditIntent): string {
   const base = `#/property/${id}/edit${tab ? `/${tab}` : ''}`
-  if (!intent) return base
-  return 'add' in intent ? `${base}/new` : `${base}/lease/${encodeURIComponent(intent.lease)}`
+  return intent ? `${base}${cardTail(intent)}` : base
 }
 
 /** `#/company`, `#/company/documents`, `#/company/own`, or with a period open `#/company/period/{ends}`. */
@@ -291,6 +303,13 @@ export function parseRoute(hash: string = window.location.hash): Route {
     }
     const { tab, rest } = property[2] ? { tab: {}, rest: property[3] } : splitPropertyTab(property[3])
     if (!rest) return { view: 'property', id, ...tab }
+    const card = tab.tab === 'leases' ? rest.match(/^(?:new|lease\/([^/]+))(?:\/(.+))?$/) : null
+    if (card) {
+      const at = { id, ...tab, card: card[1] ? { lease: decodeURIComponent(card[1]) } : ({ add: true } as const) }
+      if (!card[2]) return { view: 'property', ...at }
+      const back = parseVoucherSegment(card[2])
+      if (back) return voucherRoute({ kind: 'property', ...at }, back)
+    }
     const ref = parseVoucherSegment(rest)
     if (ref) return voucherRoute({ kind: 'property', id, ...month, ...tab }, ref)
   }

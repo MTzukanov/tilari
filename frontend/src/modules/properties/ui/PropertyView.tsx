@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { fetchPartners, fetchSettings } from '../../../api'
 import { restoreLocationHash } from '../../../app/leaveGuard'
-import { parseRoute, propertyHash, type PropertyEditIntent, type PropertyTab } from '../../../app/routing'
+import { parseRoute, propertyHash, type PropertyCard, type PropertyEditIntent, type PropertyTab } from '../../../app/routing'
 import { isParkingKind } from '../../../book/modules/properties/domain/kind'
 import { skipDocument } from '../../../book/modules/properties/domain/reminders'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
+import { localToday } from '../../../shared/downloadFile'
 import { DocLine, DocLines } from '../../../shared/DocRows'
 import { FilePill, Pill } from '../../../shared/Pill'
 import { TabPanel, Tabs, type TabItem } from '../../../shared/Tabs'
@@ -13,17 +15,23 @@ import { voucherTypeName } from '../../../shared/voucherTypes'
 import {
   fetchProperty,
   fetchPropertyDocuments,
+  fetchPropertySetup,
   saveProperty,
   type DocumentSkip,
   type LeaseException,
   type PropertyDetail,
+  type PropertyDoc,
   type PropertyDocuments,
 } from '../api'
 import { VoucherOpen } from './FormParts'
+import { LeaseCardEdit } from './LeaseCardEdit'
+import { leaseDrafts, type LeaseDraft } from './leaseDrafts'
 import { LeasesPanel } from './LeasesPanel'
 import { statusClass, tabMarks } from './format'
 import { CashFlowPanel, PropertyFinance } from './PropertyFinance'
 import { PropertyOverview } from './PropertyOverview'
+import { RentDates } from './RentDates'
+import type { CardInputs } from './useDocWriter'
 import { WaterPanel } from './WaterPanel'
 
 const DOCS_PER_GROUP = 8
@@ -107,6 +115,9 @@ export function PropertyView({
   id,
   month,
   tab: routeTab,
+  card: routeCard,
+  bookKey = '',
+  today,
   onBack,
   onEdit,
   onOpenAllocation,
@@ -117,13 +128,19 @@ export function PropertyView({
   month?: string
   /** The open tab (from the URL); none is the overview. */
   tab?: PropertyTab
+  /** A lease card to open in edit (from the URL: back from a voucher, its unsaved form kept). */
+  card?: PropertyCard
+  /** The open book's session: a card's unsaved form is kept for it. */
+  bookKey?: string
+  /** The book's date (a practice book's simulated day), for documents a card writes. */
+  today?: string
   onBack: () => void
   /** Opens the edit page on `tab` (none: the basics), to do `intent` there. */
   onEdit: (tab?: PropertyTab, intent?: PropertyEditIntent) => void
   /** `month`: open the cost-centre page on that month. */
   onOpenAllocation: (month?: string) => void
   /** `at`: the open tab and month panel, kept for the way back. */
-  onOpenVoucher: (voucherId: number, entryId: number | null, at: { month?: string; tab?: PropertyTab }) => void
+  onOpenVoucher: (voucherId: number, entryId: number | null, at: { month?: string; tab?: PropertyTab; card?: PropertyCard }) => void
 }) {
   const { t } = useI18n()
   const [targetBp, setTargetBp] = useState<number | null>(null)
@@ -140,6 +157,20 @@ export function PropertyView({
   )
   const docs = usePeriodQuery<PropertyDocuments>(() => fetchPropertyDocuments(id, bank), [id, bank])
   const loaded = Boolean(d)
+  /** The lease card in edit (one at a time; `key` null is a new lease), counted so a reopen starts afresh. */
+  const [card, setCard] = useState<{ key: string | null; prefill?: LeaseDraft[]; restore?: boolean; n: number } | null>(null)
+  const [cardError, setCardError] = useState<string | null>(null)
+  /** What a card form needs besides the object: loaded when the first card opens. */
+  const [inputs, setInputs] = useState<CardInputs | null>(null)
+  const dirty = useRef(false)
+  const setDirty = useCallback((value: boolean) => {
+    dirty.current = value
+  }, [])
+
+  /** Saves the object as a card changed it and shows it as saved. */
+  async function saveDoc(next: PropertyDoc) {
+    setData(await saveProperty(id, next, targetBp != null ? { targetBp } : {}))
+  }
 
   /** Saves the owner's word that a missing document has none (ADR-030) and shows the object as saved. */
   async function skipDoc(detail: PropertyDetail, skip: DocumentSkip) {
@@ -180,9 +211,11 @@ export function PropertyView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, asked])
 
-  /** The address of `next`, with the open month on the overview. */
-  const hashOf = (next: ViewTab, open: string | null) =>
-    propertyHash(id, next === 'overview' ? { month: open ?? undefined } : { tab: next })
+  /** The open card as the address names it. */
+  const cardOf = (c: { key: string | null } | null): PropertyCard | undefined => (c ? (c.key ? { lease: c.key } : { add: true }) : undefined)
+  /** The address of `next`, with the open month on the overview and the open card on its tab. */
+  const hashOf = (next: ViewTab, open: string | null, c: { key: string | null } | null = card) =>
+    propertyHash(id, next === 'overview' ? { month: open ?? undefined } : { tab: next, card: cardOf(c) })
 
   /** Open another tab; the URL follows without a new history entry. */
   function selectTab(next: ViewTab) {
@@ -196,7 +229,54 @@ export function PropertyView({
     restoreLocationHash(hashOf('overview', key))
   }
   const openVoucher = (voucherId: number, entryId: number | null = null) =>
-    onOpenVoucher(voucherId, entryId, tab === 'overview' ? { month: selected ?? undefined } : { tab })
+    onOpenVoucher(voucherId, entryId, tab === 'overview' ? { month: selected ?? undefined } : { tab, card: cardOf(card) })
+  /**
+   * Opens a lease card in edit on the Vuokrasuhteet tab: stored lease `key`, or a new one (filled
+   * from suggestion `suggestion`). An open card with changes is given up only after asking.
+   */
+  async function openLeaseCard(key: string | null, suggestion?: number, restore = false) {
+    if (card && dirty.current && !window.confirm(t('properties.edit.confirmLeaveCard'))) return
+    setCardError(null)
+    setTab('leases')
+    restoreLocationHash(hashOf('leases', selected, { key }))
+    let ready = inputs
+    if (!ready) {
+      try {
+        const [setup, { partners }, settings] = await Promise.all([fetchPropertySetup(), fetchPartners(), fetchSettings()])
+        ready = {
+          docs: setup.docs,
+          partners: partners.map((p) => ({ id: p.id, name: p.name })),
+          company: settings.company,
+          today: today || localToday(),
+        }
+        setInputs(ready)
+      } catch (err) {
+        setCardError(err instanceof Error ? err.message : String(err))
+        return
+      }
+    }
+    const s = suggestion != null ? d?.lease_suggestions[suggestion] : undefined
+    dirty.current = false
+    setCard((prev) => ({ key, prefill: s ? leaseDrafts([s.lease], ready.partners) : undefined, restore, n: (prev?.n ?? 0) + 1 }))
+  }
+
+  function closeCard() {
+    setCard(null)
+    restoreLocationHash(hashOf('leases', selected, null))
+  }
+
+  // Opened on a card (back from a voucher, or the address): open it once the object is here, if it
+  // can still be edited.
+  useEffect(() => {
+    if (!d || !routeCard) return
+    const key = 'lease' in routeCard ? routeCard.lease : null
+    const editable = d.status !== 'sold' && !d.read_only && (key == null || (d.doc.leases ?? []).some((l) => l.key === key))
+    if (editable) void openLeaseCard(key, undefined, true)
+    else restoreLocationHash(hashOf('leases', selected, null))
+    // When the data first arrives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded])
+
   /** The edit page on this tab: the overview's fields are the basics. */
   const edit = (on: ViewTab = tab, intent?: PropertyEditIntent) => onEdit(on === 'overview' ? undefined : on, intent)
 
@@ -266,8 +346,8 @@ export function PropertyView({
               d={d}
               showWater={showWater}
               onTab={selectTab}
-              onAdd={(on) => edit(on, { add: true })}
-              onOpenDue={(w) => edit('leases', w.lease_key ? { lease: w.lease_key } : undefined)}
+              onAdd={(on) => (on === 'leases' ? void openLeaseCard(null) : edit(on, { add: true }))}
+              onOpenDue={(w) => (w.lease_key ? void openLeaseCard(w.lease_key) : selectTab('leases'))}
               onSkip={d.read_only ? undefined : (skip) => skipDoc(d, skip)}
               onOpenVoucher={(v) => openVoucher(v)}
               cashFlow={
@@ -286,6 +366,7 @@ export function PropertyView({
           </TabPanel>
 
           <TabPanel id="leases" idPrefix="property" active={active === 'leases'}>
+            {cardError ? <p className="error">{cardError}</p> : null}
             <LeasesPanel
               leases={d.leases}
               current={d.lease}
@@ -295,8 +376,28 @@ export function PropertyView({
               period={{ start: d.rent_start, end: d.rent_end }}
               asOf={d.as_of}
               held={held}
-              onEdit={() => edit('leases')}
-              onAdd={held && !d.read_only ? () => edit('leases', { add: true }) : undefined}
+              rentDates={<RentDates detail={d} onSave={d.read_only ? undefined : saveDoc} />}
+              editing={card && inputs ? (card.key ?? 'new') : null}
+              form={
+                card && inputs ? (
+                  <LeaseCardEdit
+                    key={`${card.key ?? 'new'}-${card.n}`}
+                    detail={d}
+                    inputs={inputs}
+                    bookKey={bookKey}
+                    restore={card.restore}
+                    leaseKey={card.key}
+                    prefill={card.prefill}
+                    onSave={saveDoc}
+                    onClose={closeCard}
+                    onDirty={setDirty}
+                    onOpenVoucher={(v) => openVoucher(v)}
+                  />
+                ) : null
+              }
+              onEditLease={held && !d.read_only ? (key) => void openLeaseCard(key) : undefined}
+              onAddSuggestion={held && !d.read_only ? (i) => void openLeaseCard(null, i) : undefined}
+              onAdd={held && !d.read_only ? () => void openLeaseCard(null) : undefined}
               onOpenVoucher={(v) => openVoucher(v)}
               onSaveException={d.read_only ? undefined : (leaseKey, exception, replaces) => saveException(d, leaseKey, exception, replaces)}
               parkingObject={isParkingKind(d.kind)}

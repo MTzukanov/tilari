@@ -1270,7 +1270,7 @@
         "index": "Index"
       },
       "suggestions": "Suggestions from the books ({n})",
-      "suggestionsLead": "From the linked lease contracts and rent payments. Nothing is saved: review and save on the edit page.",
+      "suggestionsLead": "From the linked lease contracts and rent payments. Nothing is saved: Add opens a suggestion on its own card to review.",
       "review": "Review and save",
       "source": {
         "contract": "source: lease contract",
@@ -1296,6 +1296,7 @@
       "exceptionNow": "Exception now",
       "normal": "normally {amount}",
       "exceptionNormal": "Normal rent then {amount}/month",
+      "edit": "Edit",
       "editTerms": "Add an increase or an agreed exception (discount, agreed rent)…"
     },
     "deposit": {
@@ -1350,6 +1351,8 @@
       "addIncrease": "Add increase",
       "createNotice": "Create increase notice",
       "confirmDeleteUnsaved": "{n} increase notices were created on this page but not saved to the object. Delete them from the books? Cancel keeps them (they may have been sent already).",
+      "confirmRemoveLease": "Remove the lease from the object? The change is saved at once.",
+      "confirmLeaveCard": "The open card has unsaved changes. Discard them?",
       "restored": "Unsaved changes were restored.",
       "deleteDoc": "Delete voucher",
       "deleteNotice": "Delete increase notice",

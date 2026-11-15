@@ -159,6 +159,16 @@ describe('parseRoute', () => {
     expect(parseRoute('#/property/15/water/voucher/8/edit')).toEqual({ view: 'edit', voucherId: 8, type: null, via, entryId: null })
     expect(voucherHash(via, 8)).toBe('#/property/15/water/voucher/8/edit')
     expect(voucherParentHash(via)).toBe('#/property/15/water')
+    // A lease card in edit on the view, kept on the way back from a voucher.
+    expect(parseRoute('#/property/15/leases/new')).toEqual({ view: 'property', id: 15, tab: 'leases', card: { add: true } })
+    expect(parseRoute('#/property/15/leases/lease/l2')).toEqual({ view: 'property', id: 15, tab: 'leases', card: { lease: 'l2' } })
+    expect(propertyHash(15, { tab: 'leases', card: { lease: 'l2' } })).toBe('#/property/15/leases/lease/l2')
+    expect(propertyHash(15, { tab: 'water', card: { lease: 'l2' } })).toBe('#/property/15/water')
+    const cardVia = { kind: 'property' as const, id: 15, tab: 'leases' as const, card: { lease: 'l2' } }
+    expect(parseRoute('#/property/15/leases/lease/l2/voucher/8/edit')).toEqual({ view: 'edit', voucherId: 8, type: null, via: cardVia, entryId: null })
+    expect(voucherHash(cardVia, 8)).toBe('#/property/15/leases/lease/l2/voucher/8/edit')
+    expect(voucherParentHash(cardVia)).toBe('#/property/15/leases/lease/l2')
+    expect(parseRoute('#/property/15/water/new')).toEqual({ view: 'reports' })
 
     expect(parseRoute('#/property/15/edit/finance')).toEqual({ view: 'propertyEdit', id: 15, tab: 'finance' })
     const editVia = { kind: 'propertyEdit' as const, id: 15, tab: 'leases' as const }

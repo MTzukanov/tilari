@@ -15,11 +15,20 @@ function PropertiesScreen({ route, goTo, meta }: BookViewCtx) {
         id={route.id}
         month={route.month}
         tab={route.tab}
+        card={route.card}
+        bookKey={meta?.session_id ?? ''}
+        today={meta?.book_date}
         onBack={() => goTo('#/properties')}
         onEdit={(tab, intent) => goTo(propertyEditHash(route.id, tab, intent))}
         onOpenAllocation={(month) => goTo(allocationHash(route.id, month))}
         onOpenVoucher={(voucherId, entryId, at) =>
-          goTo(voucherHash({ kind: 'property', id: route.id, ...(at.month ? { month: at.month } : at.tab ? { tab: at.tab } : {}) }, voucherId, entryId))
+          goTo(
+            voucherHash(
+              { kind: 'property', id: route.id, ...(at.month ? { month: at.month } : at.tab ? { tab: at.tab, ...(at.card ? { card: at.card } : {}) } : {}) },
+              voucherId,
+              entryId,
+            ),
+          )
         }
       />
     )

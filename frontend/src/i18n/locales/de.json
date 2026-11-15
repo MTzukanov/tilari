@@ -1270,7 +1270,7 @@
         "index": "Index"
       },
       "suggestions": "Vorschläge aus der Buchhaltung ({n})",
-      "suggestionsLead": "Aus den verknüpften Mietverträgen und Mietzahlungen. Nichts ist gespeichert: auf der Bearbeitungsseite prüfen und speichern.",
+      "suggestionsLead": "Aus den verknüpften Mietverträgen und Mietzahlungen. Nichts ist gespeichert: Hinzufügen öffnet den Vorschlag zur Prüfung auf einer eigenen Karte.",
       "review": "Prüfen und speichern",
       "source": {
         "contract": "Quelle: Mietvertrag",
@@ -1296,6 +1296,7 @@
       "exceptionNow": "Derzeit abweichende Miete",
       "normal": "regulär {amount}",
       "exceptionNormal": "Reguläre Miete dann {amount}/Monat",
+      "edit": "Bearbeiten",
       "editTerms": "Erhöhung oder abweichende Miete (Nachlass, vereinbarte Miete) hinzufügen…"
     },
     "deposit": {
@@ -1350,6 +1351,8 @@
       "addIncrease": "Erhöhung hinzufügen",
       "createNotice": "Erhöhungsmitteilung erstellen",
       "confirmDeleteUnsaved": "Auf dieser Seite wurden {n} Erhöhungsmitteilungen erstellt, aber nicht beim Objekt gespeichert. Aus der Buchhaltung löschen? Abbrechen behält sie (sie wurden evtl. schon versandt).",
+      "confirmRemoveLease": "Den Mietvertrag vom Objekt entfernen? Die Änderung wird sofort gespeichert.",
+      "confirmLeaveCard": "Die offene Karte hat ungespeicherte Änderungen. Verwerfen?",
       "restored": "Ungespeicherte Änderungen wurden wiederhergestellt.",
       "deleteDoc": "Beleg löschen",
       "deleteNotice": "Erhöhungsmitteilung löschen",

@@ -1270,7 +1270,7 @@
         "index": "Indeksi"
       },
       "suggestions": "Ehdotukset kirjanpidosta ({n})",
-      "suggestionsLead": "Linkitetyistä vuokrasopimuksista ja vuokrasuorituksista. Mitään ei ole tallennettu: tarkista ja tallenna muokkaussivulla.",
+      "suggestionsLead": "Linkitetyistä vuokrasopimuksista ja vuokrasuorituksista. Mitään ei ole tallennettu: Lisää avaa ehdotuksen omalle kortilleen tarkistettavaksi.",
       "review": "Tarkista ja tallenna",
       "source": {
         "contract": "lähde: vuokrasopimus",
@@ -1296,6 +1296,7 @@
       "exceptionNow": "Nyt poikkeava vuokra",
       "normal": "normaali {amount}",
       "exceptionNormal": "Normaali vuokra tällöin {amount}/kk",
+      "edit": "Muokkaa",
       "editTerms": "Lisää korotus tai poikkeava vuokra (alennus, sovittu vuokra)…"
     },
     "deposit": {
@@ -1350,6 +1351,8 @@
       "addIncrease": "Lisää korotus",
       "createNotice": "Luo korotusilmoitus",
       "confirmDeleteUnsaved": "Tällä sivulla luotiin {n} korotusilmoitusta, joita ei tallennettu kohteelle. Poistetaanko ne kirjanpidosta? Peruuta säilyttää ne (ne on ehkä jo lähetetty).",
+      "confirmRemoveLease": "Poistetaanko vuokrasopimus kohteelta? Muutos tallennetaan heti.",
+      "confirmLeaveCard": "Avoimessa kortissa on tallentamattomia muutoksia. Hylätäänkö ne?",
       "restored": "Tallentamattomat muutokset palautettiin.",
       "deleteDoc": "Poista tosite",
       "deleteNotice": "Poista korotusilmoitus",

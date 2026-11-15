@@ -1270,7 +1270,7 @@
         "index": "Index"
       },
       "suggestions": "Förslag från bokföringen ({n})",
-      "suggestionsLead": "Från de länkade hyresavtalen och hyresbetalningarna. Inget har sparats: granska och spara på redigeringssidan.",
+      "suggestionsLead": "Från de länkade hyresavtalen och hyresbetalningarna. Inget har sparats: Lägg till öppnar förslaget på ett eget kort för granskning.",
       "review": "Granska och spara",
       "source": {
         "contract": "källa: hyresavtal",
@@ -1296,6 +1296,7 @@
       "exceptionNow": "Nu avvikande hyra",
       "normal": "normalt {amount}",
       "exceptionNormal": "Normal hyra då {amount}/mån",
+      "edit": "Redigera",
       "editTerms": "Lägg till en höjning eller avvikande hyra (rabatt, överenskommen hyra)…"
     },
     "deposit": {
@@ -1350,6 +1351,8 @@
       "addIncrease": "Lägg till höjning",
       "createNotice": "Skapa höjningsmeddelande",
       "confirmDeleteUnsaved": "{n} höjningsmeddelanden skapades på den här sidan men sparades inte för objektet. Ta bort dem ur bokföringen? Avbryt behåller dem (de kan redan ha skickats).",
+      "confirmRemoveLease": "Ta bort hyresavtalet från objektet? Ändringen sparas direkt.",
+      "confirmLeaveCard": "Det öppna kortet har osparade ändringar. Förkasta dem?",
       "restored": "Osparade ändringar återställdes.",
       "deleteDoc": "Ta bort verifikat",
       "deleteNotice": "Ta bort höjningsmeddelande",

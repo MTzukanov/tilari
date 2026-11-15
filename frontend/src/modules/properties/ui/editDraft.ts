@@ -7,6 +7,7 @@ import { leaseDrafts, withKeys, type LeaseDraft, type Partner } from './leaseDra
 import { settlementDrafts, type SettlementDraft } from './waterDrafts'
 import { formatEurInput } from '../../../shared/money'
 import { formatPercentInput } from '../../../shared/percent'
+import type { DocWriterState } from './useDocWriter'
 
 /** What deleting documents does to the form besides clearing the links to them: e.g. remove a row. */
 export type DocEdit = {
@@ -105,6 +106,44 @@ export function saveEditDraft(draft: EditDraft): void {
 export function clearEditDraft(): void {
   try {
     sessionStorage.removeItem(KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * A card's unsaved form on the view page (one card in edit at a time), kept the same way while the
+ * owner looks at a voucher. `card` names it: 'lease:l2', 'lease:new'.
+ */
+export type CardDraft = { book: string; id: number; rev: number; card: string; drafts: LeaseDraft[]; docs: DocWriterState }
+
+const CARD_KEY = 'tilari.properties.cardDraft'
+
+export function loadCardDraft(book: string, id: number, rev: number, card: string): CardDraft | null {
+  if (!book) return null
+  try {
+    const raw = sessionStorage.getItem(CARD_KEY)
+    if (!raw) return null
+    const draft = JSON.parse(raw) as CardDraft
+    if (!draft || draft.book !== book || draft.id !== id || draft.rev !== rev || draft.card !== card || !draft.drafts) return null
+    return draft
+  } catch {
+    return null
+  }
+}
+
+export function saveCardDraft(draft: CardDraft): void {
+  if (!draft.book) return
+  try {
+    sessionStorage.setItem(CARD_KEY, JSON.stringify(draft))
+  } catch {
+    /* private mode or quota: the draft just is not kept */
+  }
+}
+
+export function clearCardDraft(): void {
+  try {
+    sessionStorage.removeItem(CARD_KEY)
   } catch {
     /* ignore */
   }

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { DocLine, DocLines } from '../../../shared/DocRows'
@@ -113,8 +114,8 @@ function LeaseCard({
   asOf: string
   /** Not sold: only then is a document with no voucher flagged as missing. */
   held: boolean
-  /** Opens the edit page, where the lease's increases and exceptions are entered. */
-  onEdit: () => void
+  /** Turns the card into its form, where increases and exceptions are entered; none when it cannot change. */
+  onEdit?: () => void
   onOpenVoucher: (voucherId: number) => void
   onSaveException?: (leaseKey: string, exception: LeaseException | null, replaces?: LeaseException) => Promise<void>
   parkingObject: boolean
@@ -191,11 +192,13 @@ function LeaseCard({
           </DocLines>
         </details>
       ) : null}
-      <p className="property-lease-terms">
-        <button type="button" className="btn-link" onClick={onEdit}>
-          {t('properties.lease.editTerms')}
-        </button>
-      </p>
+      {onEdit ? (
+        <p className="property-lease-terms">
+          <button type="button" className="btn-link" onClick={onEdit}>
+            {t('properties.lease.editTerms')}
+          </button>
+        </p>
+      ) : null}
     </div>
   )
 }
@@ -210,7 +213,11 @@ export function LeasesPanel({
   unassigned = [],
   period,
   held,
-  onEdit,
+  rentDates = null,
+  editing = null,
+  form = null,
+  onEditLease,
+  onAddSuggestion,
   onAdd,
   onOpenVoucher,
   onSaveException,
@@ -228,8 +235,16 @@ export function LeasesPanel({
   asOf: string
   /** Not sold: only then is a document with no voucher flagged as missing. */
   held: boolean
-  onEdit: () => void
-  /** Opens the edit page with a new lease; none when no lease can be added (sold, read-only). */
+  /** The owner's rent days under the title (`RentDates`). */
+  rentDates?: ReactNode
+  /** The lease card in edit: a lease key, 'new', or none; `form` is shown in its place. */
+  editing?: string | null
+  form?: ReactNode
+  /** Opens a stored lease's card in edit; none when the object cannot change (sold, read-only). */
+  onEditLease?: (key: string) => void
+  /** Opens a new lease card filled from suggestion `i`; none when no lease can be added. */
+  onAddSuggestion?: (i: number) => void
+  /** Opens a new lease card; none when no lease can be added (sold, read-only). */
   onAdd?: () => void
   onOpenVoucher: (voucherId: number) => void
   /** Saves an agreed exception to a stored lease from its month table; none when the document is read-only. */
@@ -250,26 +265,19 @@ export function LeasesPanel({
           </button>
         ) : null}
       </div>
-      {!leases.length && !suggestions.length ? (
-        <p className="muted">
-          {t('properties.lease.none')}{' '}
-          {/* With "+ Vuokrasopimus" in the title row, a second way to it would be noise. */}
-          {!onAdd ? (
-            <button type="button" className="btn-link" onClick={onEdit}>
-              {t('properties.edit.addLease')}
-            </button>
-          ) : null}
-        </p>
-      ) : null}
+      {rentDates}
+      {editing === 'new' ? form : null}
+      {!leases.length && !suggestions.length && editing !== 'new' ? <p className="muted">{t('properties.lease.none')}</p> : null}
       {leases.length > 0 && !stored ? <p className="muted">{t('properties.lease.noCurrent', { date: formatDate(asOf) })}</p> : null}
-      {stored ? (
+      {stored && editing === stored.key ? form : null}
+      {stored && editing !== stored.key ? (
         <LeaseCard
           lease={stored}
           account={accounts.find((a) => a.lease_key === stored.key)}
           period={period}
           asOf={asOf}
           held={held}
-          onEdit={onEdit}
+          onEdit={onEditLease ? () => onEditLease(stored.key) : undefined}
           onOpenVoucher={onOpenVoucher}
           onSaveException={onSaveException}
           parkingObject={parkingObject}
@@ -286,6 +294,9 @@ export function LeasesPanel({
             onOpenVoucher={onOpenVoucher}
             onSaveException={onSaveException}
             parkingObject={parkingObject}
+            editing={editing}
+            form={form}
+            onEdit={onEditLease}
           />
         </>
       ) : null}
@@ -299,13 +310,8 @@ export function LeasesPanel({
           heading="h4"
           title={t('properties.lease.suggestions', { n: suggestions.length })}
           lead={t('properties.lease.suggestionsLead')}
-          action={
-            <button type="button" className="btn-primary" onClick={onEdit}>
-              {t('properties.lease.review')}
-            </button>
-          }
         >
-          <LeaseList leases={suggestions} onOpenVoucher={onOpenVoucher} />
+          <LeaseList leases={suggestions} onOpenVoucher={onOpenVoucher} onAdd={onAddSuggestion} />
         </SuggestBanner>
       ) : null}
     </section>
@@ -320,6 +326,10 @@ function LeaseList({
   onOpenVoucher,
   onSaveException,
   parkingObject = false,
+  editing = null,
+  form = null,
+  onEdit,
+  onAdd,
 }: {
   leases: LeaseView[]
   accounts?: LeaseRentAccount[]
@@ -330,11 +340,23 @@ function LeaseList({
   onSaveException?: (leaseKey: string, exception: LeaseException | null, replaces?: LeaseException) => Promise<void>
   /** With the accounts: a parking space or garage. */
   parkingObject?: boolean
+  /** The lease key whose row shows `form` instead. */
+  editing?: string | null
+  form?: ReactNode
+  /** A stored lease's "Muokkaa". */
+  onEdit?: (key: string) => void
+  /** A suggestion's "Lisää" (row `i`). */
+  onAdd?: (i: number) => void
 }) {
   const { t } = useI18n()
   return (
     <ul className="property-doc-list">
-      {leases.map((lease, i) => (
+      {leases.map((lease, i) =>
+        !lease.suggested && editing === lease.key ? (
+          <li key={`${lease.key}-${lease.starts}-${i}`} className="property-lease-row-edit">
+            {form}
+          </li>
+        ) : (
         <li key={`${lease.key}-${lease.starts}-${i}`}>
           <LeaseStatePill state={lease.state} />
           <span>{lease.tenant ?? t('properties.lease.tenantUnknown')}</span>
@@ -358,8 +380,19 @@ function LeaseList({
             />
           ) : null}
           {!lease.suggested && lease.deposit ? <DepositSummary deposit={lease.deposit} onOpen={onOpenVoucher} /> : null}
+          {!lease.suggested && onEdit ? (
+            <button type="button" className="btn-link" onClick={() => onEdit(lease.key)}>
+              {t('properties.lease.edit')}
+            </button>
+          ) : null}
+          {lease.suggested && onAdd ? (
+            <button type="button" className="btn-small is-primary" onClick={() => onAdd(i)}>
+              {t('properties.edit.addSuggestion')}
+            </button>
+          ) : null}
         </li>
-      ))}
+        ),
+      )}
     </ul>
   )
 }

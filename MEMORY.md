@@ -30,11 +30,22 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   the tabs wrap into chips and are not pinned (four rows at 137.5 % would cover the screen); a warning's pill
   goes above its sentence. Vertical tabs were the owner's idea; wrapping keeps them all in sight in less room.
 - The dated tiles carry the lease they are about (`Warning.lease_key`, computed, never stored) and open
-  `#/property/{id}/edit/leases/lease/{key}`.
+  that lease's card in edit (`#/property/{id}/leases/lease/{key}`; the edit page's `/edit/leases/lease/{key}`
+  still parses until the page goes).
 - Owner, later the same day: no tabbed edit page. The edit page repeats every lease, settlement and document,
   so editing moves into the view, per card: a lease card's "Muokkaa" turns only that card into its form with its
   own Tallenna and Peruuta, and a card save writes the doc with only that card changed (as rent exceptions and
   "Ohita" already do). Order: leases, water, then documents, Talous and the basics; the edit page goes last.
+- Edit in place, step 1 (leases): `LeaseCardEdit` is the edit page's `LeasesEditor` with one draft (`single`:
+  no suggestion banner, no "Lisää vuokrasopimus"; `otherDrafts` so a deposit already on another lease is not
+  offered). The save builds every lease with the card's draft in its place, so an overlap shows on the card.
+  Documents a card writes go through `useDocWriter`; `PropertyEdit` keeps its own copy until it is removed
+  (deliberate, short-lived duplication). One card open at a time; another asks first when the open one has
+  changes. The open card is in the address (`/leases/new`, `/leases/lease/{key}`) and in a voucher's way
+  back; its unsaved form is kept in sessionStorage (`tilari.properties.cardDraft`) and restored only when the
+  card opens from the address. The suggestions' "Tarkista" became a "Lisää" per row that opens a prefilled card.
+  The rent days (`rent_from`/`rent_until`) have their own small Muokkaa under the Vuokrasuhteet title, also on
+  a sold object (the last day matters after a sale), not on a read-only book.
 
 ## 2026-11-15 - Rental objects: document rows line up by the inputs (`fix/lease-row-align`)
 
