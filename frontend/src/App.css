@@ -5540,16 +5540,23 @@ tr.tax-total td {
   align-self: center;
 }
 
-/* The notice pick takes the room its buttons leave on the row. */
+/* A notice row: its fields, then its buttons as one group. It lines up by the inputs' top, not its
+   bottom: a picked document's file pills can wrap under the pick and make it the tallest. The pick
+   takes the room the buttons leave; short of room, the buttons wrap among themselves beside it. */
 .property-lease-notice {
   grid-column: 1 / -1;
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.6rem 1rem;
 }
 
-.property-lease-notice > label:not(.file-btn-label) {
+/* A notice sharing its row with other fields (the lease's Eräpäivä): all of them line up by their
+   labels, so the pills under the pick do not push the others down. */
+.property-lease-grid:has(> .property-lease-notice.span-3) {
+  align-items: start;
+}
+
+.property-lease-notice > label {
   flex: 1 1 18rem;
   min-width: 0;
   display: flex;
@@ -5559,13 +5566,44 @@ tr.tax-total td {
   color: var(--muted);
 }
 
-/* "Ei asiakirjaa" beside a document pick: a checkbox on one line, at the inputs' height. */
-.property-lease-notice > label.property-no-doc {
-  flex: 0 0 auto;
+/* The buttons skip a label's line (0.85rem text at line-height 1.45, then its 0.25rem gap) and are
+   as tall as the inputs. */
+.property-lease-actions {
+  flex: 0 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  margin-top: calc(0.85rem * 1.45 + 0.25rem);
+}
+
+.property-lease-actions > button,
+.property-lease-actions > label.file-btn-label {
+  min-height: 2.15rem;
+  padding-block: 0;
+}
+
+/* "Ei asiakirjaa" before the buttons: a checkbox on one line, at the inputs' height. */
+.property-lease-actions > label.property-no-doc {
   flex-direction: row;
   align-items: center;
   gap: 0.4rem;
-  padding-bottom: 0.5rem;
+  min-height: 2.15rem;
+  font-size: 0.85rem;
+}
+
+/* Without the side menu's room the fields wrap and the buttons take a line of their own. */
+@media (max-width: 900px) {
+  .property-lease-notice {
+    flex-wrap: wrap;
+  }
+
+  .property-lease-actions {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    margin-top: 0;
+  }
 }
 
 .property-skip-doc {

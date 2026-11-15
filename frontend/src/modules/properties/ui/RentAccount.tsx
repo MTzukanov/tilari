@@ -115,17 +115,19 @@ function ExceptionForm({
             {t('properties.field.exceptionNote')}
             <input type="text" maxLength={500} value={draft.note} autoFocus onChange={(e) => set({ note: e.target.value })} />
           </label>
-          <button type="button" className="btn-primary" disabled={saving} onClick={() => void save()}>
-            {saving ? t('common.saving') : t('properties.rent.saveException')}
-          </button>
-          <button type="button" className="btn-secondary" disabled={saving} onClick={onClose}>
-            {t('common.cancel')}
-          </button>
-          {onRemove ? (
-            <button type="button" className="btn-secondary" disabled={saving} onClick={remove}>
-              {t('properties.rent.removeException')}
+          <div className="property-lease-actions">
+            <button type="button" className="btn-primary" disabled={saving} onClick={() => void save()}>
+              {saving ? t('common.saving') : t('properties.rent.saveException')}
             </button>
-          ) : null}
+            <button type="button" className="btn-secondary" disabled={saving} onClick={onClose}>
+              {t('common.cancel')}
+            </button>
+            {onRemove ? (
+              <button type="button" className="btn-secondary" disabled={saving} onClick={remove}>
+                {t('properties.rent.removeException')}
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
       {error ? <p className="error">{error}</p> : null}
