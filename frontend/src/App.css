@@ -5623,14 +5623,19 @@ tr.tax-total td {
   }
 }
 
-.property-payback-line {
+.property-payback .chart-line {
   fill: none;
   stroke: #2f6fed;
   stroke-width: 2;
 }
 
-.property-payback-dot {
+.property-payback .chart-line-dot {
   fill: #2f6fed;
+}
+
+.overview-swatch.property-swatch-payback {
+  height: 2px;
+  background: #2f6fed;
 }
 
 .property-section {

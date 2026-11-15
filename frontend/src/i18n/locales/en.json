@@ -1182,7 +1182,8 @@
       "net": "Cash flow",
       "total": "Cumulative cash flow",
       "costsUp": "Costs upward",
-      "payback": "Not yet recovered at month end",
+      "payback": "At month end: not yet recovered and cumulative cash flow",
+      "paybackLine": "Not yet recovered",
       "clickHint": "Click: the month's entries",
       "more": "… and {n} more"
     },

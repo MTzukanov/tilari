@@ -1182,7 +1182,8 @@
       "net": "Cashflow",
       "total": "Kumulierter Cashflow",
       "costsUp": "Kosten nach oben",
-      "payback": "Noch nicht zurück am Monatsende",
+      "payback": "Am Monatsende: noch nicht zurück und kumulierter Cashflow",
+      "paybackLine": "Noch nicht zurück",
       "clickHint": "Klicken: Buchungen des Monats",
       "more": "… und {n} weitere"
     },

@@ -7,6 +7,17 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-15 - Rental objects: the cumulative cash flow on the payback chart
+
+- Owner: the lower chart ("Palauttamatta kuukauden lopussa") gets the cash flow line too. It now draws
+  "Palauttamatta" and "Kertynyt kassavirta" (the upper chart's running total, `runningTotals`) on one axis, with a
+  legend; heading "Kuukauden lopussa: palauttamatta ja kertynyt kassavirta". Both are always shown, over all months.
+- `shared/LineChart.tsx` draws any number of money lines (built for the planned portfolio chart, one line per object).
+  Its ticks share one step (`lineTicks`): the old payback ticks were -niceMax(min), 0, max/2, max, so a small
+  negative part put its tick 3px under zero. Hover titles are one string: mixed JSX children in an SVG `<title>`
+  rendered empty.
+- On a large object the running cash flow hugs zero beside the unrecovered money; that is the honest scale.
+
 ## 2026-11-15 - Rental objects: the object page in tabs (`feature/property-tabs`)
 
 - Owner: the object page and its edit page needed too much scrolling and were hard to move around in. Agreed

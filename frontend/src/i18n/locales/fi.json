@@ -1182,7 +1182,8 @@
       "net": "Kassavirta",
       "total": "Kertynyt kassavirta",
       "costsUp": "Kulut ylöspäin",
-      "payback": "Palauttamatta kuukauden lopussa",
+      "payback": "Kuukauden lopussa: palauttamatta ja kertynyt kassavirta",
+      "paybackLine": "Palauttamatta",
       "clickHint": "Klikkaa: kuukauden viennit",
       "more": "… ja {n} muuta"
     },
