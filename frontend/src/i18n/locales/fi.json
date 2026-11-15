@@ -517,7 +517,6 @@
     "property": "Kohteeseen",
     "properties": "Vuokrakohteisiin",
     "propertiesSetup": "Kohteiden määritykseen",
-    "propertyEdit": "Kohteen muokkaukseen",
     "company": "Yhtiö-sivulle"
   },
   "ledger": {
@@ -699,7 +698,8 @@
     "saving": "Tallennetaan…",
     "cancel": "Peru",
     "close": "Sulje",
-    "delete": "Poista"
+    "delete": "Poista",
+    "edit": "Muokkaa"
   },
   "fiscal": {
     "title": "Tilikaudet",
@@ -1030,7 +1030,7 @@
     "dataThrough": "tiliotteet {date} asti",
     "acquired": "hankittu {date}",
     "soldOn": "myyty {date}",
-    "editLink": "Muokkaa kohdetta",
+    "editLink": "Kohteen asetukset",
     "openAllocation": "Kustannuspaikan tulos",
     "empty": "Ei näytettäviä kohteita.",
     "setupBanner": "{n} kustannuspaikkaa odottaa määritystä.",
@@ -1159,7 +1159,9 @@
       "exceptionNote": "Syy",
       "exceptionDoc": "Sopimus poikkeuksesta",
       "rentFrom": "Vuokra omistajalle alkaen",
-      "rentUntil": "Vuokra omistajalle päättyen"
+      "rentUntil": "Vuokra omistajalle päättyen",
+      "date": "Päivä",
+      "amount": "Summa €"
     },
     "breakEven": {
       "title": "Nollahinta: millä hinnalla rahat tulevat takaisin",
@@ -1220,7 +1222,6 @@
     },
     "docs": {
       "title": "Asiakirjat",
-      "linkedTitle": "Linkitetyt asiakirjat",
       "empty": "Ei liitteitä.",
       "missing": "Tosite {id} on poistettu",
       "deleted": "Poistettu",
@@ -1234,7 +1235,8 @@
         "other": "Laskut ja muut tositteet",
         "bank": "Tiliotteet"
       },
-      "showAll": "Näytä kaikki ({n})"
+      "showAll": "Näytä kaikki ({n})",
+      "unlink": "Poista linkki"
     },
     "lease": {
       "title": "Vuokrasuhteet",
@@ -1270,7 +1272,6 @@
       },
       "suggestions": "Ehdotukset kirjanpidosta ({n})",
       "suggestionsLead": "Linkitetyistä vuokrasopimuksista ja vuokrasuorituksista. Mitään ei ole tallennettu: Lisää avaa ehdotuksen omalle kortilleen tarkistettavaksi.",
-      "review": "Tarkista ja tallenna",
       "source": {
         "contract": "lähde: vuokrasopimus",
         "payments": "lähde: vuokrasuoritukset",
@@ -1295,8 +1296,7 @@
       "exceptionNow": "Nyt poikkeava vuokra",
       "normal": "normaali {amount}",
       "exceptionNormal": "Normaali vuokra tällöin {amount}/kk",
-      "edit": "Muokkaa",
-      "editTerms": "Lisää korotus tai poikkeava vuokra (alennus, sovittu vuokra)…"
+      "edit": "Muokkaa"
     },
     "deposit": {
       "title": "Vuokravakuus",
@@ -1321,7 +1321,7 @@
     "edit": {
       "noDocument": "Ei asiakirjaa",
       "noDocumentHint": "Tälle ei ole asiakirjaa: siitä ei muistuteta.",
-      "title": "Muokkaa: {name}",
+      "title": "Asetukset: {name}",
       "basics": "Perustiedot",
       "erasLead": "Tase-erät, joille kohteen hankintameno (kauppahinta, varainsiirtovero, kulut) on kirjattu.",
       "addEra": "Lisää tase-erä…",
@@ -1340,19 +1340,13 @@
       "delete": "Poista kohteen tiedot",
       "deleteConfirm": "Poistetaanko Tilarin tiedot tästä kohteesta? Kirjanpitoon ei kosketa.",
       "readOnly": "Tiedot on tallennettu uudemmalla Tilarilla; tämä versio voi vain näyttää ne.",
-      "leases": "Vuokrasopimukset",
-      "leasesLead": "Vuokralainen, ehdot, vuokra alussa ja korotukset. Korotussääntö esitäyttää seuraavan korotuksen; Tilari ei muuta vuokraa itse. Sopimus ja korotusilmoitukset ovat Liitetieto-tositteita, joten ne löytyvät myös Kitsasista.",
-      "addLease": "Lisää vuokrasopimus",
       "removeLease": "Poista vuokrasopimus",
-      "suggestions": "Lisää ne lomakkeelle, tarkista ja tallenna.",
       "addSuggestion": "Lisää",
-      "addAllSuggestions": "Lisää kaikki",
       "addIncrease": "Lisää korotus",
       "createNotice": "Luo korotusilmoitus",
       "confirmDeleteUnsaved": "Tällä sivulla luotiin {n} korotusilmoitusta, joita ei tallennettu kohteelle. Poistetaanko ne kirjanpidosta? Peruuta säilyttää ne (ne on ehkä jo lähetetty).",
       "confirmRemoveLease": "Poistetaanko vuokrasopimus kohteelta? Muutos tallennetaan heti.",
       "confirmLeaveCard": "Avoimessa kortissa on tallentamattomia muutoksia. Hylätäänkö ne?",
-      "restored": "Tallentamattomat muutokset palautettiin.",
       "deleteDoc": "Poista tosite",
       "deleteNotice": "Poista korotusilmoitus",
       "uploadContract": "Lataa sopimus",
@@ -1360,7 +1354,8 @@
       "confirmDeleteDoc": "Poistetaanko tosite kirjanpidosta: {titles}? Tällä käynnillä luotu poistetaan heti, aiemmin luotu kun tallennat.",
       "exceptionsLead": "Sovittu alennus, vuokravapaa jakso tai muu poikkeus: jakson päivinä vuokralainen maksaa nämä summat vuokran ja korotusten sijaan, ja vuokrasaldo laskee niillä. Alennus kirjoitetaan alempana vuokrana.",
       "addException": "Lisää poikkeava vuokra",
-      "uploadException": "Lataa liite"
+      "uploadException": "Lataa liite",
+      "lead": "Kohteen yleiset asetukset. Vuokrasopimukset, vesitasaukset, asiakirjat ja talouden tiedot muokataan kohteen omilla välilehdillä, kortti tai osio kerrallaan."
     },
     "setup": {
       "title": "Vuokrakohteiden määritys",
@@ -1537,7 +1532,6 @@
     "water": {
       "title": "Vesimaksut ja vesitasaukset",
       "none": "Ei vesitasauksia.",
-      "add": "Lisää vesitasaus",
       "remove": "Poista vesitasaus",
       "period": "Tasausjakso {period}",
       "company": "taloyhtiö: {text}",
@@ -1566,13 +1560,10 @@
       "ownerKeeps": "Omistajalle jää {amount}.",
       "ownerBears": "Omistaja maksaa itse {amount} (esim. tyhjät päivät).",
       "suggestions": "Ehdotukset kirjanpidosta ({n})",
-      "suggestionsLead": "Kohteelle kirjatuista vesitasauksista. Mitään ei ole tallennettu: tarkista summat taloyhtiön tasauslaskelmasta ja tallenna muokkaussivulla.",
+      "suggestionsLead": "Kohteelle kirjatuista vesitasauksista. Mitään ei ole tallennettu: Lisää avaa ehdotuksen omalle kortilleen; tarkista summat taloyhtiön tasauslaskelmasta.",
       "flat": "vesimaksua ei tasata",
       "advance": "vesimaksu tasataan kulutuksen mukaan",
       "latest": "Vesitasaus {period}",
-      "editTitle": "Vesitasaukset",
-      "editLead": "Taloyhtiön vesitasaukset jaksoittain. Vuokralaisten osuudet lasketaan vuokrasopimuksista: kulutus asumispäivien mukaan, vähennettynä vesimaksuennakoilla.",
-      "editSuggestions": "Kohteelle kirjatut vesitasaukset, joita ei ole lomakkeella.",
       "direction": {
         "refund": "Hyvitys omistajalle",
         "charge": "Lisälasku omistajalle"
@@ -1606,7 +1597,8 @@
         "charge": "Lisämaksu",
         "refundText": "Palautamme {amount} tilillenne. Ilmoittakaa tilinumeronne, jos se on muuttunut.",
         "chargeText": "Pyydämme maksamaan {amount} seuraavan vuokranmaksun yhteydessä samalle tilille ja samalla viitteellä kuin vuokran."
-      }
+      },
+      "confirmRemove": "Poistetaanko tämä vesitasaus kohteelta?"
     },
     "rent": {
       "balanceOn": "Vuokrasaldo {date}",
@@ -1664,6 +1656,11 @@
         "row_missing": "ALV-koodi ilman omaa ALV-riviä",
         "rate": "eri ALV-kanta kuin päivän yleinen kanta"
       }
+    },
+    "finance": {
+      "noValuations": "Ei hinta-arvioita.",
+      "noFinancing": "Kohteelle ei ole linkitetty omaa lainaa.",
+      "noCapital": "Ei muuta sijoitettua pääomaa."
     }
   },
   "company": {

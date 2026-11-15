@@ -246,7 +246,6 @@ export function LeaseCardEdit({
         onChange={(next) => setDrafts(withKeys([...others, ...next]).slice(others.length))}
         partners={partners}
         docs={writer.allDocs}
-        suggestions={[]}
         deposits={detail.deposit_candidates}
         objectId={detail.id}
         today={today}
@@ -257,7 +256,6 @@ export function LeaseCardEdit({
         onDeleteDocs={deleteDocs}
         onOpenVoucher={onOpenVoucher}
         parkingObject={isParkingKind(detail.kind)}
-        single
         otherDrafts={others}
       />
       {error ? <p className="error">{error}</p> : null}

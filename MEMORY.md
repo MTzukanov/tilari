@@ -46,6 +46,23 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   card opens from the address. The suggestions' "Tarkista" became a "Lisää" per row that opens a prefilled card.
   The rent days (`rent_from`/`rent_until`) have their own small Muokkaa under the Vuokrasuhteet title, also on
   a sold object (the last day matters after a sale), not on a read-only book.
+- Owner's review of step 1: editing happens in one place. The edit page lost the leases and the rent days
+  (water there shares with the stored leases); its old `/edit/leases[/new|/lease/{key}]` addresses open the
+  view's tab or card, and "Muokkaa kohdetta" from the leases tab opens the basics. The lease card in force had
+  only "Lisää korotus tai poikkeava vuokra…" as its way into the form, so the owner took "Muokkaa kohdetta" and
+  landed on the edit page: every lease card now has a plain "Muokkaa". Two faults the e2e rewrite showed: the
+  card's inputs (documents to pick, partners) were loaded once, so a document written on one card was missing
+  on the next (now reloaded per card), and the Asiakirjat list was not refreshed after a card save (now is).
+- Owner, after trying leases: suggestions go at the top of the tab, before a new card's form; and water,
+  documents and Talous are edited where they are shown too, so the edit page stays short and general. Water
+  settlements are cards like leases (`WaterCardEdit`; `/water/new`, `/water/settlement/{key}`); a card's views
+  and statement guesses count the object's other settlements (`WaterEditor` `otherDrafts`). Asiakirjat links
+  with a picker at the top and unlinks with "Poista linkki"; a document a lease, settlement or sale holds has
+  no unlink there (a save would link it again: `leaseVoucherIds`/`waterVoucherIds` go into `doc_voucher_ids`).
+  Talous sections each have a Muokkaa (`FinanceEdits.tsx`). The edit page keeps kind, "Ei mukana", note and
+  delete; it opens no vouchers, so its unsaved-form storage and the `propertyEdit` voucher way back are gone.
+- Owner: no "Myyntikuluja ei ole asetettu" warning. Sale costs not set are none (0 % and 0 €), overridden per
+  object or in the defaults; `sale_costs_unset`, `BreakEven.costs_set` and the portfolio's † are gone.
 
 ## 2026-11-15 - Rental objects: document rows line up by the inputs (`fix/lease-row-align`)
 

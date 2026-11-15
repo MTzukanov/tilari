@@ -5376,6 +5376,12 @@ tr.tax-total td {
   margin-bottom: 0.5rem;
 }
 
+/* The Asiakirjat tab's picker of Liitetieto vouchers to link, under the title. */
+.property-doc-pick {
+  max-width: 40rem;
+  margin: 0 0 0.75rem;
+}
+
 .overview-panel .property-panel-head h3 {
   margin: 0;
 }

@@ -6,8 +6,9 @@ import { formatCents } from '../../../shared/money'
 import { formatBp, formatPercentInput, parsePercentInput } from '../../../shared/percent'
 import { showCutText } from '../../../shared/cutText'
 import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
-import type { Disposal, PropertyDetail, YearRow } from '../api'
+import type { Disposal, PropertyDetail, PropertyDoc, YearRow } from '../api'
 import { CashFlowChart, PaybackChart } from './Charts'
+import { CapitalSection, ErasSection, FinancingSection, SaleSection, ValuationsSection } from './FinanceEdits'
 import { VoucherOpen } from './FormParts'
 import { formatEuro } from './format'
 import { IrrKpi, Kpi, ResultKpi, T12mKpi } from './Kpi'
@@ -252,25 +253,26 @@ export function CashFlowPanel({
 export function PropertyFinance({
   d,
   onTarget,
-  onAdd,
-  onEdit,
+  onSave,
+  addValuation = 0,
   onOpenVoucher,
 }: {
   d: PropertyDetail
   onTarget: (bp: number | null) => void
-  /** Opens the edit page here with a new price estimate; none when the object cannot be changed. */
-  onAdd?: () => void
-  /** Opens this tab on the edit page (no acquisition cost linked yet). */
-  onEdit: () => void
+  /** Saves the object as a section changed it; none when it cannot be changed (read-only). */
+  onSave?: (doc: PropertyDoc) => Promise<void>
+  /** Changes when the overview's "+ Hinta-arvio" asks for a new price estimate. */
+  addValuation?: number
   onOpenVoucher: (voucherId: number, entryId?: number | null) => void
 }) {
   const { t } = useI18n()
   const s = d.summary
+  const [addHere, setAddHere] = useState(0)
   return (
     <>
-      {onAdd ? (
+      {onSave ? (
         <div className="property-quick">
-          <button type="button" className="btn-secondary" onClick={onAdd}>
+          <button type="button" className="btn-secondary" onClick={() => setAddHere((n) => n + 1)}>
             {t('properties.overview.addValuation')}
           </button>
         </div>
@@ -312,16 +314,12 @@ export function PropertyFinance({
 
       <BreakEvenPanel key={d.target?.rate_bp ?? 'none'} d={d} onTarget={onTarget} />
 
-      <section className="property-section">
-        <h3>{t('properties.eras.title')}</h3>
-        {d.eras.length === 0 ? (
-          <p className="muted">
-            {t('properties.eras.none')}{' '}
-            <button type="button" className="btn-link" onClick={onEdit}>
-              {t('properties.eras.link')}
-            </button>
-          </p>
-        ) : (
+      <SaleSection d={d} onSave={onSave} />
+      <ValuationsSection d={d} onSave={onSave} addRequest={addValuation + addHere} />
+      <ErasSection
+        d={d}
+        onSave={onSave}
+        view={
           <>
             <p className="muted">{t('properties.eras.lead')}</p>
             {d.eras.map((e) => (
@@ -350,8 +348,10 @@ export function PropertyFinance({
               </div>
             ))}
           </>
-        )}
-      </section>
+        }
+      />
+      <CapitalSection d={d} onSave={onSave} />
+      <FinancingSection d={d} onSave={onSave} />
 
       {d.disposals.length ? (
         <section className="property-section">

@@ -19,7 +19,7 @@ function PropertiesScreen({ route, goTo, meta }: BookViewCtx) {
         bookKey={meta?.session_id ?? ''}
         today={meta?.book_date}
         onBack={() => goTo('#/properties')}
-        onEdit={(tab, intent) => goTo(propertyEditHash(route.id, tab, intent))}
+        onEdit={() => goTo(propertyEditHash(route.id))}
         onOpenAllocation={(month) => goTo(allocationHash(route.id, month))}
         onOpenVoucher={(voucherId, entryId, at) =>
           goTo(
@@ -34,18 +34,7 @@ function PropertiesScreen({ route, goTo, meta }: BookViewCtx) {
     )
   }
   if (route.view === 'propertyEdit') {
-    return (
-      <PropertyEdit
-        key={route.id}
-        id={route.id}
-        bookKey={meta?.session_id ?? ''}
-        today={meta?.book_date}
-        tab={route.tab}
-        intent={route.intent}
-        onDone={(tab) => goTo(propertyHash(route.id, { tab }))}
-        onOpenVoucher={(voucherId, tab) => goTo(voucherHash({ kind: 'propertyEdit', id: route.id, ...(tab ? { tab } : {}) }, voucherId))}
-      />
-    )
+    return <PropertyEdit key={route.id} id={route.id} onDone={() => goTo(propertyHash(route.id))} />
   }
   if (route.view === 'propertiesSetup') {
     return (
@@ -77,5 +66,5 @@ export const propertiesUi: UiModule = {
   Screen: PropertiesScreen,
   TopbarItem: AlertsButton,
   activeNav: (route) =>
-    VIEWS.has(route.view) || ['property', 'propertiesSetup', 'propertyEdit'].includes(viaKind(route) ?? '') ? 'properties' : null,
+    VIEWS.has(route.view) || ['property', 'propertiesSetup'].includes(viaKind(route) ?? '') ? 'properties' : null,
 }

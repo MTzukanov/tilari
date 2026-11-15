@@ -125,9 +125,15 @@ Moved onto these parts in four steps (2026-11-02 and -03), visual only: no chang
 | `PropertyView.tsx` `Documents` | `.section-label` per group, `DocLines` and `DocLine` with `VoucherOpen` and `FilePill`; "show all" and the bank toggle stay |
 | `FormParts.tsx` `VoucherLink` | The voucher's pill, its title and the files as `FilePill`s; reaches every lease and water panel |
 | `LeasesPanel.tsx`, `WaterPanel.tsx` | A lease's state and a tenant's water status are `Pill`s |
-| `PropertyEdit.tsx`, `DocPicker.tsx` | Linked documents are `DocLine`s with the remove as a quiet link; the picked document shows its `FilePill`s |
-| `LeasesEditor.tsx`, `WaterEditor.tsx` | Suggestions in `shared/SuggestBanner`, each a `DocLine` |
+| `PropertyView.tsx` `Documents`, `DocPicker.tsx` | The Asiakirjat tab's "+ Asiakirja" opens the picker at the top; a linked row nothing else holds ends in a quiet "Poista linkki"; the picked document shows its `FilePill`s |
+| `LeasesPanel.tsx`, `WaterPanel.tsx` | Suggestions in `shared/SuggestBanner` at the top of the tab, each with a "Lisää" that opens a prefilled card under it |
+| `FinanceEdits.tsx` | Each Talous section's title row carries a small "Muokkaa"; linked balance-sheet items in its form are `DocLine`s with a quiet "Poista" |
 | `ui/Warnings.tsx` (object page and the portfolio's "Huomioitavaa") | A lease ending or a rent increase is a `DueTile` (days left, or "Myöhässä" once past); every other warning is a line led by a `Pill`: Virhe and Puuttuu red, Hoidettava amber, Ehdotus blue, Huomio grey (`warningTone` in `format.ts`) |
+
+Since 2026-11-15 everything but the basics is edited where it is shown: a lease or water card's
+"Muokkaa" turns that card into its form (`LeaseCardEdit.tsx`, `WaterCardEdit.tsx`, documents they write
+through `useDocWriter.ts`), a Talous section into its own (`FinanceEdits.tsx`). The edit page keeps the
+kind, "Ei mukana", the note and removing the object's data.
 
 What stayed a link, and why:
 

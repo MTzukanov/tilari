@@ -1,6 +1,21 @@
 import { expect, test } from '@playwright/test'
-import type { Locator } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { editorSaveButton, openBook } from './helpers'
+
+/** Opens a new lease card in place on object 4's Vuokrasuhteet tab; returns the lease's form on it. */
+async function newLeaseCard(page: Page): Promise<Locator> {
+  if (!/#\/property\/4\/leases$/.test(page.url())) await page.goto('/#/property/4/leases')
+  await page.locator('.property-leases').getByRole('button', { name: '+ Vuokrasopimus' }).click()
+  return page.locator('.property-lease-card-edit .property-lease-edit')
+}
+
+/** Saves the open lease card: it turns back into the lease, on the tab. */
+async function saveLeaseCard(page: Page) {
+  const card = page.locator('.property-lease-card-edit')
+  await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
+  await expect(card).toHaveCount(0)
+  await expect(page).toHaveURL(/#\/property\/4\/leases$/)
+}
 
 test.describe('rental objects', () => {
   test('setup links a cost centre and the object page shows its figures', async ({ page }) => {
@@ -33,7 +48,7 @@ test.describe('rental objects', () => {
     await page.getByRole('tab', { name: 'Yleiskatsaus' }).click()
     await expect(page).toHaveURL(/#\/property\/4$/)
 
-    await page.getByRole('button', { name: 'Muokkaa kohdetta' }).click()
+    await page.getByRole('button', { name: 'Kohteen asetukset' }).click()
     await expect(page).toHaveURL(/#\/property\/4\/edit$/)
     await page.getByLabel('Laji').selectOption({ label: 'Asunto' })
     await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
@@ -51,10 +66,15 @@ test.describe('rental object tabs', () => {
     await expect(page.getByRole('tab', { name: 'Yleiskatsaus' })).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('.property-now', { hasText: 'Vuokrasuhde nyt' })).toContainText('Ei vuokrasopimuksia.')
 
-    // A quick action opens the edit page on its tab, to add a row there.
+    // A quick action opens a new card on its tab, in place.
     await page.getByRole('button', { name: '+ Vesitasaus' }).click()
-    await expect(page).toHaveURL(/#\/property\/4\/edit\/water\/new$/)
-    await page.goBack()
+    await expect(page).toHaveURL(/#\/property\/4\/water\/new$/)
+    const waterCard = page.locator('.property-water .property-lease-card-edit')
+    await expect(waterCard).toHaveCount(1)
+    await waterCard.getByRole('button', { name: 'Peru', exact: true }).click()
+    await expect(waterCard).toHaveCount(0)
+    await expect(page).toHaveURL(/#\/property\/4\/water$/)
+    await page.getByRole('tab', { name: 'Yleiskatsaus' }).click()
     await expect(page).toHaveURL(/#\/property\/4$/)
 
     await page.getByRole('tab', { name: 'Yleiskatsaus' }).focus()
@@ -87,7 +107,6 @@ test.describe('rental object on a phone', () => {
     await page.addInitScript(() => localStorage.setItem('tilari.display', JSON.stringify({ textScale: 1.375, contentWidth: 'normal' })))
     await openBook(page)
     await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
-    await page.goto('/#/property/4/edit')
     // A lease whose contract has a long file name, and a later contract linked only as a document:
     // the book suggests a lease from it.
     const upload = async (lease: Locator, name: string) => {
@@ -96,30 +115,24 @@ test.describe('rental object on a phone', () => {
       await (await chooser).setFiles({ name, mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') })
       await expect(lease.getByRole('textbox', { name: 'Sopimus' })).toHaveValue(/Vuokrasopimus Asunto/)
     }
-    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
-    const lease = page.locator('.property-lease-edit').first()
+    const lease = await newLeaseCard(page)
     await lease.getByLabel('Vuokralainen').first().fill('Testi Vuokralainen')
     await lease.getByLabel('Vuokralainen').first().press('Escape')
     await lease.getByLabel('Alkaa', { exact: true }).fill('2025-01-01')
     await lease.getByLabel('Päättyy').fill('2025-03-31')
     await lease.getByLabel('Vuokra €/kk').first().fill('650')
     await upload(lease, 'Vuokrasopimus Esimerkkitie 99 A 1 Testi Vuokralainen allekirjoitettu.pdf')
-    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
-    const later = page.locator('.property-lease-edit').last()
+    await saveLeaseCard(page)
+    const later = await newLeaseCard(page)
     await later.getByLabel('Vuokralainen').first().fill('Toinen Vuokralainen Oy')
     await later.getByLabel('Vuokralainen').first().press('Escape')
     await later.getByLabel('Alkaa', { exact: true }).fill('2025-04-01')
     await upload(later, 'Esimerkkitie 99 A 1 vuokrasopimus ja vuokrankorotus 1.4.2025 alkaen skannattu.pdf')
-    // The row goes on save (no tenant, no start); its contract stays, linked as a document.
+    // No lease is saved (no tenant, no start); its contract stays, linked as a document.
     await later.getByLabel('Vuokralainen').first().fill('')
     await later.getByLabel('Vuokralainen').first().press('Escape')
     await later.getByLabel('Alkaa', { exact: true }).fill('')
-    const add = page.getByRole('textbox', { name: 'Lisää Liitetieto-tosite…' })
-    await add.click()
-    await add.fill('Toinen')
-    await page.getByRole('option', { name: /Toinen Vuokralainen/ }).click()
-    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
-    await expect(page).toHaveURL(/#\/property\/4$/)
+    await saveLeaseCard(page)
 
     await page.setViewportSize({ width: 360, height: 740 })
     const workspace = page.locator('main.workspace')
@@ -141,11 +154,21 @@ test.describe('rental object on a phone', () => {
     await page.locator('.property-leases li').filter({ hasText: 'Testi Vuokralainen' }).getByRole('button', { name: 'Muokkaa', exact: true }).click()
     await expect(card).toHaveCount(1)
     expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'lease card').toBeLessThanOrEqual(0)
+    // So do a water card and a Talous section in edit.
+    await page.getByRole('tab', { name: /^Vesimaksut/ }).click()
+    await page.locator('.property-water').getByRole('button', { name: '+ Vesitasaus' }).click()
+    await expect(page.locator('.property-water .property-lease-card-edit')).toHaveCount(1)
+    expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'water card').toBeLessThanOrEqual(0)
+    await page.getByRole('tab', { name: /^Talous/ }).click()
+    const valuations = page.locator('.property-finance-valuations')
+    await valuations.getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    await valuations.getByRole('button', { name: 'Lisää arvio' }).click()
+    expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'valuations').toBeLessThanOrEqual(0)
   })
 })
 
 test.describe('rental object leases', () => {
-  test('a lease added on the edit page shows on the object page and in the list', async ({ page }) => {
+  test('a lease added on its card shows on the object page and in the list', async ({ page }) => {
     await openBook(page)
     // The notice voucher is dated on the book's day: inside the test book's last fiscal year.
     await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
@@ -154,9 +177,7 @@ test.describe('rental object leases', () => {
     await expect(page.locator('.property-leases').getByText('Ei vuokrasopimuksia.', { exact: false })).toBeVisible()
     await expect(page.locator('.property-leases').getByRole('button', { name: '+ Vuokrasopimus' })).toBeVisible()
 
-    await page.goto('/#/property/4/edit')
-    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
-    const lease = page.locator('.property-lease-edit').first()
+    const lease = await newLeaseCard(page)
     const tenant = lease.getByRole('combobox', { name: 'Vuokralainen' }).or(lease.getByLabel('Vuokralainen'))
     await tenant.first().fill('Testi Vuokralainen')
     await tenant.first().press('Escape')
@@ -198,10 +219,8 @@ test.describe('rental object leases', () => {
     await increase.getByRole('button', { name: 'Luo korotusilmoitus' }).click()
     await again
     await expect(notice).toHaveValue(/Vuokrankorotusilmoitus Asunto 1\.1\.2026/)
-    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await saveLeaseCard(page)
 
-    await expect(page).toHaveURL(/#\/property\/4$/)
-    await page.getByRole('tab', { name: /^Vuokrasuhteet/ }).click()
     const card = page.locator('.property-lease-card')
     await expect(card).toContainText('Testi Vuokralainen')
     await expect(card).toContainText('1.1.2025 alkaen')
@@ -209,38 +228,28 @@ test.describe('rental object leases', () => {
     await expect(card).toContainText('670,00 €/kk (vuokra 650,00 €, vesi 20,00 €) · eräpäivä 2. · korotus 15,00 € vuodessa')
     await card.getByText('Korotukset (1)').click()
     await expect(card.getByRole('button', { name: /Vuokrankorotusilmoitus .* 1\.1\.2026/ })).toHaveCount(1)
-    // The undone notice is gone from the book: the pickers offer only the kept one.
-    await page.goto('/#/property/4/edit')
-    const picker = page.locator('.property-lease-edit').first().getByRole('textbox', { name: 'Sopimus' })
+    // The undone notice is gone from the book: the card's pickers offer only the kept one.
+    await card.getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    const form = page.locator('.property-lease-card-edit')
+    const picker = form.getByRole('textbox', { name: 'Sopimus' })
     await picker.click()
     await picker.fill('Vuokrankorotusilmoitus')
     await expect(page.getByRole('option', { name: /Vuokrankorotusilmoitus Asunto/ })).toHaveCount(1)
     await picker.press('Escape')
 
-    // A linked document opens its voucher; the way back restores the unsaved form.
-    await page.getByLabel('Eräpäivä').first().fill('9')
-    await page.locator('.doc-lines').getByRole('button', { name: /Vuokrankorotusilmoitus Asunto/ }).click()
-    await expect(page).toHaveURL(/#\/property\/4\/edit\/voucher\/\d+\/edit$/)
-    await expect(page.getByRole('textbox', { name: 'Otsikko' })).toHaveValue(/Vuokrankorotusilmoitus Asunto/)
-    await page.getByRole('button', { name: 'Sulje' }).click()
-    await expect(page).toHaveURL(/#\/property\/4\/edit$/)
-    await expect(page.getByText('Tallentamattomat muutokset palautettiin.')).toBeVisible()
-    await expect(page.getByLabel('Eräpäivä').first()).toHaveValue('9')
-
-    // A notice written on an earlier visit is deleted from the book when the form is saved.
-    const saved = page.locator('.property-lease-increase').first()
+    // A notice written on an earlier visit is deleted from the book when the card is saved.
+    const saved = form.locator('.property-lease-increase').first()
     page.once('dialog', (dialog) => void dialog.accept())
     await saved.getByRole('button', { name: 'Poista korotusilmoitus' }).click()
     await expect(saved.getByRole('textbox', { name: 'Korotusilmoitus' })).toHaveValue('–')
-    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
-    await expect(page).toHaveURL(/#\/property\/4$/)
-    await page.goto('/#/property/4/edit')
-    const search = page.locator('.property-lease-edit').first().getByRole('textbox', { name: 'Sopimus' })
+    await saveLeaseCard(page)
+    await card.getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    const search = form.getByRole('textbox', { name: 'Sopimus' })
     await search.click()
     await search.fill('Vuokrankorotusilmoitus')
     await expect(page.getByRole('option', { name: /Vuokrankorotusilmoitus Asunto/ })).toHaveCount(0)
     await search.press('Escape')
-    await page.locator('.property-actions').getByRole('button', { name: 'Peru' }).click()
+    await form.getByRole('button', { name: 'Peru', exact: true }).click()
 
     await page.goto('/#/properties')
     await expect(page.locator('.property-table').first()).toContainText('Testi Vuokralainen · 650,00 €/kk')
@@ -248,9 +257,7 @@ test.describe('rental object leases', () => {
 
   test('a VAT lease shows its VAT on the card and in the months, and warns of rent booked without it', async ({ page }) => {
     await openBook(page)
-    await page.goto('/#/property/4/edit')
-    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
-    const lease = page.locator('.property-lease-edit').first()
+    const lease = await newLeaseCard(page)
     const tenant = lease.getByRole('combobox', { name: 'Vuokralainen' }).or(lease.getByLabel('Vuokralainen'))
     await tenant.first().fill('Testi Yritys Oy')
     await tenant.first().press('Escape')
@@ -259,10 +266,10 @@ test.describe('rental object leases', () => {
     // VAT is an extra beside the parking space; the amounts stay without it.
     await lease.getByLabel('ALV', { exact: true }).check()
     await expect(lease.getByText('Summat ilman ALV:tä · ALV 25,5 % 127,50 € · yhteensä 627,50 €/kk')).toBeVisible()
-    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await saveLeaseCard(page)
 
-    await expect(page).toHaveURL(/#\/property\/4$/)
     // The test book's rent is booked without VAT: the object warns, and each such payment is marked.
+    await page.getByRole('tab', { name: 'Yleiskatsaus' }).click()
     await expect(page.getByText(/Vuokrasta puuttuu ALV \(Testi Yritys Oy\)/)).toBeVisible()
     await page.getByRole('tab', { name: /^Vuokrasuhteet/ }).click()
     const card = page.locator('.property-lease-card')
@@ -276,25 +283,33 @@ test.describe('rental object leases', () => {
 test.describe('rental object kinds', () => {
   test('a parking space or garage offers no water and no parking extra', async ({ page }) => {
     await openBook(page)
-    await page.goto('/#/property/4/edit')
-    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
-    const lease = page.locator('.property-lease-edit').first()
-    const water = page.getByRole('heading', { name: 'Vesitasaukset' })
+    let lease = await newLeaseCard(page)
+    const cancel = () => page.locator('.property-lease-card-edit').getByRole('button', { name: 'Peru', exact: true }).click()
     await expect(lease.getByLabel('Vesi €/kk')).toHaveCount(1)
     await expect(lease.getByText('Vesimaksu tasataan kulutuksen mukaan')).toBeVisible()
     await expect(lease.getByRole('checkbox', { name: 'Autopaikka', exact: true })).toBeVisible()
-    await expect(water).toBeVisible()
+    await cancel()
+    const water = page.getByRole('tab', { name: /^Vesimaksut/ })
+    await expect(water).toHaveCount(1)
+    await page.goto('/#/property/4/edit')
 
+    // The kind is set on the edit page; the object has no water tab then, and the lease card follows it.
     for (const kind of ['Autopaikka', 'Autotalli']) {
       await page.getByLabel('Laji').selectOption({ label: kind })
+      await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+      await expect(page).toHaveURL(/#\/property\/4$/)
+      await expect(water).toHaveCount(0)
+      lease = await newLeaseCard(page)
       await expect(lease.getByLabel('Vuokra €/kk')).toBeVisible()
       await expect(lease.getByLabel('Vesi €/kk')).toHaveCount(0)
       await expect(lease.getByText('Vesimaksu tasataan kulutuksen mukaan')).toHaveCount(0)
       await expect(lease.getByRole('checkbox', { name: 'Autopaikka', exact: true })).toHaveCount(0)
       // A parking space can still be let with VAT.
       await expect(lease.getByRole('checkbox', { name: 'ALV', exact: true })).toBeVisible()
-      await expect(water).toHaveCount(0)
+      await cancel()
+      await page.goto('/#/property/4/edit')
     }
+    lease = await newLeaseCard(page)
     // Alkaen, rent and the total share the row.
     await lease.getByLabel('Vuokra €/kk').fill('40')
     await expect(lease.locator('.property-lease-amounts').first()).toContainText('40,00')
@@ -306,9 +321,7 @@ test.describe('rental object documents', () => {
     await openBook(page)
     await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
     // An uploaded contract is a Liitetieto voucher; linked to the object as well, it lists under Asiakirjat.
-    await page.goto('/#/property/4/edit')
-    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
-    const lease = page.locator('.property-lease-edit').first()
+    const lease = await newLeaseCard(page)
     const tenant = lease.getByRole('combobox', { name: 'Vuokralainen' }).or(lease.getByLabel('Vuokralainen'))
     await tenant.first().fill('Testi Vuokralainen')
     await tenant.first().press('Escape')
@@ -318,12 +331,7 @@ test.describe('rental object documents', () => {
     await lease.locator('label', { hasText: 'Lataa sopimus' }).click()
     await (await chooser).setFiles({ name: 'sopimus.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 sopimus') })
     await expect(lease.getByRole('textbox', { name: 'Sopimus' })).toHaveValue(/Vuokrasopimus Asunto/)
-    const add = page.getByRole('textbox', { name: 'Lisää Liitetieto-tosite…' })
-    await add.click()
-    await add.fill('Vuokrasopimus')
-    await page.getByRole('option', { name: /Vuokrasopimus Asunto/ }).click()
-    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
-    await expect(page).toHaveURL(/#\/property\/4$/)
+    await saveLeaseCard(page)
     await page.getByRole('tab', { name: /^Asiakirjat/ }).click()
 
     const docs = page.locator('.property-docs')
@@ -354,6 +362,96 @@ test.describe('rental object documents', () => {
   })
 })
 
+test.describe('rental object documents linked on their tab', () => {
+  test('a document no lease holds is unlinked and linked again on the Asiakirjat tab', async ({ page }) => {
+    await openBook(page)
+    await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
+    // A contract uploaded on a lease card that is then left without a lease: linked as a document only.
+    const lease = await newLeaseCard(page)
+    await lease.getByLabel('Vuokralainen').first().fill('Testi Vuokralainen')
+    await lease.getByLabel('Vuokralainen').first().press('Escape')
+    await lease.getByLabel('Alkaa', { exact: true }).fill('2025-01-01')
+    const chooser = page.waitForEvent('filechooser')
+    await lease.locator('label', { hasText: 'Lataa sopimus' }).click()
+    await (await chooser).setFiles({ name: 'sopimus.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 sopimus') })
+    await expect(lease.getByRole('textbox', { name: 'Sopimus' })).toHaveValue(/Vuokrasopimus Asunto/)
+    await lease.getByLabel('Vuokralainen').first().fill('')
+    await lease.getByLabel('Vuokralainen').first().press('Escape')
+    await lease.getByLabel('Alkaa', { exact: true }).fill('')
+    await saveLeaseCard(page)
+
+    await page.getByRole('tab', { name: /^Asiakirjat/ }).click()
+    const docs = page.locator('.property-docs')
+    const line = docs.locator('.doc-line', { hasText: 'Vuokrasopimus Asunto' })
+    await expect(docs.locator('.section-label').first()).toHaveText('Linkitetyt (sopimukset ja ilmoitukset)')
+    await line.getByRole('button', { name: 'Poista linkki' }).click()
+    await expect(line).toHaveCount(0)
+    await expect(docs.getByText('Linkitetyt (sopimukset ja ilmoitukset)')).toHaveCount(0)
+
+    // "+ Asiakirja" opens the picker at the top of the tab; a pick links it at once.
+    await docs.getByRole('button', { name: '+ Asiakirja' }).click()
+    const pick = docs.getByRole('textbox', { name: 'Lisää Liitetieto-tosite…' })
+    await pick.click()
+    await pick.fill('Vuokrasopimus')
+    await page.getByRole('option', { name: /Vuokrasopimus Asunto/ }).click()
+    await expect(line).toBeVisible()
+    await expect(docs.locator('.section-label').first()).toHaveText('Linkitetyt (sopimukset ja ilmoitukset)')
+    await expect(pick).toHaveCount(0)
+  })
+})
+
+test.describe('rental object figures edited on Talous', () => {
+  test('each section has its own Muokkaa and saves only itself; the overview adds a price estimate there', async ({ page }) => {
+    await openBook(page)
+    await page.goto('/#/property/4/finance')
+
+    // Sale costs and target: a wrong percentage is refused in the section, which stays open.
+    const sale = page.locator('.property-finance-sale')
+    await expect(sale).toContainText('Myyntikulut, % hinnasta: – · Myyntikulut, kiinteä €: – · Tavoitetuotto, % vuodessa: –')
+    await sale.getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    await sale.getByLabel('Myyntikulut, % hinnasta').fill('kaksi')
+    await sale.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(sale.locator('.error')).toHaveText('Prosentti muodossa 3,5.')
+    await sale.getByLabel('Myyntikulut, % hinnasta').fill('2,5')
+    await sale.getByLabel('Myyntikulut, kiinteä €').fill('1000')
+    await sale.getByLabel('Tavoitetuotto, % vuodessa').fill('6')
+    await sale.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(sale).toContainText(/Myyntikulut, % hinnasta: 2,5 % · Myyntikulut, kiinteä €: 1\s000,00\s€ · Tavoitetuotto, % vuodessa: 6 %/)
+
+    // Other capital: a row added and saved.
+    const capital = page.locator('.property-finance-capital')
+    await expect(capital).toContainText('Ei muuta sijoitettua pääomaa.')
+    await capital.getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    await capital.getByRole('button', { name: 'Lisää rivi' }).click()
+    await capital.getByLabel('Päivä').fill('2024-01-01')
+    await capital.getByLabel('Summa €').fill('5000')
+    await capital.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(capital).toContainText(/1\.1\.2024\s*5\s000,00/)
+    // The sale costs stay as saved: a section's save leaves the others alone.
+    await expect(sale).toContainText('2,5 %')
+
+    // The bank loan refuses an account that is not a number; Peru leaves it as it was.
+    const loan = page.locator('.property-finance-loan')
+    await loan.getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    await loan.getByLabel('Lainatilit').fill('laina')
+    await loan.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(loan.locator('.error')).toHaveText('Tilinumerot pilkuilla eroteltuina.')
+    await loan.getByRole('button', { name: 'Peru', exact: true }).click()
+    await expect(loan).toContainText('Kohteelle ei ole linkitetty omaa lainaa.')
+
+    // The overview's "+ Hinta-arvio" opens Talous's price estimates with a new row.
+    await page.getByRole('tab', { name: 'Yleiskatsaus' }).click()
+    await page.getByRole('button', { name: '+ Hinta-arvio' }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/finance$/)
+    const valuations = page.locator('.property-finance-valuations')
+    await valuations.getByLabel('Myyntihinta (ilman lainaosuutta)').fill('120000')
+    await valuations.getByLabel('Lähde').fill('Oma arvio')
+    await valuations.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(valuations).toContainText(/120\s000,00/)
+    await expect(valuations).toContainText('Oma arvio')
+  })
+})
+
 test.describe('rental object deposits', () => {
   test('a deposit booked for the object is offered for its lease, linked and shown with its balance', async ({ page }) => {
     await openBook(page)
@@ -376,9 +474,7 @@ test.describe('rental object deposits', () => {
     await editorSaveButton(page).click()
     await expect(page).toHaveURL(/voucher\/\d+(\/v\/\d+)?\/edit/)
 
-    await page.goto('/#/property/4/edit')
-    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
-    const lease = page.locator('.property-lease-edit').first()
+    const lease = await newLeaseCard(page)
     const tenant = lease.getByRole('combobox', { name: 'Vuokralainen' }).or(lease.getByLabel('Vuokralainen'))
     await tenant.first().fill('Testi Vuokralainen')
     await tenant.first().press('Escape')
@@ -391,10 +487,8 @@ test.describe('rental object deposits', () => {
     await expect(linked).toContainText('5.1.2025 · Vuokravakuus Asunto')
     // Each booking opens its voucher from the form.
     await expect(linked.getByRole('button', { name: /^Saatu 5\.1\.2025 500,00\s€$/ })).toBeVisible()
-    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await saveLeaseCard(page)
 
-    await expect(page).toHaveURL(/#\/property\/4$/)
-    await page.getByRole('tab', { name: /^Vuokrasuhteet/ }).click()
     const card = page.locator('.property-lease-card')
     await expect(card).toContainText(/Vuokravakuus: saatu 500,00\s€ · saldo 500,00\s€/)
     await card.getByText('Vakuuden kirjaukset (1)').click()
@@ -422,7 +516,7 @@ test.describe('rental object lease cards in place', () => {
     await expect(card).toContainText('670,00 €/kk')
 
     // The card turns into its form and saves only that lease.
-    await card.getByRole('button', { name: /^Lisää korotus tai poikkeava vuokra/ }).click()
+    await card.getByRole('button', { name: 'Muokkaa', exact: true }).click()
     await form.getByLabel('Vuokra €/kk').first().fill('700')
     await form.getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(form).toHaveCount(0)
@@ -491,9 +585,7 @@ test.describe('rental object rent exceptions', () => {
   test('an agreed exception lowers the expected rent on its days and shows on the card and in the months', async ({ page }) => {
     await openBook(page)
     await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
-    await page.goto('/#/property/4/edit')
-    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
-    const lease = page.locator('.property-lease-edit').first()
+    const lease = await newLeaseCard(page)
     const tenant = lease.getByLabel('Vuokralainen').first()
     await tenant.fill('Testi Vuokralainen')
     await tenant.press('Escape')
@@ -510,10 +602,8 @@ test.describe('rental object rent exceptions', () => {
     await exception.getByLabel('Vuokra €/kk').fill('450')
     await exception.getByLabel('Syy').fill('Remonttihyvitys')
     await expect(exception).toContainText(/470,00\s€ \(−200,00\s€\)/)
-    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await saveLeaseCard(page)
 
-    await expect(page).toHaveURL(/#\/property\/4$/)
-    await page.getByRole('tab', { name: /^Vuokrasuhteet/ }).click()
     const card = page.locator('.property-lease-card').first()
     // No rent is booked on the object: nine months of 670,00 €, May 200,00 € less.
     await expect(card).toContainText(/Vuokrasaldo 30\.11\.2025: vuokrarästi 5\s830,00\s€/)
@@ -566,7 +656,7 @@ test.describe('rental object rent exceptions', () => {
     await expect(card.getByText('Poikkeava vuokra (1)')).toBeVisible()
 
     // The card turns into its form, in place, where exceptions are entered.
-    await card.getByRole('button', { name: /^Lisää korotus tai poikkeava vuokra/ }).click()
+    await card.getByRole('button', { name: 'Muokkaa', exact: true }).click()
     const cardForm = page.locator('.property-lease-card-edit')
     await expect(cardForm).toHaveCount(1)
     await expect(page).toHaveURL(/#\/property\/4\/leases\/lease\/[^/]+$/)
@@ -582,33 +672,38 @@ test.describe('rental object lease dates', () => {
   test('leases on the same days are refused with both named; an own first day of rent shows as the reason', async ({ page }) => {
     await openBook(page)
     await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
-    await page.goto('/#/property/4/edit')
-    // The golden book links no purchase: without an own day the box shows the books' start.
-    await expect(page.getByLabel('Vuokra omistajalle alkaen')).toHaveValue('2024-01-01')
-    for (const [name, starts] of [
-      ['Testi Vuokralainen', '2025-01-01'],
-      ['Toinen Vuokralainen', '2025-06-01'],
-    ]) {
-      await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
-      const lease = page.locator('.property-lease-edit').last()
+    const form = page.locator('.property-lease-card-edit')
+    const fill = async (lease: Locator, name: string, starts: string) => {
       const tenant = lease.getByLabel('Vuokralainen').first()
       await tenant.fill(name)
       await tenant.press('Escape')
       await lease.getByLabel('Alkaa', { exact: true }).fill(starts)
       await lease.getByLabel('Vuokra €/kk').first().fill('650')
     }
-    const save = page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true })
-    await save.click()
-    await expect(page.locator('.property-edit .error')).toContainText(
+    await fill(await newLeaseCard(page), 'Testi Vuokralainen', '2025-01-01')
+    await saveLeaseCard(page)
+    // The second lease's card refuses the overlap, naming both.
+    await fill(await newLeaseCard(page), 'Toinen Vuokralainen', '2025-06-01')
+    await form.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(form.locator('.error')).toContainText(
       'Vuokrasopimukset Testi Vuokralainen 1.1.2025 alkaen ja Toinen Vuokralainen 1.6.2025 alkaen menevät päällekkäin.',
     )
-    await expect(page).toHaveURL(/#\/property\/4\/edit$/)
+    await form.getByRole('button', { name: 'Peru', exact: true }).click()
 
-    await page.locator('.property-lease-edit').first().getByLabel('Päättyy').fill('2025-05-31')
-    await page.getByLabel('Vuokra omistajalle alkaen').fill('2025-02-01')
-    await save.click()
-    await expect(page).toHaveURL(/#\/property\/4$/)
-    await page.getByRole('tab', { name: /^Vuokrasuhteet/ }).click()
+    // The first lease ends before the second starts, each on its own card.
+    await page.locator('.property-lease-card', { hasText: 'Testi Vuokralainen' }).getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    await form.getByLabel('Päättyy').fill('2025-05-31')
+    await saveLeaseCard(page)
+    await fill(await newLeaseCard(page), 'Toinen Vuokralainen', '2025-06-01')
+    await saveLeaseCard(page)
+
+    // The golden book links no purchase: without an own day the box shows the books' start.
+    await page.locator('.property-rent-dates').getByRole('button', { name: 'Muokkaa' }).click()
+    const rentDates = page.locator('.property-rent-dates-edit')
+    await expect(rentDates.getByLabel('Vuokra omistajalle alkaen')).toHaveValue('2024-01-01')
+    await rentDates.getByLabel('Vuokra omistajalle alkaen').fill('2025-02-01')
+    await rentDates.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(rentDates).toHaveCount(0)
     // The ended lease's account starts after the lease: on the owner's day.
     await expect(page.locator('.property-leases')).toContainText('laskettu 1.2.2025 alkaen: omistajan antama päivä')
   })
@@ -618,9 +713,7 @@ test.describe('rental object reminders', () => {
   test('a lease ending soon, an increase due and no water settlement show on the object and mark the list', async ({ page }) => {
     await openBook(page)
     await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
-    await page.goto('/#/property/4/edit')
-    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
-    const lease = page.locator('.property-lease-edit').first()
+    const lease = await newLeaseCard(page)
     const tenant = lease.getByLabel('Vuokralainen').first()
     await tenant.fill('Testi Vuokralainen')
     await tenant.press('Escape')
@@ -630,10 +723,10 @@ test.describe('rental object reminders', () => {
     await lease.getByLabel('Vesi €/kk').first().fill('20')
     await lease.getByLabel('Korotussääntö').selectOption({ label: 'Euroa vuodessa' })
     await lease.getByLabel('Korotus € / v').fill('15')
-    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await saveLeaseCard(page)
 
     // On the as-of date (30.11.2025).
-    await expect(page).toHaveURL(/#\/property\/4$/)
+    await page.getByRole('tab', { name: 'Yleiskatsaus' }).click()
     const warnings = page.locator('.property-warnings')
     // The two reminders with a day are tiles, the whole sentence on hover; the others are lines led by a pill.
     const ending = warnings.locator('.due-tile', { hasText: 'Vuokrasopimus päättyy · Testi Vuokralainen' })
@@ -680,12 +773,10 @@ test.describe('rental object reminders', () => {
 })
 
 test.describe('rental object missing documents', () => {
-  test('a missing notice can be skipped from the reminder and taken back on the edit page; the contract cannot', async ({ page }) => {
+  test("a missing notice can be skipped from the reminder and taken back on the lease's card; the contract cannot", async ({ page }) => {
     await openBook(page)
     await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
-    await page.goto('/#/property/4/edit')
-    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
-    const lease = page.locator('.property-lease-edit').first()
+    const lease = await newLeaseCard(page)
     const tenant = lease.getByLabel('Vuokralainen').first()
     await tenant.fill('Testi Vuokralainen')
     await tenant.press('Escape')
@@ -695,10 +786,9 @@ test.describe('rental object missing documents', () => {
     const increase = lease.locator('.property-lease-increase').first()
     await increase.getByLabel('Alkaen').fill('2025-01-01')
     await increase.getByLabel('Vuokra €/kk').fill('660')
-    const save = page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true })
-    await save.click()
+    await saveLeaseCard(page)
 
-    await expect(page).toHaveURL(/#\/property\/4$/)
+    await page.getByRole('tab', { name: 'Yleiskatsaus' }).click()
     const notice = page.locator('.property-warnings li', { hasText: 'Vuokrankorotuksen 1.1.2025 korotusilmoitus puuttuu (Testi Vuokralainen).' })
     const contract = page.locator('.property-warnings li', { hasText: 'Vuokrasopimus puuttuu (Testi Vuokralainen, 1.1.2024 alkaen)' })
     await expect(contract).toBeVisible()
@@ -707,13 +797,14 @@ test.describe('rental object missing documents', () => {
     await expect(notice).toHaveCount(0)
     await expect(contract).toBeVisible()
 
-    // The edit page shows the owner's word; taking it back brings the reminder back.
-    await page.goto('/#/property/4/edit')
-    const noDoc = page.locator('.property-lease-increase').first().getByLabel('Ei asiakirjaa')
+    // The lease's card shows the owner's word; taking it back brings the reminder back.
+    await page.getByRole('tab', { name: /^Vuokrasuhteet/ }).click()
+    await page.locator('.property-lease-card').getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    const noDoc = page.locator('.property-lease-card-edit .property-lease-increase').first().getByLabel('Ei asiakirjaa')
     await expect(noDoc).toBeChecked()
     await noDoc.uncheck()
-    await save.click()
-    await expect(page).toHaveURL(/#\/property\/4$/)
+    await saveLeaseCard(page)
+    await page.getByRole('tab', { name: 'Yleiskatsaus' }).click()
     await expect(notice).toBeVisible()
 
     // The portfolio's list skips it too.
@@ -735,9 +826,7 @@ test.describe('rental object water settlements', () => {
     await expect(panel.getByRole('heading', { name: 'Vesimaksut ja vesitasaukset' })).toBeVisible()
     await expect(panel).toContainText('Ei vesitasauksia.')
 
-    await page.goto('/#/property/4/edit')
-    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
-    const lease = page.locator('.property-lease-edit').first()
+    const lease = await newLeaseCard(page)
     const tenant = lease.getByLabel('Vuokralainen').first()
     await tenant.fill('Testi Vuokralainen')
     await tenant.press('Escape')
@@ -745,9 +834,13 @@ test.describe('rental object water settlements', () => {
     await lease.getByLabel('Vuokra €/kk').first().fill('650')
     await lease.getByLabel('Vesi €/kk').first().fill('20')
     await expect(lease.getByLabel('Vesimaksu tasataan kulutuksen mukaan')).toBeChecked()
+    await saveLeaseCard(page)
 
-    await page.getByRole('button', { name: 'Lisää vesitasaus' }).click()
-    const water = page.locator('.property-water-edit').first()
+    // A new settlement on its own card on the Vesimaksut tab, shared with the saved lease.
+    await page.getByRole('tab', { name: /^Vesimaksut/ }).click()
+    await panel.getByRole('button', { name: '+ Vesitasaus' }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/water\/new$/)
+    const water = panel.locator('.property-water-edit').first()
     await water.getByLabel('Jakso alkaa').fill('2025-01-01')
     await water.getByLabel('Jakso päättyy').fill('2025-06-30')
     await expect(water.getByRole('combobox', { name: /^Taloyhtiön tasaus/ })).toHaveValue('refund')
@@ -770,10 +863,12 @@ test.describe('rental object water settlements', () => {
     await share.getByRole('button', { name: 'Luo vesitasauslaskelma' }).click()
     expect((await download).suggestedFilename()).toMatch(/^vesitasaus-.*-2025-06-30\.pdf$/)
     await expect(share.getByRole('textbox', { name: 'Vesitasauslaskelma' })).toHaveValue(/Vesitasaus Asunto 1\.1\.2025–30\.6\.2025/)
-    await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await panel.locator('.property-lease-card-edit').getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(panel.locator('.property-lease-card-edit')).toHaveCount(0)
+    await expect(page).toHaveURL(/#\/property\/4\/water$/)
 
-    await expect(page).toHaveURL(/#\/property\/4$/)
     // The overview shows the latest settlement of the running lease.
+    await page.getByRole('tab', { name: 'Yleiskatsaus' }).click()
     await expect(page.locator('.property-now', { has: page.getByRole('heading', { name: 'Vesi', exact: true }) })).toContainText(
       'Vesitasaus 1.1.2025–30.6.2025: palautetaan 39,56 €',
     )
@@ -788,6 +883,12 @@ test.describe('rental object water settlements', () => {
     await expect(row.getByRole('button', { name: /Vesitasaus Asunto/ })).toBeVisible()
     // No statement linked: the settlement's place for it says so.
     await expect(panel.locator('.property-doc-slot', { hasText: 'Tasauslaskelma' }).locator('.pill-crit')).toHaveText('Puuttuu')
+    // The stored settlement opens its own card again, named in the address.
+    await panel.locator('.property-water-card').getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/water\/settlement\/[^/]+$/)
+    await expect(panel.locator('.property-water-edit .property-water-share')).toContainText('palautetaan 39,56 €')
+    await panel.locator('.property-lease-card-edit').getByRole('button', { name: 'Peru', exact: true }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/water$/)
     await page.getByRole('tab', { name: /^Vuokrasuhteet/ }).click()
     const card = page.locator('.property-lease-card').first()
     await expect(card).toContainText('vesimaksu tasataan kulutuksen mukaan')

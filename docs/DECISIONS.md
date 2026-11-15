@@ -495,14 +495,15 @@ correction would change the open year's income statement lines. The rental-objec
   say) moves the start back to that payment's month: the owner had the object then, and the
   payment would otherwise show as paid ahead for good. Without a purchase in the books, the books'
   first fiscal year. When the sale agreed otherwise (the month of the sale to the buyer, say), the
-  owner gives the day on the edit page (`rent_from`), and it stands for all of these. The box
+  owner gives the day with the small Muokkaa under the Vuokrasuhteet title (`rent_from`; the edit page
+  until 2026-11-15), and it stands for all of these. The box
   there shows the default day; only another day is stored as `rent_from`. Before, the
   count started on the purchase day and the owner had to enter an exception at 0 for the rest of
   that month on every object bought with a tenant.
 - **The owner's last day of rent** (2026-10-27, owner's choice): after a sale, the end of the month
   of the sale - the seller usually keeps that month's rent. Before, the count ended on the sale day
   and the month's rent, paid in full, showed as paid ahead. A held object runs on to the as-of
-  date. When the sale agreed otherwise, the owner gives the day on the edit page (`rent_until`);
+  date. When the sale agreed otherwise, the owner gives the day in the same place (`rent_until`);
   as with `rent_from`, the box shows the default day (empty while held) and only another is stored.
 - **Received:** the object's income lines (without VAT, as booked; a VAT lease adds each line's own
   VAT row, ADR-033), each given to one lease: the
@@ -535,7 +536,7 @@ correction would change the open year's income statement lines. The rental-objec
   days in that month, at the monthly total that makes the month expect what was paid (less any
   water settlement due then), exact to the cent also on a part month. Water and parking stay;
   the difference comes off the rent. The owner checks it, gives the reason and saves it on the
-  object page; the agreement is attached on the edit page. None is offered where an exception
+  object page; the agreement is attached on the lease's card. None is offered where an exception
   already lies in the month: such a month offers "Muokkaa poikkeusta" instead, the stored
   exception in the same form, saved in its place (found by its first day) with its agreement kept,
   or removed there once confirmed.
@@ -577,7 +578,7 @@ correction would change the open year's income statement lines. The rental-objec
 - **Warnings:** `deposit_open` when a lease ended more than 60 days before the as-of date and
   still holds a deposit; `deposit_over` when more was returned than received (a receipt not
   linked, or booked elsewhere). Exact, no tolerance.
-- **Offered and suggested:** the edit page offers item roots and loose lines on liability
+- **Offered and suggested:** the lease card offers item roots and loose lines on liability
   accounts whose account name or text (else the voucher's title) names a deposit
   (vakuus in any form but not vakuutus - insurance, `takuu`, `pantti`, `deposit`, `säkerhet`,
   `kaution`), the object's own first: its
@@ -628,15 +629,16 @@ correction would change the open year's income statement lines. The rental-objec
   warnings after the figures (foldable, remembered per browser); in the header, a ⚠ with the
   count that opens that list (`#/properties/alerts`, `GET /api/properties/alerts`). The header
   counts 0.8 s after the last change, so a run of saves counts once; a book without stored objects
-  pays nothing. Notes count nowhere: unset sale costs (`sale_costs_unset`) and how a sale shared
-  with another object was counted (`sale_carried`, `sale_line_split`); nor do cost centres not set
-  up yet, which the setup banner asks about.
+  pays nothing. Notes count nowhere: how a sale shared with another object was counted
+  (`sale_carried`, `sale_line_split`); nor do cost centres not set up yet, which the setup banner
+  asks about. Sale costs not set are none (0 % and 0 €), set only to override; there is no note
+  about them (owner, 2026-11-15; `sale_costs_unset` is gone).
 - **No dismissing:** a reminder ends when the data answers it - the next lease, the increase
   step, the settlement, the letter, the payment, or the owner's own share amount (ADR-025) for a
   difference they will not claim. Storing dismissals would be a second truth to keep in step.
 - **Except a missing document** (owner, 2026-10-27): an increase notice, an exception agreement
   or a water statement may not exist (an increase agreed by email, a statement never sent). The
-  owner says so with "Ohita" on the reminder or "Ei asiakirjaa" on the edit page, stored as
+  owner says so with "Ohita" on the reminder or "Ei asiakirjaa" on the lease or water card, stored as
   `no_document: true` on that step, exception or settlement - an input on the item, not a list of
   dismissals - and taken back by unticking it. Never stored beside a document. The lease's
   contract cannot be skipped: every lease needs one.

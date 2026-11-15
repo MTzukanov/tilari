@@ -176,10 +176,10 @@ Rules already encoded:
 - No react-router in v1; hashes: `#/browse`, `#/journal`, `#/vat`, `#/settings`, `#/voucher/new/100`, `#/account/{n}`, `#/allocation/{id}`,
   `#/properties`, `#/properties/alerts` (opened on its list of warnings), `#/properties/setup`,
   `#/property/{id}`, `#/property/{id}/{tab}` (`leases`, `water`, `docs`, `finance`; none is the overview),
-  `#/property/{id}/leases/new` and `#/property/{id}/leases/lease/{key}` (that lease card in edit, in place; kept,
-  with its unsaved form, on the way back from a voucher),
-  `#/property/{id}/edit`, `#/property/{id}/edit/{tab}` (none is the basics; `/new` after the tab adds a row there,
-  `/edit/leases/lease/{key}` opens that lease; the page drops both from the address once done), `#/company`, `#/company/documents`, `#/company/own`,
+  `#/property/{id}/leases/new`, `#/property/{id}/leases/lease/{key}`, `#/property/{id}/water/new` and
+  `#/property/{id}/water/settlement/{key}` (that card in edit, in place; kept, with its unsaved form, on the way
+  back from a voucher), `#/property/{id}/edit` (the basics only: kind, excluded, note, delete; everything else
+  is edited on the tabs, and an old `/edit/{tab}...` address opens that tab or card), `#/company`, `#/company/documents`, `#/company/own`,
   `#/company/period/{ends}` (the last two are the company page with that card open); a
   `/month/{YYYY-MM}` after `#/property/{id}` (under its overview's chart) or `#/allocation/{id}` opens that month (and
   stays on the way back from a voucher, as a tab does).

@@ -517,7 +517,6 @@
     "property": "Till objektet",
     "properties": "Till hyresobjekten",
     "propertiesSetup": "Till inställningen av objekt",
-    "propertyEdit": "Till redigeringen av objektet",
     "company": "Till bolagssidan"
   },
   "ledger": {
@@ -699,7 +698,8 @@
     "saving": "Sparar…",
     "cancel": "Avbryt",
     "close": "Stäng",
-    "delete": "Ta bort"
+    "delete": "Ta bort",
+    "edit": "Redigera"
   },
   "fiscal": {
     "title": "Räkenskapsår",
@@ -1030,7 +1030,7 @@
     "dataThrough": "kontoutdrag till {date}",
     "acquired": "förvärvad {date}",
     "soldOn": "såld {date}",
-    "editLink": "Redigera objekt",
+    "editLink": "Objektets inställningar",
     "openAllocation": "Kostnadsställets resultat",
     "empty": "Inga objekt att visa.",
     "setupBanner": "{n} kostnadsställen väntar på inställning.",
@@ -1159,7 +1159,9 @@
       "exceptionNote": "Orsak",
       "exceptionDoc": "Avtal om undantaget",
       "rentFrom": "Hyran till ägaren från",
-      "rentUntil": "Hyran till ägaren till och med"
+      "rentUntil": "Hyran till ägaren till och med",
+      "date": "Datum",
+      "amount": "Belopp €"
     },
     "breakEven": {
       "title": "Nollpris: priset som ger pengarna tillbaka",
@@ -1220,7 +1222,6 @@
     },
     "docs": {
       "title": "Dokument",
-      "linkedTitle": "Länkade dokument",
       "empty": "Inga bilagor.",
       "missing": "Verifikat {id} har raderats",
       "deleted": "Borttaget",
@@ -1234,7 +1235,8 @@
         "other": "Fakturor och andra verifikat",
         "bank": "Kontoutdrag"
       },
-      "showAll": "Visa alla ({n})"
+      "showAll": "Visa alla ({n})",
+      "unlink": "Ta bort länk"
     },
     "lease": {
       "title": "Hyresförhållanden",
@@ -1270,7 +1272,6 @@
       },
       "suggestions": "Förslag från bokföringen ({n})",
       "suggestionsLead": "Från de länkade hyresavtalen och hyresbetalningarna. Inget har sparats: Lägg till öppnar förslaget på ett eget kort för granskning.",
-      "review": "Granska och spara",
       "source": {
         "contract": "källa: hyresavtal",
         "payments": "källa: hyresbetalningar",
@@ -1295,8 +1296,7 @@
       "exceptionNow": "Nu avvikande hyra",
       "normal": "normalt {amount}",
       "exceptionNormal": "Normal hyra då {amount}/mån",
-      "edit": "Redigera",
-      "editTerms": "Lägg till en höjning eller avvikande hyra (rabatt, överenskommen hyra)…"
+      "edit": "Redigera"
     },
     "deposit": {
       "title": "Hyresdeposition",
@@ -1321,7 +1321,7 @@
     "edit": {
       "noDocument": "Inget dokument",
       "noDocumentHint": "Det finns inget dokument för detta: ingen påminnelse.",
-      "title": "Redigera: {name}",
+      "title": "Inställningar: {name}",
       "basics": "Grunduppgifter",
       "erasLead": "Balansposter där objektets anskaffningsutgift (köpesumma, överlåtelseskatt, kostnader) är bokförd.",
       "addEra": "Lägg till balanspost…",
@@ -1340,19 +1340,13 @@
       "delete": "Radera objektets uppgifter",
       "deleteConfirm": "Radera Tilaris uppgifter om detta objekt? Bokföringen påverkas inte.",
       "readOnly": "Uppgifterna sparades med en nyare Tilari; denna version kan bara visa dem.",
-      "leases": "Hyresavtal",
-      "leasesLead": "Hyresgäst, villkor, hyra i början och höjningar. Höjningsregeln fyller i nästa höjning; Tilari ändrar aldrig hyran själv. Avtalet och höjningsmeddelandena är Liitetieto-verifikat, så de hittas även i Kitsas.",
-      "addLease": "Lägg till hyresavtal",
       "removeLease": "Ta bort hyresavtal",
-      "suggestions": "Lägg till dem i formuläret, granska och spara.",
       "addSuggestion": "Lägg till",
-      "addAllSuggestions": "Lägg till alla",
       "addIncrease": "Lägg till höjning",
       "createNotice": "Skapa höjningsmeddelande",
       "confirmDeleteUnsaved": "{n} höjningsmeddelanden skapades på den här sidan men sparades inte för objektet. Ta bort dem ur bokföringen? Avbryt behåller dem (de kan redan ha skickats).",
       "confirmRemoveLease": "Ta bort hyresavtalet från objektet? Ändringen sparas direkt.",
       "confirmLeaveCard": "Det öppna kortet har osparade ändringar. Förkasta dem?",
-      "restored": "Osparade ändringar återställdes.",
       "deleteDoc": "Ta bort verifikat",
       "deleteNotice": "Ta bort höjningsmeddelande",
       "uploadContract": "Ladda upp avtal",
@@ -1360,7 +1354,8 @@
       "confirmDeleteDoc": "Ta bort verifikatet ur bokföringen: {titles}? Ett som skapats under detta besök tas bort genast, ett tidigare när du sparar.",
       "exceptionsLead": "En överenskommen rabatt, en hyresfri period eller annat undantag: under periodens dagar betalar hyresgästen dessa belopp i stället för hyran och höjningarna, och hyressaldot räknar med dem. Skriv en rabatt som den lägre hyran.",
       "addException": "Lägg till avvikande hyra",
-      "uploadException": "Ladda upp bilaga"
+      "uploadException": "Ladda upp bilaga",
+      "lead": "Objektets allmänna inställningar. Hyresavtal, vattenutjämningar, dokument och ekonomiska uppgifter redigeras på objektets egna flikar, ett kort eller avsnitt i taget."
     },
     "setup": {
       "title": "Inställning av hyresobjekt",
@@ -1537,7 +1532,6 @@
     "water": {
       "title": "Vattenavgifter och utjämningar",
       "none": "Inga vattenutjämningar.",
-      "add": "Lägg till vattenutjämning",
       "remove": "Ta bort vattenutjämning",
       "period": "Utjämningsperiod {period}",
       "company": "bostadsbolaget: {text}",
@@ -1566,13 +1560,10 @@
       "ownerKeeps": "Ägaren behåller {amount}.",
       "ownerBears": "Ägaren står för {amount} (t.ex. tomma dagar).",
       "suggestions": "Förslag från bokföringen ({n})",
-      "suggestionsLead": "Från vattenutjämningar bokförda på objektet. Inget har sparats: kontrollera beloppen mot bostadsbolagets kalkyl och spara på redigeringssidan.",
+      "suggestionsLead": "Från vattenutjämningar bokförda på objektet. Inget har sparats: Lägg till öppnar förslaget på ett eget kort; kontrollera beloppen mot bostadsbolagets kalkyl.",
       "flat": "vattenavgiften utjämnas inte",
       "advance": "vattenavgiften utjämnas enligt förbrukning",
       "latest": "Vattenutjämning {period}",
-      "editTitle": "Vattenutjämningar",
-      "editLead": "Bostadsbolagets vattenutjämningar per period. Hyresgästernas andelar beräknas från hyresavtalen: förbrukningen enligt boendedagar, minus vattenförskotten.",
-      "editSuggestions": "Vattenutjämningar bokförda på objektet som inte finns i formuläret.",
       "direction": {
         "refund": "Gottgörelse till ägaren",
         "charge": "Tilläggsfaktura till ägaren"
@@ -1606,7 +1597,8 @@
         "charge": "Tilläggsavgift",
         "refundText": "Vi återbetalar {amount} till ert konto. Meddela oss om ert kontonummer har ändrats.",
         "chargeText": "Vi ber er betala {amount} tillsammans med nästa hyra, till samma konto och med samma referens som hyran."
-      }
+      },
+      "confirmRemove": "Ta bort den här vattenutjämningen från objektet?"
     },
     "rent": {
       "balanceOn": "Hyressaldo {date}",
@@ -1664,6 +1656,11 @@
         "row_missing": "momskod utan egen momsrad",
         "rate": "annan momssats än dagens allmänna sats"
       }
+    },
+    "finance": {
+      "noValuations": "Inga prisuppskattningar.",
+      "noFinancing": "Inget eget lån är länkat till objektet.",
+      "noCapital": "Inget annat investerat kapital."
     }
   },
   "company": {

@@ -5,16 +5,11 @@ export const PROPERTY_TABS = ['leases', 'water', 'docs', 'finance'] as const
 export type PropertyTab = (typeof PROPERTY_TABS)[number]
 
 /**
- * What the edit page is opened to do, once: `add` a new row on its tab (`/new`), or open the card
- * of `lease` (`/lease/{key}`). The page drops it from the address once done.
+ * A card open in edit on a rental object's tab: a new row (`/leases/new`, `/water/new`), stored lease
+ * `lease` (`/leases/lease/{key}`) or water settlement `settlement` (`/water/settlement/{key}`). Kept on
+ * the way back from a voucher, with its unsaved form.
  */
-export type PropertyEditIntent = { add: true } | { lease: string }
-
-/**
- * A card open in edit on a rental object's Vuokrasuhteet tab: a new lease (`/leases/new`) or stored
- * lease `lease` (`/leases/lease/{key}`). Kept on the way back from a voucher, with its unsaved form.
- */
-export type PropertyCard = PropertyEditIntent
+export type PropertyCard = { add: true } | { lease: string } | { settlement: string }
 
 export type VoucherVia =
   | { kind: 'account'; account: number }
@@ -24,8 +19,6 @@ export type VoucherVia =
   | { kind: 'property'; id: number; month?: string; tab?: PropertyTab; card?: PropertyCard }
   /** Opened from the rental-object setup (`#/properties/setup`); its unsaved choices are kept. */
   | { kind: 'propertiesSetup' }
-  /** Opened from a rental object's edit page (`#/property/{id}/edit`); its unsaved form is kept. */
-  | { kind: 'propertyEdit'; id: number; tab?: PropertyTab }
   | { kind: 'balanceSheetItems' }
   | { kind: 'browse' }
   | { kind: 'journal' }
@@ -50,7 +43,8 @@ export type Route =
    * `card` a lease card in edit there.
    */
   | { view: 'property'; id: number; month?: string; tab?: PropertyTab; card?: PropertyCard }
-  | { view: 'propertyEdit'; id: number; tab?: PropertyTab; intent?: PropertyEditIntent }
+  /** The object's general settings (kind, excluded, note); everything else is edited on its tabs. */
+  | { view: 'propertyEdit'; id: number }
   /** `documents`: every document, searchable. `own`: the page with the company's own documents open. */
   | { view: 'company'; section?: CompanySection }
   /** The page with this period open. */
@@ -86,17 +80,33 @@ export function allocationHash(id: number, month?: string): string {
  */
 export function propertyHash(id: number, at: { month?: string; tab?: PropertyTab; card?: PropertyCard } = {}): string {
   if (at.month) return `#/property/${id}/month/${at.month}`
-  return `#/property/${id}${at.tab ? `/${at.tab}` : ''}${at.tab === 'leases' && at.card ? cardTail(at.card) : ''}`
+  return `#/property/${id}${at.tab ? `/${at.tab}` : ''}${at.card && cardFits(at.tab, at.card) ? cardTail(at.card) : ''}`
+}
+
+/** A new row on the leases or water tab, a lease on the leases tab, a settlement on the water tab. */
+function cardFits(tab: PropertyTab | undefined, card: PropertyCard): boolean {
+  if ('add' in card) return tab === 'leases' || tab === 'water'
+  return 'lease' in card ? tab === 'leases' : tab === 'water'
 }
 
 function cardTail(card: PropertyCard): string {
-  return 'add' in card ? '/new' : `/lease/${encodeURIComponent(card.lease)}`
+  if ('add' in card) return '/new'
+  return 'lease' in card ? `/lease/${encodeURIComponent(card.lease)}` : `/settlement/${encodeURIComponent(card.settlement)}`
 }
 
-/** `#/property/{id}/edit`, `.../edit/{tab}`, and with an intent `.../edit/{tab}/new` or `.../edit/leases/lease/{key}`. */
-export function propertyEditHash(id: number, tab?: PropertyTab, intent?: PropertyEditIntent): string {
-  const base = `#/property/${id}/edit${tab ? `/${tab}` : ''}`
-  return intent ? `${base}${cardTail(intent)}` : base
+/** The card a tab's address names (`new`, `lease/{key}` on leases, `settlement/{key}` on water), and what follows it. */
+function parseCard(tab: PropertyTab | undefined, rest: string): { card: PropertyCard; tail: string } | null {
+  const kind = tab === 'leases' ? 'lease' : tab === 'water' ? 'settlement' : null
+  const m = kind ? rest.match(new RegExp(`^(?:new|${kind}/([^/]+))(?:/(.+))?$`)) : null
+  if (!m) return null
+  const key = m[1] != null ? decodeURIComponent(m[1]) : null
+  const card: PropertyCard = key == null ? { add: true } : kind === 'lease' ? { lease: key } : { settlement: key }
+  return { card, tail: m[2] ?? '' }
+}
+
+/** `#/property/{id}/edit`: the object's general settings. */
+export function propertyEditHash(id: number): string {
+  return `#/property/${id}/edit`
 }
 
 /** `#/company`, `#/company/documents`, `#/company/own`, or with a period open `#/company/period/{ends}`. */
@@ -145,8 +155,6 @@ export function voucherHash(
       return `${propertyHash(via.id, via)}${tail}`
     case 'propertiesSetup':
       return `#/properties/setup${tail}`
-    case 'propertyEdit':
-      return `${propertyEditHash(via.id, via.tab)}${tail}`
     case 'balanceSheetItems':
       return `#/balance-sheet-items${tail}`
     case 'browse':
@@ -174,8 +182,6 @@ export function voucherParentHash(via: VoucherVia): string {
       return propertyHash(via.id, via)
     case 'propertiesSetup':
       return '#/properties/setup'
-    case 'propertyEdit':
-      return propertyEditHash(via.id, via.tab)
     case 'balanceSheetItems':
       return '#/balance-sheet-items'
     case 'browse':
@@ -205,8 +211,6 @@ export function voucherUpI18n(via: VoucherVia): { key: string; vars?: Record<str
       return { key: 'up.property' }
     case 'propertiesSetup':
       return { key: 'up.propertiesSetup' }
-    case 'propertyEdit':
-      return { key: 'up.propertyEdit' }
     case 'balanceSheetItems':
       return { key: 'up.balanceSheetItems' }
     case 'browse':
@@ -293,21 +297,22 @@ export function parseRoute(hash: string = window.location.hash): Route {
     if (!property[3]) return { view: 'property', id, ...month }
     if (property[3] === 'edit' && !property[2]) return { view: 'propertyEdit', id }
     if (property[3].startsWith('edit/') && !property[2]) {
+      // Everything but the basics is edited on the object's tabs: an old edit-page address opens the
+      // tab, its card, or the voucher with the way back to the tab.
       const { tab, rest } = splitPropertyTab(property[3].slice('edit/'.length))
-      if (!rest) return { view: 'propertyEdit', id, ...tab }
-      if (rest === 'new' && tab.tab) return { view: 'propertyEdit', id, ...tab, intent: { add: true } }
-      const lease = rest.match(/^lease\/([^/]+)$/)
-      if (lease && tab.tab === 'leases') return { view: 'propertyEdit', id, ...tab, intent: { lease: decodeURIComponent(lease[1]) } }
+      const card = parseCard(tab.tab, rest)
+      if (card && !card.tail) return { view: 'property', id, ...tab, card: card.card }
+      if (tab.tab && (!rest || rest === 'new')) return { view: 'property', id, ...tab }
       const edited = parseVoucherSegment(rest)
-      if (edited) return voucherRoute({ kind: 'propertyEdit', id, ...tab }, edited)
+      if (edited) return voucherRoute({ kind: 'property', id, ...tab }, edited)
     }
     const { tab, rest } = property[2] ? { tab: {}, rest: property[3] } : splitPropertyTab(property[3])
     if (!rest) return { view: 'property', id, ...tab }
-    const card = tab.tab === 'leases' ? rest.match(/^(?:new|lease\/([^/]+))(?:\/(.+))?$/) : null
+    const card = parseCard(tab.tab, rest)
     if (card) {
-      const at = { id, ...tab, card: card[1] ? { lease: decodeURIComponent(card[1]) } : ({ add: true } as const) }
-      if (!card[2]) return { view: 'property', ...at }
-      const back = parseVoucherSegment(card[2])
+      const at = { id, ...tab, card: card.card }
+      if (!card.tail) return { view: 'property', ...at }
+      const back = parseVoucherSegment(card.tail)
       if (back) return voucherRoute({ kind: 'property', ...at }, back)
     }
     const ref = parseVoucherSegment(rest)

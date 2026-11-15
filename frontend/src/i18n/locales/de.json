@@ -517,7 +517,6 @@
     "property": "Zum Objekt",
     "properties": "Zu den Mietobjekten",
     "propertiesSetup": "Zur Einrichtung der Objekte",
-    "propertyEdit": "Zur Bearbeitung des Objekts",
     "company": "Zur Unternehmensseite"
   },
   "ledger": {
@@ -699,7 +698,8 @@
     "saving": "Wird gespeichert…",
     "cancel": "Abbrechen",
     "close": "Schließen",
-    "delete": "Löschen"
+    "delete": "Löschen",
+    "edit": "Bearbeiten"
   },
   "fiscal": {
     "title": "Geschäftsjahre",
@@ -1030,7 +1030,7 @@
     "dataThrough": "Kontoauszüge bis {date}",
     "acquired": "erworben {date}",
     "soldOn": "verkauft {date}",
-    "editLink": "Objekt bearbeiten",
+    "editLink": "Objekteinstellungen",
     "openAllocation": "Ergebnis der Kostenstelle",
     "empty": "Keine Objekte anzuzeigen.",
     "setupBanner": "{n} Kostenstellen warten auf die Einrichtung.",
@@ -1159,7 +1159,9 @@
       "exceptionNote": "Grund",
       "exceptionDoc": "Vereinbarung",
       "rentFrom": "Miete an den Eigentümer ab",
-      "rentUntil": "Miete an den Eigentümer bis"
+      "rentUntil": "Miete an den Eigentümer bis",
+      "date": "Datum",
+      "amount": "Betrag €"
     },
     "breakEven": {
       "title": "Break-even-Preis: der Preis, der das Geld zurückbringt",
@@ -1220,7 +1222,6 @@
     },
     "docs": {
       "title": "Dokumente",
-      "linkedTitle": "Verknüpfte Dokumente",
       "empty": "Keine Anhänge.",
       "missing": "Beleg {id} wurde gelöscht",
       "deleted": "Gelöscht",
@@ -1234,7 +1235,8 @@
         "other": "Rechnungen und andere Belege",
         "bank": "Kontoauszüge"
       },
-      "showAll": "Alle anzeigen ({n})"
+      "showAll": "Alle anzeigen ({n})",
+      "unlink": "Verknüpfung entfernen"
     },
     "lease": {
       "title": "Mietverhältnisse",
@@ -1270,7 +1272,6 @@
       },
       "suggestions": "Vorschläge aus der Buchhaltung ({n})",
       "suggestionsLead": "Aus den verknüpften Mietverträgen und Mietzahlungen. Nichts ist gespeichert: Hinzufügen öffnet den Vorschlag zur Prüfung auf einer eigenen Karte.",
-      "review": "Prüfen und speichern",
       "source": {
         "contract": "Quelle: Mietvertrag",
         "payments": "Quelle: Mietzahlungen",
@@ -1295,8 +1296,7 @@
       "exceptionNow": "Derzeit abweichende Miete",
       "normal": "regulär {amount}",
       "exceptionNormal": "Reguläre Miete dann {amount}/Monat",
-      "edit": "Bearbeiten",
-      "editTerms": "Erhöhung oder abweichende Miete (Nachlass, vereinbarte Miete) hinzufügen…"
+      "edit": "Bearbeiten"
     },
     "deposit": {
       "title": "Mietkaution",
@@ -1321,7 +1321,7 @@
     "edit": {
       "noDocument": "Kein Dokument",
       "noDocumentHint": "Dafür gibt es kein Dokument: keine Erinnerung.",
-      "title": "Bearbeiten: {name}",
+      "title": "Einstellungen: {name}",
       "basics": "Grunddaten",
       "erasLead": "Bilanzposten mit den Anschaffungskosten des Objekts (Kaufpreis, Grunderwerbsteuer, Kosten).",
       "addEra": "Bilanzposten hinzufügen…",
@@ -1340,19 +1340,13 @@
       "delete": "Objektdaten löschen",
       "deleteConfirm": "Tilaris Daten zu diesem Objekt löschen? Die Buchhaltung bleibt unverändert.",
       "readOnly": "Die Daten wurden mit einem neueren Tilari gespeichert; diese Version kann sie nur anzeigen.",
-      "leases": "Mietverträge",
-      "leasesLead": "Mieter, Bedingungen, Anfangsmiete und Erhöhungen. Die Erhöhungsklausel füllt die nächste Erhöhung vor; Tilari ändert die Miete nie selbst. Vertrag und Erhöhungsmitteilungen sind Liitetieto-Belege und daher auch in Kitsas auffindbar.",
-      "addLease": "Mietvertrag hinzufügen",
       "removeLease": "Mietvertrag entfernen",
-      "suggestions": "Ins Formular übernehmen, prüfen und speichern.",
       "addSuggestion": "Hinzufügen",
-      "addAllSuggestions": "Alle hinzufügen",
       "addIncrease": "Erhöhung hinzufügen",
       "createNotice": "Erhöhungsmitteilung erstellen",
       "confirmDeleteUnsaved": "Auf dieser Seite wurden {n} Erhöhungsmitteilungen erstellt, aber nicht beim Objekt gespeichert. Aus der Buchhaltung löschen? Abbrechen behält sie (sie wurden evtl. schon versandt).",
       "confirmRemoveLease": "Den Mietvertrag vom Objekt entfernen? Die Änderung wird sofort gespeichert.",
       "confirmLeaveCard": "Die offene Karte hat ungespeicherte Änderungen. Verwerfen?",
-      "restored": "Ungespeicherte Änderungen wurden wiederhergestellt.",
       "deleteDoc": "Beleg löschen",
       "deleteNotice": "Erhöhungsmitteilung löschen",
       "uploadContract": "Vertrag hochladen",
@@ -1360,7 +1354,8 @@
       "confirmDeleteDoc": "Den Beleg aus der Buchhaltung löschen: {titles}? Ein bei diesem Besuch erstellter wird sofort gelöscht, ein früherer beim Speichern.",
       "exceptionsLead": "Ein vereinbarter Nachlass, eine mietfreie Zeit oder eine andere Ausnahme: an ihren Tagen zahlt der Mieter diese Beträge statt der Miete und ihrer Erhöhungen, und der Mietsaldo rechnet damit. Einen Nachlass als die niedrigere Miete eingeben.",
       "addException": "Abweichende Miete hinzufügen",
-      "uploadException": "Dokument hochladen"
+      "uploadException": "Dokument hochladen",
+      "lead": "Die allgemeinen Einstellungen des Objekts. Mietverträge, Wasserabrechnungen, Dokumente und die Finanzangaben werden auf den eigenen Reitern des Objekts bearbeitet, je Karte oder Abschnitt."
     },
     "setup": {
       "title": "Mietobjekte einrichten",
@@ -1537,7 +1532,6 @@
     "water": {
       "title": "Wasserkosten und Abrechnungen",
       "none": "Keine Wasserabrechnungen.",
-      "add": "Wasserabrechnung hinzufügen",
       "remove": "Wasserabrechnung entfernen",
       "period": "Abrechnungszeitraum {period}",
       "company": "Wohnungsgesellschaft: {text}",
@@ -1566,13 +1560,10 @@
       "ownerKeeps": "Dem Eigentümer bleiben {amount}.",
       "ownerBears": "Der Eigentümer trägt {amount} (z. B. Leerstandstage).",
       "suggestions": "Vorschläge aus der Buchhaltung ({n})",
-      "suggestionsLead": "Aus den auf dem Objekt gebuchten Wasserabrechnungen. Nichts ist gespeichert: Beträge mit der Abrechnung der Gesellschaft prüfen und auf der Bearbeitungsseite speichern.",
+      "suggestionsLead": "Aus den auf dem Objekt gebuchten Wasserabrechnungen. Nichts ist gespeichert: Hinzufügen öffnet den Vorschlag auf einer eigenen Karte; Beträge mit der Abrechnung der Gesellschaft prüfen.",
       "flat": "Wasser wird nicht abgerechnet",
       "advance": "Wasser wird nach Verbrauch abgerechnet",
       "latest": "Wasserabrechnung {period}",
-      "editTitle": "Wasserabrechnungen",
-      "editLead": "Die Wasserabrechnungen der Wohnungsgesellschaft je Zeitraum. Die Anteile der Mieter ergeben sich aus den Mietverträgen: Verbrauch nach Wohntagen, abzüglich der Wasservorauszahlungen.",
-      "editSuggestions": "Auf das Objekt gebuchte Wasserabrechnungen, die nicht im Formular sind.",
       "direction": {
         "refund": "Gutschrift an den Eigentümer",
         "charge": "Nachzahlung des Eigentümers"
@@ -1606,7 +1597,8 @@
         "charge": "Nachzahlung",
         "refundText": "Wir überweisen {amount} auf Ihr Konto. Bitte teilen Sie uns mit, falls sich Ihre Kontonummer geändert hat.",
         "chargeText": "Bitte zahlen Sie {amount} mit der nächsten Miete auf dasselbe Konto und mit derselben Referenz wie die Miete."
-      }
+      },
+      "confirmRemove": "Diese Wasserabrechnung vom Objekt entfernen?"
     },
     "rent": {
       "balanceOn": "Mietsaldo {date}",
@@ -1664,6 +1656,11 @@
         "row_missing": "USt-Code ohne eigene USt-Zeile",
         "rate": "anderer USt-Satz als der Regelsatz des Tages"
       }
+    },
+    "finance": {
+      "noValuations": "Keine Preisschätzungen.",
+      "noFinancing": "Kein eigenes Darlehen ist mit dem Objekt verknüpft.",
+      "noCapital": "Kein sonstiges investiertes Kapital."
     }
   },
   "company": {

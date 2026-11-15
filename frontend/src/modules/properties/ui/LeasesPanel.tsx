@@ -114,7 +114,7 @@ function LeaseCard({
   asOf: string
   /** Not sold: only then is a document with no voucher flagged as missing. */
   held: boolean
-  /** Turns the card into its form, where increases and exceptions are entered; none when it cannot change. */
+  /** Turns the card into its form (terms, increases, exceptions, documents); none when it cannot change. */
   onEdit?: () => void
   onOpenVoucher: (voucherId: number) => void
   onSaveException?: (leaseKey: string, exception: LeaseException | null, replaces?: LeaseException) => Promise<void>
@@ -135,6 +135,11 @@ function LeaseCard({
         <strong>{lease.tenant ?? t('properties.lease.tenantUnknown')}</strong>
         <span className="muted">{leasePeriod(t, lease)}</span>
         <LeaseStatePill state={lease.state} />
+        {onEdit ? (
+          <button type="button" className="btn-link" onClick={onEdit}>
+            {t('properties.lease.edit')}
+          </button>
+        ) : null}
       </p>
       {terms.length ? <p className="property-lease-terms">{terms.join(' · ')}</p> : null}
       {exceptionNow ? (
@@ -191,13 +196,6 @@ function LeaseCard({
             ))}
           </DocLines>
         </details>
-      ) : null}
-      {onEdit ? (
-        <p className="property-lease-terms">
-          <button type="button" className="btn-link" onClick={onEdit}>
-            {t('properties.lease.editTerms')}
-          </button>
-        </p>
       ) : null}
     </div>
   )
@@ -266,6 +264,16 @@ export function LeasesPanel({
         ) : null}
       </div>
       {rentDates}
+      {/* What the book suggests comes first: its "Lisää" opens the new card right under it. */}
+      {suggestions.length ? (
+        <SuggestBanner
+          heading="h4"
+          title={t('properties.lease.suggestions', { n: suggestions.length })}
+          lead={t('properties.lease.suggestionsLead')}
+        >
+          <LeaseList leases={suggestions} onOpenVoucher={onOpenVoucher} onAdd={onAddSuggestion} />
+        </SuggestBanner>
+      ) : null}
       {editing === 'new' ? form : null}
       {!leases.length && !suggestions.length && editing !== 'new' ? <p className="muted">{t('properties.lease.none')}</p> : null}
       {leases.length > 0 && !stored ? <p className="muted">{t('properties.lease.noCurrent', { date: formatDate(asOf) })}</p> : null}
@@ -304,15 +312,6 @@ export function LeasesPanel({
         <div className="property-lease-terms">
           <LineSources label={t('properties.rent.unassigned', { n: unassigned.length })} lines={unassigned} onOpen={onOpenVoucher} />
         </div>
-      ) : null}
-      {suggestions.length ? (
-        <SuggestBanner
-          heading="h4"
-          title={t('properties.lease.suggestions', { n: suggestions.length })}
-          lead={t('properties.lease.suggestionsLead')}
-        >
-          <LeaseList leases={suggestions} onOpenVoucher={onOpenVoucher} onAdd={onAddSuggestion} />
-        </SuggestBanner>
       ) : null}
     </section>
   )

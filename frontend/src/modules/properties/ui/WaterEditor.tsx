@@ -1,26 +1,20 @@
 import { useState } from 'react'
 import { fromBookedLines, settlementViews, statementGuesses, withStatementLines } from '../../../book/modules/properties/domain/water'
 import { useI18n } from '../../../i18n'
-import { formatDate } from '../../../shared/dates'
-import { DocLine, DocLines } from '../../../shared/DocRows'
 import { EuroInput } from '../../../shared/EuroInput'
 import { FileButton } from '../../../shared/FileButton'
 import { formatCents, parseEurInput } from '../../../shared/money'
-import { SuggestBanner } from '../../../shared/SuggestBanner'
-import type { DocCandidate, Lease, WaterBookedLine, WaterSettlement, WaterStatementCandidate, WaterSuggestionView } from '../api'
+import type { DocCandidate, Lease, WaterBookedLine, WaterSettlement, WaterStatementCandidate } from '../api'
 import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
-import { companyResultText, periodText, untilText, waterBalanceText } from './format'
+import { periodText, waterBalanceText } from './format'
 import { LineLink, NoDocumentCheck, Shown, WaterStatusPill } from './FormParts'
-import { SuggestionSource } from './LeasesPanel'
 import {
   candidateAmount,
   candidateDoc,
   draftDifference,
   draftSettlement,
-  newSettlement,
   pickStatement,
-  settlementDrafts,
   shareDraft,
   statementFill,
   withShare,
@@ -28,19 +22,18 @@ import {
   type ShareDraft,
 } from './waterDrafts'
 
-/** A suggestion already in the form: a settlement ending within a month of it. */
-function inForm(drafts: SettlementDraft[], to: string): boolean {
-  const at = Date.parse(to)
-  return drafts.some((d) => d.to && Math.abs(Date.parse(d.to) - at) <= 31 * 86_400_000)
-}
-
+/**
+ * One water settlement card in edit, in place on the Vesimaksut tab: the company's figures, the
+ * statement, and each tenant's share with the letter. `otherDrafts` are the object's other
+ * settlements: the card's views and guesses count them as the page will.
+ */
 export function WaterEditor({
   drafts,
   onChange,
   leases,
   tenantName,
   docs,
-  suggestions,
+  otherDrafts = [],
   lines,
   candidates,
   onCreateLetter,
@@ -51,12 +44,12 @@ export function WaterEditor({
 }: {
   drafts: SettlementDraft[]
   onChange: (drafts: SettlementDraft[]) => void
-  /** The leases as the form has them now: shares follow them as they are edited. */
+  /** The object's stored leases: the shares follow them. */
   leases: Lease[]
   tenantName: (lease: Lease) => string
   docs: DocCandidate[]
-  /** Settlements the book suggests, newest first. */
-  suggestions: WaterSuggestionView[]
+  /** The object's other settlements (not in this form). */
+  otherDrafts?: SettlementDraft[]
   /** The object's water settlement lines: each settlement shows those it takes, as the page will. */
   lines: WaterBookedLine[]
   /** Vouchers with the object's lines that can be a statement; a picked one's lines are the company's. */
@@ -67,21 +60,21 @@ export function WaterEditor({
   onUpload: (settlement: number, leaseKey: string | null, files: File[]) => Promise<void>
   isCreated: (voucherId: number) => boolean
   onDeleteDocs: (voucherIds: number[], edit?: DocEdit) => Promise<void>
-  /** Opens a suggestion's booked line; the unsaved form waits for the way back. */
+  /** Opens a booked line's voucher; the unsaved form waits for the way back. */
   onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
   const [creating, setCreating] = useState<string | null>(null)
-  const pending = suggestions.filter((s) => !inForm(drafts, s.settlement.to))
-  const settlements = drafts.map(draftSettlement)
+  const all = [...otherDrafts, ...drafts]
+  const settlements = all.map(draftSettlement)
   const dated = settlements.filter((s): s is WaterSettlement => s != null)
-  const picked = new Set(drafts.flatMap((d) => (d.voucherId ? [Number(d.voucherId)] : [])))
+  const picked = new Set(all.flatMap((d) => (d.voucherId ? [Number(d.voucherId)] : [])))
   const booked = fromBookedLines(withStatementLines(lines, candidates.filter((c) => picked.has(c.voucher.voucher_id)).flatMap((c) => c.lines)))
   const views = settlementViews(dated, booked.lines, leases, { ...booked.ctx, tenantName })
   const set = (i: number, patch: Partial<SettlementDraft>) => onChange(drafts.map((d, j) => (j === i ? { ...d, ...patch } : d)))
   const setShare = (i: number, leaseKey: string, patch: Partial<ShareDraft>) => set(i, { shares: withShare(drafts[i].shares, leaseKey, patch) })
-  /** The form's other periods: a filled one starts after them. */
-  const othersOf = (i: number) => drafts.flatMap((x, j) => (j !== i && x.from && x.to ? [{ from: x.from, to: x.to }] : []))
+  /** The object's other periods: a filled one starts after them. */
+  const othersOf = (i: number) => all.flatMap((x, j) => (j !== otherDrafts.length + i && x.from && x.to ? [{ from: x.from, to: x.to }] : []))
   const amounts = new Map(candidates.map((c) => [c.voucher.voucher_id, candidateAmount(c)]))
   const created = (ids: string[]) => ids.filter((id) => id && isCreated(Number(id))).map(Number)
   const removeSettlement = (i: number) =>
@@ -113,49 +106,8 @@ export function WaterEditor({
 
   return (
     <>
-      {pending.length ? (
-        <SuggestBanner
-          heading="h4"
-          title={t('properties.water.suggestions', { n: pending.length })}
-          lead={t('properties.water.editSuggestions')}
-          action={
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => onChange([...drafts, ...settlementDrafts(pending.map((s) => s.settlement))])}
-            >
-              {t('properties.edit.addAllSuggestions')}
-            </button>
-          }
-        >
-          <DocLines>
-            {pending.map((s) => (
-              <DocLine
-                key={`${s.settlement.from}-${s.settlement.to}`}
-                date={formatDate(s.settlement.from)}
-                title={`${untilText(t, s.settlement.to)} · ${companyResultText(t, s.settlement.difference_snt)}`}
-                mark={<SuggestionSource source={s.source === 'company' ? 'waterCompany' : 'waterTenant'} />}
-                end={
-                  <button
-                    type="button"
-                    className="btn-small is-primary"
-                    onClick={() => onChange([...drafts, ...settlementDrafts([s.settlement])])}
-                  >
-                    {t('properties.edit.addSuggestion')}
-                  </button>
-                }
-              >
-                {s.lines.map((line) => (
-                  <LineLink key={line.line_id} line={line} onOpen={onOpenVoucher} />
-                ))}
-              </DocLine>
-            ))}
-          </DocLines>
-        </SuggestBanner>
-      ) : null}
-
       {drafts.map((d, i) => {
-        const settlement = settlements[i]
+        const settlement = settlements[otherDrafts.length + i]
         const view = settlement ? views[dated.indexOf(settlement)] : null
         const shares = view?.shares ?? []
         const usage = d.usage.trim() ? Math.abs(parseEurInput(d.usage)) : null
@@ -319,9 +271,6 @@ export function WaterEditor({
           </div>
         )
       })}
-      <button type="button" className="btn-secondary" onClick={() => onChange([...drafts, newSettlement()])}>
-        {t('properties.water.add')}
-      </button>
     </>
   )
 }
