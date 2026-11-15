@@ -32,8 +32,9 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   when the voucher is within 400 days of its end; else the year up to the month before (as suggestions). Only
   fields the owner left empty, or that the previous pick filled, change; "–" clears what a pick filled. A note
   says the period is an estimate while it is unchanged.
-- Left out: a warning for a line with another object's reference (not decided), `Tosite.viite` (rarely filled),
-  and an invoice moved onto the object by a correction is not offered there (the correction voucher has no file).
+- Left out: a warning for a line with another object's reference (owner declined 2026-11-15), `Tosite.viite`
+  (rarely filled), and an invoice moved onto the object by a correction is not offered there (the correction
+  voucher has no file).
 
 ## 2026-11-14 - Rental objects: VAT leases (`feature/lease-vat`, ADR-033)
 
