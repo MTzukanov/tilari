@@ -27,6 +27,7 @@ export type {
   MonthLineKind,
   MonthPoint,
   PortfolioAlerts,
+  PortfolioChart,
   PortfolioResponse,
   PortfolioSettings,
   PropertyDetail,

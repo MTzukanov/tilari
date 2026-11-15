@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { LineChart, lineTicks } from './LineChart'
+import { LineChart, linePath, lineTicks } from './LineChart'
 
 describe('LineChart', () => {
   const keys = ['2025-01', '2025-02', '2025-03']
@@ -33,5 +33,10 @@ describe('LineChart', () => {
     expect(lineTicks(-1_000_00, 50_000_00).ticks).toEqual([-20_000_00, 0, 20_000_00, 40_000_00, 60_000_00])
     expect(lineTicks(0, 50_000_00).ticks).toEqual([0, 20_000_00, 40_000_00, 60_000_00])
     expect(lineTicks(0, 0).ticks).toEqual([0, 25_00])
+  })
+
+  it('leaves a gap where a value is null', () => {
+    expect(linePath([null, 1, 2, null, 3], (i) => i, (v) => v)).toBe('M1.0,1.0 L2.0,2.0 M4.0,3.0')
+    expect(linePath([null, null], (i) => i, (v) => v)).toBe('')
   })
 })

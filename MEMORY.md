@@ -7,6 +7,23 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-15 - Rental objects: the Properties page's charts per object
+
+- Owner chose two charts, not one, and "Palauttamatta" as the investment measure: "Kertynyt kassavirta" and
+  "Palauttamatta kuukauden lopussa", a coloured line per object and a thick black "Kaikki yhteensä", with one row
+  of checkboxes for both (`ui/PortfolioCharts.tsx`, under "Omistuksessa"). One chart was ruled out by scale:
+  tens of thousands to recover beside a few hundred of cash flow flattens the cash lines.
+- Data: `PortfolioResponse.chart` (`portfolioChart` in `domain/series.ts`) puts each object's own months on one month
+  axis, null outside them. The total counts every object whatever is unchecked. A sold object's cash flow stays
+  in the cash total after its sale; it leaves the unrecovered total from its sale month, so the line ends at the
+  "Palauttamatta" KPI (held objects only). An object with no investment linked (`unlinked`) has a cash line and
+  no unrecovered line; with none invested the unrecovered chart is not shown (the golden book).
+- Colours: the dataviz skill's eight categorical hues in fixed order by the object's place in the chart (hiding one
+  repaints none), validated on white; a 9th object repeats them dashed. Three are under 3:1 on the surface, so
+  every line has its name in the legend and the month hover lists the values (a column-wide `<title>`).
+- Choices (hidden objects, total, all months) are kept in this browser (`tilari.properties.portfolioChart`), by
+  object id, not per book.
+
 ## 2026-11-15 - Rental objects: the cumulative cash flow on the payback chart
 
 - Owner: the lower chart ("Palauttamatta kuukauden lopussa") gets the cash flow line too. It now draws

@@ -57,6 +57,34 @@ test.describe('rental objects', () => {
   })
 })
 
+test.describe('rental objects chart', () => {
+  test('every object has a line and a checkbox, the total stays; the choice is remembered; it fits a phone', async ({ page }) => {
+    await openBook(page)
+    await page.goto('/#/properties')
+    const panel = page.locator('section.portfolio-charts')
+    await expect(panel.getByRole('heading', { name: 'Kohteet kuukausittain' })).toBeVisible()
+    const cash = panel.getByRole('img', { name: 'Kertynyt kassavirta' })
+    // The golden book links no investment: a cash flow per object, no unrecovered chart.
+    await expect(cash.locator('.portfolio-line')).toHaveCount(3)
+    await expect(cash.locator('.portfolio-total')).toHaveCount(1)
+    await expect(panel.getByRole('img', { name: 'Palauttamatta kuukauden lopussa' })).toHaveCount(0)
+
+    await panel.getByRole('checkbox', { name: 'Asunto' }).uncheck()
+    await expect(cash.locator('.portfolio-line')).toHaveCount(2)
+    await expect(cash.locator('.portfolio-total')).toHaveCount(1)
+    await page.reload()
+    await expect(panel.getByRole('checkbox', { name: 'Asunto' })).not.toBeChecked()
+    await expect(cash.locator('.portfolio-line')).toHaveCount(2)
+    await panel.getByRole('checkbox', { name: 'Kaikki yhteensä' }).uncheck()
+    await expect(cash.locator('.portfolio-total')).toHaveCount(0)
+
+    await page.setViewportSize({ width: 360, height: 800 })
+    await expect
+      .poll(() => page.evaluate(() => { const w = document.querySelector('main.workspace')!; return w.scrollWidth - w.clientWidth }))
+      .toBe(0)
+  })
+})
+
 test.describe('rental object tabs', () => {
   test('the page opens on the overview; a tab is in the address and moves with the arrow keys; it fits a phone', async ({ page }) => {
     await openBook(page)

@@ -8,7 +8,7 @@ import { lineText, monthName } from './format'
 
 const TOOLTIP_LINES = 8
 
-function monthLabel(key: string, locale: string, withYear: boolean): string {
+export function monthLabel(key: string, locale: string, withYear: boolean): string {
   const [y, m] = key.split('-').map(Number)
   return new Intl.DateTimeFormat(locale, withYear ? { month: 'short', year: '2-digit' } : { month: 'short' }).format(
     new Date(y, m - 1, 1),

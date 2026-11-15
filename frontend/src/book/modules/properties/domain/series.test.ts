@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultAsOf, trailing12 } from './series'
+import { defaultAsOf, portfolioChart, trailing12 } from './series'
 import type { MonthPoint } from './types'
 
 function month(key: string, income: number, expense: number): MonthPoint {
@@ -41,5 +41,40 @@ describe('trailing12', () => {
     const t = trailing12(months, '2026-09-30', { from: '2026-04-15', to: null }, 100_000)!
     expect(t).toMatchObject({ months: 6, annualized: true, net_snt: 7_200, from: '2026-04-01' })
     expect(trailing12(months, '2026-09-30', { from: '2026-08-01', to: null }, 100_000)).toBeNull()
+  })
+})
+
+describe('portfolioChart', () => {
+  const owed = (m: MonthPoint, unrecovered: number): MonthPoint => ({ ...m, unrecovered_snt: unrecovered })
+
+  it('puts every object on one month axis, null outside its months', () => {
+    const chart = portfolioChart([
+      { id: 1, status: 'active', months: [owed(month('2026-01', 100, 40), 900), owed(month('2026-02', 100, 40), 840), owed(month('2026-03', 100, 40), 780)] },
+      { id: 2, status: 'active', months: [owed(month('2026-02', 50, 0), 500), owed(month('2026-03', 50, 80), 530)] },
+    ])
+    expect(chart.keys).toEqual(['2026-01', '2026-02', '2026-03'])
+    expect(chart.objects[0]).toEqual({ id: 1, cash_snt: [60, 120, 180], unrecovered_snt: [900, 840, 780] })
+    expect(chart.objects[1]).toEqual({ id: 2, cash_snt: [null, 50, 20], unrecovered_snt: [null, 500, 530] })
+    expect(chart.total_cash_snt).toEqual([60, 170, 200])
+    expect(chart.total_unrecovered_snt).toEqual([900, 1340, 1310])
+  })
+
+  it('keeps a sold object in the cash flow total and leaves it out of the unrecovered total from its sale month; an unlinked one only in the cash flow', () => {
+    const chart = portfolioChart([
+      { id: 1, status: 'active', months: ['2026-01', '2026-02', '2026-03'].map((k) => owed(month(k, 10, 0), 100)) },
+      { id: 2, status: 'sold', months: [owed(month('2026-01', 30, 0), 400), owed(month('2026-02', 30, 0), -50)] },
+      { id: 3, status: 'unlinked', months: [owed(month('2026-01', 5, 0), 999)] },
+      { id: 4, status: 'excluded', months: [owed(month('2026-01', 999, 0), 999)] },
+    ])
+    expect(chart.objects.map((o) => o.id)).toEqual([1, 2, 3])
+    expect(chart.objects[1].cash_snt).toEqual([30, 60, null])
+    // Nothing invested linked: a cash flow, nothing to recover.
+    expect(chart.objects[2]).toEqual({ id: 3, cash_snt: [5, null, null], unrecovered_snt: [null, null, null] })
+    expect(chart.total_cash_snt).toEqual([45, 85, 95])
+    expect(chart.total_unrecovered_snt).toEqual([500, 100, 100])
+  })
+
+  it('is empty without objects', () => {
+    expect(portfolioChart([]).keys).toEqual([])
   })
 })

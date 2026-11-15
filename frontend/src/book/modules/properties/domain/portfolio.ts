@@ -78,7 +78,7 @@ import {
   waterVoucherIds,
   type WaterViewContext,
 } from './water'
-import { defaultAsOf, isIncome } from './series'
+import { defaultAsOf, isIncome, portfolioChart } from './series'
 import { allocationSet, computeObject, resolveSaleCosts, type CountedLine, type ObjectResult } from './summary'
 import { pickBest, suggestEra, textScorer, type TextScorer } from './suggest'
 import {
@@ -495,6 +495,7 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
       .filter((p) => p.starts <= asOf)
       .map((p) => ({ starts: p.starts, ends: p.ends })),
     rows,
+    chart: portfolioChart(computed.map((c) => ({ id: c.centre.id, status: c.result.status, months: c.result.months }))),
     undecided: loaded.centres.filter((c) => !loaded.docs.has(c.id)).length,
     totals: {
       invested_snt: linkedRows.reduce((s, c) => s + c.result.summary.invested_snt, 0),
