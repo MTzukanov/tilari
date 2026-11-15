@@ -178,9 +178,20 @@ and 573/574 applies. Repeating groups go between `001:n` and `009:i`.
   other than the record description's.
 - **Remarks** (no effect on the file): an 8A row without a business ID or comparison value. Vero only remarks on these.
 
-Checking is the owner's: Ilmoitin.fi's check validates a file before sending. `testi.ilmoitin.fi` takes invented
-data only. Vero asks software makers to tell `ohjelmistotalot@vero.fi` when production use starts; Tilari sends
-nothing itself.
+### Checking in Ilmoitin
+
+Checking is the owner's, since only the owner can log in. As of 2026-11-03 no file from Tilari has been through it,
+so until one passes, the OmaVero figures are the route to rely on.
+
+- Ilmoitin.fi's "Tarkasta aineisto" needs a Suomi.fi login but no mandate, and it passes nothing to Vero: "Lähetä"
+  is a separate step. `testi.ilmoitin.fi` takes invented data only, so a real book's file goes to the production
+  service's check.
+- Results come in three groups: virheetön, huomautus (does not stop sending) and virheellinen (stops it). An error
+  line names the record, the field code and the value. The fix belongs in Tilari: Ilmoitin does not edit files.
+- A first check settles what Vero's documents leave open: 045 left out, and the attached forms after the 6B in one file.
+- A file for a period already filed is for the check only: sending it would replace the filed return.
+
+Vero asks software makers to tell `ohjelmistotalot@vero.fi` when production use starts; Tilari sends nothing itself.
 
 ## The stored calculation
 
@@ -195,14 +206,31 @@ writes over the newest kept one in place (date, title, its file replaced), delet
 links and unlinks those already deleted (`replaceCalculation` in `company/domain/upload.ts`). One dated on or before
 the lock date cannot change and stays; the save then makes a new voucher.
 
-## Left for later
+## Left to build
 
-- On 73: dividends that were deductible for the payer (listed by country) and the partly taxable classes of credit,
-  insurance and pension institutions. These go by hand in OmaVero; a credit institution's 6B already stops the file.
+As of 2026-11-03, in this order: the check comes first because it tells whether the file route works at all.
+
+1. **The owner's check in Ilmoitin** of a file from a real book ([above](#checking-in-ilmoitin)).
+2. **Form 70**, the credit for foreign tax withheld on dividends. Its question is on the 6B: a yes lists the form and
+   makes the file check-only, as for any form not generated. The tax withheld per country is already on
+   `73-YYYY.csv`. Whether to claim the credit is the owner's and the auditor's decision; Vero's guide to form 70 caps
+   it at the treaty rate and at the Finnish tax on that income.
+3. **Attachment PDFs' names for Ilmoitin.** The financial statements, the audit report and the minutes go as separate
+   PDFs, apart from the file. Vero's enclosures guide sets each name, and the type also decides whether PRH receives
+   it. They can follow the return. The documents are already on the period's rows on the company page.
+4. **7812**, the annual return on dividends paid. Listed when a dividend is decided, not generated. A separate return,
+   not in this file; it would read the decision and payment the company page keeps ([DIVIDENDS.md](DIVIDENDS.md)).
+5. **On 73**: dividends that were deductible for the payer (listed by country) and the partly taxable classes of
+   credit, insurance and pension institutions. Until then by hand in OmaVero; a credit institution's 6B already stops
+   the file.
+
+## By hand in OmaVero
+
+Not planned:
+
 - 71B for fixed-asset shares and partnership interests, losses with restricted deduction, and earlier years' confirmed
-  losses: these go by hand in OmaVero. The dialog says so when the figures call for the first.
+  losses. The dialog says so when the figures call for the first.
 - 62 does not carry typed figures over: where tax differs from the book, next year's opening balance is typed again.
-- Attachment PDFs' names for Ilmoitin.
-- 7812 (dividends) and 7851 (shareholder loans) are separate annual returns: listed, not generated.
+- 7851 (shareholder loans) is a separate annual return: listed, not generated.
 - Owner's housing in company property, share capital changes after the year end, and banks and insurers: a yes
   stops the file, and the owner files those in OmaVero.
