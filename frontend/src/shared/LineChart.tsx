@@ -96,7 +96,8 @@ export function LineChart({
       ))}
       {keys.map((key, i) =>
         i % every === 0 ? (
-          <text key={key} className="overview-tick" x={x(i)} y={height - 8} textAnchor="middle">
+          // A label this close to the right edge would be cut in half: it ends at the point instead.
+          <text key={key} className="overview-tick" x={x(i)} y={height - 8} textAnchor={x(i) > width - padR - 28 ? 'end' : 'middle'}>
             {labelFor(key)}
           </text>
         ) : null,

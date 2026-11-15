@@ -7,6 +7,18 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-15 - Test book with rental-object investments (`testdb/tilari-properties.kitsas`)
+
+- Owner asked for a book with an acquisition: the golden `tilari-test.kitsas` links none, so neither payback chart
+  was ever drawn in e2e. Rather than change the golden book (its figures are in `expected.ts`), a second book is
+  generated from the invented unit-test fixture (`buildPropertyFixture`) with its suggested links applied
+  (`properties/testBook.test.ts`; `npm run build:testdb:properties` writes it, every run checks the committed file
+  still opens with linked objects and that the chart's unrecovered total ends at the page figure).
+- e2e opens it with `openBook(page, propertiesBook, 'Esimerkki Vuokraus Oy')`.
+- Seen on it: the line charts cut the last month's label in half at the right edge; a label near the edge now ends
+  at its point. Two of the eight hues (slots 2 and 8, orange-red and red) are close on a long legend; they pass the
+  validator as non-adjacent slots and the legend names them.
+
 ## 2026-11-15 - Rental objects: the Properties page's charts per object
 
 - Owner chose two charts, not one, and "Palauttamatta" as the investment measure: "Kertynyt kassavirta" and

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
-import { editorSaveButton, openBook } from './helpers'
+import { editorSaveButton, openBook, propertiesBook } from './helpers'
 
 /** Opens a new lease card in place on object 4's Vuokrasuhteet tab; returns the lease's form on it. */
 async function newLeaseCard(page: Page): Promise<Locator> {
@@ -82,6 +82,17 @@ test.describe('rental objects chart', () => {
     await expect
       .poll(() => page.evaluate(() => { const w = document.querySelector('main.workspace')!; return w.scrollWidth - w.clientWidth }))
       .toBe(0)
+  })
+  test('a book with investments linked draws the unrecovered chart too', async ({ page }) => {
+    await openBook(page, propertiesBook, 'Esimerkki Vuokraus Oy')
+    await page.goto('/#/properties')
+    const panel = page.locator('section.portfolio-charts')
+    const unrecovered = panel.getByRole('img', { name: 'Palauttamatta kuukauden lopussa' })
+    await expect(unrecovered).toBeVisible()
+    expect(await unrecovered.locator('.portfolio-line').count()).toBeGreaterThan(3)
+    await expect(unrecovered.locator('.portfolio-total')).toHaveCount(1)
+    // A month's hover lists every shown line, the total first.
+    await expect(unrecovered.locator('.chart-column-hover title').last()).toContainText('Kaikki yhteensä:')
   })
 })
 
