@@ -22,7 +22,7 @@ import {
 import { VoucherOpen } from './FormParts'
 import { LeasesPanel } from './LeasesPanel'
 import { statusClass, tabMarks } from './format'
-import { PropertyFinance } from './PropertyFinance'
+import { CashFlowPanel, PropertyFinance } from './PropertyFinance'
 import { PropertyOverview } from './PropertyOverview'
 import { WaterPanel } from './WaterPanel'
 
@@ -34,19 +34,29 @@ function Documents({
   data,
   bank,
   onBank,
+  onAdd,
   onOpenVoucher,
 }: {
   data: PropertyDocuments
   /** Bank statements shown too. */
   bank: boolean
   onBank: (bank: boolean) => void
+  /** Opens the edit page to link a document; none when the object cannot be changed. */
+  onAdd?: () => void
   onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   return (
     <section className="overview-panel property-docs">
-      <h3>{t('properties.docs.title')}</h3>
+      <div className="property-panel-head">
+        <h3>{t('properties.docs.title')}</h3>
+        {onAdd ? (
+          <button type="button" className="btn-small" onClick={onAdd}>
+            {t('properties.overview.addDoc')}
+          </button>
+        ) : null}
+      </div>
       {data.groups.length === 0 ? <p className="muted">{t('properties.docs.empty')}</p> : null}
       {data.groups.map((group) => (
         <div key={group.kind} className="property-doc-group">
@@ -90,8 +100,8 @@ function Documents({
   )
 }
 
-/** The tab an address opens: a month is on the figures' tab. */
-const tabOf = (route: { month?: string; tab?: PropertyTab }): ViewTab => (route.month ? 'finance' : (route.tab ?? 'overview'))
+/** The tab an address opens: a month's lines are under the chart, on the overview. */
+const tabOf = (route: { month?: string; tab?: PropertyTab }): ViewTab => (route.month ? 'overview' : (route.tab ?? 'overview'))
 
 export function PropertyView({
   id,
@@ -170,9 +180,9 @@ export function PropertyView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, asked])
 
-  /** The address of `next`, with the open month on the figures' tab. */
+  /** The address of `next`, with the open month on the overview. */
   const hashOf = (next: ViewTab, open: string | null) =>
-    propertyHash(id, next === 'finance' && open ? { month: open } : { tab: next === 'overview' ? undefined : next })
+    propertyHash(id, next === 'overview' ? { month: open ?? undefined } : { tab: next })
 
   /** Open another tab; the URL follows without a new history entry. */
   function selectTab(next: ViewTab) {
@@ -183,10 +193,10 @@ export function PropertyView({
   /** Open or close a month's lines; the URL follows without a new history entry. */
   function selectMonth(key: string | null) {
     setSelected(key)
-    restoreLocationHash(hashOf('finance', key))
+    restoreLocationHash(hashOf('overview', key))
   }
   const openVoucher = (voucherId: number, entryId: number | null = null) =>
-    onOpenVoucher(voucherId, entryId, tab === 'finance' && selected ? { month: selected } : { tab: tab === 'overview' ? undefined : tab })
+    onOpenVoucher(voucherId, entryId, tab === 'overview' ? { month: selected ?? undefined } : { tab })
   /** The edit page on this tab: the overview's fields are the basics. */
   const edit = (on: ViewTab = tab, intent?: PropertyEditIntent) => onEdit(on === 'overview' ? undefined : on, intent)
 
@@ -260,6 +270,18 @@ export function PropertyView({
               onOpenDue={(w) => edit('leases', w.lease_key ? { lease: w.lease_key } : undefined)}
               onSkip={d.read_only ? undefined : (skip) => skipDoc(d, skip)}
               onOpenVoucher={(v) => openVoucher(v)}
+              cashFlow={
+                <CashFlowPanel
+                  d={d}
+                  allMonths={allMonths}
+                  onAllMonths={setAllMonths}
+                  selected={selected}
+                  onSelectMonth={selectMonth}
+                  panelRef={panelRef}
+                  onOpenAllocation={onOpenAllocation}
+                  onOpenVoucher={openVoucher}
+                />
+              }
             />
           </TabPanel>
 
@@ -274,6 +296,7 @@ export function PropertyView({
               asOf={d.as_of}
               held={held}
               onEdit={() => edit('leases')}
+              onAdd={held && !d.read_only ? () => edit('leases', { add: true }) : undefined}
               onOpenVoucher={(v) => openVoucher(v)}
               onSaveException={d.read_only ? undefined : (leaseKey, exception, replaces) => saveException(d, leaseKey, exception, replaces)}
               parkingObject={isParkingKind(d.kind)}
@@ -281,25 +304,34 @@ export function PropertyView({
           </TabPanel>
 
           <TabPanel id="water" idPrefix="property" active={active === 'water'}>
-            <WaterPanel water={d.water} held={held} onEdit={() => edit('water')} onOpenVoucher={(v) => openVoucher(v)} />
+            <WaterPanel
+              water={d.water}
+              held={held}
+              onEdit={() => edit('water')}
+              onAdd={held && !d.read_only ? () => edit('water', { add: true }) : undefined}
+              onOpenVoucher={(v) => openVoucher(v)}
+            />
           </TabPanel>
 
           <TabPanel id="docs" idPrefix="property" active={active === 'docs'}>
             {docs.error ? <p className="error">{docs.error}</p> : null}
-            {docs.data ? <Documents data={docs.data} bank={bank} onBank={setBank} onOpenVoucher={(v) => openVoucher(v)} /> : null}
+            {docs.data ? (
+              <Documents
+                data={docs.data}
+                bank={bank}
+                onBank={setBank}
+                onAdd={d.read_only ? undefined : () => edit('docs', { add: true })}
+                onOpenVoucher={(v) => openVoucher(v)}
+              />
+            ) : null}
           </TabPanel>
 
           <TabPanel id="finance" idPrefix="property" active={active === 'finance'}>
             <PropertyFinance
               d={d}
-              allMonths={allMonths}
-              onAllMonths={setAllMonths}
-              selected={selected}
-              onSelectMonth={selectMonth}
-              panelRef={panelRef}
               onTarget={setTargetBp}
+              onAdd={d.read_only ? undefined : () => edit('finance', { add: true })}
               onEdit={() => edit('finance')}
-              onOpenAllocation={onOpenAllocation}
               onOpenVoucher={openVoucher}
             />
           </TabPanel>

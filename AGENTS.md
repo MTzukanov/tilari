@@ -179,7 +179,7 @@ Rules already encoded:
   `#/property/{id}/edit`, `#/property/{id}/edit/{tab}` (none is the basics; `/new` after the tab adds a row there,
   `/edit/leases/lease/{key}` opens that lease; the page drops both from the address once done), `#/company`, `#/company/documents`, `#/company/own`,
   `#/company/period/{ends}` (the last two are the company page with that card open); a
-  `/month/{YYYY-MM}` after `#/property/{id}` (on its `finance` tab) or `#/allocation/{id}` opens that month (and
+  `/month/{YYYY-MM}` after `#/property/{id}` (under its overview's chart) or `#/allocation/{id}` opens that month (and
   stays on the way back from a voucher, as a tab does).
   `#/settings` (and `#/settings/storage`) work without an open book for app prefs; book/company fields appear once a book is open.
 - Billing nav item (`#/billing`) is a planned stub that explains `docs/SCOPE.md`.

@@ -958,6 +958,44 @@ button.status-chip:focus-visible {
   background: var(--doc);
 }
 
+/* On a phone the tabs wrap into rows, every one in sight, the open one filled. Rows would cover
+   too much of a small screen to stay pinned, so the bar scrolls away with the page. */
+@media (max-width: 640px) {
+  .tabs,
+  .tabs.tabs-cut-left,
+  .tabs.tabs-cut-right {
+    position: static;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    overflow: visible;
+    mask-image: none;
+    box-shadow: none;
+    padding: 0 0 0.25rem;
+  }
+
+  .tabs button {
+    padding: 0.25rem 0.65rem;
+    font-size: 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+  }
+
+  .tabs button.is-active {
+    color: #fff;
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .tabs button.is-active .tabs-count {
+    color: inherit;
+  }
+
+  .tabs button.is-active .tabs-mark {
+    box-shadow: 0 0 0 2px #fff;
+  }
+}
+
 .assistant-split,
 .assistant-tulomeno {
   display: grid;
@@ -5324,18 +5362,25 @@ tr.tax-total td {
 /* The overview tab: the running lease and the water side by side, then the key figures and actions. */
 .property-now-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
   gap: 0 1rem;
 }
 
-.property-now-head {
+/* A panel's title with its action at the far side: "Kaikki vuokrasuhteet", "+ Vuokrasopimus". */
+.property-panel-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.25rem 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
-.property-now-head button {
+.overview-panel .property-panel-head h3 {
+  margin: 0;
+}
+
+.property-panel-head .btn-link {
   font-size: 0.85rem;
 }
 
@@ -5381,6 +5426,22 @@ tr.tax-total td {
 
 .property-warning-lines .pill {
   justify-self: start;
+}
+
+.property-warning-lines li > span {
+  overflow-wrap: break-word;
+}
+
+/* On a phone the pill goes above its sentence: beside it, the text column is too narrow for a long word. */
+@media (max-width: 640px) {
+  .property-warning-lines li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.15rem;
+  }
+
+  .property-warning-lines li + li {
+    margin-top: 0.55rem;
+  }
 }
 
 .due-tiles + .property-warning-lines {
@@ -6264,12 +6325,12 @@ tr.property-needs-choice td:first-child {
 }
 
 a.pill-doc {
-  max-width: 20rem;
+  max-width: min(20rem, 100%);
 }
 
 .due-tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
   gap: 0.5rem;
 }
 

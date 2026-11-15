@@ -211,6 +211,7 @@ export function LeasesPanel({
   period,
   held,
   onEdit,
+  onAdd,
   onOpenVoucher,
   onSaveException,
   parkingObject,
@@ -228,6 +229,8 @@ export function LeasesPanel({
   /** Not sold: only then is a document with no voucher flagged as missing. */
   held: boolean
   onEdit: () => void
+  /** Opens the edit page with a new lease; none when no lease can be added (sold, read-only). */
+  onAdd?: () => void
   onOpenVoucher: (voucherId: number) => void
   /** Saves an agreed exception to a stored lease from its month table; none when the document is read-only. */
   onSaveException?: (leaseKey: string, exception: LeaseException | null, replaces?: LeaseException) => Promise<void>
@@ -239,13 +242,23 @@ export function LeasesPanel({
   const others = leases.filter((l) => l.key !== stored?.key)
   return (
     <section className="overview-panel property-leases">
-      <h3>{t('properties.lease.title')}</h3>
+      <div className="property-panel-head">
+        <h3>{t('properties.lease.title')}</h3>
+        {onAdd ? (
+          <button type="button" className="btn-small" onClick={onAdd}>
+            {t('properties.overview.addLease')}
+          </button>
+        ) : null}
+      </div>
       {!leases.length && !suggestions.length ? (
         <p className="muted">
           {t('properties.lease.none')}{' '}
-          <button type="button" className="btn-link" onClick={onEdit}>
-            {t('properties.edit.addLease')}
-          </button>
+          {/* With "+ Vuokrasopimus" in the title row, a second way to it would be noise. */}
+          {!onAdd ? (
+            <button type="button" className="btn-link" onClick={onEdit}>
+              {t('properties.edit.addLease')}
+            </button>
+          ) : null}
         </p>
       ) : null}
       {leases.length > 0 && !stored ? <p className="muted">{t('properties.lease.noCurrent', { date: formatDate(asOf) })}</p> : null}

@@ -17,10 +17,18 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 - The company page's lesson ("one page", ADR-031) holds: a closed tab must not hide a problem. Each tab shows a
   count and a dot in the tone of its worst warning (`WARNING_TABS`/`tabMarks` in `ui/format.ts`; a note marks
   nothing, a dated reminder is warn and crit once late), and the overview keeps every warning.
-- Step 1, the view: the overview has the warnings, "Vuokrasuhde nyt" and "Vesi" cards, four key figures (rent
-  balance, 12 months, IRR, still to recover) and the quick actions. Talous has the other key figures, the charts,
-  the years, the break-even price, the acquisition cost and the sales; the rent balance is not repeated there.
-  A month (`/month/{YYYY-MM}`) opens Talous. The documents' query moved up to the page for the tab's count.
+- Step 1, the view: the overview has the quick actions at its top (owner: not at the bottom), the warnings,
+  "Vuokrasuhde nyt" and "Vesi" cards, four key figures (rent balance, 12 months, IRR, still to recover) and the
+  cash flow and payback charts (owner moved them from Talous), so a month (`/month/{YYYY-MM}`) opens there.
+  Talous has the other key figures, the years, the break-even price, the acquisition cost and the sales; the rent
+  balance is not repeated there. Each tab has its own "+" in its panel's title row (leases, water, documents,
+  price estimate). The documents' query moved up to the page for the tab's count.
+- Phone (owner's screenshot at a large text size): file pills ran past the card (`a.pill-doc`'s 20rem beat the
+  pill's 100%), and so did grids with a rem minimum (overview cards, due tiles) and the warnings' text column.
+  The text size is CSS `zoom`, so bounding boxes look fine while the workspace scrolls sideways: test with
+  `scrollWidth - clientWidth` on `main.workspace` (e2e "rental object on a phone", 137.5 %, 360px). Under 640px
+  the tabs wrap into chips and are not pinned (four rows at 137.5 % would cover the screen); a warning's pill
+  goes above its sentence. Vertical tabs were the owner's idea; wrapping keeps them all in sight in less room.
 - The dated tiles carry the lease they are about (`Warning.lease_key`, computed, never stored) and open
   `#/property/{id}/edit/leases/lease/{key}`.
 

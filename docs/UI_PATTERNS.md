@@ -58,7 +58,9 @@ stand out. Here colour and a filled button mark what needs doing, and everything
    object's page) is split into tabs (`shared/Tabs.tsx`). The address names the tab, so a voucher's round trip
    returns to it and a link can open it. A tab shows how many things it holds and a dot in the tone of its worst
    open item (rule 1, its count on hover), and the first tab keeps every warning in sight. The bar sticks to the
-   top of the page; on a phone it scrolls sideways, keeps the open tab in view and fades at the end that has more.
+   top of the page. On a phone (under 640px) the tabs wrap into rows of chips, the open one filled, and the bar
+   scrolls away with the page: pinned, the rows would cover too much of the screen. A tab's "+" action sits in
+   its panel's title row; the first tab has them all at its top.
 
 ## Parts
 

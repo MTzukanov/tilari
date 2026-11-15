@@ -89,24 +89,36 @@ export function WaterPanel({
   water,
   held,
   onEdit,
+  onAdd,
   onOpenVoucher,
 }: {
   water: WaterDetail
   /** Not sold: only then is a statement with no voucher flagged as missing. */
   held: boolean
   onEdit: () => void
+  /** Opens the edit page with a new settlement; none when none can be added (sold, read-only). */
+  onAdd?: () => void
   onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
   return (
     <section className="overview-panel property-water">
-      <h3>{t('properties.water.title')}</h3>
+      <div className="property-panel-head">
+        <h3>{t('properties.water.title')}</h3>
+        {onAdd ? (
+          <button type="button" className="btn-small" onClick={onAdd}>
+            {t('properties.overview.addWater')}
+          </button>
+        ) : null}
+      </div>
       {!water.settlements.length && !water.suggestions.length ? (
         <p className="muted">
           {t('properties.water.none')}{' '}
-          <button type="button" className="btn-link" onClick={onEdit}>
-            {t('properties.water.add')}
-          </button>
+          {!onAdd ? (
+            <button type="button" className="btn-link" onClick={onEdit}>
+              {t('properties.water.add')}
+            </button>
+          ) : null}
         </p>
       ) : null}
       {water.settlements.map((s) => (

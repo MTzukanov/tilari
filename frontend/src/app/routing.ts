@@ -39,7 +39,7 @@ export type Route =
   /** `section: 'alerts'` (`#/properties/alerts`): opened on the list of warnings. */
   | { view: 'properties'; section?: 'alerts' }
   | { view: 'propertiesSetup' }
-  /** `month` opens the figures' tab on that month; `tab` another tab than the overview. */
+  /** `month` opens that month's lines under the overview's chart; `tab` another tab than the overview. */
   | { view: 'property'; id: number; month?: string; tab?: PropertyTab }
   | { view: 'propertyEdit'; id: number; tab?: PropertyTab; intent?: PropertyEditIntent }
   /** `documents`: every document, searchable. `own`: the page with the company's own documents open. */
@@ -73,7 +73,7 @@ export function allocationHash(id: number, month?: string): string {
 
 /**
  * `#/property/{id}`, `#/property/{id}/{tab}` on another tab than the overview, or
- * `#/property/{id}/month/{YYYY-MM}` with that month's lines open (on the figures' tab).
+ * `#/property/{id}/month/{YYYY-MM}` with that month's lines open (under the overview's chart).
  */
 export function propertyHash(id: number, at: { month?: string; tab?: PropertyTab } = {}): string {
   if (at.month) return `#/property/${id}/month/${at.month}`

@@ -13,7 +13,7 @@ import { Warnings } from './Warnings'
 function NowCard({ title, more, onMore, children }: { title: string; more: string; onMore: () => void; children: ReactNode }) {
   return (
     <section className="overview-panel property-now">
-      <div className="property-now-head">
+      <div className="property-panel-head">
         <h3>{title}</h3>
         <button type="button" className="btn-link btn-quiet" onClick={onMore}>
           {more}
@@ -25,8 +25,8 @@ function NowCard({ title, more, onMore, children }: { title: string; more: strin
 }
 
 /**
- * The object at a glance (the first tab): every warning, the running lease and the latest water
- * settlement, four key figures, the things most often added, and the note.
+ * The object at a glance (the first tab): the things most often added, every warning, the running
+ * lease and the latest water settlement, four key figures, the cash flow, and the note.
  */
 export function PropertyOverview({
   d,
@@ -36,6 +36,7 @@ export function PropertyOverview({
   onOpenDue,
   onSkip,
   onOpenVoucher,
+  cashFlow,
 }: {
   d: PropertyDetail
   /** The water card and its action: not on a parking space or garage with nothing stored. */
@@ -47,6 +48,8 @@ export function PropertyOverview({
   onOpenDue: (w: Warning) => void
   onSkip?: (skip: DocumentSkip) => Promise<unknown>
   onOpenVoucher: (voucherId: number) => void
+  /** The cash flow chart with its month lines (`CashFlowPanel`). */
+  cashFlow: ReactNode
 }) {
   const { t } = useI18n()
   const held = d.status !== 'sold'
@@ -58,6 +61,25 @@ export function PropertyOverview({
     : []
   return (
     <>
+      <div className="property-quick">
+        {held ? (
+          <button type="button" className="btn-secondary" disabled={d.read_only} onClick={() => onAdd('leases')}>
+            {t('properties.overview.addLease')}
+          </button>
+        ) : null}
+        {held && showWater ? (
+          <button type="button" className="btn-secondary" disabled={d.read_only} onClick={() => onAdd('water')}>
+            {t('properties.overview.addWater')}
+          </button>
+        ) : null}
+        <button type="button" className="btn-secondary" disabled={d.read_only} onClick={() => onAdd('docs')}>
+          {t('properties.overview.addDoc')}
+        </button>
+        <button type="button" className="btn-secondary" disabled={d.read_only} onClick={() => onAdd('finance')}>
+          {t('properties.overview.addValuation')}
+        </button>
+      </div>
+
       {d.warnings.length ? (
         <div className="property-warnings">
           <Warnings warnings={d.warnings} asOf={d.as_of} onOpenDue={onOpenDue} onSkip={onSkip} />
@@ -115,24 +137,7 @@ export function PropertyOverview({
         <ResultKpi d={d} />
       </div>
 
-      <div className="property-quick">
-        {held ? (
-          <button type="button" className="btn-secondary" disabled={d.read_only} onClick={() => onAdd('leases')}>
-            {t('properties.overview.addLease')}
-          </button>
-        ) : null}
-        {held && showWater ? (
-          <button type="button" className="btn-secondary" disabled={d.read_only} onClick={() => onAdd('water')}>
-            {t('properties.overview.addWater')}
-          </button>
-        ) : null}
-        <button type="button" className="btn-secondary" disabled={d.read_only} onClick={() => onAdd('docs')}>
-          {t('properties.overview.addDoc')}
-        </button>
-        <button type="button" className="btn-secondary" disabled={d.read_only} onClick={() => onAdd('finance')}>
-          {t('properties.overview.addValuation')}
-        </button>
-      </div>
+      {cashFlow}
 
       {d.doc.note ? (
         <section className="property-section">

@@ -167,18 +167,15 @@ function yearColumns(t: (key: string, vars?: Record<string, string | number>) =>
 }
 
 /**
- * The object's figures (the Talous tab): every key figure, the cash flow by month with a month's
- * lines, the payback, the fiscal years, the break-even price, the acquisition cost and the sales.
+ * The cash flow by month, a month's lines under it on a click, and the payback (on the overview).
  */
-export function PropertyFinance({
+export function CashFlowPanel({
   d,
   allMonths,
   onAllMonths,
   selected,
   onSelectMonth,
   panelRef,
-  onTarget,
-  onEdit,
   onOpenAllocation,
   onOpenVoucher,
 }: {
@@ -189,17 +186,96 @@ export function PropertyFinance({
   selected: string | null
   onSelectMonth: (month: string | null) => void
   panelRef: RefObject<HTMLDivElement | null>
-  onTarget: (bp: number | null) => void
-  /** Opens this tab on the edit page (no acquisition cost linked yet). */
-  onEdit: () => void
   onOpenAllocation: (month?: string) => void
   onOpenVoucher: (voucherId: number, entryId?: number | null) => void
 }) {
   const { t } = useI18n()
-  const s = d.summary
   const months = allMonths ? d.months : d.months.slice(-24)
+  if (!d.months.length) return null
+  return (
+    <section className="overview-panel">
+      <h3>{t('properties.chart.cashFlow')}</h3>
+      <div className="overview-legend">
+        <span>
+          <i className="overview-swatch property-swatch-income" />
+          {t('properties.chart.income')}
+        </span>
+        <span>
+          <i className="overview-swatch property-swatch-expense" />
+          {t('properties.chart.expense')}
+        </span>
+        {d.months.length > 24 ? (
+          <label className="allocation-check">
+            <input type="checkbox" checked={allMonths} onChange={() => onAllMonths(!allMonths)} />
+            {t('properties.chart.allMonths')}
+          </label>
+        ) : null}
+      </div>
+      <CashFlowChart
+        months={months}
+        lines={d.month_lines}
+        selectedKey={selected}
+        onSelect={(key) => onSelectMonth(key === selected ? null : key)}
+        labels={{
+          income: t('properties.chart.income'),
+          expense: t('properties.chart.expense'),
+          clickHint: t('properties.chart.clickHint'),
+          more: (n) => t('properties.chart.more', { n }),
+        }}
+      />
+      {selected ? (
+        <div ref={panelRef}>
+          <MonthLinesPanel
+            month={selected}
+            lines={d.month_lines.filter((l) => l.month === selected)}
+            locale={getBcp47()}
+            labels={{ income: t('properties.chart.income'), expense: t('properties.chart.expense') }}
+            onClose={() => onSelectMonth(null)}
+            onOpenVoucher={onOpenVoucher}
+            onOpenAllocation={() => onOpenAllocation(selected)}
+          />
+        </div>
+      ) : null}
+      {d.summary.acquired_on ? (
+        <>
+          <h3>{t('properties.chart.payback')}</h3>
+          <PaybackChart months={d.months} label={t('properties.chart.payback')} />
+        </>
+      ) : null}
+    </section>
+  )
+}
+
+/**
+ * The object's figures (the Talous tab): every key figure, the fiscal years, the break-even price,
+ * the acquisition cost and the sales.
+ */
+export function PropertyFinance({
+  d,
+  onTarget,
+  onAdd,
+  onEdit,
+  onOpenVoucher,
+}: {
+  d: PropertyDetail
+  onTarget: (bp: number | null) => void
+  /** Opens the edit page here with a new price estimate; none when the object cannot be changed. */
+  onAdd?: () => void
+  /** Opens this tab on the edit page (no acquisition cost linked yet). */
+  onEdit: () => void
+  onOpenVoucher: (voucherId: number, entryId?: number | null) => void
+}) {
+  const { t } = useI18n()
+  const s = d.summary
   return (
     <>
+      {onAdd ? (
+        <div className="property-quick">
+          <button type="button" className="btn-secondary" onClick={onAdd}>
+            {t('properties.overview.addValuation')}
+          </button>
+        </div>
+      ) : null}
       <div className="overview-kpis">
         <Kpi label={t('properties.kpi.invested')} value={formatEuro(s.invested_snt)} hint={t('properties.kpi.investedHint')} />
         {d.status !== 'sold' ? (
@@ -221,59 +297,6 @@ export function PropertyFinance({
         <T12mKpi d={d} />
         <IrrKpi d={d} />
       </div>
-
-      {d.months.length ? (
-        <section className="overview-panel">
-          <h3>{t('properties.chart.cashFlow')}</h3>
-          <div className="overview-legend">
-            <span>
-              <i className="overview-swatch property-swatch-income" />
-              {t('properties.chart.income')}
-            </span>
-            <span>
-              <i className="overview-swatch property-swatch-expense" />
-              {t('properties.chart.expense')}
-            </span>
-            {d.months.length > 24 ? (
-              <label className="allocation-check">
-                <input type="checkbox" checked={allMonths} onChange={() => onAllMonths(!allMonths)} />
-                {t('properties.chart.allMonths')}
-              </label>
-            ) : null}
-          </div>
-          <CashFlowChart
-            months={months}
-            lines={d.month_lines}
-            selectedKey={selected}
-            onSelect={(key) => onSelectMonth(key === selected ? null : key)}
-            labels={{
-              income: t('properties.chart.income'),
-              expense: t('properties.chart.expense'),
-              clickHint: t('properties.chart.clickHint'),
-              more: (n) => t('properties.chart.more', { n }),
-            }}
-          />
-          {selected ? (
-            <div ref={panelRef}>
-              <MonthLinesPanel
-                month={selected}
-                lines={d.month_lines.filter((l) => l.month === selected)}
-                locale={getBcp47()}
-                labels={{ income: t('properties.chart.income'), expense: t('properties.chart.expense') }}
-                onClose={() => onSelectMonth(null)}
-                onOpenVoucher={onOpenVoucher}
-                onOpenAllocation={() => onOpenAllocation(selected)}
-              />
-            </div>
-          ) : null}
-          {s.acquired_on ? (
-            <>
-              <h3>{t('properties.chart.payback')}</h3>
-              <PaybackChart months={d.months} label={t('properties.chart.payback')} />
-            </>
-          ) : null}
-        </section>
-      ) : null}
 
       {d.years.length ? (
         <section className="property-section">

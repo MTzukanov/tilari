@@ -153,8 +153,8 @@ describe('parseRoute', () => {
   it('keeps a rental object tab, on its page and its edit page, through a voucher', () => {
     expect(parseRoute('#/property/15/leases')).toEqual({ view: 'property', id: 15, tab: 'leases' })
     expect(propertyHash(15, { tab: 'docs' })).toBe('#/property/15/docs')
-    // A month is on the figures' tab, so the address names only the month.
-    expect(propertyHash(15, { month: '2025-03', tab: 'finance' })).toBe('#/property/15/month/2025-03')
+    // A month's lines are under the chart on the overview, so the address names only the month.
+    expect(propertyHash(15, { month: '2025-03' })).toBe('#/property/15/month/2025-03')
     const via = { kind: 'property' as const, id: 15, tab: 'water' as const }
     expect(parseRoute('#/property/15/water/voucher/8/edit')).toEqual({ view: 'edit', voucherId: 8, type: null, via, entryId: null })
     expect(voucherHash(via, 8)).toBe('#/property/15/water/voucher/8/edit')
