@@ -7,6 +7,19 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-15 - Rental objects: document rows line up by the inputs (`fix/lease-row-align`)
+
+- Owner: on the lease form, Eräpäivä and "Lataa sopimus" sat lower than the Sopimus pick. The notice rows
+  (`.property-lease-notice`: contract, increase notice, exception, water statement and letter, the rent
+  exception form) aligned to the bottom, and a picked document's file pill wraps under the pick, so the pill's
+  bottom set the line.
+- The rows now align to the top. Each row's buttons (and "Ei asiakirjaa") sit in one `.property-lease-actions`
+  group that skips a label's line and has inputs' height, so a button that wraps stays inside the group, beside
+  the fields, instead of dropping below the pill with an empty label's space. Above 900px (the side menu's width)
+  the row does not wrap; the group shrinks and its buttons stack, right-aligned, which can leave space between
+  the pick and the buttons. At 900px and below the group takes its own line. The lease's first grid aligns
+  to the top when it has the notice beside Eräpäivä (`:has(> .property-lease-notice.span-3)`).
+
 ## 2026-11-14 - Rental objects: a water statement can be the housing company's invoice (`feature/water-statement-guess`, ADR-025)
 
 - Owner reported: an extra water charge paid as a plain invoice (an expense voucher with the vastike's reference;

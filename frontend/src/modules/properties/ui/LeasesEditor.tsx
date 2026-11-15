@@ -348,12 +348,14 @@ export function LeasesEditor({
             </label>
             <div className="property-lease-notice span-3">
               <DocPicker label={t('properties.field.contract')} docs={docs} value={d.contractId} onChange={(contractId) => set(i, { contractId })} />
-              {d.contractId && isCreated(Number(d.contractId)) ? (
-                <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(d.contractId)])}>
-                  {t('properties.edit.deleteDoc')}
-                </button>
-              ) : null}
-              <FileButton onFiles={(files) => void onUpload(i, null, files)}>{t('properties.edit.uploadContract')}</FileButton>
+              <div className="property-lease-actions">
+                {d.contractId && isCreated(Number(d.contractId)) ? (
+                  <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(d.contractId)])}>
+                    {t('properties.edit.deleteDoc')}
+                  </button>
+                ) : null}
+                <FileButton onFiles={(files) => void onUpload(i, null, files)}>{t('properties.edit.uploadContract')}</FileButton>
+              </div>
             </div>
           </div>
 
@@ -451,25 +453,27 @@ export function LeasesEditor({
                   value={r.voucherId}
                   onChange={(voucherId) => setIncrease(i, k, { voucherId })}
                 />
-                {!r.voucherId ? <NoDocumentCheck checked={r.noDocument} onChange={(noDocument) => setIncrease(i, k, { noDocument })} /> : null}
-                {r.voucherId && isCreated(Number(r.voucherId)) ? (
-                  <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(r.voucherId)])}>
-                    {t('properties.edit.deleteNotice')}
+                <div className="property-lease-actions">
+                  {!r.voucherId ? <NoDocumentCheck checked={r.noDocument} onChange={(noDocument) => setIncrease(i, k, { noDocument })} /> : null}
+                  {r.voucherId && isCreated(Number(r.voucherId)) ? (
+                    <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(r.voucherId)])}>
+                      {t('properties.edit.deleteNotice')}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      disabled={creating != null || !r.from}
+                      onClick={() => void createNotice(i, k)}
+                    >
+                      {creating === `${i}-${k}` ? t('common.saving') : t('properties.edit.createNotice')}
+                    </button>
+                  )}
+                  <FileButton onFiles={(files) => void onUpload(i, k, files)}>{t('properties.edit.uploadNotice')}</FileButton>
+                  <button type="button" className="btn-secondary" onClick={() => void removeIncrease(i, k)}>
+                    {t('properties.edit.remove')}
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    disabled={creating != null || !r.from}
-                    onClick={() => void createNotice(i, k)}
-                  >
-                    {creating === `${i}-${k}` ? t('common.saving') : t('properties.edit.createNotice')}
-                  </button>
-                )}
-                <FileButton onFiles={(files) => void onUpload(i, k, files)}>{t('properties.edit.uploadNotice')}</FileButton>
-                <button type="button" className="btn-secondary" onClick={() => void removeIncrease(i, k)}>
-                  {t('properties.edit.remove')}
-                </button>
+                </div>
               </div>
             </div>
           ))}
@@ -511,16 +515,18 @@ export function LeasesEditor({
                     value={e.voucherId}
                     onChange={(voucherId) => setException(i, k, { voucherId })}
                   />
-                  {!e.voucherId ? <NoDocumentCheck checked={e.noDocument} onChange={(noDocument) => setException(i, k, { noDocument })} /> : null}
-                  {e.voucherId && isCreated(Number(e.voucherId)) ? (
-                    <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(e.voucherId)])}>
-                      {t('properties.edit.deleteDoc')}
+                  <div className="property-lease-actions">
+                    {!e.voucherId ? <NoDocumentCheck checked={e.noDocument} onChange={(noDocument) => setException(i, k, { noDocument })} /> : null}
+                    {e.voucherId && isCreated(Number(e.voucherId)) ? (
+                      <button type="button" className="btn-secondary" onClick={() => void onDeleteDocs([Number(e.voucherId)])}>
+                        {t('properties.edit.deleteDoc')}
+                      </button>
+                    ) : null}
+                    <FileButton onFiles={(files) => void onUploadException(i, k, files)}>{t('properties.edit.uploadException')}</FileButton>
+                    <button type="button" className="btn-secondary" onClick={() => void removeException(i, k)}>
+                      {t('properties.edit.remove')}
                     </button>
-                  ) : null}
-                  <FileButton onFiles={(files) => void onUploadException(i, k, files)}>{t('properties.edit.uploadException')}</FileButton>
-                  <button type="button" className="btn-secondary" onClick={() => void removeException(i, k)}>
-                    {t('properties.edit.remove')}
-                  </button>
+                  </div>
                 </div>
               </div>
             )
