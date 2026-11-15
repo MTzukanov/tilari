@@ -54,6 +54,14 @@ stand out. Here colour and a filled button mark what needs doing, and everything
    and the title wraps to two lines, since there is no hover to show it in full. A thin line separates
    documents from each other; none goes under a row's name or after its last document.
 
+9. **Tabs switch content, and a closed tab hides nothing.** A page grown too long to move around in (a rental
+   object's page) is split into tabs (`shared/Tabs.tsx`). The address names the tab, so a voucher's round trip
+   returns to it and a link can open it. A tab shows how many things it holds and a dot in the tone of its worst
+   open item (rule 1, its count on hover), and the first tab keeps every warning in sight. The bar sticks to the
+   top of the page. On a phone (under 640px) the tabs wrap into rows of chips, the open one filled, and the bar
+   scrolls away with the page: pinned, the rows would cover too much of the screen. A tab's "+" action sits in
+   its panel's title row; the first tab has them all at its top.
+
 ## Parts
 
 | Part | File | Use it for |
@@ -66,6 +74,7 @@ stand out. Here colour and a filled button mark what needs doing, and everything
 | `DocLines`, `DocLine` | `shared/DocRows.tsx` | One document as a table row: `voucher` (or a plain `date` if it has none), title, `mark` at the title's far side, the files as children, and `end` |
 | `Binder` | `shared/Binder.tsx` | A card that opens in place, with badges that show its state while closed |
 | `StepRail` | `shared/StepRail.tsx` | Steps that follow each other, each with its state as a `Pill` and a date; the line turns green between steps done. Under 34rem it lists them one under the other. The company page's dividend card uses it |
+| `Tabs`, `TabPanel` | `shared/Tabs.tsx` | Tabs that switch a page's content (rule 9): each with a `count` and a `mark` (tone and hover text); arrow keys move between them. `TabPanel` with `keep` stays mounted while hidden, for a form |
 | `SuggestBanner` | `shared/SuggestBanner.tsx` | Suggestions from the book: a blue banner with a title, a line on where they come from, one `action` for all of them (add them all, or review them) and the suggestions below, as `DocLine`s with a filled "Lisää" in `end` |
 
 CSS, in the "Documents and status" part of `App.css`:
@@ -116,9 +125,15 @@ Moved onto these parts in four steps (2026-11-02 and -03), visual only: no chang
 | `PropertyView.tsx` `Documents` | `.section-label` per group, `DocLines` and `DocLine` with `VoucherOpen` and `FilePill`; "show all" and the bank toggle stay |
 | `FormParts.tsx` `VoucherLink` | The voucher's pill, its title and the files as `FilePill`s; reaches every lease and water panel |
 | `LeasesPanel.tsx`, `WaterPanel.tsx` | A lease's state and a tenant's water status are `Pill`s |
-| `PropertyEdit.tsx`, `DocPicker.tsx` | Linked documents are `DocLine`s with the remove as a quiet link; the picked document shows its `FilePill`s |
-| `LeasesEditor.tsx`, `WaterEditor.tsx` | Suggestions in `shared/SuggestBanner`, each a `DocLine` |
+| `PropertyView.tsx` `Documents`, `DocPicker.tsx` | The Asiakirjat tab's "+ Asiakirja" opens the picker at the top; a linked row nothing else holds ends in a quiet "Poista linkki"; the picked document shows its `FilePill`s |
+| `LeasesPanel.tsx`, `WaterPanel.tsx` | Suggestions in `shared/SuggestBanner` at the top of the tab, each with a "Lisää" that opens a prefilled card under it |
+| `FinanceEdits.tsx` | Each Talous section's title row carries a small "Muokkaa"; linked balance-sheet items in its form are `DocLine`s with a quiet "Poista" |
 | `ui/Warnings.tsx` (object page and the portfolio's "Huomioitavaa") | A lease ending or a rent increase is a `DueTile` (days left, or "Myöhässä" once past); every other warning is a line led by a `Pill`: Virhe and Puuttuu red, Hoidettava amber, Ehdotus blue, Huomio grey (`warningTone` in `format.ts`) |
+
+Since 2026-11-15 everything but the basics is edited where it is shown: a lease or water card's
+"Muokkaa" turns that card into its form (`LeaseCardEdit.tsx`, `WaterCardEdit.tsx`, documents they write
+through `useDocWriter.ts`), a Talous section into its own (`FinanceEdits.tsx`). The edit page keeps the
+kind, "Ei mukana", the note and removing the object's data.
 
 What stayed a link, and why:
 

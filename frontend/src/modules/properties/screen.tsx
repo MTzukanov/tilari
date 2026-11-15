@@ -1,4 +1,4 @@
-import { allocationHash, voucherHash } from '../../app/routing'
+import { allocationHash, propertyEditHash, propertyHash, voucherHash } from '../../app/routing'
 import type { BookViewCtx, UiModule } from '../ui'
 import { viaKind } from '../ui'
 import { AlertsButton } from './ui/AlertsButton'
@@ -14,26 +14,27 @@ function PropertiesScreen({ route, goTo, meta }: BookViewCtx) {
         key={route.id}
         id={route.id}
         month={route.month}
+        tab={route.tab}
+        card={route.card}
+        bookKey={meta?.session_id ?? ''}
+        today={meta?.book_date}
         onBack={() => goTo('#/properties')}
-        onEdit={() => goTo(`#/property/${route.id}/edit`)}
+        onEdit={() => goTo(propertyEditHash(route.id))}
         onOpenAllocation={(month) => goTo(allocationHash(route.id, month))}
-        onOpenVoucher={(voucherId, entryId, month) =>
-          goTo(voucherHash({ kind: 'property', id: route.id, month }, voucherId, entryId))
+        onOpenVoucher={(voucherId, entryId, at) =>
+          goTo(
+            voucherHash(
+              { kind: 'property', id: route.id, ...(at.month ? { month: at.month } : at.tab ? { tab: at.tab, ...(at.card ? { card: at.card } : {}) } : {}) },
+              voucherId,
+              entryId,
+            ),
+          )
         }
       />
     )
   }
   if (route.view === 'propertyEdit') {
-    return (
-      <PropertyEdit
-        key={route.id}
-        id={route.id}
-        bookKey={meta?.session_id ?? ''}
-        today={meta?.book_date}
-        onDone={() => goTo(`#/property/${route.id}`)}
-        onOpenVoucher={(voucherId) => goTo(voucherHash({ kind: 'propertyEdit', id: route.id }, voucherId))}
-      />
-    )
+    return <PropertyEdit key={route.id} id={route.id} onDone={() => goTo(propertyHash(route.id))} />
   }
   if (route.view === 'propertiesSetup') {
     return (
@@ -65,5 +66,5 @@ export const propertiesUi: UiModule = {
   Screen: PropertiesScreen,
   TopbarItem: AlertsButton,
   activeNav: (route) =>
-    VIEWS.has(route.view) || ['property', 'propertiesSetup', 'propertyEdit'].includes(viaKind(route) ?? '') ? 'properties' : null,
+    VIEWS.has(route.view) || ['property', 'propertiesSetup'].includes(viaKind(route) ?? '') ? 'properties' : null,
 }

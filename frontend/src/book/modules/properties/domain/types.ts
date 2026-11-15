@@ -201,8 +201,11 @@ export type DocumentSkip =
   | { kind: 'exception_agreement'; lease_key: string; from: string }
   | { kind: 'water_statement'; key: string }
 
-/** `skip`: a missing document's reminder the owner can end by saying there is none. */
-export type Warning = { code: string; params?: Record<string, string | number>; skip?: DocumentSkip }
+/**
+ * `skip`: a missing document's reminder the owner can end by saying there is none. `lease_key`: the
+ * lease a dated reminder is about, whose card the edit page opens.
+ */
+export type Warning = { code: string; params?: Record<string, string | number>; skip?: DocumentSkip; lease_key?: string }
 
 export type OperatingTotals = { income_snt: number; expense_snt: number; net_snt: number }
 
@@ -314,7 +317,6 @@ export type BreakEven = {
   price_snt: number
   unrecovered_snt: number
   sale_costs: SaleCosts
-  costs_set: boolean
   already_recovered: boolean
 }
 

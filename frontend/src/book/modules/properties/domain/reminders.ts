@@ -23,7 +23,7 @@ export const WATER_SETTLEMENT_MONTHS = 15
  * Notes, not things to act on: the setup's sale costs, and how a sale shared with another object
  * was counted. The object page lists them; the portfolio does not mark a row for them.
  */
-export const NOTE_CODES = new Set(['sale_costs_unset', 'sale_carried', 'sale_line_split'])
+export const NOTE_CODES = new Set(['sale_carried', 'sale_line_split'])
 
 /** The warnings to act on: all but the notes. */
 export function actionable<T extends { code: string }>(warnings: T[]): T[] {
@@ -77,9 +77,9 @@ export function reminders(input: ReminderInput): Warning[] {
     for (const lease of input.leases) {
       if (leaseState(lease, input.asOf) !== 'current') continue
       const ending = leaseEnding(lease, input.leases, input.asOf)
-      if (ending) out.push({ code: 'lease_ending', params: { tenant: input.tenant(lease), ends_date: ending } })
+      if (ending) out.push({ code: 'lease_ending', params: { tenant: input.tenant(lease), ends_date: ending }, lease_key: lease.key })
       const due = increaseDue(lease, input.asOf)
-      if (due) out.push({ code: 'increase_due', params: { tenant: input.tenant(lease), from_date: due } })
+      if (due) out.push({ code: 'increase_due', params: { tenant: input.tenant(lease), from_date: due }, lease_key: lease.key })
     }
     const missing = settlementMissing(input.leases, input.settlements, input.asOf, input.rentFrom)
     if (missing) out.push(missing)

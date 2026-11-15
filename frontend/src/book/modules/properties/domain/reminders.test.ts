@@ -207,7 +207,7 @@ describe('reminders', () => {
   it('a running lease: ending, increase and water together', () => {
     const l = lease({ ends: '2027-01-31', increase: { kind: 'percent', pct_bp: 300, month: 1 } })
     expect(reminders(input({ leases: [l] })).map((w) => w.code)).toEqual(['lease_ending', 'increase_due', 'water_settlement_none', 'lease_contract_missing'])
-    expect(reminders(input({ leases: [l] }))[0]).toEqual({ code: 'lease_ending', params: { tenant: 'Testi Vuokralainen', ends_date: '2027-01-31' } })
+    expect(reminders(input({ leases: [l] }))[0]).toEqual({ code: 'lease_ending', params: { tenant: 'Testi Vuokralainen', ends_date: '2027-01-31' }, lease_key: 'l1' })
   })
 
   it('a sold object keeps only its open water shares', () => {
@@ -293,7 +293,7 @@ describe('missing documents', () => {
 
 describe('what a portfolio row has to act on', () => {
   it('no notes, and nothing for a cost centre not set up yet', () => {
-    const warnings = [{ code: 'sale_costs_unset' }, { code: 'no_capital' }, { code: 'sale_carried' }]
+    const warnings = [{ code: 'sale_line_split' }, { code: 'no_capital' }, { code: 'sale_carried' }]
     expect(rowAlerts({ configured: true, warnings })).toEqual([{ code: 'no_capital' }])
     expect(rowAlerts({ configured: false, warnings })).toEqual([])
   })

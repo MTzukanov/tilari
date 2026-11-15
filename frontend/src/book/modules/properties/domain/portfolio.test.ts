@@ -215,8 +215,9 @@ describe('rental objects: figures', () => {
     expect(d.summary.operating).toEqual({ income_snt: 43_000 * E, expense_snt: 14_900 * E, net_snt: 28_100 * E })
     expect(d.summary.unrecovered_snt).toBe(58_100 * E)
     expect(d.summary.interest_snt).toBeNull()
-    expect(d.break_even).toMatchObject({ price_snt: 58_100 * E, costs_set: false, already_recovered: false })
-    expect(d.warnings.map((w) => w.code)).toContain('sale_costs_unset')
+    // No sale costs set: none (0 % and 0 €), and nothing to warn about.
+    expect(d.break_even).toMatchObject({ price_snt: 58_100 * E, sale_costs: { pct_bp: 0, fixed_snt: 0 }, already_recovered: false })
+    expect(d.warnings.map((w) => w.code)).not.toContain('sale_costs_unset')
     expect(d.t12m).toMatchObject({ months: 12, annualized: false, net_snt: 8_400 * E })
     expect(d.t12m?.net_yield_bp).toBe(Math.round((8_400 * 10000) / 86_200))
     expect(d.returns.at_cost_bp).toBeGreaterThan(0)
@@ -591,15 +592,15 @@ describe('rental objects: figures', () => {
     const tenant = 'Vuokralainen Virtanen'
 
     // December's anniversary passed with no increase entered; the company's charge is a month old.
-    expect(reminders('2024-12-20')).toEqual([{ code: 'increase_due', params: { tenant, from_date: '2024-12-01' } }])
+    expect(reminders('2024-12-20')).toEqual([{ code: 'increase_due', params: { tenant, from_date: '2024-12-01' }, lease_key: 'l1' }])
     expect(reminders('2025-01-05')).toEqual([{ code: 'water_letter_missing', params: { tenant, ...period } }])
     // The payment after the as-of date does not count yet.
     expect(reminders('2025-02-01')).toEqual([{ code: 'water_tenant_owes', params: { tenant, ...period, amount_snt: 60 * E } }])
     expect(reminders('2025-03-01')).toEqual([])
 
     const autumn = [
-      { code: 'lease_ending', params: { tenant, ends_date: '2026-12-31' } },
-      { code: 'increase_due', params: { tenant, from_date: '2026-12-01' } },
+      { code: 'lease_ending', params: { tenant, ends_date: '2026-12-31' }, lease_key: 'l1' },
+      { code: 'increase_due', params: { tenant, from_date: '2026-12-01' }, lease_key: 'l1' },
       { code: 'water_settlement_missing', params: { to_date: '2024-10-31' } },
     ]
     expect(reminders('2026-10-15')).toEqual(autumn)
@@ -815,7 +816,7 @@ describe('rental objects: figures', () => {
     const d = computeDetail(db, CC.garage, { today: TODAY })
     // 4 000 invested, 32 months of 100 rent -> 800 unrecovered; + 200 fixed, grossed up by 4 %.
     expect(d.summary.unrecovered_snt).toBe(800 * E)
-    expect(d.break_even).toMatchObject({ price_snt: Math.ceil((1_000 * E * 10000) / 9600), costs_set: true })
+    expect(d.break_even).toMatchObject({ price_snt: Math.ceil((1_000 * E * 10000) / 9600) })
     expect(d.valuation?.price_snt).toBe(3_500 * E)
     expect(d.returns.market_bp).not.toBeNull()
     expect(d.target?.rate_bp).toBe(500)

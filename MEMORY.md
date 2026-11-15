@@ -7,6 +7,63 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-15 - Rental objects: the object page in tabs (`feature/property-tabs`)
+
+- Owner: the object page and its edit page needed too much scrolling and were hard to move around in. Agreed
+  (plan, 2026-11-15): tabs that switch content, with the tab in the address. The view has Yleiskatsaus, Vuokrasuhteet,
+  Vesimaksut, Asiakirjat and Talous (all the figures on one tab). The edit page gets the same tabs (Perustiedot
+  for the overview). Extras: folded lease and settlement cards in edit, overview quick actions that add a row,
+  warning tiles that open their lease, and counts and marks on tabs.
+- The company page's lesson ("one page", ADR-031) holds: a closed tab must not hide a problem. Each tab shows a
+  count and a dot in the tone of its worst warning (`WARNING_TABS`/`tabMarks` in `ui/format.ts`; a note marks
+  nothing, a dated reminder is warn and crit once late), and the overview keeps every warning.
+- Step 1, the view: the overview has the quick actions at its top (owner: not at the bottom), the warnings,
+  "Vuokrasuhde nyt" and "Vesi" cards, four key figures (rent balance, 12 months, IRR, still to recover) and the
+  cash flow and payback charts (owner moved them from Talous), so a month (`/month/{YYYY-MM}`) opens there.
+  Talous has the other key figures, the years, the break-even price, the acquisition cost and the sales; the rent
+  balance is not repeated there. Each tab has its own "+" in its panel's title row (leases, water, documents,
+  price estimate). The documents' query moved up to the page for the tab's count.
+- Phone (owner's screenshot at a large text size): file pills ran past the card (`a.pill-doc`'s 20rem beat the
+  pill's 100%), and so did grids with a rem minimum (overview cards, due tiles) and the warnings' text column.
+  The text size is CSS `zoom`, so bounding boxes look fine while the workspace scrolls sideways: test with
+  `scrollWidth - clientWidth` on `main.workspace` (e2e "rental object on a phone", 137.5 %, 360px). Under 640px
+  the tabs wrap into chips and are not pinned (four rows at 137.5 % would cover the screen); a warning's pill
+  goes above its sentence. Vertical tabs were the owner's idea; wrapping keeps them all in sight in less room.
+- The dated tiles carry the lease they are about (`Warning.lease_key`, computed, never stored) and open
+  that lease's card in edit (`#/property/{id}/leases/lease/{key}`; the edit page's `/edit/leases/lease/{key}`
+  still parses until the page goes).
+- Owner, later the same day: no tabbed edit page. The edit page repeats every lease, settlement and document,
+  so editing moves into the view, per card: a lease card's "Muokkaa" turns only that card into its form with its
+  own Tallenna and Peruuta, and a card save writes the doc with only that card changed (as rent exceptions and
+  "Ohita" already do). Order: leases, water, then documents, Talous and the basics; the edit page goes last.
+- Edit in place, step 1 (leases): `LeaseCardEdit` is the edit page's `LeasesEditor` with one draft (`single`:
+  no suggestion banner, no "Lisää vuokrasopimus"; `otherDrafts` so a deposit already on another lease is not
+  offered). The save builds every lease with the card's draft in its place, so an overlap shows on the card.
+  Documents a card writes go through `useDocWriter`; `PropertyEdit` keeps its own copy until it is removed
+  (deliberate, short-lived duplication). One card open at a time; another asks first when the open one has
+  changes. The open card is in the address (`/leases/new`, `/leases/lease/{key}`) and in a voucher's way
+  back; its unsaved form is kept in sessionStorage (`tilari.properties.cardDraft`) and restored only when the
+  card opens from the address. The suggestions' "Tarkista" became a "Lisää" per row that opens a prefilled card.
+  The rent days (`rent_from`/`rent_until`) have their own small Muokkaa under the Vuokrasuhteet title, also on
+  a sold object (the last day matters after a sale), not on a read-only book.
+- Owner's review of step 1: editing happens in one place. The edit page lost the leases and the rent days
+  (water there shares with the stored leases); its old `/edit/leases[/new|/lease/{key}]` addresses open the
+  view's tab or card, and "Muokkaa kohdetta" from the leases tab opens the basics. The lease card in force had
+  only "Lisää korotus tai poikkeava vuokra…" as its way into the form, so the owner took "Muokkaa kohdetta" and
+  landed on the edit page: every lease card now has a plain "Muokkaa". Two faults the e2e rewrite showed: the
+  card's inputs (documents to pick, partners) were loaded once, so a document written on one card was missing
+  on the next (now reloaded per card), and the Asiakirjat list was not refreshed after a card save (now is).
+- Owner, after trying leases: suggestions go at the top of the tab, before a new card's form; and water,
+  documents and Talous are edited where they are shown too, so the edit page stays short and general. Water
+  settlements are cards like leases (`WaterCardEdit`; `/water/new`, `/water/settlement/{key}`); a card's views
+  and statement guesses count the object's other settlements (`WaterEditor` `otherDrafts`). Asiakirjat links
+  with a picker at the top and unlinks with "Poista linkki"; a document a lease, settlement or sale holds has
+  no unlink there (a save would link it again: `leaseVoucherIds`/`waterVoucherIds` go into `doc_voucher_ids`).
+  Talous sections each have a Muokkaa (`FinanceEdits.tsx`). The edit page keeps kind, "Ei mukana", note and
+  delete; it opens no vouchers, so its unsaved-form storage and the `propertyEdit` voucher way back are gone.
+- Owner: no "Myyntikuluja ei ole asetettu" warning. Sale costs not set are none (0 % and 0 €), overridden per
+  object or in the defaults; `sale_costs_unset`, `BreakEven.costs_set` and the portfolio's † are gone.
+
 ## 2026-11-15 - Rental objects: document rows line up by the inputs (`fix/lease-row-align`)
 
 - Owner: on the lease form, Eräpäivä and "Lataa sopimus" sat lower than the Sopimus pick. The notice rows

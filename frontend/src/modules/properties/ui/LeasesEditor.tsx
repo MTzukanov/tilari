@@ -4,33 +4,25 @@ import { rentVat } from '../../../book/modules/properties/domain/rent'
 import { generalVatPercent } from '../../../book/modules/vat/domain/vatRates'
 import { getBcp47, useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
-import { DocLine, DocLines } from '../../../shared/DocRows'
 import { EuroInput } from '../../../shared/EuroInput'
 import { FileButton } from '../../../shared/FileButton'
 import { formatCents, parseEurInput } from '../../../shared/money'
 import { SearchSelect } from '../../../shared/SearchSelect'
-import { SuggestBanner } from '../../../shared/SuggestBanner'
 import {
   LEASE_INCREASE_KINDS,
   type DepositCandidate,
   type DocCandidate,
-  type Lease,
   type LeaseIncreaseKind,
-  type LeaseSuggestionView,
-  type LeaseView,
 } from '../api'
 import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
-import { DocSlot, LineSources, NoDocumentCheck, Shown } from './FormParts'
-import { depositOptionText, leaseRentText, untilText, vatPctText } from './format'
-import { SuggestionSource } from './LeasesPanel'
+import { NoDocumentCheck, Shown } from './FormParts'
+import { depositOptionText, vatPctText } from './format'
 import {
   draftExtras,
   draftStepAt,
   draftTotal,
-  leaseDrafts,
   newException,
-  newLease,
   nextIncrease,
   type AmountsDraft,
   type ExceptionDraft,
@@ -179,29 +171,11 @@ function DepositField({
   )
 }
 
-/** What a suggested lease was read from, as pills: the contract and the increase notices with their files, then the rent payments. */
-function SuggestionPills({ lease, onOpen }: { lease: LeaseView; onOpen: (voucherId: number) => void }) {
-  const { t } = useI18n()
-  const vouchers = [lease.contract, ...lease.steps.map((step) => step.voucher)].filter((v) => v != null)
-  const payments = lease.sources ?? []
-  return (
-    <>
-      {vouchers.map((v) => (
-        <span key={v.voucher_id} className="property-voucher">
-          <DocSlot voucher={v} onOpen={onOpen} />
-        </span>
-      ))}
-      <LineSources label={t('properties.lease.payments', { n: payments.length })} lines={payments} onOpen={onOpen} />
-    </>
-  )
-}
-
 export function LeasesEditor({
   drafts,
   onChange,
   partners,
   docs,
-  suggestions,
   deposits,
   objectId,
   today,
@@ -212,14 +186,13 @@ export function LeasesEditor({
   onDeleteDocs,
   onOpenVoucher,
   parkingObject,
+  otherDrafts = [],
 }: {
   drafts: LeaseDraft[]
   onChange: (drafts: LeaseDraft[]) => void
   partners: Partner[]
   /** Liitetieto vouchers to pick the contract and increase notices from. */
   docs: DocCandidate[]
-  /** Leases the book suggests, oldest start first. */
-  suggestions: LeaseSuggestionView[]
   /** Deposits to link (ADR-029), and the object they are offered on. */
   deposits: DepositCandidate[]
   objectId: number
@@ -234,25 +207,16 @@ export function LeasesEditor({
   isCreated: (voucherId: number) => boolean
   /** Deletes such documents after asking, clears what pointed at them, then applies `edit`. */
   onDeleteDocs: (voucherIds: number[], edit?: DocEdit) => Promise<void>
-  /** Opens a suggestion's source; the unsaved form waits for the way back. */
+  /** Opens a deposit's voucher; the unsaved form waits for the way back. */
   onOpenVoucher: (voucherId: number) => void
   /** A parking space or garage: no water and no parking extra to offer (`draftExtras`). */
   parkingObject: boolean
+  /** The object's other leases (not in this form), whose deposits are not offered here. */
+  otherDrafts?: LeaseDraft[]
 }) {
   const { t } = useI18n()
   const [creating, setCreating] = useState<string | null>(null)
-  const names = new Map(partners.map((p) => [p.id, p.name.trim().toLowerCase()]))
   const partnerIds = new Map(partners.map((p) => [p.name.trim().toLowerCase(), p.id]))
-  /** A suggestion already in the form: its contract, or its tenant from the same day. */
-  const inForm = (lease: Lease) =>
-    drafts.some(
-      (d) =>
-        (lease.doc_voucher_id != null && d.contractId === String(lease.doc_voucher_id)) ||
-        (d.starts === lease.starts &&
-          d.tenant.trim().toLowerCase() === ((lease.tenant_partner_id != null ? names.get(lease.tenant_partner_id) : lease.tenant_name) ?? '').toLowerCase()),
-    )
-  const pending = suggestions.flatMap((s, i) => (inForm(s.lease) ? [] : [{ s, i }]))
-  const addSuggestions = (indices: number[]) => onChange([...drafts, ...leaseDrafts(indices.map((i) => suggestions[i].lease), partners)])
   const partnerItems = partners.map((p) => ({ value: p.name, label: p.name }))
   const extras = drafts.map((d) => draftExtras(d, parkingObject))
   const months = monthNames()
@@ -288,39 +252,6 @@ export function LeasesEditor({
 
   return (
     <>
-      {pending.length ? (
-        <SuggestBanner
-          heading="h4"
-          title={t('properties.lease.suggestions', { n: pending.length })}
-          lead={t('properties.edit.suggestions')}
-          action={
-            <button type="button" className="btn-primary" onClick={() => addSuggestions(pending.map((p) => p.i))}>
-              {t('properties.edit.addAllSuggestions')}
-            </button>
-          }
-        >
-          <DocLines>
-            {pending.map(({ s, i }) => (
-              <DocLine
-                key={i}
-                date={formatDate(s.view.starts)}
-                title={[s.view.tenant ?? t('properties.lease.tenantUnknown'), s.view.ends ? untilText(t, s.view.ends) : '', leaseRentText(t, s.view.rent, s.view.vat)]
-                  .filter(Boolean)
-                  .join(' · ')}
-                mark={s.view.suggested ? <SuggestionSource source={s.view.suggested} /> : null}
-                end={
-                  <button type="button" className="btn-small is-primary" onClick={() => addSuggestions([i])}>
-                    {t('properties.edit.addSuggestion')}
-                  </button>
-                }
-              >
-                <SuggestionPills lease={s.view} onOpen={onOpenVoucher} />
-              </DocLine>
-            ))}
-          </DocLines>
-        </SuggestBanner>
-      ) : null}
-
       {drafts.map((d, i) => (
         <div key={d.base?.key || `new-${i}`} className="property-lease-edit">
           <div className="property-lease-grid">
@@ -361,7 +292,7 @@ export function LeasesEditor({
 
           <DepositField
             draft={d}
-            drafts={drafts}
+            drafts={[...drafts, ...otherDrafts]}
             deposits={deposits}
             objectId={objectId}
             tenantId={partnerIds.get(d.tenant.trim().toLowerCase()) ?? null}
@@ -541,9 +472,6 @@ export function LeasesEditor({
           </div>
         </div>
       ))}
-      <button type="button" className="btn-secondary" onClick={() => onChange([...drafts, newLease()])}>
-        {t('properties.edit.addLease')}
-      </button>
     </>
   )
 }

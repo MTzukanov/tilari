@@ -74,9 +74,9 @@ export function allocationSet(centre: CostCentre): Set<number> {
   return new Set([centre.id, ...centre.child_ids])
 }
 
-export function resolveSaleCosts(doc: PropertyDoc, settings: PortfolioSettings): { costs: SaleCosts; set: boolean } {
-  const costs = doc.sale_costs ?? settings.sale_costs
-  return costs ? { costs, set: true } : { costs: { pct_bp: 0, fixed_snt: 0 }, set: false }
+/** The object's own sale costs, else the portfolio's defaults, else none (0 % and 0 €): set only to override. */
+export function resolveSaleCosts(doc: PropertyDoc, settings: PortfolioSettings): { costs: SaleCosts } {
+  return { costs: doc.sale_costs ?? settings.sale_costs ?? { pct_bp: 0, fixed_snt: 0 } }
 }
 
 function toFlows(flows: CashFlow[], asOf: string): Flow[] {
@@ -192,7 +192,7 @@ export function computeObject(input: ObjectInput): ObjectResult {
     input.pnl.filter((r) => r.date <= asOf),
   )
 
-  const { costs, set: costsSet } = resolveSaleCosts(doc, input.settings)
+  const { costs } = resolveSaleCosts(doc, input.settings)
   const cash = toFlows(flows, asOf)
   const valuation = [...(doc.valuations ?? [])].filter((v) => v.date <= asOf).pop() ?? null
   const holding = status === 'active' || status === 'partly_sold'
@@ -210,12 +210,11 @@ export function computeObject(input: ObjectInput): ObjectResult {
   let target: { rate_bp: number; price_snt: number } | null = null
   if (holding) {
     const be = breakEvenPrice(unrecovered, costs)
-    breakEven = { ...be, unrecovered_snt: unrecovered, sale_costs: costs, costs_set: costsSet }
+    breakEven = { ...be, unrecovered_snt: unrecovered, sale_costs: costs }
     const rateBp = input.targetBp ?? doc.target_return_bp ?? input.settings.target_return_bp ?? null
     if (rateBp != null) {
       target = { rate_bp: rateBp, price_snt: requiredSalePrice(cash, asOf, rateBp / 10000, costs) }
     }
-    if (!costsSet) warnings.push({ code: 'sale_costs_unset' })
   }
 
   const saleVouchers = new Set(classified.disposals.map((d) => d.voucher_id))

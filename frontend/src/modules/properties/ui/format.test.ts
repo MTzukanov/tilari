@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import fi from '../../../i18n/locales/fi.json'
 import { formatDate } from '../../../shared/dates'
-import { dueTile, sortWarnings, WARNING_WORDS, warningTone } from './format'
+import { dueTile, sortWarnings, tabMarks, WARNING_TABS, WARNING_WORDS, warningTone } from './format'
 
 const t = (key: string, vars?: Record<string, string | number>) => `${key}${vars ? JSON.stringify(vars) : ''}`
 
@@ -15,12 +15,33 @@ describe('warning tones', () => {
     }
   })
 
+  it('names the tab where every warning is fixed', () => {
+    expect(Object.keys(WARNING_TABS).sort()).toEqual(Object.keys(WARNING_WORDS).sort())
+  })
+
+  it('marks a tab with its worst warning, a late reminder as crit, and never with a note', () => {
+    const marks = tabMarks(
+      t,
+      [
+        { code: 'lease_suggestions' },
+        { code: 'increase_due', params: { tenant: 'A', from_date: '2026-12-01' } },
+        { code: 'water_suggestions' },
+        { code: 'sale_carried' },
+        { code: 'doc_corrupt' },
+      ],
+      '2026-11-15',
+    )
+    expect(Object.fromEntries(marks)).toEqual({ leases: { tone: 'warn', count: 2 }, water: { tone: 'doc', count: 1 } })
+    const late = tabMarks(t, [{ code: 'lease_suggestions' }, { code: 'lease_ending', params: { tenant: 'A', ends_date: '2026-11-01' } }], '2026-11-15')
+    expect(late.get('leases')).toEqual({ tone: 'crit', count: 2 })
+  })
+
   it('reads a missing document and an error as crit, a suggestion as doc, a note as neutral', () => {
     expect(warningTone('lease_contract_missing')).toEqual({ tone: 'crit', word: 'missing' })
     expect(warningTone('lease_overlap')).toEqual({ tone: 'crit', word: 'error' })
     expect(warningTone('rent_arrears')).toEqual({ tone: 'warn', word: 'todo' })
     expect(warningTone('lease_suggestions')).toEqual({ tone: 'doc', word: 'suggestion' })
-    expect(warningTone('sale_costs_unset')).toEqual({ tone: 'neutral', word: 'note' })
+    expect(warningTone('sale_carried')).toEqual({ tone: 'neutral', word: 'note' })
     expect(warningTone('something_new')).toEqual({ tone: 'warn', word: 'todo' })
   })
 

@@ -175,10 +175,14 @@ Rules already encoded:
 - **Always write source files as UTF-8.** Never introduce Windows-1252 bytes (especially `0x97` en-dash). Prefer ASCII `-`.
 - No react-router in v1; hashes: `#/browse`, `#/journal`, `#/vat`, `#/settings`, `#/voucher/new/100`, `#/account/{n}`, `#/allocation/{id}`,
   `#/properties`, `#/properties/alerts` (opened on its list of warnings), `#/properties/setup`,
-  `#/property/{id}`, `#/property/{id}/edit`, `#/company`, `#/company/documents`, `#/company/own`,
+  `#/property/{id}`, `#/property/{id}/{tab}` (`leases`, `water`, `docs`, `finance`; none is the overview),
+  `#/property/{id}/leases/new`, `#/property/{id}/leases/lease/{key}`, `#/property/{id}/water/new` and
+  `#/property/{id}/water/settlement/{key}` (that card in edit, in place; kept, with its unsaved form, on the way
+  back from a voucher), `#/property/{id}/edit` (the basics only: kind, excluded, note, delete; everything else
+  is edited on the tabs, and an old `/edit/{tab}...` address opens that tab or card), `#/company`, `#/company/documents`, `#/company/own`,
   `#/company/period/{ends}` (the last two are the company page with that card open); a
-  `/month/{YYYY-MM}` after `#/property/{id}` or `#/allocation/{id}` opens that month (and stays on the
-  way back from a voucher).
+  `/month/{YYYY-MM}` after `#/property/{id}` (under its overview's chart) or `#/allocation/{id}` opens that month (and
+  stays on the way back from a voucher, as a tab does).
   `#/settings` (and `#/settings/storage`) work without an open book for app prefs; book/company fields appear once a book is open.
 - Billing nav item (`#/billing`) is a planned stub that explains `docs/SCOPE.md`.
   Approval workflow is deferred (API 501 + `#/workflow` only; no SideNav entry).

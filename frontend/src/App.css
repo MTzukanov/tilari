@@ -876,6 +876,126 @@ button.status-chip:focus-visible {
   border-bottom-color: var(--accent);
 }
 
+/* Tabs that switch a page's content (shared/Tabs.tsx), sticky under the page title. */
+.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--paper);
+  box-shadow: inset 0 -1px 0 var(--line);
+  margin: 0 0 0.9rem;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tabs-cut-right {
+  mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+}
+
+.tabs-cut-left {
+  mask-image: linear-gradient(to left, #000 calc(100% - 2.5rem), transparent);
+}
+
+.tabs-cut-left.tabs-cut-right {
+  mask-image: linear-gradient(to right, transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent);
+}
+
+.tabs button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  padding: 0.6rem 0.95rem 0.5rem;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tabs button:hover {
+  color: var(--ink);
+}
+
+.tabs button.is-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tabs-count {
+  font-family: var(--font-num);
+  font-weight: 500;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.tabs-mark {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.tabs-mark-crit {
+  background: var(--crit);
+}
+
+.tabs-mark-warn {
+  background: #c98a00;
+}
+
+.tabs-mark-doc {
+  background: var(--doc);
+}
+
+/* On a phone the tabs wrap into rows, every one in sight, the open one filled. Rows would cover
+   too much of a small screen to stay pinned, so the bar scrolls away with the page. */
+@media (max-width: 640px) {
+  .tabs,
+  .tabs.tabs-cut-left,
+  .tabs.tabs-cut-right {
+    position: static;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    overflow: visible;
+    mask-image: none;
+    box-shadow: none;
+    padding: 0 0 0.25rem;
+  }
+
+  .tabs button {
+    padding: 0.25rem 0.65rem;
+    font-size: 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+  }
+
+  .tabs button.is-active {
+    color: #fff;
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .tabs button.is-active .tabs-count {
+    color: inherit;
+  }
+
+  .tabs button.is-active .tabs-mark {
+    box-shadow: 0 0 0 2px #fff;
+  }
+}
+
 .assistant-split,
 .assistant-tulomeno {
   display: grid;
@@ -5239,6 +5359,44 @@ tr.tax-total td {
   margin: 0.5rem 0;
 }
 
+/* The overview tab: the running lease and the water side by side, then the key figures and actions. */
+.property-now-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+  gap: 0 1rem;
+}
+
+/* A panel's title with its action at the far side: "Kaikki vuokrasuhteet", "+ Vuokrasopimus". */
+.property-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+/* The Asiakirjat tab's picker of Liitetieto vouchers to link, under the title. */
+.property-doc-pick {
+  max-width: 40rem;
+  margin: 0 0 0.75rem;
+}
+
+.overview-panel .property-panel-head h3 {
+  margin: 0;
+}
+
+.property-panel-head .btn-link {
+  font-size: 0.85rem;
+}
+
+.property-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+
 .property-warnings {
   margin: 0.5rem 0 1rem;
   padding: 0.6rem 1rem;
@@ -5274,6 +5432,22 @@ tr.tax-total td {
 
 .property-warning-lines .pill {
   justify-self: start;
+}
+
+.property-warning-lines li > span {
+  overflow-wrap: break-word;
+}
+
+/* On a phone the pill goes above its sentence: beside it, the text column is too narrow for a long word. */
+@media (max-width: 640px) {
+  .property-warning-lines li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.15rem;
+  }
+
+  .property-warning-lines li + li {
+    margin-top: 0.55rem;
+  }
 }
 
 .due-tiles + .property-warning-lines {
@@ -5632,6 +5806,8 @@ tr.tax-total td {
 
 .property-lease-foot {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
   justify-content: space-between;
   align-items: center;
   margin-top: 0.75rem;
@@ -5664,6 +5840,20 @@ tr.tax-total td {
 .property-lease-card {
   border-left: 3px solid color-mix(in srgb, #2f8f5b 55%, var(--line));
   padding: 0.1rem 0 0.1rem 0.8rem;
+}
+
+/* A lease card in edit, in place: the form's own box, with its Tallenna and Peru under it. */
+.property-lease-card.property-lease-card-edit {
+  border-left: 0;
+  padding: 0;
+}
+
+.property-lease-card-edit > .property-lease-edit {
+  margin-top: 0;
+}
+
+.property-doc-list > li.property-lease-row-edit {
+  display: block;
 }
 
 .property-lease-head {
@@ -6157,12 +6347,12 @@ tr.property-needs-choice td:first-child {
 }
 
 a.pill-doc {
-  max-width: 20rem;
+  max-width: min(20rem, 100%);
 }
 
 .due-tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
   gap: 0.5rem;
 }
 

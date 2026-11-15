@@ -308,7 +308,7 @@ function heldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
       width: 125,
       align: 'right',
       sortValue: (r) => r.break_even?.price_snt ?? -1,
-      render: (r) => (r.break_even ? `${formatEuro(r.break_even.price_snt)}${r.break_even.costs_set ? '' : '†'}` : ''),
+      render: (r) => (r.break_even ? formatEuro(r.break_even.price_snt) : ''),
     },
   ]
   if (hasValuations) {

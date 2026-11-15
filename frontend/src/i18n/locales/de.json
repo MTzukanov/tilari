@@ -517,7 +517,6 @@
     "property": "Zum Objekt",
     "properties": "Zu den Mietobjekten",
     "propertiesSetup": "Zur Einrichtung der Objekte",
-    "propertyEdit": "Zur Bearbeitung des Objekts",
     "company": "Zur Unternehmensseite"
   },
   "ledger": {
@@ -699,7 +698,8 @@
     "saving": "Wird gespeichert…",
     "cancel": "Abbrechen",
     "close": "Schließen",
-    "delete": "Löschen"
+    "delete": "Löschen",
+    "edit": "Bearbeiten"
   },
   "fiscal": {
     "title": "Geschäftsjahre",
@@ -1008,15 +1008,34 @@
     "title": "Mietobjekte",
     "lead": "Kostenstellen als Mietobjekte: investiertes Geld, Cashflow, Rendite und der Preis, der das Geld zurückbringt. Die Zahlen stammen aus der Buchhaltung; Tilari speichert nur Verknüpfungen und Schätzungen in einer eigenen Tabelle.",
     "asOf": "Stand {date}",
+    "tab": {
+      "overview": "Übersicht",
+      "leases": "Mietverhältnisse",
+      "water": "Wasserkosten",
+      "docs": "Dokumente",
+      "finance": "Finanzen",
+      "basics": "Grunddaten",
+      "mark": "Offene Punkte: {count}"
+    },
+    "overview": {
+      "leaseNow": "Aktuelles Mietverhältnis",
+      "allLeases": "Alle Mietverhältnisse",
+      "water": "Wasser",
+      "allWater": "Alle Wasserabrechnungen",
+      "addLease": "+ Mietvertrag",
+      "addWater": "+ Wasserabrechnung",
+      "addDoc": "+ Dokument",
+      "addValuation": "+ Preisschätzung"
+    },
     "dataThrough": "Kontoauszüge bis {date}",
     "acquired": "erworben {date}",
     "soldOn": "verkauft {date}",
-    "editLink": "Objekt bearbeiten",
+    "editLink": "Objekteinstellungen",
     "openAllocation": "Ergebnis der Kostenstelle",
     "empty": "Keine Objekte anzuzeigen.",
     "setupBanner": "{n} Kostenstellen warten auf die Einrichtung.",
     "setupOpen": "Objekte einrichten",
-    "footnote": "* weniger als 12 Monate im Besitz, auf ein Jahr hochgerechnet. † keine Verkaufskosten angegeben (Standardwerte unten). Spaltenkopf mit der Maus berühren für eine Erklärung; Spalten lassen sich sortieren und verbreitern.",
+    "footnote": "* weniger als 12 Monate im Besitz, auf ein Jahr hochgerechnet. Spaltenkopf mit der Maus berühren für eine Erklärung; Spalten lassen sich sortieren und verbreitern.",
     "kpi": {
       "invested": "Investiert",
       "investedHint": "Anschaffungskosten und sonstiges Kapital",
@@ -1140,14 +1159,15 @@
       "exceptionNote": "Grund",
       "exceptionDoc": "Vereinbarung",
       "rentFrom": "Miete an den Eigentümer ab",
-      "rentUntil": "Miete an den Eigentümer bis"
+      "rentUntil": "Miete an den Eigentümer bis",
+      "date": "Datum",
+      "amount": "Betrag €"
     },
     "breakEven": {
       "title": "Break-even-Preis: der Preis, der das Geld zurückbringt",
       "caption": "Verkaufspreis ohne Darlehensanteil der Wohnungsgesellschaft",
       "explain": "Noch nicht zurück {unrecovered}. Verkaufskosten {pct} und {fixed} gehen vom Preis ab; zu diesem Preis ist jeder investierte Euro zurück.",
       "recovered": "Das Objekt hat das investierte Geld bereits zurückgebracht; jeder Preis nach Verkaufskosten ist Gewinn.",
-      "costsUnset": "Keine Verkaufskosten angegeben, die Zahl nimmt null an. Für das Objekt oder in den Standardwerten angeben.",
       "bookLoss": "Kein buchhalterischer Verlust ab einem Preis von {price} (Buchwert + Verkaufskosten).",
       "taxNote": "Steuern: Werden Gewinne und Verluste mit denselben 20 % besteuert und ist ein Verlust mit anderem Gewinn verrechenbar, ist der Break-even nach Steuern dieselbe Zahl.",
       "debtFree": "Schuldenfreier Preis = Verkaufspreis + verbleibender Darlehensanteil. Die Verfolgung des Darlehensanteils kommt in der nächsten Phase.",
@@ -1202,7 +1222,6 @@
     },
     "docs": {
       "title": "Dokumente",
-      "linkedTitle": "Verknüpfte Dokumente",
       "empty": "Keine Anhänge.",
       "missing": "Beleg {id} wurde gelöscht",
       "deleted": "Gelöscht",
@@ -1216,7 +1235,8 @@
         "other": "Rechnungen und andere Belege",
         "bank": "Kontoauszüge"
       },
-      "showAll": "Alle anzeigen ({n})"
+      "showAll": "Alle anzeigen ({n})",
+      "unlink": "Verknüpfung entfernen"
     },
     "lease": {
       "title": "Mietverhältnisse",
@@ -1251,8 +1271,7 @@
         "index": "Index"
       },
       "suggestions": "Vorschläge aus der Buchhaltung ({n})",
-      "suggestionsLead": "Aus den verknüpften Mietverträgen und Mietzahlungen. Nichts ist gespeichert: auf der Bearbeitungsseite prüfen und speichern.",
-      "review": "Prüfen und speichern",
+      "suggestionsLead": "Aus den verknüpften Mietverträgen und Mietzahlungen. Nichts ist gespeichert: Hinzufügen öffnet den Vorschlag zur Prüfung auf einer eigenen Karte.",
       "source": {
         "contract": "Quelle: Mietvertrag",
         "payments": "Quelle: Mietzahlungen",
@@ -1277,7 +1296,7 @@
       "exceptionNow": "Derzeit abweichende Miete",
       "normal": "regulär {amount}",
       "exceptionNormal": "Reguläre Miete dann {amount}/Monat",
-      "editTerms": "Erhöhung oder abweichende Miete (Nachlass, vereinbarte Miete) hinzufügen…"
+      "edit": "Bearbeiten"
     },
     "deposit": {
       "title": "Mietkaution",
@@ -1302,7 +1321,7 @@
     "edit": {
       "noDocument": "Kein Dokument",
       "noDocumentHint": "Dafür gibt es kein Dokument: keine Erinnerung.",
-      "title": "Bearbeiten: {name}",
+      "title": "Einstellungen: {name}",
       "basics": "Grunddaten",
       "erasLead": "Bilanzposten mit den Anschaffungskosten des Objekts (Kaufpreis, Grunderwerbsteuer, Kosten).",
       "addEra": "Bilanzposten hinzufügen…",
@@ -1312,7 +1331,7 @@
       "valuationsLead": "Ihre Schätzung, was das Objekt jetzt einbringen würde. Die neueste wird für den IRR verwendet.",
       "addValuation": "Schätzung hinzufügen",
       "sale": "Verkauf und Ziel",
-      "saleLead": "Leer = Standardwerte.",
+      "saleLead": "Leer = die Standardwerte für alle Objekte (auf der Seite Mietobjekte); ohne sie sind die Verkaufskosten 0 % und 0 €.",
       "financing": "Bankdarlehen",
       "financingLead": "Bei Finanzierung mit eigenem Darlehen: Buchungen auf Zinskonten, auf Belegen mit einer Buchung auf dem Darlehenskonto, zählen als Kosten des Objekts.",
       "capital": "Sonstiges investiertes Kapital",
@@ -1321,17 +1340,13 @@
       "delete": "Objektdaten löschen",
       "deleteConfirm": "Tilaris Daten zu diesem Objekt löschen? Die Buchhaltung bleibt unverändert.",
       "readOnly": "Die Daten wurden mit einem neueren Tilari gespeichert; diese Version kann sie nur anzeigen.",
-      "leases": "Mietverträge",
-      "leasesLead": "Mieter, Bedingungen, Anfangsmiete und Erhöhungen. Die Erhöhungsklausel füllt die nächste Erhöhung vor; Tilari ändert die Miete nie selbst. Vertrag und Erhöhungsmitteilungen sind Liitetieto-Belege und daher auch in Kitsas auffindbar.",
-      "addLease": "Mietvertrag hinzufügen",
       "removeLease": "Mietvertrag entfernen",
-      "suggestions": "Ins Formular übernehmen, prüfen und speichern.",
       "addSuggestion": "Hinzufügen",
-      "addAllSuggestions": "Alle hinzufügen",
       "addIncrease": "Erhöhung hinzufügen",
       "createNotice": "Erhöhungsmitteilung erstellen",
       "confirmDeleteUnsaved": "Auf dieser Seite wurden {n} Erhöhungsmitteilungen erstellt, aber nicht beim Objekt gespeichert. Aus der Buchhaltung löschen? Abbrechen behält sie (sie wurden evtl. schon versandt).",
-      "restored": "Ungespeicherte Änderungen wurden wiederhergestellt.",
+      "confirmRemoveLease": "Den Mietvertrag vom Objekt entfernen? Die Änderung wird sofort gespeichert.",
+      "confirmLeaveCard": "Die offene Karte hat ungespeicherte Änderungen. Verwerfen?",
       "deleteDoc": "Beleg löschen",
       "deleteNotice": "Erhöhungsmitteilung löschen",
       "uploadContract": "Vertrag hochladen",
@@ -1339,7 +1354,8 @@
       "confirmDeleteDoc": "Den Beleg aus der Buchhaltung löschen: {titles}? Ein bei diesem Besuch erstellter wird sofort gelöscht, ein früherer beim Speichern.",
       "exceptionsLead": "Ein vereinbarter Nachlass, eine mietfreie Zeit oder eine andere Ausnahme: an ihren Tagen zahlt der Mieter diese Beträge statt der Miete und ihrer Erhöhungen, und der Mietsaldo rechnet damit. Einen Nachlass als die niedrigere Miete eingeben.",
       "addException": "Abweichende Miete hinzufügen",
-      "uploadException": "Dokument hochladen"
+      "uploadException": "Dokument hochladen",
+      "lead": "Die allgemeinen Einstellungen des Objekts. Mietverträge, Wasserabrechnungen, Dokumente und die Finanzangaben werden auf den eigenen Reitern des Objekts bearbeitet, je Karte oder Abschnitt."
     },
     "setup": {
       "title": "Mietobjekte einrichten",
@@ -1378,7 +1394,6 @@
       "ambiguous": "Objekt wählen"
     },
     "warn": {
-      "sale_costs_unset": "Keine Verkaufskosten angegeben.",
       "sale_line_split": "Beleg {voucher} verkaufte mehrere Objekte; Buchungen ohne Kostenstelle wurden nach Anschaffungskosten aufgeteilt.",
       "sale_carried": "Auf demselben Beleg wie {object} verkauft, dessen Kostenstelle die Verkaufsbuchungen trägt. Dieses Objekt gilt als in diesem Preis mitverkauft: Verkaufspreis 0 € und die Anschaffungskosten ein Veräußerungsverlust.",
       "era_missing": "Verknüpfter Bilanzposten {eraid} existiert nicht mehr.",
@@ -1517,7 +1532,6 @@
     "water": {
       "title": "Wasserkosten und Abrechnungen",
       "none": "Keine Wasserabrechnungen.",
-      "add": "Wasserabrechnung hinzufügen",
       "remove": "Wasserabrechnung entfernen",
       "period": "Abrechnungszeitraum {period}",
       "company": "Wohnungsgesellschaft: {text}",
@@ -1546,13 +1560,10 @@
       "ownerKeeps": "Dem Eigentümer bleiben {amount}.",
       "ownerBears": "Der Eigentümer trägt {amount} (z. B. Leerstandstage).",
       "suggestions": "Vorschläge aus der Buchhaltung ({n})",
-      "suggestionsLead": "Aus den auf dem Objekt gebuchten Wasserabrechnungen. Nichts ist gespeichert: Beträge mit der Abrechnung der Gesellschaft prüfen und auf der Bearbeitungsseite speichern.",
+      "suggestionsLead": "Aus den auf dem Objekt gebuchten Wasserabrechnungen. Nichts ist gespeichert: Hinzufügen öffnet den Vorschlag auf einer eigenen Karte; Beträge mit der Abrechnung der Gesellschaft prüfen.",
       "flat": "Wasser wird nicht abgerechnet",
       "advance": "Wasser wird nach Verbrauch abgerechnet",
       "latest": "Wasserabrechnung {period}",
-      "editTitle": "Wasserabrechnungen",
-      "editLead": "Die Wasserabrechnungen der Wohnungsgesellschaft je Zeitraum. Die Anteile der Mieter ergeben sich aus den Mietverträgen: Verbrauch nach Wohntagen, abzüglich der Wasservorauszahlungen.",
-      "editSuggestions": "Auf das Objekt gebuchte Wasserabrechnungen, die nicht im Formular sind.",
       "direction": {
         "refund": "Gutschrift an den Eigentümer",
         "charge": "Nachzahlung des Eigentümers"
@@ -1586,7 +1597,8 @@
         "charge": "Nachzahlung",
         "refundText": "Wir überweisen {amount} auf Ihr Konto. Bitte teilen Sie uns mit, falls sich Ihre Kontonummer geändert hat.",
         "chargeText": "Bitte zahlen Sie {amount} mit der nächsten Miete auf dasselbe Konto und mit derselben Referenz wie die Miete."
-      }
+      },
+      "confirmRemove": "Diese Wasserabrechnung vom Objekt entfernen?"
     },
     "rent": {
       "balanceOn": "Mietsaldo {date}",
@@ -1644,6 +1656,11 @@
         "row_missing": "USt-Code ohne eigene USt-Zeile",
         "rate": "anderer USt-Satz als der Regelsatz des Tages"
       }
+    },
+    "finance": {
+      "noValuations": "Keine Preisschätzungen.",
+      "noFinancing": "Kein eigenes Darlehen ist mit dem Objekt verknüpft.",
+      "noCapital": "Kein sonstiges investiertes Kapital."
     }
   },
   "company": {

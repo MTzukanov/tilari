@@ -1,3 +1,4 @@
+import type { PropertyTab } from '../../../app/routing'
 import { dayCount } from '../../../book/months'
 import { getBcp47 } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
@@ -94,7 +95,6 @@ export const WARNING_WORDS: Record<string, WarningWord | 'due'> = {
   lease_suggestions: 'suggestion',
   water_suggestions: 'suggestion',
   deposits_unlinked: 'suggestion',
-  sale_costs_unset: 'note',
   sale_line_split: 'note',
   sale_carried: 'note',
   doc_newer: 'note',
@@ -105,6 +105,66 @@ export function warningTone(code: string): { tone: PillTone; word: WarningWord }
   const listed = WARNING_WORDS[code]
   const word = listed && listed !== 'due' ? listed : 'todo'
   return { tone: WORD_TONE[word], word }
+}
+
+/**
+ * The tab where each warning is fixed, on the object's page and its edit page; null stays on the
+ * overview only (the stored document itself). Same codes as `WARNING_WORDS`; a test keeps it whole.
+ */
+export const WARNING_TABS: Record<string, PropertyTab | null> = {
+  lease_ending: 'leases',
+  increase_due: 'leases',
+  doc_corrupt: null,
+  doc_newer: null,
+  lease_overlap: 'leases',
+  water_overlap: 'water',
+  loan_shared: 'finance',
+  deposit_over: 'leases',
+  lease_contract_missing: 'leases',
+  increase_notice_missing: 'leases',
+  exception_agreement_missing: 'leases',
+  water_statement_missing: 'water',
+  water_letter_missing: 'water',
+  era_missing: 'finance',
+  no_capital: 'finance',
+  rent_vat_missing: 'leases',
+  rent_vat_unexpected: 'leases',
+  rent_vat_row_missing: 'leases',
+  rent_vat_rate: 'leases',
+  rent_arrears: 'leases',
+  former_owes: 'leases',
+  former_paid_ahead: 'leases',
+  deposit_open: 'leases',
+  water_tenant_owes: 'water',
+  water_refund_due: 'water',
+  vacant: 'leases',
+  vacant_until: 'leases',
+  water_settlement_missing: 'water',
+  water_settlement_none: 'water',
+  lease_suggestions: 'leases',
+  water_suggestions: 'water',
+  deposits_unlinked: 'leases',
+  sale_line_split: 'finance',
+  sale_carried: 'finance',
+}
+
+const MARK_ORDER: PillTone[] = ['crit', 'warn', 'doc']
+
+/**
+ * Each tab's mark: the tone of its worst warning and how many there are. A dated reminder is warn,
+ * crit once late, as its tile; a note marks nothing.
+ */
+export function tabMarks(t: T, warnings: Warning[], asOf: string): Map<PropertyTab, { tone: PillTone; count: number }> {
+  const marks = new Map<PropertyTab, { tone: PillTone; count: number }>()
+  for (const w of warnings) {
+    const tab = WARNING_TABS[w.code]
+    const tone = dueTile(t, w, asOf)?.tone ?? warningTone(w.code).tone
+    if (!tab || !MARK_ORDER.includes(tone)) continue
+    const mark = marks.get(tab)
+    const worst = mark && MARK_ORDER.indexOf(mark.tone) < MARK_ORDER.indexOf(tone) ? mark.tone : tone
+    marks.set(tab, { tone: worst, count: (mark?.count ?? 0) + 1 })
+  }
+  return marks
 }
 
 /** Errors first, notes last; the order within a word stays the domain's. */
