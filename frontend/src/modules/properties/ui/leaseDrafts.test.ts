@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Lease } from '../api'
-import { buildLeases, draftTotal, leaseDrafts, newException, newLease, nextIncrease, withKeys } from './leaseDrafts'
+import { buildLeases, draftExtras, draftTotal, leaseDrafts, newException, newLease, nextIncrease, withKeys } from './leaseDrafts'
 
 const t = (key: string, vars?: Record<string, string | number>) => `${key}${vars ? JSON.stringify(vars) : ''}`
 const partners = [{ id: 5, name: 'Vuokralainen Virtanen' }]
@@ -89,6 +89,18 @@ describe('lease drafts', () => {
       { from: '2025-01-01', rent_snt: 60_000, water_snt: 2_000 },
       { from: '2026-01-01', rent_snt: 62_000, water_snt: 2_000 },
     ])
+  })
+
+  it('a parking space or garage offers no water and no parking extra, unless its stored lease has them', () => {
+    expect(draftExtras(newLease(), false)).toEqual({ water: true, parking: true })
+    expect(draftExtras(newLease(), true)).toEqual({ water: false, parking: false })
+    const plain: Lease = { key: 'l1', starts: '2025-01-01', rents: [{ from: '2025-01-01', rent_snt: 4_000 }] }
+    expect(draftExtras(leaseDrafts([plain], partners)[0], true)).toEqual({ water: false, parking: false })
+    // Amounts already stored stay in sight, so the owner can see and clear them.
+    const withWater: Lease = { ...plain, exceptions: [{ from: '2025-03-01', to: '2025-03-31', rent_snt: 3_000, water_snt: 500 }] }
+    expect(draftExtras(leaseDrafts([withWater], partners)[0], true)).toEqual({ water: true, parking: false })
+    const withParking: Lease = { ...plain, rents: [{ from: '2025-01-01', rent_snt: 3_000, parking_snt: 1_000 }] }
+    expect(draftExtras(leaseDrafts([withParking], partners)[0], true)).toEqual({ water: false, parking: true })
   })
 
   it('the next increase comes on the clause\'s month after today, raised by the percent or the euros', () => {

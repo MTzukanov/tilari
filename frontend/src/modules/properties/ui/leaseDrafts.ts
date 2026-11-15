@@ -97,6 +97,17 @@ export function leaseDrafts(leases: Lease[] | undefined, partners: Partner[]): L
   }))
 }
 
+/**
+ * Which amounts the form offers for a lease besides the rent. A parking space or garage has no
+ * water and no parking space as an extra: there they show only for a lease that came with them,
+ * so amounts already stored stay in sight.
+ */
+export function draftExtras(d: LeaseDraft, parkingObject: boolean): { water: boolean; parking: boolean } {
+  if (!parkingObject) return { water: true, parking: true }
+  const steps = [...(d.base?.rents ?? []), ...(d.base?.exceptions ?? [])]
+  return { water: steps.some((s) => Boolean(s.water_snt)), parking: steps.some((s) => Boolean(s.parking_snt)) }
+}
+
 export function newLease(): LeaseDraft {
   return {
     base: null,

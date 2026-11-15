@@ -30,7 +30,7 @@ import {
   suggestDeposit,
 } from './deposits'
 import { listNoteVouchers } from './documents'
-import { kindFromName } from './kind'
+import { isParkingKind, kindFromName } from './kind'
 import {
   attachVat,
   loadAccountNumbers,
@@ -297,7 +297,7 @@ function leaseContext(db: SqliteDb, loaded: Loaded, computed: Computed[], asOf: 
       return ref?.posted ? [{ voucher_id: id, date: ref.date, title: ref.title }] : []
     })
     const stored = c.parsed.doc.leases ?? []
-    const parkingObject = c.parsed.doc.kind === 'parking' || c.parsed.doc.kind === 'garage'
+    const parkingObject = isParkingKind(c.parsed.doc.kind)
     const found = suggestLeases({ docs, income: incomes.get(c.centre.id) ?? [], names, centreName: c.centre.name, parkingObject, asOf })
     suggestions.set(c.centre.id, found.filter((s) => !representedBy(stored, s.lease)))
   }
@@ -436,7 +436,7 @@ function remindersOf(c: Computed, ctx: LeaseContext): Warning[] {
   const deposits = depositCandidatesOf(c, ctx).filter((d) => d.related && !d.linked_to && d.kind === 'item' && d.balance_snt > 0)
   const pending: Pending = {
     leases: held ? openSuggestions(suggested, leases, ctx.asOf) : 0,
-    water: held ? suggestSettlements(lines, settlements, leases.length ? leases : suggested).length : 0,
+    water: held && !isParkingKind(c.parsed.doc.kind) ? suggestSettlements(lines, settlements, leases.length ? leases : suggested).length : 0,
     deposits: { count: deposits.length, amount_snt: deposits.reduce((sum, d) => sum + d.balance_snt, 0) },
   }
   return reminders({
@@ -659,7 +659,9 @@ function waterDetail(db: SqliteDb, c: Computed, ctx: LeaseContext): { water: Wat
     for (const share of v.shares) latest.set(share.lease_key, { from: v.from, to: v.to, balance_snt: share.balance_snt, settled_snt: share.settled_snt, status: share.status })
   }
   const shareLeases = leases.length ? leases : suggested
-  const suggestions = suggestSettlements(lines, settlements, shareLeases).map((s) => ({
+  // A parking space or garage has no water to settle: nothing is suggested there.
+  const found = isParkingKind(c.parsed.doc.kind) ? [] : suggestSettlements(lines, settlements, shareLeases)
+  const suggestions = found.map((s) => ({
     settlement: s.settlement,
     view: settlementView(s.settlement, s.lines, shareLeases, wctx),
     source: s.source,

@@ -467,6 +467,11 @@ correction would change the open year's income statement lines. The rental-objec
   year up to the month before), marked as an estimate.
 - Why not book the shares: the settlement is already in the ledger as cash. The split between
   tenants is a calculation over the leases, and storing it would go stale when a lease changes.
+- **A parking space or garage has no water and no parking extra** (amended 2026-11-14, owner).
+  On an object of kind `parking` or `garage` the whole payment is rent: lease suggestions put
+  every line in the rent, the lease and exception forms offer neither water nor the "autopaikka"
+  extra, and no water settlement is suggested or asked for. A lease stored with such amounts
+  keeps showing them, so the owner can see and clear them; stored settlements stay in sight.
 
 ## ADR-026 Rent arrears per lease, exact to the cent (2026-10-26)
 

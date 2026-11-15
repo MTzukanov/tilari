@@ -163,6 +163,34 @@ test.describe('rental object leases', () => {
   })
 })
 
+test.describe('rental object kinds', () => {
+  test('a parking space or garage offers no water and no parking extra', async ({ page }) => {
+    await openBook(page)
+    await page.goto('/#/property/4/edit')
+    await page.getByRole('button', { name: 'Lisää vuokrasopimus' }).click()
+    const lease = page.locator('.property-lease-edit').first()
+    const water = page.getByRole('heading', { name: 'Vesitasaukset' })
+    await expect(lease.getByLabel('Vesi €/kk')).toHaveCount(1)
+    await expect(lease.getByText('Vesimaksu tasataan kulutuksen mukaan')).toBeVisible()
+    await expect(lease.getByRole('checkbox', { name: 'Autopaikka', exact: true })).toBeVisible()
+    await expect(water).toBeVisible()
+
+    for (const kind of ['Autopaikka', 'Autotalli']) {
+      await page.getByLabel('Laji').selectOption({ label: kind })
+      await expect(lease.getByLabel('Vuokra €/kk')).toBeVisible()
+      await expect(lease.getByLabel('Vesi €/kk')).toHaveCount(0)
+      await expect(lease.getByText('Vesimaksu tasataan kulutuksen mukaan')).toHaveCount(0)
+      await expect(lease.getByRole('checkbox', { name: 'Autopaikka', exact: true })).toHaveCount(0)
+      // A parking space can still be let with VAT.
+      await expect(lease.getByRole('checkbox', { name: 'ALV', exact: true })).toBeVisible()
+      await expect(water).toHaveCount(0)
+    }
+    // Alkaen, rent and the total share the row.
+    await lease.getByLabel('Vuokra €/kk').fill('40')
+    await expect(lease.locator('.property-lease-amounts').first()).toContainText('40,00')
+  })
+})
+
 test.describe('rental object documents', () => {
   test('a linked document is a line: its voucher and its file open from pills, and it fits a phone', async ({ page }) => {
     await openBook(page)

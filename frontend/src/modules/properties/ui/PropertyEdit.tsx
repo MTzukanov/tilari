@@ -23,6 +23,7 @@ import {
   type SetupResponse,
   type VoucherFile,
 } from '../api'
+import { isParkingKind } from '../../../book/modules/properties/domain/kind'
 import { settlementShares } from '../../../book/modules/properties/domain/water'
 import { DocPicker } from './DocPicker'
 import {
@@ -601,28 +602,32 @@ function EditForm({
           isCreated={isCreated}
           onDeleteDocs={deleteDocs}
           onOpenVoucher={openVoucher}
+          parkingObject={isParkingKind(kind)}
         />
       </section>
 
-      <section className="property-section">
-        <h3>{t('properties.water.editTitle')}</h3>
-        <p className="muted">{t('properties.water.editLead')}</p>
-        <WaterEditor
-          drafts={water}
-          onChange={setWater}
-          leases={formLeases}
-          tenantName={(lease) => leaseTenant(lease) || t('properties.lease.tenantUnknown')}
-          docs={allDocs}
-          suggestions={detail.water.suggestions}
-          lines={detail.water.lines}
-          candidates={detail.water.statement_candidates}
-          onCreateLetter={createLetter}
-          onUpload={uploadWater}
-          isCreated={isCreated}
-          onDeleteDocs={deleteDocs}
-          onOpenVoucher={openVoucher}
-        />
-      </section>
+      {/* A parking space or garage has no water to settle; settlements already stored stay in sight. */}
+      {!isParkingKind(kind) || water.length ? (
+        <section className="property-section">
+          <h3>{t('properties.water.editTitle')}</h3>
+          <p className="muted">{t('properties.water.editLead')}</p>
+          <WaterEditor
+            drafts={water}
+            onChange={setWater}
+            leases={formLeases}
+            tenantName={(lease) => leaseTenant(lease) || t('properties.lease.tenantUnknown')}
+            docs={allDocs}
+            suggestions={detail.water.suggestions}
+            lines={detail.water.lines}
+            candidates={detail.water.statement_candidates}
+            onCreateLetter={createLetter}
+            onUpload={uploadWater}
+            isCreated={isCreated}
+            onDeleteDocs={deleteDocs}
+            onOpenVoucher={openVoucher}
+          />
+        </section>
+      ) : null}
 
       <section className="property-section">
         <h3>{t('properties.eras.title')}</h3>

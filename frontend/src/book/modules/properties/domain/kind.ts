@@ -19,3 +19,8 @@ export function kindFromName(name: string): PropertyKind {
   }
   return 'apartment'
 }
+
+/** A parking space or garage: what it earns is its rent, with no water and no parking space as an extra. */
+export function isParkingKind(kind: PropertyKind | '' | null | undefined): boolean {
+  return kind === 'parking' || kind === 'garage'
+}

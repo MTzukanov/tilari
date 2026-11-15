@@ -643,6 +643,24 @@ describe('rental objects: figures', () => {
     expect(computeAlerts(db, { today: TODAY })).toEqual(counted())
   })
 
+  it('a parking space or garage has no water to settle: no settlement is suggested or reminded of', async () => {
+    const fx = await setUp()
+    const { db } = fx
+    fx.voucher('waterCompany', '2024-11-30', 400, 'Tiliote 2024-11', [
+      { account: 7300, credit: 120 * E, allocation: CC.bundle, description: 'Vesitasaus 31.10.2024 A 1', date: '2024-11-20' },
+      { account: 1910, debit: 120 * E, date: '2024-11-20' },
+    ])
+    const flat = computeDetail(db, CC.bundle, { today: TODAY })
+    expect(flat.water.suggestions).toHaveLength(1)
+    expect(flat.warnings.map((w) => w.code)).toContain('water_suggestions')
+    for (const kind of ['parking', 'garage'] as const) {
+      saveProperty(db, CC.bundle, { ...computeDetail(db, CC.bundle, { today: TODAY }).doc, kind }, 'now')
+      const space = computeDetail(db, CC.bundle, { today: TODAY })
+      expect(space.water.suggestions).toEqual([])
+      expect(space.warnings.map((w) => w.code)).not.toContain('water_suggestions')
+    }
+  })
+
   it('deposits: the tenant own receipt is suggested; stored, its return and deduction show; ended and held, it warns', async () => {
     const fx = await setUp()
     const { db, eras, vouchers } = fx
