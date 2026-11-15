@@ -36,7 +36,6 @@ function BreakEvenPanel({ d, onTarget }: { d: PropertyDetail; onTarget: (bp: num
               fixed: formatEuro(costs.fixed_snt),
             })}
       </p>
-      {!be.costs_set ? <p className="property-note">{t('properties.breakEven.costsUnset')}</p> : null}
       <p className="muted">{t('properties.breakEven.bookLoss', { price: formatEuro(noBookLoss) })}</p>
       <p className="muted">{t('properties.breakEven.taxNote')}</p>
       <p className="muted">{t('properties.breakEven.debtFree')}</p>

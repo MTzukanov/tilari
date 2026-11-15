@@ -1035,7 +1035,7 @@
     "empty": "Keine Objekte anzuzeigen.",
     "setupBanner": "{n} Kostenstellen warten auf die Einrichtung.",
     "setupOpen": "Objekte einrichten",
-    "footnote": "* weniger als 12 Monate im Besitz, auf ein Jahr hochgerechnet. † keine Verkaufskosten angegeben (Standardwerte unten). Spaltenkopf mit der Maus berühren für eine Erklärung; Spalten lassen sich sortieren und verbreitern.",
+    "footnote": "* weniger als 12 Monate im Besitz, auf ein Jahr hochgerechnet. Spaltenkopf mit der Maus berühren für eine Erklärung; Spalten lassen sich sortieren und verbreitern.",
     "kpi": {
       "invested": "Investiert",
       "investedHint": "Anschaffungskosten und sonstiges Kapital",
@@ -1166,7 +1166,6 @@
       "caption": "Verkaufspreis ohne Darlehensanteil der Wohnungsgesellschaft",
       "explain": "Noch nicht zurück {unrecovered}. Verkaufskosten {pct} und {fixed} gehen vom Preis ab; zu diesem Preis ist jeder investierte Euro zurück.",
       "recovered": "Das Objekt hat das investierte Geld bereits zurückgebracht; jeder Preis nach Verkaufskosten ist Gewinn.",
-      "costsUnset": "Keine Verkaufskosten angegeben, die Zahl nimmt null an. Für das Objekt oder in den Standardwerten angeben.",
       "bookLoss": "Kein buchhalterischer Verlust ab einem Preis von {price} (Buchwert + Verkaufskosten).",
       "taxNote": "Steuern: Werden Gewinne und Verluste mit denselben 20 % besteuert und ist ein Verlust mit anderem Gewinn verrechenbar, ist der Break-even nach Steuern dieselbe Zahl.",
       "debtFree": "Schuldenfreier Preis = Verkaufspreis + verbleibender Darlehensanteil. Die Verfolgung des Darlehensanteils kommt in der nächsten Phase.",
@@ -1332,7 +1331,7 @@
       "valuationsLead": "Ihre Schätzung, was das Objekt jetzt einbringen würde. Die neueste wird für den IRR verwendet.",
       "addValuation": "Schätzung hinzufügen",
       "sale": "Verkauf und Ziel",
-      "saleLead": "Leer = Standardwerte.",
+      "saleLead": "Leer = die Standardwerte für alle Objekte (auf der Seite Mietobjekte); ohne sie sind die Verkaufskosten 0 % und 0 €.",
       "financing": "Bankdarlehen",
       "financingLead": "Bei Finanzierung mit eigenem Darlehen: Buchungen auf Zinskonten, auf Belegen mit einer Buchung auf dem Darlehenskonto, zählen als Kosten des Objekts.",
       "capital": "Sonstiges investiertes Kapital",
@@ -1400,7 +1399,6 @@
       "ambiguous": "Objekt wählen"
     },
     "warn": {
-      "sale_costs_unset": "Keine Verkaufskosten angegeben.",
       "sale_line_split": "Beleg {voucher} verkaufte mehrere Objekte; Buchungen ohne Kostenstelle wurden nach Anschaffungskosten aufgeteilt.",
       "sale_carried": "Auf demselben Beleg wie {object} verkauft, dessen Kostenstelle die Verkaufsbuchungen trägt. Dieses Objekt gilt als in diesem Preis mitverkauft: Verkaufspreis 0 € und die Anschaffungskosten ein Veräußerungsverlust.",
       "era_missing": "Verknüpfter Bilanzposten {eraid} existiert nicht mehr.",

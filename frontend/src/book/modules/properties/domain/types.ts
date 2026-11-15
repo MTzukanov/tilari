@@ -317,7 +317,6 @@ export type BreakEven = {
   price_snt: number
   unrecovered_snt: number
   sale_costs: SaleCosts
-  costs_set: boolean
   already_recovered: boolean
 }
 

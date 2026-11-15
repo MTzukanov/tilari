@@ -1035,7 +1035,7 @@
     "empty": "No objects to show.",
     "setupBanner": "{n} cost centres are waiting for setup.",
     "setupOpen": "Set up objects",
-    "footnote": "* owned less than 12 months, scaled to a year. † no sale costs set (Defaults below). Hover a column header for its explanation; columns can be sorted and resized.",
+    "footnote": "* owned less than 12 months, scaled to a year. Hover a column header for its explanation; columns can be sorted and resized.",
     "kpi": {
       "invested": "Invested",
       "investedHint": "Acquisition cost and other capital",
@@ -1166,7 +1166,6 @@
       "caption": "selling price without the housing-company loan share",
       "explain": "Not yet recovered {unrecovered}. Sale costs {pct} and {fixed} come off the price; at this price every euro put into the object has come back.",
       "recovered": "The object has already returned the money invested; any price after sale costs is a gain.",
-      "costsUnset": "No sale costs are set, so the figure assumes none. Set them for the object or in the defaults.",
       "bookLoss": "No accounting loss at a price of at least {price} (book value + sale costs).",
       "taxNote": "Taxes: when gains and losses are taxed at the same 20 % and a loss can be deducted from other profit, the after-tax break-even is the same figure.",
       "debtFree": "Debt-free price = selling price + remaining housing-company loan share. Loan-share tracking comes in the next phase.",
@@ -1332,7 +1331,7 @@
       "valuationsLead": "Your estimate of what the object would sell for now. The latest is used for the IRR.",
       "addValuation": "Add estimate",
       "sale": "Sale and target",
-      "saleLead": "Empty = use the defaults.",
+      "saleLead": "Empty = the defaults for all objects (on the Rental objects page); without them sale costs are 0 % and 0 €.",
       "financing": "Bank loan",
       "financingLead": "If the object is financed with a loan: lines on the interest accounts, on vouchers that also have a loan-account line, count as the object's cost.",
       "capital": "Other capital invested",
@@ -1400,7 +1399,6 @@
       "ambiguous": "Choose the object"
     },
     "warn": {
-      "sale_costs_unset": "No sale costs set.",
       "sale_line_split": "Voucher {voucher} sold several objects; lines without a cost centre were split by acquisition cost.",
       "sale_carried": "Sold on one voucher with {object}, whose cost centre has the sale lines. This object counts as sold within that price: sale price 0 € and its acquisition cost a loss on sale.",
       "era_missing": "Linked item {eraid} no longer exists.",

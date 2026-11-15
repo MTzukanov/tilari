@@ -23,7 +23,7 @@ export const WATER_SETTLEMENT_MONTHS = 15
  * Notes, not things to act on: the setup's sale costs, and how a sale shared with another object
  * was counted. The object page lists them; the portfolio does not mark a row for them.
  */
-export const NOTE_CODES = new Set(['sale_costs_unset', 'sale_carried', 'sale_line_split'])
+export const NOTE_CODES = new Set(['sale_carried', 'sale_line_split'])
 
 /** The warnings to act on: all but the notes. */
 export function actionable<T extends { code: string }>(warnings: T[]): T[] {

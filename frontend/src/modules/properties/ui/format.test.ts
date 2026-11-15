@@ -26,7 +26,7 @@ describe('warning tones', () => {
         { code: 'lease_suggestions' },
         { code: 'increase_due', params: { tenant: 'A', from_date: '2026-12-01' } },
         { code: 'water_suggestions' },
-        { code: 'sale_costs_unset' },
+        { code: 'sale_carried' },
         { code: 'doc_corrupt' },
       ],
       '2026-11-15',
@@ -41,7 +41,7 @@ describe('warning tones', () => {
     expect(warningTone('lease_overlap')).toEqual({ tone: 'crit', word: 'error' })
     expect(warningTone('rent_arrears')).toEqual({ tone: 'warn', word: 'todo' })
     expect(warningTone('lease_suggestions')).toEqual({ tone: 'doc', word: 'suggestion' })
-    expect(warningTone('sale_costs_unset')).toEqual({ tone: 'neutral', word: 'note' })
+    expect(warningTone('sale_carried')).toEqual({ tone: 'neutral', word: 'note' })
     expect(warningTone('something_new')).toEqual({ tone: 'warn', word: 'todo' })
   })
 

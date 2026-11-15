@@ -293,7 +293,7 @@ describe('missing documents', () => {
 
 describe('what a portfolio row has to act on', () => {
   it('no notes, and nothing for a cost centre not set up yet', () => {
-    const warnings = [{ code: 'sale_costs_unset' }, { code: 'no_capital' }, { code: 'sale_carried' }]
+    const warnings = [{ code: 'sale_line_split' }, { code: 'no_capital' }, { code: 'sale_carried' }]
     expect(rowAlerts({ configured: true, warnings })).toEqual([{ code: 'no_capital' }])
     expect(rowAlerts({ configured: false, warnings })).toEqual([])
   })

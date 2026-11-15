@@ -1035,7 +1035,7 @@
     "empty": "Ei näytettäviä kohteita.",
     "setupBanner": "{n} kustannuspaikkaa odottaa määritystä.",
     "setupOpen": "Määritä kohteet",
-    "footnote": "* alle 12 kk omistus, laskettu vuodelle. † myyntikuluja ei ole asetettu (Oletukset alla). Vie hiiri sarakeotsikon päälle nähdäksesi selityksen; sarakkeita voi lajitella ja leventää.",
+    "footnote": "* alle 12 kk omistus, laskettu vuodelle. Vie hiiri sarakeotsikon päälle nähdäksesi selityksen; sarakkeita voi lajitella ja leventää.",
     "kpi": {
       "invested": "Sijoitettu",
       "investedHint": "Hankintameno ja muut pääomat",
@@ -1166,7 +1166,6 @@
       "caption": "myyntihinta ilman yhtiölainaosuutta",
       "explain": "Palauttamatta {unrecovered}. Hinnasta vähennetään myyntikulut {pct} ja {fixed}; tällä hinnalla kaikki kohteeseen sijoitettu raha on palannut.",
       "recovered": "Kohde on jo tuonut sijoitetun rahan takaisin; mikä tahansa myyntihinta myyntikulujen jälkeen on voittoa.",
-      "costsUnset": "Myyntikuluja ei ole asetettu, joten luku olettaa kulut nollaksi. Aseta ne kohteelle tai oletuksiin.",
       "bookLoss": "Kirjanpidollista tappiota ei synny, kun hinta on vähintään {price} (kirjanpitoarvo + myyntikulut).",
       "taxNote": "Verot: kun voitto ja tappio verotetaan samalla 20 %:lla ja tappio voidaan vähentää muusta tuloksesta, verojen jälkeinen nollahinta on sama luku.",
       "debtFree": "Velaton hinta = myyntihinta + jäljellä oleva yhtiölainaosuus. Lainaosuuden seuranta tulee seuraavassa vaiheessa.",
@@ -1332,7 +1331,7 @@
       "valuationsLead": "Oma arvio siitä, mitä kohteesta saisi nyt. Uusin arvio käytetään IRR:n laskemiseen.",
       "addValuation": "Lisää arvio",
       "sale": "Myynti ja tavoite",
-      "saleLead": "Tyhjä = käytetään oletuksia.",
+      "saleLead": "Tyhjä = kaikkien kohteiden oletukset (Vuokrakohteet-sivulla); ilman niitä myyntikulut ovat 0 % ja 0 €.",
       "financing": "Pankkilaina",
       "financingLead": "Jos kohde on rahoitettu omalla lainalla: korkotilien viennit tositteilla, joilla on myös lainatilin vienti, lasketaan kohteen kuluksi.",
       "capital": "Muu sijoitettu pääoma",
@@ -1400,7 +1399,6 @@
       "ambiguous": "Valitse kohde"
     },
     "warn": {
-      "sale_costs_unset": "Myyntikuluja ei ole asetettu.",
       "sale_line_split": "Tosite {voucher} myi useamman kohteen; kohdistamattomat rivit jaettiin hankintamenojen suhteessa.",
       "sale_carried": "Myyty samalla tositteella kuin {object}, jonka kustannuspaikalla myyntirivit ovat. Tämä kohde lasketaan myydyksi sen kauppahinnassa: myyntihinta 0 € ja hankintameno myyntitappiona.",
       "era_missing": "Linkitettyä tase-erää {eraid} ei enää löydy.",

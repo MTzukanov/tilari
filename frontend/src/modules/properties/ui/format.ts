@@ -95,7 +95,6 @@ export const WARNING_WORDS: Record<string, WarningWord | 'due'> = {
   lease_suggestions: 'suggestion',
   water_suggestions: 'suggestion',
   deposits_unlinked: 'suggestion',
-  sale_costs_unset: 'note',
   sale_line_split: 'note',
   sale_carried: 'note',
   doc_newer: 'note',
@@ -145,7 +144,6 @@ export const WARNING_TABS: Record<string, PropertyTab | null> = {
   lease_suggestions: 'leases',
   water_suggestions: 'water',
   deposits_unlinked: 'leases',
-  sale_costs_unset: 'finance',
   sale_line_split: 'finance',
   sale_carried: 'finance',
 }
