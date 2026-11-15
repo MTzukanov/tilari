@@ -114,9 +114,9 @@ describe('lease suggestions', () => {
     const docs = [{ voucher_id: 10, date: '2024-12-20', title: 'Vuokrasopimus Virtanen 1.1.2025-' }]
     const flat = suggestLeases({ docs, income, names, centreName, parkingObject: false, asOf: '2025-03-31' })
     expect(flat[0].lease.rents).toEqual([{ from: '2025-01-01', rent_snt: 60_000, water_snt: 2_000, parking_snt: 1_500 }])
-    // On a parking space the parking fee is the rent.
+    // On a parking space the whole payment is the rent: it has no water and no parking extra.
     const space = suggestLeases({ docs, income, names, centreName, parkingObject: true, asOf: '2025-03-31' })
-    expect(space[0].lease.rents).toEqual([{ from: '2025-01-01', rent_snt: 61_500, water_snt: 2_000 }])
+    expect(space[0].lease.rents).toEqual([{ from: '2025-01-01', rent_snt: 63_500 }])
   })
 
   it('water settlements make no rent step, also when paid with the rent', () => {

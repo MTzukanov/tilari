@@ -5462,22 +5462,33 @@ tr.tax-total td {
   max-width: 100%;
 }
 
-/* Starting rent and increases share columns: Alkaen, rent, water, (parking), total. */
+/* Starting rent and increases share columns: Alkaen, rent, (water), (parking), total. */
 .property-lease-grid.property-lease-amounts {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-.property-lease-grid.property-lease-amounts.no-parking {
+.property-lease-grid.property-lease-amounts.no-parking,
+.property-lease-grid.property-lease-amounts.no-water {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-/* An exception has a second date: Alkaen, Päättyen, rent, water, (parking), total. */
+/* A parking space or garage: no water, no parking extra. */
+.property-lease-grid.property-lease-amounts.no-parking.no-water {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* An exception has a second date: Alkaen, Päättyen, rent, (water), (parking), total. */
 .property-lease-grid.property-lease-amounts.property-lease-exception {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
-.property-lease-grid.property-lease-amounts.property-lease-exception.no-parking {
+.property-lease-grid.property-lease-amounts.property-lease-exception.no-parking,
+.property-lease-grid.property-lease-amounts.property-lease-exception.no-water {
   grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.property-lease-grid.property-lease-amounts.property-lease-exception.no-parking.no-water {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 /* A read-only value lined up with the inputs beside it. */
@@ -5598,8 +5609,12 @@ tr.tax-total td {
   .property-lease-grid,
   .property-lease-grid.property-lease-amounts,
   .property-lease-grid.property-lease-amounts.no-parking,
+  .property-lease-grid.property-lease-amounts.no-water,
+  .property-lease-grid.property-lease-amounts.no-parking.no-water,
   .property-lease-grid.property-lease-amounts.property-lease-exception,
-  .property-lease-grid.property-lease-amounts.property-lease-exception.no-parking {
+  .property-lease-grid.property-lease-amounts.property-lease-exception.no-parking,
+  .property-lease-grid.property-lease-amounts.property-lease-exception.no-water,
+  .property-lease-grid.property-lease-amounts.property-lease-exception.no-parking.no-water {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

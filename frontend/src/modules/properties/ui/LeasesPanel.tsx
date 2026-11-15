@@ -105,6 +105,7 @@ function LeaseCard({
   onEdit,
   onOpenVoucher,
   onSaveException,
+  parkingObject,
 }: {
   lease: LeaseView
   account: LeaseRentAccount | undefined
@@ -116,6 +117,7 @@ function LeaseCard({
   onEdit: () => void
   onOpenVoucher: (voucherId: number) => void
   onSaveException?: (leaseKey: string, exception: LeaseException | null, replaces?: LeaseException) => Promise<void>
+  parkingObject: boolean
 }) {
   const { t } = useI18n()
   const terms = [
@@ -150,6 +152,7 @@ function LeaseCard({
           period={period}
           onOpen={onOpenVoucher}
           onSaveException={onSaveException ? (e, replaces) => onSaveException(lease.key, e, replaces) : undefined}
+          parkingObject={parkingObject}
         />
       ) : null}
       {latest ? (
@@ -210,6 +213,7 @@ export function LeasesPanel({
   onEdit,
   onOpenVoucher,
   onSaveException,
+  parkingObject,
 }: {
   leases: LeaseView[]
   current: LeaseView | null
@@ -227,6 +231,8 @@ export function LeasesPanel({
   onOpenVoucher: (voucherId: number) => void
   /** Saves an agreed exception to a stored lease from its month table; none when the document is read-only. */
   onSaveException?: (leaseKey: string, exception: LeaseException | null, replaces?: LeaseException) => Promise<void>
+  /** A parking space or garage: its exceptions have no water to give. */
+  parkingObject: boolean
 }) {
   const { t } = useI18n()
   const stored = current && !current.suggested ? current : null
@@ -253,6 +259,7 @@ export function LeasesPanel({
           onEdit={onEdit}
           onOpenVoucher={onOpenVoucher}
           onSaveException={onSaveException}
+          parkingObject={parkingObject}
         />
       ) : null}
       {others.length ? (
@@ -265,6 +272,7 @@ export function LeasesPanel({
             asOf={asOf}
             onOpenVoucher={onOpenVoucher}
             onSaveException={onSaveException}
+            parkingObject={parkingObject}
           />
         </>
       ) : null}
@@ -298,6 +306,7 @@ function LeaseList({
   asOf = '',
   onOpenVoucher,
   onSaveException,
+  parkingObject = false,
 }: {
   leases: LeaseView[]
   accounts?: LeaseRentAccount[]
@@ -306,6 +315,8 @@ function LeaseList({
   asOf?: string
   onOpenVoucher: (voucherId: number) => void
   onSaveException?: (leaseKey: string, exception: LeaseException | null, replaces?: LeaseException) => Promise<void>
+  /** With the accounts: a parking space or garage. */
+  parkingObject?: boolean
 }) {
   const { t } = useI18n()
   return (
@@ -330,6 +341,7 @@ function LeaseList({
               period={period}
               onOpen={onOpenVoucher}
               onSaveException={onSaveException ? (e, replaces) => onSaveException(lease.key, e, replaces) : undefined}
+              parkingObject={parkingObject}
             />
           ) : null}
           {!lease.suggested && lease.deposit ? <DepositSummary deposit={lease.deposit} onOpen={onOpenVoucher} /> : null}

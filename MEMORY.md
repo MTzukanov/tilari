@@ -7,6 +7,18 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-14 - Rental objects: a parking space offers no water or parking extra (`feature/parking-objects`)
+
+- Owner: a parking space should not be offered an extra parking space or water. On kind `parking` or `garage`
+  (`isParkingKind`) lease suggestions count every line as rent (water-only lines too), the lease form hides the
+  "Lisät: Autopaikka" extra, the water amounts and "Vesimaksu tasataan", the rent account's exception form hides
+  water, and the water settlements are neither suggested (`water_suggestions`) nor shown as an empty section.
+  Amounts or settlements already stored stay visible (`draftExtras` reads the stored lease). ADR-025 amended.
+  The "ALV" checkbox (VAT leases, ADR-033) stays on parking objects: a parking space can be let with VAT.
+- Decided 2026-11-14: a parking space rented with a flat for a while (one payment for both on the flat's cost
+  centre) is split in tilari-bank-import (rule key `split`, its PR #15): the parking's part of each payment is
+  booked on the parking's own cost centre, so Tilari needs nothing for it; each object has its own lease.
+
 ## 2026-11-14 - Rental objects: VAT leases (`feature/lease-vat`, ADR-033)
 
 - Owner: VAT rent invoiced from Holvi reaches the book at payment; the payment is split into a net income line and
