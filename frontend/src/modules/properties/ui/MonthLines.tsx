@@ -26,7 +26,7 @@ export function MonthLinesPanel({
   month: string
   lines: MonthLine[]
   locale: string
-  labels: { income: string; expense: string }
+  labels: { income: string; expense: string; net: string }
   onClose: () => void
   onOpenVoucher: (voucherId: number, entryId: number) => void
   onOpenAllocation: () => void
@@ -120,6 +120,9 @@ export function MonthLinesPanel({
           <span>
             {labels.expense} {formatCents(costs)}
           </span>
+          <strong className={`property-month-net${income + costs < 0 ? ' neg' : ''}`}>
+            {labels.net} {formatCents(income + costs)}
+          </strong>
         </span>
         <button type="button" className="btn-link" onClick={onOpenAllocation} title={t('properties.month.openAllocationHint')}>
           {t('properties.month.openAllocation')}

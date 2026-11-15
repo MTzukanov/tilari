@@ -1004,6 +1004,57 @@ test.describe('rental object month lines', () => {
     await expect(page).toHaveURL(/#\/property\/4$/)
   })
 
+  test('the chart adds a cash-flow bar and turns costs up; a month shows its cash flow; a phone stacks the legend', async ({ page }) => {
+    await openBook(page)
+    await page.goto('/#/property/4')
+    const chart = page.locator('svg.property-chart').first()
+    await expect(chart.locator('.property-bar-income').first()).toBeVisible()
+    await expect(chart.locator('.property-bar-net')).toHaveCount(0)
+    const column = chart.locator('.chart-col').filter({ has: page.getByRole('button', { name: 'helmikuu 2025' }) })
+    const box = async (cls: string) => {
+      const r = column.locator(cls)
+      return { y: Number(await r.getAttribute('y')), h: Number(await r.getAttribute('height')) }
+    }
+    // Costs hang below the zero line, where the income bar ends.
+    let income = await box('.property-bar-income')
+    let costs = await box('.property-bar-expense')
+    expect(costs.y).toBeCloseTo(income.y + income.h, 1)
+
+    await page.getByRole('checkbox', { name: 'Kulut ylöspäin' }).check()
+    income = await box('.property-bar-income')
+    costs = await box('.property-bar-expense')
+    expect(costs.y + costs.h).toBeCloseTo(income.y + income.h, 1)
+    expect(costs.y).toBeLessThan(income.y + income.h)
+
+    await page.getByRole('checkbox', { name: 'Kassavirta' }).check()
+    await expect(column.locator('.property-bar-net')).toHaveCount(1)
+    await expect(column.locator('.property-bar-net title')).toHaveText(/^Kassavirta, helmikuu 2025: /)
+
+    // The month's lines sum to its cash flow: income less costs and interest.
+    await page.getByRole('button', { name: 'helmikuu 2025' }).click()
+    const sums = page.locator('.property-month-head .browse-count')
+    const cents = (text: string) => Number(text.replace(/[^\d,−-]/g, '').replace('−', '-').replace(',', ''))
+    const [inText, costText, netText] = await sums.locator('> *').allInnerTexts()
+    expect(netText).toMatch(/^Kassavirta /)
+    expect(cents(netText)).toBe(cents(inText) + cents(costText))
+
+    // The checkboxes stay through a tab switch.
+    await page.getByRole('tab', { name: /^Talous/ }).click()
+    await page.getByRole('tab', { name: /^Yleiskatsaus/ }).click()
+    await expect(page.getByRole('checkbox', { name: 'Kassavirta' })).toBeChecked()
+    await expect(page.getByRole('checkbox', { name: 'Kulut ylöspäin' })).toBeChecked()
+
+    // A phone: one legend item per line, the chart drawn at its own width (text keeps its size).
+    await page.setViewportSize({ width: 360, height: 740 })
+    const items = page.locator('.overview-legend').first().locator('> *')
+    const xs = await items.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().x)))
+    expect(new Set(xs).size).toBe(1)
+    await expect
+      .poll(() => chart.evaluate((el) => Math.abs(el.viewBox.baseVal.width - el.getBoundingClientRect().width)))
+      .toBeLessThan(2)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360)
+  })
+
   test('a month changed in the address while the page is open opens that month', async ({ page }) => {
     await openBook(page)
     await page.goto('/#/property/4/month/2025-02')

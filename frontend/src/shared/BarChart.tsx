@@ -1,5 +1,6 @@
 import { formatAxisEur, niceMax } from './chartScale'
 import { formatCents } from './money'
+import { labelEvery, useChartWidth } from './useChartWidth'
 
 export type BarSeries<K extends string> = {
   key: K
@@ -8,8 +9,10 @@ export type BarSeries<K extends string> = {
 }
 
 /**
- * Grouped bars per point (one per series); negative values hang below the zero line. With
+ * Grouped bars per point (one per series); negative values hang below the zero line. The side with
+ * the larger values gets two grid steps, the other side only the steps its values need. With
  * `onSelect` each point's column is a button (click, Enter or Space) and `selectedKey` is shaded.
+ * Drawn at its box's width (`useChartWidth`), so labels thin out instead of shrinking on a phone.
  */
 export function BarChart<K extends string>({
   points,
@@ -21,6 +24,7 @@ export function BarChart<K extends string>({
   nameFor,
   selectedKey,
   onSelect,
+  labelGap = 44,
 }: {
   points: ({ key: string } & Record<K, number>)[]
   series: BarSeries<K>[]
@@ -33,8 +37,10 @@ export function BarChart<K extends string>({
   nameFor?: (key: string) => string
   selectedKey?: string | null
   onSelect?: (key: string) => void
+  /** Least room per point label (px); labels between are left out. */
+  labelGap?: number
 }) {
-  const width = 680
+  const { ref, width } = useChartWidth(680)
   const height = 240
   const padL = 64
   const padR = 14
@@ -44,22 +50,25 @@ export function BarChart<K extends string>({
   const plotH = height - padT - padB
 
   const values = points.flatMap((p) => series.map((s) => p[s.key]))
-  const rawMax = Math.max(1, ...values.map((v) => Math.abs(v)))
-  const maxAbs = niceMax(rawMax)
-  const hasNeg = values.some((v) => v < 0)
-  const baseline = hasNeg ? padT + plotH / 2 : padT + plotH
-  const scale = hasNeg ? plotH / (maxAbs * 2) : plotH / maxAbs
+  const posMax = Math.max(0, ...values)
+  const negMax = Math.max(0, ...values.map((v) => -v))
+  const maxAbs = niceMax(Math.max(1, posMax, negMax))
+  const step = maxAbs / 2
+  const top = posMax >= negMax ? maxAbs : Math.ceil(posMax / step) * step
+  const bottom = negMax > posMax ? maxAbs : Math.ceil(negMax / step) * step
+  const scale = plotH / (top + bottom)
+  const baseline = padT + top * scale
   const groupW = plotW / Math.max(points.length, 1)
-  const gap = 2
-  const barW = Math.min(16, (groupW * 0.7 - gap * (series.length - 1)) / series.length)
+  const gap = Math.min(2, groupW * 0.08)
+  const barW = Math.max(0.5, Math.min(16, (groupW * 0.7 - gap * (series.length - 1)) / series.length))
   const clusterW = series.length * barW + (series.length - 1) * gap
+  const every = labelEvery(points.length, plotW, labelGap)
 
-  const tickCents = hasNeg
-    ? [-maxAbs, -maxAbs / 2, 0, maxAbs / 2, maxAbs]
-    : [0, maxAbs / 2, maxAbs]
+  const tickCents: number[] = []
+  for (let v = bottom ? -bottom : 0; v <= top; v += step) tickCents.push(v)
 
   return (
-    <svg className={className} viewBox={`0 0 ${width} ${height}`} role="img">
+    <svg ref={ref} className={className} viewBox={`0 0 ${width} ${height}`} role="img">
       {tickCents.map((cents) => {
         const y = baseline - cents * scale
         return (
@@ -126,9 +135,11 @@ export function BarChart<K extends string>({
                 </rect>
               )
             })}
-            <text className="overview-tick" x={cx} y={height - 10} textAnchor="middle">
-              {labelFor(p.key)}
-            </text>
+            {i % every === 0 ? (
+              <text className="overview-tick" x={cx} y={height - 10} textAnchor="middle">
+                {labelFor(p.key)}
+              </text>
+            ) : null}
           </g>
         )
       })}

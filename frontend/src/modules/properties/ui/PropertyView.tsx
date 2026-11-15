@@ -32,7 +32,7 @@ import { LeaseCardEdit } from './LeaseCardEdit'
 import { leaseDrafts, type LeaseDraft } from './leaseDrafts'
 import { LeasesPanel } from './LeasesPanel'
 import { saveErrorText, statusClass, tabMarks } from './format'
-import { CashFlowPanel, PropertyFinance } from './PropertyFinance'
+import { CashFlowPanel, PropertyFinance, type CashFlowOptions } from './PropertyFinance'
 import { PropertyOverview } from './PropertyOverview'
 import { RentDates } from './RentDates'
 import type { CardInputs } from './useDocWriter'
@@ -196,7 +196,7 @@ export function PropertyView({
 }) {
   const { t } = useI18n()
   const [targetBp, setTargetBp] = useState<number | null>(null)
-  const [allMonths, setAllMonths] = useState(false)
+  const [chartOptions, setChartOptions] = useState<CashFlowOptions>({ allMonths: false, costsUp: false, net: false })
   const [tab, setTab] = useState<ViewTab>(tabOf({ month, tab: routeTab }))
   const [selected, setSelected] = useState<string | null>(month ?? null)
   /** The month the address asked for (a new object each time, so the same month shows again). */
@@ -266,7 +266,7 @@ export function PropertyView({
   // Opened on a month (back from one of its vouchers, or the address): show its bar and bring the lines into view.
   useEffect(() => {
     if (!loaded || !asked) return
-    if (d && !d.months.slice(-24).some((m) => m.key === asked.month)) setAllMonths(true)
+    if (d && !d.months.slice(-24).some((m) => m.key === asked.month)) setChartOptions((o) => ({ ...o, allMonths: true }))
     panelRef.current?.scrollIntoView({ block: 'nearest' })
     // When the data first arrives or the address asks for a month.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -455,8 +455,8 @@ export function PropertyView({
               cashFlow={
                 <CashFlowPanel
                   d={d}
-                  allMonths={allMonths}
-                  onAllMonths={setAllMonths}
+                  options={chartOptions}
+                  onOptions={setChartOptions}
                   selected={selected}
                   onSelectMonth={selectMonth}
                   panelRef={panelRef}

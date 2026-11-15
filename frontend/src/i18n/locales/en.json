@@ -1179,6 +1179,8 @@
       "income": "Income",
       "expense": "Costs and interest",
       "allMonths": "Whole ownership",
+      "net": "Cash flow",
+      "costsUp": "Costs upward",
       "payback": "Not yet recovered at month end",
       "clickHint": "Click: the month's entries",
       "more": "… and {n} more"

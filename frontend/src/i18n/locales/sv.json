@@ -1179,6 +1179,8 @@
       "income": "Intäkter",
       "expense": "Kostnader och räntor",
       "allMonths": "Hela ägartiden",
+      "net": "Kassaflöde",
+      "costsUp": "Kostnader uppåt",
       "payback": "Ej återfått vid månadens slut",
       "clickHint": "Klicka: månadens poster",
       "more": "… och {n} till"

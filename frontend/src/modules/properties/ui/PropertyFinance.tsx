@@ -169,10 +169,13 @@ function yearColumns(t: (key: string, vars?: Record<string, string | number>) =>
 /**
  * The cash flow by month, a month's lines under it on a click, and the payback (on the overview).
  */
+/** The cash-flow chart's checkboxes (kept by the page, so they survive a tab switch). */
+export type CashFlowOptions = { allMonths: boolean; costsUp: boolean; net: boolean }
+
 export function CashFlowPanel({
   d,
-  allMonths,
-  onAllMonths,
+  options,
+  onOptions,
   selected,
   onSelectMonth,
   panelRef,
@@ -180,8 +183,8 @@ export function CashFlowPanel({
   onOpenVoucher,
 }: {
   d: PropertyDetail
-  allMonths: boolean
-  onAllMonths: (all: boolean) => void
+  options: CashFlowOptions
+  onOptions: (options: CashFlowOptions) => void
   /** The month whose lines are open. */
   selected: string | null
   onSelectMonth: (month: string | null) => void
@@ -190,7 +193,8 @@ export function CashFlowPanel({
   onOpenVoucher: (voucherId: number, entryId?: number | null) => void
 }) {
   const { t } = useI18n()
-  const months = allMonths ? d.months : d.months.slice(-24)
+  const months = options.allMonths ? d.months : d.months.slice(-24)
+  const toggle = (key: keyof CashFlowOptions) => onOptions({ ...options, [key]: !options[key] })
   if (!d.months.length) return null
   return (
     <section className="overview-panel">
@@ -204,9 +208,18 @@ export function CashFlowPanel({
           <i className="overview-swatch property-swatch-expense" />
           {t('properties.chart.expense')}
         </span>
+        <label className="allocation-check">
+          <input type="checkbox" checked={options.net} onChange={() => toggle('net')} />
+          <i className="overview-swatch property-swatch-net" />
+          {t('properties.chart.net')}
+        </label>
+        <label className="allocation-check">
+          <input type="checkbox" checked={options.costsUp} onChange={() => toggle('costsUp')} />
+          {t('properties.chart.costsUp')}
+        </label>
         {d.months.length > 24 ? (
           <label className="allocation-check">
-            <input type="checkbox" checked={allMonths} onChange={() => onAllMonths(!allMonths)} />
+            <input type="checkbox" checked={options.allMonths} onChange={() => toggle('allMonths')} />
             {t('properties.chart.allMonths')}
           </label>
         ) : null}
@@ -214,11 +227,14 @@ export function CashFlowPanel({
       <CashFlowChart
         months={months}
         lines={d.month_lines}
+        costsUp={options.costsUp}
+        net={options.net}
         selectedKey={selected}
         onSelect={(key) => onSelectMonth(key === selected ? null : key)}
         labels={{
           income: t('properties.chart.income'),
           expense: t('properties.chart.expense'),
+          net: t('properties.chart.net'),
           clickHint: t('properties.chart.clickHint'),
           more: (n) => t('properties.chart.more', { n }),
         }}
@@ -229,7 +245,11 @@ export function CashFlowPanel({
             month={selected}
             lines={d.month_lines.filter((l) => l.month === selected)}
             locale={getBcp47()}
-            labels={{ income: t('properties.chart.income'), expense: t('properties.chart.expense') }}
+            labels={{
+              income: t('properties.chart.income'),
+              expense: t('properties.chart.expense'),
+              net: t('properties.chart.net'),
+            }}
             onClose={() => onSelectMonth(null)}
             onOpenVoucher={onOpenVoucher}
             onOpenAllocation={() => onOpenAllocation(selected)}
