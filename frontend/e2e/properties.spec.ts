@@ -25,7 +25,12 @@ test.describe('rental objects', () => {
     await expect(page).toHaveURL(/#\/property\/4$/)
     await expect(page.getByRole('heading', { name: 'Asunto' })).toBeVisible()
     await expect(page.getByText('Hankintamenoa ei ole linkitetty', { exact: false }).first()).toBeVisible()
+    // The figures are on their own tab, and the address says so.
+    await page.getByRole('tab', { name: /^Talous/ }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/finance$/)
     await expect(page.getByRole('heading', { name: 'Tilikausittain' })).toBeVisible()
+    await page.getByRole('tab', { name: 'Yleiskatsaus' }).click()
+    await expect(page).toHaveURL(/#\/property\/4$/)
 
     await page.getByRole('button', { name: 'Muokkaa kohdetta' }).click()
     await expect(page).toHaveURL(/#\/property\/4\/edit$/)
@@ -36,14 +41,46 @@ test.describe('rental objects', () => {
   })
 })
 
+test.describe('rental object tabs', () => {
+  test('the page opens on the overview; a tab is in the address and moves with the arrow keys; it fits a phone', async ({ page }) => {
+    await openBook(page)
+    await page.goto('/#/property/4')
+    const tabs = page.getByRole('tablist')
+    await expect(tabs.getByRole('tab')).toHaveText([/^Yleiskatsaus/, /^Vuokrasuhteet/, /^Vesimaksut/, /^Asiakirjat/, /^Talous/])
+    await expect(page.getByRole('tab', { name: 'Yleiskatsaus' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.locator('.property-now', { hasText: 'Vuokrasuhde nyt' })).toContainText('Ei vuokrasopimuksia.')
+
+    // A quick action opens the edit page on its tab, to add a row there.
+    await page.getByRole('button', { name: '+ Vesitasaus' }).click()
+    await expect(page).toHaveURL(/#\/property\/4\/edit\/water\/new$/)
+    await page.goBack()
+    await expect(page).toHaveURL(/#\/property\/4$/)
+
+    await page.getByRole('tab', { name: 'Yleiskatsaus' }).focus()
+    await page.keyboard.press('ArrowRight')
+    await expect(page).toHaveURL(/#\/property\/4\/leases$/)
+    await expect(page.getByRole('tab', { name: /^Vuokrasuhteet/ })).toBeFocused()
+    await expect(page.getByRole('heading', { name: 'Vuokrasuhteet' })).toBeVisible()
+    // The address alone opens the tab.
+    await page.goto('/#/properties')
+    await page.goto('/#/property/4/docs')
+    await expect(page.getByRole('tab', { name: /^Asiakirjat/ })).toHaveAttribute('aria-selected', 'true')
+
+    // On a phone the bar scrolls sideways, the page does not.
+    await page.setViewportSize({ width: 360, height: 740 })
+    await expect(tabs).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360)
+  })
+})
+
 test.describe('rental object leases', () => {
   test('a lease added on the edit page shows on the object page and in the list', async ({ page }) => {
     await openBook(page)
     // The notice voucher is dated on the book's day: inside the test book's last fiscal year.
     await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
-    await page.goto('/#/property/4')
+    await page.goto('/#/property/4/leases')
     await expect(page.getByRole('heading', { name: 'Vuokrasuhteet' })).toBeVisible()
-    await expect(page.getByText('Ei vuokrasopimuksia.', { exact: false })).toBeVisible()
+    await expect(page.locator('.property-leases').getByText('Ei vuokrasopimuksia.', { exact: false })).toBeVisible()
     await expect(page.locator('.property-leases').getByRole('button', { name: 'Lisää vuokrasopimus' })).toBeVisible()
 
     await page.goto('/#/property/4/edit')
@@ -93,6 +130,7 @@ test.describe('rental object leases', () => {
     await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
 
     await expect(page).toHaveURL(/#\/property\/4$/)
+    await page.getByRole('tab', { name: /^Vuokrasuhteet/ }).click()
     const card = page.locator('.property-lease-card')
     await expect(card).toContainText('Testi Vuokralainen')
     await expect(card).toContainText('1.1.2025 alkaen')
@@ -153,13 +191,14 @@ test.describe('rental object leases', () => {
     await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
 
     await expect(page).toHaveURL(/#\/property\/4$/)
+    // The test book's rent is booked without VAT: the object warns, and each such payment is marked.
+    await expect(page.getByText(/Vuokrasta puuttuu ALV \(Testi Yritys Oy\)/)).toBeVisible()
+    await page.getByRole('tab', { name: /^Vuokrasuhteet/ }).click()
     const card = page.locator('.property-lease-card')
     await expect(card).toContainText('500,00 €/kk + ALV 25,5 % 127,50 € = 627,50 €/kk')
     await card.getByText(/^Kuukausittain/).click()
     await expect(card.locator('.property-rent-table th', { hasText: /^ALV$/ })).toBeVisible()
-    // The test book's rent is booked without VAT: each such payment is marked, and the object warns.
     await expect(card.locator('.property-rent-table .btn-link.neg').first()).toContainText('⚠')
-    await expect(page.getByText(/Vuokrasta puuttuu ALV \(Testi Yritys Oy\)/)).toBeVisible()
   })
 })
 
@@ -214,17 +253,18 @@ test.describe('rental object documents', () => {
     await page.getByRole('option', { name: /Vuokrasopimus Asunto/ }).click()
     await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(page).toHaveURL(/#\/property\/4$/)
+    await page.getByRole('tab', { name: /^Asiakirjat/ }).click()
 
     const docs = page.locator('.property-docs')
     await expect(docs.locator('.section-label')).toHaveText(['Linkitetyt (sopimukset ja ilmoitukset)'])
     const line = docs.locator('.doc-line', { hasText: 'Vuokrasopimus Asunto' })
     const file = line.getByRole('link', { name: 'sopimus.pdf' })
     await expect(file).toBeVisible()
-    // The purple pill opens the voucher, and the way back returns to the object.
+    // The purple pill opens the voucher, and the way back returns to the object's tab.
     await line.getByRole('button', { name: /^Vuokrasopimus Asunto .*, 15\.12\.2025$/ }).click()
-    await expect(page).toHaveURL(/#\/property\/4\/voucher\/\d+/)
+    await expect(page).toHaveURL(/#\/property\/4\/docs\/voucher\/\d+/)
     await page.getByRole('button', { name: 'Sulje' }).click()
-    await expect(page).toHaveURL(/#\/property\/4$/)
+    await expect(page).toHaveURL(/#\/property\/4\/docs$/)
 
     const title = line.locator('.doc-line-title')
     for (const [width, rows] of [
@@ -283,6 +323,7 @@ test.describe('rental object deposits', () => {
     await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
 
     await expect(page).toHaveURL(/#\/property\/4$/)
+    await page.getByRole('tab', { name: /^Vuokrasuhteet/ }).click()
     const card = page.locator('.property-lease-card')
     await expect(card).toContainText(/Vuokravakuus: saatu 500,00\s€ · saldo 500,00\s€/)
     await card.getByText('Vakuuden kirjaukset (1)').click()
@@ -316,6 +357,7 @@ test.describe('rental object rent exceptions', () => {
     await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
 
     await expect(page).toHaveURL(/#\/property\/4$/)
+    await page.getByRole('tab', { name: /^Vuokrasuhteet/ }).click()
     const card = page.locator('.property-lease-card').first()
     // No rent is booked on the object: nine months of 670,00 €, May 200,00 € less.
     await expect(card).toContainText(/Vuokrasaldo 30\.11\.2025: vuokrarästi 5\s830,00\s€/)
@@ -369,7 +411,7 @@ test.describe('rental object rent exceptions', () => {
 
     // The card leads to where exceptions are entered.
     await card.getByRole('button', { name: /^Lisää korotus tai poikkeava vuokra/ }).click()
-    await expect(page).toHaveURL(/#\/property\/4\/edit$/)
+    await expect(page).toHaveURL(/#\/property\/4\/edit\/leases$/)
     await expect(page.locator('.property-lease-exception')).toHaveCount(1)
   })
 })
@@ -404,6 +446,7 @@ test.describe('rental object lease dates', () => {
     await page.getByLabel('Vuokra omistajalle alkaen').fill('2025-02-01')
     await save.click()
     await expect(page).toHaveURL(/#\/property\/4$/)
+    await page.getByRole('tab', { name: /^Vuokrasuhteet/ }).click()
     // The ended lease's account starts after the lease: on the owner's day.
     await expect(page.locator('.property-leases')).toContainText('laskettu 1.2.2025 alkaen: omistajan antama päivä')
   })
@@ -465,9 +508,11 @@ test.describe('rental object reminders', () => {
     await page.locator('.property-alerts').getByRole('button', { name: 'Asunto', exact: true }).click()
     await expect(page).toHaveURL(/#\/property\/4$/)
 
-    // A tile on the object's page opens its edit page, where the lease is.
+    // The leases' tab is marked with its worst open item: the contract is missing.
+    await expect(page.getByRole('tab', { name: /^Vuokrasuhteet/ }).locator('.tabs-mark-crit')).toBeVisible()
+    // A tile on the object's page opens the lease it is about, on the edit page.
     await page.locator('.property-warnings .due-tile', { hasText: 'Vuokrankorotus' }).click()
-    await expect(page).toHaveURL(/#\/property\/4\/edit$/)
+    await expect(page).toHaveURL(/#\/property\/4\/edit\/leases\/lease\/l1$/)
   })
 })
 
@@ -522,7 +567,7 @@ test.describe('rental object water settlements', () => {
     await openBook(page)
     // The letter's voucher is dated on the book's day: inside the test book's last fiscal year.
     await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2025-12-15')
-    await page.goto('/#/property/4')
+    await page.goto('/#/property/4/water')
     const panel = page.locator('.property-water')
     await expect(panel.getByRole('heading', { name: 'Vesimaksut ja vesitasaukset' })).toBeVisible()
     await expect(panel).toContainText('Ei vesitasauksia.')
@@ -565,6 +610,11 @@ test.describe('rental object water settlements', () => {
     await page.getByRole('main').getByRole('button', { name: 'Tallenna', exact: true }).click()
 
     await expect(page).toHaveURL(/#\/property\/4$/)
+    // The overview shows the latest settlement of the running lease.
+    await expect(page.locator('.property-now', { has: page.getByRole('heading', { name: 'Vesi', exact: true }) })).toContainText(
+      'Vesitasaus 1.1.2025–30.6.2025: palautetaan 39,56 €',
+    )
+    await page.getByRole('tab', { name: /^Vesimaksut/ }).click()
     await expect(panel).toContainText('Tasausjakso 1.1.2025–30.6.2025')
     await expect(panel).toContainText('taloyhtiö: hyvitys 36,20 €, kulutus 60,00 €, ennakot 96,20 €')
     await expect(panel).toContainText('Taloyhtiön tasausta ei löydy kirjanpidosta.')
@@ -575,6 +625,7 @@ test.describe('rental object water settlements', () => {
     await expect(row.getByRole('button', { name: /Vesitasaus Asunto/ })).toBeVisible()
     // No statement linked: the settlement's place for it says so.
     await expect(panel.locator('.property-doc-slot', { hasText: 'Tasauslaskelma' }).locator('.pill-crit')).toHaveText('Puuttuu')
+    await page.getByRole('tab', { name: /^Vuokrasuhteet/ }).click()
     const card = page.locator('.property-lease-card').first()
     await expect(card).toContainText('vesimaksu tasataan kulutuksen mukaan')
     const latest = card.locator('.property-lease-terms', { hasText: 'Vesitasaus 1.1.2025–30.6.2025: palautetaan 39,56 €' })
@@ -650,7 +701,7 @@ test.describe('rental object month lines', () => {
     await openBook(page)
     // A narrow text column, so one line is cut off below.
     await page.evaluate(() => localStorage.setItem('tilari.properties.monthLines.cols', JSON.stringify({ text: 70 })))
-    await page.goto('/#/property/4')
+    await page.goto('/#/property/4/finance')
     await expect(page.getByRole('heading', { name: 'Asunto' })).toBeVisible()
 
     await page.getByRole('button', { name: 'helmikuu 2025' }).click()
@@ -682,11 +733,11 @@ test.describe('rental object month lines', () => {
     await page.goBack()
     await expect(page.locator('.ledger-head-nav').first()).toHaveAttribute('data-start', '2025-02-01')
 
-    // Closing the panel drops the month from the address.
+    // Closing the panel drops the month from the address; the figures' tab stays.
     await page.goto('/#/property/4/month/2025-02')
     await panel.getByRole('button', { name: 'Sulje' }).click()
     await expect(panel).toBeHidden()
-    await expect(page).toHaveURL(/#\/property\/4$/)
+    await expect(page).toHaveURL(/#\/property\/4\/finance$/)
   })
 
   test('a month changed in the address while the page is open opens that month', async ({ page }) => {

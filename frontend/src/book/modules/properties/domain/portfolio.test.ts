@@ -591,15 +591,15 @@ describe('rental objects: figures', () => {
     const tenant = 'Vuokralainen Virtanen'
 
     // December's anniversary passed with no increase entered; the company's charge is a month old.
-    expect(reminders('2024-12-20')).toEqual([{ code: 'increase_due', params: { tenant, from_date: '2024-12-01' } }])
+    expect(reminders('2024-12-20')).toEqual([{ code: 'increase_due', params: { tenant, from_date: '2024-12-01' }, lease_key: 'l1' }])
     expect(reminders('2025-01-05')).toEqual([{ code: 'water_letter_missing', params: { tenant, ...period } }])
     // The payment after the as-of date does not count yet.
     expect(reminders('2025-02-01')).toEqual([{ code: 'water_tenant_owes', params: { tenant, ...period, amount_snt: 60 * E } }])
     expect(reminders('2025-03-01')).toEqual([])
 
     const autumn = [
-      { code: 'lease_ending', params: { tenant, ends_date: '2026-12-31' } },
-      { code: 'increase_due', params: { tenant, from_date: '2026-12-01' } },
+      { code: 'lease_ending', params: { tenant, ends_date: '2026-12-31' }, lease_key: 'l1' },
+      { code: 'increase_due', params: { tenant, from_date: '2026-12-01' }, lease_key: 'l1' },
       { code: 'water_settlement_missing', params: { to_date: '2024-10-31' } },
     ]
     expect(reminders('2026-10-15')).toEqual(autumn)

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   companyHash,
   parseRoute,
+  propertyEditHash,
+  propertyHash,
   routeAllowsNoBook,
   voucherHash,
   voucherParentHash,
@@ -146,6 +148,35 @@ describe('parseRoute', () => {
     // Not a month: no month view, and edit has no month form.
     expect(parseRoute('#/property/15/month/2025-13')).toEqual({ view: 'reports' })
     expect(parseRoute('#/property/15/month/2025-03/edit')).toEqual({ view: 'reports' })
+  })
+
+  it('keeps a rental object tab, on its page and its edit page, through a voucher', () => {
+    expect(parseRoute('#/property/15/leases')).toEqual({ view: 'property', id: 15, tab: 'leases' })
+    expect(propertyHash(15, { tab: 'docs' })).toBe('#/property/15/docs')
+    // A month is on the figures' tab, so the address names only the month.
+    expect(propertyHash(15, { month: '2025-03', tab: 'finance' })).toBe('#/property/15/month/2025-03')
+    const via = { kind: 'property' as const, id: 15, tab: 'water' as const }
+    expect(parseRoute('#/property/15/water/voucher/8/edit')).toEqual({ view: 'edit', voucherId: 8, type: null, via, entryId: null })
+    expect(voucherHash(via, 8)).toBe('#/property/15/water/voucher/8/edit')
+    expect(voucherParentHash(via)).toBe('#/property/15/water')
+
+    expect(parseRoute('#/property/15/edit/finance')).toEqual({ view: 'propertyEdit', id: 15, tab: 'finance' })
+    const editVia = { kind: 'propertyEdit' as const, id: 15, tab: 'leases' as const }
+    expect(parseRoute('#/property/15/edit/leases/voucher/12/edit')).toEqual({ view: 'edit', voucherId: 12, type: null, via: editVia, entryId: null })
+    expect(voucherHash(editVia, 12)).toBe('#/property/15/edit/leases/voucher/12/edit')
+    expect(voucherParentHash(editVia)).toBe('#/property/15/edit/leases')
+
+    // What the edit page is opened to do: add a row on a tab, or open a lease's card.
+    expect(parseRoute('#/property/15/edit/water/new')).toEqual({ view: 'propertyEdit', id: 15, tab: 'water', intent: { add: true } })
+    expect(propertyEditHash(15, 'water', { add: true })).toBe('#/property/15/edit/water/new')
+    expect(parseRoute('#/property/15/edit/leases/lease/l2')).toEqual({ view: 'propertyEdit', id: 15, tab: 'leases', intent: { lease: 'l2' } })
+    expect(propertyEditHash(15, 'leases', { lease: 'l2' })).toBe('#/property/15/edit/leases/lease/l2')
+
+    // Not tabs, or not with a month.
+    expect(parseRoute('#/property/15/overview')).toEqual({ view: 'reports' })
+    expect(parseRoute('#/property/15/month/2025-03/leases')).toEqual({ view: 'reports' })
+    expect(parseRoute('#/property/15/edit/new')).toEqual({ view: 'reports' })
+    expect(parseRoute('#/property/15/edit/water/lease/l2')).toEqual({ view: 'reports' })
   })
 
   it('parses reports hub and fiscal periods', () => {

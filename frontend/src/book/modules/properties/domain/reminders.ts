@@ -77,9 +77,9 @@ export function reminders(input: ReminderInput): Warning[] {
     for (const lease of input.leases) {
       if (leaseState(lease, input.asOf) !== 'current') continue
       const ending = leaseEnding(lease, input.leases, input.asOf)
-      if (ending) out.push({ code: 'lease_ending', params: { tenant: input.tenant(lease), ends_date: ending } })
+      if (ending) out.push({ code: 'lease_ending', params: { tenant: input.tenant(lease), ends_date: ending }, lease_key: lease.key })
       const due = increaseDue(lease, input.asOf)
-      if (due) out.push({ code: 'increase_due', params: { tenant: input.tenant(lease), from_date: due } })
+      if (due) out.push({ code: 'increase_due', params: { tenant: input.tenant(lease), from_date: due }, lease_key: lease.key })
     }
     const missing = settlementMissing(input.leases, input.settlements, input.asOf, input.rentFrom)
     if (missing) out.push(missing)

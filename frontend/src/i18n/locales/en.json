@@ -1008,6 +1008,25 @@
     "title": "Rental objects",
     "lead": "Cost centres as rental objects: money invested, cash flow, return, and the price that gets the money back. Figures come from the books; Tilari stores only links and estimates in its own table.",
     "asOf": "As of {date}",
+    "tab": {
+      "overview": "Overview",
+      "leases": "Tenancies",
+      "water": "Water",
+      "docs": "Documents",
+      "finance": "Finances",
+      "basics": "Basics",
+      "mark": "Open items: {count}"
+    },
+    "overview": {
+      "leaseNow": "Tenancy now",
+      "allLeases": "All tenancies",
+      "water": "Water",
+      "allWater": "All water settlements",
+      "addLease": "+ Lease",
+      "addWater": "+ Water settlement",
+      "addDoc": "+ Document",
+      "addValuation": "+ Price estimate"
+    },
     "dataThrough": "bank statements to {date}",
     "acquired": "acquired {date}",
     "soldOn": "sold {date}",

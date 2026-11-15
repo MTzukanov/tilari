@@ -1,4 +1,4 @@
-import { allocationHash, voucherHash } from '../../app/routing'
+import { allocationHash, propertyEditHash, propertyHash, voucherHash } from '../../app/routing'
 import type { BookViewCtx, UiModule } from '../ui'
 import { viaKind } from '../ui'
 import { AlertsButton } from './ui/AlertsButton'
@@ -14,11 +14,12 @@ function PropertiesScreen({ route, goTo, meta }: BookViewCtx) {
         key={route.id}
         id={route.id}
         month={route.month}
+        tab={route.tab}
         onBack={() => goTo('#/properties')}
-        onEdit={() => goTo(`#/property/${route.id}/edit`)}
+        onEdit={(tab, intent) => goTo(propertyEditHash(route.id, tab, intent))}
         onOpenAllocation={(month) => goTo(allocationHash(route.id, month))}
-        onOpenVoucher={(voucherId, entryId, month) =>
-          goTo(voucherHash({ kind: 'property', id: route.id, month }, voucherId, entryId))
+        onOpenVoucher={(voucherId, entryId, at) =>
+          goTo(voucherHash({ kind: 'property', id: route.id, ...(at.month ? { month: at.month } : at.tab ? { tab: at.tab } : {}) }, voucherId, entryId))
         }
       />
     )
@@ -30,8 +31,10 @@ function PropertiesScreen({ route, goTo, meta }: BookViewCtx) {
         id={route.id}
         bookKey={meta?.session_id ?? ''}
         today={meta?.book_date}
-        onDone={() => goTo(`#/property/${route.id}`)}
-        onOpenVoucher={(voucherId) => goTo(voucherHash({ kind: 'propertyEdit', id: route.id }, voucherId))}
+        tab={route.tab}
+        intent={route.intent}
+        onDone={(tab) => goTo(propertyHash(route.id, { tab }))}
+        onOpenVoucher={(voucherId, tab) => goTo(voucherHash({ kind: 'propertyEdit', id: route.id, ...(tab ? { tab } : {}) }, voucherId))}
       />
     )
   }

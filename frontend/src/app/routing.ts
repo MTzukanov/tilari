@@ -1,15 +1,25 @@
 export type CompanySection = 'documents' | 'own'
 
+/** A rental object's tabs after the first (the overview on its page, the basics on the edit page). */
+export const PROPERTY_TABS = ['leases', 'water', 'docs', 'finance'] as const
+export type PropertyTab = (typeof PROPERTY_TABS)[number]
+
+/**
+ * What the edit page is opened to do, once: `add` a new row on its tab (`/new`), or open the card
+ * of `lease` (`/lease/{key}`). The page drops it from the address once done.
+ */
+export type PropertyEditIntent = { add: true } | { lease: string }
+
 export type VoucherVia =
   | { kind: 'account'; account: number }
   /** `month` (YYYY-MM): the page was showing that month; back returns to it. */
   | { kind: 'allocation'; id: number; month?: string }
-  /** Opened from a rental object's page (`#/property/{id}`), `month` its open month panel. */
-  | { kind: 'property'; id: number; month?: string }
+  /** Opened from a rental object's page (`#/property/{id}`), `month` its open month panel, `tab` its open tab. */
+  | { kind: 'property'; id: number; month?: string; tab?: PropertyTab }
   /** Opened from the rental-object setup (`#/properties/setup`); its unsaved choices are kept. */
   | { kind: 'propertiesSetup' }
   /** Opened from a rental object's edit page (`#/property/{id}/edit`); its unsaved form is kept. */
-  | { kind: 'propertyEdit'; id: number }
+  | { kind: 'propertyEdit'; id: number; tab?: PropertyTab }
   | { kind: 'balanceSheetItems' }
   | { kind: 'browse' }
   | { kind: 'journal' }
@@ -29,8 +39,9 @@ export type Route =
   /** `section: 'alerts'` (`#/properties/alerts`): opened on the list of warnings. */
   | { view: 'properties'; section?: 'alerts' }
   | { view: 'propertiesSetup' }
-  | { view: 'property'; id: number; month?: string }
-  | { view: 'propertyEdit'; id: number }
+  /** `month` opens the figures' tab on that month; `tab` another tab than the overview. */
+  | { view: 'property'; id: number; month?: string; tab?: PropertyTab }
+  | { view: 'propertyEdit'; id: number; tab?: PropertyTab; intent?: PropertyEditIntent }
   /** `documents`: every document, searchable. `own`: the page with the company's own documents open. */
   | { view: 'company'; section?: CompanySection }
   /** The page with this period open. */
@@ -60,9 +71,20 @@ export function allocationHash(id: number, month?: string): string {
   return `#/allocation/${id}${month ? `/month/${month}` : ''}`
 }
 
-/** `#/property/{id}`, or `#/property/{id}/month/{YYYY-MM}` with that month's lines open. */
-export function propertyHash(id: number, month?: string): string {
-  return `#/property/${id}${month ? `/month/${month}` : ''}`
+/**
+ * `#/property/{id}`, `#/property/{id}/{tab}` on another tab than the overview, or
+ * `#/property/{id}/month/{YYYY-MM}` with that month's lines open (on the figures' tab).
+ */
+export function propertyHash(id: number, at: { month?: string; tab?: PropertyTab } = {}): string {
+  if (at.month) return `#/property/${id}/month/${at.month}`
+  return `#/property/${id}${at.tab ? `/${at.tab}` : ''}`
+}
+
+/** `#/property/{id}/edit`, `.../edit/{tab}`, and with an intent `.../edit/{tab}/new` or `.../edit/leases/lease/{key}`. */
+export function propertyEditHash(id: number, tab?: PropertyTab, intent?: PropertyEditIntent): string {
+  const base = `#/property/${id}/edit${tab ? `/${tab}` : ''}`
+  if (!intent) return base
+  return 'add' in intent ? `${base}/new` : `${base}/lease/${encodeURIComponent(intent.lease)}`
 }
 
 /** `#/company`, `#/company/documents`, `#/company/own`, or with a period open `#/company/period/{ends}`. */
@@ -83,6 +105,13 @@ function parseVoucherSegment(seg: string): VoucherRef | null {
   }
 }
 
+/** A leading tab segment (`leases/...`) and what follows it; `rest` is the whole segment without one. */
+function splitPropertyTab(seg: string): { tab: { tab?: PropertyTab }; rest: string } {
+  const [first, ...more] = seg.split('/')
+  if (!(PROPERTY_TABS as readonly string[]).includes(first)) return { tab: {}, rest: seg }
+  return { tab: { tab: first as PropertyTab }, rest: more.join('/') }
+}
+
 function voucherTail(id: number, entryId: number | null): string {
   const entry = entryId != null ? `/v/${entryId}` : ''
   return `/voucher/${id}${entry}/edit`
@@ -101,11 +130,11 @@ export function voucherHash(
     case 'allocation':
       return `${allocationHash(via.id, via.month)}${tail}`
     case 'property':
-      return `${propertyHash(via.id, via.month)}${tail}`
+      return `${propertyHash(via.id, via)}${tail}`
     case 'propertiesSetup':
       return `#/properties/setup${tail}`
     case 'propertyEdit':
-      return `#/property/${via.id}/edit${tail}`
+      return `${propertyEditHash(via.id, via.tab)}${tail}`
     case 'balanceSheetItems':
       return `#/balance-sheet-items${tail}`
     case 'browse':
@@ -130,11 +159,11 @@ export function voucherParentHash(via: VoucherVia): string {
     case 'allocation':
       return allocationHash(via.id, via.month)
     case 'property':
-      return propertyHash(via.id, via.month)
+      return propertyHash(via.id, via)
     case 'propertiesSetup':
       return '#/properties/setup'
     case 'propertyEdit':
-      return `#/property/${via.id}/edit`
+      return propertyEditHash(via.id, via.tab)
     case 'balanceSheetItems':
       return '#/balance-sheet-items'
     case 'browse':
@@ -252,11 +281,18 @@ export function parseRoute(hash: string = window.location.hash): Route {
     if (!property[3]) return { view: 'property', id, ...month }
     if (property[3] === 'edit' && !property[2]) return { view: 'propertyEdit', id }
     if (property[3].startsWith('edit/') && !property[2]) {
-      const edited = parseVoucherSegment(property[3].slice('edit/'.length))
-      if (edited) return voucherRoute({ kind: 'propertyEdit', id }, edited)
+      const { tab, rest } = splitPropertyTab(property[3].slice('edit/'.length))
+      if (!rest) return { view: 'propertyEdit', id, ...tab }
+      if (rest === 'new' && tab.tab) return { view: 'propertyEdit', id, ...tab, intent: { add: true } }
+      const lease = rest.match(/^lease\/([^/]+)$/)
+      if (lease && tab.tab === 'leases') return { view: 'propertyEdit', id, ...tab, intent: { lease: decodeURIComponent(lease[1]) } }
+      const edited = parseVoucherSegment(rest)
+      if (edited) return voucherRoute({ kind: 'propertyEdit', id, ...tab }, edited)
     }
-    const ref = parseVoucherSegment(property[3])
-    if (ref) return voucherRoute({ kind: 'property', id, ...month }, ref)
+    const { tab, rest } = property[2] ? { tab: {}, rest: property[3] } : splitPropertyTab(property[3])
+    if (!rest) return { view: 'property', id, ...tab }
+    const ref = parseVoucherSegment(rest)
+    if (ref) return voucherRoute({ kind: 'property', id, ...month, ...tab }, ref)
   }
 
   const company = hash.match(/^#\/company(?:\/period\/(\d{4}-\d{2}-\d{2})|\/(documents|own))?(?:\/(.+))?$/)

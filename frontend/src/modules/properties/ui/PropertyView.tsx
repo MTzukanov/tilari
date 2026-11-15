@@ -1,199 +1,49 @@
 import { useEffect, useRef, useState } from 'react'
 import { restoreLocationHash } from '../../../app/leaveGuard'
-import { parseRoute, propertyHash } from '../../../app/routing'
+import { parseRoute, propertyHash, type PropertyEditIntent, type PropertyTab } from '../../../app/routing'
 import { isParkingKind } from '../../../book/modules/properties/domain/kind'
 import { skipDocument } from '../../../book/modules/properties/domain/reminders'
-import { grossPriceFor } from '../../../book/modules/properties/domain/returns'
-import { getBcp47, useI18n } from '../../../i18n'
+import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { DocLine, DocLines } from '../../../shared/DocRows'
-import { formatCents } from '../../../shared/money'
 import { FilePill, Pill } from '../../../shared/Pill'
-import { formatBp, formatPercentInput, parsePercentInput } from '../../../shared/percent'
+import { TabPanel, Tabs, type TabItem } from '../../../shared/Tabs'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import { voucherTypeName } from '../../../shared/voucherTypes'
-import { showCutText } from '../../../shared/cutText'
-import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import {
   fetchProperty,
   fetchPropertyDocuments,
   saveProperty,
-  type Disposal,
   type DocumentSkip,
   type LeaseException,
   type PropertyDetail,
   type PropertyDocuments,
-  type RentBalance,
-  type YearRow,
 } from '../api'
-import { CashFlowChart, PaybackChart } from './Charts'
 import { VoucherOpen } from './FormParts'
 import { LeasesPanel } from './LeasesPanel'
-import { formatEuro, statusClass, tenantSide } from './format'
-import { MonthLinesPanel } from './MonthLines'
-import { Warnings } from './Warnings'
+import { statusClass, tabMarks } from './format'
+import { PropertyFinance } from './PropertyFinance'
+import { PropertyOverview } from './PropertyOverview'
 import { WaterPanel } from './WaterPanel'
-
-function Kpi({ label, value, neg, hint, title }: { label: string; value: string; neg?: boolean; hint?: string; title?: string }) {
-  return (
-    <div className="overview-kpi" title={title}>
-      <span className="overview-kpi-label">{label}</span>
-      <strong className={neg ? 'neg' : ''}>{value || '–'}</strong>
-      {hint ? <span className="muted property-kpi-hint">{hint}</span> : null}
-    </div>
-  )
-}
-
-/** The running lease's rent balance, exact; what other leases left in the hint, minus when owed. */
-function RentKpi({ rent }: { rent: RentBalance }) {
-  const { t } = useI18n()
-  const current = rent.current_snt
-  const others = tenantSide(rent.others_snt)
-  const label =
-    current == null || current === 0 ? 'properties.rent.kpi' : current > 0 ? 'properties.rent.kpiArrears' : 'properties.rent.kpiAhead'
-  return (
-    <Kpi
-      label={t(label)}
-      value={current == null ? '' : formatCents(Math.abs(current))}
-      neg={(current ?? 0) > 0}
-      hint={others ? t('properties.rent.othersHint', { amount: `${others > 0 ? '+' : ''}${formatCents(others)}` }) : t('properties.rent.kpiHint')}
-    />
-  )
-}
-
-function BreakEvenPanel({ d, onTarget }: { d: PropertyDetail; onTarget: (bp: number | null) => void }) {
-  const { t } = useI18n()
-  const [target, setTarget] = useState(formatPercentInput(d.target?.rate_bp ?? null))
-  const be = d.break_even
-  if (!be) return null
-  const costs = be.sale_costs
-  const noBookLoss = grossPriceFor(d.summary.book_value_snt, costs)
-  return (
-    <section className="overview-panel property-breakeven">
-      <h3>{t('properties.breakEven.title')}</h3>
-      <div className="property-breakeven-main">
-        <strong className="property-big">{formatEuro(be.price_snt)}</strong>
-        <span className="muted">{t('properties.breakEven.caption')}</span>
-      </div>
-      <p>
-        {be.already_recovered
-          ? t('properties.breakEven.recovered')
-          : t('properties.breakEven.explain', {
-              unrecovered: formatEuro(be.unrecovered_snt),
-              pct: formatBp(costs.pct_bp),
-              fixed: formatEuro(costs.fixed_snt),
-            })}
-      </p>
-      {!be.costs_set ? <p className="property-note">{t('properties.breakEven.costsUnset')}</p> : null}
-      <p className="muted">{t('properties.breakEven.bookLoss', { price: formatEuro(noBookLoss) })}</p>
-      <p className="muted">{t('properties.breakEven.taxNote')}</p>
-      <p className="muted">{t('properties.breakEven.debtFree')}</p>
-      <div className="property-target">
-        <label>
-          {t('properties.field.targetReturn')}
-          <input
-            type="text"
-            inputMode="decimal"
-            value={target}
-            placeholder="4,0"
-            onChange={(e) => setTarget(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                const bp = parsePercentInput(target)
-                if (!Number.isNaN(bp)) onTarget(bp)
-              }
-            }}
-          />
-        </label>
-        <button
-          type="button"
-          className="btn-secondary"
-          onClick={() => {
-            const bp = parsePercentInput(target)
-            if (!Number.isNaN(bp)) onTarget(bp)
-          }}
-        >
-          {t('properties.breakEven.calculate')}
-        </button>
-        {d.target ? (
-          <span>
-            {t('properties.breakEven.targetPrice', { pct: formatBp(d.target.rate_bp), price: formatEuro(d.target.price_snt) })}
-          </span>
-        ) : null}
-      </div>
-    </section>
-  )
-}
 
 const DOCS_PER_GROUP = 8
 
-type VoucherLabel = { voucher_id: number; date: string; doc_number: number | null; series: string | null; title: string }
+type ViewTab = 'overview' | PropertyTab
 
-/** A sale's voucher: the pill that opens it, then its title. */
-function VoucherButton({ v, onOpen }: { v: VoucherLabel; onOpen: (voucherId: number) => void }) {
-  return (
-    <>
-      <VoucherOpen voucher={v} onOpen={onOpen} /> {v.title}
-    </>
-  )
-}
-
-/** Each sale as price, costs and cash received, every amount next to the voucher it comes from. */
-function Sales({ disposals, onOpenVoucher }: { disposals: Disposal[]; onOpenVoucher: (voucherId: number) => void }) {
+function Documents({
+  data,
+  bank,
+  onBank,
+  onOpenVoucher,
+}: {
+  data: PropertyDocuments
+  /** Bank statements shown too. */
+  bank: boolean
+  onBank: (bank: boolean) => void
+  onOpenVoucher: (voucherId: number) => void
+}) {
   const { t } = useI18n()
-  return (
-    <table className="property-sales" onMouseOver={showCutText}>
-      {disposals.map((x) => {
-        const costs = x.price_snt - x.proceeds_snt
-        // Costs on the sale voucher itself: what the other vouchers do not explain.
-        const onSale = costs - x.cost_vouchers.reduce((s, v) => s + v.amount_snt, 0)
-        const sources = [...(onSale !== 0 ? [{ ...x, amount_snt: onSale }] : []), ...x.cost_vouchers]
-        return (
-          <tbody key={x.voucher_id}>
-            <tr>
-              <th scope="row">{t('properties.sales.price')}</th>
-              <td className="num">{formatCents(x.price_snt)}</td>
-              <td className="property-sales-voucher">
-                <VoucherButton v={x} onOpen={onOpenVoucher} />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row">{t('properties.sales.costs')}</th>
-              <td className="num">{formatCents(costs)}</td>
-              <td className="property-sales-voucher">
-                {sources.length === 1 ? <VoucherButton v={sources[0]} onOpen={onOpenVoucher} /> : null}
-              </td>
-            </tr>
-            {sources.length > 1
-              ? sources.map((v) => (
-                  <tr key={v.voucher_id} className="property-sales-part">
-                    <th scope="row" />
-                    <td className="num">{formatCents(v.amount_snt)}</td>
-                    <td className="property-sales-voucher">
-                      <VoucherButton v={v} onOpen={onOpenVoucher} />
-                    </td>
-                  </tr>
-                ))
-              : null}
-            <tr className="property-sales-total">
-              <th scope="row">{t('properties.sales.proceeds')}</th>
-              <td className="num">{formatCents(x.proceeds_snt)}</td>
-              <td />
-            </tr>
-          </tbody>
-        )
-      })}
-    </table>
-  )
-}
-
-function Documents({ id, onOpenVoucher }: { id: number; onOpenVoucher: (voucherId: number) => void }) {
-  const { t } = useI18n()
-  const [bank, setBank] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const { data, error } = usePeriodQuery<PropertyDocuments>(() => fetchPropertyDocuments(id, bank), [id, bank])
-  if (error) return <p className="error">{error}</p>
-  if (!data) return null
   return (
     <section className="overview-panel property-docs">
       <h3>{t('properties.docs.title')}</h3>
@@ -232,7 +82,7 @@ function Documents({ id, onOpenVoucher }: { id: number; onOpenVoucher: (voucherI
       ))}
       {data.bank_hidden > 0 || bank ? (
         <label className="allocation-check">
-          <input type="checkbox" checked={bank} onChange={() => setBank(!bank)} />
+          <input type="checkbox" checked={bank} onChange={() => onBank(!bank)} />
           {t('properties.docs.showBank', { n: data.bank_hidden })}
         </label>
       ) : null}
@@ -240,38 +90,13 @@ function Documents({ id, onOpenVoucher }: { id: number; onOpenVoucher: (voucherI
   )
 }
 
-function yearColumns(t: (key: string, vars?: Record<string, string | number>) => string, withInterest: boolean): TableColumn<YearRow>[] {
-  const money = (id: keyof YearRow & string, label: string, title?: string, signed = false): TableColumn<YearRow> => ({
-    id,
-    label,
-    title,
-    width: 120,
-    align: 'right',
-    sortValue: (y) => Number(y[id]),
-    cellClass: (y) => (signed && Number(y[id]) < 0 ? 'neg' : ''),
-    render: (y) => formatCents(Number(y[id]), { emptyZero: id !== 'net_snt' && id !== 'kitsas_result_snt' }),
-  })
-  return [
-    {
-      id: 'period',
-      label: t('properties.years.period'),
-      width: 190,
-      sortValue: (y) => y.starts,
-      render: (y) => `${formatDate(y.starts)}–${formatDate(y.ends)}`,
-    },
-    money('income_snt', t('properties.years.income')),
-    money('expense_snt', t('properties.years.expense')),
-    money('net_snt', t('properties.years.net'), t('properties.years.netHint'), true),
-    ...(withInterest ? [money('interest_snt', t('properties.years.interest'))] : []),
-    money('capex_snt', t('properties.years.capex'), t('properties.years.capexHint'), true),
-    money('proceeds_snt', t('properties.years.proceeds'), t('properties.years.proceedsHint')),
-    money('kitsas_result_snt', t('properties.years.result'), t('properties.years.resultHint'), true),
-  ]
-}
+/** The tab an address opens: a month is on the figures' tab. */
+const tabOf = (route: { month?: string; tab?: PropertyTab }): ViewTab => (route.month ? 'finance' : (route.tab ?? 'overview'))
 
 export function PropertyView({
   id,
   month,
+  tab: routeTab,
   onBack,
   onEdit,
   onOpenAllocation,
@@ -280,24 +105,30 @@ export function PropertyView({
   id: number
   /** YYYY-MM whose lines are open under the chart (from the URL). */
   month?: string
+  /** The open tab (from the URL); none is the overview. */
+  tab?: PropertyTab
   onBack: () => void
-  onEdit: () => void
+  /** Opens the edit page on `tab` (none: the basics), to do `intent` there. */
+  onEdit: (tab?: PropertyTab, intent?: PropertyEditIntent) => void
   /** `month`: open the cost-centre page on that month. */
   onOpenAllocation: (month?: string) => void
-  /** `month`: the open month panel, kept for the way back. */
-  onOpenVoucher: (voucherId: number, entryId: number | null, month?: string) => void
+  /** `at`: the open tab and month panel, kept for the way back. */
+  onOpenVoucher: (voucherId: number, entryId: number | null, at: { month?: string; tab?: PropertyTab }) => void
 }) {
   const { t } = useI18n()
   const [targetBp, setTargetBp] = useState<number | null>(null)
   const [allMonths, setAllMonths] = useState(false)
+  const [tab, setTab] = useState<ViewTab>(tabOf({ month, tab: routeTab }))
   const [selected, setSelected] = useState<string | null>(month ?? null)
   /** The month the address asked for (a new object each time, so the same month shows again). */
   const [asked, setAsked] = useState<{ month: string } | null>(month ? { month } : null)
+  const [bank, setBank] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
   const { data: d, error, loading, setData } = usePeriodQuery(
     () => fetchProperty(id, targetBp != null ? { targetBp } : {}),
     [id, targetBp],
   )
+  const docs = usePeriodQuery<PropertyDocuments>(() => fetchPropertyDocuments(id, bank), [id, bank])
   const loaded = Boolean(d)
 
   /** Saves the owner's word that a missing document has none (ADR-030) and shows the object as saved. */
@@ -316,12 +147,13 @@ export function PropertyView({
     setData(await saveProperty(id, { ...detail.doc, leases }, targetBp != null ? { targetBp } : {}))
   }
 
-  // A month typed or linked in the address while this page is open. Read the address itself:
-  // a bar click changes it without a route change, so the `month` prop can be stale.
+  // A tab or month typed or linked in the address while this page is open. Read the address itself:
+  // a tab or bar click changes it without a route change, so the props can be stale.
   useEffect(() => {
     const onHash = () => {
       const route = parseRoute()
       if (route.view !== 'property' || route.id !== id) return
+      setTab(tabOf(route))
       setSelected(route.month ?? null)
       setAsked(route.month ? { month: route.month } : null)
     }
@@ -338,24 +170,54 @@ export function PropertyView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, asked])
 
+  /** The address of `next`, with the open month on the figures' tab. */
+  const hashOf = (next: ViewTab, open: string | null) =>
+    propertyHash(id, next === 'finance' && open ? { month: open } : { tab: next === 'overview' ? undefined : next })
+
+  /** Open another tab; the URL follows without a new history entry. */
+  function selectTab(next: ViewTab) {
+    setTab(next)
+    restoreLocationHash(hashOf(next, selected))
+  }
+
   /** Open or close a month's lines; the URL follows without a new history entry. */
   function selectMonth(key: string | null) {
     setSelected(key)
-    restoreLocationHash(propertyHash(id, key ?? undefined))
+    restoreLocationHash(hashOf('finance', key))
   }
   const openVoucher = (voucherId: number, entryId: number | null = null) =>
-    onOpenVoucher(voucherId, entryId, selected ?? undefined)
+    onOpenVoucher(voucherId, entryId, tab === 'finance' && selected ? { month: selected } : { tab: tab === 'overview' ? undefined : tab })
+  /** The edit page on this tab: the overview's fields are the basics. */
+  const edit = (on: ViewTab = tab, intent?: PropertyEditIntent) => onEdit(on === 'overview' ? undefined : on, intent)
 
   const s = d?.summary
-  const irr = d ? (d.status === 'sold' ? d.returns.actual_bp : (d.returns.market_bp ?? d.returns.at_cost_bp)) : null
-  const irrHint = d
-    ? d.status === 'sold'
-      ? t('properties.kpi.irrActual')
-      : d.returns.market_bp != null
-        ? t('properties.kpi.irrMarket', { price: formatEuro(d.valuation?.price_snt) })
-        : t('properties.kpi.irrAtCost')
-    : undefined
-  const months = d ? (allMonths ? d.months : d.months.slice(-24)) : []
+  const held = d?.status !== 'sold'
+  const showLeases = d ? held || d.leases.length > 0 || d.lease_suggestions.length > 0 : false
+  // A parking space or garage has no water to settle: the tab shows only what is stored there.
+  const showWater = d ? (held && !isParkingKind(d.kind)) || d.water.settlements.length > 0 || d.water.suggestions.length > 0 : false
+  const shown = (key: ViewTab) => (key === 'leases' ? showLeases : key === 'water' ? showWater : true)
+  const active: ViewTab = shown(tab) ? tab : 'overview'
+
+  const tabs: TabItem<ViewTab>[] = []
+  if (d) {
+    const marks = tabMarks(t, d.warnings, d.as_of)
+    const mark = (key: PropertyTab) => {
+      const m = marks.get(key)
+      return m ? { tone: m.tone, title: t('properties.tab.mark', { count: m.count }) } : undefined
+    }
+    const docIds = new Set(docs.data?.groups.flatMap((g) => g.vouchers.map((v) => v.voucher_id)) ?? [])
+    const deleted = new Set(docs.data?.groups.flatMap((g) => g.vouchers.filter((v) => v.missing).map((v) => v.voucher_id)) ?? [])
+    tabs.push({ id: 'overview', label: t('properties.tab.overview') })
+    if (showLeases) tabs.push({ id: 'leases', label: t('properties.tab.leases'), count: d.leases.filter((l) => !l.suggested).length, mark: mark('leases') })
+    if (showWater) tabs.push({ id: 'water', label: t('properties.tab.water'), count: d.water.settlements.length, mark: mark('water') })
+    tabs.push({
+      id: 'docs',
+      label: t('properties.tab.docs'),
+      count: docIds.size,
+      mark: deleted.size ? { tone: 'crit', title: t('properties.tab.mark', { count: deleted.size }) } : undefined,
+    })
+    tabs.push({ id: 'finance', label: t('properties.tab.finance'), mark: mark('finance') })
+  }
 
   return (
     <div className="ledger property-detail">
@@ -377,7 +239,7 @@ export function PropertyView({
             <p className="muted property-asof">
               {t('properties.asOf', { date: formatDate(d.as_of) })}
               {' · '}
-              <button type="button" className="btn-link" onClick={onEdit}>
+              <button type="button" className="btn-link" onClick={() => edit()}>
                 {t('properties.editLink')}
               </button>
               {' · '}
@@ -387,67 +249,21 @@ export function PropertyView({
             </p>
           </div>
 
-          {d.warnings.length ? (
-            <div className="property-warnings">
-              <Warnings warnings={d.warnings} asOf={d.as_of} onOpenDue={onEdit} onSkip={d.read_only ? undefined : (skip) => skipDoc(d, skip)} />
-            </div>
-          ) : null}
+          <Tabs tabs={tabs} active={active} onSelect={selectTab} idPrefix="property" label={d.name} />
 
-          <div className="overview-kpis">
-            <Kpi label={t('properties.kpi.invested')} value={formatEuro(s.invested_snt)} hint={t('properties.kpi.investedHint')} />
-            {d.status !== 'sold' ? (
-              <Kpi label={t('properties.kpi.bookValue')} value={formatEuro(s.book_value_snt)} />
-            ) : (
-              <Kpi label={t('properties.kpi.proceeds')} value={formatEuro(s.proceeds_snt)} />
-            )}
-            <Kpi
-              label={t('properties.kpi.operating')}
-              value={formatEuro(s.operating.net_snt)}
-              neg={s.operating.net_snt < 0}
-              hint={t('properties.kpi.operatingHint', {
-                income: formatEuro(s.operating.income_snt),
-                expense: formatEuro(s.operating.expense_snt),
-              })}
+          <TabPanel id="overview" idPrefix="property" active={active === 'overview'}>
+            <PropertyOverview
+              d={d}
+              showWater={showWater}
+              onTab={selectTab}
+              onAdd={(on) => edit(on, { add: true })}
+              onOpenDue={(w) => edit('leases', w.lease_key ? { lease: w.lease_key } : undefined)}
+              onSkip={d.read_only ? undefined : (skip) => skipDoc(d, skip)}
+              onOpenVoucher={(v) => openVoucher(v)}
             />
-            {s.interest_snt != null ? (
-              <Kpi label={t('properties.kpi.interest')} value={formatEuro(s.interest_snt)} />
-            ) : null}
-            {d.status === 'sold' ? (
-              <Kpi
-                label={t('properties.kpi.totalResult')}
-                value={formatEuro(-s.unrecovered_snt)}
-                neg={s.unrecovered_snt > 0}
-                hint={t('properties.kpi.totalResultHint')}
-              />
-            ) : (
-              <Kpi
-                label={s.unrecovered_snt < 0 ? t('properties.kpi.gain') : t('properties.kpi.unrecovered')}
-                value={formatEuro(Math.abs(s.unrecovered_snt))}
-                hint={t('properties.kpi.unrecoveredHint')}
-              />
-            )}
-            {d.t12m ? (
-              <Kpi
-                label={t('properties.kpi.t12m')}
-                value={formatEuro(d.t12m.net_snt)}
-                neg={d.t12m.net_snt < 0}
-                hint={
-                  (d.t12m.net_yield_bp != null ? t('properties.kpi.yieldHint', { pct: formatBp(d.t12m.net_yield_bp) }) : '') +
-                  (d.t12m.annualized ? ` · ${t('properties.kpi.annualized', { n: d.t12m.months })}` : '')
-                }
-              />
-            ) : null}
-            <Kpi
-              label={t('properties.kpi.irr')}
-              value={formatBp(irr)}
-              neg={(irr ?? 0) < 0}
-              hint={irrHint}
-              title={d.status === 'sold' ? t('properties.col.irrSoldHint') : t('properties.col.irrHint')}
-            />
-            {d.rent ? <RentKpi rent={d.rent} /> : null}
-          </div>
+          </TabPanel>
 
-          {d.status !== 'sold' || d.leases.length || d.lease_suggestions.length ? (
+          <TabPanel id="leases" idPrefix="property" active={active === 'leases'}>
             <LeasesPanel
               leases={d.leases}
               current={d.lease}
@@ -456,143 +272,37 @@ export function PropertyView({
               unassigned={d.rent_account?.unassigned}
               period={{ start: d.rent_start, end: d.rent_end }}
               asOf={d.as_of}
-              held={d.status !== 'sold'}
-              onEdit={onEdit}
+              held={held}
+              onEdit={() => edit('leases')}
               onOpenVoucher={(v) => openVoucher(v)}
               onSaveException={d.read_only ? undefined : (leaseKey, exception, replaces) => saveException(d, leaseKey, exception, replaces)}
               parkingObject={isParkingKind(d.kind)}
             />
-          ) : null}
+          </TabPanel>
 
-          {/* A parking space or garage has no water to settle: the panel shows only what is stored there. */}
-          {(d.status !== 'sold' && !isParkingKind(d.kind)) || d.water.settlements.length || d.water.suggestions.length ? (
-            <WaterPanel water={d.water} held={d.status !== 'sold'} onEdit={onEdit} onOpenVoucher={(v) => openVoucher(v)} />
-          ) : null}
+          <TabPanel id="water" idPrefix="property" active={active === 'water'}>
+            <WaterPanel water={d.water} held={held} onEdit={() => edit('water')} onOpenVoucher={(v) => openVoucher(v)} />
+          </TabPanel>
 
-          <BreakEvenPanel key={d.target?.rate_bp ?? 'none'} d={d} onTarget={setTargetBp} />
+          <TabPanel id="docs" idPrefix="property" active={active === 'docs'}>
+            {docs.error ? <p className="error">{docs.error}</p> : null}
+            {docs.data ? <Documents data={docs.data} bank={bank} onBank={setBank} onOpenVoucher={(v) => openVoucher(v)} /> : null}
+          </TabPanel>
 
-          {d.months.length ? (
-            <section className="overview-panel">
-              <h3>{t('properties.chart.cashFlow')}</h3>
-              <div className="overview-legend">
-                <span>
-                  <i className="overview-swatch property-swatch-income" />
-                  {t('properties.chart.income')}
-                </span>
-                <span>
-                  <i className="overview-swatch property-swatch-expense" />
-                  {t('properties.chart.expense')}
-                </span>
-                {d.months.length > 24 ? (
-                  <label className="allocation-check">
-                    <input type="checkbox" checked={allMonths} onChange={() => setAllMonths(!allMonths)} />
-                    {t('properties.chart.allMonths')}
-                  </label>
-                ) : null}
-              </div>
-              <CashFlowChart
-                months={months}
-                lines={d.month_lines}
-                selectedKey={selected}
-                onSelect={(key) => selectMonth(key === selected ? null : key)}
-                labels={{
-                  income: t('properties.chart.income'),
-                  expense: t('properties.chart.expense'),
-                  clickHint: t('properties.chart.clickHint'),
-                  more: (n) => t('properties.chart.more', { n }),
-                }}
-              />
-              {selected ? (
-                <div ref={panelRef}>
-                  <MonthLinesPanel
-                    month={selected}
-                    lines={d.month_lines.filter((l) => l.month === selected)}
-                    locale={getBcp47()}
-                    labels={{ income: t('properties.chart.income'), expense: t('properties.chart.expense') }}
-                    onClose={() => selectMonth(null)}
-                    onOpenVoucher={openVoucher}
-                    onOpenAllocation={() => onOpenAllocation(selected)}
-                  />
-                </div>
-              ) : null}
-              {s.acquired_on ? (
-                <>
-                  <h3>{t('properties.chart.payback')}</h3>
-                  <PaybackChart months={d.months} label={t('properties.chart.payback')} />
-                </>
-              ) : null}
-            </section>
-          ) : null}
-
-          {d.years.length ? (
-            <section className="property-section">
-              <h3>{t('properties.years.title')}</h3>
-              <SortableTable
-                storageKey="tilari.properties.years.cols"
-                columns={yearColumns(t, d.summary.interest_snt != null)}
-                rows={d.years}
-                rowKey={(y) => y.starts}
-                className="compact"
-              />
-            </section>
-          ) : null}
-
-          <section className="property-section">
-            <h3>{t('properties.eras.title')}</h3>
-            {d.eras.length === 0 ? (
-              <p className="muted">
-                {t('properties.eras.none')}{' '}
-                <button type="button" className="btn-link" onClick={onEdit}>
-                  {t('properties.eras.link')}
-                </button>
-              </p>
-            ) : (
-              <>
-                <p className="muted">{t('properties.eras.lead')}</p>
-                {d.eras.map((e) => (
-                  <div key={e.eraid} className="property-era">
-                    <h4>
-                      {e.missing ? t('properties.eras.missing', { id: e.eraid }) : e.description}
-                      <span className="muted">
-                        {' '}
-                        · {e.account} · {t('properties.eras.balance', { amount: formatCents(e.balance_snt) })}
-                      </span>
-                    </h4>
-                    <table className="ledger-table compact">
-                      <tbody>
-                        {e.movements.map((m, i) => (
-                          <tr key={`${m.voucher_id}-${i}`} className="clickable" onClick={() => openVoucher(m.voucher_id)}>
-                            <td className="num property-col-date">{formatDate(m.date)}</td>
-                            <td className="property-col-kind">
-                              <span className={`property-move property-move-${m.kind}`}>{t(`properties.eras.kind.${m.kind}`)}</span>
-                            </td>
-                            <td>{m.description}</td>
-                            <td className={`amount ${m.amount_snt < 0 ? 'neg' : ''}`}>{formatCents(m.amount_snt)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ))}
-              </>
-            )}
-          </section>
-
-          {d.disposals.length ? (
-            <section className="property-section">
-              <h3>{t('properties.sales.title')}</h3>
-              <Sales disposals={d.disposals} onOpenVoucher={openVoucher} />
-            </section>
-          ) : null}
-
-          <Documents id={id} onOpenVoucher={openVoucher} />
-
-          {d.doc.note ? (
-            <section className="property-section">
-              <h3>{t('properties.field.note')}</h3>
-              <p className="property-note-text">{d.doc.note}</p>
-            </section>
-          ) : null}
+          <TabPanel id="finance" idPrefix="property" active={active === 'finance'}>
+            <PropertyFinance
+              d={d}
+              allMonths={allMonths}
+              onAllMonths={setAllMonths}
+              selected={selected}
+              onSelectMonth={selectMonth}
+              panelRef={panelRef}
+              onTarget={setTargetBp}
+              onEdit={() => edit('finance')}
+              onOpenAllocation={onOpenAllocation}
+              onOpenVoucher={openVoucher}
+            />
+          </TabPanel>
         </>
       ) : null}
     </div>

@@ -17,8 +17,8 @@ export function Warnings({
 }: {
   warnings: Warning[]
   asOf: string
-  /** Where a tile goes: the edit page from the object's page, the object from the portfolio. */
-  onOpenDue: () => void
+  /** Where a tile goes: its lease on the edit page from the object's page, the object from the portfolio. */
+  onOpenDue: (w: Warning) => void
   /** Only where the owner may say a document does not exist ("Ohita"). */
   onSkip?: (skip: DocumentSkip) => Promise<unknown>
 }) {
@@ -33,7 +33,7 @@ export function Warnings({
       {tiles.length ? (
         <DueTiles>
           {tiles.map(({ w, tile }, i) => (
-            <DueTile key={`${w.code}-${i}`} {...tile} title={warningText(t, w)} onOpen={onOpenDue} />
+            <DueTile key={`${w.code}-${i}`} {...tile} title={warningText(t, w)} onOpen={() => onOpenDue(w)} />
           ))}
         </DueTiles>
       ) : null}

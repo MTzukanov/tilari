@@ -1008,6 +1008,25 @@
     "title": "Vuokrakohteet",
     "lead": "Kustannuspaikat vuokrakohteina: sijoitettu raha, kassavirta, tuotto ja hinta, jolla rahat tulevat takaisin. Luvut lasketaan kirjanpidosta; Tilari tallentaa vain linkit ja arviot omaan tauluunsa.",
     "asOf": "Tilanne {date}",
+    "tab": {
+      "overview": "Yleiskatsaus",
+      "leases": "Vuokrasuhteet",
+      "water": "Vesimaksut",
+      "docs": "Asiakirjat",
+      "finance": "Talous",
+      "basics": "Perustiedot",
+      "mark": "Avoimia asioita: {count}"
+    },
+    "overview": {
+      "leaseNow": "Vuokrasuhde nyt",
+      "allLeases": "Kaikki vuokrasuhteet",
+      "water": "Vesi",
+      "allWater": "Kaikki vesitasaukset",
+      "addLease": "+ Vuokrasopimus",
+      "addWater": "+ Vesitasaus",
+      "addDoc": "+ Asiakirja",
+      "addValuation": "+ Hinta-arvio"
+    },
     "dataThrough": "tiliotteet {date} asti",
     "acquired": "hankittu {date}",
     "soldOn": "myyty {date}",

@@ -1008,6 +1008,25 @@
     "title": "Hyresobjekt",
     "lead": "Kostnadsställen som hyresobjekt: investerade pengar, kassaflöde, avkastning och priset som ger pengarna tillbaka. Siffrorna kommer från bokföringen; Tilari sparar bara länkar och uppskattningar i en egen tabell.",
     "asOf": "Läge {date}",
+    "tab": {
+      "overview": "Översikt",
+      "leases": "Hyresförhållanden",
+      "water": "Vattenavgifter",
+      "docs": "Dokument",
+      "finance": "Ekonomi",
+      "basics": "Grunduppgifter",
+      "mark": "Öppna punkter: {count}"
+    },
+    "overview": {
+      "leaseNow": "Hyresförhållande nu",
+      "allLeases": "Alla hyresförhållanden",
+      "water": "Vatten",
+      "allWater": "Alla vattenutjämningar",
+      "addLease": "+ Hyresavtal",
+      "addWater": "+ Vattenutjämning",
+      "addDoc": "+ Dokument",
+      "addValuation": "+ Prisuppskattning"
+    },
     "dataThrough": "kontoutdrag till {date}",
     "acquired": "förvärvad {date}",
     "soldOn": "såld {date}",

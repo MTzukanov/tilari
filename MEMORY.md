@@ -7,6 +7,23 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-15 - Rental objects: the object page in tabs (`feature/property-tabs`)
+
+- Owner: the object page and its edit page needed too much scrolling and were hard to move around in. Agreed
+  (plan, 2026-11-15): tabs that switch content, with the tab in the address. The view has Yleiskatsaus, Vuokrasuhteet,
+  Vesimaksut, Asiakirjat and Talous (all the figures on one tab). The edit page gets the same tabs (Perustiedot
+  for the overview). Extras: folded lease and settlement cards in edit, overview quick actions that add a row,
+  warning tiles that open their lease, and counts and marks on tabs.
+- The company page's lesson ("one page", ADR-031) holds: a closed tab must not hide a problem. Each tab shows a
+  count and a dot in the tone of its worst warning (`WARNING_TABS`/`tabMarks` in `ui/format.ts`; a note marks
+  nothing, a dated reminder is warn and crit once late), and the overview keeps every warning.
+- Step 1, the view: the overview has the warnings, "Vuokrasuhde nyt" and "Vesi" cards, four key figures (rent
+  balance, 12 months, IRR, still to recover) and the quick actions. Talous has the other key figures, the charts,
+  the years, the break-even price, the acquisition cost and the sales; the rent balance is not repeated there.
+  A month (`/month/{YYYY-MM}`) opens Talous. The documents' query moved up to the page for the tab's count.
+- The dated tiles carry the lease they are about (`Warning.lease_key`, computed, never stored) and open
+  `#/property/{id}/edit/leases/lease/{key}`.
+
 ## 2026-11-15 - Rental objects: document rows line up by the inputs (`fix/lease-row-align`)
 
 - Owner: on the lease form, Eräpäivä and "Lataa sopimus" sat lower than the Sopimus pick. The notice rows

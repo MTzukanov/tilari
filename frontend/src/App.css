@@ -876,6 +876,88 @@ button.status-chip:focus-visible {
   border-bottom-color: var(--accent);
 }
 
+/* Tabs that switch a page's content (shared/Tabs.tsx), sticky under the page title. */
+.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--paper);
+  box-shadow: inset 0 -1px 0 var(--line);
+  margin: 0 0 0.9rem;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tabs-cut-right {
+  mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+}
+
+.tabs-cut-left {
+  mask-image: linear-gradient(to left, #000 calc(100% - 2.5rem), transparent);
+}
+
+.tabs-cut-left.tabs-cut-right {
+  mask-image: linear-gradient(to right, transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent);
+}
+
+.tabs button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  padding: 0.6rem 0.95rem 0.5rem;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tabs button:hover {
+  color: var(--ink);
+}
+
+.tabs button.is-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tabs-count {
+  font-family: var(--font-num);
+  font-weight: 500;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.tabs-mark {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.tabs-mark-crit {
+  background: var(--crit);
+}
+
+.tabs-mark-warn {
+  background: #c98a00;
+}
+
+.tabs-mark-doc {
+  background: var(--doc);
+}
+
 .assistant-split,
 .assistant-tulomeno {
   display: grid;
@@ -5237,6 +5319,31 @@ tr.tax-total td {
   gap: 0.6rem;
   align-items: end;
   margin: 0.5rem 0;
+}
+
+/* The overview tab: the running lease and the water side by side, then the key figures and actions. */
+.property-now-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 0 1rem;
+}
+
+.property-now-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.property-now-head button {
+  font-size: 0.85rem;
+}
+
+.property-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
 }
 
 .property-warnings {

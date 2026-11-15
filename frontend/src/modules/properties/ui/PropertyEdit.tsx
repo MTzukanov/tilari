@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { deleteVoucher, fetchPartners, fetchSettings, saveVoucher, uploadAttachment } from '../../../api'
+import type { PropertyEditIntent, PropertyTab } from '../../../app/routing'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { downloadFile, localToday } from '../../../shared/downloadFile'
@@ -832,14 +833,21 @@ export function PropertyEdit({
   id,
   bookKey,
   today,
+  tab,
   onDone,
   onOpenVoucher,
 }: {
   id: number
   bookKey: string
   today?: string
-  onDone: () => void
-  onOpenVoucher: (voucherId: number) => void
+  /** The tab opened (from the URL); none is the basics. */
+  tab?: PropertyTab
+  /** What the page was opened to do there (from the URL), once. */
+  intent?: PropertyEditIntent
+  /** Back to the object's page, on the tab that matches `tab` (none: the overview). */
+  onDone: (tab?: PropertyTab) => void
+  /** `tab`: the open tab, kept for the way back. */
+  onOpenVoucher: (voucherId: number, tab?: PropertyTab) => void
 }) {
   const { t } = useI18n()
   const [state, setState] = useState<{
@@ -867,7 +875,7 @@ export function PropertyEdit({
   }, [id])
   return (
     <div className="ledger property-detail">
-      <button type="button" className="back-btn" onClick={onDone}>
+      <button type="button" className="back-btn" onClick={() => onDone(tab)}>
         {t('up.property')}
       </button>
       <div className="ledger-head-intro">
@@ -882,8 +890,8 @@ export function PropertyEdit({
           company={state.company}
           today={today || localToday()}
           bookKey={bookKey}
-          onDone={onDone}
-          onOpenVoucher={onOpenVoucher}
+          onDone={() => onDone(tab)}
+          onOpenVoucher={(voucherId) => onOpenVoucher(voucherId, tab)}
         />
       ) : null}
     </div>

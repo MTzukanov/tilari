@@ -1008,6 +1008,25 @@
     "title": "Mietobjekte",
     "lead": "Kostenstellen als Mietobjekte: investiertes Geld, Cashflow, Rendite und der Preis, der das Geld zurückbringt. Die Zahlen stammen aus der Buchhaltung; Tilari speichert nur Verknüpfungen und Schätzungen in einer eigenen Tabelle.",
     "asOf": "Stand {date}",
+    "tab": {
+      "overview": "Übersicht",
+      "leases": "Mietverhältnisse",
+      "water": "Wasserkosten",
+      "docs": "Dokumente",
+      "finance": "Finanzen",
+      "basics": "Grunddaten",
+      "mark": "Offene Punkte: {count}"
+    },
+    "overview": {
+      "leaseNow": "Aktuelles Mietverhältnis",
+      "allLeases": "Alle Mietverhältnisse",
+      "water": "Wasser",
+      "allWater": "Alle Wasserabrechnungen",
+      "addLease": "+ Mietvertrag",
+      "addWater": "+ Wasserabrechnung",
+      "addDoc": "+ Dokument",
+      "addValuation": "+ Preisschätzung"
+    },
     "dataThrough": "Kontoauszüge bis {date}",
     "acquired": "erworben {date}",
     "soldOn": "verkauft {date}",

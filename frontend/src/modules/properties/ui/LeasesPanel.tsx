@@ -32,7 +32,7 @@ export function SuggestionSource({ source }: { source: 'contract' | 'payments' |
 }
 
 /** A lease's state on the as-of date: running, or a plain fact. */
-function LeaseStatePill({ state }: { state: LeaseState }) {
+export function LeaseStatePill({ state }: { state: LeaseState }) {
   const { t } = useI18n()
   return <Pill tone={state === 'current' ? 'accent' : 'neutral'}>{t(`properties.lease.state.${state}`)}</Pill>
 }

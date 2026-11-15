@@ -54,6 +54,12 @@ stand out. Here colour and a filled button mark what needs doing, and everything
    and the title wraps to two lines, since there is no hover to show it in full. A thin line separates
    documents from each other; none goes under a row's name or after its last document.
 
+9. **Tabs switch content, and a closed tab hides nothing.** A page grown too long to move around in (a rental
+   object's page) is split into tabs (`shared/Tabs.tsx`). The address names the tab, so a voucher's round trip
+   returns to it and a link can open it. A tab shows how many things it holds and a dot in the tone of its worst
+   open item (rule 1, its count on hover), and the first tab keeps every warning in sight. The bar sticks to the
+   top of the page; on a phone it scrolls sideways, keeps the open tab in view and fades at the end that has more.
+
 ## Parts
 
 | Part | File | Use it for |
@@ -66,6 +72,7 @@ stand out. Here colour and a filled button mark what needs doing, and everything
 | `DocLines`, `DocLine` | `shared/DocRows.tsx` | One document as a table row: `voucher` (or a plain `date` if it has none), title, `mark` at the title's far side, the files as children, and `end` |
 | `Binder` | `shared/Binder.tsx` | A card that opens in place, with badges that show its state while closed |
 | `StepRail` | `shared/StepRail.tsx` | Steps that follow each other, each with its state as a `Pill` and a date; the line turns green between steps done. Under 34rem it lists them one under the other. The company page's dividend card uses it |
+| `Tabs`, `TabPanel` | `shared/Tabs.tsx` | Tabs that switch a page's content (rule 9): each with a `count` and a `mark` (tone and hover text); arrow keys move between them. `TabPanel` with `keep` stays mounted while hidden, for a form |
 | `SuggestBanner` | `shared/SuggestBanner.tsx` | Suggestions from the book: a blue banner with a title, a line on where they come from, one `action` for all of them (add them all, or review them) and the suggestions below, as `DocLine`s with a filled "Lisää" in `end` |
 
 CSS, in the "Documents and status" part of `App.css`:
