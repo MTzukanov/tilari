@@ -769,12 +769,59 @@ export type PropertyDetail = PropertyRow & {
 /** Another object's loan to copy from (ADR-034); `same_company` when both pay the same housing company. */
 export type HousingCopySource = { object_id: number; object_name: string; same_company: boolean; loan: HousingLoan }
 
+/**
+ * One month of a loan's share as Tilari follows it (ADR-034), computed every time: what the payments
+ * to the housing company paid for the loan, the interest on the share, and the share after them.
+ */
+export type LoanMonth = {
+  /** YYYY-MM. */
+  month: string
+  opening_snt: number
+  /** The rahoitusvastike in force: what one month's payment pays for this loan. */
+  due_snt: number
+  /** Payments to the housing company booked in the month, as whole payments (`housingPayments`). */
+  payments: number
+  /** The rahoitusvastike paid: `due` for each payment (each due month when payments are not known). */
+  paid_snt: number
+  /** Reference rate + margin in force (1/1000 %). */
+  rate_pcm: number
+  /** Interest on the share; between two certificates, fitted so the path meets the later one. */
+  interest_snt: number
+  /** What the payments left for the share: paid less interest. */
+  principal_snt: number
+  /** Extra repayments of the month (events). */
+  extra_snt: number
+  closing_snt: number
+  /** Computed backwards from the first certificate. */
+  backward?: true
+  /**
+   * A certificate (its share at the month's end): with an earlier one, how far the computed path was
+   * from it (computed less certified, to the cent) and the rate the fitted months imply.
+   */
+  certificate?: { date: string; share_snt: number; voucher_id?: number; gap_snt: number | null; implied_pcm: number | null }
+}
+
+/** A loan's share month by month (`loanPath`), and what the payments leave missing. */
+export type LoanPath = {
+  loan_key: string
+  /** Oldest first; empty without a certificate to start from. */
+  months: LoanMonth[]
+  /** Payments to the housing company were found in the book; without them each due month counts as paid. */
+  payments_known: boolean
+  /** Due months with no payment by the as-of date that later payments did not make up for: how many, from which month. */
+  missing: { count: number; from: string } | null
+}
+
 /** What the Taloyhtiö tab shows besides the stored loans. */
 export type HousingDetail = {
   /** The tab's documents and every voucher a loan links, posted ones only; a missing id was deleted. */
   vouchers: LeaseVoucher[]
   /** Other objects' loans, those paying the same housing company first. */
   copy_sources: HousingCopySource[]
+  /** Each stored loan's share month by month, in the loans' order. */
+  paths: LoanPath[]
+  /** The object's payments to its housing company by month (YYYY-MM), newest first. */
+  payments: { month: string; units: number; lines: BookedLine[] }[]
 }
 
 export type MonthLineKind = 'income' | 'expense' | 'interest'

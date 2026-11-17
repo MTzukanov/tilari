@@ -1,17 +1,20 @@
 import { useState, type ReactNode } from 'react'
 import { loanNow, paidOffOn } from '../../../book/modules/properties/domain/housingLoan'
-import { useI18n } from '../../../i18n'
+import { monthEnd } from '../../../book/months'
+import { getBcp47, useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { DocLine, DocLines } from '../../../shared/DocRows'
 import { FileButton } from '../../../shared/FileButton'
 import { formatCents } from '../../../shared/money'
+import { LineChart } from '../../../shared/LineChart'
 import { formatPcm } from '../../../shared/percent'
 import { FilePill, Pill } from '../../../shared/Pill'
 import { SearchSelect } from '../../../shared/SearchSelect'
-import type { DocCandidate, HousingCopySource, HousingLoan, LeaseVoucher, PropertyDetail } from '../api'
+import type { BookedLine, DocCandidate, HousingCopySource, HousingLoan, LeaseVoucher, LoanMonth, LoanPath, PropertyDetail } from '../api'
+import { monthLabel } from './Charts'
 import { DocPicker } from './DocPicker'
-import { periodText } from './format'
-import { DocSlot, VoucherOpen } from './FormParts'
+import { monthName, periodText } from './format'
+import { DocSlot, LineLink, VoucherOpen } from './FormParts'
 
 /** Titles a housing company's document has: starred in the pick. */
 const HOUSING_WORDS = /is[äa]nn[öo]itsij[äa]ntodistu|taloyhti|yhti[öo]kokou|vastike|lainaosuu|velkaosuu/i
@@ -127,10 +130,122 @@ function HousingDocuments({ d, links, onOpenVoucher }: { d: PropertyDetail; link
   )
 }
 
+/** The payments to the housing company of a month, as the table shows them. */
+type MonthPayments = Map<string, { units: number; lines: BookedLine[] }>
+
+/** How far the computed path was from a certificate: "laskettu 4,43 € enemmän", or that it met it. */
+function gapText(t: (key: string, vars?: Record<string, string | number>) => string, gap: number): string {
+  if (gap === 0) return t('properties.housing.path.gapNone')
+  return t(gap > 0 ? 'properties.housing.path.gapMore' : 'properties.housing.path.gapLess', { amount: formatCents(Math.abs(gap)) })
+}
+
+/**
+ * A loan's share month by month (ADR-034): a line of the share at each month's end with its
+ * certificates as dots, and the months newest first - the payments to the housing company, the
+ * rahoitusvastike they paid, the interest, what lowered the share, and the share; each certificate
+ * under its month with the computed path's gap and the rate it implies.
+ */
+function LoanMonths({ path, payments, onOpenVoucher }: { path: LoanPath; payments: MonthPayments; onOpenVoucher: (voucherId: number) => void }) {
+  const { t } = useI18n()
+  const locale = getBcp47()
+  const months = path.months
+  return (
+    <details className="property-sources property-loan-months">
+      <summary>{t('properties.housing.path.months', { n: months.length })}</summary>
+      <LineChart
+        className="overview-chart property-chart"
+        keys={months.map((m) => m.month)}
+        series={[
+          { key: 'share', label: t('properties.housing.path.share'), values: months.map((m) => m.closing_snt), className: 'property-loan-share' },
+          {
+            key: 'certificate',
+            label: t('properties.housing.field.certificate'),
+            values: months.map((m) => m.certificate?.share_snt ?? null),
+            className: 'property-loan-certificate',
+            dots: true,
+          },
+        ]}
+        labelFor={(key) => monthLabel(key, locale, true)}
+        nameFor={(key) => monthName(key, locale)}
+        locale={locale}
+        label={t('properties.housing.path.share')}
+      />
+      <p className="muted property-lease-hint">{t('properties.housing.path.chartHint')}</p>
+      <div className="property-loan-table-scroll">
+        <table className="ledger-table compact property-rent-table property-loan-table">
+          <thead>
+            <tr>
+              <th>{t('properties.rent.col.month')}</th>
+              <th>{t('properties.housing.path.col.payments')}</th>
+              <th className="amount">{t('properties.housing.path.col.paid')}</th>
+              <th className="amount">{t('properties.housing.path.col.interest')}</th>
+              <th className="amount">{t('properties.housing.path.col.principal')}</th>
+              <th className="amount">{t('properties.housing.path.col.share')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...months].reverse().flatMap((m: LoanMonth) => {
+              const paid = payments.get(m.month)
+              const row = (
+                <tr key={m.month} className={m.backward ? 'property-loan-backward' : undefined} title={m.backward ? t('properties.housing.path.backwardHint') : undefined}>
+                  <td>{monthName(m.month, locale)}</td>
+                  <td>
+                    {paid?.lines.map((line) => <LineLink key={line.line_id} line={line} onOpen={onOpenVoucher} />)}
+                    {m.payments > 1 ? <span className="muted"> ×{m.payments}</span> : null}
+                    {m.due_snt > 0 && m.payments === 0 && path.payments_known ? (
+                      <span className="property-loan-unpaid">{t('properties.housing.path.unpaid')}</span>
+                    ) : null}
+                  </td>
+                  <td className="amount">{formatCents(m.paid_snt, { emptyZero: true })}</td>
+                  <td className="amount" title={t('properties.housing.path.rateHint', { rate: formatPcm(m.rate_pcm) })}>
+                    {formatCents(m.interest_snt)}
+                  </td>
+                  <td className="amount" title={m.extra_snt ? t('properties.housing.path.extraHint', { amount: formatCents(m.extra_snt) }) : undefined}>
+                    {formatCents(m.principal_snt + m.extra_snt)}
+                  </td>
+                  <td className="amount">{formatCents(m.closing_snt)}</td>
+                </tr>
+              )
+              const c = m.certificate
+              if (!c) return [row]
+              const parts = [t('properties.housing.path.certificate', { date: formatDate(c.date), amount: formatCents(c.share_snt) })]
+              if (c.gap_snt != null) parts.push(gapText(t, c.gap_snt))
+              if (c.implied_pcm != null) parts.push(t('properties.housing.path.implied', { rate: formatPcm(c.implied_pcm) }))
+              return [
+                row,
+                <tr key={`${m.month}-certificate`} className="property-loan-certificate-row">
+                  <td colSpan={6}>{parts.join(' · ')}</td>
+                </tr>,
+              ]
+            })}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  )
+}
+
+/** The share the path ends at, and what the last twelve months paid off and paid as interest. */
+function ComputedShare({ path }: { path: LoanPath }) {
+  const { t } = useI18n()
+  const last = path.months.at(-1)!
+  const year = path.months.slice(-12)
+  const principal = year.reduce((sum, m) => sum + m.principal_snt + m.extra_snt, 0)
+  const interest = year.reduce((sum, m) => sum + m.interest_snt, 0)
+  return (
+    <p className="property-lease-terms">
+      <strong>{t('properties.housing.path.computed', { date: formatDate(monthEnd(last.month)), amount: formatCents(last.closing_snt) })}</strong>{' '}
+      <span className="muted">{t('properties.housing.path.year', { count: year.length, principal: formatCents(principal), interest: formatCents(interest) })}</span>
+    </p>
+  )
+}
+
 /** A loan as the tab shows it on `on` (`loanNow`): the share, the rahoitusvastike, the rate, the term; every row folded below. */
 function LoanCard({
   loan,
   on,
+  path,
+  payments,
   vouchers,
   held,
   onEdit,
@@ -138,6 +253,9 @@ function LoanCard({
 }: {
   loan: HousingLoan
   on: string
+  /** The share month by month; none before it is computed. */
+  path?: LoanPath
+  payments: MonthPayments
   vouchers: Map<number, LeaseVoucher>
   held: boolean
   onEdit?: () => void
@@ -178,6 +296,8 @@ function LoanCard({
           t('properties.housing.shareNone')
         )}
       </p>
+      {path?.months.length ? <ComputedShare path={path} /> : null}
+      {path && !path.payments_known ? <p className="muted property-lease-hint">{t('properties.housing.path.paymentsUnknown')}</p> : null}
       <p className="property-lease-terms">
         {charge ? (
           <>
@@ -214,6 +334,7 @@ function LoanCard({
           .filter(Boolean)
           .join(' · ')}
       </p>
+      {path?.months.length ? <LoanMonths path={path} payments={payments} onOpenVoucher={onOpenVoucher} /> : null}
       {fold(
         t('properties.housing.certificates'),
         [...(loan.certificates ?? [])].reverse().map((c) => (
@@ -302,6 +423,7 @@ export function HousingPanel({
   const [copying, setCopying] = useState(false)
   const loans = d.doc.housing_loans ?? []
   const vouchers = new Map(d.housing.vouchers.map((v) => [v.voucher_id, v]))
+  const payments: MonthPayments = new Map(d.housing.payments.map((p) => [p.month, p]))
   const sources = d.housing.copy_sources
   const sourceItems = sources.map((s, i) => ({
     value: String(i),
@@ -354,6 +476,8 @@ export function HousingPanel({
               key={loan.key}
               loan={loan}
               on={on}
+              path={d.housing.paths.find((p) => p.loan_key === loan.key)}
+              payments={payments}
               vouchers={vouchers}
               held={held}
               onEdit={onEditLoan ? () => onEditLoan(loan.key) : undefined}

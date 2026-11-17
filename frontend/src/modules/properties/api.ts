@@ -22,6 +22,8 @@ export type {
   LoanCharge,
   LoanEvent,
   LoanEventKind,
+  LoanMonth,
+  LoanPath,
   LoanRate,
   RateReference,
   Lease,

@@ -4,10 +4,15 @@ import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
 import { FileButton } from '../../../shared/FileButton'
 import { formatPcm, parsePcmInput } from '../../../shared/percent'
+import { copyGroup, groupOf } from '../../../book/modules/properties/domain/housingLoan'
 import {
+  fetchProperty,
   HOUSING_LOAN_TYPES,
   LOAN_EVENT_KINDS,
   RATE_REFERENCES,
+  saveProperty,
+  type HousingCopySource,
+  type LoanRate,
   type HousingLoanType,
   type LoanEventKind,
   type PropertyDetail,
@@ -106,6 +111,17 @@ export function LoanCardEdit({
 
   const built = buildLoan(t, draft)
   const issues: FormIssue[] = tried && Array.isArray(built) ? built : []
+
+  /**
+   * The same company loan on other objects (copies share a `group`; the original's is named after
+   * it): a rate row new on this card can be added to them on save, each ticked by default.
+   */
+  const group = draft.group || (loanKey ? groupOf(detail.id, loanKey) : '')
+  const members = group ? detail.housing.copy_sources.filter((s) => copyGroup(s.loan, s.object_id) === group) : []
+  const before = new Set(initial.rates.map((r) => r.from))
+  const newRates: LoanRate[] = Array.isArray(built) ? [] : (built.rates ?? []).filter((r) => !before.has(r.from)).map(({ voucher_id: _v, ...r }) => r)
+  const memberKey = (m: HousingCopySource) => `${m.object_id}:${m.loan.key}`
+  const [skipMembers, setSkipMembers] = useState<Set<string>>(new Set())
   const issueOf = (field: string) => issueIn(issues, field)
   const invalid = (field: string) => invalidProps(issues, field)
 
@@ -155,12 +171,37 @@ export function LoanCardEdit({
       await writer.flushDeletes()
       clearCardDraft()
       onDirty(false)
+      const failed = remove ? [] : await addRatesToMembers()
+      if (failed.length) {
+        setError(t('properties.housing.alsoFailed', { objects: failed.join(', ') }))
+        return
+      }
       onClose()
     } catch (err) {
       setError(saveErrorText(t, err instanceof Error ? err.message : String(err)))
     } finally {
       setSaving(false)
     }
+  }
+
+  /** Adds this card's new rate rows to the ticked copies on other objects; returns the objects that failed. */
+  async function addRatesToMembers(): Promise<string[]> {
+    const failed: string[] = []
+    for (const member of members) {
+      if (!newRates.length || skipMembers.has(memberKey(member))) continue
+      try {
+        const other = await fetchProperty(member.object_id)
+        const loans = (other.doc.housing_loans ?? []).map((l) => {
+          if (l.key !== member.loan.key) return l
+          const have = new Set((l.rates ?? []).map((r) => r.from))
+          return { ...l, rates: [...(l.rates ?? []), ...newRates.filter((r) => !have.has(r.from))] }
+        })
+        await saveProperty(member.object_id, { ...other.doc, housing_loans: loans })
+      } catch {
+        failed.push(member.object_name)
+      }
+    }
+    return failed
   }
 
   async function cancel() {
@@ -417,6 +458,31 @@ export function LoanCardEdit({
             )
           })}
         </RowSection>
+
+        {members.length && newRates.length ? (
+          <div className="property-loan-also">
+            <p className="muted property-lease-hint">
+              {t('properties.housing.alsoLead', { dates: newRates.map((r) => formatDate(r.from)).join(', ') })}
+            </p>
+            {members.map((m) => (
+              <label key={memberKey(m)} className="allocation-check">
+                <input
+                  type="checkbox"
+                  checked={!skipMembers.has(memberKey(m))}
+                  onChange={() =>
+                    setSkipMembers((prev) => {
+                      const next = new Set(prev)
+                      if (next.has(memberKey(m))) next.delete(memberKey(m))
+                      else next.add(memberKey(m))
+                      return next
+                    })
+                  }
+                />
+                {m.object_name} · {m.loan.name}
+              </label>
+            ))}
+          </div>
+        ) : null}
 
         <RowSection title={t('properties.housing.grace')} onAdd={() => addRow('grace', { from: '', to: '' })}>
           {draft.grace.map((g, i) => (

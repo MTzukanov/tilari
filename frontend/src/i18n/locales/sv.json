@@ -1475,7 +1475,11 @@
       "loan_share_missing": "Bolagslånet {loan} har ingen låneandel: lägg till ett disponentintyg.",
       "loan_certificate_stale": "Låneandelen för bolagslånet {loan} är från ett intyg daterat {certificate}. Begär ett nytt disponentintyg.",
       "loan_certificate_missing": "Intyget för låneandelen {certificate} i bolagslånet {loan} saknas.",
-      "loan_charge_notice_missing": "Fakturan eller meddelandet om finansieringsvederlaget från {from} ({amount}/mån) för bolagslånet {loan} saknas."
+      "loan_charge_notice_missing": "Fakturan eller meddelandet om finansieringsvederlaget från {from} ({amount}/mån) för bolagslånet {loan} saknas.",
+      "loan_payment_missing": "Ingen betalning till bostadsbolaget är bokförd för {count} månader från {from} (bolagslånet {loan}): låneandelen minskade inte för dem.",
+      "loan_payment_missing_one": "Ingen betalning till bostadsbolaget är bokförd för månaden {from} (bolagslånet {loan}): låneandelen minskade inte.",
+      "loan_rate_missing": "Referensräntan för bolagslånet {loan} justerades {reset}: lägg till den nya referensräntan.",
+      "loan_rahastoitu_expensed": "Finansieringsvederlaget för bolagslånet {loan} från {from} är fonderat men bokfört som kostnad: i beskattningen hör det till aktiernas anskaffningsutgift. Kontrollera med revisorn."
     },
     "warnCount": "Anmärkningar: {count}",
     "alerts": {
@@ -1800,7 +1804,34 @@
       "loansLead": "Objektets andel av bostadsbolagets lån. Ett lån för ett annat objekt i samma bolag kan kopieras.",
       "copyPick": "Välj lånet att kopiera…",
       "copySame": "★ = objektet betalar till samma bostadsbolag.",
-      "none": "Inga bolagslån."
+      "none": "Inga bolagslån.",
+      "path": {
+        "months": "Per månad ({n})",
+        "share": "Låneandel vid månadens slut",
+        "chartHint": "Linje: beräknad låneandel vid månadens slut. Punkter: disponentintyg.",
+        "col": {
+          "payments": "Betalningar till bolaget",
+          "paid": "Finansieringsvederlag",
+          "interest": "Ränta",
+          "principal": "Amortering",
+          "share": "Låneandel"
+        },
+        "backwardHint": "Beräknad bakåt från det första intyget.",
+        "unpaid": "ingen betalning",
+        "rateHint": "Ränta {rate} per år",
+        "extraHint": "Varav extra amortering {amount}",
+        "certificate": "Disponentintyg {date}: {amount}",
+        "gapNone": "beräkningen stämmer",
+        "gapMore": "beräknat {amount} större",
+        "gapLess": "beräknat {amount} mindre",
+        "implied": "faktisk ränta {rate}",
+        "computed": "Beräknad låneandel {date}: {amount}",
+        "year": "{count} mån: amorterat {principal}, ränta {interest}",
+        "year_one": "1 mån: amorterat {principal}, ränta {interest}",
+        "paymentsUnknown": "Inga betalningar till bostadsbolaget hittades i bokföringen: varje finansieringsvederlag räknas som betalt."
+      },
+      "alsoLead": "Lägg till de nya referensräntorna ({dates}) även i lånets kopior i andra objekt:",
+      "alsoFailed": "Lånet sparades, men referensräntan kunde inte läggas till för objekten: {objects}."
     }
   },
   "company": {

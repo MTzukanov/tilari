@@ -1475,7 +1475,11 @@
       "loan_share_missing": "The company loan {loan} has no loan share: add a property manager's certificate.",
       "loan_certificate_stale": "The loan share of the company loan {loan} is from a certificate dated {certificate}. Ask for a new property manager's certificate.",
       "loan_certificate_missing": "The certificate for the loan share on {certificate} of the company loan {loan} is missing.",
-      "loan_charge_notice_missing": "The invoice or notice for the financing charge from {from} ({amount}/month) of the company loan {loan} is missing."
+      "loan_charge_notice_missing": "The invoice or notice for the financing charge from {from} ({amount}/month) of the company loan {loan} is missing.",
+      "loan_payment_missing": "No payment to the housing company is booked for {count} months from {from} (company loan {loan}): the loan share did not fall for them.",
+      "loan_payment_missing_one": "No payment to the housing company is booked for the month {from} (company loan {loan}): the loan share did not fall.",
+      "loan_rate_missing": "The reference rate of the company loan {loan} was reset on {reset}: add the new reference rate.",
+      "loan_rahastoitu_expensed": "The financing charge of the company loan {loan} from {from} is capitalised but booked as a cost: in taxation it belongs to the shares' acquisition cost. Check with the auditor."
     },
     "warnCount": "Notes: {count}",
     "alerts": {
@@ -1800,7 +1804,34 @@
       "loansLead": "The object's share of the housing company's loans. A loan of another object in the same company can be copied.",
       "copyPick": "Pick the loan to copy…",
       "copySame": "★ = the object pays the same housing company.",
-      "none": "No company loans."
+      "none": "No company loans.",
+      "path": {
+        "months": "Month by month ({n})",
+        "share": "Loan share at month end",
+        "chartHint": "Line: the computed loan share at each month's end. Dots: property manager's certificates.",
+        "col": {
+          "payments": "Payments to the company",
+          "paid": "Financing charge",
+          "interest": "Interest",
+          "principal": "Repaid",
+          "share": "Loan share"
+        },
+        "backwardHint": "Worked back from the first certificate.",
+        "unpaid": "no payment",
+        "rateHint": "Interest {rate} a year",
+        "extraHint": "Of which an extra repayment {amount}",
+        "certificate": "Property manager's certificate {date}: {amount}",
+        "gapNone": "computed matches",
+        "gapMore": "computed {amount} more",
+        "gapLess": "computed {amount} less",
+        "implied": "actual rate {rate}",
+        "computed": "Computed loan share {date}: {amount}",
+        "year": "{count} months: repaid {principal}, interest {interest}",
+        "year_one": "1 month: repaid {principal}, interest {interest}",
+        "paymentsUnknown": "No payments to the housing company were found in the books: each financing charge counts as paid."
+      },
+      "alsoLead": "Add the new reference rates ({dates}) to the loan's copies on other objects too:",
+      "alsoFailed": "The loan was saved, but the reference rate could not be added to: {objects}."
     }
   },
   "company": {

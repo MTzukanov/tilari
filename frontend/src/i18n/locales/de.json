@@ -1475,7 +1475,11 @@
       "loan_share_missing": "Das Gesellschaftsdarlehen {loan} hat keinen Darlehensanteil: Hausverwalterbescheinigung hinzufügen.",
       "loan_certificate_stale": "Der Darlehensanteil des Gesellschaftsdarlehens {loan} stammt aus einer Bescheinigung vom {certificate}. Eine neue Hausverwalterbescheinigung anfordern.",
       "loan_certificate_missing": "Die Bescheinigung zum Darlehensanteil vom {certificate} des Gesellschaftsdarlehens {loan} fehlt.",
-      "loan_charge_notice_missing": "Die Rechnung oder Mitteilung zum Finanzierungsentgelt ab {from} ({amount}/Monat) des Gesellschaftsdarlehens {loan} fehlt."
+      "loan_charge_notice_missing": "Die Rechnung oder Mitteilung zum Finanzierungsentgelt ab {from} ({amount}/Monat) des Gesellschaftsdarlehens {loan} fehlt.",
+      "loan_payment_missing": "Für {count} Monate ab {from} ist keine Zahlung an die Wohnungsgesellschaft gebucht (Gesellschaftsdarlehen {loan}): der Darlehensanteil sank für sie nicht.",
+      "loan_payment_missing_one": "Für den Monat {from} ist keine Zahlung an die Wohnungsgesellschaft gebucht (Gesellschaftsdarlehen {loan}): der Darlehensanteil sank nicht.",
+      "loan_rate_missing": "Der Referenzzins des Gesellschaftsdarlehens {loan} wurde am {reset} angepasst: neuen Referenzzins hinzufügen.",
+      "loan_rahastoitu_expensed": "Das Finanzierungsentgelt des Gesellschaftsdarlehens {loan} ab {from} ist kapitalisiert, aber als Aufwand gebucht: steuerlich gehört es zu den Anschaffungskosten der Anteile. Mit dem Abschlussprüfer klären."
     },
     "warnCount": "Hinweise: {count}",
     "alerts": {
@@ -1800,7 +1804,34 @@
       "loansLead": "Der Anteil des Objekts an den Darlehen der Wohnungsgesellschaft. Das Darlehen eines anderen Objekts derselben Gesellschaft kann kopiert werden.",
       "copyPick": "Zu kopierendes Darlehen wählen…",
       "copySame": "★ = das Objekt zahlt an dieselbe Wohnungsgesellschaft.",
-      "none": "Keine Gesellschaftsdarlehen."
+      "none": "Keine Gesellschaftsdarlehen.",
+      "path": {
+        "months": "Monatlich ({n})",
+        "share": "Darlehensanteil am Monatsende",
+        "chartHint": "Linie: berechneter Darlehensanteil am Monatsende. Punkte: Hausverwalterbescheinigungen.",
+        "col": {
+          "payments": "Zahlungen an die Gesellschaft",
+          "paid": "Finanzierungsentgelt",
+          "interest": "Zins",
+          "principal": "Tilgung",
+          "share": "Darlehensanteil"
+        },
+        "backwardHint": "Rückwärts von der ersten Bescheinigung berechnet.",
+        "unpaid": "keine Zahlung",
+        "rateHint": "Zins {rate} pro Jahr",
+        "extraHint": "Davon Sondertilgung {amount}",
+        "certificate": "Hausverwalterbescheinigung {date}: {amount}",
+        "gapNone": "Berechnung stimmt",
+        "gapMore": "berechnet {amount} mehr",
+        "gapLess": "berechnet {amount} weniger",
+        "implied": "tatsächlicher Zins {rate}",
+        "computed": "Berechneter Darlehensanteil {date}: {amount}",
+        "year": "{count} Monate: getilgt {principal}, Zins {interest}",
+        "year_one": "1 Monat: getilgt {principal}, Zins {interest}",
+        "paymentsUnknown": "In der Buchhaltung wurden keine Zahlungen an die Wohnungsgesellschaft gefunden: jedes Finanzierungsentgelt gilt als bezahlt."
+      },
+      "alsoLead": "Die neuen Referenzzinsen ({dates}) auch bei den Kopien des Darlehens in anderen Objekten eintragen:",
+      "alsoFailed": "Das Darlehen wurde gespeichert, aber der Referenzzins konnte nicht eingetragen werden bei: {objects}."
     }
   },
   "company": {

@@ -1123,6 +1123,32 @@ describe('rental objects: housing-company loans', () => {
     expect(codes(CC.bundle)).toEqual(['loan_charge_notice_missing'])
   })
 
+  it('follows the share month by month from the payments to the housing company, and reminds of what they leave', async () => {
+    const { db } = await setUp()
+    const doc = computeDetail(db, CC.bundle, { today: TODAY }).doc
+    const stored = loan({
+      reset_months: 12,
+      rates: [{ from: '2025-01-01', reference_pcm: 2200 }],
+      charges: [{ from: '2025-01-01', amount_snt: 80 * E, rahastoitu: true, no_document: true }],
+      certificates: [{ date: '2025-12-31', share_snt: 10_000 * E, no_document: true }],
+    })
+    saveProperty(db, CC.bundle, { ...doc, housing_loans: [stored] }, 'now')
+    const detail = computeDetail(db, CC.bundle, { today: TODAY })
+    // The vastike is paid to the housing company every month the statements run (March 2023 - September 2026).
+    expect(detail.housing.payments.map((p) => p.month)).toHaveLength(43)
+    expect(detail.housing.payments[0]).toMatchObject({ month: '2026-09', units: 1 })
+    expect(detail.housing.payments[0].lines.map((l) => [l.amount_snt, l.partner])).toEqual([[300 * E, 'As Oy Esimerkkikatu 1']])
+    const [path] = detail.housing.paths
+    // From the first charge, back from the certificate, on to the as-of month.
+    expect(path.months[0]).toMatchObject({ month: '2025-01', backward: true, paid_snt: 80 * E })
+    expect(path.months.find((m) => m.month === '2025-12')).toMatchObject({ closing_snt: 10_000 * E, certificate: { date: '2025-12-31' } })
+    expect(path.months.at(-1)!.month).toBe(detail.as_of.slice(0, 7))
+    expect(path).toMatchObject({ payments_known: true, missing: null })
+    expect(path.months.at(-1)!.closing_snt).toBeLessThan(10_000 * E)
+    const codes = detail.warnings.map((w) => w.code).filter((c) => c.startsWith('loan_'))
+    expect(codes).toEqual(['loan_rate_missing', 'loan_rahastoitu_expensed'])
+  })
+
   it('copy sources: the other objects\' loans, those paying the same housing company first', async () => {
     const fx = await setUp()
     const { db } = fx

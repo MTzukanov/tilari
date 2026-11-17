@@ -1475,7 +1475,11 @@
       "loan_share_missing": "Yhtiölainalla {loan} ei ole velkaosuutta: lisää isännöitsijäntodistus.",
       "loan_certificate_stale": "Yhtiölainan {loan} velkaosuus on {certificate} päivätystä todistuksesta. Pyydä uusi isännöitsijäntodistus.",
       "loan_certificate_missing": "Yhtiölainan {loan} velkaosuuden {certificate} todistus puuttuu.",
-      "loan_charge_notice_missing": "Yhtiölainan {loan} rahoitusvastikkeen {from} alkaen ({amount}/kk) lasku tai ilmoitus puuttuu."
+      "loan_charge_notice_missing": "Yhtiölainan {loan} rahoitusvastikkeen {from} alkaen ({amount}/kk) lasku tai ilmoitus puuttuu.",
+      "loan_payment_missing": "Taloyhtiölle ei ole kirjattu maksua {count} kuukaudelta {from} alkaen (yhtiölaina {loan}): velkaosuus ei pienentynyt niiltä.",
+      "loan_payment_missing_one": "Taloyhtiölle ei ole kirjattu maksua kuukaudelta {from} (yhtiölaina {loan}): velkaosuus ei pienentynyt.",
+      "loan_rate_missing": "Yhtiölainan {loan} viitekorko tarkistettiin {reset}: lisää uusi viitekorko.",
+      "loan_rahastoitu_expensed": "Yhtiölainan {loan} rahoitusvastike {from} alkaen on rahastoitu, mutta kirjattu kuluksi: verotuksessa se kuuluu osakkeiden hankintamenoon. Tarkista tilintarkastajan kanssa."
     },
     "warnCount": "Huomautuksia: {count}",
     "alerts": {
@@ -1800,7 +1804,34 @@
       "loansLead": "Kohteen osuus taloyhtiön lainoista. Saman taloyhtiön toisen kohteen lainan voi kopioida.",
       "copyPick": "Valitse kopioitava laina…",
       "copySame": "★ = kohde maksaa samalle taloyhtiölle.",
-      "none": "Ei yhtiölainoja."
+      "none": "Ei yhtiölainoja.",
+      "path": {
+        "months": "Kuukausittain ({n})",
+        "share": "Velkaosuus kuukauden lopussa",
+        "chartHint": "Viiva: laskettu velkaosuus kuukauden lopussa. Pisteet: isännöitsijäntodistukset.",
+        "col": {
+          "payments": "Maksut taloyhtiölle",
+          "paid": "Rahoitusvastike",
+          "interest": "Korko",
+          "principal": "Lyhennys",
+          "share": "Velkaosuus"
+        },
+        "backwardHint": "Laskettu taaksepäin ensimmäisestä todistuksesta.",
+        "unpaid": "ei maksua",
+        "rateHint": "Korko {rate} vuodessa",
+        "extraHint": "Josta ylimääräinen lyhennys {amount}",
+        "certificate": "Isännöitsijäntodistus {date}: {amount}",
+        "gapNone": "laskettu täsmää",
+        "gapMore": "laskettu {amount} suurempi",
+        "gapLess": "laskettu {amount} pienempi",
+        "implied": "toteutunut korko {rate}",
+        "computed": "Laskettu velkaosuus {date}: {amount}",
+        "year": "{count} kk: lyhennetty {principal}, korkoa {interest}",
+        "year_one": "1 kk: lyhennetty {principal}, korkoa {interest}",
+        "paymentsUnknown": "Maksuja taloyhtiölle ei tunnistettu kirjanpidosta: jokainen rahoitusvastike on laskettu maksetuksi."
+      },
+      "alsoLead": "Lisää uudet viitekorot ({dates}) myös saman lainan kopioihin muissa kohteissa:",
+      "alsoFailed": "Laina tallennettiin, mutta viitekorkoa ei saatu lisättyä kohteille: {objects}."
     }
   },
   "company": {

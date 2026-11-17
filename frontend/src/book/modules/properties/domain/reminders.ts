@@ -20,10 +20,11 @@ export const WATER_OPEN_DAYS = 60
 export const WATER_SETTLEMENT_MONTHS = 15
 
 /**
- * Notes, not things to act on: the setup's sale costs, and how a sale shared with another object
- * was counted. The object page lists them; the portfolio does not mark a row for them.
+ * Notes, not things to act on: the setup's sale costs, how a sale shared with another object was
+ * counted, and a rahastoitu rahoitusvastike the ledger books as a cost (ADR-034). The object page
+ * lists them; the portfolio does not mark a row for them.
  */
-export const NOTE_CODES = new Set(['sale_carried', 'sale_line_split'])
+export const NOTE_CODES = new Set(['sale_carried', 'sale_line_split', 'loan_rahastoitu_expensed'])
 
 /** The warnings to act on: all but the notes. */
 export function actionable<T extends { code: string }>(warnings: T[]): T[] {

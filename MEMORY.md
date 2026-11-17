@@ -7,6 +7,23 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-17 - Rental objects: a loan's share month by month (`feature/housing-loans-month`, ADR-034, step 4b)
+
+- `loanPath` (`domain/housingLoan.ts`) follows each loan's share from its certificates and the payments to the
+  housing company (`housingPayments`, `domain/water.ts`, next to `housingCompanyPartners`); the card shows the
+  computed share at the path's end with what twelve months repaid and paid as interest, and folds a chart and a
+  month table (payments as line links, rahoitusvastike, interest, repaid, share; certificate rows with the gap
+  and the implied rate). Interest is monthly on the share at the month's start (`share * pcm / 1 200 000`).
+- A month's payment count is its total over the regular amount, rounded: chosen over counting repeating amounts
+  only, which flagged a raised vastike as missing until it repeated, and over counting every line, which took a
+  water invoice for a second payment.
+- The path ends at the as-of month (data through), or at a later certificate; payments missing are counted to the
+  as-of month only, so months the book has not imported yet do not warn.
+- The invented fixture's vastike lines now name their housing company ("As Oy Esimerkkikatu 1", "As Oy Mallitie
+  2"), so the test book has payments to follow; `testdb/tilari-properties.kitsas` was rebuilt.
+- Owner's look at the cards: two loan cards ran together. Cards after cards (leases, settlements, loans) now keep
+  1rem apart. The month table scrolls on its own on a phone.
+
 ## 2026-11-17 - Rental objects: housing-company loans on a Taloyhtiö tab (`feature/housing-loans`, ADR-034)
 
 - Owner's step 4 (loan share and rahoitusvastike), planned in increments 4a-4e. Decisions: a loan belongs to the

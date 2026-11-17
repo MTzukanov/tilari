@@ -13,6 +13,7 @@ import {
   shareStatus,
   statementGuesses,
   housingCompanyPartners,
+  housingPayments,
   statementPeriod,
   yearFrom,
   statementSuspects,
@@ -307,6 +308,29 @@ describe('water settlements: the company\'s statement without water in its text'
     expect([...housingCompanyPartners(rows)]).toEqual([5])
     // Lines a correction moved away do not count: two vastike lines left are not enough.
     expect([...housingCompanyPartners(vastike().slice(0, 3), new Set([1]))]).toEqual([])
+  })
+
+  it('payments to the housing company count whole: a catch-up month two, a raise one, an extra invoice nothing more', () => {
+    const rows = [
+      // March to October 2027.
+      ...vastike().slice(0, 8),
+      // November 2027 paid with December's: two payments.
+      pnl(20, '2027-11-05', -412_30, REF),
+      pnl(21, '2027-11-20', -412_30, REF),
+      // A raise from January: once so far, still one payment; and a water invoice beside it.
+      pnl(22, '2028-01-05', -425_00, REF),
+      pnl(23, '2028-01-12', -37_90, 'Vesilasku'),
+      // A one-off supplier is no housing company.
+      pnl(40, '2027-09-10', -250_00, 'Putkimies', { partner_id: 8 }),
+    ]
+    const { months, known } = housingPayments(rows)
+    expect(known).toBe(true)
+    expect([...months].map(([m, x]) => [m, x.units]).sort()).toEqual([
+      ['2027-03', 1], ['2027-04', 1], ['2027-05', 1], ['2027-06', 1], ['2027-07', 1], ['2027-08', 1], ['2027-09', 1],
+      ['2027-10', 1], ['2027-11', 2], ['2028-01', 1],
+    ])
+    expect(months.get('2028-01')!.rows.map((r) => r.id)).toEqual([22, 23])
+    expect(housingPayments([pnl(40, '2027-09-10', -250_00, 'Putkimies', { partner_id: 8 })]).known).toBe(false)
   })
 
   it('guesses: the voucher that matches the difference to the cent, else the suspects near the period', () => {

@@ -506,6 +506,14 @@ test.describe('rental object housing-company loans', () => {
     await expect(saved).toContainText(/Rahoitusvastike 80,00\s€\/kk 1\.1\.2026 alkaen/)
     await expect(saved.locator('.property-lease-terms .pill', { hasText: 'Rahastoitu' })).toHaveCount(1)
     await expect(saved).toContainText(/= 2,900\s%/)
+    // The share month by month from the payments to the housing company, to the as-of month (May):
+    // April 12 000,00 - (80,00 - 29,00), May 11 949,00 - (80,00 - 28,88).
+    await expect(saved).toContainText(/Laskettu velkaosuus 31\.5\.2026: 11\s897,88\s€/)
+    await saved.locator('summary', { hasText: 'Kuukausittain (5)' }).click()
+    const table = saved.locator('.property-loan-table')
+    await expect(table.locator('tbody tr').first()).toContainText(/toukokuu 2026.*5\.5\.2026 300,00\s€.*80,00\s€.*28,88\s€.*51,12\s€.*11\s897,88\s€/)
+    await expect(table.locator('.property-loan-certificate-row')).toHaveText(/^Isännöitsijäntodistus 1\.3\.2026: 12\s000,00\s€$/)
+    await expect(table.locator('tr.property-loan-backward')).toHaveCount(2)
     // The certificate is the housing company's document, held by the loan: not unlinked on Asiakirjat.
     const housingDocs = page.locator('.property-housing-docs')
     await expect(housingDocs.locator('.doc-line', { hasText: 'Isännöitsijäntodistus' })).toContainText('Velkaosuus 1.3.2026, Putkiremontti')
@@ -541,6 +549,8 @@ test.describe('rental object housing-company loans', () => {
     await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(card).toHaveCount(0)
     await expect(loans.locator('.property-loan-card')).toContainText(/Velkaosuus 5\s000,00\s€ \(1\.1\.2025\)/)
+    // The garage pays no housing company in the book: each charge counts as paid, and it says so.
+    await expect(loans.locator('.property-loan-card')).toContainText('Maksuja taloyhtiölle ei tunnistettu kirjanpidosta')
     // The share's and the charge's documents are missing: they mark the tab.
     await expect(page.getByRole('tab', { name: /^Taloyhtiö/ }).locator('.tabs-mark-crit')).toHaveCount(1)
 

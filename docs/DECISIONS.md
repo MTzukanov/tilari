@@ -829,8 +829,22 @@ correction would change the open year's income statement lines. The rental-objec
   bookings, so a share or rate dated after the last booked month counts at once.
 - **Reminders** (computed, ADR-030), while the object is held: a running loan with no share, a newest share older
   than 12 months, and a certificate or rahoitusvastike without its document (skippable with `no_document`).
-- **Next steps:** the share month by month from the payments to
-  the housing company, anchored to the certificates; the figures that depend on it (debt-free values, the
-  rahoitusvastike split into interest and principal); rate estimates for the future and each loan's projection;
-  then tilari-bank-import reading the vastike invoices into facts on the voucher.
+- **The share month by month** (`loanPath`, computed every time): the payments to the housing company are the
+  expense lines of the payees the object pays repeating amounts on one account (`housingPayments`), counted as whole
+  payments - a month's total over the regular amount in force, rounded, so a catch-up counts two and a small extra
+  invoice nothing. Each payment pays the rahoitusvastike in force for the month; interest is the share at the
+  month's start times reference + margin over twelve; the rest lowers the share, as do extra repayments, and a
+  payoff ends it. A certificate gives the share at its month's end. Before the first one the path runs backwards (to
+  the later of the loan's start, the purchase, the books' start and the first charge); between two, the computed
+  months are fitted to the later one - its gap, computed less certified, is taken from their interest by weight in
+  whole cents - and the raw gap and the rate the fitted interest implies stay on the certificate's month; after the
+  last one it runs to the as-of month. Without any payee found, each due month counts as paid, and the card says so.
+- **Its reminders:** due months the payments have not covered by the as-of month (counted on, so an early or a
+  catch-up payment settles it), a rate reset date passed with no rate row for it, and - as a note, since the ledger
+  books it so - a rahastoitu rahoitusvastike paid as a cost.
+- **A rate row on copies:** a rate row new on a loan card can be added to the same loan on other objects (its
+  `group`) in the same save, each ticked by default.
+- **Next steps:** the figures that depend on the share (debt-free values, the rahoitusvastike split into interest
+  and principal, the rahastoitu view option); rate estimates for the future and each loan's projection; then
+  tilari-bank-import reading the vastike invoices into facts on the voucher.
 

@@ -5685,6 +5685,60 @@ tr.tax-total td {
   fill: #2f6fed;
 }
 
+/* A loan's months: wider than a phone, so the table scrolls on its own, not the page. */
+.property-loan-table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* "Lisää myös": the loan's copies on other objects that a new rate row can go to. */
+.property-loan-also {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 1rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.property-loan-also > p {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* A housing-company loan's share month by month, and its certificates as dots on it. */
+.property-loan-share .chart-line {
+  fill: none;
+  stroke: #2f6fed;
+  stroke-width: 2;
+}
+
+.property-loan-share .chart-line-dot {
+  fill: #2f6fed;
+}
+
+.property-loan-certificate .chart-line {
+  display: none;
+}
+
+.property-loan-certificate .chart-line-dot {
+  fill: var(--ink);
+}
+
+/* A month worked back from the first certificate, and a due month with no payment. */
+.property-loan-table tr.property-loan-backward td {
+  color: var(--muted);
+}
+
+.property-loan-table .property-loan-unpaid {
+  color: var(--neg);
+  font-weight: 600;
+}
+
+.property-loan-table tr.property-loan-certificate-row td {
+  font-size: 0.85rem;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
 .portfolio-line .chart-line {
   fill: none;
   stroke-width: 2;
@@ -6014,6 +6068,13 @@ tr.tax-total td {
 .property-lease-card {
   border-left: 3px solid color-mix(in srgb, #2f8f5b 55%, var(--line));
   padding: 0.1rem 0 0.1rem 0.8rem;
+}
+
+/* Cards one after another (leases, settlements, loans) keep apart: each its own bar. */
+.property-lease-card + .property-lease-card,
+.property-lease-card + div > .property-lease-card,
+div:has(> .property-lease-card) + .property-lease-card {
+  margin-top: 1rem;
 }
 
 /* A lease card in edit, in place: the form's own box, with its Tallenna and Peru under it. */
