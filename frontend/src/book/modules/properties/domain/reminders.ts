@@ -135,6 +135,16 @@ export function skipDocument(doc: PropertyDoc, skip: DocumentSkip): PropertyDoc 
     const settlements = (doc.water_settlements ?? []).map((s) => (s.key === skip.key ? { ...s, no_document: true as const } : s))
     return { ...doc, water_settlements: settlements }
   }
+  if (skip.kind === 'loan_certificate' || skip.kind === 'loan_charge') {
+    const loans = (doc.housing_loans ?? []).map((loan) => {
+      if (loan.key !== skip.loan_key) return loan
+      if (skip.kind === 'loan_certificate') {
+        return { ...loan, certificates: (loan.certificates ?? []).map((c) => (c.date === skip.date ? { ...c, no_document: true as const } : c)) }
+      }
+      return { ...loan, charges: (loan.charges ?? []).map((c) => (c.from === skip.from ? { ...c, no_document: true as const } : c)) }
+    })
+    return { ...doc, housing_loans: loans }
+  }
   const leases = (doc.leases ?? []).map((lease) => {
     if (lease.key !== skip.lease_key) return lease
     if (skip.kind === 'increase_notice') {

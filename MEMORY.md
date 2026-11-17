@@ -7,6 +7,24 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-17 - Rental objects: housing-company loans on a Taloyhtiö tab (`feature/housing-loans`, ADR-034)
+
+- Owner's step 4 (loan share and rahoitusvastike), planned in increments 4a-4e. Decisions: a loan belongs to the
+  object, no housing-company record; a loan can be copied from another object of the same company (the copy keeps
+  the original's `group`); the share is followed month by month from the payments to the housing company, not the
+  bank's schedule, anchored to certificates; actual reference rates by hand on the loan, estimates for the future
+  as one curve per reference rate in the Properties defaults (4d); a "Rahastoitu" checkbox per rahoitusvastike
+  period, tuloutettu by default, with a later view option to count rahastoitu charges as capital; no ledger change -
+  tilari-bank-import will read the vastike invoices into facts on the voucher (4e).
+- 4a, built here: `housing_loans[]` and `housing_doc_voucher_ids` on the object (DATA_MODEL.md), the Taloyhtiö tab
+  (`housing`; cards `/housing/new`, `/housing/loan/{key}`) with the company's documents (linked, uploaded, and every
+  voucher a loan links, marked with what it is for) and loan cards edited in place; "+ Yhtiölaina" on the overview.
+  Copy sources list every other object's loans, those paying one of this object's housing-company partners first
+  (`housingCompanyPartners`, taken out of `statementSuspects`). Rates are in 1/1000 % (`*_pcm`).
+- Reminders while held: `loan_share_missing`, `loan_certificate_stale` (12 months), `loan_certificate_missing` and
+  `loan_charge_notice_missing` (skippable, ADR-030 kinds `loan_certificate` / `loan_charge`).
+- A certificate uploaded on a card is dated today, like the other documents Tilari writes; its own date is the row's.
+
 ## 2026-11-15 - Test book with rental-object investments (`testdb/tilari-properties.kitsas`)
 
 - Owner asked for a book with an acquisition: the golden `tilari-test.kitsas` links none, so neither payback chart

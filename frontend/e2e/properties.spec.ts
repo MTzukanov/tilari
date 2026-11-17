@@ -101,7 +101,7 @@ test.describe('rental object tabs', () => {
     await openBook(page)
     await page.goto('/#/property/4')
     const tabs = page.getByRole('tablist')
-    await expect(tabs.getByRole('tab')).toHaveText([/^Yleiskatsaus/, /^Vuokrasuhteet/, /^Vesimaksut/, /^Asiakirjat/, /^Talous/])
+    await expect(tabs.getByRole('tab')).toHaveText([/^Yleiskatsaus/, /^Vuokrasuhteet/, /^Vesimaksut/, /^Taloyhtiö/, /^Asiakirjat/, /^Talous/])
     await expect(page.getByRole('tab', { name: 'Yleiskatsaus' })).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('.property-now', { hasText: 'Vuokrasuhde nyt' })).toContainText('Ei vuokrasopimuksia.')
 
@@ -175,7 +175,7 @@ test.describe('rental object on a phone', () => {
 
     await page.setViewportSize({ width: 360, height: 740 })
     const workspace = page.locator('main.workspace')
-    for (const name of ['Yleiskatsaus', 'Vuokrasuhteet', 'Vesimaksut', 'Asiakirjat', 'Talous']) {
+    for (const name of ['Yleiskatsaus', 'Vuokrasuhteet', 'Vesimaksut', 'Taloyhtiö', 'Asiakirjat', 'Talous']) {
       const tab = page.getByRole('tab', { name: new RegExp(`^${name}`) })
       // Every tab is in sight: the bar wraps instead of scrolling.
       expect((await tab.boundingBox())!.x + (await tab.boundingBox())!.width, name).toBeLessThanOrEqual(360)
@@ -436,6 +436,87 @@ test.describe('rental object documents linked on their tab', () => {
     await expect(line).toBeVisible()
     await expect(docs.locator('.section-label').first()).toHaveText('Linkitetyt (sopimukset ja ilmoitukset)')
     await expect(pick).toHaveCount(0)
+  })
+})
+
+test.describe('rental object housing-company loans', () => {
+  test('a loan is added on its card with a certificate, copied to another object, and the tab fits a phone', async ({ page }) => {
+    await openBook(page, propertiesBook, 'Esimerkki Vuokraus Oy')
+    await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2026-06-15')
+    await page.goto('/#/property/10/housing')
+    await expect(page.getByRole('tab', { name: /^Taloyhtiö/ })).toHaveAttribute('aria-selected', 'true')
+    const loans = page.locator('.property-housing-loans')
+    await expect(loans.getByText('Ei yhtiölainoja.')).toBeVisible()
+    // No other object has a loan yet: nothing to copy.
+    await expect(loans.getByRole('button', { name: 'Kopioi toisesta kohteesta' })).toHaveCount(0)
+
+    await loans.getByRole('button', { name: '+ Lisää laina' }).click()
+    await expect(page).toHaveURL(/#\/property\/10\/housing\/new$/)
+    const card = page.locator('.property-loan-card-edit')
+    await card.getByLabel('Laina', { exact: true }).fill('Putkiremontti')
+    await card.getByLabel('Nostettu', { exact: true }).fill('2020-01-01')
+    await card.getByLabel('Marginaali %').fill('0,8')
+    const rows = card.locator('.property-lease-increase')
+
+    await card.getByRole('button', { name: '+ Lisää rivi' }).nth(0).click()
+    const certificate = rows.nth(0)
+    await certificate.getByLabel('Päivä', { exact: true }).fill('2026-03-01')
+    await certificate.getByLabel('Velkaosuus').fill('12000')
+    const chooser = page.waitForEvent('filechooser')
+    await certificate.locator('label', { hasText: 'Lataa tiedosto' }).click()
+    await (await chooser).setFiles({ name: 'todistus.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 todistus') })
+    await expect(certificate.getByRole('textbox', { name: 'Isännöitsijäntodistus' })).toHaveValue(/Isännöitsijäntodistus/)
+
+    await card.getByRole('button', { name: '+ Lisää rivi' }).nth(1).click()
+    const charge = rows.nth(1)
+    await charge.getByLabel('Alkaen').fill('2026-01-01')
+    await charge.getByLabel('Rahoitusvastike €/kk').fill('80')
+    await charge.getByRole('checkbox', { name: 'Rahastoitu' }).check()
+    await charge.getByRole('checkbox', { name: 'Ei asiakirjaa' }).check()
+
+    await card.getByRole('button', { name: '+ Lisää rivi' }).nth(2).click()
+    const rate = rows.nth(2)
+    await rate.getByLabel('Alkaen').fill('2026-03-01')
+    await rate.getByLabel('Viitekorko %').fill('2,1')
+    await expect(rate).toContainText(/2,900\s%/)
+
+    await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(card).toHaveCount(0)
+    await expect(page).toHaveURL(/#\/property\/10\/housing$/)
+    const saved = loans.locator('.property-loan-card')
+    await expect(saved).toContainText(/Velkaosuus 12\s000,00\s€ \(1\.3\.2026\)/)
+    await expect(saved).toContainText(/Rahoitusvastike 80,00\s€\/kk 1\.1\.2026 alkaen/)
+    await expect(saved.locator('.property-lease-terms .pill', { hasText: 'Rahastoitu' })).toHaveCount(1)
+    await expect(saved).toContainText(/= 2,900\s%/)
+    // The certificate is the housing company's document, held by the loan: not unlinked on Asiakirjat.
+    const housingDocs = page.locator('.property-housing-docs')
+    await expect(housingDocs.locator('.doc-line', { hasText: 'Isännöitsijäntodistus' })).toContainText('Velkaosuus 1.3.2026, Putkiremontti')
+    await page.getByRole('tab', { name: /^Asiakirjat/ }).click()
+    const docLine = page.locator('.property-docs .doc-line', { hasText: 'Isännöitsijäntodistus' })
+    await expect(docLine).toBeVisible()
+    await expect(docLine.getByRole('button', { name: 'Poista linkki' })).toHaveCount(0)
+
+    // Another object copies the loan's terms; its share and charges are its own.
+    await page.goto('/#/property/30/housing')
+    await loans.getByRole('button', { name: 'Kopioi toisesta kohteesta' }).click()
+    const pick = loans.getByRole('textbox', { name: 'Kopioi toisesta kohteesta' })
+    await pick.click()
+    await page.getByRole('option', { name: /Putkiremontti/ }).click()
+    await expect(card.getByLabel('Laina', { exact: true })).toHaveValue('Putkiremontti')
+    await expect(card.getByLabel('Marginaali %')).toHaveValue('0,8')
+    await expect(card.getByText('Ehdot kopioitu toisen kohteen lainasta.', { exact: false })).toBeVisible()
+    await expect(card.locator('.property-lease-increase')).toHaveCount(1)
+    await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(loans.locator('.property-loan-card')).toContainText('Velkaosuutta ei ole annettu.')
+    // The missing share marks the tab.
+    await expect(page.getByRole('tab', { name: /^Taloyhtiö/ }).locator('.tabs-mark-crit')).toHaveCount(1)
+
+    await page.setViewportSize({ width: 360, height: 740 })
+    const workspace = page.locator('main.workspace')
+    expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'housing tab').toBeLessThanOrEqual(0)
+    await loans.locator('.property-loan-card').getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    await expect(card).toHaveCount(1)
+    expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'loan card').toBeLessThanOrEqual(0)
   })
 })
 

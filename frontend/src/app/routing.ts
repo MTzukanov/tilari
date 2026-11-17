@@ -1,15 +1,16 @@
 export type CompanySection = 'documents' | 'own'
 
 /** A rental object's tabs after the first (the overview on its page, the basics on the edit page). */
-export const PROPERTY_TABS = ['leases', 'water', 'docs', 'finance'] as const
+export const PROPERTY_TABS = ['leases', 'water', 'housing', 'docs', 'finance'] as const
 export type PropertyTab = (typeof PROPERTY_TABS)[number]
 
 /**
- * A card open in edit on a rental object's tab: a new row (`/leases/new`, `/water/new`), stored lease
- * `lease` (`/leases/lease/{key}`) or water settlement `settlement` (`/water/settlement/{key}`). Kept on
- * the way back from a voucher, with its unsaved form.
+ * A card open in edit on a rental object's tab: a new row (`/leases/new`, `/water/new`, `/housing/new`),
+ * stored lease `lease` (`/leases/lease/{key}`), water settlement `settlement` (`/water/settlement/{key}`)
+ * or housing-company loan `loan` (`/housing/loan/{key}`). Kept on the way back from a voucher, with its
+ * unsaved form.
  */
-export type PropertyCard = { add: true } | { lease: string } | { settlement: string }
+export type PropertyCard = { add: true } | { lease: string } | { settlement: string } | { loan: string }
 
 export type VoucherVia =
   | { kind: 'account'; account: number }
@@ -83,24 +84,28 @@ export function propertyHash(id: number, at: { month?: string; tab?: PropertyTab
   return `#/property/${id}${at.tab ? `/${at.tab}` : ''}${at.card && cardFits(at.tab, at.card) ? cardTail(at.card) : ''}`
 }
 
-/** A new row on the leases or water tab, a lease on the leases tab, a settlement on the water tab. */
+/** The tab each card kind is on: a lease on the leases tab, a settlement on the water tab, a loan on the housing tab. */
+const CARD_KINDS = { leases: 'lease', water: 'settlement', housing: 'loan' } as const
+
+/** A new row on a tab with cards, or a stored card on its own tab. */
 function cardFits(tab: PropertyTab | undefined, card: PropertyCard): boolean {
-  if ('add' in card) return tab === 'leases' || tab === 'water'
-  return 'lease' in card ? tab === 'leases' : tab === 'water'
+  const kind = tab && tab in CARD_KINDS ? CARD_KINDS[tab as keyof typeof CARD_KINDS] : null
+  return kind != null && ('add' in card || kind in card)
 }
 
 function cardTail(card: PropertyCard): string {
   if ('add' in card) return '/new'
-  return 'lease' in card ? `/lease/${encodeURIComponent(card.lease)}` : `/settlement/${encodeURIComponent(card.settlement)}`
+  const [kind, key] = Object.entries(card)[0] as [string, string]
+  return `/${kind}/${encodeURIComponent(key)}`
 }
 
-/** The card a tab's address names (`new`, `lease/{key}` on leases, `settlement/{key}` on water), and what follows it. */
+/** The card a tab's address names (`new`, or `lease/{key}`, `settlement/{key}`, `loan/{key}` on its tab), and what follows it. */
 function parseCard(tab: PropertyTab | undefined, rest: string): { card: PropertyCard; tail: string } | null {
-  const kind = tab === 'leases' ? 'lease' : tab === 'water' ? 'settlement' : null
+  const kind = tab && tab in CARD_KINDS ? CARD_KINDS[tab as keyof typeof CARD_KINDS] : null
   const m = kind ? rest.match(new RegExp(`^(?:new|${kind}/([^/]+))(?:/(.+))?$`)) : null
-  if (!m) return null
+  if (!kind || !m) return null
   const key = m[1] != null ? decodeURIComponent(m[1]) : null
-  const card: PropertyCard = key == null ? { add: true } : kind === 'lease' ? { lease: key } : { settlement: key }
+  const card = (key == null ? { add: true } : { [kind]: key }) as PropertyCard
   return { card, tail: m[2] ?? '' }
 }
 

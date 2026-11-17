@@ -1065,3 +1065,84 @@ describe('rental objects: corrections in a later year', () => {
   })
 })
 
+
+describe('rental objects: housing-company loans', () => {
+  const loan = (extra: Record<string, unknown> = {}) => ({
+    name: 'Putkiremontti',
+    starts: '2020-01-01',
+    type: 'annuity',
+    reference: 'euribor_12m',
+    margin_pcm: 800,
+    ...extra,
+  })
+
+  it('a loan is stored with its documents linked to the object; its links must be posted vouchers', async () => {
+    const fx = await setUp()
+    const { db, vouchers } = fx
+    const certificate = fx.voucher('certificate', '2026-03-01', 800, 'Isännöitsijäntodistus Esimerkkikatu 1 A 1', [])
+    const minutes = fx.voucher('minutes', '2026-04-20', 800, 'Yhtiökokouksen pöytäkirja Esimerkkikatu 1', [])
+    const doc = computeDetail(db, CC.bundle, { today: TODAY }).doc
+    const save = (extra: Record<string, unknown>) => () => saveProperty(db, CC.bundle, { ...doc, ...extra }, 'now')
+    expect(save({ housing_loans: [loan({ certificates: [{ date: '2026-03-01', share_snt: 12_000 * E, voucher_id: vouchers.leaseOld }] })] })).toThrow(
+      'invalid_field:housing_loans[0].certificates[0].voucher_id',
+    )
+    expect(save({ housing_doc_voucher_ids: [vouchers.draft] })).toThrow('invalid_field:housing_doc_voucher_ids[0]')
+    expect(
+      save({
+        housing_loans: [loan({ certificates: [{ date: '2026-03-01', share_snt: 12_000 * E, voucher_id: certificate }] })],
+        housing_doc_voucher_ids: [minutes],
+      })(),
+    ).toBe(true)
+    const detail = computeDetail(db, CC.bundle, { today: TODAY })
+    expect(detail.doc.housing_loans?.map((l) => l.key)).toEqual(['h1'])
+    expect(detail.doc.doc_voucher_ids).toEqual(expect.arrayContaining([certificate, minutes]))
+    expect(detail.housing.vouchers.map((v) => [v.voucher_id, v.title])).toEqual(
+      expect.arrayContaining([
+        [certificate, 'Isännöitsijäntodistus Esimerkkikatu 1 A 1'],
+        [minutes, 'Yhtiökokouksen pöytäkirja Esimerkkikatu 1'],
+      ]),
+    )
+    expect(detail.housing.copy_sources).toEqual([])
+  })
+
+  it('reminds of a missing share and missing documents while held; a sold object is not reminded', async () => {
+    const { db } = await setUp()
+    const loans = [loan({ charges: [{ from: '2026-01-01', amount_snt: 80 * E }] })]
+    for (const id of [CC.bundle, CC.sold]) saveProperty(db, id, { ...computeDetail(db, id, { today: TODAY }).doc, housing_loans: loans }, 'now')
+    const codes = (id: number) => computeDetail(db, id, { today: TODAY }).warnings.map((w) => w.code).filter((c) => c.startsWith('loan_'))
+    expect(codes(CC.bundle)).toEqual(['loan_share_missing', 'loan_charge_notice_missing'])
+    expect(codes(CC.sold)).toEqual([])
+    expect(computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.bundle)?.warnings.map((w) => w.code)).toEqual(
+      expect.arrayContaining(['loan_share_missing', 'loan_charge_notice_missing']),
+    )
+  })
+
+  it('copy sources: the other objects\' loans, those paying the same housing company first', async () => {
+    const fx = await setUp()
+    const { db } = fx
+    // The bundle and the garage pay one housing company; the commercial unit pays another.
+    for (const month of ['2026-01', '2026-02', '2026-03']) {
+      for (const [allocation, partner] of [
+        [CC.bundle, 'As Oy Testitalo'],
+        [CC.garage, 'As Oy Testitalo'],
+        [CC.commercial, 'Kiinteistö Oy Kauppatie'],
+      ] as const) {
+        fx.voucher(`vastike-${allocation}-${month}`, `${month}-02`, 100, `Vastike ${month}`, [
+          { account: 7300, debit: 120 * E, allocation, partner },
+          { account: 1910, credit: 120 * E },
+        ])
+      }
+    }
+    const store = (id: number, name: string) =>
+      saveProperty(db, id, { ...computeDetail(db, id, { today: TODAY }).doc, housing_loans: [loan({ name, rates: [{ from: '2026-03-01', reference_pcm: 2100 }] })] }, 'now')
+    store(CC.commercial, 'Katto')
+    store(CC.garage, 'Julkisivu')
+    const sources = computeDetail(db, CC.bundle, { today: TODAY }).housing.copy_sources
+    expect(sources.map((s) => [s.object_id, s.loan.name, s.same_company])).toEqual([
+      [CC.garage, 'Julkisivu', true],
+      [CC.commercial, 'Katto', false],
+    ])
+    // An object never lists its own loans.
+    expect(computeDetail(db, CC.garage, { today: TODAY }).housing.copy_sources.map((s) => s.object_id)).toEqual([CC.commercial])
+  })
+})

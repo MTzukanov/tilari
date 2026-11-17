@@ -171,6 +171,17 @@ describe('parseRoute', () => {
     expect(propertyHash(15, { tab: 'water', card: { settlement: 'w1' } })).toBe('#/property/15/water/settlement/w1')
     expect(parseRoute('#/property/15/edit/water/new')).toEqual({ view: 'property', id: 15, tab: 'water', card: { add: true } })
     expect(parseRoute('#/property/15/docs/new')).toEqual({ view: 'reports' })
+    // A housing-company loan card on the Taloyhtiö tab.
+    expect(parseRoute('#/property/15/housing')).toEqual({ view: 'property', id: 15, tab: 'housing' })
+    expect(parseRoute('#/property/15/housing/new')).toEqual({ view: 'property', id: 15, tab: 'housing', card: { add: true } })
+    expect(parseRoute('#/property/15/housing/loan/h1')).toEqual({ view: 'property', id: 15, tab: 'housing', card: { loan: 'h1' } })
+    expect(propertyHash(15, { tab: 'housing', card: { loan: 'h1' } })).toBe('#/property/15/housing/loan/h1')
+    expect(propertyHash(15, { tab: 'housing', card: { add: true } })).toBe('#/property/15/housing/new')
+    expect(propertyHash(15, { tab: 'leases', card: { loan: 'h1' } })).toBe('#/property/15/leases')
+    expect(parseRoute('#/property/15/housing/lease/l2')).toEqual({ view: 'reports' })
+    const loanVia = { kind: 'property' as const, id: 15, tab: 'housing' as const, card: { loan: 'h1' } }
+    expect(voucherHash(loanVia, 8)).toBe('#/property/15/housing/loan/h1/voucher/8/edit')
+    expect(parseRoute('#/property/15/housing/loan/h1/voucher/8/edit')).toEqual({ view: 'edit', voucherId: 8, type: null, via: loanVia, entryId: null })
 
     // Everything but the basics is edited on the object's tabs: the edit page's tab addresses open them.
     expect(parseRoute('#/property/15/edit/finance')).toEqual({ view: 'property', id: 15, tab: 'finance' })

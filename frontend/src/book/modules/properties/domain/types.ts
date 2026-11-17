@@ -148,6 +148,71 @@ export type WaterSettlement = {
   [key: string]: unknown
 }
 
+/** A housing-company loan's kind: annuiteetti, tasalyhennys, kiinteä tasaerä (the payment stays, the term moves). */
+export const HOUSING_LOAN_TYPES = ['annuity', 'equal_principal', 'fixed_payment'] as const
+export type HousingLoanType = (typeof HOUSING_LOAN_TYPES)[number]
+
+/** The reference rate (viitekorko) a loan's interest follows; `fixed` is a fixed rate, typed in its rate rows. */
+export const RATE_REFERENCES = ['euribor_12m', 'euribor_6m', 'euribor_3m', 'prime', 'fixed', 'other'] as const
+export type RateReference = (typeof RATE_REFERENCES)[number]
+
+/** What happened to a loan besides its payments: the share paid off (kertasuoritus), an extra payment, new terms, a note. */
+export const LOAN_EVENT_KINDS = ['paid_off', 'extra_payment', 'terms', 'note'] as const
+export type LoanEventKind = (typeof LOAN_EVENT_KINDS)[number]
+
+/**
+ * The reference rate from `from` on, as the company or its bank gave it. Rates are in 1/1000 %
+ * (`*_pcm`, 1000 = 1 %): Euribor is quoted to three decimals and can be negative.
+ */
+export type LoanRate = { from: string; reference_pcm: number; voucher_id?: number }
+
+/**
+ * The object's share of the loan (velkaosuus) on `date`, as an isännöitsijäntodistus or the
+ * purchase deed gives it: an anchor the share is followed from (ADR-034).
+ */
+export type LoanCertificate = { date: string; share_snt: number; voucher_id?: number; no_document?: true }
+
+/**
+ * The rahoitusvastike a month for this loan from `from` on, as the company's invoice or notice gives
+ * it. `rahastoitu`: the company puts it into its equity rather than its income (tuloutettu, the
+ * default), which matters for the shareholder's tax.
+ */
+export type LoanCharge = { from: string; amount_snt: number; rahastoitu?: true; voucher_id?: number; no_document?: true }
+
+export type LoanEvent = { date: string; kind: LoanEventKind; amount_snt?: number; voucher_id?: number; note?: string }
+
+/**
+ * A housing-company loan (yhtiölaina) the object has a share of, entered by hand (ADR-034). The
+ * loan is the object's own; a copy from another object of the same housing company keeps the
+ * original's `group`, so later steps can treat them as one company loan.
+ */
+export type HousingLoan = {
+  /** Stable within the document, for cards and warnings. */
+  key: string
+  group?: string
+  /** What it is for: "Putkiremontti 2019". */
+  name: string
+  lender?: string
+  starts: string
+  /** The last due date in the loan's terms. */
+  ends?: string
+  type: HousingLoanType
+  /** The company's whole loan, for information. */
+  total_snt?: number
+  reference: RateReference
+  margin_pcm: number
+  /** How often the reference rate is reset (koronmuutosväli), in months. */
+  reset_months?: number
+  /** The actual reference rate, oldest first, entered by hand. */
+  rates?: LoanRate[]
+  /** Periods with no repayment (lyhennysvapaa), oldest first. */
+  grace?: { from: string; to: string }[]
+  certificates?: LoanCertificate[]
+  charges?: LoanCharge[]
+  events?: LoanEvent[]
+  [key: string]: unknown
+}
+
 export type PropertyDoc = {
   v: number
   rev: number
@@ -180,6 +245,10 @@ export type PropertyDoc = {
    */
   rent_until?: string
   water_settlements?: WaterSettlement[]
+  /** The housing company's loans the object has a share of (ADR-034). */
+  housing_loans?: HousingLoan[]
+  /** The housing company's documents on the Taloyhtiö tab (certificates, meeting minutes, notices). */
+  housing_doc_voucher_ids?: number[]
   [key: string]: unknown
 }
 
@@ -200,6 +269,8 @@ export type DocumentSkip =
   | { kind: 'increase_notice'; lease_key: string; from: string }
   | { kind: 'exception_agreement'; lease_key: string; from: string }
   | { kind: 'water_statement'; key: string }
+  | { kind: 'loan_certificate'; loan_key: string; date: string }
+  | { kind: 'loan_charge'; loan_key: string; from: string }
 
 /**
  * `skip`: a missing document's reminder the owner can end by saying there is none. `lease_key`: the
@@ -692,6 +763,18 @@ export type PropertyDetail = PropertyRow & {
   rent_end_default: RentEnd | null
   /** Deposits to link to the leases: the object's first, then every other on a deposit account. */
   deposit_candidates: DepositCandidate[]
+  housing: HousingDetail
+}
+
+/** Another object's loan to copy from (ADR-034); `same_company` when both pay the same housing company. */
+export type HousingCopySource = { object_id: number; object_name: string; same_company: boolean; loan: HousingLoan }
+
+/** What the Taloyhtiö tab shows besides the stored loans. */
+export type HousingDetail = {
+  /** The tab's documents and every voucher a loan links, posted ones only; a missing id was deleted. */
+  vouchers: LeaseVoucher[]
+  /** Other objects' loans, those paying the same housing company first. */
+  copy_sources: HousingCopySource[]
 }
 
 export type MonthLineKind = 'income' | 'expense' | 'interest'

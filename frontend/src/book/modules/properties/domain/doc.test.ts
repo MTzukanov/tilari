@@ -272,3 +272,92 @@ describe('parse and merge', () => {
     expect(serializeDoc(a)).toBe(serializeDoc(b))
   })
 })
+
+describe('housing-company loans', () => {
+  const loan = (extra: Record<string, unknown> = {}) => ({
+    name: 'Putkiremontti',
+    starts: '2020-01-01',
+    type: 'annuity',
+    reference: 'euribor_12m',
+    margin_pcm: 800,
+    ...extra,
+  })
+
+  it('keys loans, sorts their rows and keeps unknown keys', () => {
+    const doc = normalizePropertyDoc({
+      eras: [],
+      housing_loans: [
+        loan({
+          name: ' Julkisivu ',
+          starts: '2022-05-01',
+          rates: [
+            { from: '2024-03-01', reference_pcm: 3105 },
+            { from: '2023-03-01', reference_pcm: -250, voucher_id: 7 },
+          ],
+          certificates: [
+            { date: '2025-02-01', share_snt: 9_000_00, voucher_id: 3, no_document: true },
+            { date: '2024-02-01', share_snt: 9_800_00, no_document: true },
+          ],
+          charges: [{ from: '2024-01-01', amount_snt: 80_00, rahastoitu: false }, { from: '2023-01-01', amount_snt: 75_00, rahastoitu: true }],
+          grace: [{ from: '2022-05-01', to: '2023-04-30' }],
+          events: [{ date: '2025-06-01', kind: 'note', note: ' Uusi isännöitsijä ' }],
+          future: { x: 1 },
+        }),
+        loan({ key: 'h1', group: 'o12-h3' }),
+      ],
+      housing_doc_voucher_ids: [9, 4, 9],
+    })
+    expect(doc.housing_doc_voucher_ids).toEqual([4, 9])
+    expect(doc.housing_loans).toEqual([
+      { key: 'h1', group: 'o12-h3', name: 'Putkiremontti', starts: '2020-01-01', type: 'annuity', reference: 'euribor_12m', margin_pcm: 800 },
+      {
+        key: 'h2',
+        name: 'Julkisivu',
+        starts: '2022-05-01',
+        type: 'annuity',
+        reference: 'euribor_12m',
+        margin_pcm: 800,
+        rates: [
+          { from: '2023-03-01', reference_pcm: -250, voucher_id: 7 },
+          { from: '2024-03-01', reference_pcm: 3105 },
+        ],
+        grace: [{ from: '2022-05-01', to: '2023-04-30' }],
+        certificates: [
+          { date: '2024-02-01', share_snt: 9_800_00, no_document: true },
+          // A document and "no document" at once: the document wins.
+          { date: '2025-02-01', share_snt: 9_000_00, voucher_id: 3 },
+        ],
+        charges: [
+          { from: '2023-01-01', amount_snt: 75_00, rahastoitu: true },
+          { from: '2024-01-01', amount_snt: 80_00 },
+        ],
+        events: [{ date: '2025-06-01', kind: 'note', note: 'Uusi isännöitsijä' }],
+        future: { x: 1 },
+      },
+    ])
+  })
+
+  it('refuses a loan that does not hold together, naming the field', () => {
+    const save = (extra: Record<string, unknown>) => () => normalizePropertyDoc({ eras: [], housing_loans: [loan(extra)] })
+    expect(save({ name: '  ' })).toThrow('invalid_field:housing_loans[0].name')
+    expect(save({ type: 'balloon' })).toThrow('invalid_field:housing_loans[0].type')
+    expect(save({ reference: 'libor' })).toThrow('invalid_field:housing_loans[0].reference')
+    expect(save({ margin_pcm: -1 })).toThrow('invalid_field:housing_loans[0].margin_pcm')
+    expect(save({ ends: '2019-12-31' })).toThrow('invalid_field:housing_loans[0].ends')
+    expect(save({ group: 'not a group!' })).toThrow('invalid_field:housing_loans[0].group')
+    expect(save({ reset_months: 0 })).toThrow('invalid_field:housing_loans[0].reset_months')
+    expect(save({ rates: [{ from: '2024-03-01', reference_pcm: 1 }, { from: '2024-03-01', reference_pcm: 2 }] })).toThrow(
+      'invalid_field:housing_loans[0].rates[1].from',
+    )
+    expect(save({ grace: [{ from: '2022-01-01', to: '2022-12-31' }, { from: '2022-06-01', to: '2023-05-31' }] })).toThrow(
+      'invalid_field:housing_loans[0].grace[1].from',
+    )
+    expect(save({ certificates: [{ date: '2024-01-01', share_snt: -1 }] })).toThrow('invalid_field:housing_loans[0].certificates[0].share_snt')
+    expect(save({ charges: [{ from: '2024-01-01', amount_snt: 1, rahastoitu: 'yes' }] })).toThrow('invalid_field:housing_loans[0].charges[0].rahastoitu')
+    expect(save({ events: [{ date: '2024-01-01', kind: 'extra_payment' }] })).toThrow('invalid_field:housing_loans[0].events[0].amount_snt')
+    expect(save({ events: [{ date: '2024-01-01', kind: 'refinance' }] })).toThrow('invalid_field:housing_loans[0].events[0].kind')
+    expect(() => normalizePropertyDoc({ eras: [], housing_loans: [loan({ key: 'h1' }), loan({ key: 'h1' })] })).toThrow(
+      'invalid_field:housing_loans[1].key',
+    )
+  })
+})

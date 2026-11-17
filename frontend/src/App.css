@@ -5404,6 +5404,14 @@ tr.tax-total td {
   font-size: 0.85rem;
 }
 
+/* Two or more buttons at a panel title's far side, kept together. */
+.property-panel-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .property-quick {
   display: flex;
   flex-wrap: wrap;
@@ -5870,6 +5878,14 @@ tr.tax-total td {
   gap: 0.4rem;
   min-height: 2.15rem;
   font-size: 0.85rem;
+}
+
+/* A loan row's "Rahastoitu" checkbox: on one line, level with the inputs beside it. */
+.property-lease-grid label.property-loan-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.15rem;
 }
 
 /* Without the side menu's room the fields wrap and the buttons take a line of their own. */

@@ -801,3 +801,29 @@ correction would change the open year's income statement lines. The rental-objec
 - **Suggestions:** a lease suggested from payments is a VAT lease when most of them carry a sales VAT code.
 - **Left out** (owner): letters and invoices with VAT (Holvi invoices), water letters, the 10-year review of
   VAT deducted on property investments (later), VAT in amounts kept from a deposit (a later step).
+
+## ADR-034 Housing-company loans belong to the object, entered by hand (2026-11-17)
+
+**Status:** accepted. Step 4 of the rental objects' Phase 2; the ledger is not changed.
+
+- **A loan is the object's own** (owner, 2026-11-17): `housing_loans[]` on `property/{id}`, with its terms,
+  actual reference rates, grace periods, the object's share on each certificate (isännöitsijäntodistus or the
+  purchase deed), its rahoitusvastike periods and events. There is no housing-company record. A loan can be
+  copied from another object of the same housing company: the copy takes the terms, rates and grace, not the
+  share, the charges or the events, and keeps the original's `group`, so a later step can treat the copies as
+  one company loan (and build a company record from the groups) without moving data.
+- **Same company** is a hint: the copy list puts first the objects that pay one of this object's housing-company
+  partners (repeating amounts on one expense account, as `statementSuspects` reads them). A property manager
+  billing several companies is one partner too, so the list never hides the others.
+- **The Taloyhtiö tab** holds the company's documents (its own links, `housing_doc_voucher_ids`, and every
+  voucher a loan links) and the loans as cards edited in place, like leases and water settlements.
+- **Rahastoitu / tuloutettu** is a checkbox on each rahoitusvastike period, tuloutettu by default (owner): a
+  rahastoitu charge belongs to the shares' acquisition cost in the shareholder's taxation. Later steps warn when
+  the ledger books one as a cost and offer a view that counts it as capital.
+- **Reminders** (computed, ADR-030), while the object is held: a running loan with no share, a share older than
+  12 months, and a certificate or rahoitusvastike without its document (skippable with `no_document`).
+- **Next steps:** the share month by month from the payments to
+  the housing company, anchored to the certificates; the figures that depend on it (debt-free values, the
+  rahoitusvastike split into interest and principal); rate estimates for the future and each loan's projection;
+  then tilari-bank-import reading the vastike invoices into facts on the voucher.
+
