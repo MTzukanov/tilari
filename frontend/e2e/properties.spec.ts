@@ -453,12 +453,32 @@ test.describe('rental object housing-company loans', () => {
     await loans.getByRole('button', { name: '+ Lisää laina' }).click()
     await expect(page).toHaveURL(/#\/property\/10\/housing\/new$/)
     const card = page.locator('.property-loan-card-edit')
+    // An empty form is not saved: each field a loan needs is marked with its reason and listed (rows by
+    // section and number), and the first has the focus. A mark goes as its field is filled.
+    await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(card).toHaveCount(1)
+    const issues = card.locator('.property-loan-issues li')
+    await expect(issues).toHaveCount(10)
+    await expect(issues.first()).toHaveText('Laina: puuttuu')
+    await expect(issues.last()).toHaveText('Viitekorot, rivi 1: Viitekorko %: puuttuu')
+    const name = card.getByLabel('Laina · puuttuu')
+    await expect(name).toHaveAttribute('aria-invalid', 'true')
+    await expect(name).toBeFocused()
+    await name.fill('Putkiremontti')
+    await expect(issues).toHaveCount(9)
+    await expect(card.getByLabel('Laina', { exact: true })).not.toHaveAttribute('aria-invalid')
+    await card.getByRole('button', { name: 'Peru', exact: true }).click()
+    await expect(card).toHaveCount(0)
+
+    // A new loan has a row for its share, its rahoitusvastike and its rate.
+    await loans.getByRole('button', { name: '+ Lisää laina' }).click()
     await card.getByLabel('Laina', { exact: true }).fill('Putkiremontti')
     await card.getByLabel('Nostettu', { exact: true }).fill('2020-01-01')
+    await card.getByLabel('Viimeinen eräpäivä').fill('2044-12-31')
     await card.getByLabel('Marginaali %').fill('0,8')
     const rows = card.locator('.property-lease-increase')
+    await expect(rows).toHaveCount(3)
 
-    await card.getByRole('button', { name: '+ Lisää rivi' }).nth(0).click()
     const certificate = rows.nth(0)
     await certificate.getByLabel('Päivä', { exact: true }).fill('2026-03-01')
     await certificate.getByLabel('Velkaosuus').fill('12000')
@@ -467,14 +487,12 @@ test.describe('rental object housing-company loans', () => {
     await (await chooser).setFiles({ name: 'todistus.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 todistus') })
     await expect(certificate.getByRole('textbox', { name: 'Isännöitsijäntodistus' })).toHaveValue(/Isännöitsijäntodistus/)
 
-    await card.getByRole('button', { name: '+ Lisää rivi' }).nth(1).click()
     const charge = rows.nth(1)
     await charge.getByLabel('Alkaen').fill('2026-01-01')
     await charge.getByLabel('Rahoitusvastike €/kk').fill('80')
     await charge.getByRole('checkbox', { name: 'Rahastoitu' }).check()
     await charge.getByRole('checkbox', { name: 'Ei asiakirjaa' }).check()
 
-    await card.getByRole('button', { name: '+ Lisää rivi' }).nth(2).click()
     const rate = rows.nth(2)
     await rate.getByLabel('Alkaen').fill('2026-03-01')
     await rate.getByLabel('Viitekorko %').fill('2,1')
@@ -505,10 +523,25 @@ test.describe('rental object housing-company loans', () => {
     await expect(card.getByLabel('Laina', { exact: true })).toHaveValue('Putkiremontti')
     await expect(card.getByLabel('Marginaali %')).toHaveValue('0,8')
     await expect(card.getByText('Ehdot kopioitu toisen kohteen lainasta.', { exact: false })).toBeVisible()
-    await expect(card.locator('.property-lease-increase')).toHaveCount(1)
+    // The copied rate, and empty rows for the object's own share and rahoitusvastike, which a save asks for.
+    await expect(card.locator('.property-lease-increase')).toHaveCount(3)
     await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
-    await expect(loans.locator('.property-loan-card')).toContainText('Velkaosuutta ei ole annettu.')
-    // The missing share marks the tab.
+    await expect(card.locator('.property-loan-issues li')).toHaveText([
+      'Velkaosuudet, rivi 1: Päivä: puuttuu',
+      'Velkaosuudet, rivi 1: Velkaosuus: puuttuu',
+      'Rahoitusvastikkeet, rivi 1: Alkaen: puuttuu',
+      'Rahoitusvastikkeet, rivi 1: Rahoitusvastike €/kk: puuttuu',
+    ])
+    const copyRows = card.locator('.property-lease-increase')
+    await copyRows.nth(0).getByLabel('Päivä · puuttuu').fill('2025-01-01')
+    await copyRows.nth(0).getByLabel('Velkaosuus · puuttuu').fill('5000')
+    await copyRows.nth(1).getByLabel('Alkaen · puuttuu').fill('2025-01-01')
+    await copyRows.nth(1).getByLabel('Rahoitusvastike €/kk · puuttuu').fill('40')
+    await expect(card.locator('.property-loan-issues li')).toHaveCount(0)
+    await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(card).toHaveCount(0)
+    await expect(loans.locator('.property-loan-card')).toContainText(/Velkaosuus 5\s000,00\s€ \(1\.1\.2025\)/)
+    // The share's and the charge's documents are missing: they mark the tab.
     await expect(page.getByRole('tab', { name: /^Taloyhtiö/ }).locator('.tabs-mark-crit')).toHaveCount(1)
 
     await page.setViewportSize({ width: 360, height: 740 })

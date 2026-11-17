@@ -30,7 +30,7 @@ import {
   suggestDeposit,
 } from './deposits'
 import { listNoteVouchers } from './documents'
-import { housingVoucherIds, loanWarnings } from './housingLoan'
+import { housingVoucherIds, loanDay, loanWarnings } from './housingLoan'
 import { isParkingKind, kindFromName } from './kind'
 import {
   attachVat,
@@ -238,6 +238,8 @@ function byDate(a: { date: string; id: number }, b: { date: string; id: number }
 /** Tenant names, voucher labels and the book's lease suggestions for the objects on the page, loaded once. */
 type LeaseContext = {
   asOf: string
+  /** The book's day: the loans' rows count up to the later of it and the as-of date (ADR-034). */
+  today: string
   /** The first fiscal year's start: rent accounts count from it at the earliest. */
   booksStart: string
   partners: Map<number, PartnerInfo>
@@ -277,7 +279,7 @@ function incomeOf(c: Computed): SuggestIncome[] {
     .map((r) => ({ date: r.date, partner_id: r.partner_id, amount_snt: r.net_snt, text: r.text, id: r.id, voucher_id: r.voucher_id, vat_code: r.vat_code ?? 0 }))
 }
 
-function leaseContext(db: SqliteDb, loaded: Loaded, computed: Computed[], asOf: string): LeaseContext {
+function leaseContext(db: SqliteDb, loaded: Loaded, computed: Computed[], asOf: string, today: string): LeaseContext {
   const leases: Lease[] = computed.flatMap((c) => c.parsed.doc.leases ?? [])
   const docIds = computed.flatMap((c) => c.parsed.doc.doc_voucher_ids ?? [])
   const linked = depositIds(leases)
@@ -305,7 +307,7 @@ function leaseContext(db: SqliteDb, loaded: Loaded, computed: Computed[], asOf: 
     const found = suggestLeases({ docs, income: incomes.get(c.centre.id) ?? [], names, centreName: c.centre.name, parkingObject, asOf })
     suggestions.set(c.centre.id, found.filter((s) => !representedBy(stored, s.lease)))
   }
-  return { asOf, booksStart: getPeriods(db)[0]?.starts ?? asOf, partners, refs, suggestions, depositLines, deductions, pool: depositPool(db, loaded) }
+  return { asOf, today, booksStart: getPeriods(db)[0]?.starts ?? asOf, partners, refs, suggestions, depositLines, deductions, pool: depositPool(db, loaded) }
 }
 
 /** A stored lease's deposit on the as-of date; null when it links none. */
@@ -453,7 +455,7 @@ function remindersOf(c: Computed, ctx: LeaseContext): Warning[] {
     tenant: (lease) => tenantName(ctx)(lease) ?? '',
     pending,
   })
-  return [...leaseReminders, ...loanWarnings(c.parsed.doc.housing_loans ?? [], ctx.asOf, held)]
+  return [...leaseReminders, ...loanWarnings(c.parsed.doc.housing_loans ?? [], loanDay(ctx.asOf, ctx.today), held)]
 }
 
 function resolveAsOf(db: SqliteDb, today: string, asOf?: string | null): { asOf: string; dataThrough: string | null } {
@@ -466,7 +468,7 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
   const { asOf, dataThrough } = resolveAsOf(db, opts.today, opts.asOf)
   const centres = loaded.centres.filter((c) => !docFor(loaded, c.id).doc.excluded)
   const computed = computeObjects(db, loaded, centres, asOf)
-  const ctx = leaseContext(db, loaded, computed, asOf)
+  const ctx = leaseContext(db, loaded, computed, asOf, opts.today)
   const rows = computed.map((c) => toRow(c, ctx))
 
   const holding = computed.filter((c) => c.result.status === 'active' || c.result.status === 'partly_sold')
@@ -536,7 +538,7 @@ export function computeDetail(
   if (!centre) throw new BookError('not_found', 404)
   const { asOf, dataThrough } = resolveAsOf(db, opts.today, opts.asOf)
   const [computed] = computeObjects(db, loaded, [centre], asOf, opts.targetBp)
-  const ctx = leaseContext(db, loaded, [computed], asOf)
+  const ctx = leaseContext(db, loaded, [computed], asOf, opts.today)
   const { water, latest } = waterDetail(db, computed, ctx)
   const suggestions = ctx.suggestions.get(id) ?? []
   const sources = leaseSources(db, computed, suggestions, ctx)

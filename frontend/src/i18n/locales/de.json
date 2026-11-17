@@ -1681,9 +1681,23 @@
       "noCapital": "Kein sonstiges investiertes Kapital."
     },
     "housing": {
-      "check": "Bitte prüfen: {field}.",
-      "checkRow": "{field} ({section}, Zeile {n})",
-      "sameDay": "{section}: Zwei Zeilen haben dasselbe Datum.",
+      "issuesLead": "Das Darlehen wurde nicht gespeichert. Markierte Felder korrigieren:",
+      "rowField": "{section}, Zeile {n}: {field}",
+      "issue": {
+        "required": "fehlt",
+        "date": "vollständiges Datum angeben",
+        "amount": "Betrag in Euro angeben, z. B. 1 250,00",
+        "rate": "Prozentsatz angeben, z. B. 2,125",
+        "months": "1-120 Monate angeben",
+        "endsBeforeStarts": "vor dem Auszahlungstag",
+        "toBeforeFrom": "vor dem Anfangsdatum",
+        "sameDay": "gleiches Datum wie Zeile {n}",
+        "extraAmount": "eine Sondertilgung hat einen Betrag",
+        "atLeastOne": "mindestens eine Zeile hinzufügen",
+        "beforeStarts": "vor dem Auszahlungstag",
+        "afterEnds": "nach der letzten Fälligkeit",
+        "shareOverTotal": "mehr als das Darlehen der Gesellschaft gesamt"
+      },
       "field": {
         "name": "Darlehen",
         "lender": "Darlehensgeber",
@@ -1707,7 +1721,8 @@
         "document": "Dokument",
         "eventKind": "Ereignis",
         "amount": "Betrag",
-        "note": "Anmerkung"
+        "note": "Anmerkung",
+        "fixedRate": "Festzins %"
       },
       "namePlaceholder": "z. B. Rohrsanierung 2019",
       "type": {
@@ -1730,11 +1745,12 @@
         "note": "Anmerkung"
       },
       "certificates": "Darlehensanteile",
-      "certificatesHint": "Der Darlehensanteil laut Hausverwalterbescheinigung oder Kaufvertrag. Der Anteil wird von diesen aus weiterverfolgt.",
+      "certificatesHint": "Mindestens eine: der Darlehensanteil laut Hausverwalterbescheinigung oder Kaufvertrag. Der Anteil wird von diesen aus weiterverfolgt.",
       "charges": "Finanzierungsentgelte",
-      "chargesHint": "Das Finanzierungsentgelt dieses Darlehens pro Monat laut Rechnung oder Mitteilung der Gesellschaft. Kapitalisiert: Die Gesellschaft führt das Entgelt ihrem Eigenkapital zu, statt es als Ertrag zu buchen (selten).",
+      "chargesHint": "Mindestens eine: das Finanzierungsentgelt dieses Darlehens pro Monat laut Rechnung oder Mitteilung der Gesellschaft. Kapitalisiert: Die Gesellschaft führt das Entgelt ihrem Eigenkapital zu, statt es als Ertrag zu buchen (selten).",
       "rates": "Referenzzinsen",
-      "ratesHint": "Der tatsächliche Referenzzins ab dem Anpassungstag. Zins gesamt = Referenzzins + Marge.",
+      "ratesHint": "Mindestens eine: der tatsächliche Referenzzins ab dem Anpassungstag. Zins gesamt = Referenzzins + Marge.",
+      "ratesHintFixed": "Mindestens eine: der Festzins ab dem Datum.",
       "grace": "Tilgungsfreie Zeiten",
       "events": "Ereignisse",
       "addRow": "+ Zeile hinzufügen",
@@ -1767,6 +1783,8 @@
       "chargeNone": "Kein Finanzierungsentgelt angegeben.",
       "rateNow": "Zins {reference} {rate} + Marge {margin} = {total} (ab {date})",
       "rateNone": "Zins {reference} + Marge {margin}; kein tatsächlicher Referenzzins angegeben.",
+      "rateNowFixed": "Festzins {rate} (ab {date})",
+      "rateNoneFixed": "Kein Festzins angegeben.",
       "term": "Laufzeit {period}",
       "termOpen": "Ausgezahlt {date}",
       "reset": "Zinsanpassung alle {months} Monate",

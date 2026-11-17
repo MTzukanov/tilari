@@ -1681,9 +1681,23 @@
       "noCapital": "Ei muuta sijoitettua pääomaa."
     },
     "housing": {
-      "check": "Tarkista: {field}.",
-      "checkRow": "{field} ({section}, rivi {n})",
-      "sameDay": "{section}: kahdella rivillä on sama päivä.",
+      "issuesLead": "Lainaa ei tallennettu. Korjaa merkityt kentät:",
+      "rowField": "{section}, rivi {n}: {field}",
+      "issue": {
+        "required": "puuttuu",
+        "date": "anna koko päivämäärä",
+        "amount": "anna summa euroina, esim. 1 250,00",
+        "rate": "anna prosentti, esim. 2,125",
+        "months": "anna kuukaudet 1-120",
+        "endsBeforeStarts": "ennen nostopäivää",
+        "toBeforeFrom": "ennen alkupäivää",
+        "sameDay": "sama päivä kuin rivillä {n}",
+        "extraAmount": "ylimääräisellä lyhennyksellä on summa",
+        "atLeastOne": "lisää vähintään yksi rivi",
+        "beforeStarts": "ennen nostopäivää",
+        "afterEnds": "viimeisen eräpäivän jälkeen",
+        "shareOverTotal": "suurempi kuin taloyhtiön laina yhteensä"
+      },
       "field": {
         "name": "Laina",
         "lender": "Lainanantaja",
@@ -1707,7 +1721,8 @@
         "document": "Asiakirja",
         "eventKind": "Tapahtuma",
         "amount": "Summa",
-        "note": "Huomautus"
+        "note": "Huomautus",
+        "fixedRate": "Kiinteä korko %"
       },
       "namePlaceholder": "esim. Putkiremontti 2019",
       "type": {
@@ -1730,11 +1745,12 @@
         "note": "Huomautus"
       },
       "certificates": "Velkaosuudet",
-      "certificatesHint": "Velkaosuus isännöitsijäntodistuksesta tai kauppakirjasta. Osuutta seurataan näistä eteenpäin.",
+      "certificatesHint": "Vähintään yksi: velkaosuus isännöitsijäntodistuksesta tai kauppakirjasta. Osuutta seurataan näistä eteenpäin.",
       "charges": "Rahoitusvastikkeet",
-      "chargesHint": "Tämän lainan rahoitusvastike kuukaudessa taloyhtiön laskun tai ilmoituksen mukaan. Rahastoitu: taloyhtiö rahastoi vastikkeen eikä tulouta sitä (harvinaista).",
+      "chargesHint": "Vähintään yksi: tämän lainan rahoitusvastike kuukaudessa taloyhtiön laskun tai ilmoituksen mukaan. Rahastoitu: taloyhtiö rahastoi vastikkeen eikä tulouta sitä (harvinaista).",
       "rates": "Viitekorot",
-      "ratesHint": "Toteutunut viitekorko koronmuutospäivästä alkaen. Korko yhteensä = viitekorko + marginaali.",
+      "ratesHint": "Vähintään yksi: toteutunut viitekorko koronmuutospäivästä alkaen. Korko yhteensä = viitekorko + marginaali.",
+      "ratesHintFixed": "Vähintään yksi: kiinteä korko päivästä alkaen.",
       "grace": "Lyhennysvapaat",
       "events": "Tapahtumat",
       "addRow": "+ Lisää rivi",
@@ -1767,6 +1783,8 @@
       "chargeNone": "Rahoitusvastiketta ei ole annettu.",
       "rateNow": "Korko {reference} {rate} + marginaali {margin} = {total} ({date} alkaen)",
       "rateNone": "Korko {reference} + marginaali {margin}; toteutunutta viitekorkoa ei ole annettu.",
+      "rateNowFixed": "Kiinteä korko {rate} ({date} alkaen)",
+      "rateNoneFixed": "Kiinteää korkoa ei ole annettu.",
       "term": "Laina-aika {period}",
       "termOpen": "Nostettu {date}",
       "reset": "korko muuttuu {months} kk välein",

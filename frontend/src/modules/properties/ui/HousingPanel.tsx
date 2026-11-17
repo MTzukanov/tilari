@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { chargeAt, latestCertificate, paidOffOn, rateAt } from '../../../book/modules/properties/domain/housingLoan'
+import { loanNow, paidOffOn } from '../../../book/modules/properties/domain/housingLoan'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { DocLine, DocLines } from '../../../shared/DocRows'
@@ -127,17 +127,17 @@ function HousingDocuments({ d, links, onOpenVoucher }: { d: PropertyDetail; link
   )
 }
 
-/** A loan as the tab shows it on the as-of date: the share, the rahoitusvastike, the rate, the term; every row folded below. */
+/** A loan as the tab shows it on `on` (`loanNow`): the share, the rahoitusvastike, the rate, the term; every row folded below. */
 function LoanCard({
   loan,
-  asOf,
+  on,
   vouchers,
   held,
   onEdit,
   onOpenVoucher,
 }: {
   loan: HousingLoan
-  asOf: string
+  on: string
   vouchers: Map<number, LeaseVoucher>
   held: boolean
   onEdit?: () => void
@@ -145,11 +145,10 @@ function LoanCard({
 }) {
   const { t } = useI18n()
   const voucher = (id: number | undefined) => (id != null ? (vouchers.get(id) ?? null) : null)
-  const certificate = latestCertificate(loan, asOf)
-  const charge = chargeAt(loan, asOf)
-  const rate = rateAt(loan, asOf)
+  const { certificate, charge, rate } = loanNow(loan, on)
   const paidOff = paidOffOn(loan)
   const reference = t(`properties.housing.reference.${loan.reference}`)
+  const fixed = loan.reference === 'fixed'
   const fold = (title: string, rows: ReactNode[]) =>
     rows.length ? (
       <details className="property-sources">
@@ -193,15 +192,19 @@ function LoanCard({
         )}
       </p>
       <p className="property-lease-terms">
-        {rate
-          ? t('properties.housing.rateNow', {
-              reference,
-              rate: formatPcm(rate.reference_pcm),
-              margin: formatPcm(loan.margin_pcm),
-              total: formatPcm(rate.reference_pcm + loan.margin_pcm),
-              date: formatDate(rate.from),
-            })
-          : t('properties.housing.rateNone', { reference, margin: formatPcm(loan.margin_pcm) })}
+        {fixed
+          ? rate
+            ? t('properties.housing.rateNowFixed', { rate: formatPcm(rate.reference_pcm), date: formatDate(rate.from) })
+            : t('properties.housing.rateNoneFixed')
+          : rate
+            ? t('properties.housing.rateNow', {
+                reference,
+                rate: formatPcm(rate.reference_pcm),
+                margin: formatPcm(loan.margin_pcm),
+                total: formatPcm(rate.reference_pcm + loan.margin_pcm),
+                date: formatDate(rate.from),
+              })
+            : t('properties.housing.rateNone', { reference, margin: formatPcm(loan.margin_pcm) })}
       </p>
       <p className="property-lease-terms muted">
         {[
@@ -239,7 +242,11 @@ function LoanCard({
         [...(loan.rates ?? [])].reverse().map((r) => (
           <li key={r.from}>
             <span>{t('properties.housing.fromDate', { date: formatDate(r.from) })}</span>
-            <span>{t('properties.housing.rateRow', { rate: formatPcm(r.reference_pcm), total: formatPcm(r.reference_pcm + loan.margin_pcm) })}</span>
+            <span>
+              {fixed
+                ? formatPcm(r.reference_pcm)
+                : t('properties.housing.rateRow', { rate: formatPcm(r.reference_pcm), total: formatPcm(r.reference_pcm + loan.margin_pcm) })}
+            </span>
             {r.voucher_id != null ? <DocSlot voucher={voucher(r.voucher_id)} onOpen={onOpenVoucher} /> : null}
           </li>
         )),
@@ -266,6 +273,7 @@ function LoanCard({
  */
 export function HousingPanel({
   d,
+  on,
   held,
   editing = null,
   form = null,
@@ -276,6 +284,8 @@ export function HousingPanel({
   onOpenVoucher,
 }: {
   d: PropertyDetail
+  /** The day the loans are read on: the later of the as-of date and the book's day (`loanDay`). */
+  on: string
   /** Not sold: only then is a missing document flagged. */
   held: boolean
   /** The loan card in edit: a loan key, 'new', or none. */
@@ -345,7 +355,7 @@ export function HousingPanel({
             <LoanCard
               key={loan.key}
               loan={loan}
-              asOf={d.as_of}
+              on={on}
               vouchers={vouchers}
               held={held}
               onEdit={onEditLoan ? () => onEditLoan(loan.key) : undefined}

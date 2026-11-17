@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chargeAt, copyGroup, housingVoucherIds, latestCertificate, loanRunning, loanWarnings, rateAt, rowAt } from './housingLoan'
+import { chargeAt, copyGroup, housingVoucherIds, latestCertificate, loanDay, loanNow, loanRunning, loanWarnings, rateAt, rowAt } from './housingLoan'
 import { skipDocument } from './reminders'
 import type { HousingLoan, PropertyDoc } from './types'
 
@@ -28,6 +28,20 @@ describe('housing-company loans: what a loan holds on a day', () => {
     expect(latestCertificate(l, '2025-01-31')?.share_snt).toBe(9_800_00)
     expect(latestCertificate(l, '2025-02-01')?.share_snt).toBe(9_000_00)
     expect(latestCertificate(l, '2024-01-01')).toBeNull()
+  })
+
+  it('is read on the later of the as-of date and the book\'s day; the card falls back to the newest share and the next rows', () => {
+    // The rows are inputs: one dated after the last booked month counts by the book's day.
+    expect(loanDay('2026-10-31', '2026-11-17')).toBe('2026-11-17')
+    expect(loanDay('2026-10-31', '2026-10-15')).toBe('2026-10-31')
+    const l = loan({
+      certificates: [{ date: '2026-11-17', share_snt: 3_000_00 }],
+      charges: [{ from: '2026-12-01', amount_snt: 30_00 }],
+      rates: [{ from: '2026-11-17', reference_pcm: 3300 }],
+    })
+    expect(loanNow(l, '2026-11-17')).toEqual({ certificate: l.certificates![0], charge: l.charges![0], rate: l.rates![0] })
+    expect(loanNow(l, '2026-10-31')).toEqual({ certificate: l.certificates![0], charge: l.charges![0], rate: l.rates![0] })
+    expect(loanNow(loan(), '2026-11-17')).toEqual({ certificate: null, charge: null, rate: null })
   })
 
   it('runs from its start to its last due date, unless the share is paid off first', () => {

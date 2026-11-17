@@ -32,6 +32,26 @@ export function rateAt(loan: HousingLoan, date: string): LoanRate | null {
   return rowAt(loan.rates, date)
 }
 
+/**
+ * The day a loan's rows are read on: the later of the page's as-of date and the book's day. The rows
+ * are the owner's inputs, not bookings, so one dated after the last booked month still counts.
+ */
+export function loanDay(asOf: string, today: string): string {
+  return today > asOf ? today : asOf
+}
+
+/**
+ * What a loan's card shows on `on`: the newest share by then (else its newest), and the
+ * rahoitusvastike and rate in force (else the first one to come).
+ */
+export function loanNow(loan: HousingLoan, on: string): { certificate: LoanCertificate | null; charge: LoanCharge | null; rate: LoanRate | null } {
+  return {
+    certificate: latestCertificate(loan, on) ?? loan.certificates?.at(-1) ?? null,
+    charge: chargeAt(loan, on) ?? loan.charges?.[0] ?? null,
+    rate: rateAt(loan, on) ?? loan.rates?.[0] ?? null,
+  }
+}
+
 /** The day the object's share was paid off (kertasuoritus), if it was. */
 export function paidOffOn(loan: HousingLoan): string | null {
   return (loan.events ?? []).find((e) => e.kind === 'paid_off')?.date ?? null
@@ -55,18 +75,19 @@ export function housingVoucherIds(loans: HousingLoan[]): number[] {
 }
 
 /**
- * What the loans ask of the owner while the object is held: a running loan with no share, a share
- * older than `CERTIFICATE_STALE_MONTHS`, and documents the rows have a place for but no voucher in
- * (a certificate's, a rahoitusvastike's notice), each skippable (ADR-030).
+ * What the loans ask of the owner while the object is held, on `on` (the later of the as-of date and
+ * the book's day): a running loan with no share, a newest share older than
+ * `CERTIFICATE_STALE_MONTHS`, and documents the rows have a place for but no voucher in (a
+ * certificate's, a rahoitusvastike's notice), each skippable (ADR-030).
  */
-export function loanWarnings(loans: HousingLoan[], asOf: string, held: boolean): Warning[] {
+export function loanWarnings(loans: HousingLoan[], on: string, held: boolean): Warning[] {
   if (!held) return []
   const out: Warning[] = []
   for (const loan of loans) {
-    if (loanRunning(loan, asOf)) {
-      const latest = latestCertificate(loan, asOf)
+    if (loanRunning(loan, on)) {
+      const latest = loan.certificates?.at(-1)
       if (!latest) out.push({ code: 'loan_share_missing', params: { loan: loan.name } })
-      else if (latest.date < monthsBefore(asOf, CERTIFICATE_STALE_MONTHS)) {
+      else if (latest.date < monthsBefore(on, CERTIFICATE_STALE_MONTHS)) {
         out.push({ code: 'loan_certificate_stale', params: { loan: loan.name, certificate_date: latest.date } })
       }
     }

@@ -1681,9 +1681,23 @@
       "noCapital": "Inget annat investerat kapital."
     },
     "housing": {
-      "check": "Kontrollera: {field}.",
-      "checkRow": "{field} ({section}, rad {n})",
-      "sameDay": "{section}: två rader har samma datum.",
+      "issuesLead": "Lånet sparades inte. Rätta de markerade fälten:",
+      "rowField": "{section}, rad {n}: {field}",
+      "issue": {
+        "required": "saknas",
+        "date": "ange ett fullständigt datum",
+        "amount": "ange ett belopp i euro, t.ex. 1 250,00",
+        "rate": "ange en procentsats, t.ex. 2,125",
+        "months": "ange 1-120 månader",
+        "endsBeforeStarts": "före lyftdagen",
+        "toBeforeFrom": "före startdagen",
+        "sameDay": "samma datum som rad {n}",
+        "extraAmount": "en extra amortering har ett belopp",
+        "atLeastOne": "lägg till minst en rad",
+        "beforeStarts": "före lyftdagen",
+        "afterEnds": "efter sista förfallodagen",
+        "shareOverTotal": "större än bolagets lån totalt"
+      },
       "field": {
         "name": "Lån",
         "lender": "Långivare",
@@ -1707,7 +1721,8 @@
         "document": "Dokument",
         "eventKind": "Händelse",
         "amount": "Belopp",
-        "note": "Anmärkning"
+        "note": "Anmärkning",
+        "fixedRate": "Fast ränta %"
       },
       "namePlaceholder": "t.ex. Rörrenovering 2019",
       "type": {
@@ -1730,11 +1745,12 @@
         "note": "Anmärkning"
       },
       "certificates": "Låneandelar",
-      "certificatesHint": "Låneandelen enligt disponentintyget eller köpebrevet. Andelen följs vidare från dessa.",
+      "certificatesHint": "Minst en: låneandelen enligt disponentintyget eller köpebrevet. Andelen följs vidare från dessa.",
       "charges": "Finansieringsvederlag",
-      "chargesHint": "Detta låns finansieringsvederlag per månad enligt bolagets faktura eller meddelande. Fonderat: bolaget fonderar vederlaget i stället för att intäktsföra det (sällsynt).",
+      "chargesHint": "Minst en: detta låns finansieringsvederlag per månad enligt bolagets faktura eller meddelande. Fonderat: bolaget fonderar vederlaget i stället för att intäktsföra det (sällsynt).",
       "rates": "Referensräntor",
-      "ratesHint": "Den faktiska referensräntan från räntejusteringsdagen. Ränta totalt = referensränta + marginal.",
+      "ratesHint": "Minst en: den faktiska referensräntan från räntejusteringsdagen. Ränta totalt = referensränta + marginal.",
+      "ratesHintFixed": "Minst en: den fasta räntan från datumet.",
       "grace": "Amorteringsfria perioder",
       "events": "Händelser",
       "addRow": "+ Lägg till rad",
@@ -1767,6 +1783,8 @@
       "chargeNone": "Inget finansieringsvederlag angivet.",
       "rateNow": "Ränta {reference} {rate} + marginal {margin} = {total} (från {date})",
       "rateNone": "Ränta {reference} + marginal {margin}; ingen faktisk referensränta angiven.",
+      "rateNowFixed": "Fast ränta {rate} (från {date})",
+      "rateNoneFixed": "Ingen fast ränta angiven.",
       "term": "Lånetid {period}",
       "termOpen": "Lyft {date}",
       "reset": "räntan justeras var {months}:e månad",

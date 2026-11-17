@@ -24,6 +24,21 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 - Reminders while held: `loan_share_missing`, `loan_certificate_stale` (12 months), `loan_certificate_missing` and
   `loan_charge_notice_missing` (skippable, ADR-030 kinds `loan_certificate` / `loan_charge`).
 - A certificate uploaded on a card is dated today, like the other documents Tilari writes; its own date is the row's.
+- Fixed, owner's review: the forms edited in place (lease, water and loan cards, Talous sections, rent days) had
+  the browser's own inputs since #75 moved them out of `.property-edit`, the container the shared input style
+  (`App.css`, with `.editor`) was scoped to. The style now lists `.property-lease-card-edit`, `.property-section`
+  and `.property-rent-dates-edit` too; a `.property-form-row`'s unlabelled inputs share the line instead of filling it.
+- Owner: an empty loan form saved with only "Tarkista: Laina." A refused save now marks every field to fix
+  (`field-invalid` + `aria-invalid`, the reason in its label: "Nostettu · puuttuu"), lists them above the buttons and
+  focuses the first; the marks follow the form until it saves (`buildLoan` returns `LoanIssue[]`). The lease and water
+  cards still show one line (`saveErrorText`): the same treatment there is a later step if wanted.
+- Owner's second look: the card said "no share" with a share entered. The page's as-of date follows the booked
+  months (end of the last whole one), and the rows were dated after it; the card and the reminders now read loans
+  on `loanDay(asOf, today)`, the later of the two, and fall back to the newest share and the next rows (`loanNow`).
+- Owner: more fields are required - what the share's monthly path and the forecast need (ADR-034 "What a loan
+  needs"). A new loan opens with one row each for its share, rahoitusvastike and rate; a copy brings its rate and
+  asks for the object's own share and rahoitusvastike. A fixed rate hides margin and reset interval.
+- English: lyhennysvapaa is "interest-only period", not "repayment holiday" (owner).
 
 ## 2026-11-15 - Test book with rental-object investments (`testdb/tilari-properties.kitsas`)
 

@@ -820,8 +820,15 @@ correction would change the open year's income statement lines. The rental-objec
 - **Rahastoitu / tuloutettu** is a checkbox on each rahoitusvastike period, tuloutettu by default (owner): a
   rahastoitu charge belongs to the shares' acquisition cost in the shareholder's taxation. Later steps warn when
   the ledger books one as a cost and offer a view that counts it as capital.
-- **Reminders** (computed, ADR-030), while the object is held: a running loan with no share, a share older than
-  12 months, and a certificate or rahoitusvastike without its document (skippable with `no_document`).
+- **What a loan needs** (owner, 2026-11-17): the form saves a loan only with its name, drawdown and last due date,
+  its margin and reset interval (not for a fixed rate, which is all in its rate rows), and at least one share, one
+  rahoitusvastike and one rate: what following the share and a forecast need. The company's whole loan is optional
+  (nothing is computed from it), but no share may exceed it, nor come before the drawdown. The stored format stays
+  lenient, so data written elsewhere still reads.
+- **The day a loan is read on** is the later of the page's as-of date and the book's day: the rows are inputs, not
+  bookings, so a share or rate dated after the last booked month counts at once.
+- **Reminders** (computed, ADR-030), while the object is held: a running loan with no share, a newest share older
+  than 12 months, and a certificate or rahoitusvastike without its document (skippable with `no_document`).
 - **Next steps:** the share month by month from the payments to
   the housing company, anchored to the certificates; the figures that depend on it (debt-free values, the
   rahoitusvastike split into interest and principal); rate estimates for the future and each loan's projection;

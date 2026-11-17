@@ -1115,6 +1115,12 @@ describe('rental objects: housing-company loans', () => {
     expect(computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.bundle)?.warnings.map((w) => w.code)).toEqual(
       expect.arrayContaining(['loan_share_missing', 'loan_charge_notice_missing']),
     )
+    // A share dated after the as-of date (the last booked month) but by the book's day is there.
+    const detail = computeDetail(db, CC.bundle, { today: TODAY })
+    expect(detail.as_of < '2026-10-05').toBe(true)
+    const certified = [{ ...loans[0], certificates: [{ date: '2026-10-05', share_snt: 3_000 * E, no_document: true }] }]
+    saveProperty(db, CC.bundle, { ...detail.doc, housing_loans: certified }, 'now')
+    expect(codes(CC.bundle)).toEqual(['loan_charge_notice_missing'])
   })
 
   it('copy sources: the other objects\' loans, those paying the same housing company first', async () => {

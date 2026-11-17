@@ -40,6 +40,11 @@ export function voucherDoc(v: LeaseVoucher): DocCandidate {
 }
 const eurText = (snt: number | undefined) => (snt != null ? formatEurInput(snt) : '')
 
+export const emptyCertificate = (): CertificateDraft => ({ date: '', share: '', voucherId: '', noDocument: false })
+export const emptyCharge = (): ChargeDraft => ({ from: '', amount: '', rahastoitu: false, voucherId: '', noDocument: false })
+export const emptyRate = (): RateDraft => ({ from: '', rate: '', voucherId: '' })
+
+/** A new loan: an empty row in each section a loan needs one of (share, rahoitusvastike, rate). */
 export function newLoanDraft(): LoanDraft {
   return {
     base: null,
@@ -53,10 +58,10 @@ export function newLoanDraft(): LoanDraft {
     reference: 'euribor_12m',
     margin: '',
     resetMonths: '12',
-    rates: [],
+    rates: [emptyRate()],
     grace: [],
-    certificates: [],
-    charges: [],
+    certificates: [emptyCertificate()],
+    charges: [emptyCharge()],
     events: [],
   }
 }
@@ -110,7 +115,7 @@ export function copiedLoanDraft(source: HousingCopySource): LoanDraft {
   return {
     ...newLoanDraft(),
     ...copied,
-    rates: copied.rates.map((r) => ({ ...r, voucherId: '' })),
+    rates: copied.rates.length ? copied.rates.map((r) => ({ ...r, voucherId: '' })) : [emptyRate()],
     group: copyGroup(source.loan, source.object_id),
   }
 }
@@ -122,23 +127,174 @@ const amountOf = (text: string) => (text.trim() ? Math.abs(parseEurInput(text)) 
 const okDate = (text: string) => /^\d{4}-\d{2}-\d{2}$/.test(text)
 
 /**
- * The stored loan, or a message naming the first field to check: a section's rows by their
- * number. Rows left empty are dropped; a row is kept on the base's unknown keys.
+ * A field the loan cannot be saved with: `field` names it on the form (`name`, `certificates.0.date`),
+ * `label` names it for a reader (with its section and row), `message` says what to fix.
  */
-export function buildLoan(t: T, d: LoanDraft): HousingLoan | string {
-  const check = (field: string, section?: string, n?: number) =>
-    t('properties.housing.check', {
-      field: section ? t('properties.housing.checkRow', { field: t(field), section: t(section), n: n ?? 1 }) : t(field),
+export type LoanIssue = { field: string; label: string; message: string }
+
+/** Where a row's field is: its section's title and its number, for the issue's label. */
+type RowAt = { section: string; n: number }
+
+/**
+ * The stored loan, or every field to fix, in the form's order. Rows left empty are dropped; the loan
+ * keeps the base's unknown keys.
+ */
+export function buildLoan(t: T, d: LoanDraft): HousingLoan | LoanIssue[] {
+  const issues: LoanIssue[] = []
+  const issue = (field: string, label: string, message: string, at?: RowAt, vars?: Record<string, string | number>) =>
+    issues.push({
+      field,
+      label: at ? t('properties.housing.rowField', { section: t(at.section), n: at.n, field: t(label) }) : t(label),
+      message: t(message, vars),
     })
-  if (!d.name.trim()) return check('properties.housing.field.name')
-  if (!okDate(d.starts)) return check('properties.housing.field.starts')
-  if (d.ends && (!okDate(d.ends) || d.ends < d.starts)) return check('properties.housing.field.ends')
-  const margin = parsePcmInput(d.margin)
-  if (margin != null && (Number.isNaN(margin) || margin < 0)) return check('properties.housing.field.margin')
+  const has = (field: string) => issues.some((i) => i.field === field)
+  /** A date the row needs: missing, or not a whole date. */
+  const needDate = (field: string, label: string, value: string, at?: RowAt) => {
+    if (!value) issue(field, label, 'properties.housing.issue.required', at)
+    else if (!okDate(value)) issue(field, label, 'properties.housing.issue.date', at)
+  }
+  /** An amount the row needs, as cents; null when missing or unreadable (the issue is noted). */
+  const needAmount = (field: string, label: string, value: string, at: RowAt) => {
+    const amount = amountOf(value)
+    if (amount == null) issue(field, label, 'properties.housing.issue.required', at)
+    else if (Number.isNaN(amount)) issue(field, label, 'properties.housing.issue.amount', at)
+    return amount == null || Number.isNaN(amount) ? null : amount
+  }
+  /** A row's day another row of its section has first (`seen`: the section's days so far, by row). */
+  const sameDay = (seen: Map<string, number>, day: string, i: number, field: string, label: string, at: RowAt) => {
+    if (!okDate(day)) return
+    const before = seen.get(day)
+    if (before == null) seen.set(day, i)
+    else issue(field, label, 'properties.housing.issue.sameDay', at, { n: before + 1 })
+  }
+  /**
+   * A section the loan needs a row of (share, rahoitusvastike, rate): with no row at all the
+   * section itself is to fix; with only empty rows, the first row's fields.
+   */
+  const needRows = (section: 'certificates' | 'charges' | 'rates', rows: Record<string, unknown>[], fields: [string, string][]) => {
+    const title = `properties.housing.${section}`
+    if (!rows.length) issue(section, title, 'properties.housing.issue.atLeastOne')
+    else if (rows.every(blank)) {
+      for (const [field, label] of fields) issue(`${section}.0.${field}`, label, 'properties.housing.issue.required', { section: title, n: 1 })
+    }
+  }
+  const startsOk = okDate(d.starts)
+  const endsOk = okDate(d.ends)
+  const fixed = d.reference === 'fixed'
+
+  if (!d.name.trim()) issue('name', 'properties.housing.field.name', 'properties.housing.issue.required')
+  needDate('starts', 'properties.housing.field.starts', d.starts)
+  needDate('ends', 'properties.housing.field.ends', d.ends)
+  if (startsOk && endsOk && d.ends < d.starts) issue('ends', 'properties.housing.field.ends', 'properties.housing.issue.endsBeforeStarts')
   const total = amountOf(d.total)
-  if (total != null && Number.isNaN(total)) return check('properties.housing.field.total')
-  const reset = d.resetMonths.trim() ? Number(d.resetMonths.trim()) : null
-  if (reset != null && (!Number.isInteger(reset) || reset < 1 || reset > 120)) return check('properties.housing.field.resetMonths')
+  if (total != null && Number.isNaN(total)) issue('total', 'properties.housing.field.total', 'properties.housing.issue.amount')
+  // A fixed rate is all in its rate rows: no margin and no resets.
+  const margin = fixed ? 0 : parsePcmInput(d.margin)
+  if (margin == null) issue('margin', 'properties.housing.field.margin', 'properties.housing.issue.required')
+  else if (Number.isNaN(margin) || margin < 0) issue('margin', 'properties.housing.field.margin', 'properties.housing.issue.rate')
+  const reset = fixed ? null : d.resetMonths.trim() ? Number(d.resetMonths.trim()) : NaN
+  if (!fixed && !d.resetMonths.trim()) issue('resetMonths', 'properties.housing.field.resetMonths', 'properties.housing.issue.required')
+  else if (reset != null && (!Number.isInteger(reset) || reset < 1 || reset > 120)) {
+    issue('resetMonths', 'properties.housing.field.resetMonths', 'properties.housing.issue.months')
+  }
+
+  const certificates: NonNullable<HousingLoan['certificates']> = []
+  const certificateDays = new Map<string, number>()
+  d.certificates.forEach((c, i) => {
+    if (blank(c)) return
+    const at = { section: 'properties.housing.certificates', n: i + 1 }
+    const dateField = `certificates.${i}.date`
+    needDate(dateField, 'properties.housing.field.date', c.date, at)
+    if (okDate(c.date) && startsOk && c.date < d.starts) issue(dateField, 'properties.housing.field.date', 'properties.housing.issue.beforeStarts', at)
+    if (!has(dateField)) sameDay(certificateDays, c.date, i, dateField, 'properties.housing.field.date', at)
+    const share = needAmount(`certificates.${i}.share`, 'properties.housing.field.share', c.share, at)
+    if (share != null && total != null && !Number.isNaN(total) && share > total) {
+      issue(`certificates.${i}.share`, 'properties.housing.field.share', 'properties.housing.issue.shareOverTotal', at)
+    }
+    if (!has(dateField) && !has(`certificates.${i}.share`) && share != null) {
+      certificates.push({
+        date: c.date,
+        share_snt: share,
+        ...(c.voucherId ? { voucher_id: Number(c.voucherId) } : c.noDocument ? { no_document: true as const } : {}),
+      })
+    }
+  })
+  needRows('certificates', d.certificates, [
+    ['date', 'properties.housing.field.date'],
+    ['share', 'properties.housing.field.share'],
+  ])
+
+  const charges: NonNullable<HousingLoan['charges']> = []
+  const chargeDays = new Map<string, number>()
+  d.charges.forEach((c, i) => {
+    if (blank(c)) return
+    const at = { section: 'properties.housing.charges', n: i + 1 }
+    needDate(`charges.${i}.from`, 'properties.housing.field.from', c.from, at)
+    sameDay(chargeDays, c.from, i, `charges.${i}.from`, 'properties.housing.field.from', at)
+    const amount = needAmount(`charges.${i}.amount`, 'properties.housing.field.charge', c.amount, at)
+    if (!has(`charges.${i}.from`) && amount != null) {
+      charges.push({
+        from: c.from,
+        amount_snt: amount,
+        ...(c.rahastoitu ? { rahastoitu: true as const } : {}),
+        ...(c.voucherId ? { voucher_id: Number(c.voucherId) } : c.noDocument ? { no_document: true as const } : {}),
+      })
+    }
+  })
+  needRows('charges', d.charges, [
+    ['from', 'properties.housing.field.from'],
+    ['amount', 'properties.housing.field.charge'],
+  ])
+
+  const rates: NonNullable<HousingLoan['rates']> = []
+  const rateDays = new Map<string, number>()
+  const rateLabel = fixed ? 'properties.housing.field.fixedRate' : 'properties.housing.field.rate'
+  d.rates.forEach((r, i) => {
+    if (blank(r)) return
+    const at = { section: 'properties.housing.rates', n: i + 1 }
+    needDate(`rates.${i}.from`, 'properties.housing.field.from', r.from, at)
+    sameDay(rateDays, r.from, i, `rates.${i}.from`, 'properties.housing.field.from', at)
+    const rate = parsePcmInput(r.rate)
+    if (rate == null) issue(`rates.${i}.rate`, rateLabel, 'properties.housing.issue.required', at)
+    else if (Number.isNaN(rate)) issue(`rates.${i}.rate`, rateLabel, 'properties.housing.issue.rate', at)
+    else if (!has(`rates.${i}.from`)) rates.push({ from: r.from, reference_pcm: rate, ...(r.voucherId ? { voucher_id: Number(r.voucherId) } : {}) })
+  })
+  needRows('rates', d.rates, [
+    ['from', 'properties.housing.field.from'],
+    ['rate', rateLabel],
+  ])
+
+  const grace: NonNullable<HousingLoan['grace']> = []
+  d.grace.forEach((g, i) => {
+    if (blank(g)) return
+    const at = { section: 'properties.housing.grace', n: i + 1 }
+    needDate(`grace.${i}.from`, 'properties.housing.field.from', g.from, at)
+    needDate(`grace.${i}.to`, 'properties.housing.field.to', g.to, at)
+    if (okDate(g.from) && startsOk && g.from < d.starts) issue(`grace.${i}.from`, 'properties.housing.field.from', 'properties.housing.issue.beforeStarts', at)
+    if (okDate(g.from) && okDate(g.to) && g.to < g.from) issue(`grace.${i}.to`, 'properties.housing.field.to', 'properties.housing.issue.toBeforeFrom', at)
+    else if (okDate(g.to) && endsOk && g.to > d.ends) issue(`grace.${i}.to`, 'properties.housing.field.to', 'properties.housing.issue.afterEnds', at)
+    if (!has(`grace.${i}.from`) && !has(`grace.${i}.to`)) grace.push({ from: g.from, to: g.to })
+  })
+
+  const events: NonNullable<HousingLoan['events']> = []
+  d.events.forEach((e, i) => {
+    if (!e.date && !e.amount && !e.voucherId && !e.note) return
+    const at = { section: 'properties.housing.events', n: i + 1 }
+    needDate(`events.${i}.date`, 'properties.housing.field.date', e.date, at)
+    const amount = amountOf(e.amount)
+    if (amount != null && Number.isNaN(amount)) issue(`events.${i}.amount`, 'properties.housing.field.amount', 'properties.housing.issue.amount', at)
+    else if (e.kind === 'extra_payment' && !amount) issue(`events.${i}.amount`, 'properties.housing.field.amount', 'properties.housing.issue.extraAmount', at)
+    else if (okDate(e.date)) {
+      events.push({
+        date: e.date,
+        kind: e.kind,
+        ...(amount ? { amount_snt: amount } : {}),
+        ...(e.voucherId ? { voucher_id: Number(e.voucherId) } : {}),
+        ...(e.note.trim() ? { note: e.note.trim() } : {}),
+      })
+    }
+  })
+  if (issues.length) return issues
 
   const loan: HousingLoan = {
     ...(d.base ?? {}),
@@ -155,67 +311,6 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | string {
   if (d.ends) loan.ends = d.ends
   if (total != null) loan.total_snt = total
   if (reset != null) loan.reset_months = reset
-
-  const rates: NonNullable<HousingLoan['rates']> = []
-  for (const [i, r] of d.rates.entries()) {
-    if (blank(r)) continue
-    const rate = parsePcmInput(r.rate)
-    if (!okDate(r.from)) return check('properties.housing.field.from', 'properties.housing.rates', i + 1)
-    if (rate == null || Number.isNaN(rate)) return check('properties.housing.field.rate', 'properties.housing.rates', i + 1)
-    rates.push({ from: r.from, reference_pcm: rate, ...(r.voucherId ? { voucher_id: Number(r.voucherId) } : {}) })
-  }
-  const grace: NonNullable<HousingLoan['grace']> = []
-  for (const [i, g] of d.grace.entries()) {
-    if (blank(g)) continue
-    if (!okDate(g.from)) return check('properties.housing.field.from', 'properties.housing.grace', i + 1)
-    if (!okDate(g.to) || g.to < g.from) return check('properties.housing.field.to', 'properties.housing.grace', i + 1)
-    grace.push({ from: g.from, to: g.to })
-  }
-  const certificates: NonNullable<HousingLoan['certificates']> = []
-  for (const [i, c] of d.certificates.entries()) {
-    if (blank(c)) continue
-    const share = amountOf(c.share)
-    if (!okDate(c.date)) return check('properties.housing.field.date', 'properties.housing.certificates', i + 1)
-    if (share == null || Number.isNaN(share)) return check('properties.housing.field.share', 'properties.housing.certificates', i + 1)
-    certificates.push({
-      date: c.date,
-      share_snt: share,
-      ...(c.voucherId ? { voucher_id: Number(c.voucherId) } : c.noDocument ? { no_document: true as const } : {}),
-    })
-  }
-  const charges: NonNullable<HousingLoan['charges']> = []
-  for (const [i, c] of d.charges.entries()) {
-    if (blank(c)) continue
-    const amount = amountOf(c.amount)
-    if (!okDate(c.from)) return check('properties.housing.field.from', 'properties.housing.charges', i + 1)
-    if (amount == null || Number.isNaN(amount)) return check('properties.housing.field.charge', 'properties.housing.charges', i + 1)
-    charges.push({
-      from: c.from,
-      amount_snt: amount,
-      ...(c.rahastoitu ? { rahastoitu: true as const } : {}),
-      ...(c.voucherId ? { voucher_id: Number(c.voucherId) } : c.noDocument ? { no_document: true as const } : {}),
-    })
-  }
-  const events: NonNullable<HousingLoan['events']> = []
-  for (const [i, e] of d.events.entries()) {
-    if (!e.date && !e.amount && !e.voucherId && !e.note) continue
-    const amount = amountOf(e.amount)
-    if (!okDate(e.date)) return check('properties.housing.field.date', 'properties.housing.events', i + 1)
-    if ((amount != null && Number.isNaN(amount)) || (e.kind === 'extra_payment' && !amount)) {
-      return check('properties.housing.field.amount', 'properties.housing.events', i + 1)
-    }
-    events.push({
-      date: e.date,
-      kind: e.kind,
-      ...(amount ? { amount_snt: amount } : {}),
-      ...(e.voucherId ? { voucher_id: Number(e.voucherId) } : {}),
-      ...(e.note.trim() ? { note: e.note.trim() } : {}),
-    })
-  }
-  const twice = (days: string[]) => days.some((day, i) => days.indexOf(day) !== i)
-  if (twice(rates.map((r) => r.from))) return t('properties.housing.sameDay', { section: t('properties.housing.rates') })
-  if (twice(certificates.map((c) => c.date))) return t('properties.housing.sameDay', { section: t('properties.housing.certificates') })
-  if (twice(charges.map((c) => c.from))) return t('properties.housing.sameDay', { section: t('properties.housing.charges') })
   if (rates.length) loan.rates = rates
   if (grace.length) loan.grace = grace
   if (certificates.length) loan.certificates = certificates

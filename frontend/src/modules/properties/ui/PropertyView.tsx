@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchPartners, fetchSettings, saveVoucher, uploadAttachment } from '../../../api'
 import { restoreLocationHash } from '../../../app/leaveGuard'
 import { parseRoute, propertyHash, type PropertyCard, type PropertyTab } from '../../../app/routing'
-import { housingVoucherIds } from '../../../book/modules/properties/domain/housingLoan'
+import { housingVoucherIds, loanDay } from '../../../book/modules/properties/domain/housingLoan'
 import { isParkingKind } from '../../../book/modules/properties/domain/kind'
 import { leaseVoucherIds } from '../../../book/modules/properties/domain/rent'
 import { waterVoucherIds } from '../../../book/modules/properties/domain/water'
@@ -614,6 +614,7 @@ export function PropertyView({
             {cardError ? <p className="error">{cardError}</p> : null}
             <HousingPanel
               d={d}
+              on={loanDay(d.as_of, today || localToday())}
               held={held}
               editing={card?.kind === 'loan' && inputs ? (card.key ?? 'new') : null}
               form={

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
@@ -18,7 +18,7 @@ import { DocPicker } from './DocPicker'
 import { clearCardDraft, loadCardDraft, saveCardDraft } from './editDraft'
 import { saveErrorText } from './format'
 import { NoDocumentCheck, Shown } from './FormParts'
-import { buildLoan, newLoanDraft, loanDraft, voucherDoc, type LoanDraft } from './loanDrafts'
+import { buildLoan, emptyCertificate, emptyCharge, emptyRate, newLoanDraft, loanDraft, voucherDoc, type LoanDraft, type LoanIssue } from './loanDrafts'
 import { useDocWriter, type CardInputs } from './useDocWriter'
 import { candidateDoc } from './waterDrafts'
 
@@ -27,12 +27,20 @@ const CERTIFICATE_WORDS = /is[äa]nn[öo]itsij[äa]ntodistu|lainaosuu|velkaosuu/
 const CHARGE_WORDS = /vastike|yhti[öo]kokou/i
 const RATE_WORDS = /korko|euribor/i
 
-/** A section of rows with its heading, a hint, and "Lisää rivi". */
-function RowSection({ title, hint, onAdd, children }: { title: string; hint?: string; onAdd: () => void; children: ReactNode }) {
+type RowKey = 'rates' | 'grace' | 'certificates' | 'charges' | 'events'
+
+/**
+ * A section of rows with its heading, a hint, and "Lisää rivi". `issue`: what a save found missing
+ * in the section itself (no row at all); the heading says it and takes the focus.
+ */
+function RowSection({ title, hint, issue, onAdd, children }: { title: string; hint?: string; issue?: string; onAdd: () => void; children: ReactNode }) {
   const { t } = useI18n()
   return (
     <>
-      <h4>{title}</h4>
+      <h4 tabIndex={issue ? -1 : undefined} data-issue={issue ? true : undefined}>
+        {title}
+        {issue ? <span className="field-issue"> · {issue}</span> : null}
+      </h4>
       {hint ? <p className="muted property-lease-hint">{hint}</p> : null}
       {children}
       <button type="button" className="btn-link property-lease-add" onClick={onAdd}>
@@ -42,9 +50,24 @@ function RowSection({ title, hint, onAdd, children }: { title: string; hint?: st
   )
 }
 
+/** A labelled field; when a save found it wanting, the label says why (the input is marked by `invalid`). */
+function Field({ label, issue, className, children }: { label: string; issue?: string; className?: string; children: ReactNode }) {
+  return (
+    <label className={className}>
+      <span>
+        {label}
+        {issue ? <span className="field-issue"> · {issue}</span> : null}
+      </span>
+      {children}
+    </label>
+  )
+}
+
 /**
  * One housing-company loan card in edit, in place on the Taloyhtiö tab, with its own Tallenna and
  * Peruuta (ADR-034). A save writes the object with only this loan changed (or added, or removed).
+ * A save the form cannot make marks every field to fix, says why in its label, lists them above
+ * the buttons and moves to the first; the marks follow the form until it can be saved.
  */
 export function LoanCardEdit({
   detail,
@@ -86,7 +109,18 @@ export function LoanCardEdit({
   const [draft, setDraft] = useState<LoanDraft>(kept?.drafts[0] ?? initial)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  /** A save was tried: from then on the fields to fix are marked as the form changes. */
+  const [tried, setTried] = useState(false)
+  /** Counts the saves that found fields to fix: each moves to the first of them. */
+  const [refused, setRefused] = useState(0)
+  const cardRef = useRef<HTMLDivElement>(null)
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial) || writer.state.newDocs.length > 0
+
+  const built = buildLoan(t, draft)
+  const issues: LoanIssue[] = tried && Array.isArray(built) ? built : []
+  const issueOf = (field: string) => issues.find((i) => i.field === field)?.message
+  /** The marks an input carries when its field is to fix. */
+  const invalid = (field: string) => (issueOf(field) ? { className: 'field-invalid', 'aria-invalid': true as const } : {})
 
   useEffect(() => {
     onDirty(dirty)
@@ -99,15 +133,21 @@ export function LoanCardEdit({
     else clearCardDraft()
   }, [dirty, draft, newDocs, toDelete, bookKey, detail.id, doc.rev, cardId])
 
+  // After a refused save, the first field to fix comes into view with the focus.
+  useEffect(() => {
+    if (!refused) return
+    const first = cardRef.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-issue]')
+    first?.scrollIntoView({ block: 'center' })
+    first?.focus()
+  }, [refused])
+
   const fail = (err: unknown) => setError(err instanceof Error ? err.message : String(err))
   const set = (patch: Partial<LoanDraft>) => setDraft((d) => ({ ...d, ...patch }))
   /** Changes row `i` of a section. */
-  const setRow = <K extends 'rates' | 'grace' | 'certificates' | 'charges' | 'events'>(key: K, i: number, patch: Partial<LoanDraft[K][number]>) =>
+  const setRow = <K extends RowKey>(key: K, i: number, patch: Partial<LoanDraft[K][number]>) =>
     setDraft((d) => ({ ...d, [key]: (d[key] as LoanDraft[K][number][]).map((row, j) => (j === i ? { ...row, ...patch } : row)) }))
-  const addRow = <K extends 'rates' | 'grace' | 'certificates' | 'charges' | 'events'>(key: K, row: LoanDraft[K][number]) =>
-    setDraft((d) => ({ ...d, [key]: [...d[key], row] }))
-  const removeRow = (key: 'rates' | 'grace' | 'certificates' | 'charges' | 'events', i: number) =>
-    setDraft((d) => ({ ...d, [key]: (d[key] as unknown[]).filter((_, j) => j !== i) }))
+  const addRow = <K extends RowKey>(key: K, row: LoanDraft[K][number]) => setDraft((d) => ({ ...d, [key]: [...d[key], row] }))
+  const removeRow = (key: RowKey, i: number) => setDraft((d) => ({ ...d, [key]: (d[key] as unknown[]).filter((_, j) => j !== i) }))
 
   /** What a row's document can be: the Liitetieto documents, the object's vouchers with files, and those already linked. */
   const docs = [
@@ -118,13 +158,13 @@ export function LoanCardEdit({
 
   async function write(remove = false) {
     setError(null)
-    const built = remove ? null : buildLoan(t, draft)
-    if (typeof built === 'string') {
-      setError(built)
+    if (!remove && Array.isArray(built)) {
+      setTried(true)
+      setRefused((n) => n + 1)
       return
     }
     // Every loan of the object with this card's in its place (saving puts them in order); none removes it.
-    const loans = [...stored.filter((l) => l.key !== loanKey), ...(built ? [built] : [])]
+    const loans = [...stored.filter((l) => l.key !== loanKey), ...(!remove && !Array.isArray(built) ? [built] : [])]
     const next: PropertyDoc = { ...doc }
     if (loans.length) next.housing_loans = loans
     else delete next.housing_loans
@@ -225,29 +265,31 @@ export function LoanCardEdit({
     )
   }
 
-  const margin = parsePcmInput(draft.margin) ?? 0
+  const fixed = draft.reference === 'fixed'
+  const margin = fixed ? 0 : (parsePcmInput(draft.margin) ?? 0)
   return (
-    <div className="property-lease-card property-lease-card-edit property-loan-card-edit">
+    <div ref={cardRef} className="property-lease-card property-lease-card-edit property-loan-card-edit">
       <div className="property-lease-edit property-loan-edit">
         <div className="property-lease-grid">
-          <label className="span-2">
-            {t('properties.housing.field.name')}
-            <input type="text" value={draft.name} placeholder={t('properties.housing.namePlaceholder')} onChange={(e) => set({ name: e.target.value })} />
-          </label>
-          <label className="span-2">
-            {t('properties.housing.field.lender')}
+          <Field className="span-2" label={t('properties.housing.field.name')} issue={issueOf('name')}>
+            <input
+              type="text"
+              value={draft.name}
+              placeholder={t('properties.housing.namePlaceholder')}
+              onChange={(e) => set({ name: e.target.value })}
+              {...invalid('name')}
+            />
+          </Field>
+          <Field className="span-2" label={t('properties.housing.field.lender')}>
             <input type="text" value={draft.lender} onChange={(e) => set({ lender: e.target.value })} />
-          </label>
-          <label>
-            {t('properties.housing.field.starts')}
-            <input type="date" value={draft.starts} onChange={(e) => set({ starts: e.target.value })} />
-          </label>
-          <label>
-            {t('properties.housing.field.ends')}
-            <input type="date" value={draft.ends} onChange={(e) => set({ ends: e.target.value })} />
-          </label>
-          <label>
-            {t('properties.housing.field.type')}
+          </Field>
+          <Field label={t('properties.housing.field.starts')} issue={issueOf('starts')}>
+            <input type="date" value={draft.starts} onChange={(e) => set({ starts: e.target.value })} {...invalid('starts')} />
+          </Field>
+          <Field label={t('properties.housing.field.ends')} issue={issueOf('ends')}>
+            <input type="date" value={draft.ends} onChange={(e) => set({ ends: e.target.value })} {...invalid('ends')} />
+          </Field>
+          <Field label={t('properties.housing.field.type')}>
             <select value={draft.type} onChange={(e) => set({ type: e.target.value as HousingLoanType })}>
               {HOUSING_LOAN_TYPES.map((type) => (
                 <option key={type} value={type}>
@@ -255,13 +297,11 @@ export function LoanCardEdit({
                 </option>
               ))}
             </select>
-          </label>
-          <label>
-            {t('properties.housing.field.total')}
-            <EuroInput value={draft.total} placeholder="" onChange={(total) => set({ total })} />
-          </label>
-          <label>
-            {t('properties.housing.field.reference')}
+          </Field>
+          <Field label={t('properties.housing.field.total')} issue={issueOf('total')}>
+            <EuroInput value={draft.total} placeholder="" onChange={(total) => set({ total })} {...invalid('total')} />
+          </Field>
+          <Field label={t('properties.housing.field.reference')}>
             <select value={draft.reference} onChange={(e) => set({ reference: e.target.value as RateReference })}>
               {RATE_REFERENCES.map((ref) => (
                 <option key={ref} value={ref}>
@@ -269,33 +309,49 @@ export function LoanCardEdit({
                 </option>
               ))}
             </select>
-          </label>
-          <label>
-            {t('properties.housing.field.margin')}
-            <input type="text" inputMode="decimal" value={draft.margin} placeholder="0,000" onChange={(e) => set({ margin: e.target.value })} />
-          </label>
-          <label>
-            {t('properties.housing.field.resetMonths')}
-            <input type="number" min={1} max={120} value={draft.resetMonths} onChange={(e) => set({ resetMonths: e.target.value })} />
-          </label>
+          </Field>
+          {/* A fixed rate is all in its rate rows: no margin and no resets. */}
+          {!fixed ? (
+            <Field label={t('properties.housing.field.margin')} issue={issueOf('margin')}>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={draft.margin}
+                placeholder="0,000"
+                onChange={(e) => set({ margin: e.target.value })}
+                {...invalid('margin')}
+              />
+            </Field>
+          ) : null}
+          {!fixed ? (
+            <Field label={t('properties.housing.field.resetMonths')} issue={issueOf('resetMonths')}>
+              <input
+                type="number"
+                min={1}
+                max={120}
+                value={draft.resetMonths}
+                onChange={(e) => set({ resetMonths: e.target.value })}
+                {...invalid('resetMonths')}
+              />
+            </Field>
+          ) : null}
         </div>
         {draft.group ? <p className="muted property-lease-hint">{t('properties.housing.copiedHint')}</p> : null}
 
         <RowSection
           title={t('properties.housing.certificates')}
           hint={t('properties.housing.certificatesHint')}
-          onAdd={() => addRow('certificates', { date: '', share: '', voucherId: '', noDocument: false })}
+          issue={issueOf('certificates')}
+          onAdd={() => addRow('certificates', emptyCertificate())}
         >
           {draft.certificates.map((c, i) => (
             <div key={i} className="property-lease-grid property-lease-increase">
-              <label>
-                {t('properties.housing.field.date')}
-                <input type="date" value={c.date} onChange={(e) => setRow('certificates', i, { date: e.target.value })} />
-              </label>
-              <label>
-                {t('properties.housing.field.share')}
-                <EuroInput value={c.share} onChange={(share) => setRow('certificates', i, { share })} />
-              </label>
+              <Field label={t('properties.housing.field.date')} issue={issueOf(`certificates.${i}.date`)}>
+                <input type="date" value={c.date} onChange={(e) => setRow('certificates', i, { date: e.target.value })} {...invalid(`certificates.${i}.date`)} />
+              </Field>
+              <Field label={t('properties.housing.field.share')} issue={issueOf(`certificates.${i}.share`)}>
+                <EuroInput value={c.share} onChange={(share) => setRow('certificates', i, { share })} {...invalid(`certificates.${i}.share`)} />
+              </Field>
               {docRow({
                 label: t('properties.housing.field.certificate'),
                 voucherId: c.voucherId,
@@ -312,18 +368,17 @@ export function LoanCardEdit({
         <RowSection
           title={t('properties.housing.charges')}
           hint={t('properties.housing.chargesHint')}
-          onAdd={() => addRow('charges', { from: '', amount: '', rahastoitu: false, voucherId: '', noDocument: false })}
+          issue={issueOf('charges')}
+          onAdd={() => addRow('charges', emptyCharge())}
         >
           {draft.charges.map((c, i) => (
             <div key={i} className="property-lease-grid property-lease-increase">
-              <label>
-                {t('properties.housing.field.from')}
-                <input type="date" value={c.from} onChange={(e) => setRow('charges', i, { from: e.target.value })} />
-              </label>
-              <label>
-                {t('properties.housing.field.charge')}
-                <EuroInput value={c.amount} onChange={(amount) => setRow('charges', i, { amount })} />
-              </label>
+              <Field label={t('properties.housing.field.from')} issue={issueOf(`charges.${i}.from`)}>
+                <input type="date" value={c.from} onChange={(e) => setRow('charges', i, { from: e.target.value })} {...invalid(`charges.${i}.from`)} />
+              </Field>
+              <Field label={t('properties.housing.field.charge')} issue={issueOf(`charges.${i}.amount`)}>
+                <EuroInput value={c.amount} onChange={(amount) => setRow('charges', i, { amount })} {...invalid(`charges.${i}.amount`)} />
+              </Field>
               <label className="allocation-check property-loan-check" title={t('properties.housing.rahastoituHint')}>
                 <input type="checkbox" checked={c.rahastoitu} onChange={() => setRow('charges', i, { rahastoitu: !c.rahastoitu })} />
                 {t('properties.housing.field.rahastoitu')}
@@ -341,23 +396,35 @@ export function LoanCardEdit({
           ))}
         </RowSection>
 
-        <RowSection title={t('properties.housing.rates')} hint={t('properties.housing.ratesHint')} onAdd={() => addRow('rates', { from: '', rate: '', voucherId: '' })}>
+        <RowSection
+          title={t('properties.housing.rates')}
+          hint={t(fixed ? 'properties.housing.ratesHintFixed' : 'properties.housing.ratesHint')}
+          issue={issueOf('rates')}
+          onAdd={() => addRow('rates', emptyRate())}
+        >
           {draft.rates.map((r, i) => {
             const rate = parsePcmInput(r.rate)
             return (
               <div key={i} className="property-lease-grid property-lease-increase">
-                <label>
-                  {t('properties.housing.field.from')}
-                  <input type="date" value={r.from} onChange={(e) => setRow('rates', i, { from: e.target.value })} />
-                </label>
-                <label>
-                  {t('properties.housing.field.rate')}
-                  <input type="text" inputMode="decimal" value={r.rate} placeholder="0,000" onChange={(e) => setRow('rates', i, { rate: e.target.value })} />
-                </label>
-                <Shown
-                  label={t('properties.housing.field.totalRate')}
-                  value={rate != null && !Number.isNaN(rate) ? formatPcm(rate + margin) : '–'}
-                />
+                <Field label={t('properties.housing.field.from')} issue={issueOf(`rates.${i}.from`)}>
+                  <input type="date" value={r.from} onChange={(e) => setRow('rates', i, { from: e.target.value })} {...invalid(`rates.${i}.from`)} />
+                </Field>
+                <Field label={t(fixed ? 'properties.housing.field.fixedRate' : 'properties.housing.field.rate')} issue={issueOf(`rates.${i}.rate`)}>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={r.rate}
+                    placeholder="0,000"
+                    onChange={(e) => setRow('rates', i, { rate: e.target.value })}
+                    {...invalid(`rates.${i}.rate`)}
+                  />
+                </Field>
+                {!fixed ? (
+                  <Shown
+                    label={t('properties.housing.field.totalRate')}
+                    value={rate != null && !Number.isNaN(rate) ? formatPcm(rate + margin) : '–'}
+                  />
+                ) : null}
                 {docRow({
                   label: t('properties.housing.field.document'),
                   voucherId: r.voucherId,
@@ -373,14 +440,12 @@ export function LoanCardEdit({
         <RowSection title={t('properties.housing.grace')} onAdd={() => addRow('grace', { from: '', to: '' })}>
           {draft.grace.map((g, i) => (
             <div key={i} className="property-lease-grid property-lease-increase">
-              <label>
-                {t('properties.housing.field.from')}
-                <input type="date" value={g.from} onChange={(e) => setRow('grace', i, { from: e.target.value })} />
-              </label>
-              <label>
-                {t('properties.housing.field.to')}
-                <input type="date" value={g.to} onChange={(e) => setRow('grace', i, { to: e.target.value })} />
-              </label>
+              <Field label={t('properties.housing.field.from')} issue={issueOf(`grace.${i}.from`)}>
+                <input type="date" value={g.from} onChange={(e) => setRow('grace', i, { from: e.target.value })} {...invalid(`grace.${i}.from`)} />
+              </Field>
+              <Field label={t('properties.housing.field.to')} issue={issueOf(`grace.${i}.to`)}>
+                <input type="date" value={g.to} onChange={(e) => setRow('grace', i, { to: e.target.value })} {...invalid(`grace.${i}.to`)} />
+              </Field>
               <div className="property-lease-actions">
                 <button type="button" className="btn-link property-delete" onClick={() => removeRow('grace', i)}>
                   {t('properties.housing.removeRow')}
@@ -396,12 +461,10 @@ export function LoanCardEdit({
         >
           {draft.events.map((e, i) => (
             <div key={i} className="property-lease-grid property-lease-increase">
-              <label>
-                {t('properties.housing.field.date')}
-                <input type="date" value={e.date} onChange={(ev) => setRow('events', i, { date: ev.target.value })} />
-              </label>
-              <label>
-                {t('properties.housing.field.eventKind')}
+              <Field label={t('properties.housing.field.date')} issue={issueOf(`events.${i}.date`)}>
+                <input type="date" value={e.date} onChange={(ev) => setRow('events', i, { date: ev.target.value })} {...invalid(`events.${i}.date`)} />
+              </Field>
+              <Field label={t('properties.housing.field.eventKind')}>
                 <select value={e.kind} onChange={(ev) => setRow('events', i, { kind: ev.target.value as LoanEventKind })}>
                   {LOAN_EVENT_KINDS.map((kind) => (
                     <option key={kind} value={kind}>
@@ -409,15 +472,13 @@ export function LoanCardEdit({
                     </option>
                   ))}
                 </select>
-              </label>
-              <label>
-                {t('properties.housing.field.amount')}
-                <EuroInput value={e.amount} placeholder="" onChange={(amount) => setRow('events', i, { amount })} />
-              </label>
-              <label>
-                {t('properties.housing.field.note')}
+              </Field>
+              <Field label={t('properties.housing.field.amount')} issue={issueOf(`events.${i}.amount`)}>
+                <EuroInput value={e.amount} placeholder="" onChange={(amount) => setRow('events', i, { amount })} {...invalid(`events.${i}.amount`)} />
+              </Field>
+              <Field label={t('properties.housing.field.note')}>
                 <input type="text" value={e.note} onChange={(ev) => setRow('events', i, { note: ev.target.value })} />
-              </label>
+              </Field>
               {docRow({
                 label: t('properties.housing.field.document'),
                 voucherId: e.voucherId,
@@ -436,6 +497,18 @@ export function LoanCardEdit({
           </button>
         </div>
       </div>
+      {issues.length ? (
+        <div className="error" role="alert">
+          <p className="property-loan-issues-lead">{t('properties.housing.issuesLead')}</p>
+          <ul className="property-loan-issues">
+            {issues.map((issue) => (
+              <li key={issue.field}>
+                {issue.label}: {issue.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       {error ? <p className="error">{error}</p> : null}
       <div className="property-actions">
         <button type="button" className="btn-primary" disabled={saving || detail.read_only} onClick={() => void write()}>
