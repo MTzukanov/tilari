@@ -3391,11 +3391,11 @@ select.field-invalid {
 }
 
 /* What a refused save needs, above the buttons: one line per marked field. */
-.property-loan-issues-lead {
+.form-issues-lead {
   margin: 0;
 }
 
-.property-loan-issues {
+.form-issues {
   margin: 0.35rem 0 0;
   padding-left: 1.2rem;
 }
@@ -5924,6 +5924,11 @@ tr.tax-total td {
   font-size: 0.85rem;
 }
 
+/* A row's own buttons after its fields (a grace period's "Poista rivi"): to the row's end, level with the inputs. */
+.property-lease-grid > .property-row-end {
+  grid-column: 3 / -1;
+}
+
 /* A loan row's "Rahastoitu" checkbox: on one line, level with the inputs beside it. */
 .property-lease-grid label.property-loan-check {
   flex-direction: row;
@@ -5999,6 +6004,10 @@ tr.tax-total td {
 
   .property-lease-grid .span-3 {
     grid-column: span 2;
+  }
+
+  .property-lease-grid > .property-row-end {
+    grid-column: 1 / -1;
   }
 }
 

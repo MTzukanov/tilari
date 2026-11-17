@@ -1239,7 +1239,7 @@
       "empty": "Keine Anhänge.",
       "missing": "Beleg {id} wurde gelöscht",
       "deleted": "Gelöscht",
-      "absent": "Fehlt",
+      "absent": "Dokument fehlt",
       "voucher": "Beleg {id}",
       "voucherNoId": "Beleg",
       "showBank": "Kontoauszüge anzeigen ({n})",
@@ -1371,6 +1371,32 @@
       "uploadException": "Dokument hochladen",
       "lead": "Die allgemeinen Einstellungen des Objekts. Mietverträge, Wasserabrechnungen, Dokumente und die Finanzangaben werden auf den eigenen Reitern des Objekts bearbeitet, je Karte oder Abschnitt."
     },
+    "form": {
+      "issuesLead": "Nicht gespeichert. Markierte Felder korrigieren:",
+      "rowField": "{section}, Zeile {n}: {field}",
+      "issue": {
+        "required": "fehlt",
+        "date": "vollständiges Datum angeben",
+        "amount": "Betrag in Euro angeben, z. B. 1 250,00",
+        "rate": "Prozentsatz angeben, z. B. 2,125",
+        "months": "1-120 Monate angeben",
+        "endsBeforeStarts": "vor dem Auszahlungstag",
+        "toBeforeFrom": "vor dem Anfangsdatum",
+        "sameDay": "gleiches Datum wie Zeile {n}",
+        "extraAmount": "eine Sondertilgung hat einen Betrag",
+        "atLeastOne": "mindestens eine Zeile hinzufügen",
+        "beforeStarts": "vor dem Auszahlungstag",
+        "afterEnds": "nach der letzten Fälligkeit",
+        "shareOverTotal": "mehr als das Darlehen der Gesellschaft gesamt",
+        "outsideLease": "außerhalb der Mietzeit",
+        "overlapsLease": "gleiche Tage wie der Vertrag {lease}",
+        "overlapsRow": "gleiche Tage wie Zeile {n}",
+        "overlapsSettlement": "gleiche Tage wie die Abrechnung {period}",
+        "dueDay": "Tag 1-31 angeben",
+        "percent": "Prozentsatz angeben, z. B. 3,5",
+        "sameAsStart": "gleicher Tag wie die Anfangsmiete"
+      }
+    },
     "setup": {
       "title": "Mietobjekte einrichten",
       "lead": "Wählen Sie, welche Kostenstellen Mietobjekte sind, und verknüpfen Sie Anschaffungsposten und Dokumente. Vorschläge stammen aus der Buchhaltung; ★ = Vorschlag. Die Buchhaltung bleibt unverändert.",
@@ -1483,14 +1509,6 @@
       "loan_linked": "Darlehenskonto {path} ist bereits das Bankdarlehen eines anderen Objekts. Ein Darlehen kann nur zu einem Objekt gehören, sonst würden die Zinsen doppelt gezählt.",
       "deposit_linked": "Die Kaution gehört bereits zu einem anderen Mietverhältnis.",
       "overlap": "Zeiträume überschneiden sich: Feld {path} prüfen.",
-      "leaseOverlap": "Die Mietverträge {a} und {b} überschneiden sich. Ein Tag kann nur zu einem Vertrag gehören, sonst wird seine Miete doppelt erwartet: den früheren vor Beginn des nächsten beenden.",
-      "leaseEnds": "Der Mietvertrag {lease} endet vor seinem Beginn.",
-      "increaseOutside": "Die Miete ab {date} liegt nicht innerhalb des Mietvertrags {lease}.",
-      "increaseTwice": "Der Mietvertrag {lease} hat zwei Mieten ab {date}.",
-      "exceptionDates": "Die abweichende Miete {period} endet vor ihrem Beginn.",
-      "exceptionOutside": "Die abweichende Miete {period} liegt nicht innerhalb des Mietvertrags {lease}.",
-      "exceptionOverlap": "Die abweichenden Mieten {a} und {b} überschneiden sich ({lease}). Ein Tag kann nur eine Ausnahme haben.",
-      "waterOverlap": "Die Zeiträume der Wasserabrechnungen {a} und {b} überschneiden sich, dieselben Tage würden doppelt abgerechnet.",
       "rentDates": "Der letzte Miettag liegt vor dem ersten."
     },
     "total": "Summe",
@@ -1681,23 +1699,6 @@
       "noCapital": "Kein sonstiges investiertes Kapital."
     },
     "housing": {
-      "issuesLead": "Das Darlehen wurde nicht gespeichert. Markierte Felder korrigieren:",
-      "rowField": "{section}, Zeile {n}: {field}",
-      "issue": {
-        "required": "fehlt",
-        "date": "vollständiges Datum angeben",
-        "amount": "Betrag in Euro angeben, z. B. 1 250,00",
-        "rate": "Prozentsatz angeben, z. B. 2,125",
-        "months": "1-120 Monate angeben",
-        "endsBeforeStarts": "vor dem Auszahlungstag",
-        "toBeforeFrom": "vor dem Anfangsdatum",
-        "sameDay": "gleiches Datum wie Zeile {n}",
-        "extraAmount": "eine Sondertilgung hat einen Betrag",
-        "atLeastOne": "mindestens eine Zeile hinzufügen",
-        "beforeStarts": "vor dem Auszahlungstag",
-        "afterEnds": "nach der letzten Fälligkeit",
-        "shareOverTotal": "mehr als das Darlehen der Gesellschaft gesamt"
-      },
       "field": {
         "name": "Darlehen",
         "lender": "Darlehensgeber",

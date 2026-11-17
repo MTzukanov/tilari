@@ -2,6 +2,7 @@
 import { copyGroup } from '../../../book/modules/properties/domain/housingLoan'
 import { formatEurInput, parseEurInput } from '../../../shared/money'
 import { formatPcmInput, parsePcmInput } from '../../../shared/percent'
+import { issueCollector, type FormIssue, type RowAt } from './formIssues'
 import type { DocCandidate, HousingCopySource, HousingLoan, HousingLoanType, LeaseVoucher, LoanEventKind, RateReference } from '../api'
 
 type T = (key: string, vars?: Record<string, string | number>) => string
@@ -127,37 +128,21 @@ const amountOf = (text: string) => (text.trim() ? Math.abs(parseEurInput(text)) 
 const okDate = (text: string) => /^\d{4}-\d{2}-\d{2}$/.test(text)
 
 /**
- * A field the loan cannot be saved with: `field` names it on the form (`name`, `certificates.0.date`),
- * `label` names it for a reader (with its section and row), `message` says what to fix.
- */
-export type LoanIssue = { field: string; label: string; message: string }
-
-/** Where a row's field is: its section's title and its number, for the issue's label. */
-type RowAt = { section: string; n: number }
-
-/**
  * The stored loan, or every field to fix, in the form's order. Rows left empty are dropped; the loan
  * keeps the base's unknown keys.
  */
-export function buildLoan(t: T, d: LoanDraft): HousingLoan | LoanIssue[] {
-  const issues: LoanIssue[] = []
-  const issue = (field: string, label: string, message: string, at?: RowAt, vars?: Record<string, string | number>) =>
-    issues.push({
-      field,
-      label: at ? t('properties.housing.rowField', { section: t(at.section), n: at.n, field: t(label) }) : t(label),
-      message: t(message, vars),
-    })
-  const has = (field: string) => issues.some((i) => i.field === field)
+export function buildLoan(t: T, d: LoanDraft): HousingLoan | FormIssue[] {
+  const { issues, issue, has } = issueCollector(t)
   /** A date the row needs: missing, or not a whole date. */
   const needDate = (field: string, label: string, value: string, at?: RowAt) => {
-    if (!value) issue(field, label, 'properties.housing.issue.required', at)
-    else if (!okDate(value)) issue(field, label, 'properties.housing.issue.date', at)
+    if (!value) issue(field, label, 'properties.form.issue.required', at)
+    else if (!okDate(value)) issue(field, label, 'properties.form.issue.date', at)
   }
   /** An amount the row needs, as cents; null when missing or unreadable (the issue is noted). */
   const needAmount = (field: string, label: string, value: string, at: RowAt) => {
     const amount = amountOf(value)
-    if (amount == null) issue(field, label, 'properties.housing.issue.required', at)
-    else if (Number.isNaN(amount)) issue(field, label, 'properties.housing.issue.amount', at)
+    if (amount == null) issue(field, label, 'properties.form.issue.required', at)
+    else if (Number.isNaN(amount)) issue(field, label, 'properties.form.issue.amount', at)
     return amount == null || Number.isNaN(amount) ? null : amount
   }
   /** A row's day another row of its section has first (`seen`: the section's days so far, by row). */
@@ -165,7 +150,7 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | LoanIssue[] {
     if (!okDate(day)) return
     const before = seen.get(day)
     if (before == null) seen.set(day, i)
-    else issue(field, label, 'properties.housing.issue.sameDay', at, { n: before + 1 })
+    else issue(field, label, 'properties.form.issue.sameDay', at, { n: before + 1 })
   }
   /**
    * A section the loan needs a row of (share, rahoitusvastike, rate): with no row at all the
@@ -173,29 +158,29 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | LoanIssue[] {
    */
   const needRows = (section: 'certificates' | 'charges' | 'rates', rows: Record<string, unknown>[], fields: [string, string][]) => {
     const title = `properties.housing.${section}`
-    if (!rows.length) issue(section, title, 'properties.housing.issue.atLeastOne')
+    if (!rows.length) issue(section, title, 'properties.form.issue.atLeastOne')
     else if (rows.every(blank)) {
-      for (const [field, label] of fields) issue(`${section}.0.${field}`, label, 'properties.housing.issue.required', { section: title, n: 1 })
+      for (const [field, label] of fields) issue(`${section}.0.${field}`, label, 'properties.form.issue.required', { section: title, n: 1 })
     }
   }
   const startsOk = okDate(d.starts)
   const endsOk = okDate(d.ends)
   const fixed = d.reference === 'fixed'
 
-  if (!d.name.trim()) issue('name', 'properties.housing.field.name', 'properties.housing.issue.required')
+  if (!d.name.trim()) issue('name', 'properties.housing.field.name', 'properties.form.issue.required')
   needDate('starts', 'properties.housing.field.starts', d.starts)
   needDate('ends', 'properties.housing.field.ends', d.ends)
-  if (startsOk && endsOk && d.ends < d.starts) issue('ends', 'properties.housing.field.ends', 'properties.housing.issue.endsBeforeStarts')
+  if (startsOk && endsOk && d.ends < d.starts) issue('ends', 'properties.housing.field.ends', 'properties.form.issue.endsBeforeStarts')
   const total = amountOf(d.total)
-  if (total != null && Number.isNaN(total)) issue('total', 'properties.housing.field.total', 'properties.housing.issue.amount')
+  if (total != null && Number.isNaN(total)) issue('total', 'properties.housing.field.total', 'properties.form.issue.amount')
   // A fixed rate is all in its rate rows: no margin and no resets.
   const margin = fixed ? 0 : parsePcmInput(d.margin)
-  if (margin == null) issue('margin', 'properties.housing.field.margin', 'properties.housing.issue.required')
-  else if (Number.isNaN(margin) || margin < 0) issue('margin', 'properties.housing.field.margin', 'properties.housing.issue.rate')
+  if (margin == null) issue('margin', 'properties.housing.field.margin', 'properties.form.issue.required')
+  else if (Number.isNaN(margin) || margin < 0) issue('margin', 'properties.housing.field.margin', 'properties.form.issue.rate')
   const reset = fixed ? null : d.resetMonths.trim() ? Number(d.resetMonths.trim()) : NaN
-  if (!fixed && !d.resetMonths.trim()) issue('resetMonths', 'properties.housing.field.resetMonths', 'properties.housing.issue.required')
+  if (!fixed && !d.resetMonths.trim()) issue('resetMonths', 'properties.housing.field.resetMonths', 'properties.form.issue.required')
   else if (reset != null && (!Number.isInteger(reset) || reset < 1 || reset > 120)) {
-    issue('resetMonths', 'properties.housing.field.resetMonths', 'properties.housing.issue.months')
+    issue('resetMonths', 'properties.housing.field.resetMonths', 'properties.form.issue.months')
   }
 
   const certificates: NonNullable<HousingLoan['certificates']> = []
@@ -205,11 +190,11 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | LoanIssue[] {
     const at = { section: 'properties.housing.certificates', n: i + 1 }
     const dateField = `certificates.${i}.date`
     needDate(dateField, 'properties.housing.field.date', c.date, at)
-    if (okDate(c.date) && startsOk && c.date < d.starts) issue(dateField, 'properties.housing.field.date', 'properties.housing.issue.beforeStarts', at)
+    if (okDate(c.date) && startsOk && c.date < d.starts) issue(dateField, 'properties.housing.field.date', 'properties.form.issue.beforeStarts', at)
     if (!has(dateField)) sameDay(certificateDays, c.date, i, dateField, 'properties.housing.field.date', at)
     const share = needAmount(`certificates.${i}.share`, 'properties.housing.field.share', c.share, at)
     if (share != null && total != null && !Number.isNaN(total) && share > total) {
-      issue(`certificates.${i}.share`, 'properties.housing.field.share', 'properties.housing.issue.shareOverTotal', at)
+      issue(`certificates.${i}.share`, 'properties.housing.field.share', 'properties.form.issue.shareOverTotal', at)
     }
     if (!has(dateField) && !has(`certificates.${i}.share`) && share != null) {
       certificates.push({
@@ -255,8 +240,8 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | LoanIssue[] {
     needDate(`rates.${i}.from`, 'properties.housing.field.from', r.from, at)
     sameDay(rateDays, r.from, i, `rates.${i}.from`, 'properties.housing.field.from', at)
     const rate = parsePcmInput(r.rate)
-    if (rate == null) issue(`rates.${i}.rate`, rateLabel, 'properties.housing.issue.required', at)
-    else if (Number.isNaN(rate)) issue(`rates.${i}.rate`, rateLabel, 'properties.housing.issue.rate', at)
+    if (rate == null) issue(`rates.${i}.rate`, rateLabel, 'properties.form.issue.required', at)
+    else if (Number.isNaN(rate)) issue(`rates.${i}.rate`, rateLabel, 'properties.form.issue.rate', at)
     else if (!has(`rates.${i}.from`)) rates.push({ from: r.from, reference_pcm: rate, ...(r.voucherId ? { voucher_id: Number(r.voucherId) } : {}) })
   })
   needRows('rates', d.rates, [
@@ -270,9 +255,9 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | LoanIssue[] {
     const at = { section: 'properties.housing.grace', n: i + 1 }
     needDate(`grace.${i}.from`, 'properties.housing.field.from', g.from, at)
     needDate(`grace.${i}.to`, 'properties.housing.field.to', g.to, at)
-    if (okDate(g.from) && startsOk && g.from < d.starts) issue(`grace.${i}.from`, 'properties.housing.field.from', 'properties.housing.issue.beforeStarts', at)
-    if (okDate(g.from) && okDate(g.to) && g.to < g.from) issue(`grace.${i}.to`, 'properties.housing.field.to', 'properties.housing.issue.toBeforeFrom', at)
-    else if (okDate(g.to) && endsOk && g.to > d.ends) issue(`grace.${i}.to`, 'properties.housing.field.to', 'properties.housing.issue.afterEnds', at)
+    if (okDate(g.from) && startsOk && g.from < d.starts) issue(`grace.${i}.from`, 'properties.housing.field.from', 'properties.form.issue.beforeStarts', at)
+    if (okDate(g.from) && okDate(g.to) && g.to < g.from) issue(`grace.${i}.to`, 'properties.housing.field.to', 'properties.form.issue.toBeforeFrom', at)
+    else if (okDate(g.to) && endsOk && g.to > d.ends) issue(`grace.${i}.to`, 'properties.housing.field.to', 'properties.form.issue.afterEnds', at)
     if (!has(`grace.${i}.from`) && !has(`grace.${i}.to`)) grace.push({ from: g.from, to: g.to })
   })
 
@@ -282,8 +267,8 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | LoanIssue[] {
     const at = { section: 'properties.housing.events', n: i + 1 }
     needDate(`events.${i}.date`, 'properties.housing.field.date', e.date, at)
     const amount = amountOf(e.amount)
-    if (amount != null && Number.isNaN(amount)) issue(`events.${i}.amount`, 'properties.housing.field.amount', 'properties.housing.issue.amount', at)
-    else if (e.kind === 'extra_payment' && !amount) issue(`events.${i}.amount`, 'properties.housing.field.amount', 'properties.housing.issue.extraAmount', at)
+    if (amount != null && Number.isNaN(amount)) issue(`events.${i}.amount`, 'properties.housing.field.amount', 'properties.form.issue.amount', at)
+    else if (e.kind === 'extra_payment' && !amount) issue(`events.${i}.amount`, 'properties.housing.field.amount', 'properties.form.issue.extraAmount', at)
     else if (okDate(e.date)) {
       events.push({
         date: e.date,

@@ -1239,7 +1239,7 @@
       "empty": "Ei liitteitä.",
       "missing": "Tosite {id} on poistettu",
       "deleted": "Poistettu",
-      "absent": "Puuttuu",
+      "absent": "Asiakirja puuttuu",
       "voucher": "Tosite {id}",
       "voucherNoId": "Tosite",
       "showBank": "Näytä tiliotteet ({n})",
@@ -1371,6 +1371,32 @@
       "uploadException": "Lataa liite",
       "lead": "Kohteen yleiset asetukset. Vuokrasopimukset, vesitasaukset, asiakirjat ja talouden tiedot muokataan kohteen omilla välilehdillä, kortti tai osio kerrallaan."
     },
+    "form": {
+      "issuesLead": "Ei tallennettu. Korjaa merkityt kentät:",
+      "rowField": "{section}, rivi {n}: {field}",
+      "issue": {
+        "required": "puuttuu",
+        "date": "anna koko päivämäärä",
+        "amount": "anna summa euroina, esim. 1 250,00",
+        "rate": "anna prosentti, esim. 2,125",
+        "months": "anna kuukaudet 1-120",
+        "endsBeforeStarts": "ennen nostopäivää",
+        "toBeforeFrom": "ennen alkupäivää",
+        "sameDay": "sama päivä kuin rivillä {n}",
+        "extraAmount": "ylimääräisellä lyhennyksellä on summa",
+        "atLeastOne": "lisää vähintään yksi rivi",
+        "beforeStarts": "ennen nostopäivää",
+        "afterEnds": "viimeisen eräpäivän jälkeen",
+        "shareOverTotal": "suurempi kuin taloyhtiön laina yhteensä",
+        "outsideLease": "vuokrasopimuksen ajan ulkopuolella",
+        "overlapsLease": "samoina päivinä kuin sopimus {lease}",
+        "overlapsRow": "samoina päivinä kuin rivi {n}",
+        "overlapsSettlement": "samoina päivinä kuin tasaus {period}",
+        "dueDay": "anna päivä 1-31",
+        "percent": "anna prosentti, esim. 3,5",
+        "sameAsStart": "sama päivä kuin alkuvuokralla"
+      }
+    },
     "setup": {
       "title": "Vuokrakohteiden määritys",
       "lead": "Valitse, mitkä kustannuspaikat ovat vuokrakohteita, ja yhdistä niihin hankintamenon tase-erät ja asiakirjat. Ehdotukset tulevat kirjanpidosta; ★ = ehdotettu. Kirjanpitoon ei kosketa.",
@@ -1483,14 +1509,6 @@
       "loan_linked": "Lainatili {path} on jo toisen kohteen pankkilaina. Laina voi kuulua vain yhdelle kohteelle, muuten sen korot laskettaisiin kahdesti.",
       "deposit_linked": "Vakuus kuuluu jo toiseen vuokrasuhteeseen.",
       "overlap": "Ajanjaksot menevät päällekkäin: tarkista kenttä {path}.",
-      "leaseOverlap": "Vuokrasopimukset {a} ja {b} menevät päällekkäin. Päivä voi kuulua vain yhteen sopimukseen, muuten sen vuokraa odotetaan kahdesti: päätä aiempi ennen seuraavan alkua.",
-      "leaseEnds": "Vuokrasopimus {lease} päättyy ennen alkuaan.",
-      "increaseOutside": "Vuokra {date} alkaen ei osu vuokrasopimuksen {lease} ajalle.",
-      "increaseTwice": "Vuokrasopimuksessa {lease} on kaksi vuokraa {date} alkaen.",
-      "exceptionDates": "Poikkeava vuokra {period} päättyy ennen alkuaan.",
-      "exceptionOutside": "Poikkeava vuokra {period} ei osu vuokrasopimuksen {lease} ajalle.",
-      "exceptionOverlap": "Poikkeavat vuokrat {a} ja {b} menevät päällekkäin ({lease}). Päivälle voi sopia vain yhden poikkeuksen.",
-      "waterOverlap": "Vesitasausten jaksot {a} ja {b} menevät päällekkäin, jolloin samat päivät tasattaisiin kahdesti.",
       "rentDates": "Vuokran päättymispäivä on ennen alkamispäivää."
     },
     "total": "Yhteensä",
@@ -1681,23 +1699,6 @@
       "noCapital": "Ei muuta sijoitettua pääomaa."
     },
     "housing": {
-      "issuesLead": "Lainaa ei tallennettu. Korjaa merkityt kentät:",
-      "rowField": "{section}, rivi {n}: {field}",
-      "issue": {
-        "required": "puuttuu",
-        "date": "anna koko päivämäärä",
-        "amount": "anna summa euroina, esim. 1 250,00",
-        "rate": "anna prosentti, esim. 2,125",
-        "months": "anna kuukaudet 1-120",
-        "endsBeforeStarts": "ennen nostopäivää",
-        "toBeforeFrom": "ennen alkupäivää",
-        "sameDay": "sama päivä kuin rivillä {n}",
-        "extraAmount": "ylimääräisellä lyhennyksellä on summa",
-        "atLeastOne": "lisää vähintään yksi rivi",
-        "beforeStarts": "ennen nostopäivää",
-        "afterEnds": "viimeisen eräpäivän jälkeen",
-        "shareOverTotal": "suurempi kuin taloyhtiön laina yhteensä"
-      },
       "field": {
         "name": "Laina",
         "lender": "Lainanantaja",

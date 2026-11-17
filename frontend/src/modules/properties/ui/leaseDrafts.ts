@@ -1,13 +1,14 @@
 /** Lease form drafts: strings while editing, the stored leases on save. */
 import { depositKeys } from '../../../book/modules/properties/domain/deposits'
 import { DEFAULT_DUE_DAY } from '../../../book/modules/properties/domain/leaseSuggest'
-import { leaseOverlaps, overlaps } from '../../../book/modules/properties/domain/ranges'
+import { overlaps } from '../../../book/modules/properties/domain/ranges'
 import { monthEnd } from '../../../book/months'
 import { formatDate } from '../../../shared/dates'
 import { formatEurInput, parseEurInput } from '../../../shared/money'
 import { formatPercentInput, parsePercentInput } from '../../../shared/percent'
 import type { Lease, LeaseException, LeaseIncreaseKind, LeaseRent } from '../api'
-import { periodText, saveErrorText } from './format'
+import { issueCollector, type FormIssue } from './formIssues'
+import { periodText } from './format'
 
 export type Partner = { id: number; name: string }
 
@@ -168,77 +169,84 @@ function leaseLabel(t: T, tenant: string, lease: Lease): string {
   return tenant ? `${tenant} ${period}` : period
 }
 
-/**
- * The first date that does not fit, as a sentence, or null: a lease ending before it starts, a
- * rent step or an exception outside its lease, two steps from one day, an exception ending before
- * it starts, two exceptions on the same days, or two leases on the same days (a day in two would
- * expect its rent twice). Empty dates are left to the field check.
- */
-function rangeError(t: T, leases: Lease[], tenants: string[]): string | null {
-  for (const [i, lease] of leases.entries()) {
-    if (!lease.starts) continue
-    const label = leaseLabel(t, tenants[i], lease)
-    if (lease.ends && lease.ends < lease.starts) return t('properties.error.leaseEnds', { lease: label })
-    const outside = (date: string) => date < lease.starts || (lease.ends != null && date > lease.ends)
-    const seen = new Set<string>()
-    for (const step of lease.rents) {
-      if (!step.from) continue
-      if (outside(step.from)) return t('properties.error.increaseOutside', { date: formatDate(step.from), lease: label })
-      if (seen.has(step.from)) return t('properties.error.increaseTwice', { date: formatDate(step.from), lease: label })
-      seen.add(step.from)
-    }
-    const exceptions = (lease.exceptions ?? []).filter((e) => e.from && e.to)
-    for (const e of exceptions) {
-      const period = periodText(t, e.from, e.to)
-      if (e.to < e.from) return t('properties.error.exceptionDates', { period })
-      if (outside(e.from) || outside(e.to)) return t('properties.error.exceptionOutside', { period, lease: label })
-    }
-    const [same] = overlaps(exceptions, (e) => ({ from: e.from, to: e.to }))
-    if (same) {
-      const [a, b] = same
-      return t('properties.error.exceptionOverlap', { a: periodText(t, a.from, a.to), b: periodText(t, b.from, b.to), lease: label })
-    }
-  }
-  const [both] = leaseOverlaps(leases.filter((l) => l.starts))
-  if (!both) return null
-  const [a, b] = both.map((l) => leaseLabel(t, tenants[leases.indexOf(l)], l))
-  return t('properties.error.leaseOverlap', { a, b })
-}
+const okDate = (text: string) => /^\d{4}-\d{2}-\d{2}$/.test(text)
+
+/** A lease draft's fields on the form: `{key}.{field}` (`l2.starts`, `l2.increases.0.from`). */
+export const leaseField = (d: LeaseDraft, i: number, field: string) => `${d.key || i}.${field}`
 
 /**
- * The stored leases, or an error text naming the first bad field or date (`rangeError`). Rows
- * without a start or tenant are dropped.
+ * The stored leases, or every field to fix: a missing or misplaced date, a due day or percentage
+ * that does not read, a rent step or exception outside its lease or on another's days, and two
+ * leases on the same days (a day in two would expect its rent twice), marked on both. Rows without
+ * a start or tenant are dropped. `only`: the leases on the form (by key); others' issues are left
+ * out unless they are all there is.
  */
-export function buildLeases(t: T, drafts: LeaseDraft[], partners: Partner[]): Lease[] | string {
+export function buildLeases(t: T, drafts: LeaseDraft[], partners: Partner[], only?: Set<string>): Lease[] | { issues: FormIssue[] } {
   const byName = new Map(partners.map((p) => [p.name.trim().toLowerCase(), p.id]))
-  const out: Lease[] = []
-  const tenants: string[] = []
+  const { issues, issue, has } = issueCollector(t)
+  const out: { lease: Lease; tenant: string; field: (name: string) => string }[] = []
   for (const [i, d] of drafts.entries()) {
     const tenant = d.tenant.trim()
     if (!d.starts && !tenant) continue
-    const bad = (field: string) => saveErrorText(t, `invalid_field:leases[${i}].${field}`)
+    const field = (name: string) => leaseField(d, i, name)
     const lease: Lease = { ...(d.base ?? {}), key: d.key || d.base?.key || '', starts: d.starts, rents: [] }
     for (const key of OPTIONAL_KEYS) delete lease[key]
     const partnerId = byName.get(tenant.toLowerCase())
     if (partnerId != null) lease.tenant_partner_id = partnerId
     else if (tenant) lease.tenant_name = tenant
+
+    if (!d.starts) issue(field('starts'), 'properties.field.leaseStarts', 'properties.form.issue.required')
+    else if (!okDate(d.starts)) issue(field('starts'), 'properties.field.leaseStarts', 'properties.form.issue.date')
+    if (d.ends && okDate(d.starts) && d.ends < d.starts) issue(field('ends'), 'properties.field.leaseEnds', 'properties.form.issue.toBeforeFrom')
     if (d.ends) lease.ends = d.ends
-    if (d.dueDay.trim()) {
-      if (!/^\d+$/.test(d.dueDay.trim())) return bad('due_day')
-      lease.due_day = Number(d.dueDay.trim())
-    }
+    const dueDay = d.dueDay.trim()
+    if (dueDay && (!/^\d+$/.test(dueDay) || Number(dueDay) < 1 || Number(dueDay) > 31)) {
+      issue(field('dueDay'), 'properties.field.dueDay', 'properties.form.issue.dueDay')
+    } else if (dueDay) lease.due_day = Number(dueDay)
+
+    const outside = (date: string) => okDate(d.starts) && (date < d.starts || (d.ends !== '' && date > d.ends))
+    const seen = new Map<string, number>()
+    d.increases.forEach((r, k) => {
+      if (!r.from && !typed(r)) return
+      const at = { section: 'properties.lease.increases', n: k + 1 }
+      const from = field(`increases.${k}.from`)
+      if (!r.from) issue(from, 'properties.field.increaseFrom', 'properties.form.issue.required', at)
+      else if (outside(r.from)) issue(from, 'properties.field.increaseFrom', 'properties.form.issue.outsideLease', at)
+      else if (r.from === d.starts) issue(from, 'properties.field.increaseFrom', 'properties.form.issue.sameAsStart', at)
+      else if (seen.has(r.from)) issue(from, 'properties.field.increaseFrom', 'properties.form.issue.sameDay', at, { n: seen.get(r.from)! + 1 })
+      else seen.set(r.from, k)
+    })
     lease.rents = [
       ...(typed(d.initial) ? [step(d.starts, d.initial, d.parking)] : []),
       ...d.increases.filter((r) => r.from || typed(r)).map((r) => step(r.from, r, d.parking, r.voucherId, r.noDocument)),
     ]
+
+    const spans: { from: string; to: string; k: number }[] = []
+    d.exceptions.forEach((e, k) => {
+      if (!e.from && !e.to && !typed(e) && !e.note.trim() && !e.voucherId) return
+      const at = { section: 'properties.lease.exceptions', n: k + 1 }
+      const from = field(`exceptions.${k}.from`)
+      const to = field(`exceptions.${k}.to`)
+      if (!e.from) issue(from, 'properties.field.exceptionFrom', 'properties.form.issue.required', at)
+      else if (outside(e.from)) issue(from, 'properties.field.exceptionFrom', 'properties.form.issue.outsideLease', at)
+      if (!e.to) issue(to, 'properties.field.exceptionTo', 'properties.form.issue.required', at)
+      else if (e.from && e.to < e.from) issue(to, 'properties.field.exceptionTo', 'properties.form.issue.toBeforeFrom', at)
+      else if (outside(e.to)) issue(to, 'properties.field.exceptionTo', 'properties.form.issue.outsideLease', at)
+      if (!has(from) && !has(to)) spans.push({ from: e.from, to: e.to, k })
+    })
+    for (const [a, b] of overlaps(spans, (x) => ({ from: x.from, to: x.to }))) {
+      const at = { section: 'properties.lease.exceptions', n: b.k + 1 }
+      issue(field(`exceptions.${b.k}.from`), 'properties.field.exceptionFrom', 'properties.form.issue.overlapsRow', at, { n: a.k + 1 })
+    }
     const exceptions = d.exceptions.filter((e) => e.from || e.to || typed(e) || e.note.trim() || e.voucherId)
     if (exceptions.length) lease.exceptions = exceptions.map((e) => exception(e, d.parking))
+
     if (d.increaseKind !== 'none' || d.increaseMonth) {
       const increase: Lease['increase'] = { kind: d.increaseKind }
       if (d.increaseKind === 'percent' && d.increaseValue) {
         const pct = parsePercentInput(d.increaseValue)
-        if (pct == null || Number.isNaN(pct)) return bad('increase.pct_bp')
-        increase.pct_bp = pct
+        if (pct == null || Number.isNaN(pct)) issue(field('increaseValue'), 'properties.field.increasePct', 'properties.form.issue.percent')
+        else increase.pct_bp = pct
       }
       if (d.increaseKind === 'amount' && d.increaseValue) increase.amount_snt = parseEurInput(d.increaseValue)
       if (d.increaseMonth) increase.month = Number(d.increaseMonth)
@@ -254,10 +262,19 @@ export function buildLeases(t: T, drafts: LeaseDraft[], partners: Partner[]): Le
       if (eraids.length) lease.deposit.eraids = eraids
       if (lineIds.length) lease.deposit.line_ids = lineIds
     }
-    out.push(lease)
-    tenants.push(tenant)
+    out.push({ lease, tenant, field })
   }
-  return rangeError(t, out, tenants) ?? out
+  // Two leases on the same days: the later starts within the earlier, which ends too late or not at all.
+  const dated = out.filter((x) => okDate(x.lease.starts) && !has(x.field('ends')))
+  for (const [a, b] of overlaps(dated, (x) => ({ from: x.lease.starts, to: x.lease.ends ?? null }))) {
+    issue(b.field('starts'), 'properties.field.leaseStarts', 'properties.form.issue.overlapsLease', undefined, { lease: leaseLabel(t, a.tenant, a.lease) })
+    issue(a.field('ends'), 'properties.field.leaseEnds', 'properties.form.issue.overlapsLease', undefined, { lease: leaseLabel(t, b.tenant, b.lease) })
+  }
+  if (issues.length) {
+    const own = only ? issues.filter((x) => only.has(x.field.slice(0, x.field.indexOf('.')))) : issues
+    return { issues: own.length ? own : issues }
+  }
+  return out.map((x) => x.lease)
 }
 
 /** What the tenant pays a month at a draft step, in cents; parking only when the lease has it. */

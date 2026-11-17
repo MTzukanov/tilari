@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { DocLine, DocLines } from '../../../shared/DocRows'
@@ -6,6 +6,7 @@ import { formatVoucherId } from '../../../shared/formatVoucherId'
 import { formatCents } from '../../../shared/money'
 import { FilePill, Pill, VoucherPill } from '../../../shared/Pill'
 import type { BookedLine, LeaseVoucher, WaterShareView } from '../api'
+import type { FormIssue } from './formIssues'
 import { saveErrorText, waterStatusText } from './format'
 
 /** A voucher's pill: its date and Kitsas number, its title on hover and for screen readers. Opens the voucher. */
@@ -191,5 +192,36 @@ export function LineSources({ label, lines, onOpen }: { label: string; lines: Bo
         ))}
       </span>
     </details>
+  )
+}
+
+/** A labelled field; when a save found it wanting, the label says why (the input carries `invalidProps`). */
+export function Field({ label, issue, className, children }: { label: string; issue?: string; className?: string; children: ReactNode }) {
+  return (
+    <label className={className}>
+      <span>
+        {label}
+        {issue ? <span className="field-issue"> · {issue}</span> : null}
+      </span>
+      {children}
+    </label>
+  )
+}
+
+/** What a refused save needs, above a card's buttons: one line per field to fix. */
+export function FormIssueList({ issues }: { issues: FormIssue[] }) {
+  const { t } = useI18n()
+  if (!issues.length) return null
+  return (
+    <div className="error" role="alert">
+      <p className="form-issues-lead">{t('properties.form.issuesLead')}</p>
+      <ul className="form-issues">
+        {issues.map((issue) => (
+          <li key={issue.field}>
+            {issue.label}: {issue.message}
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }

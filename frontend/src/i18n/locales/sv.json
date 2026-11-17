@@ -1239,7 +1239,7 @@
       "empty": "Inga bilagor.",
       "missing": "Verifikat {id} har raderats",
       "deleted": "Borttaget",
-      "absent": "Saknas",
+      "absent": "Dokument saknas",
       "voucher": "Verifikat {id}",
       "voucherNoId": "Verifikat",
       "showBank": "Visa kontoutdrag ({n})",
@@ -1371,6 +1371,32 @@
       "uploadException": "Ladda upp bilaga",
       "lead": "Objektets allmänna inställningar. Hyresavtal, vattenutjämningar, dokument och ekonomiska uppgifter redigeras på objektets egna flikar, ett kort eller avsnitt i taget."
     },
+    "form": {
+      "issuesLead": "Sparades inte. Rätta de markerade fälten:",
+      "rowField": "{section}, rad {n}: {field}",
+      "issue": {
+        "required": "saknas",
+        "date": "ange ett fullständigt datum",
+        "amount": "ange ett belopp i euro, t.ex. 1 250,00",
+        "rate": "ange en procentsats, t.ex. 2,125",
+        "months": "ange 1-120 månader",
+        "endsBeforeStarts": "före lyftdagen",
+        "toBeforeFrom": "före startdagen",
+        "sameDay": "samma datum som rad {n}",
+        "extraAmount": "en extra amortering har ett belopp",
+        "atLeastOne": "lägg till minst en rad",
+        "beforeStarts": "före lyftdagen",
+        "afterEnds": "efter sista förfallodagen",
+        "shareOverTotal": "större än bolagets lån totalt",
+        "outsideLease": "utanför hyresavtalets tid",
+        "overlapsLease": "samma dagar som avtalet {lease}",
+        "overlapsRow": "samma dagar som rad {n}",
+        "overlapsSettlement": "samma dagar som utjämningen {period}",
+        "dueDay": "ange en dag 1-31",
+        "percent": "ange en procentsats, t.ex. 3,5",
+        "sameAsStart": "samma dag som starthyran"
+      }
+    },
     "setup": {
       "title": "Inställning av hyresobjekt",
       "lead": "Välj vilka kostnadsställen som är hyresobjekt och koppla deras anskaffningsposter och dokument. Förslagen kommer från bokföringen; ★ = förslag. Bokföringen påverkas inte.",
@@ -1483,14 +1509,6 @@
       "loan_linked": "Lånekonto {path} är redan ett annat objekts banklån. Ett lån kan höra till bara ett objekt, annars räknas räntan två gånger.",
       "deposit_linked": "Depositionen hör redan till ett annat hyresförhållande.",
       "overlap": "Perioder överlappar: kontrollera fältet {path}.",
-      "leaseOverlap": "Hyresavtalen {a} och {b} överlappar. En dag kan höra till bara ett avtal, annars väntas dess hyra två gånger: avsluta det tidigare innan nästa börjar.",
-      "leaseEnds": "Hyresavtalet {lease} slutar innan det börjar.",
-      "increaseOutside": "Hyran från {date} ligger inte inom hyresavtalet {lease}.",
-      "increaseTwice": "Hyresavtalet {lease} har två hyror från {date}.",
-      "exceptionDates": "Den avvikande hyran {period} slutar innan den börjar.",
-      "exceptionOutside": "Den avvikande hyran {period} ligger inte inom hyresavtalet {lease}.",
-      "exceptionOverlap": "De avvikande hyrorna {a} och {b} överlappar ({lease}). En dag kan ha bara ett undantag.",
-      "waterOverlap": "Vattenutjämningarnas perioder {a} och {b} överlappar, så samma dagar skulle utjämnas två gånger.",
       "rentDates": "Hyrans sista dag ligger före den första."
     },
     "total": "Totalt",
@@ -1681,23 +1699,6 @@
       "noCapital": "Inget annat investerat kapital."
     },
     "housing": {
-      "issuesLead": "Lånet sparades inte. Rätta de markerade fälten:",
-      "rowField": "{section}, rad {n}: {field}",
-      "issue": {
-        "required": "saknas",
-        "date": "ange ett fullständigt datum",
-        "amount": "ange ett belopp i euro, t.ex. 1 250,00",
-        "rate": "ange en procentsats, t.ex. 2,125",
-        "months": "ange 1-120 månader",
-        "endsBeforeStarts": "före lyftdagen",
-        "toBeforeFrom": "före startdagen",
-        "sameDay": "samma datum som rad {n}",
-        "extraAmount": "en extra amortering har ett belopp",
-        "atLeastOne": "lägg till minst en rad",
-        "beforeStarts": "före lyftdagen",
-        "afterEnds": "efter sista förfallodagen",
-        "shareOverTotal": "större än bolagets lån totalt"
-      },
       "field": {
         "name": "Lån",
         "lender": "Långivare",

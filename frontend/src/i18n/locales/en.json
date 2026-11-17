@@ -1239,7 +1239,7 @@
       "empty": "No attachments.",
       "missing": "Voucher {id} has been deleted",
       "deleted": "Deleted",
-      "absent": "Missing",
+      "absent": "Document missing",
       "voucher": "Voucher {id}",
       "voucherNoId": "Voucher",
       "showBank": "Show bank statements ({n})",
@@ -1371,6 +1371,32 @@
       "uploadException": "Upload document",
       "lead": "The object's general settings. Leases, water settlements, documents and the figures' inputs are edited on the object's own tabs, one card or section at a time."
     },
+    "form": {
+      "issuesLead": "Not saved. Fix the marked fields:",
+      "rowField": "{section}, row {n}: {field}",
+      "issue": {
+        "required": "missing",
+        "date": "give a full date",
+        "amount": "give an amount in euros, e.g. 1 250,00",
+        "rate": "give a percentage, e.g. 2,125",
+        "months": "give 1-120 months",
+        "endsBeforeStarts": "before the drawdown date",
+        "toBeforeFrom": "before the start date",
+        "sameDay": "same date as row {n}",
+        "extraAmount": "an extra repayment has an amount",
+        "atLeastOne": "add at least one row",
+        "beforeStarts": "before the drawdown date",
+        "afterEnds": "after the last due date",
+        "shareOverTotal": "more than the company's whole loan",
+        "outsideLease": "outside the lease",
+        "overlapsLease": "same days as the lease {lease}",
+        "overlapsRow": "same days as row {n}",
+        "overlapsSettlement": "same days as the settlement {period}",
+        "dueDay": "give a day 1-31",
+        "percent": "give a percentage, e.g. 3,5",
+        "sameAsStart": "same day as the starting rent"
+      }
+    },
     "setup": {
       "title": "Set up rental objects",
       "lead": "Choose which cost centres are rental objects and link their acquisition items and documents. Suggestions come from the books; ★ = suggested. The books are not touched.",
@@ -1483,14 +1509,6 @@
       "loan_linked": "Loan account {path} is already another object's bank loan. A loan can belong to one object only; otherwise its interest would count twice.",
       "deposit_linked": "The deposit already belongs to another lease.",
       "overlap": "Periods overlap: check the field {path}.",
-      "leaseOverlap": "The leases {a} and {b} overlap. A day can belong to one lease only, or its rent is expected twice: end the earlier one before the next starts.",
-      "leaseEnds": "The lease {lease} ends before it starts.",
-      "increaseOutside": "The rent from {date} is not within the lease {lease}.",
-      "increaseTwice": "The lease {lease} has two rents from {date}.",
-      "exceptionDates": "The exception {period} ends before it starts.",
-      "exceptionOutside": "The exception {period} is not within the lease {lease}.",
-      "exceptionOverlap": "The exceptions {a} and {b} overlap ({lease}). A day can have one exception only.",
-      "waterOverlap": "The water settlement periods {a} and {b} overlap, so the same days would be settled twice.",
       "rentDates": "The last day of rent is before the first."
     },
     "total": "Total",
@@ -1681,23 +1699,6 @@
       "noCapital": "No other invested capital."
     },
     "housing": {
-      "issuesLead": "The loan was not saved. Fix the marked fields:",
-      "rowField": "{section}, row {n}: {field}",
-      "issue": {
-        "required": "missing",
-        "date": "give a full date",
-        "amount": "give an amount in euros, e.g. 1 250,00",
-        "rate": "give a percentage, e.g. 2,125",
-        "months": "give 1-120 months",
-        "endsBeforeStarts": "before the drawdown date",
-        "toBeforeFrom": "before the start date",
-        "sameDay": "same date as row {n}",
-        "extraAmount": "an extra repayment has an amount",
-        "atLeastOne": "add at least one row",
-        "beforeStarts": "before the drawdown date",
-        "afterEnds": "after the last due date",
-        "shareOverTotal": "more than the company's whole loan"
-      },
       "field": {
         "name": "Loan",
         "lender": "Lender",

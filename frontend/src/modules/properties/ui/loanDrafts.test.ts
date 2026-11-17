@@ -82,20 +82,20 @@ describe('housing-company loan drafts', () => {
   it('a new loan needs its name, term, margin, a share, a rahoitusvastike and a rate; each is named', () => {
     const issues = buildLoan(t, newLoanDraft())
     expect(Array.isArray(issues) && issues.map((i) => [i.field, i.message])).toEqual([
-      ['name', 'properties.housing.issue.required'],
-      ['starts', 'properties.housing.issue.required'],
-      ['ends', 'properties.housing.issue.required'],
-      ['margin', 'properties.housing.issue.required'],
-      ['certificates.0.date', 'properties.housing.issue.required'],
-      ['certificates.0.share', 'properties.housing.issue.required'],
-      ['charges.0.from', 'properties.housing.issue.required'],
-      ['charges.0.amount', 'properties.housing.issue.required'],
-      ['rates.0.from', 'properties.housing.issue.required'],
-      ['rates.0.rate', 'properties.housing.issue.required'],
+      ['name', 'properties.form.issue.required'],
+      ['starts', 'properties.form.issue.required'],
+      ['ends', 'properties.form.issue.required'],
+      ['margin', 'properties.form.issue.required'],
+      ['certificates.0.date', 'properties.form.issue.required'],
+      ['certificates.0.share', 'properties.form.issue.required'],
+      ['charges.0.from', 'properties.form.issue.required'],
+      ['charges.0.amount', 'properties.form.issue.required'],
+      ['rates.0.from', 'properties.form.issue.required'],
+      ['rates.0.rate', 'properties.form.issue.required'],
     ])
     // A section whose rows were all removed is itself to fix.
     const none = buildLoan(t, { ...complete(), charges: [] })
-    expect(none).toEqual([{ field: 'charges', label: 'properties.housing.charges', message: 'properties.housing.issue.atLeastOne' }])
+    expect(none).toEqual([{ field: 'charges', label: 'properties.housing.charges', message: 'properties.form.issue.atLeastOne' }])
   })
 
   it('a fixed rate needs no margin and no resets: its rate rows hold it', () => {
@@ -112,9 +112,9 @@ describe('housing-company loan drafts', () => {
       grace: [{ from: '2023-05-01', to: '2044-01-01' }],
     })
     expect(Array.isArray(issues) && issues.map((i) => [i.field, i.message])).toEqual([
-      ['certificates.0.date', 'properties.housing.issue.beforeStarts'],
-      ['certificates.0.share', 'properties.housing.issue.shareOverTotal'],
-      ['grace.0.to', 'properties.housing.issue.afterEnds'],
+      ['certificates.0.date', 'properties.form.issue.beforeStarts'],
+      ['certificates.0.share', 'properties.form.issue.shareOverTotal'],
+      ['grace.0.to', 'properties.form.issue.afterEnds'],
     ])
   })
 
@@ -135,18 +135,18 @@ describe('housing-company loan drafts', () => {
     }
     const issues = buildLoan(t, d)
     expect(Array.isArray(issues) && issues.map((i) => [i.field, i.message])).toEqual([
-      ['ends', 'properties.housing.issue.endsBeforeStarts'],
-      ['margin', 'properties.housing.issue.rate'],
-      ['resetMonths', 'properties.housing.issue.months'],
-      ['certificates.1.date', 'properties.housing.issue.sameDay {"n":1}'],
-      ['certificates.1.share', 'properties.housing.issue.required'],
-      ['charges.0.from', 'properties.housing.issue.required'],
-      ['rates.0.rate', 'properties.housing.issue.rate'],
-      ['grace.0.to', 'properties.housing.issue.toBeforeFrom'],
-      ['events.0.amount', 'properties.housing.issue.extraAmount'],
+      ['ends', 'properties.form.issue.endsBeforeStarts'],
+      ['margin', 'properties.form.issue.rate'],
+      ['resetMonths', 'properties.form.issue.months'],
+      ['certificates.1.date', 'properties.form.issue.sameDay {"n":1}'],
+      ['certificates.1.share', 'properties.form.issue.required'],
+      ['charges.0.from', 'properties.form.issue.required'],
+      ['rates.0.rate', 'properties.form.issue.rate'],
+      ['grace.0.to', 'properties.form.issue.toBeforeFrom'],
+      ['events.0.amount', 'properties.form.issue.extraAmount'],
     ])
     expect(Array.isArray(issues) && issues[4].label).toBe(
-      'properties.housing.rowField {"section":"properties.housing.certificates","n":2,"field":"properties.housing.field.share"}',
+      'properties.form.rowField {"section":"properties.housing.certificates","n":2,"field":"properties.housing.field.share"}',
     )
   })
 })

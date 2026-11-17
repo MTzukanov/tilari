@@ -144,49 +144,67 @@ describe('lease drafts', () => {
     ])
   })
 
-  it('a bad number names its field', () => {
-    const lease = { ...newLease(), starts: '2025-01-01', dueDay: 'toinen' }
-    expect(buildLeases(t, [lease], partners)).toBe('properties.error.invalid_field{"path":"leases[0].due_day"}')
-    const pct = { ...newLease(), starts: '2025-01-01', increaseKind: 'percent' as const, increaseValue: 'kolme' }
-    expect(buildLeases(t, [pct], partners)).toBe('properties.error.invalid_field{"path":"leases[0].increase.pct_bp"}')
+  it('a bad number marks its field', () => {
+    const lease = { ...newLease(), key: 'l1', starts: '2025-01-01', dueDay: 'toinen' }
+    expect(buildLeases(t, [lease], partners)).toEqual({
+      issues: [{ field: 'l1.dueDay', label: 'properties.field.dueDay', message: 'properties.form.issue.dueDay' }],
+    })
+    const pct = { ...newLease(), key: 'l1', starts: '2025-01-01', increaseKind: 'percent' as const, increaseValue: 'kolme' }
+    expect(buildLeases(t, [pct], partners)).toEqual({
+      issues: [{ field: 'l1.increaseValue', label: 'properties.field.increasePct', message: 'properties.form.issue.percent' }],
+    })
+    // A tenant without a start: the start is needed.
+    const noStart = { ...newLease(), key: 'l1', tenant: 'Vuokralainen Virtanen' }
+    expect(buildLeases(t, [noStart], partners)).toEqual({
+      issues: [{ field: 'l1.starts', label: 'properties.field.leaseStarts', message: 'properties.form.issue.required' }],
+    })
   })
 
-  it('dates that do not fit name the lease and the days: overlapping leases or exceptions, a step or exception outside', () => {
-    // Texts as "leaseOverlap(a, b)", to read the names and days.
+  it('dates that do not fit mark their fields, naming the other lease or row: overlaps, a step or exception outside', () => {
+    // Texts as "overlapsLease(a)", to read the names and days.
     const say = (key: string, vars?: Record<string, string | number>) => `${key.split('.').pop()}${vars ? `(${Object.values(vars).join(', ')})` : ''}`
+    const marks = (r: ReturnType<typeof buildLeases>) => ('issues' in r ? r.issues.map((i) => `${i.field} ${i.message}`) : r)
     const old = { ...newLease(), tenant: 'Vuokralainen Virtanen', starts: '2024-01-01', initial: { rent: '640', water: '', parking: '' } }
     const next = { ...newLease(), tenant: 'Uusi Vuokralainen', starts: '2025-03-01', ends: '2026-02-28' }
-    // An open lease runs on: the next one would expect its rent twice.
-    expect(buildLeases(say, [next, old], partners)).toBe(
-      'leaseOverlap(Vuokralainen Virtanen since(1.1.2024), Uusi Vuokralainen period(1.3.2025, 28.2.2026))',
-    )
+    // An open lease runs on: the next one would expect its rent twice. Both leases are marked.
+    expect(marks(buildLeases(say, [next, old], partners))).toEqual([
+      '0.starts overlapsLease(Vuokralainen Virtanen since(1.1.2024))',
+      '1.ends overlapsLease(Uusi Vuokralainen period(1.3.2025, 28.2.2026))',
+    ])
     // One shared day is an overlap too; the day after is not.
-    expect(buildLeases(say, [{ ...old, ends: '2025-03-01' }, next], partners)).toMatch(/^leaseOverlap/)
+    expect(marks(buildLeases(say, [{ ...old, ends: '2025-03-01' }, next], partners))).toEqual([
+      '1.starts overlapsLease(Vuokralainen Virtanen period(1.1.2024, 1.3.2025))',
+      '0.ends overlapsLease(Uusi Vuokralainen period(1.3.2025, 28.2.2026))',
+    ])
     expect(buildLeases(say, [{ ...old, ends: '2025-02-28' }, next], partners)).toHaveLength(2)
     // A lease inside a longer one.
-    expect(buildLeases(say, [{ ...old, ends: '2026-12-31' }, { ...next, ends: '2025-03-31' }], partners)).toMatch(/^leaseOverlap/)
+    expect(marks(buildLeases(say, [{ ...old, ends: '2026-12-31' }, { ...next, ends: '2025-03-31' }], partners))).toHaveLength(2)
+    // Only the form's lease is marked when the other is stored.
+    const card = { ...next, key: 'l2' }
+    expect(marks(buildLeases(say, [{ ...old, key: 'l1' }, card], partners, new Set(['l2'])))).toEqual([
+      'l2.starts overlapsLease(Vuokralainen Virtanen since(1.1.2024))',
+    ])
 
     const lease = { ...old, ends: '2024-12-31' }
     const exception = (from: string, to: string) => ({ from, to, rent: '0', water: '', parking: '', note: '', voucherId: '', noDocument: false })
     const march = exception('2024-03-01', '2024-03-31')
-    expect(buildLeases(say, [{ ...lease, exceptions: [march, exception('2024-03-15', '2024-04-15')] }], partners)).toBe(
-      'exceptionOverlap(period(1.3.2024, 31.3.2024), period(15.3.2024, 15.4.2024), Vuokralainen Virtanen period(1.1.2024, 31.12.2024))',
-    )
+    expect(marks(buildLeases(say, [{ ...lease, exceptions: [march, exception('2024-03-15', '2024-04-15')] }], partners))).toEqual([
+      '0.exceptions.1.from overlapsRow(1)',
+    ])
     expect(buildLeases(say, [{ ...lease, exceptions: [march, exception('2024-04-01', '2024-04-30')] }], partners)).toHaveLength(1)
-    expect(buildLeases(say, [{ ...lease, exceptions: [exception('2024-12-01', '2025-01-31')] }], partners)).toBe(
-      'exceptionOutside(period(1.12.2024, 31.1.2025), Vuokralainen Virtanen period(1.1.2024, 31.12.2024))',
-    )
-    expect(buildLeases(say, [{ ...lease, exceptions: [exception('2024-05-31', '2024-05-01')] }], partners)).toBe(
-      'exceptionDates(period(31.5.2024, 1.5.2024))',
-    )
+    expect(marks(buildLeases(say, [{ ...lease, exceptions: [exception('2024-12-01', '2025-01-31')] }], partners))).toEqual([
+      '0.exceptions.0.to outsideLease',
+    ])
+    expect(marks(buildLeases(say, [{ ...lease, exceptions: [exception('2024-05-31', '2024-05-01')] }], partners))).toEqual([
+      '0.exceptions.0.to toBeforeFrom',
+    ])
     const step = (from: string) => ({ from, rent: '650', water: '', parking: '', voucherId: '', noDocument: false })
-    expect(buildLeases(say, [{ ...lease, increases: [step('2025-01-01')] }], partners)).toBe(
-      'increaseOutside(1.1.2025, Vuokralainen Virtanen period(1.1.2024, 31.12.2024))',
-    )
-    expect(buildLeases(say, [{ ...lease, increases: [step('2024-01-01')] }], partners)).toBe(
-      'increaseTwice(1.1.2024, Vuokralainen Virtanen period(1.1.2024, 31.12.2024))',
-    )
-    expect(buildLeases(say, [{ ...lease, ends: '2023-11-30' }], partners)).toBe('leaseEnds(Vuokralainen Virtanen period(1.1.2024, 30.11.2023))')
+    expect(marks(buildLeases(say, [{ ...lease, increases: [step('2025-01-01')] }], partners))).toEqual(['0.increases.0.from outsideLease'])
+    expect(marks(buildLeases(say, [{ ...lease, increases: [step('2024-01-01')] }], partners))).toEqual(['0.increases.0.from sameAsStart'])
+    expect(marks(buildLeases(say, [{ ...lease, increases: [step('2024-06-01'), step('2024-06-01')] }], partners))).toEqual([
+      '0.increases.1.from sameDay(1)',
+    ])
+    expect(marks(buildLeases(say, [{ ...lease, ends: '2023-11-30' }], partners))).toEqual(['0.ends toBeforeFrom'])
   })
 
   it('a new exception covers this month within the lease, at the amounts in force; removing all drops the key', () => {

@@ -39,6 +39,16 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   needs"). A new loan opens with one row each for its share, rahoitusvastike and rate; a copy brings its rate and
   asks for the object's own share and rahoitusvastike. A fixed rate hides margin and reset interval.
 - English: lyhennysvapaa is "interest-only period", not "repayment holiday" (owner).
+- Owner's third look: the lease and water cards mark their fields the same way. The parts are shared:
+  `formIssues.ts` (`FormIssue`, `issueCollector`, `invalidProps`, `useIssueFocus`) and `Field` / `FormIssueList` in
+  `FormParts.tsx`, texts under `properties.form.*`. `buildLeases` / `buildSettlements` return the leases or
+  `{ issues }` with fields `{lease key}.{field}` (`leaseField`) / `{settlement key or new}.{field}`
+  (`settlementField`); an overlap marks both leases' (settlements') dates, and a card keeps only its own issues
+  unless they are all there is. The old one-sentence `properties.error.leaseOverlap` etc. are gone. The rules are
+  unchanged, except that a tenant typed without a start now asks for the start instead of failing at the save.
+- The "Puuttuu" pill of an empty document slot said nothing of what was missing: `properties.docs.absent` is now
+  "Asiakirja puuttuu". The warnings list's word pill ("Puuttuu" beside its sentence) stays.
+- The company's whole loan (`total_snt`) stays optional (owner).
 
 ## 2026-11-15 - Test book with rental-object investments (`testdb/tilari-properties.kitsas`)
 

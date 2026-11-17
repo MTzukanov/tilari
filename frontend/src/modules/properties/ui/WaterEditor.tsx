@@ -8,13 +8,15 @@ import type { DocCandidate, Lease, WaterBookedLine, WaterSettlement, WaterStatem
 import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
 import { periodText, waterBalanceText } from './format'
-import { LineLink, NoDocumentCheck, Shown, WaterStatusPill } from './FormParts'
+import { invalidProps, issueOf, type FormIssue } from './formIssues'
+import { Field, LineLink, NoDocumentCheck, Shown, WaterStatusPill } from './FormParts'
 import {
   candidateAmount,
   candidateDoc,
   draftDifference,
   draftSettlement,
   pickStatement,
+  settlementField,
   shareDraft,
   statementFill,
   withShare,
@@ -41,6 +43,7 @@ export function WaterEditor({
   isCreated,
   onDeleteDocs,
   onOpenVoucher,
+  issues = [],
 }: {
   drafts: SettlementDraft[]
   onChange: (drafts: SettlementDraft[]) => void
@@ -62,6 +65,8 @@ export function WaterEditor({
   onDeleteDocs: (voucherIds: number[], edit?: DocEdit) => Promise<void>
   /** Opens a booked line's voucher; the unsaved form waits for the way back. */
   onOpenVoucher: (voucherId: number) => void
+  /** Fields a refused save marked (`settlementField`), with their reasons. */
+  issues?: FormIssue[]
 }) {
   const { t } = useI18n()
   const [creating, setCreating] = useState<string | null>(null)
@@ -117,14 +122,12 @@ export function WaterEditor({
         return (
           <div key={d.base?.key || `new-${i}`} className="property-lease-edit property-water-edit">
             <div className="property-lease-grid">
-              <label>
-                {t('properties.field.waterFrom')}
-                <input type="date" value={d.from} onChange={(e) => set(i, { from: e.target.value })} />
-              </label>
-              <label>
-                {t('properties.field.waterTo')}
-                <input type="date" value={d.to} onChange={(e) => set(i, { to: e.target.value })} />
-              </label>
+              <Field label={t('properties.field.waterFrom')} issue={issueOf(issues, settlementField(d, 'from'))}>
+                <input type="date" value={d.from} onChange={(e) => set(i, { from: e.target.value })} {...invalidProps(issues, settlementField(d, 'from'))} />
+              </Field>
+              <Field label={t('properties.field.waterTo')} issue={issueOf(issues, settlementField(d, 'to'))}>
+                <input type="date" value={d.to} onChange={(e) => set(i, { to: e.target.value })} {...invalidProps(issues, settlementField(d, 'to'))} />
+              </Field>
               <label>
                 {t('properties.field.waterResult')}
                 <select value={d.direction} onChange={(e) => set(i, { direction: e.target.value as SettlementDraft['direction'] })}>

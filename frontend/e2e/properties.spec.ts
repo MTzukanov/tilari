@@ -457,7 +457,7 @@ test.describe('rental object housing-company loans', () => {
     // section and number), and the first has the focus. A mark goes as its field is filled.
     await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(card).toHaveCount(1)
-    const issues = card.locator('.property-loan-issues li')
+    const issues = card.locator('.form-issues li')
     await expect(issues).toHaveCount(10)
     await expect(issues.first()).toHaveText('Laina: puuttuu')
     await expect(issues.last()).toHaveText('Viitekorot, rivi 1: Viitekorko %: puuttuu')
@@ -526,7 +526,7 @@ test.describe('rental object housing-company loans', () => {
     // The copied rate, and empty rows for the object's own share and rahoitusvastike, which a save asks for.
     await expect(card.locator('.property-lease-increase')).toHaveCount(3)
     await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
-    await expect(card.locator('.property-loan-issues li')).toHaveText([
+    await expect(card.locator('.form-issues li')).toHaveText([
       'Velkaosuudet, rivi 1: Päivä: puuttuu',
       'Velkaosuudet, rivi 1: Velkaosuus: puuttuu',
       'Rahoitusvastikkeet, rivi 1: Alkaen: puuttuu',
@@ -537,7 +537,7 @@ test.describe('rental object housing-company loans', () => {
     await copyRows.nth(0).getByLabel('Velkaosuus · puuttuu').fill('5000')
     await copyRows.nth(1).getByLabel('Alkaen · puuttuu').fill('2025-01-01')
     await copyRows.nth(1).getByLabel('Rahoitusvastike €/kk · puuttuu').fill('40')
-    await expect(card.locator('.property-loan-issues li')).toHaveCount(0)
+    await expect(card.locator('.form-issues li')).toHaveCount(0)
     await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(card).toHaveCount(0)
     await expect(loans.locator('.property-loan-card')).toContainText(/Velkaosuus 5\s000,00\s€ \(1\.1\.2025\)/)
@@ -838,9 +838,8 @@ test.describe('rental object lease dates', () => {
     // The second lease's card refuses the overlap, naming both.
     await fill(await newLeaseCard(page), 'Toinen Vuokralainen', '2025-06-01')
     await form.getByRole('button', { name: 'Tallenna', exact: true }).click()
-    await expect(form.locator('.error')).toContainText(
-      'Vuokrasopimukset Testi Vuokralainen 1.1.2025 alkaen ja Toinen Vuokralainen 1.6.2025 alkaen menevät päällekkäin.',
-    )
+    await expect(form.locator('.form-issues li')).toHaveText(['Alkaa: samoina päivinä kuin sopimus Testi Vuokralainen 1.1.2025 alkaen'])
+    await expect(form.getByLabel('Alkaa · samoina päivinä kuin sopimus Testi Vuokralainen 1.1.2025 alkaen')).toHaveAttribute('aria-invalid', 'true')
     await form.getByRole('button', { name: 'Peru', exact: true }).click()
 
     // The first lease ends before the second starts, each on its own card.
@@ -994,8 +993,14 @@ test.describe('rental object water settlements', () => {
     await panel.getByRole('button', { name: '+ Vesitasaus' }).click()
     await expect(page).toHaveURL(/#\/property\/4\/water\/new$/)
     const water = panel.locator('.property-water-edit').first()
-    await water.getByLabel('Jakso alkaa').fill('2025-01-01')
-    await water.getByLabel('Jakso päättyy').fill('2025-06-30')
+    // A settlement without its period is not saved: both days are marked and listed.
+    await water.getByLabel('Summa €').first().fill('36,20')
+    await panel.locator('.property-lease-card-edit').getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(panel.locator('.form-issues li')).toHaveText(['Jakso alkaa: puuttuu', 'Jakso päättyy: puuttuu'])
+    await expect(water.getByLabel('Jakso alkaa · puuttuu')).toBeFocused()
+    await water.getByLabel('Jakso alkaa · puuttuu').fill('2025-01-01')
+    await water.getByLabel('Jakso päättyy · puuttuu').fill('2025-06-30')
+    await expect(panel.locator('.form-issues li')).toHaveCount(0)
     await expect(water.getByRole('combobox', { name: /^Taloyhtiön tasaus/ })).toHaveValue('refund')
     await water.getByLabel('Summa €').first().fill('36,20')
     // No use given: the company's refund by days, 122 of the period's 181 days.
@@ -1035,7 +1040,7 @@ test.describe('rental object water settlements', () => {
     await expect(row.locator('.pill-warn')).toHaveText('avoin')
     await expect(row.getByRole('button', { name: /Vesitasaus Asunto/ })).toBeVisible()
     // No statement linked: the settlement's place for it says so.
-    await expect(panel.locator('.property-doc-slot', { hasText: 'Tasauslaskelma' }).locator('.pill-crit')).toHaveText('Puuttuu')
+    await expect(panel.locator('.property-doc-slot', { hasText: 'Tasauslaskelma' }).locator('.pill-crit')).toHaveText('Asiakirja puuttuu')
     // The stored settlement opens its own card again, named in the address.
     await panel.locator('.property-water-card').getByRole('button', { name: 'Muokkaa', exact: true }).click()
     await expect(page).toHaveURL(/#\/property\/4\/water\/settlement\/[^/]+$/)

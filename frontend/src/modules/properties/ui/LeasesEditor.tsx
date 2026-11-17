@@ -16,12 +16,14 @@ import {
 } from '../api'
 import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
-import { NoDocumentCheck, Shown } from './FormParts'
+import { invalidProps, issueOf, type FormIssue } from './formIssues'
+import { Field, NoDocumentCheck, Shown } from './FormParts'
 import { depositOptionText, vatPctText } from './format'
 import {
   draftExtras,
   draftStepAt,
   draftTotal,
+  leaseField,
   newException,
   nextIncrease,
   type AmountsDraft,
@@ -187,6 +189,7 @@ export function LeasesEditor({
   onOpenVoucher,
   parkingObject,
   otherDrafts = [],
+  issues = [],
 }: {
   drafts: LeaseDraft[]
   onChange: (drafts: LeaseDraft[]) => void
@@ -213,8 +216,13 @@ export function LeasesEditor({
   parkingObject: boolean
   /** The object's other leases (not in this form), whose deposits are not offered here. */
   otherDrafts?: LeaseDraft[]
+  /** Fields a refused save marked (`leaseField`), with their reasons. */
+  issues?: FormIssue[]
 }) {
   const { t } = useI18n()
+  /** Lease `i`'s field `name`: its reason to fix, and the marks its input carries. */
+  const issue = (i: number, name: string) => issueOf(issues, leaseField(drafts[i], i, name))
+  const invalid = (i: number, name: string) => invalidProps(issues, leaseField(drafts[i], i, name))
   const [creating, setCreating] = useState<string | null>(null)
   const partnerIds = new Map(partners.map((p) => [p.name.trim().toLowerCase(), p.id]))
   const partnerItems = partners.map((p) => ({ value: p.name, label: p.name }))
@@ -265,18 +273,15 @@ export function LeasesEditor({
                 onChange={(tenant) => set(i, { tenant })}
               />
             </label>
-            <label>
-              {t('properties.field.leaseStarts')}
-              <input type="date" value={d.starts} onChange={(e) => set(i, { starts: e.target.value })} />
-            </label>
-            <label>
-              {t('properties.field.leaseEnds')}
-              <input type="date" value={d.ends} onChange={(e) => set(i, { ends: e.target.value })} />
-            </label>
-            <label>
-              {t('properties.field.dueDay')}
-              <input type="text" inputMode="numeric" value={d.dueDay} onChange={(e) => set(i, { dueDay: e.target.value })} />
-            </label>
+            <Field label={t('properties.field.leaseStarts')} issue={issue(i, 'starts')}>
+              <input type="date" value={d.starts} onChange={(e) => set(i, { starts: e.target.value })} {...invalid(i, 'starts')} />
+            </Field>
+            <Field label={t('properties.field.leaseEnds')} issue={issue(i, 'ends')}>
+              <input type="date" value={d.ends} onChange={(e) => set(i, { ends: e.target.value })} {...invalid(i, 'ends')} />
+            </Field>
+            <Field label={t('properties.field.dueDay')} issue={issue(i, 'dueDay')}>
+              <input type="text" inputMode="numeric" value={d.dueDay} onChange={(e) => set(i, { dueDay: e.target.value })} {...invalid(i, 'dueDay')} />
+            </Field>
             <div className="property-lease-notice span-3">
               <DocPicker label={t('properties.field.contract')} docs={docs} value={d.contractId} onChange={(contractId) => set(i, { contractId })} />
               <div className="property-lease-actions">
@@ -345,15 +350,15 @@ export function LeasesEditor({
               </select>
             </label>
             {d.increaseKind === 'percent' || d.increaseKind === 'amount' ? (
-              <label>
-                {t(d.increaseKind === 'percent' ? 'properties.field.increasePct' : 'properties.field.increaseEur')}
+              <Field label={t(d.increaseKind === 'percent' ? 'properties.field.increasePct' : 'properties.field.increaseEur')} issue={issue(i, 'increaseValue')}>
                 <input
                   type="text"
                   inputMode="decimal"
                   value={d.increaseValue}
                   onChange={(e) => set(i, { increaseValue: e.target.value })}
+                  {...invalid(i, 'increaseValue')}
                 />
-              </label>
+              </Field>
             ) : null}
             <label>
               {t('properties.field.increaseMonth')}
@@ -371,10 +376,9 @@ export function LeasesEditor({
           <h4>{t('properties.lease.increases')}</h4>
           {d.increases.map((r, k) => (
             <div key={k} className={`${amountsClass(d, extras[i].water)} property-lease-increase`}>
-              <label>
-                {t('properties.field.increaseFrom')}
-                <input type="date" value={r.from} onChange={(e) => setIncrease(i, k, { from: e.target.value })} />
-              </label>
+              <Field label={t('properties.field.increaseFrom')} issue={issue(i, `increases.${k}.from`)}>
+                <input type="date" value={r.from} onChange={(e) => setIncrease(i, k, { from: e.target.value })} {...invalid(i, `increases.${k}.from`)} />
+              </Field>
               <Amounts value={r} water={extras[i].water} parking={d.parking} onChange={(patch) => setIncrease(i, k, patch)} />
               <Shown label={t('properties.field.total')} value={formatCents(draftTotal(r, d.parking))} strong />
               <div className="property-lease-notice">
@@ -420,14 +424,12 @@ export function LeasesEditor({
             const total = exceptionTotal(e, d)
             return (
               <div key={k} className={`${amountsClass(d, extras[i].water)} property-lease-exception property-lease-increase`}>
-                <label>
-                  {t('properties.field.exceptionFrom')}
-                  <input type="date" value={e.from} onChange={(ev) => setException(i, k, { from: ev.target.value })} />
-                </label>
-                <label>
-                  {t('properties.field.exceptionTo')}
-                  <input type="date" value={e.to} onChange={(ev) => setException(i, k, { to: ev.target.value })} />
-                </label>
+                <Field label={t('properties.field.exceptionFrom')} issue={issue(i, `exceptions.${k}.from`)}>
+                  <input type="date" value={e.from} onChange={(ev) => setException(i, k, { from: ev.target.value })} {...invalid(i, `exceptions.${k}.from`)} />
+                </Field>
+                <Field label={t('properties.field.exceptionTo')} issue={issue(i, `exceptions.${k}.to`)}>
+                  <input type="date" value={e.to} onChange={(ev) => setException(i, k, { to: ev.target.value })} {...invalid(i, `exceptions.${k}.to`)} />
+                </Field>
                 <Amounts value={e} water={extras[i].water} parking={d.parking} onChange={(patch) => setException(i, k, patch)} />
                 <Shown
                   label={t('properties.field.total')}

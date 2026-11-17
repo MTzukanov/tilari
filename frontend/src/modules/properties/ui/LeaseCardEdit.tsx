@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { isParkingKind } from '../../../book/modules/properties/domain/kind'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
@@ -7,6 +7,8 @@ import { parseEurInput } from '../../../shared/money'
 import type { PropertyDetail, PropertyDoc } from '../api'
 import { clearCardDraft, loadCardDraft, saveCardDraft, type DocEdit } from './editDraft'
 import { clauseText, saveErrorText } from './format'
+import { useIssueFocus } from './formIssues'
+import { FormIssueList } from './FormParts'
 import { increaseNoticePdf, noticeTitle, type NoticeAmounts } from './increaseNotice'
 import { buildLeases, leaseDrafts, newLease, withKeys, type AmountsDraft, type LeaseDraft } from './leaseDrafts'
 import { LeasesEditor } from './LeasesEditor'
@@ -85,12 +87,24 @@ export function LeaseCardEdit({
   /** Every lease of the object, this card's in its place (a new one last). */
   const withCard = (list: LeaseDraft[]) =>
     leaseKey ? stored.flatMap((d) => (d.key === leaseKey ? list : [d])) : [...stored, ...list]
+  /** The leases as a save would store them, or this card's fields to fix. */
+  const build = (list: LeaseDraft[]) => buildLeases(t, withCard(list), partners, new Set(list.map((d) => d.key)))
+
+  /** A save was tried: from then on the fields to fix are marked as the form changes. */
+  const [tried, setTried] = useState(false)
+  /** Counts the saves that found fields to fix: each moves to the first of them. */
+  const [refused, setRefused] = useState(0)
+  const cardRef = useRef<HTMLDivElement>(null)
+  const current = build(drafts)
+  const issues = tried && 'issues' in current ? current.issues : []
+  useIssueFocus(cardRef, refused)
 
   async function save(list: LeaseDraft[] = drafts) {
     setError(null)
-    const built = buildLeases(t, withCard(list), partners)
-    if (typeof built === 'string') {
-      setError(built)
+    const built = build(list)
+    if ('issues' in built) {
+      setTried(true)
+      setRefused((n) => n + 1)
       return
     }
     setSaving(true)
@@ -134,8 +148,8 @@ export function LeaseCardEdit({
     const increase = lease.increases[k]
     const before = k === 0 ? lease.initial : lease.increases[k - 1]
     const contract = writer.docById.get(Number(lease.contractId))
-    const built = buildLeases(t, [lease], partners)
-    const rule = typeof built === 'string' ? undefined : built[0]?.increase
+    const one = buildLeases(t, [lease], partners)
+    const rule = 'issues' in one ? undefined : one[0]?.increase
     const pdf = increaseNoticePdf(t, {
       company: letterCompany(inputs.company),
       tenant: writer.tenantOf(lease.tenant),
@@ -240,7 +254,7 @@ export function LeaseCardEdit({
   }
 
   return (
-    <div className="property-lease-card property-lease-card-edit">
+    <div ref={cardRef} className="property-lease-card property-lease-card-edit">
       <LeasesEditor
         drafts={drafts}
         onChange={(next) => setDrafts(withKeys([...others, ...next]).slice(others.length))}
@@ -257,7 +271,9 @@ export function LeaseCardEdit({
         onOpenVoucher={onOpenVoucher}
         parkingObject={isParkingKind(detail.kind)}
         otherDrafts={others}
+        issues={issues}
       />
+      <FormIssueList issues={issues} />
       {error ? <p className="error">{error}</p> : null}
       <div className="property-actions">
         <button type="button" className="btn-primary" disabled={saving || detail.read_only} onClick={() => void save()}>

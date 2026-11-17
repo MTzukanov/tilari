@@ -175,9 +175,7 @@ function LoanCard({
             <DocSlot voucher={voucher(certificate.voucher_id)} noDocument={certificate.no_document} held={held} onOpen={onOpenVoucher} />
           </>
         ) : (
-          <>
-            {t('properties.housing.shareNone')} {held ? <Pill tone="crit">{t('properties.docs.absent')}</Pill> : null}
-          </>
+          t('properties.housing.shareNone')
         )}
       </p>
       <p className="property-lease-terms">

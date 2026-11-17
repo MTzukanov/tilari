@@ -6,12 +6,14 @@ import { buildSettlements, draftSettlement, newSettlement, pickStatement, settle
 const t = (key: string, vars?: Record<string, string | number>) => `${key}${vars ? JSON.stringify(vars) : ''}`
 
 describe('water settlement drafts', () => {
-  it('two periods on the same days are refused: those days would be settled twice', () => {
+  it('two periods on the same days are marked on both: those days would be settled twice', () => {
     const draft = (from: string, to: string) => ({ ...newSettlement(), from, to, amount: '10' })
     const say = (key: string, vars?: Record<string, string | number>) => `${key.split('.').pop()}${vars ? `(${Object.values(vars).join(', ')})` : ''}`
-    expect(buildSettlements(say, [draft('2024-06-01', '2025-05-31'), draft('2023-06-01', '2024-06-01')], new Set())).toBe(
-      'waterOverlap(period(1.6.2023, 1.6.2024), period(1.6.2024, 31.5.2025))',
-    )
+    const built = buildSettlements(say, [draft('2024-06-01', '2025-05-31'), draft('2023-06-01', '2024-06-01')], new Set())
+    expect('issues' in built && built.issues.map((i) => `${i.field} ${i.message}`)).toEqual([
+      'new.from overlapsSettlement(period(1.6.2023, 1.6.2024))',
+      'new.to overlapsSettlement(period(1.6.2024, 31.5.2025))',
+    ])
     expect(buildSettlements(say, [draft('2024-06-02', '2025-05-31'), draft('2023-06-01', '2024-06-01')], new Set())).toHaveLength(2)
   })
 
@@ -71,14 +73,17 @@ describe('water settlement drafts', () => {
     ])
   })
 
-  it('a period is needed; a bad one names its field', () => {
+  it('a period is needed; a bad one marks its field', () => {
     expect(draftSettlement({ ...newSettlement(), from: '2024-11-01' })).toBeNull()
-    expect(buildSettlements(t, [{ ...newSettlement(), amount: '10' }], new Set())).toBe(
-      'properties.error.invalid_field{"path":"water_settlements[0].from"}',
-    )
-    expect(buildSettlements(t, [{ ...newSettlement(), from: '2024-11-01', to: '2024-10-31' }], new Set())).toBe(
-      'properties.error.invalid_field{"path":"water_settlements[0].to"}',
-    )
+    expect(buildSettlements(t, [{ ...newSettlement(), amount: '10' }], new Set())).toEqual({
+      issues: [
+        { field: 'new.from', label: 'properties.field.waterFrom', message: 'properties.form.issue.required' },
+        { field: 'new.to', label: 'properties.field.waterTo', message: 'properties.form.issue.required' },
+      ],
+    })
+    expect(buildSettlements(t, [{ ...newSettlement(), from: '2024-11-01', to: '2024-10-31' }], new Set())).toEqual({
+      issues: [{ field: 'new.to', label: 'properties.field.waterTo', message: 'properties.form.issue.toBeforeFrom' }],
+    })
   })
 
   it('a picked invoice fills the amount, its direction and an estimated period where the owner has not', () => {

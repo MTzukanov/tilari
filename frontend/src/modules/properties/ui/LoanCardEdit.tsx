@@ -17,8 +17,9 @@ import {
 import { DocPicker } from './DocPicker'
 import { clearCardDraft, loadCardDraft, saveCardDraft } from './editDraft'
 import { saveErrorText } from './format'
-import { NoDocumentCheck, Shown } from './FormParts'
-import { buildLoan, emptyCertificate, emptyCharge, emptyRate, newLoanDraft, loanDraft, voucherDoc, type LoanDraft, type LoanIssue } from './loanDrafts'
+import { invalidProps, issueOf as issueIn, useIssueFocus, type FormIssue } from './formIssues'
+import { Field, FormIssueList, NoDocumentCheck, Shown } from './FormParts'
+import { buildLoan, emptyCertificate, emptyCharge, emptyRate, newLoanDraft, loanDraft, voucherDoc, type LoanDraft } from './loanDrafts'
 import { useDocWriter, type CardInputs } from './useDocWriter'
 import { candidateDoc } from './waterDrafts'
 
@@ -47,19 +48,6 @@ function RowSection({ title, hint, issue, onAdd, children }: { title: string; hi
         {t('properties.housing.addRow')}
       </button>
     </>
-  )
-}
-
-/** A labelled field; when a save found it wanting, the label says why (the input is marked by `invalid`). */
-function Field({ label, issue, className, children }: { label: string; issue?: string; className?: string; children: ReactNode }) {
-  return (
-    <label className={className}>
-      <span>
-        {label}
-        {issue ? <span className="field-issue"> · {issue}</span> : null}
-      </span>
-      {children}
-    </label>
   )
 }
 
@@ -117,10 +105,9 @@ export function LoanCardEdit({
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial) || writer.state.newDocs.length > 0
 
   const built = buildLoan(t, draft)
-  const issues: LoanIssue[] = tried && Array.isArray(built) ? built : []
-  const issueOf = (field: string) => issues.find((i) => i.field === field)?.message
-  /** The marks an input carries when its field is to fix. */
-  const invalid = (field: string) => (issueOf(field) ? { className: 'field-invalid', 'aria-invalid': true as const } : {})
+  const issues: FormIssue[] = tried && Array.isArray(built) ? built : []
+  const issueOf = (field: string) => issueIn(issues, field)
+  const invalid = (field: string) => invalidProps(issues, field)
 
   useEffect(() => {
     onDirty(dirty)
@@ -133,13 +120,7 @@ export function LoanCardEdit({
     else clearCardDraft()
   }, [dirty, draft, newDocs, toDelete, bookKey, detail.id, doc.rev, cardId])
 
-  // After a refused save, the first field to fix comes into view with the focus.
-  useEffect(() => {
-    if (!refused) return
-    const first = cardRef.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-issue]')
-    first?.scrollIntoView({ block: 'center' })
-    first?.focus()
-  }, [refused])
+  useIssueFocus(cardRef, refused)
 
   const fail = (err: unknown) => setError(err instanceof Error ? err.message : String(err))
   const set = (patch: Partial<LoanDraft>) => setDraft((d) => ({ ...d, ...patch }))
@@ -446,7 +427,7 @@ export function LoanCardEdit({
               <Field label={t('properties.housing.field.to')} issue={issueOf(`grace.${i}.to`)}>
                 <input type="date" value={g.to} onChange={(e) => setRow('grace', i, { to: e.target.value })} {...invalid(`grace.${i}.to`)} />
               </Field>
-              <div className="property-lease-actions">
+              <div className="property-lease-actions property-row-end">
                 <button type="button" className="btn-link property-delete" onClick={() => removeRow('grace', i)}>
                   {t('properties.housing.removeRow')}
                 </button>
@@ -497,18 +478,7 @@ export function LoanCardEdit({
           </button>
         </div>
       </div>
-      {issues.length ? (
-        <div className="error" role="alert">
-          <p className="property-loan-issues-lead">{t('properties.housing.issuesLead')}</p>
-          <ul className="property-loan-issues">
-            {issues.map((issue) => (
-              <li key={issue.field}>
-                {issue.label}: {issue.message}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      <FormIssueList issues={issues} />
       {error ? <p className="error">{error}</p> : null}
       <div className="property-actions">
         <button type="button" className="btn-primary" disabled={saving || detail.read_only} onClick={() => void write()}>
