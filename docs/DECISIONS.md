@@ -850,6 +850,8 @@ correction would change the open year's income statement lines. The rental-objec
   reset or the end of an interest-only period; from there an annuity pays what clears the share by `ends`, a
   tasalyhennys the share over the months left plus interest, each worked out again at every reset; a fixed payment
   stays and runs the share to 0. The last month pays what is left. No forecast when the charge would never clear it.
+  Two more checkboxes add the interest, and the repayment with it, summed from the path's first month: on the
+  share's scale, where a month's own figures would not show. The chart's choices are remembered in the browser.
 - **Next steps:** the figures that depend on the share (debt-free values, the rahoitusvastike split into interest
   and principal, the rahastoitu view option); rate estimates per reference rate for the forecast; then
   tilari-bank-import reading the vastike invoices into facts on the voucher.

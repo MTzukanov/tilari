@@ -289,6 +289,11 @@ describe('housing-company loans: the share ahead', () => {
     expect(pays(rows.slice(0, 11)).every((p) => p === 86_066)).toBe(true)
     expect(rows[0].interest_snt).toBe(5_000)
     expect(rows.at(-1)).toMatchObject({ month: '2027-05', opening_snt: 85_642, interest_snt: 428, paid_snt: 86_070, closing_snt: 0 })
+    // The payment stays, so as the interest falls the repayment grows: the share falls faster towards the end.
+    for (let i = 1; i < 11; i++) {
+      expect(rows[i].interest_snt).toBeLessThan(rows[i - 1].interest_snt)
+      expect(rows[i].principal_snt).toBeGreaterThan(rows[i - 1].principal_snt)
+    }
   })
 
   it('a tasalyhennys repays the share over the months left, the interest on top', () => {

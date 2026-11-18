@@ -5848,15 +5848,39 @@ tr.tax-total td {
   border-radius: 0;
 }
 
-.property-loan-forecast .chart-line {
+/* Repayment and interest summed, and interest alone; any line's estimate ahead is dashed and lighter. */
+.property-loan-paid .chart-line {
   fill: none;
-  stroke: #2f6fed;
-  stroke-width: 2;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.property-loan-paid .chart-line-dot {
+  fill: var(--ink);
+}
+
+.property-loan-interest .chart-line {
+  fill: none;
+  stroke: #c45c26;
+  stroke-width: 1.5;
+}
+
+.property-loan-interest .chart-line-dot {
+  fill: #c45c26;
+}
+
+.property-loan-ahead .chart-line {
   opacity: 0.75;
 }
 
-.property-loan-forecast .chart-line-dot {
-  fill: color-mix(in srgb, #2f6fed 60%, var(--card));
+.overview-swatch.property-swatch-loan-paid {
+  height: 2px;
+  background: var(--ink);
+}
+
+.overview-swatch.property-swatch-loan-interest {
+  height: 2px;
+  background: #c45c26;
 }
 
 .property-loan-forecast-years h5 {

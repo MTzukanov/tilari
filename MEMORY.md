@@ -42,8 +42,12 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   `Tabs` is sticky, so not reused), an open list has no line under its last row, "Lyhennetty yhteensä" counts
   from the path's first month (the later of purchase, loan start, books' start, first charge: the span is under
   the figure), and the chart has "Arvio laina-ajan loppuun" (`loanForecast`, ADR-034; remembered in this browser,
-  `tilari.properties.loanForecast`): a dashed line to the end and the months summed by year. The rate is held at
+  `tilari.properties.loanChart`): a dashed line to the end and the months summed by year. The rate is held at
   the latest until the rate estimates per reference rate exist.
+- Owner: "Korko yhteensä" and "Lyhennys + korko yhteensä" as lines (summed, so they share the share's scale), all
+  three choices remembered; the chart's how-to line is gone. The owner asked whether the annuity is right since its
+  line looked straight: it is - over a few years at ~4 % an annuity's share sags only a few thousand euros above a
+  straight line (about 4 px); a unit test now pins falling interest and growing repayment month by month.
 
 ## 2026-11-17 - Rental objects: housing-company loans on a Taloyhtiö tab (`feature/housing-loans`, ADR-034)
 

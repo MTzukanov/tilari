@@ -6,13 +6,13 @@ import { formatDate } from '../../../shared/dates'
 import { DocLine, DocLines } from '../../../shared/DocRows'
 import { FileButton } from '../../../shared/FileButton'
 import { formatCents } from '../../../shared/money'
-import { LineChart, type PointTip } from '../../../shared/LineChart'
+import { LineChart, type LineSeries, type PointTip } from '../../../shared/LineChart'
 import { formatPcm } from '../../../shared/percent'
 import { FilePill, Pill } from '../../../shared/Pill'
 import { SearchSelect } from '../../../shared/SearchSelect'
 import type { BookedLine, DocCandidate, HousingCopySource, HousingLoan, LeaseVoucher, LoanMonth, LoanPath, PropertyDetail } from '../api'
 import { monthLabel } from './Charts'
-import { loadLoanForecast, saveLoanForecast } from './chartOptions'
+import { loadLoanChartOptions, saveLoanChartOptions, type LoanChartOptions } from './chartOptions'
 import { DocPicker } from './DocPicker'
 import { monthName, periodText } from './format'
 import { DocSlot, LineLink, VoucherOpen } from './FormParts'
@@ -140,6 +140,11 @@ function gapText(t: (key: string, vars?: Record<string, string | number>) => str
   return t(gap > 0 ? 'properties.housing.path.gapMore' : 'properties.housing.path.gapLess', { amount: formatCents(Math.abs(gap)) })
 }
 
+/** The loan chart's line colours, also beside their rows in a month's box (`App.css` has the same). */
+const SHARE_COLOR = '#2f6fed'
+const PAID_COLOR = 'var(--ink)'
+const INTEREST_COLOR = '#c45c26'
+
 /** A month as "11/2026". */
 const monthShort = (key: string) => `${Number(key.slice(5, 7))}/${key.slice(0, 4)}`
 
@@ -162,8 +167,9 @@ function forecastYears(months: LoanMonth[]) {
  * certificates as dots, and the months newest first - the payments to the housing company, the
  * rahoitusvastike they paid, the interest, what lowered the share, and the share; each certificate
  * under its month with the computed path's gap and the rate it implies. The card's "Kuukausittain"
- * opens it. "Arvio laina-ajan loppuun" (remembered in this browser) runs the line on dashed to the
- * loan's end (`loanForecast`) and sums those months by year.
+ * opens it. Checkboxes, remembered in this browser, add the interest and the repayment with it summed
+ * from the first month (on the share's scale: a month's own would be too small to see), and run the
+ * lines on dashed to the loan's end (`loanForecast`), whose months are summed by year under the chart.
  */
 function LoanMonths({
   loan,
@@ -180,9 +186,32 @@ function LoanMonths({
   const locale = getBcp47()
   const months = path.months
   const [picked, setPicked] = useState<string | null>(null)
-  const [ahead, setAhead] = useState(loadLoanForecast)
+  const [options, setOptionsState] = useState(loadLoanChartOptions)
+  const setOptions = (next: LoanChartOptions) => {
+    setOptionsState(next)
+    saveLoanChartOptions(next)
+  }
   const future = loanForecast(loan, path)
-  const shown = ahead && future.length ? [...months, ...future] : months
+  const shown = options.forecast && future.length ? [...months, ...future] : months
+  const known = months.length
+  let interestSoFar = 0
+  let paidSoFar = 0
+  const interestSum = shown.map((m) => (interestSoFar += m.interest_snt))
+  const paidSum = shown.map((m) => (paidSoFar += m.principal_snt + m.extra_snt + m.interest_snt))
+  /** A line solid over the months followed and, with the estimate on, dashed after them. */
+  const line = (key: string, label: string, values: number[], className: string, dots?: 'spaced'): LineSeries[] => [
+    { key, label, values: values.map((v, i) => (i < known ? v : null)), className, dots },
+    ...(shown.length > known
+      ? [{ key: `${key}-ahead`, label, values: values.map((v, i) => (i >= known - 1 ? v : null)), className: `${className} property-loan-ahead`, dashed: true }]
+      : []),
+  ]
+  const check = (key: keyof LoanChartOptions, label: string, swatch: string) => (
+    <label className="allocation-check">
+      <input type="checkbox" checked={options[key]} onChange={() => setOptions({ ...options, [key]: !options[key] })} />
+      <i className={`overview-swatch ${swatch}`} />
+      {label}
+    </label>
+  )
   const unpaid = (m: LoanMonth) => m.due_snt > 0 && m.payments === 0 && path.payments_known
   const certificateText = (c: NonNullable<LoanMonth['certificate']>) => {
     const parts = [t('properties.housing.path.certificate', { date: formatDate(c.date), amount: formatCents(c.share_snt) })]
@@ -195,10 +224,12 @@ function LoanMonths({
     return {
       title: m.forecast ? t('properties.housing.path.forecastMonth', { month: monthName(m.month, locale) }) : monthName(m.month, locale),
       rows: [
-        { label: t('properties.housing.path.col.share'), value: formatCents(m.closing_snt) },
+        { label: t('properties.housing.path.col.share'), value: formatCents(m.closing_snt), color: SHARE_COLOR },
         { label: t('properties.housing.path.col.paid'), value: unpaid(m) ? t('properties.housing.path.unpaid') : formatCents(m.paid_snt) },
         { label: t('properties.housing.path.col.interest'), value: `${formatCents(m.interest_snt)} (${formatPcm(m.rate_pcm)})` },
         { label: t('properties.housing.path.col.principal'), value: formatCents(m.principal_snt + m.extra_snt) },
+        ...(options.paid ? [{ label: t('properties.housing.path.paidSum'), value: formatCents(paidSum[i]), color: PAID_COLOR }] : []),
+        ...(options.interest ? [{ label: t('properties.housing.path.interestSum'), value: formatCents(interestSum[i]), color: INTEREST_COLOR }] : []),
       ],
       notes: [
         ...(m.certificate ? [certificateText(m.certificate)] : []),
@@ -219,20 +250,9 @@ function LoanMonths({
           <i className="overview-swatch property-swatch-certificate" />
           {t('properties.housing.field.certificate')}
         </span>
-        {future.length ? (
-          <label className="allocation-check">
-            <input
-              type="checkbox"
-              checked={ahead}
-              onChange={() => {
-                setAhead(!ahead)
-                saveLoanForecast(!ahead)
-              }}
-            />
-            <i className="overview-swatch property-swatch-forecast" />
-            {t('properties.housing.path.forecast')}
-          </label>
-        ) : null}
+        {check('paid', t('properties.housing.path.paidSum'), 'property-swatch-loan-paid')}
+        {check('interest', t('properties.housing.path.interestSum'), 'property-swatch-loan-interest')}
+        {future.length ? check('forecast', t('properties.housing.path.forecast'), 'property-swatch-forecast') : null}
       </div>
       <LineChart
         className="overview-chart property-chart"
@@ -240,25 +260,9 @@ function LoanMonths({
         pointTip={tip}
         onSelect={(i) => setPicked(i == null ? null : shown[i].month)}
         series={[
-          {
-            key: 'share',
-            label: t('properties.housing.path.share'),
-            values: shown.map((m) => (m.forecast ? null : m.closing_snt)),
-            className: 'property-loan-share',
-            dots: 'spaced',
-          },
-          ...(shown.length > months.length
-            ? [
-                {
-                  key: 'forecast',
-                  label: t('properties.housing.path.forecastSeries'),
-                  // From the last month known on, so the dashes go on from the line.
-                  values: shown.map((m, i) => (m.forecast || i === months.length - 1 ? m.closing_snt : null)),
-                  className: 'property-loan-forecast',
-                  dashed: true,
-                },
-              ]
-            : []),
+          ...line('share', t('properties.housing.path.share'), shown.map((m) => m.closing_snt), 'property-loan-share', 'spaced'),
+          ...(options.paid ? line('paid', t('properties.housing.path.paidSum'), paidSum, 'property-loan-paid') : []),
+          ...(options.interest ? line('interest', t('properties.housing.path.interestSum'), interestSum, 'property-loan-interest') : []),
           {
             key: 'certificate',
             label: t('properties.housing.field.certificate'),
@@ -272,7 +276,6 @@ function LoanMonths({
         locale={locale}
         label={t('properties.housing.path.share')}
       />
-      <p className="muted property-lease-hint">{t('properties.housing.path.chartHint')}</p>
       {shown.length > months.length ? (
         <div className="property-loan-forecast-years">
           <h5>{t('properties.housing.path.forecastYears')}</h5>

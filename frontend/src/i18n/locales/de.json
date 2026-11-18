@@ -1801,7 +1801,6 @@
       "path": {
         "months": "Monatlich",
         "share": "Darlehensanteil am Monatsende",
-        "chartHint": "Zeigen Sie auf einen Monat oder tippen Sie ihn an, um seine Zahlen zu sehen; der gewählte Monat wird in der Tabelle markiert.",
         "col": {
           "payments": "Zahlungen an die Gesellschaft",
           "paid": "Finanzierungsentgelt",
@@ -1822,7 +1821,6 @@
         "implied": "tatsächlicher Zins {rate}",
         "paymentsUnknown": "In der Buchhaltung wurden keine monatlichen Zahlungen des Objekts an die Wohnungsgesellschaft gefunden; die Berechnung nimmt daher an, dass jedes monatliche Finanzierungsentgelt bezahlt wurde.",
         "forecast": "Schätzung bis Laufzeitende",
-        "forecastSeries": "Geschätzter Darlehensanteil",
         "forecastMonth": "{month} (Schätzung)",
         "forecastYears": "Schätzung nach Jahren",
         "forecastSummary": "Anteil bis {date} getilgt, wenn der Zins bei {rate} bleibt.",
@@ -1831,7 +1829,9 @@
           "annuity": "Das Finanzierungsentgelt wird bei jeder Zinsanpassung neu berechnet, sodass das Darlehen zum Laufzeitende getilgt ist.",
           "equal_principal": "Ab den Zinsanpassungen ist die Tilgung der Anteil geteilt durch die restlichen Monate, der Zins kommt hinzu.",
           "fixed_payment": "Das Finanzierungsentgelt bleibt gleich, bis der Anteil getilgt ist."
-        }
+        },
+        "paidSum": "Tilgung + Zins insgesamt",
+        "interestSum": "Zins insgesamt"
       },
       "alsoLead": "Die neuen Referenzzinsen ({dates}) auch bei den Kopien des Darlehens in anderen Objekten eintragen:",
       "alsoFailed": "Das Darlehen wurde gespeichert, aber der Referenzzins konnte nicht eingetragen werden bei: {objects}.",

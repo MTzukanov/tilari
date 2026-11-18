@@ -1801,7 +1801,6 @@
       "path": {
         "months": "Month by month",
         "share": "Loan share at month end",
-        "chartHint": "Point at a month or tap it to see its figures; the month picked is marked in the table.",
         "col": {
           "payments": "Payments to the company",
           "paid": "Financing charge",
@@ -1822,7 +1821,6 @@
         "implied": "actual rate {rate}",
         "paymentsUnknown": "No monthly payments from this object to the housing company were found in the books, so the calculation assumes each month's financing charge was paid.",
         "forecast": "Estimate to the loan's end",
-        "forecastSeries": "Estimated loan share",
         "forecastMonth": "{month} (estimate)",
         "forecastYears": "Estimate by year",
         "forecastSummary": "The share paid off by {date} if the rate stays at {rate}.",
@@ -1831,7 +1829,9 @@
           "annuity": "The financing charge is worked out again at each rate reset so that the loan is paid off by the end of its term.",
           "equal_principal": "From the rate resets on, the repayment is the share over the months left, with the interest on top.",
           "fixed_payment": "The financing charge stays the same until the share is paid off."
-        }
+        },
+        "paidSum": "Repaid + interest in all",
+        "interestSum": "Interest in all"
       },
       "alsoLead": "Add the new reference rates ({dates}) to the loan's copies on other objects too:",
       "alsoFailed": "The loan was saved, but the reference rate could not be added to: {objects}.",

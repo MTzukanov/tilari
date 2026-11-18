@@ -539,7 +539,7 @@ test.describe('rental object housing-company loans', () => {
     await expect(tip).toContainText(/^huhtikuu 2026/)
     // The estimate to the loan's end: the line runs on dashed, its months summed by year repay the share.
     await saved.getByRole('checkbox', { name: 'Arvio laina-ajan loppuun' }).check()
-    await expect(chart.locator('.property-loan-forecast .chart-line')).toHaveCount(1)
+    await expect(chart.locator('.property-loan-share.property-loan-ahead .chart-line')).toHaveCount(1)
     const ahead = saved.locator('.property-loan-forecast-years')
     await expect(ahead).toContainText(/Velkaosuus maksettu 31\.12\.2044 mennessä, kun korko pysyy 2,900\s%\./)
     await expect(ahead.locator('tbody tr').first()).toContainText(/^2026/)
@@ -549,6 +549,15 @@ test.describe('rental object housing-company loans', () => {
     await expect(tip).toContainText(/^joulukuu 2044 \(arvio\)Velkaosuus0,00\s€/)
     await saved.getByRole('checkbox', { name: 'Arvio laina-ajan loppuun' }).uncheck()
     await expect(ahead).toHaveCount(0)
+    // Interest, and repayment with it, summed from the first month: lines on the share's scale.
+    await saved.getByRole('checkbox', { name: 'Lyhennys + korko yhteensä', exact: true }).check()
+    await saved.getByRole('checkbox', { name: 'Korko yhteensä', exact: true }).check()
+    await expect(chart.locator('.property-loan-paid .chart-line')).toHaveCount(1)
+    await expect(chart.locator('.property-loan-interest .chart-line')).toHaveCount(1)
+    await chart.locator('.chart-point-hit').last().hover()
+    await expect(tip).toContainText(/Lyhennys \+ korko yhteensä400,00\s€Korko yhteensä145,62\s€$/)
+    // The choices hold for every loan in this browser.
+    expect(await page.evaluate(() => localStorage.getItem('tilari.properties.loanChart'))).toBe('{"interest":true,"paid":true,"forecast":false}')
     // The certificate is the housing company's document, held by the loan: not unlinked on Asiakirjat.
     const housingDocs = page.locator('.property-housing-docs')
     await expect(housingDocs.locator('.doc-line', { hasText: 'Isännöitsijäntodistus' })).toContainText('Velkaosuus 1.3.2026, Putkiremontti')

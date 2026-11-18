@@ -1801,7 +1801,6 @@
       "path": {
         "months": "Per månad",
         "share": "Låneandel vid månadens slut",
-        "chartHint": "Peka på en månad eller tryck på den för att se dess siffror; den valda månaden markeras i tabellen.",
         "col": {
           "payments": "Betalningar till bolaget",
           "paid": "Finansieringsvederlag",
@@ -1822,7 +1821,6 @@
         "implied": "faktisk ränta {rate}",
         "paymentsUnknown": "Inga månatliga betalningar från objektet till bostadsbolaget hittades i bokföringen, så beräkningen antar att varje månads finansieringsvederlag är betalt.",
         "forecast": "Uppskattning till lånets slut",
-        "forecastSeries": "Uppskattad låneandel",
         "forecastMonth": "{month} (uppskattning)",
         "forecastYears": "Uppskattning per år",
         "forecastSummary": "Låneandelen betald senast {date}, om räntan förblir {rate}.",
@@ -1831,7 +1829,9 @@
           "annuity": "Finansieringsvederlaget räknas om vid ränteändringar så att lånet är betalt vid lånetidens slut.",
           "equal_principal": "Från ränteändringarna är amorteringen låneandelen delad med de återstående månaderna, räntan ovanpå.",
           "fixed_payment": "Finansieringsvederlaget förblir detsamma tills låneandelen är betald."
-        }
+        },
+        "paidSum": "Amortering + ränta totalt",
+        "interestSum": "Ränta totalt"
       },
       "alsoLead": "Lägg till de nya referensräntorna ({dates}) även i lånets kopior i andra objekt:",
       "alsoFailed": "Lånet sparades, men referensräntan kunde inte läggas till för objekten: {objects}.",

@@ -45,20 +45,37 @@ export function saveCashFlowOptions(options: CashFlowOptions): void {
   }
 }
 
-export const LOAN_FORECAST_STORAGE_KEY = 'tilari.properties.loanForecast'
+/** A housing-company loan chart's checkboxes, one choice for every loan, remembered in this browser. */
+export type LoanChartOptions = {
+  /** Interest summed from the first month followed, a line. */
+  interest: boolean
+  /** Repayment and interest summed, a line. */
+  paid: boolean
+  /** The share on to the loan's end, an estimate. */
+  forecast: boolean
+}
 
-/** Whether a loan's chart runs on to the loan's end (an estimate): one choice for every loan, in this browser. */
-export function loadLoanForecast(): boolean {
+export const LOAN_CHART_STORAGE_KEY = 'tilari.properties.loanChart'
+
+export const DEFAULT_LOAN_CHART: LoanChartOptions = { interest: false, paid: false, forecast: false }
+
+export function loadLoanChartOptions(): LoanChartOptions {
   try {
-    return localStorage.getItem(LOAN_FORECAST_STORAGE_KEY) === '1'
+    const raw = localStorage.getItem(LOAN_CHART_STORAGE_KEY)
+    const stored = raw ? (JSON.parse(raw) as Record<string, unknown>) : {}
+    const out = { ...DEFAULT_LOAN_CHART }
+    for (const key of Object.keys(out) as (keyof LoanChartOptions)[]) {
+      if (typeof stored[key] === 'boolean') out[key] = stored[key]
+    }
+    return out
   } catch {
-    return false
+    return { ...DEFAULT_LOAN_CHART }
   }
 }
 
-export function saveLoanForecast(on: boolean): void {
+export function saveLoanChartOptions(options: LoanChartOptions): void {
   try {
-    localStorage.setItem(LOAN_FORECAST_STORAGE_KEY, on ? '1' : '0')
+    localStorage.setItem(LOAN_CHART_STORAGE_KEY, JSON.stringify(options))
   } catch {
     // Private window or blocked storage: the choice lasts until the page closes.
   }
