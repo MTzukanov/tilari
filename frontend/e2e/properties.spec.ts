@@ -510,14 +510,15 @@ test.describe('rental object housing-company loans', () => {
     // The share month by month from the payments to the housing company, to the as-of month (May):
     // April 12 000,00 - (80,00 - 29,00), May 11 949,00 - (80,00 - 28,88).
     await expect(figure('Laskettu velkaosuus 31.5.2026')).toContainText(/11\s897,88\s€Todistus 1\.3\.2026: 12\s000,00\s€/)
-    await expect(figure('Lyhennetty, 5 kk')).toContainText(/254,38\s€korkoa 145,62\s€/)
+    // Repaid since the share is followed (here the books' first month), and the interest with it.
+    await expect(figure('Lyhennetty yhteensä')).toContainText(/254,38\s€1\/2026–5\/2026korkoa 145,62\s€/)
     await expect(figure('Rahoitusvastike')).toContainText(/80,00\s€\/kk1\.1\.2026 alkaenRahastoitu/)
     await expect(saved.locator('.property-loan-figure .pill', { hasText: 'Rahastoitu' })).toHaveCount(1)
     await expect(figure('Korko')).toContainText(/2,900\s%12 kk Euribor 2,100\s% \+ 0,800\s%1\.3\.2026 alkaen/)
     await expect(figure('Laina-aika')).toContainText(/1\.1\.2020.31\.12\.2044korko muuttuu/)
-    // Its lists in one row, one open at a time.
-    await expect(saved.getByRole('button', { name: /\(\d+\)$/ })).toHaveText(['▸Kuukausittain (5)', '▸Velkaosuudet (1)', '▸Rahoitusvastikkeet (1)', '▸Viitekorot (1)'])
-    await saved.getByRole('button', { name: 'Kuukausittain (5)', exact: true }).click()
+    // Its lists as small tabs, one open at a time.
+    await expect(saved.locator('.property-loan-fold')).toHaveText(['Kuukausittain 5', 'Velkaosuudet 1', 'Rahoitusvastikkeet 1', 'Viitekorot 1'])
+    await saved.getByRole('button', { name: 'Kuukausittain 5', exact: true }).click()
     const table = saved.locator('.property-loan-table')
     await expect(table.locator('tbody tr').first()).toContainText(/toukokuu 2026.*5\.5\.2026 300,00\s€.*80,00\s€.*28,88\s€.*51,12\s€.*11\s897,88\s€/)
     await expect(table.locator('.property-loan-certificate-row')).toHaveText(/^Isännöitsijäntodistus 1\.3\.2026: 12\s000,00\s€$/)
@@ -536,6 +537,18 @@ test.describe('rental object housing-company loans', () => {
     await chart.locator('svg').press('ArrowRight')
     await expect(table.locator('tr.is-selected')).toContainText('huhtikuu 2026')
     await expect(tip).toContainText(/^huhtikuu 2026/)
+    // The estimate to the loan's end: the line runs on dashed, its months summed by year repay the share.
+    await saved.getByRole('checkbox', { name: 'Arvio laina-ajan loppuun' }).check()
+    await expect(chart.locator('.property-loan-forecast .chart-line')).toHaveCount(1)
+    const ahead = saved.locator('.property-loan-forecast-years')
+    await expect(ahead).toContainText(/Velkaosuus maksettu 31\.12\.2044 mennessä, kun korko pysyy 2,900\s%\./)
+    await expect(ahead.locator('tbody tr').first()).toContainText(/^2026/)
+    await expect(ahead.locator('tbody tr').last()).toContainText(/^2044.*0,00\s€$/)
+    await expect(ahead.locator('tfoot')).toContainText(/11\s897,88\s€/)
+    await chart.locator('.chart-point-hit').last().hover()
+    await expect(tip).toContainText(/^joulukuu 2044 \(arvio\)Velkaosuus0,00\s€/)
+    await saved.getByRole('checkbox', { name: 'Arvio laina-ajan loppuun' }).uncheck()
+    await expect(ahead).toHaveCount(0)
     // The certificate is the housing company's document, held by the loan: not unlinked on Asiakirjat.
     const housingDocs = page.locator('.property-housing-docs')
     await expect(housingDocs.locator('.doc-line', { hasText: 'Isännöitsijäntodistus' })).toContainText('Velkaosuus 1.3.2026, Putkiremontti')

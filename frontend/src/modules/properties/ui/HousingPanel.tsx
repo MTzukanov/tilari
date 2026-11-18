@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { loanNow, paidOffOn } from '../../../book/modules/properties/domain/housingLoan'
+import { loanForecast, loanNow, paidOffOn } from '../../../book/modules/properties/domain/housingLoan'
 import { monthEnd } from '../../../book/months'
 import { getBcp47, useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
@@ -12,6 +12,7 @@ import { FilePill, Pill } from '../../../shared/Pill'
 import { SearchSelect } from '../../../shared/SearchSelect'
 import type { BookedLine, DocCandidate, HousingCopySource, HousingLoan, LeaseVoucher, LoanMonth, LoanPath, PropertyDetail } from '../api'
 import { monthLabel } from './Charts'
+import { loadLoanForecast, saveLoanForecast } from './chartOptions'
 import { DocPicker } from './DocPicker'
 import { monthName, periodText } from './format'
 import { DocSlot, LineLink, VoucherOpen } from './FormParts'
@@ -139,18 +140,49 @@ function gapText(t: (key: string, vars?: Record<string, string | number>) => str
   return t(gap > 0 ? 'properties.housing.path.gapMore' : 'properties.housing.path.gapLess', { amount: formatCents(Math.abs(gap)) })
 }
 
+/** A month as "11/2026". */
+const monthShort = (key: string) => `${Number(key.slice(5, 7))}/${key.slice(0, 4)}`
+
+/** A forecast's months summed by year: the charges, the interest, the repayment, the share at the year's end. */
+function forecastYears(months: LoanMonth[]) {
+  const years = new Map<string, { year: string; paid: number; interest: number; principal: number; closing: number }>()
+  for (const m of months) {
+    const y = years.get(m.month.slice(0, 4)) ?? { year: m.month.slice(0, 4), paid: 0, interest: 0, principal: 0, closing: 0 }
+    y.paid += m.paid_snt
+    y.interest += m.interest_snt
+    y.principal += m.principal_snt
+    y.closing = m.closing_snt
+    years.set(y.year, y)
+  }
+  return [...years.values()]
+}
+
 /**
  * A loan's share month by month (ADR-034): a line of the share at each month's end with its
  * certificates as dots, and the months newest first - the payments to the housing company, the
  * rahoitusvastike they paid, the interest, what lowered the share, and the share; each certificate
  * under its month with the computed path's gap and the rate it implies. The card's "Kuukausittain"
- * opens it.
+ * opens it. "Arvio laina-ajan loppuun" (remembered in this browser) runs the line on dashed to the
+ * loan's end (`loanForecast`) and sums those months by year.
  */
-function LoanMonths({ path, payments, onOpenVoucher }: { path: LoanPath; payments: MonthPayments; onOpenVoucher: (voucherId: number) => void }) {
+function LoanMonths({
+  loan,
+  path,
+  payments,
+  onOpenVoucher,
+}: {
+  loan: HousingLoan
+  path: LoanPath
+  payments: MonthPayments
+  onOpenVoucher: (voucherId: number) => void
+}) {
   const { t } = useI18n()
   const locale = getBcp47()
   const months = path.months
   const [picked, setPicked] = useState<string | null>(null)
+  const [ahead, setAhead] = useState(loadLoanForecast)
+  const future = loanForecast(loan, path)
+  const shown = ahead && future.length ? [...months, ...future] : months
   const unpaid = (m: LoanMonth) => m.due_snt > 0 && m.payments === 0 && path.payments_known
   const certificateText = (c: NonNullable<LoanMonth['certificate']>) => {
     const parts = [t('properties.housing.path.certificate', { date: formatDate(c.date), amount: formatCents(c.share_snt) })]
@@ -159,9 +191,9 @@ function LoanMonths({ path, payments, onOpenVoucher }: { path: LoanPath; payment
     return parts.join(' · ')
   }
   const tip = (i: number): PointTip => {
-    const m = months[i]
+    const m = shown[i]
     return {
-      title: monthName(m.month, locale),
+      title: m.forecast ? t('properties.housing.path.forecastMonth', { month: monthName(m.month, locale) }) : monthName(m.month, locale),
       rows: [
         { label: t('properties.housing.path.col.share'), value: formatCents(m.closing_snt) },
         { label: t('properties.housing.path.col.paid'), value: unpaid(m) ? t('properties.housing.path.unpaid') : formatCents(m.paid_snt) },
@@ -174,25 +206,63 @@ function LoanMonths({ path, payments, onOpenVoucher }: { path: LoanPath; payment
       ],
     }
   }
+  const years = forecastYears(future)
+  const sum = (pick: (y: (typeof years)[number]) => number) => years.reduce((total, y) => total + pick(y), 0)
   return (
     <div className="property-loan-months">
+      <div className="overview-legend">
+        <span className="allocation-check">
+          <i className="overview-swatch property-swatch-loan" />
+          {t('properties.housing.path.share')}
+        </span>
+        <span className="allocation-check">
+          <i className="overview-swatch property-swatch-certificate" />
+          {t('properties.housing.field.certificate')}
+        </span>
+        {future.length ? (
+          <label className="allocation-check">
+            <input
+              type="checkbox"
+              checked={ahead}
+              onChange={() => {
+                setAhead(!ahead)
+                saveLoanForecast(!ahead)
+              }}
+            />
+            <i className="overview-swatch property-swatch-forecast" />
+            {t('properties.housing.path.forecast')}
+          </label>
+        ) : null}
+      </div>
       <LineChart
         className="overview-chart property-chart"
-        keys={months.map((m) => m.month)}
+        keys={shown.map((m) => m.month)}
         pointTip={tip}
-        onSelect={(i) => setPicked(i == null ? null : months[i].month)}
+        onSelect={(i) => setPicked(i == null ? null : shown[i].month)}
         series={[
           {
             key: 'share',
             label: t('properties.housing.path.share'),
-            values: months.map((m) => m.closing_snt),
+            values: shown.map((m) => (m.forecast ? null : m.closing_snt)),
             className: 'property-loan-share',
             dots: 'spaced',
           },
+          ...(shown.length > months.length
+            ? [
+                {
+                  key: 'forecast',
+                  label: t('properties.housing.path.forecastSeries'),
+                  // From the last month known on, so the dashes go on from the line.
+                  values: shown.map((m, i) => (m.forecast || i === months.length - 1 ? m.closing_snt : null)),
+                  className: 'property-loan-forecast',
+                  dashed: true,
+                },
+              ]
+            : []),
           {
             key: 'certificate',
             label: t('properties.housing.field.certificate'),
-            values: months.map((m) => m.certificate?.share_snt ?? null),
+            values: shown.map((m) => m.certificate?.share_snt ?? null),
             className: 'property-loan-certificate',
             dots: true,
           },
@@ -203,6 +273,51 @@ function LoanMonths({ path, payments, onOpenVoucher }: { path: LoanPath; payment
         label={t('properties.housing.path.share')}
       />
       <p className="muted property-lease-hint">{t('properties.housing.path.chartHint')}</p>
+      {shown.length > months.length ? (
+        <div className="property-loan-forecast-years">
+          <h5>{t('properties.housing.path.forecastYears')}</h5>
+          <p className="muted property-lease-hint">
+            {t('properties.housing.path.forecastSummary', {
+              date: formatDate(monthEnd(future.at(-1)!.month)),
+              rate: formatPcm(future.at(-1)!.rate_pcm),
+            })}{' '}
+            {t(`properties.housing.path.forecastRule.${loan.type}`)}
+          </p>
+          <div className="property-loan-table-scroll">
+            <table className="ledger-table compact property-rent-table property-loan-table">
+              <thead>
+                <tr>
+                  <th>{t('properties.housing.path.col.year')}</th>
+                  <th className="amount">{t('properties.housing.path.col.paid')}</th>
+                  <th className="amount">{t('properties.housing.path.col.interest')}</th>
+                  <th className="amount">{t('properties.housing.path.col.principal')}</th>
+                  <th className="amount">{t('properties.housing.path.col.shareYearEnd')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {years.map((y) => (
+                  <tr key={y.year}>
+                    <td>{y.year}</td>
+                    <td className="amount">{formatCents(y.paid)}</td>
+                    <td className="amount">{formatCents(y.interest)}</td>
+                    <td className="amount">{formatCents(y.principal)}</td>
+                    <td className="amount">{formatCents(y.closing)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td>{t('properties.housing.path.forecastTotal')}</td>
+                  <td className="amount">{formatCents(sum((y) => y.paid))}</td>
+                  <td className="amount">{formatCents(sum((y) => y.interest))}</td>
+                  <td className="amount">{formatCents(sum((y) => y.principal))}</td>
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      ) : null}
       <div className="property-loan-table-scroll">
         <table className="ledger-table compact property-rent-table property-loan-table">
           <thead>
@@ -303,8 +418,8 @@ function LoanCard({
   const paidOff = paidOffOn(loan)
   const reference = t(`properties.housing.reference.${loan.reference}`)
   const fixed = loan.reference === 'fixed'
+  const first = path?.months[0]
   const last = path?.months.at(-1)
-  const year = path?.months.slice(-12) ?? []
   const note = path && !path.payments_known ? t('properties.housing.path.paymentsUnknown') : null
   const certificateSlot = certificate ? (
     <DocSlot voucher={voucher(certificate.voucher_id)} noDocument={certificate.no_document} held={held} onOpen={onOpenVoucher} />
@@ -313,13 +428,13 @@ function LoanCard({
   const folds: { key: LoanFold; title: string; n: number; body: () => ReactNode }[] = [
     {
       key: 'months',
-      title: t('properties.housing.path.months', { n: path?.months.length ?? 0 }),
+      title: t('properties.housing.path.months'),
       n: path?.months.length ?? 0,
-      body: () => (path ? <LoanMonths path={path} payments={payments} onOpenVoucher={onOpenVoucher} /> : null),
+      body: () => (path ? <LoanMonths loan={loan} path={path} payments={payments} onOpenVoucher={onOpenVoucher} /> : null),
     },
     {
       key: 'certificates',
-      title: t('properties.housing.fold', { title: t('properties.housing.certificates'), n: loan.certificates?.length ?? 0 }),
+      title: t('properties.housing.certificates'),
       n: loan.certificates?.length ?? 0,
       body: () =>
         list(
@@ -334,7 +449,7 @@ function LoanCard({
     },
     {
       key: 'charges',
-      title: t('properties.housing.fold', { title: t('properties.housing.charges'), n: loan.charges?.length ?? 0 }),
+      title: t('properties.housing.charges'),
       n: loan.charges?.length ?? 0,
       body: () =>
         list(
@@ -350,7 +465,7 @@ function LoanCard({
     },
     {
       key: 'rates',
-      title: t('properties.housing.fold', { title: t('properties.housing.rates'), n: loan.rates?.length ?? 0 }),
+      title: t('properties.housing.rates'),
       n: loan.rates?.length ?? 0,
       body: () =>
         list(
@@ -369,7 +484,7 @@ function LoanCard({
     },
     {
       key: 'events',
-      title: t('properties.housing.fold', { title: t('properties.housing.events'), n: loan.events?.length ?? 0 }),
+      title: t('properties.housing.events'),
       n: loan.events?.length ?? 0,
       body: () =>
         list(
@@ -434,11 +549,14 @@ function LoanCard({
               : [t('properties.housing.shareNone')]
           }
         />
-        {last ? (
+        {first && last ? (
           <Figure
-            label={t('properties.housing.figure.repaid', { count: year.length })}
-            value={formatCents(year.reduce((sum, m) => sum + m.principal_snt + m.extra_snt, 0))}
-            sub={[t('properties.housing.figure.interest', { amount: formatCents(year.reduce((sum, m) => sum + m.interest_snt, 0)) })]}
+            label={t('properties.housing.figure.repaid')}
+            value={formatCents(first.opening_snt - last.closing_snt)}
+            sub={[
+              t('properties.housing.figure.span', { from: monthShort(first.month), to: monthShort(last.month) }),
+              t('properties.housing.figure.interest', { amount: formatCents(path!.months.reduce((sum, m) => sum + m.interest_snt, 0)) }),
+            ]}
           />
         ) : null}
         <Figure
@@ -486,11 +604,14 @@ function LoanCard({
       {shown.length ? (
         <div className="property-loan-folds">
           {shown.map((f) => (
-            <button key={f.key} type="button" className="property-loan-fold" aria-expanded={open === f.key} onClick={() => setOpen(open === f.key ? null : f.key)}>
-              <span className="property-loan-fold-mark" aria-hidden="true">
-                {open === f.key ? '\u25BE' : '\u25B8'}
-              </span>
-              {f.title}
+            <button
+              key={f.key}
+              type="button"
+              className={`property-loan-fold${open === f.key ? ' is-open' : ''}`}
+              aria-expanded={open === f.key}
+              onClick={() => setOpen(open === f.key ? null : f.key)}
+            >
+              {f.title} <span className="tabs-count">{f.n}</span>
             </button>
           ))}
         </div>

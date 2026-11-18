@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  annuityPayment,
   chargeAt,
   copyGroup,
   housingVoucherIds,
   latestCertificate,
   loanDay,
+  loanForecast,
   loanNow,
   loanPath,
   loanRunning,
@@ -241,5 +243,116 @@ describe('housing-company loans: the share month by month', () => {
       ['loan_rahastoitu_expensed', { loan: 'Putkiremontti', from_date: '2025-01-01' }],
       ['loan_charge_notice_missing', { loan: 'Putkiremontti', from_date: '2025-01-01', amount_snt: 100_00 }],
     ])
+  })
+})
+
+describe('housing-company loans: the share ahead', () => {
+  /** A path whose last month is `month`, the share `share` at its end. */
+  const pathTo = (month: string, share: number): LoanPath => ({
+    loan_key: 'h1',
+    months: [
+      { month, opening_snt: share, due_snt: 0, payments: 0, paid_snt: 0, rate_pcm: 0, interest_snt: 0, principal_snt: 0, extra_snt: 0, closing_snt: share },
+    ],
+    payments_known: true,
+    missing: null,
+  })
+  const pays = (rows: { paid_snt: number }[]) => rows.map((r) => r.paid_snt)
+
+  it('the level payment of an annuity, to the cent', () => {
+    // 10 000,00 at 6 % a year (0,5 % a month) over 12 months: 860,66.
+    expect(annuityPayment(1_000_000, 6000, 12)).toBe(86_066)
+    expect(annuityPayment(1_150_00, 0, 6)).toBe(191_67)
+    expect(annuityPayment(500_00, 12_000, 1)).toBe(505_00)
+  })
+
+  it('an annuity pays its charge until the rate reset, then what clears the share by its end', () => {
+    // Reset every 6 months from January: the charge in June, the worked-out payment from July, the rest in December.
+    const l = loan({
+      reference: 'fixed',
+      margin_pcm: 0,
+      ends: '2026-12-31',
+      reset_months: 6,
+      rates: [{ from: '2026-01-01', reference_pcm: 0 }],
+      charges: [{ from: '2026-01-01', amount_snt: 50_00 }],
+    })
+    const rows = loanForecast(l, pathTo('2026-05', 1_200_00))
+    expect(rows.map((r) => r.month)).toEqual(['2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12'])
+    expect(pays(rows)).toEqual([50_00, 191_67, 191_67, 191_67, 191_67, 191_67, 191_65])
+    expect(rows.at(-1)!.closing_snt).toBe(0)
+    expect(rows.every((r) => r.forecast)).toBe(true)
+  })
+
+  it('an annuity with interest: level payments, the last one what is left', () => {
+    const l = loan({ margin_pcm: 1000, ends: '2027-05-31', reset_months: 12, rates: [{ from: '2026-06-01', reference_pcm: 5000 }] })
+    const rows = loanForecast(l, pathTo('2026-05', 1_000_000))
+    expect(rows).toHaveLength(12)
+    expect(pays(rows.slice(0, 11)).every((p) => p === 86_066)).toBe(true)
+    expect(rows[0].interest_snt).toBe(5_000)
+    expect(rows.at(-1)).toMatchObject({ month: '2027-05', opening_snt: 85_642, interest_snt: 428, paid_snt: 86_070, closing_snt: 0 })
+  })
+
+  it('a tasalyhennys repays the share over the months left, the interest on top', () => {
+    // 1 200,00 at 12 % a year: 100,00 a month plus 1 % of the share left.
+    const l = loan({ type: 'equal_principal', margin_pcm: 800, ends: '2027-05-31', reset_months: 12, rates: [{ from: '2026-06-01', reference_pcm: 11_200 }] })
+    const rows = loanForecast(l, pathTo('2026-05', 1_200_00))
+    expect(pays(rows)).toEqual([112, 111, 110, 109, 108, 107, 106, 105, 104, 103, 102, 101].map((e) => e * 100))
+    expect(rows.at(-1)!.closing_snt).toBe(0)
+  })
+
+  it('a fixed payment stays until the share is cleared, past the end in the terms', () => {
+    const l = loan({
+      type: 'fixed_payment',
+      reference: 'fixed',
+      ends: '2026-07-31',
+      rates: [{ from: '2026-01-01', reference_pcm: 0 }],
+      charges: [{ from: '2026-01-01', amount_snt: 300_00 }],
+    })
+    const rows = loanForecast(l, pathTo('2026-05', 1_000_00))
+    expect(rows.map((r) => [r.month, r.paid_snt, r.closing_snt])).toEqual([
+      ['2026-06', 300_00, 700_00],
+      ['2026-07', 300_00, 400_00],
+      ['2026-08', 300_00, 100_00],
+      ['2026-09', 100_00, 0],
+    ])
+  })
+
+  it('an interest-only period pays the interest; its end works the payment out again, as a reset does', () => {
+    const l = loan({
+      reference: 'fixed',
+      margin_pcm: 0,
+      ends: '2027-05-31',
+      reset_months: 12,
+      grace: [{ from: '2026-06-01', to: '2026-08-31' }],
+      rates: [{ from: '2026-01-01', reference_pcm: 0 }],
+      charges: [{ from: '2026-01-01', amount_snt: 50_00 }],
+    })
+    const rows = loanForecast(l, pathTo('2026-05', 1_200_00))
+    // Nothing in the grace months; from September 1 200,00 over 9 months; January's reset 666,64 over 5.
+    expect(pays(rows)).toEqual([0, 0, 0, 133_34, 133_34, 133_34, 133_34, 133_33, 133_33, 133_33, 133_33, 133_32])
+    expect(rows.at(-1)).toMatchObject({ month: '2027-05', closing_snt: 0 })
+  })
+
+  it('a later rahoitusvastike row is the company figure until the next reset', () => {
+    const l = loan({
+      type: 'fixed_payment',
+      reference: 'fixed',
+      rates: [{ from: '2026-01-01', reference_pcm: 0 }],
+      charges: [
+        { from: '2026-01-01', amount_snt: 100_00 },
+        { from: '2026-07-01', amount_snt: 200_00 },
+      ],
+    })
+    expect(pays(loanForecast(l, pathTo('2026-05', 500_00)))).toEqual([100_00, 200_00, 200_00])
+  })
+
+  it('none without a rate, a share or a charge that clears it, once paid off, or after the end', () => {
+    const base = { rates: [{ from: '2026-01-01', reference_pcm: 3000 }], charges: [{ from: '2026-01-01', amount_snt: 5_00 }] }
+    expect(loanForecast(loan({ ...base, rates: [] }), pathTo('2026-05', 1_000_00))).toEqual([])
+    expect(loanForecast(loan(base), pathTo('2026-05', 0))).toEqual([])
+    expect(loanForecast(loan({ ...base, ends: '2026-05-31' }), pathTo('2026-05', 1_000_00))).toEqual([])
+    expect(loanForecast(loan({ ...base, events: [{ date: '2026-04-01', kind: 'paid_off' }] }), pathTo('2026-05', 1_000_00))).toEqual([])
+    // 5,00 a month never covers 3,8 % on 3 000,00: no end in sight.
+    expect(loanForecast(loan({ ...base, type: 'fixed_payment' }), pathTo('2026-05', 3_000_00))).toEqual([])
+    expect(loanForecast(loan(base), { loan_key: 'h1', months: [], payments_known: true, missing: null })).toEqual([])
   })
 })

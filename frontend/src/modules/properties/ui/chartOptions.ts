@@ -45,6 +45,25 @@ export function saveCashFlowOptions(options: CashFlowOptions): void {
   }
 }
 
+export const LOAN_FORECAST_STORAGE_KEY = 'tilari.properties.loanForecast'
+
+/** Whether a loan's chart runs on to the loan's end (an estimate): one choice for every loan, in this browser. */
+export function loadLoanForecast(): boolean {
+  try {
+    return localStorage.getItem(LOAN_FORECAST_STORAGE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function saveLoanForecast(on: boolean): void {
+  try {
+    localStorage.setItem(LOAN_FORECAST_STORAGE_KEY, on ? '1' : '0')
+  } catch {
+    // Private window or blocked storage: the choice lasts until the page closes.
+  }
+}
+
 /** Income less expenses and interest: the month's cash flow (the net bar, the month lines' sum). */
 export function monthNet(m: MonthPoint): number {
   return m.income_snt - m.expense_snt - m.interest_snt

@@ -794,6 +794,8 @@ export type LoanMonth = {
   closing_snt: number
   /** Computed backwards from the first certificate. */
   backward?: true
+  /** An estimate after the path (`loanForecast`): the month has not come yet. */
+  forecast?: true
   /**
    * A certificate (its share at the month's end): with an earlier one, how far the computed path was
    * from it (computed less certified, to the cent) and the rate the fitted months imply.

@@ -1780,7 +1780,6 @@
       "uploadDoc": "Upload document",
       "docsLead": "Property manager's certificates, general meeting minutes and charge notices. Those linked to the loans show here too.",
       "noDocs": "No housing company documents.",
-      "fold": "{title} ({n})",
       "paidOff": "Paid off {date}",
       "shareNone": "No loan share given.",
       "chargeNone": "No financing charge given.",
@@ -1800,15 +1799,17 @@
       "copySame": "★ = the object pays the same housing company.",
       "none": "No company loans.",
       "path": {
-        "months": "Month by month ({n})",
+        "months": "Month by month",
         "share": "Loan share at month end",
-        "chartHint": "Line: the computed loan share at each month's end. Dark dots: property manager's certificates. Point at a month or tap it to see its figures; the month picked is marked in the table.",
+        "chartHint": "Point at a month or tap it to see its figures; the month picked is marked in the table.",
         "col": {
           "payments": "Payments to the company",
           "paid": "Financing charge",
           "interest": "Interest",
           "principal": "Repaid",
-          "share": "Loan share"
+          "share": "Loan share",
+          "year": "Year",
+          "shareYearEnd": "Share at 31 Dec"
         },
         "backwardHint": "Worked back from the first certificate.",
         "unpaid": "no payment",
@@ -1819,7 +1820,18 @@
         "gapMore": "computed {amount} more",
         "gapLess": "computed {amount} less",
         "implied": "actual rate {rate}",
-        "paymentsUnknown": "No monthly payments from this object to the housing company were found in the books, so the calculation assumes each month's financing charge was paid."
+        "paymentsUnknown": "No monthly payments from this object to the housing company were found in the books, so the calculation assumes each month's financing charge was paid.",
+        "forecast": "Estimate to the loan's end",
+        "forecastSeries": "Estimated loan share",
+        "forecastMonth": "{month} (estimate)",
+        "forecastYears": "Estimate by year",
+        "forecastSummary": "The share paid off by {date} if the rate stays at {rate}.",
+        "forecastTotal": "Total",
+        "forecastRule": {
+          "annuity": "The financing charge is worked out again at each rate reset so that the loan is paid off by the end of its term.",
+          "equal_principal": "From the rate resets on, the repayment is the share over the months left, with the interest on top.",
+          "fixed_payment": "The financing charge stays the same until the share is paid off."
+        }
       },
       "alsoLead": "Add the new reference rates ({dates}) to the loan's copies on other objects too:",
       "alsoFailed": "The loan was saved, but the reference rate could not be added to: {objects}.",
@@ -1828,15 +1840,15 @@
         "share": "Loan share {date}",
         "shareLabel": "Loan share",
         "certificate": "Certificate {date}: {amount}",
-        "repaid": "Repaid, {count} months",
-        "repaid_one": "Repaid, 1 month",
+        "repaid": "Repaid in all",
         "interest": "interest {amount}",
         "charge": "Financing charge",
         "rate": "Interest rate",
         "rateParts": "{reference} {rate} + {margin}",
         "rateMissing": "{reference} + {margin}; reference rate missing",
         "fixed": "fixed",
-        "term": "Loan term"
+        "term": "Loan term",
+        "span": "{from}–{to}"
       }
     }
   },

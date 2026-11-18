@@ -1780,7 +1780,6 @@
       "uploadDoc": "Dokument hochladen",
       "docsLead": "Hausverwalterbescheinigungen, Protokolle der Hauptversammlung und Entgeltmitteilungen. Die mit den Darlehen verknüpften stehen auch hier.",
       "noDocs": "Keine Dokumente der Wohnungsgesellschaft.",
-      "fold": "{title} ({n})",
       "paidOff": "Abgelöst {date}",
       "shareNone": "Kein Darlehensanteil angegeben.",
       "chargeNone": "Kein Finanzierungsentgelt angegeben.",
@@ -1800,15 +1799,17 @@
       "copySame": "★ = das Objekt zahlt an dieselbe Wohnungsgesellschaft.",
       "none": "Keine Gesellschaftsdarlehen.",
       "path": {
-        "months": "Monatlich ({n})",
+        "months": "Monatlich",
         "share": "Darlehensanteil am Monatsende",
-        "chartHint": "Linie: berechneter Darlehensanteil am Ende jedes Monats. Dunkle Punkte: Hausverwalterbescheinigungen. Zeigen Sie auf einen Monat oder tippen Sie ihn an, um seine Zahlen zu sehen; der gewählte Monat wird in der Tabelle markiert.",
+        "chartHint": "Zeigen Sie auf einen Monat oder tippen Sie ihn an, um seine Zahlen zu sehen; der gewählte Monat wird in der Tabelle markiert.",
         "col": {
           "payments": "Zahlungen an die Gesellschaft",
           "paid": "Finanzierungsentgelt",
           "interest": "Zins",
           "principal": "Tilgung",
-          "share": "Darlehensanteil"
+          "share": "Darlehensanteil",
+          "year": "Jahr",
+          "shareYearEnd": "Anteil am 31.12."
         },
         "backwardHint": "Rückwärts von der ersten Bescheinigung berechnet.",
         "unpaid": "keine Zahlung",
@@ -1819,7 +1820,18 @@
         "gapMore": "berechnet {amount} mehr",
         "gapLess": "berechnet {amount} weniger",
         "implied": "tatsächlicher Zins {rate}",
-        "paymentsUnknown": "In der Buchhaltung wurden keine monatlichen Zahlungen des Objekts an die Wohnungsgesellschaft gefunden; die Berechnung nimmt daher an, dass jedes monatliche Finanzierungsentgelt bezahlt wurde."
+        "paymentsUnknown": "In der Buchhaltung wurden keine monatlichen Zahlungen des Objekts an die Wohnungsgesellschaft gefunden; die Berechnung nimmt daher an, dass jedes monatliche Finanzierungsentgelt bezahlt wurde.",
+        "forecast": "Schätzung bis Laufzeitende",
+        "forecastSeries": "Geschätzter Darlehensanteil",
+        "forecastMonth": "{month} (Schätzung)",
+        "forecastYears": "Schätzung nach Jahren",
+        "forecastSummary": "Anteil bis {date} getilgt, wenn der Zins bei {rate} bleibt.",
+        "forecastTotal": "Gesamt",
+        "forecastRule": {
+          "annuity": "Das Finanzierungsentgelt wird bei jeder Zinsanpassung neu berechnet, sodass das Darlehen zum Laufzeitende getilgt ist.",
+          "equal_principal": "Ab den Zinsanpassungen ist die Tilgung der Anteil geteilt durch die restlichen Monate, der Zins kommt hinzu.",
+          "fixed_payment": "Das Finanzierungsentgelt bleibt gleich, bis der Anteil getilgt ist."
+        }
       },
       "alsoLead": "Die neuen Referenzzinsen ({dates}) auch bei den Kopien des Darlehens in anderen Objekten eintragen:",
       "alsoFailed": "Das Darlehen wurde gespeichert, aber der Referenzzins konnte nicht eingetragen werden bei: {objects}.",
@@ -1828,15 +1840,15 @@
         "share": "Darlehensanteil {date}",
         "shareLabel": "Darlehensanteil",
         "certificate": "Bescheinigung {date}: {amount}",
-        "repaid": "Getilgt, {count} Monate",
-        "repaid_one": "Getilgt, 1 Monat",
+        "repaid": "Insgesamt getilgt",
         "interest": "Zins {amount}",
         "charge": "Finanzierungsentgelt",
         "rate": "Zinssatz",
         "rateParts": "{reference} {rate} + {margin}",
         "rateMissing": "{reference} + {margin}; Referenzzins fehlt",
         "fixed": "fest",
-        "term": "Laufzeit"
+        "term": "Laufzeit",
+        "span": "{from}–{to}"
       }
     }
   },

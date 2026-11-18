@@ -246,6 +246,81 @@ export function paymentsMissing(loan: HousingLoan, payments: PaymentUnits, from:
   return deficit > 0 && since ? { count: deficit, from: since } : null
 }
 
+/** Months from `a` to `b` (`YYYY-MM`): 0 in the same month. */
+const monthsBetween = (a: string, b: string) => (Number(b.slice(0, 4)) - Number(a.slice(0, 4))) * 12 + Number(b.slice(5, 7)) - Number(a.slice(5, 7))
+
+/** A forecast that has not cleared the share in this many months never will: there is none. */
+const FORECAST_MAX_MONTHS = 600
+
+/** The level payment that clears `share` in `months` at `pcm` (1/1000 % a year), to the cent. */
+export function annuityPayment(share: number, pcm: number, months: number): number {
+  const r = pcm / 1_200_000
+  if (months <= 1) return share + interestOn(share, pcm)
+  if (r === 0) return Math.ceil(share / months)
+  return Math.round((share * r) / (1 - (1 + r) ** -months))
+}
+
+/**
+ * The share's months after the path, to the loan's end (ADR-034): an estimate, at the rates the rows
+ * give and the latest one after them (estimates per reference rate come later). The rahoitusvastike in
+ * force - or a later row of it, the company's own figure - is paid until the next rate reset (every
+ * `reset_months`, 12 when not known, from the latest rate row) or the end of an interest-only period;
+ * from there an annuity pays what clears the share by `ends` and a tasalyhennys the share over the
+ * months left plus the interest, both worked out again at each reset. A fixed payment stays as it is
+ * and runs the share to 0, whatever `ends` says. An interest-only month pays the interest; the last
+ * month pays what is left. None without a path, a share left or a rate, once paid off, or when the
+ * charge would never clear the share.
+ */
+export function loanForecast(loan: HousingLoan, path: LoanPath): LoanMonth[] {
+  const last = path.months.at(-1)
+  if (!last || last.closing_snt <= 0 || paidOffOn(loan) || !loan.rates?.length) return []
+  const end = loan.type !== 'fixed_payment' && loan.ends ? monthOf(loan.ends) : null
+  if (end && end <= last.month) return []
+  const anchor = monthOf(loan.rates.at(-1)!.from)
+  const every = loan.reset_months ?? 12
+  const inGrace = (m: string) => (loan.grace ?? []).some((g) => monthOf(g.from) <= m && m <= monthOf(g.to))
+  const newCharge = (m: string) => (loan.charges ?? []).some((c) => monthOf(c.from) === m)
+  const rows: LoanMonth[] = []
+  let opening = last.closing_snt
+  let worked: { annuity: number; principal: number } | null = null
+  for (let m = addMonths(last.month, 1); rows.length < FORECAST_MAX_MONTHS; m = addMonths(m, 1)) {
+    const rate = rateIn(loan, m)
+    const interest = interestOn(opening, rate)
+    const since = monthsBetween(anchor, m)
+    const reset = (since >= 0 && since % every === 0) || (rows.length > 0 && inGrace(rows.at(-1)!.month) && !inGrace(m))
+    if (newCharge(m)) worked = null
+    if (end && loan.type !== 'fixed_payment' && reset && !inGrace(m)) {
+      const left = monthsBetween(m, end) + 1
+      worked = { annuity: annuityPayment(opening, rate, left), principal: Math.round(opening / left) }
+    }
+    let pay = inGrace(m)
+      ? interest
+      : worked
+        ? loan.type === 'annuity'
+          ? worked.annuity
+          : worked.principal + interest
+        : dueIn(loan, m)
+    if (m === end || pay >= opening + interest) pay = opening + interest
+    const closing = opening - (pay - interest)
+    rows.push({
+      month: m,
+      opening_snt: opening,
+      due_snt: pay,
+      payments: 1,
+      paid_snt: pay,
+      rate_pcm: rate,
+      interest_snt: interest,
+      principal_snt: pay - interest,
+      extra_snt: 0,
+      closing_snt: closing,
+      forecast: true,
+    })
+    if (closing <= 0) return rows
+    opening = closing
+  }
+  return []
+}
+
 /** The next reset of the reference rate after the latest rate row, if its interval is known. */
 export function nextReset(loan: HousingLoan): string | null {
   const last = loan.rates?.at(-1)

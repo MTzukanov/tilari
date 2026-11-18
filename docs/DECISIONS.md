@@ -844,7 +844,13 @@ correction would change the open year's income statement lines. The rental-objec
   books it so - a rahastoitu rahoitusvastike paid as a cost.
 - **A rate row on copies:** a rate row new on a loan card can be added to the same loan on other objects (its
   `group`) in the same save, each ticked by default.
+- **The share ahead** (`loanForecast`, 2026-11-18, the owner's ask ahead of the rest of the forecast work): a
+  checkbox on the loan's chart runs it on dashed to the loan's end and sums those months by year. The rates are the
+  rows and then the latest held. The rahoitusvastike in force (or a later row of it) is paid until the next rate
+  reset or the end of an interest-only period; from there an annuity pays what clears the share by `ends`, a
+  tasalyhennys the share over the months left plus interest, each worked out again at every reset; a fixed payment
+  stays and runs the share to 0. The last month pays what is left. No forecast when the charge would never clear it.
 - **Next steps:** the figures that depend on the share (debt-free values, the rahoitusvastike split into interest
-  and principal, the rahastoitu view option); rate estimates for the future and each loan's projection; then
+  and principal, the rahastoitu view option); rate estimates per reference rate for the forecast; then
   tilari-bank-import reading the vastike invoices into facts on the voucher.
 

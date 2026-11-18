@@ -38,6 +38,12 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   became an "i" by the share (hover title; a click shows it under the tiles), reworded to say what it means:
   the calculation assumes each month's rahoitusvastike was paid. The lists (months, shares, charges, rates,
   events) are one row of buttons, one open at a time.
+- Owner, later: the list buttons are small tabs (like the page's, with the count beside the name; the page's
+  `Tabs` is sticky, so not reused), an open list has no line under its last row, "Lyhennetty yhteensä" counts
+  from the path's first month (the later of purchase, loan start, books' start, first charge: the span is under
+  the figure), and the chart has "Arvio laina-ajan loppuun" (`loanForecast`, ADR-034; remembered in this browser,
+  `tilari.properties.loanForecast`): a dashed line to the end and the months summed by year. The rate is held at
+  the latest until the rate estimates per reference rate exist.
 
 ## 2026-11-17 - Rental objects: housing-company loans on a Taloyhtiö tab (`feature/housing-loans`, ADR-034)
 

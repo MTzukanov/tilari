@@ -1780,7 +1780,6 @@
       "uploadDoc": "Ladda upp dokument",
       "docsLead": "Disponentintyg, bolagsstämmoprotokoll och vederlagsmeddelanden. De som är länkade till lånen visas också här.",
       "noDocs": "Inga dokument från bostadsbolaget.",
-      "fold": "{title} ({n})",
       "paidOff": "Betald {date}",
       "shareNone": "Ingen låneandel angiven.",
       "chargeNone": "Inget finansieringsvederlag angivet.",
@@ -1800,15 +1799,17 @@
       "copySame": "★ = objektet betalar till samma bostadsbolag.",
       "none": "Inga bolagslån.",
       "path": {
-        "months": "Per månad ({n})",
+        "months": "Per månad",
         "share": "Låneandel vid månadens slut",
-        "chartHint": "Linje: beräknad låneandel vid varje månads slut. Mörka punkter: disponentintyg. Peka på en månad eller tryck på den för att se dess siffror; den valda månaden markeras i tabellen.",
+        "chartHint": "Peka på en månad eller tryck på den för att se dess siffror; den valda månaden markeras i tabellen.",
         "col": {
           "payments": "Betalningar till bolaget",
           "paid": "Finansieringsvederlag",
           "interest": "Ränta",
           "principal": "Amortering",
-          "share": "Låneandel"
+          "share": "Låneandel",
+          "year": "År",
+          "shareYearEnd": "Låneandel 31.12."
         },
         "backwardHint": "Beräknad bakåt från det första intyget.",
         "unpaid": "ingen betalning",
@@ -1819,7 +1820,18 @@
         "gapMore": "beräknat {amount} större",
         "gapLess": "beräknat {amount} mindre",
         "implied": "faktisk ränta {rate}",
-        "paymentsUnknown": "Inga månatliga betalningar från objektet till bostadsbolaget hittades i bokföringen, så beräkningen antar att varje månads finansieringsvederlag är betalt."
+        "paymentsUnknown": "Inga månatliga betalningar från objektet till bostadsbolaget hittades i bokföringen, så beräkningen antar att varje månads finansieringsvederlag är betalt.",
+        "forecast": "Uppskattning till lånets slut",
+        "forecastSeries": "Uppskattad låneandel",
+        "forecastMonth": "{month} (uppskattning)",
+        "forecastYears": "Uppskattning per år",
+        "forecastSummary": "Låneandelen betald senast {date}, om räntan förblir {rate}.",
+        "forecastTotal": "Totalt",
+        "forecastRule": {
+          "annuity": "Finansieringsvederlaget räknas om vid ränteändringar så att lånet är betalt vid lånetidens slut.",
+          "equal_principal": "Från ränteändringarna är amorteringen låneandelen delad med de återstående månaderna, räntan ovanpå.",
+          "fixed_payment": "Finansieringsvederlaget förblir detsamma tills låneandelen är betald."
+        }
       },
       "alsoLead": "Lägg till de nya referensräntorna ({dates}) även i lånets kopior i andra objekt:",
       "alsoFailed": "Lånet sparades, men referensräntan kunde inte läggas till för objekten: {objects}.",
@@ -1828,15 +1840,15 @@
         "share": "Låneandel {date}",
         "shareLabel": "Låneandel",
         "certificate": "Intyg {date}: {amount}",
-        "repaid": "Amorterat, {count} mån",
-        "repaid_one": "Amorterat, 1 mån",
+        "repaid": "Amorterat totalt",
         "interest": "ränta {amount}",
         "charge": "Finansieringsvederlag",
         "rate": "Ränta",
         "rateParts": "{reference} {rate} + {margin}",
         "rateMissing": "{reference} + {margin}; referensränta saknas",
         "fixed": "fast",
-        "term": "Lånetid"
+        "term": "Lånetid",
+        "span": "{from}–{to}"
       }
     }
   },

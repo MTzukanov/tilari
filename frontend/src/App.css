@@ -5774,41 +5774,99 @@ tr.tax-total td {
   margin: 0 0 0.5rem;
 }
 
-/* The loan's lists in one row; one opens at a time under it. */
+/* The loan's lists as small tabs, like the page's own: one opens under them, a click on it closes it. */
 .property-loan-folds {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1.25rem;
-  margin-top: 0.25rem;
+  margin-top: 0.4rem;
+  border-bottom: 1px solid var(--line);
 }
 
 .property-loan-fold {
-  padding: 0.15rem 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: -1px;
+  padding: 0.45rem 0.75rem 0.35rem;
   border: 0;
+  border-bottom: 2px solid transparent;
   background: none;
-  color: var(--ink);
+  color: var(--muted);
   font: inherit;
   font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.property-loan-fold-mark {
-  display: inline-block;
-  width: 1em;
-  color: var(--muted);
-}
-
-.property-loan-fold[aria-expanded='true'] {
-  font-weight: 600;
+.property-loan-fold:first-child {
+  padding-left: 0.1rem;
 }
 
 .property-loan-fold:hover {
-  text-decoration: underline;
+  color: var(--ink);
+}
+
+.property-loan-fold.is-open {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .property-loan-months,
 .property-loan-fold-body {
   margin-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .property-loan-fold {
+    padding: 0.4rem 0.5rem 0.3rem;
+    font-size: 0.84rem;
+  }
+}
+
+/* An open list ends with its last row, not with a line under it. */
+.property-loan-fold-body > li:last-child {
+  border-bottom: 0;
+}
+
+/* The chart's legend: the share, the certificates, the estimate ahead. */
+.overview-swatch.property-swatch-loan {
+  height: 2px;
+  background: #2f6fed;
+}
+
+.overview-swatch.property-swatch-certificate {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.overview-swatch.property-swatch-forecast {
+  height: 0;
+  border-top: 2px dashed #2f6fed;
+  border-radius: 0;
+}
+
+.property-loan-forecast .chart-line {
+  fill: none;
+  stroke: #2f6fed;
+  stroke-width: 2;
+  opacity: 0.75;
+}
+
+.property-loan-forecast .chart-line-dot {
+  fill: color-mix(in srgb, #2f6fed 60%, var(--card));
+}
+
+.property-loan-forecast-years h5 {
+  margin: 0.75rem 0 0.15rem;
+  font-size: 0.85rem;
+}
+
+.property-loan-table tfoot td {
+  font-weight: 600;
+  border-top: 1px solid var(--line);
 }
 
 /* A loan's months: wider than a phone, so the table scrolls on its own, not the page. */

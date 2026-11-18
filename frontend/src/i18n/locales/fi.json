@@ -1780,7 +1780,6 @@
       "uploadDoc": "Lataa asiakirja",
       "docsLead": "Isännöitsijäntodistukset, yhtiökokousten pöytäkirjat ja vastikeilmoitukset. Lainoihin linkitetyt näkyvät myös tässä.",
       "noDocs": "Ei taloyhtiön asiakirjoja.",
-      "fold": "{title} ({n})",
       "paidOff": "Maksettu pois {date}",
       "shareNone": "Velkaosuutta ei ole annettu.",
       "chargeNone": "Rahoitusvastiketta ei ole annettu.",
@@ -1800,15 +1799,17 @@
       "copySame": "★ = kohde maksaa samalle taloyhtiölle.",
       "none": "Ei yhtiölainoja.",
       "path": {
-        "months": "Kuukausittain ({n})",
+        "months": "Kuukausittain",
         "share": "Velkaosuus kuukauden lopussa",
-        "chartHint": "Viiva: laskettu velkaosuus kunkin kuukauden lopussa. Tummat pisteet: isännöitsijäntodistukset. Vie osoitin kuukauden kohdalle tai napauta sitä, niin sen luvut näkyvät; valittu kuukausi korostuu taulukossa.",
+        "chartHint": "Vie osoitin kuukauden kohdalle tai napauta sitä, niin sen luvut näkyvät; valittu kuukausi korostuu taulukossa.",
         "col": {
           "payments": "Maksut taloyhtiölle",
           "paid": "Rahoitusvastike",
           "interest": "Korko",
           "principal": "Lyhennys",
-          "share": "Velkaosuus"
+          "share": "Velkaosuus",
+          "year": "Vuosi",
+          "shareYearEnd": "Velkaosuus 31.12."
         },
         "backwardHint": "Laskettu taaksepäin ensimmäisestä todistuksesta.",
         "unpaid": "ei maksua",
@@ -1819,7 +1820,18 @@
         "gapMore": "laskettu {amount} suurempi",
         "gapLess": "laskettu {amount} pienempi",
         "implied": "toteutunut korko {rate}",
-        "paymentsUnknown": "Kirjanpidosta ei löytynyt kohteen kuukausittaisia maksuja taloyhtiölle, joten laskelma olettaa jokaisen kuukauden rahoitusvastikkeen maksetuksi."
+        "paymentsUnknown": "Kirjanpidosta ei löytynyt kohteen kuukausittaisia maksuja taloyhtiölle, joten laskelma olettaa jokaisen kuukauden rahoitusvastikkeen maksetuksi.",
+        "forecast": "Arvio laina-ajan loppuun",
+        "forecastSeries": "Arvioitu velkaosuus",
+        "forecastMonth": "{month} (arvio)",
+        "forecastYears": "Arvio vuosittain",
+        "forecastSummary": "Velkaosuus maksettu {date} mennessä, kun korko pysyy {rate}.",
+        "forecastTotal": "Yhteensä",
+        "forecastRule": {
+          "annuity": "Rahoitusvastike lasketaan koronmuutoksissa uudelleen niin, että laina on maksettu laina-ajan loppuun.",
+          "equal_principal": "Koronmuutoksista alkaen lyhennys on velkaosuus jaettuna jäljellä olevilla kuukausilla, korko sen päälle.",
+          "fixed_payment": "Rahoitusvastike pysyy samana, kunnes velkaosuus on maksettu."
+        }
       },
       "alsoLead": "Lisää uudet viitekorot ({dates}) myös saman lainan kopioihin muissa kohteissa:",
       "alsoFailed": "Laina tallennettiin, mutta viitekorkoa ei saatu lisättyä kohteille: {objects}.",
@@ -1828,15 +1840,15 @@
         "share": "Velkaosuus {date}",
         "shareLabel": "Velkaosuus",
         "certificate": "Todistus {date}: {amount}",
-        "repaid": "Lyhennetty, {count} kk",
-        "repaid_one": "Lyhennetty, 1 kk",
+        "repaid": "Lyhennetty yhteensä",
         "interest": "korkoa {amount}",
         "charge": "Rahoitusvastike",
         "rate": "Korko",
         "rateParts": "{reference} {rate} + {margin}",
         "rateMissing": "{reference} + {margin}; viitekorko puuttuu",
         "fixed": "kiinteä",
-        "term": "Laina-aika"
+        "term": "Laina-aika",
+        "span": "{from}–{to}"
       }
     }
   },
