@@ -1782,15 +1782,9 @@
       "noDocs": "No housing company documents.",
       "fold": "{title} ({n})",
       "paidOff": "Paid off {date}",
-      "shareNow": "Loan share {amount} ({date})",
       "shareNone": "No loan share given.",
-      "chargeNow": "Financing charge {amount}/month from {date}",
       "chargeNone": "No financing charge given.",
-      "rateNow": "Rate {reference} {rate} + margin {margin} = {total} (from {date})",
-      "rateNone": "Rate {reference} + margin {margin}; no actual reference rate given.",
-      "rateNowFixed": "Fixed rate {rate} (from {date})",
       "rateNoneFixed": "No fixed rate given.",
-      "term": "Loan term {period}",
       "termOpen": "Drawn {date}",
       "reset": "rate reset every {months} months",
       "total": "company's loan {amount}",
@@ -1825,13 +1819,25 @@
         "gapMore": "computed {amount} more",
         "gapLess": "computed {amount} less",
         "implied": "actual rate {rate}",
-        "computed": "Computed loan share {date}: {amount}",
-        "year": "{count} months: repaid {principal}, interest {interest}",
-        "year_one": "1 month: repaid {principal}, interest {interest}",
-        "paymentsUnknown": "No payments to the housing company were found in the books: each financing charge counts as paid."
+        "paymentsUnknown": "No monthly payments from this object to the housing company were found in the books, so the calculation assumes each month's financing charge was paid."
       },
       "alsoLead": "Add the new reference rates ({dates}) to the loan's copies on other objects too:",
-      "alsoFailed": "The loan was saved, but the reference rate could not be added to: {objects}."
+      "alsoFailed": "The loan was saved, but the reference rate could not be added to: {objects}.",
+      "figure": {
+        "shareComputed": "Computed loan share {date}",
+        "share": "Loan share {date}",
+        "shareLabel": "Loan share",
+        "certificate": "Certificate {date}: {amount}",
+        "repaid": "Repaid, {count} months",
+        "repaid_one": "Repaid, 1 month",
+        "interest": "interest {amount}",
+        "charge": "Financing charge",
+        "rate": "Interest rate",
+        "rateParts": "{reference} {rate} + {margin}",
+        "rateMissing": "{reference} + {margin}; reference rate missing",
+        "fixed": "fixed",
+        "term": "Loan term"
+      }
     }
   },
   "company": {

@@ -20,8 +20,11 @@ export type LineSeries = {
   dots?: boolean | 'spaced'
 }
 
-/** What the box by a point says: the month, a label and its value a row, and notes under them. */
-export type PointTip = { title: string; rows: { label: string; value: string }[]; notes?: string[] }
+/**
+ * What the box by a point says: the month, a label and its value a row (with its line's colour, when
+ * lines are told apart by colour), and notes under them.
+ */
+export type PointTip = { title: string; rows: { label: string; value: string; color?: string }[]; notes?: string[] }
 
 /** The least gap between two points that still draws a dot on each ('spaced'). */
 const DOT_GAP = 6
@@ -70,7 +73,6 @@ export function LineChart({
   label,
   className = 'overview-chart',
   height = 200,
-  columnTitle,
   pointTip,
   onSelect,
 }: {
@@ -83,8 +85,6 @@ export function LineChart({
   label: string
   className?: string
   height?: number
-  /** Hover text of a whole month (a column as wide as the month): every line's value there. */
-  columnTitle?: (index: number) => string
   /**
    * A box of a point's figures, by the point the pointer is over or the one picked: each month is
    * picked by a click or a tap (again to let go), or by the arrow keys, and keeps a solid guide line.
@@ -219,13 +219,7 @@ export function LineChart({
               onClick={() => pin(i === shown ? null : i)}
             />
           ))
-        : columnTitle
-          ? keys.map((key, i) => (
-              <rect key={`c-${key}`} className="chart-column-hover" {...column(i)}>
-                <title>{columnTitle(i)}</title>
-              </rect>
-            ))
-          : null}
+        : null}
     </svg>
   )
   if (!pointTip) return svg
@@ -257,9 +251,12 @@ export function LineChart({
         {tip ? (
           <>
             <div className="chart-tip-title">{tip.title}</div>
-            {tip.rows.map((r) => (
-              <div key={r.label} className="chart-tip-row">
-                <span>{r.label}</span>
+            {tip.rows.map((r, i) => (
+              <div key={i} className="chart-tip-row">
+                <span>
+                  {r.color ? <i className="chart-tip-swatch" style={{ background: r.color }} /> : null}
+                  {r.label}
+                </span>
                 <span>{r.value}</span>
               </div>
             ))}

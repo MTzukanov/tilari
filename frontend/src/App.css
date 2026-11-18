@@ -5685,6 +5685,132 @@ tr.tax-total td {
   fill: #2f6fed;
 }
 
+/* A loan's figures at a glance: a tile each, as many in a row as fit (two on a phone). */
+.property-loan-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.property-loan-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  padding: 0.5rem 0.7rem;
+  background: var(--surface);
+  border-radius: 8px;
+}
+
+.property-loan-figure-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.property-loan-figure > strong {
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.property-loan-figure-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.4rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* A pill in a narrow tile wraps rather than run past its edge. */
+.property-loan-figure-sub .pill {
+  white-space: normal;
+}
+
+/* Two tiles a row on a phone. */
+@media (max-width: 640px) {
+  .property-loan-figures {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  .property-loan-figure {
+    padding: 0.45rem 0.55rem;
+  }
+
+  .property-loan-figure > strong {
+    font-size: 1rem;
+  }
+}
+
+/* An "i" by a figure: its note on hover, and under the figures on a click or a tap. */
+.property-loan-info {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  font: italic 700 0.72rem/1 Georgia, serif;
+  cursor: pointer;
+}
+
+.property-loan-info:hover,
+.property-loan-info[aria-expanded='true'] {
+  color: var(--card);
+  background: var(--muted);
+  border-color: var(--muted);
+}
+
+.property-loan-note {
+  margin: 0 0 0.5rem;
+}
+
+/* The loan's lists in one row; one opens at a time under it. */
+.property-loan-folds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin-top: 0.25rem;
+}
+
+.property-loan-fold {
+  padding: 0.15rem 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.property-loan-fold-mark {
+  display: inline-block;
+  width: 1em;
+  color: var(--muted);
+}
+
+.property-loan-fold[aria-expanded='true'] {
+  font-weight: 600;
+}
+
+.property-loan-fold:hover {
+  text-decoration: underline;
+}
+
+.property-loan-months,
+.property-loan-fold-body {
+  margin-top: 0.5rem;
+}
+
 /* A loan's months: wider than a phone, so the table scrolls on its own, not the page. */
 .property-loan-table-scroll {
   overflow-x: auto;
@@ -5776,10 +5902,6 @@ tr.tax-total td {
   background: var(--ink);
 }
 
-.chart-column-hover {
-  fill: transparent;
-}
-
 /* A chart whose points can be picked (LineChart pointTip): the box of figures stands over it. */
 .line-chart {
   position: relative;
@@ -5856,6 +5978,14 @@ tr.tax-total td {
   gap: 0.75rem;
 }
 
+.chart-tip-swatch {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-right: 0.35rem;
+  border-radius: 2px;
+}
+
 .chart-tip-row > span:last-child {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -5864,10 +5994,6 @@ tr.tax-total td {
 .chart-tip-note {
   margin-top: 0.2rem;
   color: var(--muted);
-}
-
-.chart-column-hover:hover {
-  fill: color-mix(in srgb, var(--ink) 6%, transparent);
 }
 
 .portfolio-charts h4 {

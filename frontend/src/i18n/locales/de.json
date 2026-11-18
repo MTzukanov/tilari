@@ -1782,15 +1782,9 @@
       "noDocs": "Keine Dokumente der Wohnungsgesellschaft.",
       "fold": "{title} ({n})",
       "paidOff": "Abgelöst {date}",
-      "shareNow": "Darlehensanteil {amount} ({date})",
       "shareNone": "Kein Darlehensanteil angegeben.",
-      "chargeNow": "Finanzierungsentgelt {amount}/Monat ab {date}",
       "chargeNone": "Kein Finanzierungsentgelt angegeben.",
-      "rateNow": "Zins {reference} {rate} + Marge {margin} = {total} (ab {date})",
-      "rateNone": "Zins {reference} + Marge {margin}; kein tatsächlicher Referenzzins angegeben.",
-      "rateNowFixed": "Festzins {rate} (ab {date})",
       "rateNoneFixed": "Kein Festzins angegeben.",
-      "term": "Laufzeit {period}",
       "termOpen": "Ausgezahlt {date}",
       "reset": "Zinsanpassung alle {months} Monate",
       "total": "Darlehen der Gesellschaft {amount}",
@@ -1825,13 +1819,25 @@
         "gapMore": "berechnet {amount} mehr",
         "gapLess": "berechnet {amount} weniger",
         "implied": "tatsächlicher Zins {rate}",
-        "computed": "Berechneter Darlehensanteil {date}: {amount}",
-        "year": "{count} Monate: getilgt {principal}, Zins {interest}",
-        "year_one": "1 Monat: getilgt {principal}, Zins {interest}",
-        "paymentsUnknown": "In der Buchhaltung wurden keine Zahlungen an die Wohnungsgesellschaft gefunden: jedes Finanzierungsentgelt gilt als bezahlt."
+        "paymentsUnknown": "In der Buchhaltung wurden keine monatlichen Zahlungen des Objekts an die Wohnungsgesellschaft gefunden; die Berechnung nimmt daher an, dass jedes monatliche Finanzierungsentgelt bezahlt wurde."
       },
       "alsoLead": "Die neuen Referenzzinsen ({dates}) auch bei den Kopien des Darlehens in anderen Objekten eintragen:",
-      "alsoFailed": "Das Darlehen wurde gespeichert, aber der Referenzzins konnte nicht eingetragen werden bei: {objects}."
+      "alsoFailed": "Das Darlehen wurde gespeichert, aber der Referenzzins konnte nicht eingetragen werden bei: {objects}.",
+      "figure": {
+        "shareComputed": "Berechneter Darlehensanteil {date}",
+        "share": "Darlehensanteil {date}",
+        "shareLabel": "Darlehensanteil",
+        "certificate": "Bescheinigung {date}: {amount}",
+        "repaid": "Getilgt, {count} Monate",
+        "repaid_one": "Getilgt, 1 Monat",
+        "interest": "Zins {amount}",
+        "charge": "Finanzierungsentgelt",
+        "rate": "Zinssatz",
+        "rateParts": "{reference} {rate} + {margin}",
+        "rateMissing": "{reference} + {margin}; Referenzzins fehlt",
+        "fixed": "fest",
+        "term": "Laufzeit"
+      }
     }
   },
   "company": {

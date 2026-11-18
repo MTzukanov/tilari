@@ -143,7 +143,8 @@ function gapText(t: (key: string, vars?: Record<string, string | number>) => str
  * A loan's share month by month (ADR-034): a line of the share at each month's end with its
  * certificates as dots, and the months newest first - the payments to the housing company, the
  * rahoitusvastike they paid, the interest, what lowered the share, and the share; each certificate
- * under its month with the computed path's gap and the rate it implies.
+ * under its month with the computed path's gap and the rate it implies. The card's "Kuukausittain"
+ * opens it.
  */
 function LoanMonths({ path, payments, onOpenVoucher }: { path: LoanPath; payments: MonthPayments; onOpenVoucher: (voucherId: number) => void }) {
   const { t } = useI18n()
@@ -174,8 +175,7 @@ function LoanMonths({ path, payments, onOpenVoucher }: { path: LoanPath; payment
     }
   }
   return (
-    <details className="property-sources property-loan-months">
-      <summary>{t('properties.housing.path.months', { n: months.length })}</summary>
+    <div className="property-loan-months">
       <LineChart
         className="overview-chart property-chart"
         keys={months.map((m) => m.month)}
@@ -253,24 +253,26 @@ function LoanMonths({ path, payments, onOpenVoucher }: { path: LoanPath; payment
           </tbody>
         </table>
       </div>
-    </details>
+    </div>
   )
 }
 
-/** The share the path ends at, and what the last twelve months paid off and paid as interest. */
-function ComputedShare({ path }: { path: LoanPath }) {
-  const { t } = useI18n()
-  const last = path.months.at(-1)!
-  const year = path.months.slice(-12)
-  const principal = year.reduce((sum, m) => sum + m.principal_snt + m.extra_snt, 0)
-  const interest = year.reduce((sum, m) => sum + m.interest_snt, 0)
+/** One figure on a loan card: what it is, the figure, and a line or two under it. */
+function Figure({ label, value, sub = [] }: { label: ReactNode; value: string; sub?: ReactNode[] }) {
   return (
-    <p className="property-lease-terms">
-      <strong>{t('properties.housing.path.computed', { date: formatDate(monthEnd(last.month)), amount: formatCents(last.closing_snt) })}</strong>{' '}
-      <span className="muted">{t('properties.housing.path.year', { count: year.length, principal: formatCents(principal), interest: formatCents(interest) })}</span>
-    </p>
+    <div className="property-loan-figure">
+      <span className="property-loan-figure-label">{label}</span>
+      <strong>{value || '–'}</strong>
+      {sub.map((line, i) => (
+        <span key={i} className="property-loan-figure-sub">
+          {line}
+        </span>
+      ))}
+    </div>
   )
 }
+
+type LoanFold = 'months' | 'certificates' | 'charges' | 'rates' | 'events'
 
 /** A loan as the tab shows it on `on` (`loanNow`): the share, the rahoitusvastike, the rate, the term; every row folded below. */
 function LoanCard({
@@ -294,18 +296,97 @@ function LoanCard({
   onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
+  const [open, setOpen] = useState<LoanFold | null>(null)
+  const [noteOpen, setNoteOpen] = useState(false)
   const voucher = (id: number | undefined) => (id != null ? (vouchers.get(id) ?? null) : null)
   const { certificate, charge, rate } = loanNow(loan, on)
   const paidOff = paidOffOn(loan)
   const reference = t(`properties.housing.reference.${loan.reference}`)
   const fixed = loan.reference === 'fixed'
-  const fold = (title: string, rows: ReactNode[]) =>
-    rows.length ? (
-      <details className="property-sources">
-        <summary>{t('properties.housing.fold', { title, n: rows.length })}</summary>
-        <ul className="property-doc-list">{rows}</ul>
-      </details>
-    ) : null
+  const last = path?.months.at(-1)
+  const year = path?.months.slice(-12) ?? []
+  const note = path && !path.payments_known ? t('properties.housing.path.paymentsUnknown') : null
+  const certificateSlot = certificate ? (
+    <DocSlot voucher={voucher(certificate.voucher_id)} noDocument={certificate.no_document} held={held} onOpen={onOpenVoucher} />
+  ) : null
+  const list = (rows: ReactNode[]) => <ul className="property-doc-list property-loan-fold-body">{rows}</ul>
+  const folds: { key: LoanFold; title: string; n: number; body: () => ReactNode }[] = [
+    {
+      key: 'months',
+      title: t('properties.housing.path.months', { n: path?.months.length ?? 0 }),
+      n: path?.months.length ?? 0,
+      body: () => (path ? <LoanMonths path={path} payments={payments} onOpenVoucher={onOpenVoucher} /> : null),
+    },
+    {
+      key: 'certificates',
+      title: t('properties.housing.fold', { title: t('properties.housing.certificates'), n: loan.certificates?.length ?? 0 }),
+      n: loan.certificates?.length ?? 0,
+      body: () =>
+        list(
+          [...(loan.certificates ?? [])].reverse().map((c) => (
+            <li key={c.date}>
+              <span>{formatDate(c.date)}</span>
+              <span>{formatCents(c.share_snt)}</span>
+              <DocSlot voucher={voucher(c.voucher_id)} noDocument={c.no_document} held={held} onOpen={onOpenVoucher} />
+            </li>
+          )),
+        ),
+    },
+    {
+      key: 'charges',
+      title: t('properties.housing.fold', { title: t('properties.housing.charges'), n: loan.charges?.length ?? 0 }),
+      n: loan.charges?.length ?? 0,
+      body: () =>
+        list(
+          [...(loan.charges ?? [])].reverse().map((c) => (
+            <li key={c.from}>
+              <span>{t('properties.housing.fromDate', { date: formatDate(c.from) })}</span>
+              <span>{t('properties.housing.perMonth', { amount: formatCents(c.amount_snt) })}</span>
+              {c.rahastoitu ? <Pill tone="doc">{t('properties.housing.field.rahastoitu')}</Pill> : null}
+              <DocSlot voucher={voucher(c.voucher_id)} noDocument={c.no_document} held={held} onOpen={onOpenVoucher} />
+            </li>
+          )),
+        ),
+    },
+    {
+      key: 'rates',
+      title: t('properties.housing.fold', { title: t('properties.housing.rates'), n: loan.rates?.length ?? 0 }),
+      n: loan.rates?.length ?? 0,
+      body: () =>
+        list(
+          [...(loan.rates ?? [])].reverse().map((r) => (
+            <li key={r.from}>
+              <span>{t('properties.housing.fromDate', { date: formatDate(r.from) })}</span>
+              <span>
+                {fixed
+                  ? formatPcm(r.reference_pcm)
+                  : t('properties.housing.rateRow', { rate: formatPcm(r.reference_pcm), total: formatPcm(r.reference_pcm + loan.margin_pcm) })}
+              </span>
+              {r.voucher_id != null ? <DocSlot voucher={voucher(r.voucher_id)} onOpen={onOpenVoucher} /> : null}
+            </li>
+          )),
+        ),
+    },
+    {
+      key: 'events',
+      title: t('properties.housing.fold', { title: t('properties.housing.events'), n: loan.events?.length ?? 0 }),
+      n: loan.events?.length ?? 0,
+      body: () =>
+        list(
+          [...(loan.events ?? [])].reverse().map((e, i) => (
+            <li key={`${e.date}-${i}`}>
+              <span>{formatDate(e.date)}</span>
+              <span>{t(`properties.housing.event.${e.kind}`)}</span>
+              {e.amount_snt ? <span>{formatCents(e.amount_snt)}</span> : null}
+              {e.note ? <span className="muted">{e.note}</span> : null}
+              {e.voucher_id != null ? <DocSlot voucher={voucher(e.voucher_id)} onOpen={onOpenVoucher} /> : null}
+            </li>
+          )),
+        ),
+    },
+  ]
+  const shown = folds.filter((f) => f.n > 0)
+  const opened = shown.find((f) => f.key === open)
   return (
     <div className="property-lease-card property-loan-card">
       <p className="property-lease-head">
@@ -318,102 +399,103 @@ function LoanCard({
           </button>
         ) : null}
       </p>
-      <p className="property-lease-terms">
-        {certificate ? (
-          <>
-            {t('properties.housing.shareNow', { amount: formatCents(certificate.share_snt), date: formatDate(certificate.date) })}{' '}
-            <DocSlot voucher={voucher(certificate.voucher_id)} noDocument={certificate.no_document} held={held} onOpen={onOpenVoucher} />
-          </>
-        ) : (
-          t('properties.housing.shareNone')
-        )}
-      </p>
-      {path?.months.length ? <ComputedShare path={path} /> : null}
-      {path && !path.payments_known ? <p className="muted property-lease-hint">{t('properties.housing.path.paymentsUnknown')}</p> : null}
-      <p className="property-lease-terms">
-        {charge ? (
-          <>
-            {t('properties.housing.chargeNow', { amount: formatCents(charge.amount_snt), date: formatDate(charge.from) })}{' '}
-            {charge.rahastoitu ? <Pill tone="doc">{t('properties.housing.field.rahastoitu')}</Pill> : null}{' '}
-            <DocSlot voucher={voucher(charge.voucher_id)} noDocument={charge.no_document} held={held} onOpen={onOpenVoucher} />
-          </>
-        ) : (
-          <span className="muted">{t('properties.housing.chargeNone')}</span>
-        )}
-      </p>
-      <p className="property-lease-terms">
-        {fixed
-          ? rate
-            ? t('properties.housing.rateNowFixed', { rate: formatPcm(rate.reference_pcm), date: formatDate(rate.from) })
-            : t('properties.housing.rateNoneFixed')
-          : rate
-            ? t('properties.housing.rateNow', {
-                reference,
-                rate: formatPcm(rate.reference_pcm),
-                margin: formatPcm(loan.margin_pcm),
-                total: formatPcm(rate.reference_pcm + loan.margin_pcm),
-                date: formatDate(rate.from),
-              })
-            : t('properties.housing.rateNone', { reference, margin: formatPcm(loan.margin_pcm) })}
-      </p>
-      <p className="property-lease-terms muted">
-        {[
-          loan.ends ? t('properties.housing.term', { period: periodText(t, loan.starts, loan.ends) }) : t('properties.housing.termOpen', { date: formatDate(loan.starts) }),
-          loan.reset_months ? t('properties.housing.reset', { months: loan.reset_months }) : '',
-          loan.total_snt != null ? t('properties.housing.total', { amount: formatCents(loan.total_snt) }) : '',
-          ...(loan.grace ?? []).map((g) => t('properties.housing.graceText', { period: periodText(t, g.from, g.to) })),
-        ]
-          .filter(Boolean)
-          .join(' · ')}
-      </p>
-      {path?.months.length ? <LoanMonths path={path} payments={payments} onOpenVoucher={onOpenVoucher} /> : null}
-      {fold(
-        t('properties.housing.certificates'),
-        [...(loan.certificates ?? [])].reverse().map((c) => (
-          <li key={c.date}>
-            <span>{formatDate(c.date)}</span>
-            <span>{formatCents(c.share_snt)}</span>
-            <DocSlot voucher={voucher(c.voucher_id)} noDocument={c.no_document} held={held} onOpen={onOpenVoucher} />
-          </li>
-        )),
-      )}
-      {fold(
-        t('properties.housing.charges'),
-        [...(loan.charges ?? [])].reverse().map((c) => (
-          <li key={c.from}>
-            <span>{t('properties.housing.fromDate', { date: formatDate(c.from) })}</span>
-            <span>{t('properties.housing.perMonth', { amount: formatCents(c.amount_snt) })}</span>
-            {c.rahastoitu ? <Pill tone="doc">{t('properties.housing.field.rahastoitu')}</Pill> : null}
-            <DocSlot voucher={voucher(c.voucher_id)} noDocument={c.no_document} held={held} onOpen={onOpenVoucher} />
-          </li>
-        )),
-      )}
-      {fold(
-        t('properties.housing.rates'),
-        [...(loan.rates ?? [])].reverse().map((r) => (
-          <li key={r.from}>
-            <span>{t('properties.housing.fromDate', { date: formatDate(r.from) })}</span>
-            <span>
-              {fixed
-                ? formatPcm(r.reference_pcm)
-                : t('properties.housing.rateRow', { rate: formatPcm(r.reference_pcm), total: formatPcm(r.reference_pcm + loan.margin_pcm) })}
-            </span>
-            {r.voucher_id != null ? <DocSlot voucher={voucher(r.voucher_id)} onOpen={onOpenVoucher} /> : null}
-          </li>
-        )),
-      )}
-      {fold(
-        t('properties.housing.events'),
-        [...(loan.events ?? [])].reverse().map((e, i) => (
-          <li key={`${e.date}-${i}`}>
-            <span>{formatDate(e.date)}</span>
-            <span>{t(`properties.housing.event.${e.kind}`)}</span>
-            {e.amount_snt ? <span>{formatCents(e.amount_snt)}</span> : null}
-            {e.note ? <span className="muted">{e.note}</span> : null}
-            {e.voucher_id != null ? <DocSlot voucher={voucher(e.voucher_id)} onOpen={onOpenVoucher} /> : null}
-          </li>
-        )),
-      )}
+      <div className="property-loan-figures">
+        <Figure
+          label={
+            <>
+              {last
+                ? t('properties.housing.figure.shareComputed', { date: formatDate(monthEnd(last.month)) })
+                : certificate
+                  ? t('properties.housing.figure.share', { date: formatDate(certificate.date) })
+                  : t('properties.housing.figure.shareLabel')}
+              {note ? (
+                <button
+                  type="button"
+                  className="property-loan-info"
+                  aria-label={note}
+                  aria-expanded={noteOpen}
+                  title={noteOpen ? undefined : note}
+                  onClick={() => setNoteOpen(!noteOpen)}
+                >
+                  i
+                </button>
+              ) : null}
+            </>
+          }
+          value={last ? formatCents(last.closing_snt) : certificate ? formatCents(certificate.share_snt) : ''}
+          sub={
+            certificate
+              ? [
+                  <>
+                    {last ? `${t('properties.housing.figure.certificate', { date: formatDate(certificate.date), amount: formatCents(certificate.share_snt) })} ` : null}
+                    {certificateSlot}
+                  </>,
+                ]
+              : [t('properties.housing.shareNone')]
+          }
+        />
+        {last ? (
+          <Figure
+            label={t('properties.housing.figure.repaid', { count: year.length })}
+            value={formatCents(year.reduce((sum, m) => sum + m.principal_snt + m.extra_snt, 0))}
+            sub={[t('properties.housing.figure.interest', { amount: formatCents(year.reduce((sum, m) => sum + m.interest_snt, 0)) })]}
+          />
+        ) : null}
+        <Figure
+          label={t('properties.housing.figure.charge')}
+          value={charge ? t('properties.housing.perMonth', { amount: formatCents(charge.amount_snt) }) : ''}
+          sub={
+            charge
+              ? [
+                  t('properties.housing.fromDate', { date: formatDate(charge.from) }),
+                  <>
+                    {charge.rahastoitu ? <Pill tone="doc">{t('properties.housing.field.rahastoitu')}</Pill> : null}{' '}
+                    <DocSlot voucher={voucher(charge.voucher_id)} noDocument={charge.no_document} held={held} onOpen={onOpenVoucher} />
+                  </>,
+                ]
+              : [t('properties.housing.chargeNone')]
+          }
+        />
+        <Figure
+          label={t('properties.housing.figure.rate')}
+          value={rate ? formatPcm(rate.reference_pcm + (fixed ? 0 : loan.margin_pcm)) : ''}
+          sub={
+            fixed
+              ? rate
+                ? [t('properties.housing.figure.fixed'), t('properties.housing.fromDate', { date: formatDate(rate.from) })]
+                : [t('properties.housing.rateNoneFixed')]
+              : rate
+                ? [
+                    t('properties.housing.figure.rateParts', { reference, rate: formatPcm(rate.reference_pcm), margin: formatPcm(loan.margin_pcm) }),
+                    t('properties.housing.fromDate', { date: formatDate(rate.from) }),
+                  ]
+                : [t('properties.housing.figure.rateMissing', { reference, margin: formatPcm(loan.margin_pcm) })]
+          }
+        />
+        <Figure
+          label={t('properties.housing.figure.term')}
+          value={loan.ends ? periodText(t, loan.starts, loan.ends) : t('properties.housing.termOpen', { date: formatDate(loan.starts) })}
+          sub={[
+            ...(loan.reset_months ? [t('properties.housing.reset', { months: loan.reset_months })] : []),
+            ...(loan.total_snt != null ? [t('properties.housing.total', { amount: formatCents(loan.total_snt) })] : []),
+            ...(loan.grace ?? []).map((g) => t('properties.housing.graceText', { period: periodText(t, g.from, g.to) })),
+          ]}
+        />
+      </div>
+      {note && noteOpen ? <p className="muted property-lease-hint property-loan-note">{note}</p> : null}
+      {shown.length ? (
+        <div className="property-loan-folds">
+          {shown.map((f) => (
+            <button key={f.key} type="button" className="property-loan-fold" aria-expanded={open === f.key} onClick={() => setOpen(open === f.key ? null : f.key)}>
+              <span className="property-loan-fold-mark" aria-hidden="true">
+                {open === f.key ? '\u25BE' : '\u25B8'}
+              </span>
+              {f.title}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {opened ? opened.body() : null}
     </div>
   )
 }

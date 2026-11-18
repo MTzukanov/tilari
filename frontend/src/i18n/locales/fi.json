@@ -1782,15 +1782,9 @@
       "noDocs": "Ei taloyhtiön asiakirjoja.",
       "fold": "{title} ({n})",
       "paidOff": "Maksettu pois {date}",
-      "shareNow": "Velkaosuus {amount} ({date})",
       "shareNone": "Velkaosuutta ei ole annettu.",
-      "chargeNow": "Rahoitusvastike {amount}/kk {date} alkaen",
       "chargeNone": "Rahoitusvastiketta ei ole annettu.",
-      "rateNow": "Korko {reference} {rate} + marginaali {margin} = {total} ({date} alkaen)",
-      "rateNone": "Korko {reference} + marginaali {margin}; toteutunutta viitekorkoa ei ole annettu.",
-      "rateNowFixed": "Kiinteä korko {rate} ({date} alkaen)",
       "rateNoneFixed": "Kiinteää korkoa ei ole annettu.",
-      "term": "Laina-aika {period}",
       "termOpen": "Nostettu {date}",
       "reset": "korko muuttuu {months} kk välein",
       "total": "taloyhtiön laina {amount}",
@@ -1825,13 +1819,25 @@
         "gapMore": "laskettu {amount} suurempi",
         "gapLess": "laskettu {amount} pienempi",
         "implied": "toteutunut korko {rate}",
-        "computed": "Laskettu velkaosuus {date}: {amount}",
-        "year": "{count} kk: lyhennetty {principal}, korkoa {interest}",
-        "year_one": "1 kk: lyhennetty {principal}, korkoa {interest}",
-        "paymentsUnknown": "Maksuja taloyhtiölle ei tunnistettu kirjanpidosta: jokainen rahoitusvastike on laskettu maksetuksi."
+        "paymentsUnknown": "Kirjanpidosta ei löytynyt kohteen kuukausittaisia maksuja taloyhtiölle, joten laskelma olettaa jokaisen kuukauden rahoitusvastikkeen maksetuksi."
       },
       "alsoLead": "Lisää uudet viitekorot ({dates}) myös saman lainan kopioihin muissa kohteissa:",
-      "alsoFailed": "Laina tallennettiin, mutta viitekorkoa ei saatu lisättyä kohteille: {objects}."
+      "alsoFailed": "Laina tallennettiin, mutta viitekorkoa ei saatu lisättyä kohteille: {objects}.",
+      "figure": {
+        "shareComputed": "Laskettu velkaosuus {date}",
+        "share": "Velkaosuus {date}",
+        "shareLabel": "Velkaosuus",
+        "certificate": "Todistus {date}: {amount}",
+        "repaid": "Lyhennetty, {count} kk",
+        "repaid_one": "Lyhennetty, 1 kk",
+        "interest": "korkoa {amount}",
+        "charge": "Rahoitusvastike",
+        "rate": "Korko",
+        "rateParts": "{reference} {rate} + {margin}",
+        "rateMissing": "{reference} + {margin}; viitekorko puuttuu",
+        "fixed": "kiinteä",
+        "term": "Laina-aika"
+      }
     }
   },
   "company": {

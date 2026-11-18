@@ -29,7 +29,15 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 - The loan chart has a point per month (`LineSeries.dots: 'spaced'`: only while points are 6 px apart) and
   `LineChart`'s `pointTip`: pointing at a month shows its figures in a box beside it; a click, a tap or the arrow
   keys pick it (solid guide line, row marked in the table). Under 480 px the picked month's figures go under the
-  chart, since a box beside the point does not fit. Other charts keep their hover titles.
+  chart, since a box beside the point does not fit.
+- Owner, same day: the same on the other line charts. The payback chart and both portfolio charts use `pointTip`
+  (the portfolio's rows carry each object's colour); `columnTitle` (native hover titles) is gone.
+- Owner, same day: the loan card read "like a novel". Its figures are now tiles (`.property-loan-figures`: the
+  share - computed at the path's end, with the certificate under it -, repaid in the last 12 months with the
+  interest, the rahoitusvastike, the rate, the term), two a row on a phone. The note that no payments were found
+  became an "i" by the share (hover title; a click shows it under the tiles), reworded to say what it means:
+  the calculation assumes each month's rahoitusvastike was paid. The lists (months, shares, charges, rates,
+  events) are one row of buttons, one open at a time.
 
 ## 2026-11-17 - Rental objects: housing-company loans on a Taloyhtiö tab (`feature/housing-loans`, ADR-034)
 

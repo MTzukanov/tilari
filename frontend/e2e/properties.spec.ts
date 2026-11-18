@@ -63,11 +63,11 @@ test.describe('rental objects chart', () => {
     await page.goto('/#/properties')
     const panel = page.locator('section.portfolio-charts')
     await expect(panel.getByRole('heading', { name: 'Kohteet kuukausittain' })).toBeVisible()
-    const cash = panel.getByRole('img', { name: 'Kertynyt kassavirta' })
+    const cash = panel.getByRole('group', { name: 'Kertynyt kassavirta' })
     // The golden book links no investment: a cash flow per object, no unrecovered chart.
     await expect(cash.locator('.portfolio-line')).toHaveCount(3)
     await expect(cash.locator('.portfolio-total')).toHaveCount(1)
-    await expect(panel.getByRole('img', { name: 'Palauttamatta kuukauden lopussa' })).toHaveCount(0)
+    await expect(panel.getByRole('group', { name: 'Palauttamatta kuukauden lopussa' })).toHaveCount(0)
 
     await panel.getByRole('checkbox', { name: 'Asunto' }).uncheck()
     await expect(cash.locator('.portfolio-line')).toHaveCount(2)
@@ -87,12 +87,15 @@ test.describe('rental objects chart', () => {
     await openBook(page, propertiesBook, 'Esimerkki Vuokraus Oy')
     await page.goto('/#/properties')
     const panel = page.locator('section.portfolio-charts')
-    const unrecovered = panel.getByRole('img', { name: 'Palauttamatta kuukauden lopussa' })
+    const unrecovered = panel.getByRole('group', { name: 'Palauttamatta kuukauden lopussa' })
     await expect(unrecovered).toBeVisible()
     expect(await unrecovered.locator('.portfolio-line').count()).toBeGreaterThan(3)
     await expect(unrecovered.locator('.portfolio-total')).toHaveCount(1)
-    // A month's hover lists every shown line, the total first.
-    await expect(unrecovered.locator('.chart-column-hover title').last()).toContainText('Kaikki yhteensä:')
+    // Pointing at a month lists every shown line, the total first; a click keeps it.
+    const tip = unrecovered.locator('xpath=..').locator('.chart-tip')
+    await unrecovered.locator('.chart-point-hit').last().click()
+    await expect(tip.locator('.chart-tip-row').first()).toContainText('Kaikki yhteensä')
+    expect(await tip.locator('.chart-tip-row').count()).toBeGreaterThan(3)
   })
 })
 
@@ -502,14 +505,19 @@ test.describe('rental object housing-company loans', () => {
     await expect(card).toHaveCount(0)
     await expect(page).toHaveURL(/#\/property\/10\/housing$/)
     const saved = loans.locator('.property-loan-card')
-    await expect(saved).toContainText(/Velkaosuus 12\s000,00\s€ \(1\.3\.2026\)/)
-    await expect(saved).toContainText(/Rahoitusvastike 80,00\s€\/kk 1\.1\.2026 alkaen/)
-    await expect(saved.locator('.property-lease-terms .pill', { hasText: 'Rahastoitu' })).toHaveCount(1)
-    await expect(saved).toContainText(/= 2,900\s%/)
+    // The card's figures, a tile each: label, figure, what it rests on.
+    const figure = (label: string) => saved.locator('.property-loan-figure', { has: page.locator('.property-loan-figure-label', { hasText: label }) })
     // The share month by month from the payments to the housing company, to the as-of month (May):
     // April 12 000,00 - (80,00 - 29,00), May 11 949,00 - (80,00 - 28,88).
-    await expect(saved).toContainText(/Laskettu velkaosuus 31\.5\.2026: 11\s897,88\s€/)
-    await saved.locator('summary', { hasText: 'Kuukausittain (5)' }).click()
+    await expect(figure('Laskettu velkaosuus 31.5.2026')).toContainText(/11\s897,88\s€Todistus 1\.3\.2026: 12\s000,00\s€/)
+    await expect(figure('Lyhennetty, 5 kk')).toContainText(/254,38\s€korkoa 145,62\s€/)
+    await expect(figure('Rahoitusvastike')).toContainText(/80,00\s€\/kk1\.1\.2026 alkaenRahastoitu/)
+    await expect(saved.locator('.property-loan-figure .pill', { hasText: 'Rahastoitu' })).toHaveCount(1)
+    await expect(figure('Korko')).toContainText(/2,900\s%12 kk Euribor 2,100\s% \+ 0,800\s%1\.3\.2026 alkaen/)
+    await expect(figure('Laina-aika')).toContainText(/1\.1\.2020.31\.12\.2044korko muuttuu/)
+    // Its lists in one row, one open at a time.
+    await expect(saved.getByRole('button', { name: /\(\d+\)$/ })).toHaveText(['▸Kuukausittain (5)', '▸Velkaosuudet (1)', '▸Rahoitusvastikkeet (1)', '▸Viitekorot (1)'])
+    await saved.getByRole('button', { name: 'Kuukausittain (5)', exact: true }).click()
     const table = saved.locator('.property-loan-table')
     await expect(table.locator('tbody tr').first()).toContainText(/toukokuu 2026.*5\.5\.2026 300,00\s€.*80,00\s€.*28,88\s€.*51,12\s€.*11\s897,88\s€/)
     await expect(table.locator('.property-loan-certificate-row')).toHaveText(/^Isännöitsijäntodistus 1\.3\.2026: 12\s000,00\s€$/)
@@ -562,9 +570,15 @@ test.describe('rental object housing-company loans', () => {
     await expect(card.locator('.form-issues li')).toHaveCount(0)
     await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(card).toHaveCount(0)
-    await expect(loans.locator('.property-loan-card')).toContainText(/Velkaosuus 5\s000,00\s€ \(1\.1\.2025\)/)
-    // The garage pays no housing company in the book: each charge counts as paid, and it says so.
-    await expect(loans.locator('.property-loan-card')).toContainText('Maksuja taloyhtiölle ei tunnistettu kirjanpidosta')
+    const garage = loans.locator('.property-loan-card')
+    await expect(garage.locator('.property-loan-figure').first()).toContainText(/Todistus 1\.1\.2025: 5\s000,00\s€/)
+    // The garage pays no housing company in the book: each charge counts as paid. An "i" by the share
+    // says so on hover, and under the figures on a click.
+    const info = garage.getByRole('button', { name: /^Kirjanpidosta ei löytynyt kohteen kuukausittaisia maksuja taloyhtiölle/ })
+    await expect(info).toHaveAttribute('title', /olettaa jokaisen kuukauden rahoitusvastikkeen maksetuksi/)
+    await expect(garage.locator('.property-loan-note')).toHaveCount(0)
+    await info.click()
+    await expect(garage.locator('.property-loan-note')).toContainText('olettaa jokaisen kuukauden rahoitusvastikkeen maksetuksi')
     // The share's and the charge's documents are missing: they mark the tab.
     await expect(page.getByRole('tab', { name: /^Taloyhtiö/ }).locator('.tabs-mark-crit')).toHaveCount(1)
 

@@ -1782,15 +1782,9 @@
       "noDocs": "Inga dokument från bostadsbolaget.",
       "fold": "{title} ({n})",
       "paidOff": "Betald {date}",
-      "shareNow": "Låneandel {amount} ({date})",
       "shareNone": "Ingen låneandel angiven.",
-      "chargeNow": "Finansieringsvederlag {amount}/mån från {date}",
       "chargeNone": "Inget finansieringsvederlag angivet.",
-      "rateNow": "Ränta {reference} {rate} + marginal {margin} = {total} (från {date})",
-      "rateNone": "Ränta {reference} + marginal {margin}; ingen faktisk referensränta angiven.",
-      "rateNowFixed": "Fast ränta {rate} (från {date})",
       "rateNoneFixed": "Ingen fast ränta angiven.",
-      "term": "Lånetid {period}",
       "termOpen": "Lyft {date}",
       "reset": "räntan justeras var {months}:e månad",
       "total": "bolagets lån {amount}",
@@ -1825,13 +1819,25 @@
         "gapMore": "beräknat {amount} större",
         "gapLess": "beräknat {amount} mindre",
         "implied": "faktisk ränta {rate}",
-        "computed": "Beräknad låneandel {date}: {amount}",
-        "year": "{count} mån: amorterat {principal}, ränta {interest}",
-        "year_one": "1 mån: amorterat {principal}, ränta {interest}",
-        "paymentsUnknown": "Inga betalningar till bostadsbolaget hittades i bokföringen: varje finansieringsvederlag räknas som betalt."
+        "paymentsUnknown": "Inga månatliga betalningar från objektet till bostadsbolaget hittades i bokföringen, så beräkningen antar att varje månads finansieringsvederlag är betalt."
       },
       "alsoLead": "Lägg till de nya referensräntorna ({dates}) även i lånets kopior i andra objekt:",
-      "alsoFailed": "Lånet sparades, men referensräntan kunde inte läggas till för objekten: {objects}."
+      "alsoFailed": "Lånet sparades, men referensräntan kunde inte läggas till för objekten: {objects}.",
+      "figure": {
+        "shareComputed": "Beräknad låneandel {date}",
+        "share": "Låneandel {date}",
+        "shareLabel": "Låneandel",
+        "certificate": "Intyg {date}: {amount}",
+        "repaid": "Amorterat, {count} mån",
+        "repaid_one": "Amorterat, 1 mån",
+        "interest": "ränta {amount}",
+        "charge": "Finansieringsvederlag",
+        "rate": "Ränta",
+        "rateParts": "{reference} {rate} + {margin}",
+        "rateMissing": "{reference} + {margin}; referensränta saknas",
+        "fixed": "fast",
+        "term": "Lånetid"
+      }
     }
   },
   "company": {
