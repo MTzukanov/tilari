@@ -14,6 +14,18 @@ export type {
   DocumentVoucher,
   EraCandidate,
   DocCandidate,
+  HousingCopySource,
+  HousingDetail,
+  HousingLoan,
+  HousingLoanType,
+  LoanCertificate,
+  LoanCharge,
+  LoanEvent,
+  LoanEventKind,
+  LoanMonth,
+  LoanPath,
+  LoanRate,
+  RateReference,
   Lease,
   LeaseException,
   LeaseIncrease,
@@ -61,7 +73,7 @@ export type {
   WaterSuggestionView,
   YearRow,
 } from '../../book/modules/properties/domain/types'
-export { LEASE_INCREASE_KINDS, PROPERTY_KINDS } from '../../book/modules/properties/domain/types'
+export { HOUSING_LOAN_TYPES, LEASE_INCREASE_KINDS, LOAN_EVENT_KINDS, PROPERTY_KINDS, RATE_REFERENCES } from '../../book/modules/properties/domain/types'
 
 function service() {
   return getBookService().modules.properties

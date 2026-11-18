@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { fetchPartners, fetchSettings } from '../../../api'
+import { fetchPartners, fetchSettings, saveVoucher, uploadAttachment } from '../../../api'
 import { restoreLocationHash } from '../../../app/leaveGuard'
 import { parseRoute, propertyHash, type PropertyCard, type PropertyTab } from '../../../app/routing'
+import { housingVoucherIds, loanDay } from '../../../book/modules/properties/domain/housingLoan'
 import { isParkingKind } from '../../../book/modules/properties/domain/kind'
 import { leaseVoucherIds } from '../../../book/modules/properties/domain/rent'
 import { waterVoucherIds } from '../../../book/modules/properties/domain/water'
@@ -21,6 +22,7 @@ import {
   saveProperty,
   type DocCandidate,
   type DocumentSkip,
+  type HousingCopySource,
   type LeaseException,
   type PropertyDetail,
   type PropertyDoc,
@@ -28,6 +30,9 @@ import {
 } from '../api'
 import { DocPicker } from './DocPicker'
 import { VoucherOpen } from './FormParts'
+import { HousingPanel } from './HousingPanel'
+import { LoanCardEdit } from './LoanCardEdit'
+import { copiedLoanDraft, type LoanDraft } from './loanDrafts'
 import { LeaseCardEdit } from './LeaseCardEdit'
 import { leaseDrafts, type LeaseDraft } from './leaseDrafts'
 import { LeasesPanel } from './LeasesPanel'
@@ -38,7 +43,7 @@ import { PropertyOverview } from './PropertyOverview'
 import { RentDates } from './RentDates'
 import type { CardInputs } from './useDocWriter'
 import { WaterCardEdit } from './WaterCardEdit'
-import { settlementDrafts, type SettlementDraft } from './waterDrafts'
+import { candidateDoc, settlementDrafts, type SettlementDraft } from './waterDrafts'
 import { WaterPanel } from './WaterPanel'
 
 const DOCS_PER_GROUP = 8
@@ -50,7 +55,7 @@ type DocLinks = {
   /** The Liitetieto vouchers to link while the picker is open; null when it is closed. */
   picking: DocCandidate[] | null
   objectId: number
-  /** Linked by a lease, a water settlement or a sale: unlinked there, not here. */
+  /** Linked by a lease, a water settlement, the Taloyhtiö tab or a sale: unlinked there, not here. */
   held: Set<number>
   onPick: () => void
   onLink: (voucherId: number) => void
@@ -151,15 +156,15 @@ function Documents({
   )
 }
 
-type CardKind = 'lease' | 'water'
+type CardKind = 'lease' | 'water' | 'loan'
 type CardRef = { kind: CardKind; key: string | null }
-/** The card in edit and how it opens: prefilled from a suggestion, or from the form kept for it. */
-type OpenCard = CardRef & { leases?: LeaseDraft[]; water?: SettlementDraft[]; restore?: boolean; n: number }
+/** The card in edit and how it opens: prefilled from a suggestion or a copy, or from the form kept for it. */
+type OpenCard = CardRef & { leases?: LeaseDraft[]; water?: SettlementDraft[]; loan?: LoanDraft; restore?: boolean; n: number }
 /** The tab a card is on. */
-const CARD_TAB = { lease: 'leases', water: 'water' } as const
+const CARD_TAB = { lease: 'leases', water: 'water', loan: 'housing' } as const
 /** The card as the address names it. */
 const cardOf = (c: CardRef): PropertyCard =>
-  c.key == null ? { add: true } : c.kind === 'lease' ? { lease: c.key } : { settlement: c.key }
+  c.key == null ? { add: true } : c.kind === 'lease' ? { lease: c.key } : c.kind === 'water' ? { settlement: c.key } : { loan: c.key }
 
 /** The tab an address opens: a month's lines are under the chart, on the overview. */
 const tabOf = (route: { month?: string; tab?: PropertyTab }): ViewTab => (route.month ? 'overview' : (route.tab ?? 'overview'))
@@ -218,6 +223,8 @@ export function PropertyView({
   const [cardError, setCardError] = useState<string | null>(null)
   /** The Asiakirjat tab's picker: the vouchers to link while it is open. */
   const [docPicker, setDocPicker] = useState<DocCandidate[] | null>(null)
+  /** The Taloyhtiö tab's picker, the same way. */
+  const [housingPicker, setHousingPicker] = useState<DocCandidate[] | null>(null)
   /** Counts the overview's "+ Hinta-arvio": each opens Talous's price estimates with a new row. */
   const [addValuation, setAddValuation] = useState(0)
   /** What a card form needs besides the object: loaded each time a card opens (a card may have written documents). */
@@ -291,11 +298,11 @@ export function PropertyView({
   const openVoucher = (voucherId: number, entryId: number | null = null) =>
     onOpenVoucher(voucherId, entryId, tab === 'overview' ? { month: selected ?? undefined } : { tab, card: card && CARD_TAB[card.kind] === tab ? cardOf(card) : undefined })
   /**
-   * Opens a card in edit on its tab: a lease on Vuokrasuhteet, a settlement on Vesimaksut; stored
-   * `key`, or a new one (filled from the book's suggestion `suggestion`). An open card with changes
-   * is given up only after asking.
+   * Opens a card in edit on its tab: a lease on Vuokrasuhteet, a settlement on Vesimaksut, a loan on
+   * Taloyhtiö; stored `key`, or a new one (filled from the book's suggestion `suggestion`, or a loan
+   * copied from another object's `copy`). An open card with changes is given up only after asking.
    */
-  async function openCard(kind: CardKind, key: string | null, suggestion?: number, restore = false) {
+  async function openCard(kind: CardKind, key: string | null, suggestion?: number, restore = false, copy?: HousingCopySource) {
     if (card && dirty.current && !window.confirm(t('properties.edit.confirmLeaveCard'))) return
     setCardError(null)
     setTab(CARD_TAB[kind])
@@ -322,6 +329,7 @@ export function PropertyView({
       key,
       leases: lease ? leaseDrafts([lease.lease], ready.partners) : undefined,
       water: water ? settlementDrafts([water.settlement]) : undefined,
+      loan: kind === 'loan' && copy ? copiedLoanDraft(copy) : undefined,
       restore,
       n: (prev?.n ?? 0) + 1,
     }))
@@ -349,6 +357,58 @@ export function PropertyView({
     }
   }
 
+  /** Opens the Taloyhtiö tab's picker: the Liitetieto documents and the object's own vouchers with files. */
+  async function openHousingPicker() {
+    setCardError(null)
+    selectTab('housing')
+    try {
+      const notes = (await fetchPropertySetup()).docs
+      const listed = new Set(notes.map((n) => n.voucher_id))
+      setHousingPicker([...notes, ...(d?.water.statement_candidates ?? []).map(candidateDoc).filter((c) => !listed.has(c.voucher_id))])
+    } catch (err) {
+      setCardError(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  /** Saves the Taloyhtiö tab's own documents as `ids` (and drops a removed one from the object's); the picker closes. */
+  async function linkHousingDocs(doc: PropertyDoc, ids: number[]) {
+    setCardError(null)
+    const removed = (doc.housing_doc_voucher_ids ?? []).filter((id) => !ids.includes(id))
+    const next: PropertyDoc = { ...doc, doc_voucher_ids: (doc.doc_voucher_ids ?? []).filter((id) => !removed.includes(id)) }
+    if (ids.length) next.housing_doc_voucher_ids = [...new Set(ids)]
+    else delete next.housing_doc_voucher_ids
+    try {
+      await saveDoc(next)
+      setHousingPicker(null)
+    } catch (err) {
+      setCardError(saveErrorText(t, err instanceof Error ? err.message : String(err)))
+    }
+  }
+
+  /** Uploads files as a new Liitetieto voucher on the Taloyhtiö tab, linked there and deletable as the object's own. */
+  async function uploadHousingDoc(doc: PropertyDoc, name: string, files: File[]) {
+    setCardError(null)
+    const date = today || localToday()
+    try {
+      const saved = await saveVoucher({
+        date,
+        type: 800,
+        status: 100,
+        title: t('properties.housing.docTitle', { object: name, date: formatDate(date) }),
+        partner: null,
+        entries: [],
+      })
+      for (const file of files) await uploadAttachment(saved.id, file)
+      await saveDoc({
+        ...doc,
+        housing_doc_voucher_ids: [...new Set([...(doc.housing_doc_voucher_ids ?? []), saved.id])],
+        created_voucher_ids: [...new Set([...(doc.created_voucher_ids ?? []), saved.id])],
+      })
+    } catch (err) {
+      setCardError(saveErrorText(t, err instanceof Error ? err.message : String(err)))
+    }
+  }
+
   function addPriceEstimate() {
     selectTab('finance')
     setAddValuation((n) => n + 1)
@@ -363,9 +423,14 @@ export function PropertyView({
   // can still be edited.
   useEffect(() => {
     if (!d || !routeCard) return
-    const kind: CardKind = 'lease' in routeCard || ('add' in routeCard && routeTab === 'leases') ? 'lease' : 'water'
-    const key = 'lease' in routeCard ? routeCard.lease : 'settlement' in routeCard ? routeCard.settlement : null
-    const stored = kind === 'lease' ? (d.doc.leases ?? []) : (d.doc.water_settlements ?? [])
+    const kind: CardKind =
+      'lease' in routeCard || ('add' in routeCard && routeTab === 'leases')
+        ? 'lease'
+        : 'loan' in routeCard || ('add' in routeCard && routeTab === 'housing')
+          ? 'loan'
+          : 'water'
+    const key = 'lease' in routeCard ? routeCard.lease : 'settlement' in routeCard ? routeCard.settlement : 'loan' in routeCard ? routeCard.loan : null
+    const stored = kind === 'lease' ? (d.doc.leases ?? []) : kind === 'loan' ? (d.doc.housing_loans ?? []) : (d.doc.water_settlements ?? [])
     const editable = d.status !== 'sold' && !d.read_only && (key == null || stored.some((x) => x.key === key))
     if (editable) void openCard(kind, key, undefined, true)
     else restoreLocationHash(hashOf(CARD_TAB[kind], selected, null))
@@ -380,7 +445,9 @@ export function PropertyView({
   const showLeases = d ? held || d.leases.length > 0 || d.lease_suggestions.length > 0 : false
   // A parking space or garage has no water to settle: the tab shows only what is stored there.
   const showWater = d ? (held && !isParkingKind(d.kind)) || d.water.settlements.length > 0 || d.water.suggestions.length > 0 : false
-  const shown = (key: ViewTab) => (key === 'leases' ? showLeases : key === 'water' ? showWater : true)
+  // The housing company's loans and documents: on a held object, or when something is stored.
+  const showHousing = d ? held || Boolean(d.doc.housing_loans?.length || d.doc.housing_doc_voucher_ids?.length) : false
+  const shown = (key: ViewTab) => (key === 'leases' ? showLeases : key === 'water' ? showWater : key === 'housing' ? showHousing : true)
   const active: ViewTab = shown(tab) ? tab : 'overview'
 
   const tabs: TabItem<ViewTab>[] = []
@@ -395,6 +462,7 @@ export function PropertyView({
     tabs.push({ id: 'overview', label: t('properties.tab.overview') })
     if (showLeases) tabs.push({ id: 'leases', label: t('properties.tab.leases'), count: d.leases.filter((l) => !l.suggested).length, mark: mark('leases') })
     if (showWater) tabs.push({ id: 'water', label: t('properties.tab.water'), count: d.water.settlements.length, mark: mark('water') })
+    if (showHousing) tabs.push({ id: 'housing', label: t('properties.tab.housing'), count: d.doc.housing_loans?.length ?? 0, mark: mark('housing') })
     tabs.push({
       id: 'docs',
       label: t('properties.tab.docs'),
@@ -446,9 +514,11 @@ export function PropertyView({
                   ? void openCard('lease', null)
                   : on === 'water'
                     ? void openCard('water', null)
-                    : on === 'docs'
-                      ? void openDocPicker()
-                      : addPriceEstimate()
+                    : on === 'housing'
+                      ? void openCard('loan', null)
+                      : on === 'docs'
+                        ? void openDocPicker()
+                        : addPriceEstimate()
               }
               onOpenDue={(w) => (w.lease_key ? void openCard('lease', w.lease_key) : selectTab('leases'))}
               onSkip={d.read_only ? undefined : (skip) => skipDoc(d, skip)}
@@ -540,6 +610,47 @@ export function PropertyView({
             />
           </TabPanel>
 
+          <TabPanel id="housing" idPrefix="property" active={active === 'housing'}>
+            {cardError ? <p className="error">{cardError}</p> : null}
+            <HousingPanel
+              d={d}
+              on={loanDay(d.as_of, today || localToday())}
+              held={held}
+              editing={card?.kind === 'loan' && inputs ? (card.key ?? 'new') : null}
+              form={
+                card?.kind === 'loan' && inputs ? (
+                  <LoanCardEdit
+                    key={`${card.key ?? 'new'}-${card.n}`}
+                    detail={d}
+                    inputs={inputs}
+                    bookKey={bookKey}
+                    restore={card.restore}
+                    loanKey={card.key}
+                    prefill={card.loan}
+                    onSave={saveDoc}
+                    onClose={closeCard}
+                    onDirty={setDirty}
+                  />
+                ) : null
+              }
+              links={
+                d.read_only
+                  ? undefined
+                  : {
+                      picking: housingPicker,
+                      onPick: () => void openHousingPicker(),
+                      onLink: (v) => void linkHousingDocs(d.doc, [...(d.doc.housing_doc_voucher_ids ?? []), v]),
+                      onUnlink: (v) => void linkHousingDocs(d.doc, (d.doc.housing_doc_voucher_ids ?? []).filter((x) => x !== v)),
+                      onUpload: (files) => uploadHousingDoc(d.doc, d.name, files),
+                    }
+              }
+              onEditLoan={held && !d.read_only ? (key) => void openCard('loan', key) : undefined}
+              onAdd={held && !d.read_only ? () => void openCard('loan', null) : undefined}
+              onCopy={held && !d.read_only ? (source) => void openCard('loan', null, undefined, false, source) : undefined}
+              onOpenVoucher={(v) => openVoucher(v)}
+            />
+          </TabPanel>
+
           <TabPanel id="docs" idPrefix="property" active={active === 'docs'}>
             {cardError ? <p className="error">{cardError}</p> : null}
             {docs.error ? <p className="error">{docs.error}</p> : null}
@@ -557,6 +668,8 @@ export function PropertyView({
                         held: new Set([
                           ...leaseVoucherIds(d.doc.leases ?? []),
                           ...waterVoucherIds(d.doc.water_settlements ?? []),
+                          ...housingVoucherIds(d.doc.housing_loans ?? []),
+                          ...(d.doc.housing_doc_voucher_ids ?? []),
                           ...(d.doc.sale_voucher_ids ?? []),
                         ]),
                         onPick: () => void openDocPicker(),

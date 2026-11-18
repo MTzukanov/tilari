@@ -45,6 +45,42 @@ export function saveCashFlowOptions(options: CashFlowOptions): void {
   }
 }
 
+/** A housing-company loan chart's checkboxes, one choice for every loan, remembered in this browser. */
+export type LoanChartOptions = {
+  /** Interest summed from the first month followed, a line. */
+  interest: boolean
+  /** Repayment and interest summed, a line. */
+  paid: boolean
+  /** The share on to the loan's end, an estimate. */
+  forecast: boolean
+}
+
+export const LOAN_CHART_STORAGE_KEY = 'tilari.properties.loanChart'
+
+export const DEFAULT_LOAN_CHART: LoanChartOptions = { interest: false, paid: false, forecast: false }
+
+export function loadLoanChartOptions(): LoanChartOptions {
+  try {
+    const raw = localStorage.getItem(LOAN_CHART_STORAGE_KEY)
+    const stored = raw ? (JSON.parse(raw) as Record<string, unknown>) : {}
+    const out = { ...DEFAULT_LOAN_CHART }
+    for (const key of Object.keys(out) as (keyof LoanChartOptions)[]) {
+      if (typeof stored[key] === 'boolean') out[key] = stored[key]
+    }
+    return out
+  } catch {
+    return { ...DEFAULT_LOAN_CHART }
+  }
+}
+
+export function saveLoanChartOptions(options: LoanChartOptions): void {
+  try {
+    localStorage.setItem(LOAN_CHART_STORAGE_KEY, JSON.stringify(options))
+  } catch {
+    // Private window or blocked storage: the choice lasts until the page closes.
+  }
+}
+
 /** Income less expenses and interest: the month's cash flow (the net bar, the month lines' sum). */
 export function monthNet(m: MonthPoint): number {
   return m.income_snt - m.expense_snt - m.interest_snt

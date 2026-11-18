@@ -30,6 +30,7 @@ import {
   suggestDeposit,
 } from './deposits'
 import { listNoteVouchers } from './documents'
+import { housingVoucherIds, latestCertificate, loanDay, loanPath, loanWarnings, paymentsMissing, type PaymentUnits } from './housingLoan'
 import { isParkingKind, kindFromName } from './kind'
 import {
   attachVat,
@@ -67,6 +68,8 @@ import { currentLease, leasePartnerIds, leaseVoucherIds, leaseView } from './ren
 import { saleNet, toBp, xirr, yieldBp, type Flow } from './returns'
 import {
   bookedLine,
+  housingCompanyPartners,
+  housingPayments,
   tenantSettlementLines,
   settlementView,
   settlementViews,
@@ -85,7 +88,10 @@ import {
   PORTFOLIO_KEY,
   PROPERTY_KEY_PREFIX,
   type Disposal,
+  type HousingCopySource,
+  type HousingDetail,
   type Lease,
+  type LoanPath,
   type LeaseView,
   type PortfolioAlerts,
   type PortfolioResponse,
@@ -234,6 +240,8 @@ function byDate(a: { date: string; id: number }, b: { date: string; id: number }
 /** Tenant names, voucher labels and the book's lease suggestions for the objects on the page, loaded once. */
 type LeaseContext = {
   asOf: string
+  /** The book's day: the loans' rows count up to the later of it and the as-of date (ADR-034). */
+  today: string
   /** The first fiscal year's start: rent accounts count from it at the earliest. */
   booksStart: string
   partners: Map<number, PartnerInfo>
@@ -273,7 +281,7 @@ function incomeOf(c: Computed): SuggestIncome[] {
     .map((r) => ({ date: r.date, partner_id: r.partner_id, amount_snt: r.net_snt, text: r.text, id: r.id, voucher_id: r.voucher_id, vat_code: r.vat_code ?? 0 }))
 }
 
-function leaseContext(db: SqliteDb, loaded: Loaded, computed: Computed[], asOf: string): LeaseContext {
+function leaseContext(db: SqliteDb, loaded: Loaded, computed: Computed[], asOf: string, today: string): LeaseContext {
   const leases: Lease[] = computed.flatMap((c) => c.parsed.doc.leases ?? [])
   const docIds = computed.flatMap((c) => c.parsed.doc.doc_voucher_ids ?? [])
   const linked = depositIds(leases)
@@ -301,7 +309,7 @@ function leaseContext(db: SqliteDb, loaded: Loaded, computed: Computed[], asOf: 
     const found = suggestLeases({ docs, income: incomes.get(c.centre.id) ?? [], names, centreName: c.centre.name, parkingObject, asOf })
     suggestions.set(c.centre.id, found.filter((s) => !representedBy(stored, s.lease)))
   }
-  return { asOf, booksStart: getPeriods(db)[0]?.starts ?? asOf, partners, refs, suggestions, depositLines, deductions, pool: depositPool(db, loaded) }
+  return { asOf, today, booksStart: getPeriods(db)[0]?.starts ?? asOf, partners, refs, suggestions, depositLines, deductions, pool: depositPool(db, loaded) }
 }
 
 /** A stored lease's deposit on the as-of date; null when it links none. */
@@ -439,7 +447,7 @@ function remindersOf(c: Computed, ctx: LeaseContext): Warning[] {
     water: held && !isParkingKind(c.parsed.doc.kind) ? suggestSettlements(lines, settlements, leases.length ? leases : suggested).length : 0,
     deposits: { count: deposits.length, amount_snt: deposits.reduce((sum, d) => sum + d.balance_snt, 0) },
   }
-  return reminders({
+  const leaseReminders = reminders({
     leases,
     settlements,
     views,
@@ -449,6 +457,28 @@ function remindersOf(c: Computed, ctx: LeaseContext): Warning[] {
     tenant: (lease) => tenantName(ctx)(lease) ?? '',
     pending,
   })
+  return [...leaseReminders, ...loanWarnings(c.parsed.doc.housing_loans ?? [], loanDay(ctx.asOf, ctx.today), held, loanPaths(c, ctx).paths)]
+}
+
+/**
+ * The object's payments to its housing company and each loan's share month by month (ADR-034).
+ * The book follows the payments from the later of the purchase and the books' start; they are
+ * counted to the as-of date, the path to it or to a later certificate, and both end at a sale.
+ */
+function loanPaths(c: Computed, ctx: LeaseContext): { payments: ReturnType<typeof housingPayments>; paths: LoanPath[] } {
+  const found = housingPayments(c.result.classified.operating, c.reversed)
+  const units: PaymentUnits = { units: (m) => found.months.get(m)?.units ?? 0, known: found.known }
+  const acquired = c.result.summary.acquired_on
+  const from = [acquired?.slice(0, 7), ctx.booksStart.slice(0, 7)].filter((m): m is string => Boolean(m)).sort().at(-1) ?? null
+  const sold = c.result.status === 'sold' ? c.result.summary.sold_on?.slice(0, 7) : undefined
+  const asOf = sold && sold < ctx.asOf.slice(0, 7) ? sold : ctx.asOf.slice(0, 7)
+  const day = loanDay(ctx.asOf, ctx.today)
+  const paths = (c.parsed.doc.housing_loans ?? []).map((loan): LoanPath => {
+    const latest = latestCertificate(loan, day)?.date.slice(0, 7)
+    const to = latest && latest > asOf && !sold ? latest : asOf
+    return { ...loanPath(loan, { payments: units, from, to }), missing: paymentsMissing(loan, units, from, asOf) }
+  })
+  return { payments: found, paths }
 }
 
 function resolveAsOf(db: SqliteDb, today: string, asOf?: string | null): { asOf: string; dataThrough: string | null } {
@@ -461,7 +491,7 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
   const { asOf, dataThrough } = resolveAsOf(db, opts.today, opts.asOf)
   const centres = loaded.centres.filter((c) => !docFor(loaded, c.id).doc.excluded)
   const computed = computeObjects(db, loaded, centres, asOf)
-  const ctx = leaseContext(db, loaded, computed, asOf)
+  const ctx = leaseContext(db, loaded, computed, asOf, opts.today)
   const rows = computed.map((c) => toRow(c, ctx))
 
   const holding = computed.filter((c) => c.result.status === 'active' || c.result.status === 'partly_sold')
@@ -531,7 +561,7 @@ export function computeDetail(
   if (!centre) throw new BookError('not_found', 404)
   const { asOf, dataThrough } = resolveAsOf(db, opts.today, opts.asOf)
   const [computed] = computeObjects(db, loaded, [centre], asOf, opts.targetBp)
-  const ctx = leaseContext(db, loaded, [computed], asOf)
+  const ctx = leaseContext(db, loaded, [computed], asOf, opts.today)
   const { water, latest } = waterDetail(db, computed, ctx)
   const suggestions = ctx.suggestions.get(id) ?? []
   const sources = leaseSources(db, computed, suggestions, ctx)
@@ -583,6 +613,44 @@ export function computeDetail(
     rent_start_default: rentStartOf(computed, ctx, lines, false),
     rent_end: rentEndOf(computed, true),
     rent_end_default: rentEndOf(computed, false),
+    housing: housingDetail(db, loaded, computed, ctx),
+  }
+}
+
+/**
+ * The Taloyhtiö tab's vouchers, each loan's share month by month with the payments behind it, and
+ * the loans of other objects to copy from (ADR-034): those whose object pays one of this object's
+ * housing-company partners first.
+ */
+function housingDetail(db: SqliteDb, loaded: Loaded, c: Computed, ctx: LeaseContext): HousingDetail {
+  const doc = c.parsed.doc
+  const refs = loadVoucherRefs(db, new Set([...(doc.housing_doc_voucher_ids ?? []), ...housingVoucherIds(doc.housing_loans ?? [])]))
+  const vouchers = [...refs.values()]
+    .filter((r) => r.posted)
+    .map((r) => ({ voucher_id: r.id, date: r.date, doc_number: r.doc_number, series: r.series, title: r.title, files: r.files ?? [] }))
+  const { payments: found, paths } = loanPaths(c, ctx)
+  const paid = [...found.months.values()].flatMap((m) => m.rows)
+  const lineRefs = loadVoucherRefs(db, new Set(paid.map((r) => r.voucher_id)))
+  const payees = loadPartners(db, new Set(paid.flatMap((r) => (r.partner_id != null ? [r.partner_id] : []))))
+  const lineCtx = { partnerName: (id: number | null) => (id != null ? (payees.get(id)?.name ?? null) : null), refs: lineRefs }
+  const payments = [...found.months]
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([month, m]) => ({ month, units: m.units, lines: m.rows.map((r) => bookedLine(r, -r.net_snt, lineCtx)) }))
+  const others = loaded.centres.filter((centre) => centre.id !== c.centre.id && (docFor(loaded, centre.id).doc.housing_loans ?? []).length)
+  if (!others.length) return { vouchers, copy_sources: [], paths, payments }
+  const own = housingCompanyPartners(c.result.classified.operating, c.reversed)
+  const rows = groupBy(loadPnlRows(db, new Set(others.flatMap((centre) => [...allocationSet(centre)]))), (r) => r.allocation)
+  const sources: HousingCopySource[] = others.flatMap((centre) => {
+    const payees = housingCompanyPartners([...allocationSet(centre)].flatMap((a) => rows.get(a) ?? []))
+    const same = [...payees].some((p) => own.has(p))
+    return (docFor(loaded, centre.id).doc.housing_loans ?? []).map((loan) => ({ object_id: centre.id, object_name: centre.name, same_company: same, loan }))
+  })
+  const order = (s: HousingCopySource) => (s.same_company ? 0 : 1)
+  return {
+    vouchers,
+    copy_sources: sources.sort((a, b) => order(a) - order(b) || a.object_name.localeCompare(b.object_name, 'fi') || a.loan.name.localeCompare(b.loan.name, 'fi')),
+    paths,
+    payments,
   }
 }
 
@@ -780,9 +848,11 @@ function checkLinks(
   }
   const leases = doc.leases ?? []
   const settlements = doc.water_settlements ?? []
-  if (!leases.length && !settlements.length) return { ...doc, eras }
+  const loans = doc.housing_loans ?? []
+  const housing = [...(doc.housing_doc_voucher_ids ?? []), ...housingVoucherIds(loans)]
+  if (!leases.length && !settlements.length && !housing.length) return { ...doc, eras }
   const partners = loadPartners(db, leasePartnerIds(leases))
-  const linked = [...leaseVoucherIds(leases), ...waterVoucherIds(settlements)]
+  const linked = [...leaseVoucherIds(leases), ...waterVoucherIds(settlements), ...housing]
   const refs = loadVoucherRefs(db, linked)
   const posted = (voucherId: number | undefined, path: string) => {
     if (voucherId != null && !refs.get(voucherId)?.posted) throw new PropertyDocError('invalid_field', path)
@@ -804,7 +874,14 @@ function checkLinks(
       posted(share.voucher_id, `${at}.voucher_id`)
     })
   })
-  // A lease's contract and notices, and the water statements and letters, are documents of the object too.
+  ;(doc.housing_doc_voucher_ids ?? []).forEach((voucherId, i) => posted(voucherId, `housing_doc_voucher_ids[${i}]`))
+  loans.forEach((loan, i) => {
+    for (const rows of ['rates', 'certificates', 'charges', 'events'] as const) {
+      ;(loan[rows] ?? []).forEach((row, j) => posted(row.voucher_id, `housing_loans[${i}].${rows}[${j}].voucher_id`))
+    }
+  })
+  // A lease's contract and notices, the water statements and letters, and the housing company's
+  // documents are documents of the object too.
   const docVoucherIds = [...new Set([...(doc.doc_voucher_ids ?? []), ...linked])].sort((a, b) => a - b)
   return { ...doc, eras, doc_voucher_ids: docVoucherIds }
 }

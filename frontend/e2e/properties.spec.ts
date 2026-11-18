@@ -63,11 +63,11 @@ test.describe('rental objects chart', () => {
     await page.goto('/#/properties')
     const panel = page.locator('section.portfolio-charts')
     await expect(panel.getByRole('heading', { name: 'Kohteet kuukausittain' })).toBeVisible()
-    const cash = panel.getByRole('img', { name: 'Kertynyt kassavirta' })
+    const cash = panel.getByRole('group', { name: 'Kertynyt kassavirta' })
     // The golden book links no investment: a cash flow per object, no unrecovered chart.
     await expect(cash.locator('.portfolio-line')).toHaveCount(3)
     await expect(cash.locator('.portfolio-total')).toHaveCount(1)
-    await expect(panel.getByRole('img', { name: 'Palauttamatta kuukauden lopussa' })).toHaveCount(0)
+    await expect(panel.getByRole('group', { name: 'Palauttamatta kuukauden lopussa' })).toHaveCount(0)
 
     await panel.getByRole('checkbox', { name: 'Asunto' }).uncheck()
     await expect(cash.locator('.portfolio-line')).toHaveCount(2)
@@ -87,12 +87,15 @@ test.describe('rental objects chart', () => {
     await openBook(page, propertiesBook, 'Esimerkki Vuokraus Oy')
     await page.goto('/#/properties')
     const panel = page.locator('section.portfolio-charts')
-    const unrecovered = panel.getByRole('img', { name: 'Palauttamatta kuukauden lopussa' })
+    const unrecovered = panel.getByRole('group', { name: 'Palauttamatta kuukauden lopussa' })
     await expect(unrecovered).toBeVisible()
     expect(await unrecovered.locator('.portfolio-line').count()).toBeGreaterThan(3)
     await expect(unrecovered.locator('.portfolio-total')).toHaveCount(1)
-    // A month's hover lists every shown line, the total first.
-    await expect(unrecovered.locator('.chart-column-hover title').last()).toContainText('Kaikki yhteensä:')
+    // Pointing at a month lists every shown line, the total first; a click keeps it.
+    const tip = unrecovered.locator('xpath=..').locator('.chart-tip')
+    await unrecovered.locator('.chart-point-hit').last().click()
+    await expect(tip.locator('.chart-tip-row').first()).toContainText('Kaikki yhteensä')
+    expect(await tip.locator('.chart-tip-row').count()).toBeGreaterThan(3)
   })
 })
 
@@ -101,7 +104,7 @@ test.describe('rental object tabs', () => {
     await openBook(page)
     await page.goto('/#/property/4')
     const tabs = page.getByRole('tablist')
-    await expect(tabs.getByRole('tab')).toHaveText([/^Yleiskatsaus/, /^Vuokrasuhteet/, /^Vesimaksut/, /^Asiakirjat/, /^Talous/])
+    await expect(tabs.getByRole('tab')).toHaveText([/^Yleiskatsaus/, /^Vuokrasuhteet/, /^Vesimaksut/, /^Taloyhtiö/, /^Asiakirjat/, /^Talous/])
     await expect(page.getByRole('tab', { name: 'Yleiskatsaus' })).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('.property-now', { hasText: 'Vuokrasuhde nyt' })).toContainText('Ei vuokrasopimuksia.')
 
@@ -175,7 +178,7 @@ test.describe('rental object on a phone', () => {
 
     await page.setViewportSize({ width: 360, height: 740 })
     const workspace = page.locator('main.workspace')
-    for (const name of ['Yleiskatsaus', 'Vuokrasuhteet', 'Vesimaksut', 'Asiakirjat', 'Talous']) {
+    for (const name of ['Yleiskatsaus', 'Vuokrasuhteet', 'Vesimaksut', 'Taloyhtiö', 'Asiakirjat', 'Talous']) {
       const tab = page.getByRole('tab', { name: new RegExp(`^${name}`) })
       // Every tab is in sight: the bar wraps instead of scrolling.
       expect((await tab.boundingBox())!.x + (await tab.boundingBox())!.width, name).toBeLessThanOrEqual(360)
@@ -436,6 +439,177 @@ test.describe('rental object documents linked on their tab', () => {
     await expect(line).toBeVisible()
     await expect(docs.locator('.section-label').first()).toHaveText('Linkitetyt (sopimukset ja ilmoitukset)')
     await expect(pick).toHaveCount(0)
+  })
+})
+
+test.describe('rental object housing-company loans', () => {
+  test('a loan is added on its card with a certificate, copied to another object, and the tab fits a phone', async ({ page }) => {
+    await openBook(page, propertiesBook, 'Esimerkki Vuokraus Oy')
+    await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2026-06-15')
+    await page.goto('/#/property/10/housing')
+    await expect(page.getByRole('tab', { name: /^Taloyhtiö/ })).toHaveAttribute('aria-selected', 'true')
+    const loans = page.locator('.property-housing-loans')
+    await expect(loans.getByText('Ei yhtiölainoja.')).toBeVisible()
+    // No other object has a loan yet: nothing to copy.
+    await expect(loans.getByRole('button', { name: 'Kopioi toisesta kohteesta' })).toHaveCount(0)
+
+    await loans.getByRole('button', { name: '+ Lisää laina' }).click()
+    await expect(page).toHaveURL(/#\/property\/10\/housing\/new$/)
+    const card = page.locator('.property-loan-card-edit')
+    // An empty form is not saved: each field a loan needs is marked with its reason and listed (rows by
+    // section and number), and the first has the focus. A mark goes as its field is filled.
+    await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(card).toHaveCount(1)
+    const issues = card.locator('.form-issues li')
+    await expect(issues).toHaveCount(10)
+    await expect(issues.first()).toHaveText('Laina: puuttuu')
+    await expect(issues.last()).toHaveText('Viitekorot, rivi 1: Viitekorko %: puuttuu')
+    const name = card.getByLabel('Laina · puuttuu')
+    await expect(name).toHaveAttribute('aria-invalid', 'true')
+    await expect(name).toBeFocused()
+    await name.fill('Putkiremontti')
+    await expect(issues).toHaveCount(9)
+    await expect(card.getByLabel('Laina', { exact: true })).not.toHaveAttribute('aria-invalid')
+    await card.getByRole('button', { name: 'Peru', exact: true }).click()
+    await expect(card).toHaveCount(0)
+
+    // A new loan has a row for its share, its rahoitusvastike and its rate.
+    await loans.getByRole('button', { name: '+ Lisää laina' }).click()
+    await card.getByLabel('Laina', { exact: true }).fill('Putkiremontti')
+    await card.getByLabel('Nostettu', { exact: true }).fill('2020-01-01')
+    await card.getByLabel('Viimeinen eräpäivä').fill('2044-12-31')
+    await card.getByLabel('Marginaali %').fill('0,8')
+    const rows = card.locator('.property-lease-increase')
+    await expect(rows).toHaveCount(3)
+
+    const certificate = rows.nth(0)
+    await certificate.getByLabel('Päivä', { exact: true }).fill('2026-03-01')
+    await certificate.getByLabel('Velkaosuus').fill('12000')
+    const chooser = page.waitForEvent('filechooser')
+    await certificate.locator('label', { hasText: 'Lataa tiedosto' }).click()
+    await (await chooser).setFiles({ name: 'todistus.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 todistus') })
+    await expect(certificate.getByRole('textbox', { name: 'Isännöitsijäntodistus' })).toHaveValue(/Isännöitsijäntodistus/)
+
+    const charge = rows.nth(1)
+    await charge.getByLabel('Alkaen').fill('2026-01-01')
+    await charge.getByLabel('Rahoitusvastike €/kk').fill('80')
+    await charge.getByRole('checkbox', { name: 'Rahastoitu' }).check()
+    await charge.getByRole('checkbox', { name: 'Ei asiakirjaa' }).check()
+
+    const rate = rows.nth(2)
+    await rate.getByLabel('Alkaen').fill('2026-03-01')
+    await rate.getByLabel('Viitekorko %').fill('2,1')
+    await expect(rate).toContainText(/2,900\s%/)
+
+    await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(card).toHaveCount(0)
+    await expect(page).toHaveURL(/#\/property\/10\/housing$/)
+    const saved = loans.locator('.property-loan-card')
+    // The card's figures, a tile each: label, figure, what it rests on.
+    const figure = (label: string) => saved.locator('.property-loan-figure', { has: page.locator('.property-loan-figure-label', { hasText: label }) })
+    // The share month by month from the payments to the housing company, to the as-of month (May):
+    // April 12 000,00 - (80,00 - 29,00), May 11 949,00 - (80,00 - 28,88).
+    await expect(figure('Laskettu velkaosuus 31.5.2026')).toContainText(/11\s897,88\s€Todistus 1\.3\.2026: 12\s000,00\s€/)
+    // Repaid since the share is followed (here the books' first month), and the interest with it.
+    await expect(figure('Lyhennetty yhteensä')).toContainText(/254,38\s€1\/2026–5\/2026korkoa 145,62\s€/)
+    await expect(figure('Rahoitusvastike')).toContainText(/80,00\s€\/kk1\.1\.2026 alkaenRahastoitu/)
+    await expect(saved.locator('.property-loan-figure .pill', { hasText: 'Rahastoitu' })).toHaveCount(1)
+    await expect(figure('Korko')).toContainText(/2,900\s%12 kk Euribor 2,100\s% \+ 0,800\s%1\.3\.2026 alkaen/)
+    await expect(figure('Laina-aika')).toContainText(/1\.1\.2020.31\.12\.2044korko muuttuu/)
+    // Its lists as small tabs, one open at a time.
+    await expect(saved.locator('.property-loan-fold')).toHaveText(['Kuukausittain 5', 'Velkaosuudet 1', 'Rahoitusvastikkeet 1', 'Viitekorot 1'])
+    await saved.getByRole('button', { name: 'Kuukausittain 5', exact: true }).click()
+    const table = saved.locator('.property-loan-table')
+    await expect(table.locator('tbody tr').first()).toContainText(/toukokuu 2026.*5\.5\.2026 300,00\s€.*80,00\s€.*28,88\s€.*51,12\s€.*11\s897,88\s€/)
+    await expect(table.locator('.property-loan-certificate-row')).toHaveText(/^Isännöitsijäntodistus 1\.3\.2026: 12\s000,00\s€$/)
+    await expect(table.locator('tr.property-loan-backward')).toHaveCount(2)
+    // Each month is a point on the chart: pointing at one shows its figures, a click or an arrow key
+    // picks it, and the month picked is marked in the table.
+    const chart = saved.locator('.line-chart')
+    await expect(chart.locator('.property-loan-share .chart-line-dot')).toHaveCount(5)
+    const tip = chart.locator('.chart-tip')
+    await expect(tip).toBeHidden()
+    await chart.locator('.chart-point-hit').last().hover()
+    await expect(tip).toContainText(/^toukokuu 2026Velkaosuus11\s897,88\s€Rahoitusvastike80,00\s€Korko28,88\s€ \(2,900\s%\)Lyhennys51,12\s€$/)
+    await chart.locator('.chart-point-hit').nth(2).click()
+    await expect(tip).toContainText('Isännöitsijäntodistus 1.3.2026')
+    await expect(table.locator('tr.is-selected')).toContainText('maaliskuu 2026')
+    await chart.locator('svg').press('ArrowRight')
+    await expect(table.locator('tr.is-selected')).toContainText('huhtikuu 2026')
+    await expect(tip).toContainText(/^huhtikuu 2026/)
+    // The estimate to the loan's end: the line runs on dashed, its months summed by year repay the share.
+    await saved.getByRole('checkbox', { name: 'Arvio laina-ajan loppuun' }).check()
+    await expect(chart.locator('.property-loan-share.property-loan-ahead .chart-line')).toHaveCount(1)
+    const ahead = saved.locator('.property-loan-forecast-years')
+    await expect(ahead).toContainText(/Velkaosuus maksettu 31\.12\.2044 mennessä, kun korko pysyy 2,900\s%\./)
+    await expect(ahead.locator('tbody tr').first()).toContainText(/^2026/)
+    await expect(ahead.locator('tbody tr').last()).toContainText(/^2044.*0,00\s€$/)
+    await expect(ahead.locator('tfoot')).toContainText(/11\s897,88\s€/)
+    await chart.locator('.chart-point-hit').last().hover()
+    await expect(tip).toContainText(/^joulukuu 2044 \(arvio\)Velkaosuus0,00\s€/)
+    await saved.getByRole('checkbox', { name: 'Arvio laina-ajan loppuun' }).uncheck()
+    await expect(ahead).toHaveCount(0)
+    // Interest, and repayment with it, summed from the first month: lines on the share's scale.
+    await saved.getByRole('checkbox', { name: 'Lyhennys + korko yhteensä', exact: true }).check()
+    await saved.getByRole('checkbox', { name: 'Korko yhteensä', exact: true }).check()
+    await expect(chart.locator('.property-loan-paid .chart-line')).toHaveCount(1)
+    await expect(chart.locator('.property-loan-interest .chart-line')).toHaveCount(1)
+    await chart.locator('.chart-point-hit').last().hover()
+    await expect(tip).toContainText(/Lyhennys \+ korko yhteensä400,00\s€Korko yhteensä145,62\s€$/)
+    // The choices hold for every loan in this browser.
+    expect(await page.evaluate(() => localStorage.getItem('tilari.properties.loanChart'))).toBe('{"interest":true,"paid":true,"forecast":false}')
+    // The certificate is the housing company's document, held by the loan: not unlinked on Asiakirjat.
+    const housingDocs = page.locator('.property-housing-docs')
+    await expect(housingDocs.locator('.doc-line', { hasText: 'Isännöitsijäntodistus' })).toContainText('Velkaosuus 1.3.2026, Putkiremontti')
+    await page.getByRole('tab', { name: /^Asiakirjat/ }).click()
+    const docLine = page.locator('.property-docs .doc-line', { hasText: 'Isännöitsijäntodistus' })
+    await expect(docLine).toBeVisible()
+    await expect(docLine.getByRole('button', { name: 'Poista linkki' })).toHaveCount(0)
+
+    // Another object copies the loan's terms; its share and charges are its own.
+    await page.goto('/#/property/30/housing')
+    await loans.getByRole('button', { name: 'Kopioi toisesta kohteesta' }).click()
+    const pick = loans.getByRole('textbox', { name: 'Kopioi toisesta kohteesta' })
+    await pick.click()
+    await page.getByRole('option', { name: /Putkiremontti/ }).click()
+    await expect(card.getByLabel('Laina', { exact: true })).toHaveValue('Putkiremontti')
+    await expect(card.getByLabel('Marginaali %')).toHaveValue('0,8')
+    await expect(card.getByText('Ehdot kopioitu toisen kohteen lainasta.', { exact: false })).toBeVisible()
+    // The copied rate, and empty rows for the object's own share and rahoitusvastike, which a save asks for.
+    await expect(card.locator('.property-lease-increase')).toHaveCount(3)
+    await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(card.locator('.form-issues li')).toHaveText([
+      'Velkaosuudet, rivi 1: Päivä: puuttuu',
+      'Velkaosuudet, rivi 1: Velkaosuus: puuttuu',
+      'Rahoitusvastikkeet, rivi 1: Alkaen: puuttuu',
+      'Rahoitusvastikkeet, rivi 1: Rahoitusvastike €/kk: puuttuu',
+    ])
+    const copyRows = card.locator('.property-lease-increase')
+    await copyRows.nth(0).getByLabel('Päivä · puuttuu').fill('2025-01-01')
+    await copyRows.nth(0).getByLabel('Velkaosuus · puuttuu').fill('5000')
+    await copyRows.nth(1).getByLabel('Alkaen · puuttuu').fill('2025-01-01')
+    await copyRows.nth(1).getByLabel('Rahoitusvastike €/kk · puuttuu').fill('40')
+    await expect(card.locator('.form-issues li')).toHaveCount(0)
+    await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(card).toHaveCount(0)
+    const garage = loans.locator('.property-loan-card')
+    await expect(garage.locator('.property-loan-figure').first()).toContainText(/Todistus 1\.1\.2025: 5\s000,00\s€/)
+    // The garage pays no housing company in the book: each charge counts as paid. An "i" by the share
+    // says so on hover, and under the figures on a click.
+    const info = garage.getByRole('button', { name: /^Kirjanpidosta ei löytynyt kohteen kuukausittaisia maksuja taloyhtiölle/ })
+    await expect(info).toHaveAttribute('title', /olettaa jokaisen kuukauden rahoitusvastikkeen maksetuksi/)
+    await expect(garage.locator('.property-loan-note')).toHaveCount(0)
+    await info.click()
+    await expect(garage.locator('.property-loan-note')).toContainText('olettaa jokaisen kuukauden rahoitusvastikkeen maksetuksi')
+    // The share's and the charge's documents are missing: they mark the tab.
+    await expect(page.getByRole('tab', { name: /^Taloyhtiö/ }).locator('.tabs-mark-crit')).toHaveCount(1)
+
+    await page.setViewportSize({ width: 360, height: 740 })
+    const workspace = page.locator('main.workspace')
+    expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'housing tab').toBeLessThanOrEqual(0)
+    await loans.locator('.property-loan-card').getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    await expect(card).toHaveCount(1)
+    expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'loan card').toBeLessThanOrEqual(0)
   })
 })
 
@@ -724,9 +898,8 @@ test.describe('rental object lease dates', () => {
     // The second lease's card refuses the overlap, naming both.
     await fill(await newLeaseCard(page), 'Toinen Vuokralainen', '2025-06-01')
     await form.getByRole('button', { name: 'Tallenna', exact: true }).click()
-    await expect(form.locator('.error')).toContainText(
-      'Vuokrasopimukset Testi Vuokralainen 1.1.2025 alkaen ja Toinen Vuokralainen 1.6.2025 alkaen menevät päällekkäin.',
-    )
+    await expect(form.locator('.form-issues li')).toHaveText(['Alkaa: samoina päivinä kuin sopimus Testi Vuokralainen 1.1.2025 alkaen'])
+    await expect(form.getByLabel('Alkaa · samoina päivinä kuin sopimus Testi Vuokralainen 1.1.2025 alkaen')).toHaveAttribute('aria-invalid', 'true')
     await form.getByRole('button', { name: 'Peru', exact: true }).click()
 
     // The first lease ends before the second starts, each on its own card.
@@ -880,8 +1053,14 @@ test.describe('rental object water settlements', () => {
     await panel.getByRole('button', { name: '+ Vesitasaus' }).click()
     await expect(page).toHaveURL(/#\/property\/4\/water\/new$/)
     const water = panel.locator('.property-water-edit').first()
-    await water.getByLabel('Jakso alkaa').fill('2025-01-01')
-    await water.getByLabel('Jakso päättyy').fill('2025-06-30')
+    // A settlement without its period is not saved: both days are marked and listed.
+    await water.getByLabel('Summa €').first().fill('36,20')
+    await panel.locator('.property-lease-card-edit').getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(panel.locator('.form-issues li')).toHaveText(['Jakso alkaa: puuttuu', 'Jakso päättyy: puuttuu'])
+    await expect(water.getByLabel('Jakso alkaa · puuttuu')).toBeFocused()
+    await water.getByLabel('Jakso alkaa · puuttuu').fill('2025-01-01')
+    await water.getByLabel('Jakso päättyy · puuttuu').fill('2025-06-30')
+    await expect(panel.locator('.form-issues li')).toHaveCount(0)
     await expect(water.getByRole('combobox', { name: /^Taloyhtiön tasaus/ })).toHaveValue('refund')
     await water.getByLabel('Summa €').first().fill('36,20')
     // No use given: the company's refund by days, 122 of the period's 181 days.
@@ -921,7 +1100,7 @@ test.describe('rental object water settlements', () => {
     await expect(row.locator('.pill-warn')).toHaveText('avoin')
     await expect(row.getByRole('button', { name: /Vesitasaus Asunto/ })).toBeVisible()
     // No statement linked: the settlement's place for it says so.
-    await expect(panel.locator('.property-doc-slot', { hasText: 'Tasauslaskelma' }).locator('.pill-crit')).toHaveText('Puuttuu')
+    await expect(panel.locator('.property-doc-slot', { hasText: 'Tasauslaskelma' }).locator('.pill-crit')).toHaveText('Asiakirja puuttuu')
     // The stored settlement opens its own card again, named in the address.
     await panel.locator('.property-water-card').getByRole('button', { name: 'Muokkaa', exact: true }).click()
     await expect(page).toHaveURL(/#\/property\/4\/water\/settlement\/[^/]+$/)

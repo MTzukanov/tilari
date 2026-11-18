@@ -801,3 +801,58 @@ correction would change the open year's income statement lines. The rental-objec
 - **Suggestions:** a lease suggested from payments is a VAT lease when most of them carry a sales VAT code.
 - **Left out** (owner): letters and invoices with VAT (Holvi invoices), water letters, the 10-year review of
   VAT deducted on property investments (later), VAT in amounts kept from a deposit (a later step).
+
+## ADR-034 Housing-company loans belong to the object, entered by hand (2026-11-17)
+
+**Status:** accepted. Step 4 of the rental objects' Phase 2; the ledger is not changed.
+
+- **A loan is the object's own** (owner, 2026-11-17): `housing_loans[]` on `property/{id}`, with its terms,
+  actual reference rates, grace periods, the object's share on each certificate (isännöitsijäntodistus or the
+  purchase deed), its rahoitusvastike periods and events. There is no housing-company record. A loan can be
+  copied from another object of the same housing company: the copy takes the terms, rates and grace, not the
+  share, the charges or the events, and keeps the original's `group`, so a later step can treat the copies as
+  one company loan (and build a company record from the groups) without moving data.
+- **Same company** is a hint: the copy list puts first the objects that pay one of this object's housing-company
+  partners (repeating amounts on one expense account, as `statementSuspects` reads them). A property manager
+  billing several companies is one partner too, so the list never hides the others.
+- **The Taloyhtiö tab** holds the company's documents (its own links, `housing_doc_voucher_ids`, and every
+  voucher a loan links) and the loans as cards edited in place, like leases and water settlements.
+- **Rahastoitu / tuloutettu** is a checkbox on each rahoitusvastike period, tuloutettu by default (owner): a
+  rahastoitu charge belongs to the shares' acquisition cost in the shareholder's taxation. Later steps warn when
+  the ledger books one as a cost and offer a view that counts it as capital.
+- **What a loan needs** (owner, 2026-11-17): the form saves a loan only with its name, drawdown and last due date,
+  its margin and reset interval (not for a fixed rate, which is all in its rate rows), and at least one share, one
+  rahoitusvastike and one rate: what following the share and a forecast need. The company's whole loan is optional
+  (nothing is computed from it), but no share may exceed it, nor come before the drawdown. The stored format stays
+  lenient, so data written elsewhere still reads.
+- **The day a loan is read on** is the later of the page's as-of date and the book's day: the rows are inputs, not
+  bookings, so a share or rate dated after the last booked month counts at once.
+- **Reminders** (computed, ADR-030), while the object is held: a running loan with no share, a newest share older
+  than 12 months, and a certificate or rahoitusvastike without its document (skippable with `no_document`).
+- **The share month by month** (`loanPath`, computed every time): the payments to the housing company are the
+  expense lines of the payees the object pays repeating amounts on one account (`housingPayments`), counted as whole
+  payments - a month's total over the regular amount in force, rounded, so a catch-up counts two and a small extra
+  invoice nothing. Each payment pays the rahoitusvastike in force for the month; interest is the share at the
+  month's start times reference + margin over twelve; the rest lowers the share, as do extra repayments, and a
+  payoff ends it. A certificate gives the share at its month's end. Before the first one the path runs backwards (to
+  the later of the loan's start, the purchase, the books' start and the first charge); between two, the computed
+  months are fitted to the later one - its gap, computed less certified, is taken from their interest by weight in
+  whole cents - and the raw gap and the rate the fitted interest implies stay on the certificate's month; after the
+  last one it runs to the as-of month. Without any payee found, each due month counts as paid, and the card says so.
+- **Its reminders:** due months the payments have not covered by the as-of month (counted on, so an early or a
+  catch-up payment settles it), a rate reset date passed with no rate row for it, and - as a note, since the ledger
+  books it so - a rahastoitu rahoitusvastike paid as a cost.
+- **A rate row on copies:** a rate row new on a loan card can be added to the same loan on other objects (its
+  `group`) in the same save, each ticked by default.
+- **The share ahead** (`loanForecast`, 2026-11-18, the owner's ask ahead of the rest of the forecast work): a
+  checkbox on the loan's chart runs it on dashed to the loan's end and sums those months by year. The rates are the
+  rows and then the latest held. The rahoitusvastike in force (or a later row of it) is paid until the next rate
+  reset or the end of an interest-only period; from there an annuity pays what clears the share by `ends`, a
+  tasalyhennys the share over the months left plus interest, each worked out again at every reset; a fixed payment
+  stays and runs the share to 0. The last month pays what is left. No forecast when the charge would never clear it.
+  Two more checkboxes add the interest, and the repayment with it, summed from the path's first month: on the
+  share's scale, where a month's own figures would not show. The chart's choices are remembered in the browser.
+- **Next steps:** the figures that depend on the share (debt-free values, the rahoitusvastike split into interest
+  and principal, the rahastoitu view option); rate estimates per reference rate for the forecast; then
+  tilari-bank-import reading the vastike invoices into facts on the voucher.
+

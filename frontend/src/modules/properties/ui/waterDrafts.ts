@@ -1,9 +1,10 @@
 /** Water settlement form drafts: strings while editing, the stored settlements on save. */
-import { settlementOverlaps } from '../../../book/modules/properties/domain/ranges'
+import { overlaps } from '../../../book/modules/properties/domain/ranges'
 import { statementPeriod } from '../../../book/modules/properties/domain/water'
 import { formatEurInput, parseEurInput } from '../../../shared/money'
 import type { DocCandidate, WaterSettlement, WaterShare, WaterStatementCandidate } from '../api'
-import { periodText, saveErrorText } from './format'
+import { issueCollector, type FormIssue } from './formIssues'
+import { periodText } from './format'
 
 type T = (key: string, vars?: Record<string, string | number>) => string
 
@@ -160,18 +161,34 @@ export function draftSettlement(d: SettlementDraft): WaterSettlement | null {
   return out
 }
 
+/** A settlement draft on the form: its stored key, or `new`. */
+export const settlementId = (d: SettlementDraft) => d.base?.key || 'new'
+
+/** A settlement draft's fields on the form: `{key}.{field}`, a new one's `new.{field}`. */
+export const settlementField = (d: SettlementDraft, field: string) => `${settlementId(d)}.${field}`
+
 /**
- * The stored settlements, or an error text naming the first bad field or two periods on the same
- * days (they would settle those days twice). Empty rows are dropped, and so are shares of leases
- * no longer in the form.
+ * The stored settlements, or every field to fix: a period with a day missing or ending before it
+ * starts, and two periods on the same days (the tenants' water would be settled twice), marked on
+ * both. Drafts with nothing typed are dropped. `only`: the settlements on the form (`settlementField`
+ * keys); others' issues are left out unless they are all there is.
  */
-export function buildSettlements(t: T, drafts: SettlementDraft[], leaseKeys: Set<string>): WaterSettlement[] | string {
-  const out: WaterSettlement[] = []
-  for (const [i, d] of drafts.entries()) {
+export function buildSettlements(
+  t: T,
+  drafts: SettlementDraft[],
+  leaseKeys: Set<string>,
+  only?: Set<string>,
+): WaterSettlement[] | { issues: FormIssue[] } {
+  const { issues, issue, has } = issueCollector(t)
+  const out: { settlement: WaterSettlement; d: SettlementDraft }[] = []
+  for (const d of drafts) {
     if (!d.from && !d.to && !d.amount && !d.usage && !d.voucherId) continue
-    const bad = (field: string) => saveErrorText(t, `invalid_field:water_settlements[${i}].${field}`)
-    if (!d.from) return bad('from')
-    if (!d.to || d.to < d.from) return bad('to')
+    const from = settlementField(d, 'from')
+    const to = settlementField(d, 'to')
+    if (!d.from) issue(from, 'properties.field.waterFrom', 'properties.form.issue.required')
+    if (!d.to) issue(to, 'properties.field.waterTo', 'properties.form.issue.required')
+    else if (d.from && d.to < d.from) issue(to, 'properties.field.waterTo', 'properties.form.issue.toBeforeFrom')
+    if (has(from) || has(to)) continue
     const settlement: WaterSettlement = { ...(d.base ?? {}), ...draftSettlement(d)! }
     if (!d.usage.trim()) delete settlement.usage_snt
     delete settlement.no_document
@@ -183,10 +200,16 @@ export function buildSettlements(t: T, drafts: SettlementDraft[], leaseKeys: Set
     const shares = d.shares.filter((s) => leaseKeys.has(s.leaseKey)).flatMap((s) => buildShare(s) ?? [])
     if (shares.length) settlement.shares = shares
     else delete settlement.shares
-    out.push(settlement)
+    out.push({ settlement, d })
   }
-  const [both] = settlementOverlaps(out)
-  if (!both) return out
-  const [a, b] = both.map((s) => periodText(t, s.from, s.to))
-  return t('properties.error.waterOverlap', { a, b })
+  for (const [a, b] of overlaps(out, (x) => ({ from: x.settlement.from, to: x.settlement.to }))) {
+    const period = (x: typeof a) => periodText(t, x.settlement.from, x.settlement.to)
+    issue(settlementField(b.d, 'from'), 'properties.field.waterFrom', 'properties.form.issue.overlapsSettlement', undefined, { period: period(a) })
+    issue(settlementField(a.d, 'to'), 'properties.field.waterTo', 'properties.form.issue.overlapsSettlement', undefined, { period: period(b) })
+  }
+  if (issues.length) {
+    const own = only ? issues.filter((x) => only.has(x.field.slice(0, x.field.indexOf('.')))) : issues
+    return { issues: own.length ? own : issues }
+  }
+  return out.map((x) => x.settlement)
 }

@@ -113,14 +113,18 @@ export function PaybackChart({
 }) {
   const locale = getBcp47()
   const series: LineSeries[] = [
-    { key: 'payback', label: labels.payback, values: months.map((m) => m.unrecovered_snt), className: 'property-payback', dots: true },
-    ...(totals ? [{ key: 'total', label: labels.total, values: totals, className: 'property-total', dots: true }] : []),
+    { key: 'payback', label: labels.payback, values: months.map((m) => m.unrecovered_snt), className: 'property-payback', dots: 'spaced' },
+    ...(totals ? [{ key: 'total', label: labels.total, values: totals, className: 'property-total', dots: 'spaced' as const }] : []),
   ]
   return (
     <LineChart
       className="overview-chart property-chart"
       keys={months.map((m) => m.key)}
       series={series}
+      pointTip={(i) => ({
+        title: monthName(months[i].key, locale),
+        rows: series.flatMap((s) => (s.values[i] == null ? [] : [{ label: s.label, value: formatCents(s.values[i]!) }])),
+      })}
       labelFor={(key) => monthLabel(key, locale, true)}
       nameFor={(key) => monthName(key, locale)}
       locale={locale}

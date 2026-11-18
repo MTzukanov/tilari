@@ -3325,6 +3325,11 @@ tr.is-ended td {
 .editor select,
 .property-edit input:not([type='checkbox']):not([type='radio']),
 .property-edit select,
+.property-lease-card-edit input:not([type='checkbox']):not([type='radio']),
+.property-lease-card-edit select,
+.property-section input:not([type='checkbox']):not([type='radio']),
+.property-section select,
+.property-rent-dates-edit input:not([type='checkbox']):not([type='radio']),
 .property-rent-exception-form input:not([type='checkbox']):not([type='radio']),
 .filters input:not([type='checkbox']):not([type='radio']),
 .filters select,
@@ -3348,6 +3353,12 @@ tr.is-ended td {
 .editor input[type='date']::-webkit-datetime-edit-fields-wrapper,
 .property-edit input[type='date']::-webkit-datetime-edit,
 .property-edit input[type='date']::-webkit-datetime-edit-fields-wrapper,
+.property-lease-card-edit input[type='date']::-webkit-datetime-edit,
+.property-lease-card-edit input[type='date']::-webkit-datetime-edit-fields-wrapper,
+.property-section input[type='date']::-webkit-datetime-edit,
+.property-section input[type='date']::-webkit-datetime-edit-fields-wrapper,
+.property-rent-dates-edit input[type='date']::-webkit-datetime-edit,
+.property-rent-dates-edit input[type='date']::-webkit-datetime-edit-fields-wrapper,
 .property-rent-exception-form input[type='date']::-webkit-datetime-edit,
 .property-rent-exception-form input[type='date']::-webkit-datetime-edit-fields-wrapper {
   display: inline-flex;
@@ -3358,9 +3369,35 @@ tr.is-ended td {
 
 .editor input[type='date']::-webkit-calendar-picker-indicator,
 .property-edit input[type='date']::-webkit-calendar-picker-indicator,
+.property-lease-card-edit input[type='date']::-webkit-calendar-picker-indicator,
+.property-section input[type='date']::-webkit-calendar-picker-indicator,
+.property-rent-dates-edit input[type='date']::-webkit-calendar-picker-indicator,
 .property-rent-exception-form input[type='date']::-webkit-calendar-picker-indicator {
   margin: 0;
   align-self: center;
+}
+
+/* A field a save cannot take: marked where it is (as the setup's undecided rows), its reason in its label. */
+input.field-invalid:not([type='checkbox']):not([type='radio']),
+select.field-invalid {
+  border-color: var(--neg);
+  background: color-mix(in srgb, var(--neg) 8%, #fff);
+  outline: 1px solid color-mix(in srgb, var(--neg) 35%, transparent);
+}
+
+.field-issue {
+  color: var(--neg);
+  font-weight: 600;
+}
+
+/* What a refused save needs, above the buttons: one line per marked field. */
+.form-issues-lead {
+  margin: 0;
+}
+
+.form-issues {
+  margin: 0.35rem 0 0;
+  padding-left: 1.2rem;
 }
 
 .editor-card {
@@ -5373,6 +5410,13 @@ tr.tax-total td {
   margin: 0.5rem 0;
 }
 
+/* A row's inputs without a label share the line with the labelled ones instead of filling it. */
+.property-form-row > input {
+  flex: 1 1 9rem;
+  width: auto;
+  min-width: 0;
+}
+
 /* The overview tab: the running lease and the water side by side, then the key figures and actions. */
 .property-now-cards {
   display: grid;
@@ -5402,6 +5446,14 @@ tr.tax-total td {
 
 .property-panel-head .btn-link {
   font-size: 0.85rem;
+}
+
+/* Two or more buttons at a panel title's far side, kept together. */
+.property-panel-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .property-quick {
@@ -5633,6 +5685,281 @@ tr.tax-total td {
   fill: #2f6fed;
 }
 
+/* A loan's figures at a glance: a tile each, as many in a row as fit (two on a phone). */
+.property-loan-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.property-loan-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  padding: 0.5rem 0.7rem;
+  background: var(--surface);
+  border-radius: 8px;
+}
+
+.property-loan-figure-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.property-loan-figure > strong {
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.property-loan-figure-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.4rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* A pill in a narrow tile wraps rather than run past its edge. */
+.property-loan-figure-sub .pill {
+  white-space: normal;
+}
+
+/* Two tiles a row on a phone. */
+@media (max-width: 640px) {
+  .property-loan-figures {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  .property-loan-figure {
+    padding: 0.45rem 0.55rem;
+  }
+
+  .property-loan-figure > strong {
+    font-size: 1rem;
+  }
+}
+
+/* An "i" by a figure: its note on hover, and under the figures on a click or a tap. */
+.property-loan-info {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  font: italic 700 0.72rem/1 Georgia, serif;
+  cursor: pointer;
+}
+
+.property-loan-info:hover,
+.property-loan-info[aria-expanded='true'] {
+  color: var(--card);
+  background: var(--muted);
+  border-color: var(--muted);
+}
+
+.property-loan-note {
+  margin: 0 0 0.5rem;
+}
+
+/* The loan's lists as small tabs, like the page's own: one opens under them, a click on it closes it. */
+.property-loan-folds {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 0.4rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.property-loan-fold {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: -1px;
+  padding: 0.45rem 0.75rem 0.35rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.property-loan-fold:first-child {
+  padding-left: 0.1rem;
+}
+
+.property-loan-fold:hover {
+  color: var(--ink);
+}
+
+.property-loan-fold.is-open {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.property-loan-months,
+.property-loan-fold-body {
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .property-loan-fold {
+    padding: 0.4rem 0.5rem 0.3rem;
+    font-size: 0.84rem;
+  }
+}
+
+/* An open list ends with its last row, not with a line under it. */
+.property-loan-fold-body > li:last-child {
+  border-bottom: 0;
+}
+
+/* The chart's legend: the share, the certificates, the estimate ahead. */
+.overview-swatch.property-swatch-loan {
+  height: 2px;
+  background: #2f6fed;
+}
+
+.overview-swatch.property-swatch-certificate {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.overview-swatch.property-swatch-forecast {
+  height: 0;
+  border-top: 2px dashed #2f6fed;
+  border-radius: 0;
+}
+
+/* Repayment and interest summed, and interest alone; any line's estimate ahead is dashed and lighter. */
+.property-loan-paid .chart-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.property-loan-paid .chart-line-dot {
+  fill: var(--ink);
+}
+
+.property-loan-interest .chart-line {
+  fill: none;
+  stroke: #c45c26;
+  stroke-width: 1.5;
+}
+
+.property-loan-interest .chart-line-dot {
+  fill: #c45c26;
+}
+
+.property-loan-ahead .chart-line {
+  opacity: 0.75;
+}
+
+.overview-swatch.property-swatch-loan-paid {
+  height: 2px;
+  background: var(--ink);
+}
+
+.overview-swatch.property-swatch-loan-interest {
+  height: 2px;
+  background: #c45c26;
+}
+
+.property-loan-forecast-years h5 {
+  margin: 0.75rem 0 0.15rem;
+  font-size: 0.85rem;
+}
+
+.property-loan-table tfoot td {
+  font-weight: 600;
+  border-top: 1px solid var(--line);
+}
+
+/* A loan's months: wider than a phone, so the table scrolls on its own, not the page. */
+.property-loan-table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* "Lisää myös": the loan's copies on other objects that a new rate row can go to. */
+.property-loan-also {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 1rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.property-loan-also > p {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* A housing-company loan's share month by month, and its certificates as dots on it. */
+.property-loan-share .chart-line {
+  fill: none;
+  stroke: #2f6fed;
+  stroke-width: 2;
+}
+
+.property-loan-share .chart-line-dot {
+  fill: #2f6fed;
+}
+
+.property-loan-certificate .chart-line {
+  display: none;
+}
+
+/* A certificate's dot sits on the share's own: bigger, ringed, so both show. */
+.property-loan-certificate .chart-line-dot {
+  fill: var(--ink);
+  r: 4px;
+  stroke: var(--card);
+  stroke-width: 1.5;
+}
+
+.property-loan-certificate .chart-line-dot.chart-point-mark {
+  r: 5.5px;
+}
+
+/* The month picked on the chart, in the table under it. */
+.property-loan-table tr.is-selected td {
+  background: var(--accent-soft);
+}
+
+/* A month worked back from the first certificate, and a due month with no payment. */
+.property-loan-table tr.property-loan-backward td {
+  color: var(--muted);
+}
+
+.property-loan-table .property-loan-unpaid {
+  color: var(--neg);
+  font-weight: 600;
+}
+
+.property-loan-table tr.property-loan-certificate-row td {
+  font-size: 0.85rem;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
 .portfolio-line .chart-line {
   fill: none;
   stroke-width: 2;
@@ -5657,12 +5984,98 @@ tr.tax-total td {
   background: var(--ink);
 }
 
-.chart-column-hover {
-  fill: transparent;
+/* A chart whose points can be picked (LineChart pointTip): the box of figures stands over it. */
+.line-chart {
+  position: relative;
 }
 
-.chart-column-hover:hover {
-  fill: color-mix(in srgb, var(--ink) 6%, transparent);
+.line-chart > svg:focus {
+  outline: none;
+}
+
+.line-chart > svg:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.chart-point-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+/* A dashed guide where the pointer is; a solid one at the month picked. */
+.chart-point-guide {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.chart-point-guide.is-picked {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: none;
+}
+
+.chart-point-mark {
+  stroke: var(--card);
+  stroke-width: 2;
+}
+
+.chart-tip {
+  position: absolute;
+  z-index: 2;
+  max-width: min(17rem, calc(50% - 14px));
+  padding: 0.4rem 0.6rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+.chart-tip[hidden] {
+  display: none;
+}
+
+/* A narrow chart's figures: under it, as wide as it. */
+.chart-tip.is-below {
+  position: static;
+  max-width: none;
+  margin-top: 0.25rem;
+  box-shadow: none;
+  font-size: 0.85rem;
+}
+
+.chart-tip-title {
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
+.chart-tip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.chart-tip-swatch {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-right: 0.35rem;
+  border-radius: 2px;
+}
+
+.chart-tip-row > span:last-child {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.chart-tip-note {
+  margin-top: 0.2rem;
+  color: var(--muted);
 }
 
 .portfolio-charts h4 {
@@ -5872,6 +6285,19 @@ tr.tax-total td {
   font-size: 0.85rem;
 }
 
+/* A row's own buttons after its fields (a grace period's "Poista rivi"): to the row's end, level with the inputs. */
+.property-lease-grid > .property-row-end {
+  grid-column: 3 / -1;
+}
+
+/* A loan row's "Rahastoitu" checkbox: on one line, level with the inputs beside it. */
+.property-lease-grid label.property-loan-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.15rem;
+}
+
 /* Without the side menu's room the fields wrap and the buttons take a line of their own. */
 @media (max-width: 900px) {
   .property-lease-notice {
@@ -5940,16 +6366,38 @@ tr.tax-total td {
   .property-lease-grid .span-3 {
     grid-column: span 2;
   }
+
+  .property-lease-grid > .property-row-end {
+    grid-column: 1 / -1;
+  }
 }
 
+/* A lease, a water settlement or a loan as its tab shows it: a box of its own, like a binder. */
 .property-lease-card {
-  border-left: 3px solid color-mix(in srgb, #2f8f5b 55%, var(--line));
-  padding: 0.1rem 0 0.1rem 0.8rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+}
+
+@media (max-width: 640px) {
+  .property-lease-card {
+    padding: 0.6rem 0.7rem;
+  }
+}
+
+/* Cards one after another (leases, settlements, loans) keep apart. */
+.property-lease-card + .property-lease-card,
+.property-lease-card + div > .property-lease-card,
+div:has(> .property-lease-card) + .property-lease-card {
+  margin-top: 0.75rem;
 }
 
 /* A lease card in edit, in place: the form's own box, with its Tallenna and Peru under it. */
 .property-lease-card.property-lease-card-edit {
-  border-left: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
   padding: 0;
 }
 
@@ -6079,11 +6527,6 @@ tr.tax-total td {
 /* A month with an agreed exception: the normal rent and the reason on hover. */
 .property-rent-exception {
   cursor: help;
-}
-
-/* Water settlements: one card per period. */
-.property-water-card + .property-water-card {
-  margin-top: 0.9rem;
 }
 
 /* In the form: a share's booked lines and status, on their own row under its figures. */

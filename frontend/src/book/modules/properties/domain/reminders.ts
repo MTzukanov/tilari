@@ -20,10 +20,11 @@ export const WATER_OPEN_DAYS = 60
 export const WATER_SETTLEMENT_MONTHS = 15
 
 /**
- * Notes, not things to act on: the setup's sale costs, and how a sale shared with another object
- * was counted. The object page lists them; the portfolio does not mark a row for them.
+ * Notes, not things to act on: the setup's sale costs, how a sale shared with another object was
+ * counted, and a rahastoitu rahoitusvastike the ledger books as a cost (ADR-034). The object page
+ * lists them; the portfolio does not mark a row for them.
  */
-export const NOTE_CODES = new Set(['sale_carried', 'sale_line_split'])
+export const NOTE_CODES = new Set(['sale_carried', 'sale_line_split', 'loan_rahastoitu_expensed'])
 
 /** The warnings to act on: all but the notes. */
 export function actionable<T extends { code: string }>(warnings: T[]): T[] {
@@ -134,6 +135,16 @@ export function skipDocument(doc: PropertyDoc, skip: DocumentSkip): PropertyDoc 
   if (skip.kind === 'water_statement') {
     const settlements = (doc.water_settlements ?? []).map((s) => (s.key === skip.key ? { ...s, no_document: true as const } : s))
     return { ...doc, water_settlements: settlements }
+  }
+  if (skip.kind === 'loan_certificate' || skip.kind === 'loan_charge') {
+    const loans = (doc.housing_loans ?? []).map((loan) => {
+      if (loan.key !== skip.loan_key) return loan
+      if (skip.kind === 'loan_certificate') {
+        return { ...loan, certificates: (loan.certificates ?? []).map((c) => (c.date === skip.date ? { ...c, no_document: true as const } : c)) }
+      }
+      return { ...loan, charges: (loan.charges ?? []).map((c) => (c.from === skip.from ? { ...c, no_document: true as const } : c)) }
+    })
+    return { ...doc, housing_loans: loans }
   }
   const leases = (doc.leases ?? []).map((lease) => {
     if (lease.key !== skip.lease_key) return lease

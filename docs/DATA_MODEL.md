@@ -54,6 +54,8 @@ Money in integer cents (`*_snt`), percentages in basis points (`*_bp`, 100 = 1 %
 | `rent_from` | The owner's first day of rent when the sale agreed otherwise; missing: the first whole month after the purchase (ADR-026) |
 | `rent_until` | The owner's last day of rent when the sale agreed otherwise; missing: the end of the month of the sale, or none while held (ADR-026) |
 | `water_settlements[]` | The housing company's water settlements, oldest period first, never sharing a day (below) |
+| `housing_loans[]` | The object's share of the housing company's loans, oldest start first (below, ADR-034) |
+| `housing_doc_voucher_ids[]` | The housing company's documents on the Taloyhtiö tab (certificates, meeting minutes, notices); also in `doc_voucher_ids` |
 
 `leases[]` - one per tenancy; unknown keys of a lease are kept like the document's own:
 
@@ -94,6 +96,31 @@ advances, or without the use the difference by days. Saving checks that `lease_k
 the vouchers are posted and no two periods share a day (`overlap`), and adds the statement and letters to `doc_voucher_ids`. A letter
 written in Tilari is a posted type-800 voucher titled after the object and the period, with the
 tenant as partner and the letter as a PDF (`modules/properties/ui/waterLetter.ts`).
+
+`housing_loans[]` - one per housing-company loan the object has a share of (yhtiölaina, ADR-034), entered by
+hand; unknown keys are kept. Rates are in 1/1000 % (`*_pcm`, 1000 = 1 %): Euribor has three decimals and can be
+negative.
+
+| Key | Meaning |
+|-----|---------|
+| `key` | Stable within the document (`h1`, `h2`...); given on save when missing |
+| `group?` | Shared by copies of one company loan on objects of the same housing company: a copy takes the original's group, or `o{objectId}-{key}` of the original |
+| `name` | What the loan is for ("Putkiremontti 2019") |
+| `lender?`, `total_snt?` | The bank, and the company's whole loan, for information |
+| `starts`, `ends?` | Drawn; the last due date in the terms |
+| `type` | `annuity` (annuiteetti), `equal_principal` (tasalyhennys) or `fixed_payment` (kiinteä tasaerä: the payment stays, the term moves) |
+| `reference`, `margin_pcm` | The reference rate (`euribor_12m`, `euribor_6m`, `euribor_3m`, `prime`, `fixed`, `other`) and the margin |
+| `reset_months?` | How often the reference rate is reset |
+| `rates[]?` | `{ from, reference_pcm, voucher_id? }`: the actual reference rate from `from` on, by hand; no two on one day |
+| `grace[]?` | `{ from, to }`: periods with no repayment (lyhennysvapaa), not overlapping |
+| `certificates[]?` | `{ date, share_snt, voucher_id?, no_document? }`: the object's share (velkaosuus) on `date` from an isännöitsijäntodistus or the purchase deed; no two on one day |
+| `charges[]?` | `{ from, amount_snt, rahastoitu?, voucher_id?, no_document? }`: this loan's rahoitusvastike a month from `from` on, with the invoice or notice; `rahastoitu: true` when the company puts it into its equity instead of its income (tuloutettu, the default); no two on one day |
+| `events[]?` | `{ date, kind, amount_snt?, voucher_id?, note? }`: `paid_off` (the share paid off), `extra_payment` (with an amount), `terms`, `note` |
+
+Saving checks that every voucher a loan links is posted, and adds them to `doc_voucher_ids`. A certificate
+or rahoitusvastike notice uploaded on a loan card is a posted type-800 voucher titled after the object
+(`modules/properties/ui/LoanCardEdit.tsx`); so is a document uploaded on the Taloyhtiö tab, which goes to
+`housing_doc_voucher_ids`.
 
 `portfolio`: `v`, `rev`, `sale_costs`, `target_return_bp`, `dismissed[]` (setup suggestions
 the owner rejected: `era:{eraid}`, `doc:{voucherId}`).

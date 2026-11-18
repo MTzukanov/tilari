@@ -7,6 +7,91 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-17 - Rental objects: a loan's share month by month (`feature/housing-loans-month`, ADR-034, step 4b)
+
+- `loanPath` (`domain/housingLoan.ts`) follows each loan's share from its certificates and the payments to the
+  housing company (`housingPayments`, `domain/water.ts`, next to `housingCompanyPartners`); the card shows the
+  computed share at the path's end with what twelve months repaid and paid as interest, and folds a chart and a
+  month table (payments as line links, rahoitusvastike, interest, repaid, share; certificate rows with the gap
+  and the implied rate). Interest is monthly on the share at the month's start (`share * pcm / 1 200 000`).
+- A month's payment count is its total over the regular amount, rounded: chosen over counting repeating amounts
+  only, which flagged a raised vastike as missing until it repeated, and over counting every line, which took a
+  water invoice for a second payment.
+- The path ends at the as-of month (data through), or at a later certificate; payments missing are counted to the
+  as-of month only, so months the book has not imported yet do not warn.
+- The invented fixture's vastike lines now name their housing company ("As Oy Esimerkkikatu 1", "As Oy Mallitie
+  2"), so the test book has payments to follow; `testdb/tilari-properties.kitsas` was rebuilt.
+- Owner's look at the cards: two loan cards ran together. Cards after cards (leases, settlements, loans) now keep
+  1rem apart. The month table scrolls on its own on a phone.
+- 2026-11-18, owner's second look: the green left bar of the cards meant nothing (it came with the first lease
+  cards; green is "done" elsewhere), and a bar alone did not show where a card ends. A card in view is now a white
+  box with a border, like a binder (`.property-lease-card`); a card in edit stays the form's own tinted box.
+- The loan chart has a point per month (`LineSeries.dots: 'spaced'`: only while points are 6 px apart) and
+  `LineChart`'s `pointTip`: pointing at a month shows its figures in a box beside it; a click, a tap or the arrow
+  keys pick it (solid guide line, row marked in the table). Under 480 px the picked month's figures go under the
+  chart, since a box beside the point does not fit.
+- Owner, same day: the same on the other line charts. The payback chart and both portfolio charts use `pointTip`
+  (the portfolio's rows carry each object's colour); `columnTitle` (native hover titles) is gone.
+- Owner, same day: the loan card read "like a novel". Its figures are now tiles (`.property-loan-figures`: the
+  share - computed at the path's end, with the certificate under it -, repaid in the last 12 months with the
+  interest, the rahoitusvastike, the rate, the term), two a row on a phone. The note that no payments were found
+  became an "i" by the share (hover title; a click shows it under the tiles), reworded to say what it means:
+  the calculation assumes each month's rahoitusvastike was paid. The lists (months, shares, charges, rates,
+  events) are one row of buttons, one open at a time.
+- Owner, later: the list buttons are small tabs (like the page's, with the count beside the name; the page's
+  `Tabs` is sticky, so not reused), an open list has no line under its last row, "Lyhennetty yhteensä" counts
+  from the path's first month (the later of purchase, loan start, books' start, first charge: the span is under
+  the figure), and the chart has "Arvio laina-ajan loppuun" (`loanForecast`, ADR-034; remembered in this browser,
+  `tilari.properties.loanChart`): a dashed line to the end and the months summed by year. The rate is held at
+  the latest until the rate estimates per reference rate exist.
+- Owner: "Korko yhteensä" and "Lyhennys + korko yhteensä" as lines (summed, so they share the share's scale), all
+  three choices remembered; the chart's how-to line is gone. The owner asked whether the annuity is right since its
+  line looked straight: it is - over a few years at ~4 % an annuity's share sags only a few thousand euros above a
+  straight line (about 4 px); a unit test now pins falling interest and growing repayment month by month.
+
+## 2026-11-17 - Rental objects: housing-company loans on a Taloyhtiö tab (`feature/housing-loans`, ADR-034)
+
+- Owner's step 4 (loan share and rahoitusvastike), planned in increments 4a-4e. Decisions: a loan belongs to the
+  object, no housing-company record; a loan can be copied from another object of the same company (the copy keeps
+  the original's `group`); the share is followed month by month from the payments to the housing company, not the
+  bank's schedule, anchored to certificates; actual reference rates by hand on the loan, estimates for the future
+  as one curve per reference rate in the Properties defaults (4d); a "Rahastoitu" checkbox per rahoitusvastike
+  period, tuloutettu by default, with a later view option to count rahastoitu charges as capital; no ledger change -
+  tilari-bank-import will read the vastike invoices into facts on the voucher (4e).
+- 4a, built here: `housing_loans[]` and `housing_doc_voucher_ids` on the object (DATA_MODEL.md), the Taloyhtiö tab
+  (`housing`; cards `/housing/new`, `/housing/loan/{key}`) with the company's documents (linked, uploaded, and every
+  voucher a loan links, marked with what it is for) and loan cards edited in place; "+ Yhtiölaina" on the overview.
+  Copy sources list every other object's loans, those paying one of this object's housing-company partners first
+  (`housingCompanyPartners`, taken out of `statementSuspects`). Rates are in 1/1000 % (`*_pcm`).
+- Reminders while held: `loan_share_missing`, `loan_certificate_stale` (12 months), `loan_certificate_missing` and
+  `loan_charge_notice_missing` (skippable, ADR-030 kinds `loan_certificate` / `loan_charge`).
+- A certificate uploaded on a card is dated today, like the other documents Tilari writes; its own date is the row's.
+- Fixed, owner's review: the forms edited in place (lease, water and loan cards, Talous sections, rent days) had
+  the browser's own inputs since #75 moved them out of `.property-edit`, the container the shared input style
+  (`App.css`, with `.editor`) was scoped to. The style now lists `.property-lease-card-edit`, `.property-section`
+  and `.property-rent-dates-edit` too; a `.property-form-row`'s unlabelled inputs share the line instead of filling it.
+- Owner: an empty loan form saved with only "Tarkista: Laina." A refused save now marks every field to fix
+  (`field-invalid` + `aria-invalid`, the reason in its label: "Nostettu · puuttuu"), lists them above the buttons and
+  focuses the first; the marks follow the form until it saves (`buildLoan` returns `LoanIssue[]`). The lease and water
+  cards still show one line (`saveErrorText`): the same treatment there is a later step if wanted.
+- Owner's second look: the card said "no share" with a share entered. The page's as-of date follows the booked
+  months (end of the last whole one), and the rows were dated after it; the card and the reminders now read loans
+  on `loanDay(asOf, today)`, the later of the two, and fall back to the newest share and the next rows (`loanNow`).
+- Owner: more fields are required - what the share's monthly path and the forecast need (ADR-034 "What a loan
+  needs"). A new loan opens with one row each for its share, rahoitusvastike and rate; a copy brings its rate and
+  asks for the object's own share and rahoitusvastike. A fixed rate hides margin and reset interval.
+- English: lyhennysvapaa is "interest-only period", not "repayment holiday" (owner).
+- Owner's third look: the lease and water cards mark their fields the same way. The parts are shared:
+  `formIssues.ts` (`FormIssue`, `issueCollector`, `invalidProps`, `useIssueFocus`) and `Field` / `FormIssueList` in
+  `FormParts.tsx`, texts under `properties.form.*`. `buildLeases` / `buildSettlements` return the leases or
+  `{ issues }` with fields `{lease key}.{field}` (`leaseField`) / `{settlement key or new}.{field}`
+  (`settlementField`); an overlap marks both leases' (settlements') dates, and a card keeps only its own issues
+  unless they are all there is. The old one-sentence `properties.error.leaseOverlap` etc. are gone. The rules are
+  unchanged, except that a tenant typed without a start now asks for the start instead of failing at the save.
+- The "Puuttuu" pill of an empty document slot said nothing of what was missing: `properties.docs.absent` is now
+  "Asiakirja puuttuu". The warnings list's word pill ("Puuttuu" beside its sentence) stays.
+- The company's whole loan (`total_snt`) stays optional (owner).
+
 ## 2026-11-15 - Test book with rental-object investments (`testdb/tilari-properties.kitsas`)
 
 - Owner asked for a book with an acquisition: the golden `tilari-test.kitsas` links none, so neither payback chart

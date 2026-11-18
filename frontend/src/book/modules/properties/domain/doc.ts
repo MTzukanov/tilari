@@ -8,11 +8,22 @@ import {
   PROPERTY_DOC_VERSION,
   PROPERTY_KEY_PREFIX,
   PROPERTY_KINDS,
+  HOUSING_LOAN_TYPES,
   LEASE_INCREASE_KINDS,
   LEASE_WATER_KINDS,
+  LOAN_EVENT_KINDS,
+  RATE_REFERENCES,
   type CapitalEntry,
   type EraLink,
   type Financing,
+  type HousingLoan,
+  type HousingLoanType,
+  type LoanCertificate,
+  type LoanCharge,
+  type LoanEvent,
+  type LoanEventKind,
+  type LoanRate,
+  type RateReference,
   type Lease,
   type LeaseDeposit,
   type LeaseException,
@@ -139,6 +150,8 @@ const DOC_KEYS = new Set([
   'water_settlements',
   'rent_from',
   'rent_until',
+  'housing_loans',
+  'housing_doc_voucher_ids',
 ])
 
 const LEASE_KEYS = new Set([
@@ -360,6 +373,166 @@ function waterSettlements(value: unknown): WaterSettlement[] {
   return list.sort((a, b) => a.from.localeCompare(b.from) || a.key.localeCompare(b.key))
 }
 
+const LOAN_KEYS = new Set([
+  'key',
+  'group',
+  'name',
+  'lender',
+  'starts',
+  'ends',
+  'type',
+  'total_snt',
+  'reference',
+  'margin_pcm',
+  'reset_months',
+  'rates',
+  'grace',
+  'certificates',
+  'charges',
+  'events',
+])
+const LOAN_GROUP = /^[A-Za-z0-9_-]{1,40}$/
+/** 100 % in 1/1000 % (`*_pcm`). */
+const MAX_PCM = 100_000
+
+/** Rows of a loan oldest first; `at` names a row's date, which no two rows may share. */
+function datedRows<T>(value: unknown, path: string, row: (raw: Record<string, unknown>, at: string) => T, at: (item: T) => string, field: string): T[] {
+  const list = array(value, path, 240).map((raw, i) => {
+    if (!isObject(raw)) fail(`${path}[${i}]`)
+    return { item: row(raw, `${path}[${i}]`), i }
+  })
+  const seen = new Set<string>()
+  for (const { item, i } of list) {
+    if (seen.has(at(item))) fail(`${path}[${i}].${field}`)
+    seen.add(at(item))
+  }
+  return list.map(({ item }) => item).sort((a, b) => at(a).localeCompare(at(b)))
+}
+
+function housingLoan(item: unknown, path: string): HousingLoan {
+  if (!isObject(item)) fail(path)
+  const name = text(item.name, `${path}.name`, MAX_TEXT)
+  if (!name) fail(`${path}.name`)
+  if (!HOUSING_LOAN_TYPES.includes(item.type as HousingLoanType)) fail(`${path}.type`)
+  if (!RATE_REFERENCES.includes(item.reference as RateReference)) fail(`${path}.reference`)
+  const out: HousingLoan = {
+    key: '',
+    name,
+    starts: date(item.starts, `${path}.starts`),
+    type: item.type as HousingLoanType,
+    reference: item.reference as RateReference,
+    margin_pcm: int(item.margin_pcm ?? 0, `${path}.margin_pcm`, 0, MAX_PCM),
+  }
+  keep(out, item, LOAN_KEYS)
+  if (item.key != null && item.key !== '') {
+    if (typeof item.key !== 'string' || !LEASE_KEY.test(item.key)) fail(`${path}.key`)
+    out.key = item.key
+  }
+  if (item.group != null) {
+    if (typeof item.group !== 'string' || !LOAN_GROUP.test(item.group)) fail(`${path}.group`)
+    out.group = item.group
+  }
+  const lender = text(item.lender, `${path}.lender`, MAX_TEXT)
+  if (lender) out.lender = lender
+  if (item.ends != null) {
+    out.ends = date(item.ends, `${path}.ends`)
+    if (out.ends < out.starts) fail(`${path}.ends`)
+  }
+  if (item.total_snt != null) out.total_snt = snt(item.total_snt, `${path}.total_snt`, 0)
+  if (item.reset_months != null) out.reset_months = int(item.reset_months, `${path}.reset_months`, 1, 120)
+
+  const rates = datedRows(
+    item.rates,
+    `${path}.rates`,
+    (raw, at): LoanRate => {
+      const rate: LoanRate = { from: date(raw.from, `${at}.from`), reference_pcm: int(raw.reference_pcm, `${at}.reference_pcm`, -MAX_PCM, MAX_PCM) }
+      const voucher = optionalId(raw.voucher_id, `${at}.voucher_id`)
+      if (voucher != null) rate.voucher_id = voucher
+      return rate
+    },
+    (r) => r.from,
+    'from',
+  )
+  if (rates.length) out.rates = rates
+
+  const grace = datedRows(
+    item.grace,
+    `${path}.grace`,
+    (raw, at) => {
+      const from = date(raw.from, `${at}.from`)
+      const to = date(raw.to, `${at}.to`)
+      if (to < from) fail(`${at}.to`)
+      return { from, to }
+    },
+    (g) => g.from,
+    'from',
+  )
+  grace.forEach((g, i) => {
+    if (i > 0 && g.from <= grace[i - 1].to) fail(`${path}.grace[${i}].from`)
+  })
+  if (grace.length) out.grace = grace
+
+  const certificates = datedRows(
+    item.certificates,
+    `${path}.certificates`,
+    (raw, at): LoanCertificate => {
+      const c: LoanCertificate = { date: date(raw.date, `${at}.date`), share_snt: snt(raw.share_snt, `${at}.share_snt`, 0) }
+      const voucher = optionalId(raw.voucher_id, `${at}.voucher_id`)
+      if (voucher != null) c.voucher_id = voucher
+      noDocument(raw, c, `${at}.no_document`)
+      return c
+    },
+    (c) => c.date,
+    'date',
+  )
+  if (certificates.length) out.certificates = certificates
+
+  const charges = datedRows(
+    item.charges,
+    `${path}.charges`,
+    (raw, at): LoanCharge => {
+      const c: LoanCharge = { from: date(raw.from, `${at}.from`), amount_snt: snt(raw.amount_snt, `${at}.amount_snt`, 0) }
+      if (raw.rahastoitu != null && raw.rahastoitu !== false) {
+        if (raw.rahastoitu !== true) fail(`${at}.rahastoitu`)
+        c.rahastoitu = true
+      }
+      const voucher = optionalId(raw.voucher_id, `${at}.voucher_id`)
+      if (voucher != null) c.voucher_id = voucher
+      noDocument(raw, c, `${at}.no_document`)
+      return c
+    },
+    (c) => c.from,
+    'from',
+  )
+  if (charges.length) out.charges = charges
+
+  const events = array(item.events, `${path}.events`, 120)
+    .map((raw, i): LoanEvent => {
+      const at = `${path}.events[${i}]`
+      if (!isObject(raw)) fail(at)
+      if (!LOAN_EVENT_KINDS.includes(raw.kind as LoanEventKind)) fail(`${at}.kind`)
+      const e: LoanEvent = { date: date(raw.date, `${at}.date`), kind: raw.kind as LoanEventKind }
+      if (raw.amount_snt != null) e.amount_snt = snt(raw.amount_snt, `${at}.amount_snt`, 0)
+      // An extra payment is an amount; the others may name one.
+      if (e.kind === 'extra_payment' && !e.amount_snt) fail(`${at}.amount_snt`)
+      const voucher = optionalId(raw.voucher_id, `${at}.voucher_id`)
+      if (voucher != null) e.voucher_id = voucher
+      const note = text(raw.note, `${at}.note`, MAX_TEXT)
+      if (note) e.note = note
+      return e
+    })
+    .sort((a, b) => a.date.localeCompare(b.date))
+  if (events.length) out.events = events
+  return out
+}
+
+/** Loans oldest start first; a missing key gets the first free `h{n}`, a repeated one fails. */
+function housingLoans(value: unknown): HousingLoan[] {
+  const list = array(value, 'housing_loans', 50).map((item, i) => housingLoan(item, `housing_loans[${i}]`))
+  assignKeys(list, 'h', 'housing_loans')
+  return list.sort((a, b) => a.starts.localeCompare(b.starts) || a.key.localeCompare(b.key))
+}
+
 function checkVersion(value: unknown): void {
   if (value == null) return
   if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1) fail('v')
@@ -455,6 +628,10 @@ export function normalizePropertyDoc(input: unknown): PropertyDoc {
   }
   const settlements = waterSettlements(input.water_settlements)
   if (settlements.length) out.water_settlements = settlements
+  const loans = housingLoans(input.housing_loans)
+  if (loans.length) out.housing_loans = loans
+  const housingDocs = ids(input.housing_doc_voucher_ids, 'housing_doc_voucher_ids')
+  if (housingDocs.length) out.housing_doc_voucher_ids = housingDocs
   checkSize(out)
   return out
 }

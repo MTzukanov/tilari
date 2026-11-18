@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { settlementShares } from '../../../book/modules/properties/domain/water'
 import { useI18n } from '../../../i18n'
 import { downloadFile } from '../../../shared/downloadFile'
 import type { Lease, PropertyDetail, PropertyDoc } from '../api'
 import { clearCardDraft, loadCardDraft, saveCardDraft, type DocEdit } from './editDraft'
 import { saveErrorText } from './format'
+import { useIssueFocus } from './formIssues'
+import { FormIssueList } from './FormParts'
 import { leaseDrafts } from './leaseDrafts'
 import { fileSlug, letterCompany, useDocWriter, type CardInputs } from './useDocWriter'
-import { buildSettlements, draftSettlement, newSettlement, settlementDrafts, withShare, type SettlementDraft } from './waterDrafts'
+import { buildSettlements, draftSettlement, newSettlement, settlementDrafts, settlementId, withShare, type SettlementDraft } from './waterDrafts'
 import { WaterEditor } from './WaterEditor'
 import { statementTitle, waterLetterPdf, waterLetterTitle } from './waterLetter'
 
@@ -82,11 +84,25 @@ export function WaterCardEdit({
   const withCard = (list: SettlementDraft[]) =>
     settlementKey ? stored.flatMap((d) => (d.base?.key === settlementKey ? list : [d])) : [...stored, ...list]
 
+  /** The settlements as a save would store them, or this card's fields to fix. */
+  const build = (list: SettlementDraft[]) =>
+    buildSettlements(t, withCard(list), new Set(leases.map((l) => l.key)), new Set(list.map(settlementId)))
+
+  /** A save was tried: from then on the fields to fix are marked as the form changes. */
+  const [tried, setTried] = useState(false)
+  /** Counts the saves that found fields to fix: each moves to the first of them. */
+  const [refused, setRefused] = useState(0)
+  const cardRef = useRef<HTMLDivElement>(null)
+  const current = build(drafts)
+  const issues = tried && 'issues' in current ? current.issues : []
+  useIssueFocus(cardRef, refused)
+
   async function save(list: SettlementDraft[] = drafts) {
     setError(null)
-    const built = buildSettlements(t, withCard(list), new Set(leases.map((l) => l.key)))
-    if (typeof built === 'string') {
-      setError(built)
+    const built = build(list)
+    if ('issues' in built) {
+      setTried(true)
+      setRefused((n) => n + 1)
       return
     }
     const next: PropertyDoc = { ...doc }
@@ -207,7 +223,7 @@ export function WaterCardEdit({
   }
 
   return (
-    <div className="property-lease-card property-lease-card-edit property-water-card-edit">
+    <div ref={cardRef} className="property-lease-card property-lease-card-edit property-water-card-edit">
       <WaterEditor
         drafts={drafts}
         onChange={setDrafts}
@@ -222,7 +238,9 @@ export function WaterCardEdit({
         isCreated={writer.isCreated}
         onDeleteDocs={deleteDocs}
         onOpenVoucher={onOpenVoucher}
+        issues={issues}
       />
+      <FormIssueList issues={issues} />
       {error ? <p className="error">{error}</p> : null}
       <div className="property-actions">
         <button type="button" className="btn-primary" disabled={saving || detail.read_only} onClick={() => void save()}>

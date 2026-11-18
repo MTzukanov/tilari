@@ -481,32 +481,77 @@ export type StatementSuspect = WaterStatementCandidate['suspect']
  * booking a correction moved away, and the correction line) are left out.
  */
 export function statementSuspects(rows: PnlRow[], reversed: ReadonlySet<number> = new Set()): Map<number, NonNullable<StatementSuspect>> {
-  const groups = new Map<string, PnlRow[]>()
-  for (const r of rows) {
-    if (isIncome(r) || r.partner_id == null || reversed.has(r.id)) continue
-    const key = `${r.partner_id}:${r.account}`
-    groups.set(key, [...(groups.get(key) ?? []), r])
-  }
-  const monthsBy = <K>(list: PnlRow[], key: (r: PnlRow) => K | null) => {
-    const out = new Map<K, Set<string>>()
-    for (const r of list) {
-      const k = key(r)
-      if (k != null) out.set(k, (out.get(k) ?? new Set()).add(r.date.slice(0, 7)))
-    }
-    return out
-  }
   const out = new Map<number, NonNullable<StatementSuspect>>()
-  for (const group of groups.values()) {
-    const amounts = monthsBy(group, (r) => r.net_snt)
-    const repeats = (r: PnlRow) => amounts.get(r.net_snt)!.size >= 2
-    const regular = group.filter(repeats)
-    if (regular.length < 3) continue
+  for (const { group, regular, repeats } of regularPayees(rows, reversed)) {
     const own = new Set([...monthsBy(regular, (r) => referenceOf(r.text))].filter(([, months]) => months.size >= 3).map(([ref]) => ref))
     for (const r of group) {
       if (repeats(r)) continue
       const ref = referenceOf(r.text)
       if (out.get(r.voucher_id) !== 'reference') out.set(r.voucher_id, ref != null && own.has(ref) ? 'reference' : 'amount')
     }
+  }
+  return out
+}
+
+/**
+ * The partners the object pays as its housing company: on one expense account, amounts repeated
+ * in two or more months, at least three such lines (as `statementSuspects` reads them). A property
+ * manager billing several companies is one partner too, so this is a hint, not a company.
+ */
+export function housingCompanyPartners(rows: PnlRow[], reversed: ReadonlySet<number> = new Set()): Set<number> {
+  return new Set(regularPayees(rows, reversed).map(({ group }) => group[0].partner_id!))
+}
+
+/**
+ * The object's payments to its housing company, month by month (ADR-034): every expense line in a
+ * `regularPayees` group, counted as whole payments - the month's total over the regular amount in
+ * force then (the latest repeating amount, or the first one before any), rounded. A month that
+ * pays two months counts 2, a small extra invoice 0, a raised amount still 1. With several groups
+ * (vastike and water paid apart) a month counts as its most. `known`: some payee was found.
+ */
+export function housingPayments(rows: PnlRow[], reversed: ReadonlySet<number> = new Set()): { months: Map<string, { units: number; rows: PnlRow[] }>; known: boolean } {
+  const months = new Map<string, { units: number; rows: PnlRow[] }>()
+  const payees = regularPayees(rows, reversed)
+  for (const { group, regular } of payees) {
+    // The regular amount from each month on, oldest first.
+    const levels = [...new Map([...regular].sort((a, b) => a.date.localeCompare(b.date)).map((r) => [r.date.slice(0, 7), -r.net_snt])).entries()]
+    const levelAt = (month: string) => levels.filter(([m]) => m <= month).at(-1)?.[1] ?? levels[0][1]
+    const byMonth = new Map<string, PnlRow[]>()
+    for (const r of group) byMonth.set(r.date.slice(0, 7), [...(byMonth.get(r.date.slice(0, 7)) ?? []), r])
+    for (const [month, list] of byMonth) {
+      const level = levelAt(month)
+      const total = list.reduce((sum, r) => sum - r.net_snt, 0)
+      const units = level > 0 ? Math.max(0, Math.round(total / level)) : 0
+      const prev = months.get(month)
+      months.set(month, { units: Math.max(prev?.units ?? 0, units), rows: [...(prev?.rows ?? []), ...list] })
+    }
+  }
+  return { months, known: payees.length > 0 }
+}
+
+function monthsBy<K>(list: PnlRow[], key: (r: PnlRow) => K | null): Map<K, Set<string>> {
+  const out = new Map<K, Set<string>>()
+  for (const r of list) {
+    const k = key(r)
+    if (k != null) out.set(k, (out.get(k) ?? new Set()).add(r.date.slice(0, 7)))
+  }
+  return out
+}
+
+/** Expense lines by partner and account, where the partner is paid repeating amounts there. */
+function regularPayees(rows: PnlRow[], reversed: ReadonlySet<number>): { group: PnlRow[]; regular: PnlRow[]; repeats: (r: PnlRow) => boolean }[] {
+  const groups = new Map<string, PnlRow[]>()
+  for (const r of rows) {
+    if (isIncome(r) || r.partner_id == null || reversed.has(r.id)) continue
+    const key = `${r.partner_id}:${r.account}`
+    groups.set(key, [...(groups.get(key) ?? []), r])
+  }
+  const out: { group: PnlRow[]; regular: PnlRow[]; repeats: (r: PnlRow) => boolean }[] = []
+  for (const group of groups.values()) {
+    const amounts = monthsBy(group, (r) => r.net_snt)
+    const repeats = (r: PnlRow) => amounts.get(r.net_snt)!.size >= 2
+    const regular = group.filter(repeats)
+    if (regular.length >= 3) out.push({ group, regular, repeats })
   }
   return out
 }

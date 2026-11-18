@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { getBcp47, useI18n } from '../../../i18n'
-import { LineChart, type LineSeries } from '../../../shared/LineChart'
+import { LineChart, type LineSeries, type PointTip } from '../../../shared/LineChart'
 import { formatCents } from '../../../shared/money'
 import type { PortfolioChart, PropertyRow } from '../api'
 import { monthLabel } from './Charts'
@@ -85,11 +85,17 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
       .map((o) => ({ key: String(o.id), label: o.name, values: pick(o).slice(from), className: 'portfolio-line', color: o.color, dashed: o.dashed })),
     ...(options.total ? [{ key: 'total', label: totalLabel, values: total.slice(from), className: 'portfolio-total' }] : []),
   ]
-  const columnTitle = (series: LineSeries[]) => (i: number) =>
-    [
-      monthName(keys[i], locale),
-      ...[...series].reverse().flatMap((s) => (s.values[i] == null ? [] : [`${s.label}: ${formatCents(s.values[i]!)}`])),
-    ].join('\n')
+  // A month's box: all of them together first, then each object's line in its colour.
+  const pointTip =
+    (series: LineSeries[]) =>
+    (i: number): PointTip => ({
+      title: monthName(keys[i], locale),
+      rows: [...series]
+        .reverse()
+        .flatMap((s) =>
+          s.values[i] == null ? [] : [{ label: s.label, value: formatCents(s.values[i]!), color: s.color ?? (s.key === 'total' ? 'var(--ink)' : undefined) }],
+        ),
+    })
 
   const toggle = (id: number) =>
     setOptions({ ...options, hidden: hidden.has(id) ? options.hidden.filter((h) => h !== id) : [...options.hidden, id] })
@@ -132,7 +138,7 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
       </div>
       <p className="muted property-kpi-hint">{t('properties.portfolioChart.lead')}</p>
       <h4>{t('properties.portfolioChart.cash')}</h4>
-      <LineChart {...chartProps} series={cash} label={t('properties.portfolioChart.cash')} columnTitle={columnTitle(cash)} />
+      <LineChart {...chartProps} series={cash} label={t('properties.portfolioChart.cash')} pointTip={pointTip(cash)} />
       {invested ? (
         <>
           <h4>{t('properties.portfolioChart.unrecovered')}</h4>
@@ -140,7 +146,7 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
             {...chartProps}
             series={unrecovered}
             label={t('properties.portfolioChart.unrecovered')}
-            columnTitle={columnTitle(unrecovered)}
+            pointTip={pointTip(unrecovered)}
           />
         </>
       ) : null}

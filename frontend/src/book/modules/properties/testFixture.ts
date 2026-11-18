@@ -216,12 +216,12 @@ export async function buildPropertyFixture(): Promise<PropertyFixture> {
     const date = `${key}-05`
     const lines: Line[] = [
       { account: 3760, credit: 1_000 * E, allocation: CC.bundle, description: 'Vuokra A 1', partner: 'Vuokralainen Virtanen' },
-      { account: 7300, debit: 300 * E, allocation: CC.bundle, description: 'Vastike A 1' },
+      { account: 7300, debit: 300 * E, allocation: CC.bundle, description: 'Vastike A 1', partner: 'As Oy Esimerkkikatu 1' },
     ]
     if (key <= '2025-05') {
       lines.push(
         { account: 3760, credit: 800 * E, allocation: CC.sold, description: 'Vuokra B 5' },
-        { account: 7300, debit: 250 * E, allocation: CC.sold, description: 'Vastike B 5' },
+        { account: 7300, debit: 250 * E, allocation: CC.sold, description: 'Vastike B 5', partner: 'As Oy Mallitie 2' },
       )
     }
     if (key >= '2024-02') lines.push({ account: 3790, credit: 100 * E, allocation: CC.garage, description: 'Autotallin vuokra' })
