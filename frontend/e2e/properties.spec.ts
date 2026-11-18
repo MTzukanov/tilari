@@ -514,6 +514,20 @@ test.describe('rental object housing-company loans', () => {
     await expect(table.locator('tbody tr').first()).toContainText(/toukokuu 2026.*5\.5\.2026 300,00\s€.*80,00\s€.*28,88\s€.*51,12\s€.*11\s897,88\s€/)
     await expect(table.locator('.property-loan-certificate-row')).toHaveText(/^Isännöitsijäntodistus 1\.3\.2026: 12\s000,00\s€$/)
     await expect(table.locator('tr.property-loan-backward')).toHaveCount(2)
+    // Each month is a point on the chart: pointing at one shows its figures, a click or an arrow key
+    // picks it, and the month picked is marked in the table.
+    const chart = saved.locator('.line-chart')
+    await expect(chart.locator('.property-loan-share .chart-line-dot')).toHaveCount(5)
+    const tip = chart.locator('.chart-tip')
+    await expect(tip).toBeHidden()
+    await chart.locator('.chart-point-hit').last().hover()
+    await expect(tip).toContainText(/^toukokuu 2026Velkaosuus11\s897,88\s€Rahoitusvastike80,00\s€Korko28,88\s€ \(2,900\s%\)Lyhennys51,12\s€$/)
+    await chart.locator('.chart-point-hit').nth(2).click()
+    await expect(tip).toContainText('Isännöitsijäntodistus 1.3.2026')
+    await expect(table.locator('tr.is-selected')).toContainText('maaliskuu 2026')
+    await chart.locator('svg').press('ArrowRight')
+    await expect(table.locator('tr.is-selected')).toContainText('huhtikuu 2026')
+    await expect(tip).toContainText(/^huhtikuu 2026/)
     // The certificate is the housing company's document, held by the loan: not unlinked on Asiakirjat.
     const housingDocs = page.locator('.property-housing-docs')
     await expect(housingDocs.locator('.doc-line', { hasText: 'Isännöitsijäntodistus' })).toContainText('Velkaosuus 1.3.2026, Putkiremontti')

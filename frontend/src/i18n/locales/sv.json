@@ -1808,7 +1808,7 @@
       "path": {
         "months": "Per månad ({n})",
         "share": "Låneandel vid månadens slut",
-        "chartHint": "Linje: beräknad låneandel vid månadens slut. Punkter: disponentintyg.",
+        "chartHint": "Linje: beräknad låneandel vid varje månads slut. Mörka punkter: disponentintyg. Peka på en månad eller tryck på den för att se dess siffror; den valda månaden markeras i tabellen.",
         "col": {
           "payments": "Betalningar till bolaget",
           "paid": "Finansieringsvederlag",

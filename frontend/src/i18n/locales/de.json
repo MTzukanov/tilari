@@ -1808,7 +1808,7 @@
       "path": {
         "months": "Monatlich ({n})",
         "share": "Darlehensanteil am Monatsende",
-        "chartHint": "Linie: berechneter Darlehensanteil am Monatsende. Punkte: Hausverwalterbescheinigungen.",
+        "chartHint": "Linie: berechneter Darlehensanteil am Ende jedes Monats. Dunkle Punkte: Hausverwalterbescheinigungen. Zeigen Sie auf einen Monat oder tippen Sie ihn an, um seine Zahlen zu sehen; der gewählte Monat wird in der Tabelle markiert.",
         "col": {
           "payments": "Zahlungen an die Gesellschaft",
           "paid": "Finanzierungsentgelt",

@@ -6,7 +6,7 @@ import { formatDate } from '../../../shared/dates'
 import { DocLine, DocLines } from '../../../shared/DocRows'
 import { FileButton } from '../../../shared/FileButton'
 import { formatCents } from '../../../shared/money'
-import { LineChart } from '../../../shared/LineChart'
+import { LineChart, type PointTip } from '../../../shared/LineChart'
 import { formatPcm } from '../../../shared/percent'
 import { FilePill, Pill } from '../../../shared/Pill'
 import { SearchSelect } from '../../../shared/SearchSelect'
@@ -149,14 +149,46 @@ function LoanMonths({ path, payments, onOpenVoucher }: { path: LoanPath; payment
   const { t } = useI18n()
   const locale = getBcp47()
   const months = path.months
+  const [picked, setPicked] = useState<string | null>(null)
+  const unpaid = (m: LoanMonth) => m.due_snt > 0 && m.payments === 0 && path.payments_known
+  const certificateText = (c: NonNullable<LoanMonth['certificate']>) => {
+    const parts = [t('properties.housing.path.certificate', { date: formatDate(c.date), amount: formatCents(c.share_snt) })]
+    if (c.gap_snt != null) parts.push(gapText(t, c.gap_snt))
+    if (c.implied_pcm != null) parts.push(t('properties.housing.path.implied', { rate: formatPcm(c.implied_pcm) }))
+    return parts.join(' · ')
+  }
+  const tip = (i: number): PointTip => {
+    const m = months[i]
+    return {
+      title: monthName(m.month, locale),
+      rows: [
+        { label: t('properties.housing.path.col.share'), value: formatCents(m.closing_snt) },
+        { label: t('properties.housing.path.col.paid'), value: unpaid(m) ? t('properties.housing.path.unpaid') : formatCents(m.paid_snt) },
+        { label: t('properties.housing.path.col.interest'), value: `${formatCents(m.interest_snt)} (${formatPcm(m.rate_pcm)})` },
+        { label: t('properties.housing.path.col.principal'), value: formatCents(m.principal_snt + m.extra_snt) },
+      ],
+      notes: [
+        ...(m.certificate ? [certificateText(m.certificate)] : []),
+        ...(m.backward ? [t('properties.housing.path.backwardHint')] : []),
+      ],
+    }
+  }
   return (
     <details className="property-sources property-loan-months">
       <summary>{t('properties.housing.path.months', { n: months.length })}</summary>
       <LineChart
         className="overview-chart property-chart"
         keys={months.map((m) => m.month)}
+        pointTip={tip}
+        onSelect={(i) => setPicked(i == null ? null : months[i].month)}
         series={[
-          { key: 'share', label: t('properties.housing.path.share'), values: months.map((m) => m.closing_snt), className: 'property-loan-share' },
+          {
+            key: 'share',
+            label: t('properties.housing.path.share'),
+            values: months.map((m) => m.closing_snt),
+            className: 'property-loan-share',
+            dots: 'spaced',
+          },
           {
             key: 'certificate',
             label: t('properties.housing.field.certificate'),
@@ -187,12 +219,16 @@ function LoanMonths({ path, payments, onOpenVoucher }: { path: LoanPath; payment
             {[...months].reverse().flatMap((m: LoanMonth) => {
               const paid = payments.get(m.month)
               const row = (
-                <tr key={m.month} className={m.backward ? 'property-loan-backward' : undefined} title={m.backward ? t('properties.housing.path.backwardHint') : undefined}>
+                <tr
+                  key={m.month}
+                  className={[m.backward ? 'property-loan-backward' : '', m.month === picked ? 'is-selected' : ''].filter(Boolean).join(' ') || undefined}
+                  title={m.backward ? t('properties.housing.path.backwardHint') : undefined}
+                >
                   <td>{monthName(m.month, locale)}</td>
                   <td>
                     {paid?.lines.map((line) => <LineLink key={line.line_id} line={line} onOpen={onOpenVoucher} />)}
                     {m.payments > 1 ? <span className="muted"> ×{m.payments}</span> : null}
-                    {m.due_snt > 0 && m.payments === 0 && path.payments_known ? (
+                    {unpaid(m) ? (
                       <span className="property-loan-unpaid">{t('properties.housing.path.unpaid')}</span>
                     ) : null}
                   </td>
@@ -206,15 +242,11 @@ function LoanMonths({ path, payments, onOpenVoucher }: { path: LoanPath; payment
                   <td className="amount">{formatCents(m.closing_snt)}</td>
                 </tr>
               )
-              const c = m.certificate
-              if (!c) return [row]
-              const parts = [t('properties.housing.path.certificate', { date: formatDate(c.date), amount: formatCents(c.share_snt) })]
-              if (c.gap_snt != null) parts.push(gapText(t, c.gap_snt))
-              if (c.implied_pcm != null) parts.push(t('properties.housing.path.implied', { rate: formatPcm(c.implied_pcm) }))
+              if (!m.certificate) return [row]
               return [
                 row,
                 <tr key={`${m.month}-certificate`} className="property-loan-certificate-row">
-                  <td colSpan={6}>{parts.join(' · ')}</td>
+                  <td colSpan={6}>{certificateText(m.certificate)}</td>
                 </tr>,
               ]
             })}

@@ -5720,8 +5720,21 @@ tr.tax-total td {
   display: none;
 }
 
+/* A certificate's dot sits on the share's own: bigger, ringed, so both show. */
 .property-loan-certificate .chart-line-dot {
   fill: var(--ink);
+  r: 4px;
+  stroke: var(--card);
+  stroke-width: 1.5;
+}
+
+.property-loan-certificate .chart-line-dot.chart-point-mark {
+  r: 5.5px;
+}
+
+/* The month picked on the chart, in the table under it. */
+.property-loan-table tr.is-selected td {
+  background: var(--accent-soft);
 }
 
 /* A month worked back from the first certificate, and a due month with no payment. */
@@ -5765,6 +5778,92 @@ tr.tax-total td {
 
 .chart-column-hover {
   fill: transparent;
+}
+
+/* A chart whose points can be picked (LineChart pointTip): the box of figures stands over it. */
+.line-chart {
+  position: relative;
+}
+
+.line-chart > svg:focus {
+  outline: none;
+}
+
+.line-chart > svg:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.chart-point-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+/* A dashed guide where the pointer is; a solid one at the month picked. */
+.chart-point-guide {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.chart-point-guide.is-picked {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: none;
+}
+
+.chart-point-mark {
+  stroke: var(--card);
+  stroke-width: 2;
+}
+
+.chart-tip {
+  position: absolute;
+  z-index: 2;
+  max-width: min(17rem, calc(50% - 14px));
+  padding: 0.4rem 0.6rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+.chart-tip[hidden] {
+  display: none;
+}
+
+/* A narrow chart's figures: under it, as wide as it. */
+.chart-tip.is-below {
+  position: static;
+  max-width: none;
+  margin-top: 0.25rem;
+  box-shadow: none;
+  font-size: 0.85rem;
+}
+
+.chart-tip-title {
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
+.chart-tip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.chart-tip-row > span:last-child {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.chart-tip-note {
+  margin-top: 0.2rem;
+  color: var(--muted);
 }
 
 .chart-column-hover:hover {
@@ -6065,21 +6164,32 @@ tr.tax-total td {
   }
 }
 
+/* A lease, a water settlement or a loan as its tab shows it: a box of its own, like a binder. */
 .property-lease-card {
-  border-left: 3px solid color-mix(in srgb, #2f8f5b 55%, var(--line));
-  padding: 0.1rem 0 0.1rem 0.8rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
 }
 
-/* Cards one after another (leases, settlements, loans) keep apart: each its own bar. */
+@media (max-width: 640px) {
+  .property-lease-card {
+    padding: 0.6rem 0.7rem;
+  }
+}
+
+/* Cards one after another (leases, settlements, loans) keep apart. */
 .property-lease-card + .property-lease-card,
 .property-lease-card + div > .property-lease-card,
 div:has(> .property-lease-card) + .property-lease-card {
-  margin-top: 1rem;
+  margin-top: 0.75rem;
 }
 
 /* A lease card in edit, in place: the form's own box, with its Tallenna and Peru under it. */
 .property-lease-card.property-lease-card-edit {
-  border-left: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
   padding: 0;
 }
 
@@ -6209,11 +6319,6 @@ div:has(> .property-lease-card) + .property-lease-card {
 /* A month with an agreed exception: the normal rent and the reason on hover. */
 .property-rent-exception {
   cursor: help;
-}
-
-/* Water settlements: one card per period. */
-.property-water-card + .property-water-card {
-  margin-top: 0.9rem;
 }
 
 /* In the form: a share's booked lines and status, on their own row under its figures. */

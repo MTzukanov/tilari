@@ -23,6 +23,13 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   2"), so the test book has payments to follow; `testdb/tilari-properties.kitsas` was rebuilt.
 - Owner's look at the cards: two loan cards ran together. Cards after cards (leases, settlements, loans) now keep
   1rem apart. The month table scrolls on its own on a phone.
+- 2026-11-18, owner's second look: the green left bar of the cards meant nothing (it came with the first lease
+  cards; green is "done" elsewhere), and a bar alone did not show where a card ends. A card in view is now a white
+  box with a border, like a binder (`.property-lease-card`); a card in edit stays the form's own tinted box.
+- The loan chart has a point per month (`LineSeries.dots: 'spaced'`: only while points are 6 px apart) and
+  `LineChart`'s `pointTip`: pointing at a month shows its figures in a box beside it; a click, a tap or the arrow
+  keys pick it (solid guide line, row marked in the table). Under 480 px the picked month's figures go under the
+  chart, since a box beside the point does not fit. Other charts keep their hover titles.
 
 ## 2026-11-17 - Rental objects: housing-company loans on a Taloyhtiö tab (`feature/housing-loans`, ADR-034)
 

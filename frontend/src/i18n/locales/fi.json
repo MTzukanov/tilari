@@ -1808,7 +1808,7 @@
       "path": {
         "months": "Kuukausittain ({n})",
         "share": "Velkaosuus kuukauden lopussa",
-        "chartHint": "Viiva: laskettu velkaosuus kuukauden lopussa. Pisteet: isännöitsijäntodistukset.",
+        "chartHint": "Viiva: laskettu velkaosuus kunkin kuukauden lopussa. Tummat pisteet: isännöitsijäntodistukset. Vie osoitin kuukauden kohdalle tai napauta sitä, niin sen luvut näkyvät; valittu kuukausi korostuu taulukossa.",
         "col": {
           "payments": "Maksut taloyhtiölle",
           "paid": "Rahoitusvastike",

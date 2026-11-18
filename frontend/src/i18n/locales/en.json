@@ -1808,7 +1808,7 @@
       "path": {
         "months": "Month by month ({n})",
         "share": "Loan share at month end",
-        "chartHint": "Line: the computed loan share at each month's end. Dots: property manager's certificates.",
+        "chartHint": "Line: the computed loan share at each month's end. Dark dots: property manager's certificates. Point at a month or tap it to see its figures; the month picked is marked in the table.",
         "col": {
           "payments": "Payments to the company",
           "paid": "Financing charge",
