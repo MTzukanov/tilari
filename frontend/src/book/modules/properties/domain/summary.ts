@@ -2,6 +2,7 @@
 import { addMonths } from '../../../months'
 import { classifyObject, NON_CASH_TYPES, type CashFlow, type Classified, type SaleShare } from './classify'
 import type { CostCentre, EraRoot, EraRow, PnlRow } from './ledger'
+import type { RahastoituPaid } from './housingLoan'
 import { breakEvenPrice, requiredSalePrice, saleNet, toBp, xirr, type Flow } from './returns'
 import { isIncome, monthlySeries, trailing12, yearTable } from './series'
 import { TYPE_DEPRECIATION } from '../../../vouchers'
@@ -39,6 +40,8 @@ export type ObjectInput = {
   periods: { starts: string; ends: string }[]
   asOf: string
   targetBp?: number | null
+  /** Rahastoitu rahoitusvastike paid, shown as capital put in rather than a cost (that view, ADR-034). */
+  capitalized?: RahastoituPaid[]
 }
 
 /** A line behind a month's bars (`MonthLine` without the ledger details). */
@@ -49,6 +52,7 @@ export type CountedLine = {
   counted_date: string
   amount_snt: number
   counted_account?: { account: number; name: string }
+  capitalized?: { loan_key: string; loan: string }
 }
 
 export type ObjectResult = {
@@ -83,6 +87,22 @@ function toFlows(flows: CashFlow[], asOf: string): Flow[] {
   return flows.filter((f) => f.date <= asOf).map((f) => ({ date: f.date, amount_snt: f.amount_snt }))
 }
 
+/** A cost line that takes a rahastoitu payment back out of the expenses (`id` below 0: not a ledger line). */
+function takenBack(m: RahastoituPaid, allocation: number, id: number): PnlRow {
+  return {
+    id,
+    date: m.date,
+    voucher_id: 0,
+    voucher_type: 0,
+    allocation,
+    account: 0,
+    account_type: 'D',
+    gross_snt: m.amount_snt,
+    net_snt: m.amount_snt,
+    partner_id: null,
+  }
+}
+
 export function computeObject(input: ObjectInput): ObjectResult {
   const { doc, centre, asOf } = input
   const allocations = allocationSet(centre)
@@ -107,13 +127,27 @@ export function computeObject(input: ObjectInput): ObjectResult {
     flows.push({ date: entry.date, amount_snt: -entry.amount_snt, kind: 'capital', voucher_id: 0 })
   }
   flows.sort((a, b) => a.date.localeCompare(b.date))
+  const capitalDates = flows.filter((f) => f.kind === 'capital' && f.amount_snt < 0).map((f) => f.date)
+
+  // Rahastoitu rahoitusvastike as capital: out of the costs (a line that takes it back from the
+  // payment's expense), into the capital put in; the cash flows stay as they were.
+  const moved = (input.capitalized ?? []).filter((m) => m.date <= asOf)
+  const operatingRows = moved.length
+    ? [...classified.operating, ...moved.map((m, i) => takenBack(m, centre.id, -1 - i))].sort((a, b) => a.date.localeCompare(b.date))
+    : classified.operating
+  for (const m of moved) {
+    flows.push({ date: m.date, amount_snt: m.amount_snt, kind: 'operating', voucher_id: 0 })
+    flows.push({ date: m.date, amount_snt: -m.amount_snt, kind: 'capital', voucher_id: 0 })
+  }
+  if (moved.length) flows.sort((a, b) => a.date.localeCompare(b.date))
+  const capitalized = moved.reduce((s, m) => s + m.amount_snt, 0)
   const upTo = flows.filter((f) => f.date <= asOf)
 
   const eraBalance = input.eraRows.filter((r) => r.date <= asOf).reduce((s, r) => s + r.signed_snt, 0)
   const manualCapital = (doc.manual_capital ?? []).filter((c) => c.date <= asOf).reduce((s, c) => s + c.amount_snt, 0)
   const disposals = classified.disposals.filter((d) => d.date <= asOf)
   const hasCapital = doc.eras.length > 0 || (doc.manual_capital ?? []).length > 0
-  const bookValue = disposals.length && eraBalance === 0 ? 0 : eraBalance + manualCapital
+  const bookValue = disposals.length && eraBalance === 0 ? 0 : eraBalance + manualCapital + capitalized
 
   let status: PropertyStatus
   if (doc.excluded) status = 'excluded'
@@ -122,12 +156,11 @@ export function computeObject(input: ObjectInput): ObjectResult {
   else if (disposals.length) status = 'partly_sold'
   else status = 'active'
 
-  const capitalDates = flows.filter((f) => f.kind === 'capital' && f.amount_snt < 0).map((f) => f.date)
   const acquiredOn = capitalDates[0] ?? null
   const soldOn = status === 'sold' ? disposals[disposals.length - 1].date : null
 
   const operating = { income_snt: 0, expense_snt: 0, net_snt: 0 }
-  for (const row of classified.operating) {
+  for (const row of operatingRows) {
     if (row.date > asOf) continue
     if (isIncome(row)) operating.income_snt += row.net_snt
     else operating.expense_snt -= row.net_snt
@@ -150,6 +183,8 @@ export function computeObject(input: ObjectInput): ObjectResult {
     sale_price_snt: disposals.reduce((sum, d) => sum + d.price_snt, 0),
     disposed_cost_snt: disposals.reduce((sum, d) => sum + d.eras.reduce((t, e) => t + e.credit_snt, 0), 0),
     unrecovered_snt: unrecovered,
+    housing_share_snt: null,
+    ...(input.capitalized ? { capitalized_snt: capitalized } : {}),
   }
 
   // Months from the first activity to the as-of month (at most 25 years back).
@@ -157,7 +192,7 @@ export function computeObject(input: ObjectInput): ObjectResult {
   const toKey = (soldOn ?? asOf).slice(0, 7)
   const fromKey = firstDate ? (firstDate.slice(0, 7) < toKey ? firstDate.slice(0, 7) : toKey) : toKey
   const earliest = addMonths(toKey, -300)
-  const months = monthlySeries(upTo, classified.operating.filter((r) => r.date <= asOf), fromKey < earliest ? earliest : fromKey, toKey)
+  const months = monthlySeries(upTo, operatingRows.filter((r) => r.date <= asOf), fromKey < earliest ? earliest : fromKey, toKey)
 
   // The same lines as the bars: operating P&L (corrections on their booking's date) and interest.
   const shown = new Set(months.map((m) => m.key))
@@ -178,6 +213,18 @@ export function computeObject(input: ObjectInput): ObjectResult {
     if (NON_CASH_TYPES.has(row.voucher_type) || row.date > asOf || !shown.has(row.date.slice(0, 7))) continue
     lines.push({ id: row.id, month: row.date.slice(0, 7), kind: 'interest', counted_date: row.date, amount_snt: row.net_snt })
   }
+  const loanName = (key: string) => (doc.housing_loans ?? []).find((l) => l.key === key)?.name ?? key
+  for (const m of moved) {
+    if (!shown.has(m.month)) continue
+    lines.push({
+      id: m.line_id,
+      month: m.month,
+      kind: 'expense',
+      counted_date: m.date,
+      amount_snt: m.amount_snt,
+      capitalized: { loan_key: m.loan_key, loan: loanName(m.loan_key) },
+    })
+  }
   lines.sort((a, b) => a.counted_date.localeCompare(b.counted_date) || a.id - b.id)
 
   const t12m =
@@ -188,7 +235,7 @@ export function computeObject(input: ObjectInput): ObjectResult {
   const years = yearTable(
     input.periods.filter((p) => p.starts <= asOf),
     upTo,
-    classified.operating.filter((r) => r.date <= asOf),
+    operatingRows.filter((r) => r.date <= asOf),
     input.pnl.filter((r) => r.date <= asOf),
   )
 

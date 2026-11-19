@@ -3,6 +3,8 @@ import {
   annuityPayment,
   chargeAt,
   copyGroup,
+  housingShare,
+  housingShareMonths,
   housingVoucherIds,
   latestCertificate,
   loanDay,
@@ -13,9 +15,12 @@ import {
   loanWarnings,
   nextReset,
   paymentsMissing,
+  rahastoituPaid,
   rateAt,
   rowAt,
+  shareAt,
   splitByWeight,
+  vastikeYears,
   type PaymentUnits,
 } from './housingLoan'
 import { skipDocument } from './reminders'
@@ -359,5 +364,86 @@ describe('housing-company loans: the share ahead', () => {
     // 5,00 a month never covers 3,8 % on 3 000,00: no end in sight.
     expect(loanForecast(loan({ ...base, type: 'fixed_payment' }), pathTo('2026-05', 3_000_00))).toEqual([])
     expect(loanForecast(loan(base), { loan_key: 'h1', months: [], payments_known: true, missing: null })).toEqual([])
+  })
+})
+
+describe('housing-company loans: the figures that use the share', () => {
+  /** 3 % a year, 100,00 € a month from January 2025, 10 000,00 € at the end of January (as above). */
+  const first = () =>
+    loan({
+      rates: [{ from: '2024-03-01', reference_pcm: 2200 }],
+      charges: [{ from: '2025-01-01', amount_snt: 100_00 }],
+      certificates: [{ date: '2025-01-31', share_snt: 10_000_00 }],
+    })
+  /** Drawn in March 2025: 50,00 € a month, 5 000,00 € at the end of March. */
+  const second = () =>
+    loan({
+      key: 'h2',
+      name: 'Julkisivu',
+      starts: '2025-03-01',
+      rates: [{ from: '2024-03-01', reference_pcm: 2200 }],
+      charges: [{ from: '2025-03-01', amount_snt: 50_00 }],
+      certificates: [{ date: '2025-03-31', share_snt: 5_000_00 }],
+    })
+  const paid: PaymentUnits = { units: () => 1, known: true }
+  const follow = (l: HousingLoan): LoanPath => ({ ...loanPath(l, { payments: paid, from: '2025-01', to: '2025-04' }), missing: null })
+
+  it('the share at a month\'s end: 0 before the loan and from its payoff, the path\'s last after it, unknown before it', () => {
+    const l = first()
+    const path = follow(l)
+    expect(shareAt(l, path, '2025-03')).toBe(984_981)
+    expect(shareAt(l, path, '2019-12')).toBe(0)
+    // Drawn in 2020, followed from January 2025: before that the share is not known.
+    expect(shareAt(l, path, '2024-12')).toBeNull()
+    expect(shareAt(l, path, '2025-08')).toBe(977_443)
+    expect(shareAt(l, undefined, '2025-03')).toBeNull()
+    expect(shareAt(loan({ ...l, events: [{ date: '2025-03-10', kind: 'paid_off' }] }), path, '2025-06')).toBe(0)
+  })
+
+  it('the object\'s share sums its loans, and is not known when one loan\'s is not', () => {
+    const loans = [first(), second()]
+    const paths = loans.map(follow)
+    expect(housingShare(loans, paths, '2025-02')).toBe(992_500)
+    expect(housingShare(loans, paths, '2025-04')).toBe(977_443 + 496_250)
+    expect(housingShare(loans, paths.slice(0, 1), '2025-04')).toBeNull()
+    expect(housingShare([], [], '2025-04')).toBeNull()
+    expect([...housingShareMonths(loans, paths)]).toEqual([
+      ['2025-01', 1_000_000],
+      ['2025-02', 992_500],
+      ['2025-03', 984_981 + 500_000],
+      ['2025-04', 977_443 + 496_250],
+    ])
+  })
+
+  it('splits the rahoitusvastike paid in a fiscal year into interest and repayment; a month counts where its first day falls', () => {
+    const paths = [follow(first())]
+    const year = [{ starts: '2025-01-01', ends: '2025-12-31' }]
+    expect(vastikeYears(paths, year, '2025-01', '2025-04')).toEqual([
+      { starts: '2025-01-01', paid_snt: 400_00, interest_snt: 2_519 + 2_500 + 2_481 + 2_462, principal_snt: 7_481 + 7_500 + 7_519 + 7_538 },
+    ])
+    // Followed from February, to the as-of month March.
+    expect(vastikeYears(paths, year, '2025-02', '2025-03')).toEqual([
+      { starts: '2025-01-01', paid_snt: 200_00, interest_snt: 2_500 + 2_481, principal_snt: 7_500 + 7_519 },
+    ])
+    // A fiscal year from 15 March: March's first day is in the year before.
+    const split = [
+      { starts: '2024-03-15', ends: '2025-03-14' },
+      { starts: '2025-03-15', ends: '2026-03-14' },
+    ]
+    expect(vastikeYears(paths, split, '2025-01', '2025-04').map((y) => [y.starts, y.paid_snt])).toEqual([
+      ['2024-03-15', 300_00],
+      ['2025-03-15', 100_00],
+    ])
+  })
+
+  it('the rahastoitu rahoitusvastike paid, each month on its first payment; none when the payments are not known', () => {
+    const l = loan({ ...first(), charges: [{ from: '2025-01-01', amount_snt: 100_00 }, { from: '2025-03-01', amount_snt: 100_00, rahastoitu: true }] })
+    const path = follow(l)
+    const firstPayment = (m: string) => (m === '2025-04' ? null : { id: 7, date: `${m}-03` })
+    expect(rahastoituPaid([l], [path], firstPayment, '2025-01', '2025-04')).toEqual([
+      { loan_key: 'h1', month: '2025-03', date: '2025-03-03', line_id: 7, amount_snt: 100_00 },
+    ])
+    expect(rahastoituPaid([l], [path], firstPayment, '2025-01', '2025-02')).toEqual([])
+    expect(rahastoituPaid([l], [{ ...path, payments_known: false }], firstPayment, '2025-01', '2025-04')).toEqual([])
   })
 })

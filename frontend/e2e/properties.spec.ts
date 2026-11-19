@@ -566,6 +566,31 @@ test.describe('rental object housing-company loans', () => {
     await expect(docLine).toBeVisible()
     await expect(docLine.getByRole('button', { name: 'Poista linkki' })).toHaveCount(0)
 
+    // The share in the figures: a tile on the overview, with what is still to recover debt-free.
+    const kpi = (label: string) => page.locator('.overview-kpi', { has: page.locator('.overview-kpi-label', { hasText: new RegExp(`^${label}$`) }) })
+    await page.getByRole('tab', { name: /^Yleiskatsaus/ }).click()
+    await expect(kpi('Velkaosuus')).toContainText(/^Velkaosuus11\s898\s€velattomana palauttamatta \d/)
+    // On Talous: the rahoitusvastike paid in 2026 split as on the card, the break-even price debt-free.
+    await page.getByRole('tab', { name: /^Talous/ }).click()
+    const years = page.locator('.property-section', { has: page.getByRole('heading', { name: 'Tilikausittain' }) })
+    await expect(years.locator('thead')).toContainText(/Yhtiölainan korko.*Yhtiölainan lyhennys/)
+    await expect(years.locator('tbody tr', { hasText: '1.1.2026' })).toContainText(/145,62\s€254,38\s€/)
+    await expect(page.locator('.property-breakeven')).toContainText(/velaton hinta, velkaosuus 11\s898\s€ 31\.5\.2026/)
+    // The rahastoitu rahoitusvastike as capital, a view option kept in this browser: out of the costs.
+    const asCapital = page.getByRole('checkbox', { name: 'Rahastoitu rahoitusvastike pääomana' })
+    await expect(kpi('Sijoitettu')).toContainText('Hankintameno ja muut pääomat')
+    await asCapital.check()
+    await expect(kpi('Sijoitettu')).toContainText('josta rahastoitua rahoitusvastiketta 400 €')
+    expect(await page.evaluate(() => localStorage.getItem('tilari.properties.rahastoituCapital'))).toBe('1')
+    await asCapital.uncheck()
+    await expect(kpi('Sijoitettu')).toContainText('Hankintameno ja muut pääomat')
+    // The portfolio: the shares together, a column, and a chart of them.
+    await page.goto('/#/properties')
+    await expect(kpi('Yhtiölainaosuudet')).toContainText(/11\s898\s€/)
+    await expect(page.locator('.property-table').first().locator('thead')).toContainText('Velkaosuus')
+    await expect(page.getByRole('heading', { name: 'Yhtiölainaosuudet kuukauden lopussa' })).toBeVisible()
+    await expect(page.getByRole('checkbox', { name: 'Rahastoitu rahoitusvastike pääomana' })).not.toBeChecked()
+
     // Another object copies the loan's terms; its share and charges are its own.
     await page.goto('/#/property/30/housing')
     await loans.getByRole('button', { name: 'Kopioi toisesta kohteesta' }).click()

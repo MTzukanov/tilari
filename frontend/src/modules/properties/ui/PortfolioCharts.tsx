@@ -59,8 +59,9 @@ function Swatch({ color, dashed }: { color: string; dashed: boolean }) {
 }
 
 /**
- * The Properties page's charts: every object's cash flow summed month by month, and its money still
- * to recover, one coloured line each, with all of them together. One row of checkboxes serves both.
+ * The Properties page's charts: every object's cash flow summed month by month, its money still to
+ * recover, and its housing-company loan share (ADR-034), one coloured line each, with all of them
+ * together. One row of checkboxes serves them all.
  */
 export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: PropertyRow[] }) {
   const { t } = useI18n()
@@ -79,7 +80,7 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
   const keys = chart.keys.slice(from)
   const totalLabel = t('properties.portfolioChart.total')
 
-  const seriesOf = (pick: (o: (typeof objects)[number]) => (number | null)[], total: number[]): LineSeries[] => [
+  const seriesOf = (pick: (o: (typeof objects)[number]) => (number | null)[], total: (number | null)[]): LineSeries[] => [
     ...objects
       .filter((o) => !hidden.has(o.id))
       .map((o) => ({ key: String(o.id), label: o.name, values: pick(o).slice(from), className: 'portfolio-line', color: o.color, dashed: o.dashed })),
@@ -105,6 +106,8 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
     (s) => s.key === 'total' || s.values.some((v) => v != null),
   )
   const invested = chart.objects.some((o) => o.unrecovered_snt.some((v) => v != null))
+  const shares = seriesOf((o) => o.share_snt, chart.total_share_snt).filter((s) => s.key === 'total' || s.values.some((v) => v != null))
+  const owed = chart.objects.some((o) => o.share_snt.some((v) => v != null))
   const chartProps = {
     keys,
     labelFor: (key: string) => monthLabel(key, locale, true),
@@ -148,6 +151,12 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
             label={t('properties.portfolioChart.unrecovered')}
             pointTip={pointTip(unrecovered)}
           />
+        </>
+      ) : null}
+      {owed ? (
+        <>
+          <h4>{t('properties.portfolioChart.shares')}</h4>
+          <LineChart {...chartProps} series={shares} label={t('properties.portfolioChart.shares')} pointTip={pointTip(shares)} />
         </>
       ) : null}
     </section>

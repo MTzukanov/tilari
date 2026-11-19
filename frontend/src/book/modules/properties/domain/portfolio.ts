@@ -30,7 +30,19 @@ import {
   suggestDeposit,
 } from './deposits'
 import { listNoteVouchers } from './documents'
-import { housingVoucherIds, latestCertificate, loanDay, loanPath, loanWarnings, paymentsMissing, type PaymentUnits } from './housingLoan'
+import {
+  housingShare,
+  housingShareMonths,
+  housingVoucherIds,
+  latestCertificate,
+  loanDay,
+  loanPath,
+  loanWarnings,
+  paymentsMissing,
+  rahastoituPaid,
+  vastikeYears,
+  type PaymentUnits,
+} from './housingLoan'
 import { isParkingKind, kindFromName } from './kind'
 import {
   attachVat,
@@ -82,7 +94,7 @@ import {
   type WaterViewContext,
 } from './water'
 import { defaultAsOf, isIncome, portfolioChart } from './series'
-import { allocationSet, computeObject, resolveSaleCosts, type CountedLine, type ObjectResult } from './summary'
+import { allocationSet, computeObject, resolveSaleCosts, type CountedLine, type ObjectInput, type ObjectResult } from './summary'
 import { pickBest, suggestEra, textScorer, type TextScorer } from './suggest'
 import {
   PORTFOLIO_KEY,
@@ -90,6 +102,7 @@ import {
   type Disposal,
   type HousingCopySource,
   type HousingDetail,
+  type HousingLoan,
   type Lease,
   type LoanPath,
   type LeaseView,
@@ -168,15 +181,20 @@ type Computed = {
   result: ObjectResult
   /** Line ids of bookings a later correction moved away, and of the correction lines that did it. */
   reversed: Set<number>
+  loans: FollowedLoans
 }
 
-function computeObjects(
-  db: SqliteDb,
-  loaded: Loaded,
-  centres: CostCentre[],
-  asOf: string,
-  targetBp?: number | null,
-): Computed[] {
+/** What the objects are computed for: the as-of date, the book's day, and the page's options. */
+type ComputeOptions = {
+  asOf: string
+  today: string
+  targetBp?: number | null
+  /** Rahastoitu rahoitusvastike paid counts as capital put in, not as a cost (a view option, ADR-034). */
+  capitalize?: boolean
+}
+
+function computeObjects(db: SqliteDb, loaded: Loaded, centres: CostCentre[], opts: ComputeOptions): Computed[] {
+  const { asOf, targetBp } = opts
   const allocations = new Set<number>()
   for (const c of centres) for (const a of allocationSet(c)) allocations.add(a)
   const recounted = loadRecountedLines(db)
@@ -202,6 +220,7 @@ function computeObjects(
   // Bookings a correction moved away, and the correction lines that did it.
   const reversed = new Set([...corrections].flatMap(([id, c]) => (c.reverses != null ? [id, c.reverses] : [])))
   const periods = getPeriods(db).map((p) => ({ starts: p.starts, ends: p.ends }))
+  const window: LoanWindow = { asOf, today: opts.today, booksStart: periods[0]?.starts ?? asOf }
 
   return centres.map((centre) => {
     const parsed = docFor(loaded, centre.id)
@@ -212,7 +231,7 @@ function computeObjects(
     const interest = financing
       ? loadInterestRows(db, financing.interest_accounts, financing.loan_accounts, own)
       : []
-    const result = computeObject({
+    const input: ObjectInput = {
       centre,
       doc: parsed.doc,
       settings: loaded.settings.doc,
@@ -226,10 +245,28 @@ function computeObjects(
       periods,
       asOf,
       targetBp,
-    })
+    }
+    let result = computeObject(input)
+    const housingLoans = parsed.doc.housing_loans ?? []
+    // The loans follow the payments and the purchase, which the rahastoitu view leaves as they are.
+    const loans = followLoans(result, reversed, housingLoans, window)
+    if (opts.capitalize) {
+      const first = (month: string) => loans.payments.months.get(month)?.rows.reduce<PnlRow | null>((a, r) => (!a || byDate(r, a) < 0 ? r : a), null) ?? null
+      const capitalized = rahastoituPaid(housingLoans, loans.paths, first, loans.from, loans.through)
+      if (capitalized.length) result = computeObject({ ...input, capitalized })
+    }
+    if (housingLoans.length) {
+      const held = result.status !== 'sold' && result.status !== 'excluded'
+      result.summary.housing_share_snt = held ? housingShare(housingLoans, loans.paths, asOf.slice(0, 7)) : null
+      const split = new Map(vastikeYears(loans.paths, periods, loans.from, loans.through).map((y) => [y.starts, y]))
+      for (const year of result.years) {
+        year.housing_interest_snt = split.get(year.starts)?.interest_snt ?? 0
+        year.housing_principal_snt = split.get(year.starts)?.principal_snt ?? 0
+      }
+    }
     const shared = (financing?.loan_accounts ?? []).find((a) => (loaded.loanOwners.get(a) ?? []).some((o) => o !== centre.id))
     if (shared != null) result.warnings.push({ code: 'loan_shared', params: { account: shared } })
-    return { centre, parsed, result, reversed }
+    return { centre, parsed, result, reversed, loans }
   })
 }
 
@@ -457,28 +494,37 @@ function remindersOf(c: Computed, ctx: LeaseContext): Warning[] {
     tenant: (lease) => tenantName(ctx)(lease) ?? '',
     pending,
   })
-  return [...leaseReminders, ...loanWarnings(c.parsed.doc.housing_loans ?? [], loanDay(ctx.asOf, ctx.today), held, loanPaths(c, ctx).paths)]
+  return [...leaseReminders, ...loanWarnings(c.parsed.doc.housing_loans ?? [], loanDay(ctx.asOf, ctx.today), held, c.loans.paths)]
 }
 
+/** The days the loans are followed by: the as-of date, the book's day, the first fiscal year's start. */
+type LoanWindow = { asOf: string; today: string; booksStart: string }
+
 /**
- * The object's payments to its housing company and each loan's share month by month (ADR-034).
- * The book follows the payments from the later of the purchase and the books' start; they are
- * counted to the as-of date, the path to it or to a later certificate, and both end at a sale.
+ * The object's payments to its housing company and each loan's share month by month (ADR-034), and
+ * the months the book follows them: `from` the later of the purchase and the books' start, `through`
+ * the as-of month or the sale's.
  */
-function loanPaths(c: Computed, ctx: LeaseContext): { payments: ReturnType<typeof housingPayments>; paths: LoanPath[] } {
-  const found = housingPayments(c.result.classified.operating, c.reversed)
+type FollowedLoans = { payments: ReturnType<typeof housingPayments>; paths: LoanPath[]; from: string | null; through: string }
+
+/**
+ * Follows the loans: the payments count to the as-of date, the path to it or to a later
+ * certificate, and both end at a sale.
+ */
+function followLoans(result: ObjectResult, reversed: Set<number>, loans: HousingLoan[], window: LoanWindow): FollowedLoans {
+  const found = housingPayments(result.classified.operating, reversed)
   const units: PaymentUnits = { units: (m) => found.months.get(m)?.units ?? 0, known: found.known }
-  const acquired = c.result.summary.acquired_on
-  const from = [acquired?.slice(0, 7), ctx.booksStart.slice(0, 7)].filter((m): m is string => Boolean(m)).sort().at(-1) ?? null
-  const sold = c.result.status === 'sold' ? c.result.summary.sold_on?.slice(0, 7) : undefined
-  const asOf = sold && sold < ctx.asOf.slice(0, 7) ? sold : ctx.asOf.slice(0, 7)
-  const day = loanDay(ctx.asOf, ctx.today)
-  const paths = (c.parsed.doc.housing_loans ?? []).map((loan): LoanPath => {
+  const acquired = result.summary.acquired_on
+  const from = [acquired?.slice(0, 7), window.booksStart.slice(0, 7)].filter((m): m is string => Boolean(m)).sort().at(-1) ?? null
+  const sold = result.status === 'sold' ? result.summary.sold_on?.slice(0, 7) : undefined
+  const asOf = sold && sold < window.asOf.slice(0, 7) ? sold : window.asOf.slice(0, 7)
+  const day = loanDay(window.asOf, window.today)
+  const paths = loans.map((loan): LoanPath => {
     const latest = latestCertificate(loan, day)?.date.slice(0, 7)
     const to = latest && latest > asOf && !sold ? latest : asOf
     return { ...loanPath(loan, { payments: units, from, to }), missing: paymentsMissing(loan, units, from, asOf) }
   })
-  return { payments: found, paths }
+  return { payments: found, paths, from, through: asOf }
 }
 
 function resolveAsOf(db: SqliteDb, today: string, asOf?: string | null): { asOf: string; dataThrough: string | null } {
@@ -486,11 +532,11 @@ function resolveAsOf(db: SqliteDb, today: string, asOf?: string | null): { asOf:
   return { asOf: asOf || defaultAsOf(today, dataThrough), dataThrough }
 }
 
-export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: string | null }): PortfolioResponse {
+export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: string | null; capitalize?: boolean }): PortfolioResponse {
   const loaded = loadStored(db)
   const { asOf, dataThrough } = resolveAsOf(db, opts.today, opts.asOf)
   const centres = loaded.centres.filter((c) => !docFor(loaded, c.id).doc.excluded)
-  const computed = computeObjects(db, loaded, centres, asOf)
+  const computed = computeObjects(db, loaded, centres, { asOf, today: opts.today, capitalize: opts.capitalize })
   const ctx = leaseContext(db, loaded, computed, asOf, opts.today)
   const rows = computed.map((c) => toRow(c, ctx))
 
@@ -517,6 +563,7 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
     if (exit > 0) heldFlows.push({ date: asOf, amount_snt: saleNet(exit, costs) })
   }
   const linkedRows = computed.filter((c) => c.result.status !== 'unlinked')
+  const shares = computed.flatMap((c) => (c.result.summary.housing_share_snt != null ? [c.result.summary.housing_share_snt] : []))
   return {
     as_of: asOf,
     data_through: dataThrough,
@@ -525,7 +572,14 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
       .filter((p) => p.starts <= asOf)
       .map((p) => ({ starts: p.starts, ends: p.ends })),
     rows,
-    chart: portfolioChart(computed.map((c) => ({ id: c.centre.id, status: c.result.status, months: c.result.months }))),
+    chart: portfolioChart(
+      computed.map((c) => ({
+        id: c.centre.id,
+        status: c.result.status,
+        months: c.result.months,
+        shares: housingShareMonths(c.parsed.doc.housing_loans ?? [], c.loans.paths),
+      })),
+    ),
     undecided: loaded.centres.filter((c) => !loaded.docs.has(c.id)).length,
     totals: {
       invested_snt: linkedRows.reduce((s, c) => s + c.result.summary.invested_snt, 0),
@@ -537,7 +591,9 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
       irr_bp: toBp(xirr(portfolioFlows).rate),
       held_irr_bp: toBp(xirr(heldFlows).rate),
       sold_irr_bp: toBp(xirr(soldFlows).rate),
+      housing_share_snt: shares.length ? shares.reduce((s, n) => s + n, 0) : null,
     },
+    has_rahastoitu: computed.some((c) => (c.parsed.doc.housing_loans ?? []).some((l) => (l.charges ?? []).some((ch) => ch.rahastoitu))),
   }
 }
 
@@ -554,13 +610,13 @@ export function computeAlerts(db: SqliteDb, opts: { today: string; asOf?: string
 export function computeDetail(
   db: SqliteDb,
   id: number,
-  opts: { today: string; asOf?: string | null; targetBp?: number | null },
+  opts: { today: string; asOf?: string | null; targetBp?: number | null; capitalize?: boolean },
 ): PropertyDetail {
   const loaded = loadStored(db)
   const centre = loaded.centres.find((c) => c.id === id)
   if (!centre) throw new BookError('not_found', 404)
   const { asOf, dataThrough } = resolveAsOf(db, opts.today, opts.asOf)
-  const [computed] = computeObjects(db, loaded, [centre], asOf, opts.targetBp)
+  const [computed] = computeObjects(db, loaded, [centre], { asOf, today: opts.today, targetBp: opts.targetBp, capitalize: opts.capitalize })
   const ctx = leaseContext(db, loaded, [computed], asOf, opts.today)
   const { water, latest } = waterDetail(db, computed, ctx)
   const suggestions = ctx.suggestions.get(id) ?? []
@@ -613,7 +669,7 @@ export function computeDetail(
     rent_start_default: rentStartOf(computed, ctx, lines, false),
     rent_end: rentEndOf(computed, true),
     rent_end_default: rentEndOf(computed, false),
-    housing: housingDetail(db, loaded, computed, ctx),
+    housing: housingDetail(db, loaded, computed),
   }
 }
 
@@ -622,13 +678,13 @@ export function computeDetail(
  * the loans of other objects to copy from (ADR-034): those whose object pays one of this object's
  * housing-company partners first.
  */
-function housingDetail(db: SqliteDb, loaded: Loaded, c: Computed, ctx: LeaseContext): HousingDetail {
+function housingDetail(db: SqliteDb, loaded: Loaded, c: Computed): HousingDetail {
   const doc = c.parsed.doc
   const refs = loadVoucherRefs(db, new Set([...(doc.housing_doc_voucher_ids ?? []), ...housingVoucherIds(doc.housing_loans ?? [])]))
   const vouchers = [...refs.values()]
     .filter((r) => r.posted)
     .map((r) => ({ voucher_id: r.id, date: r.date, doc_number: r.doc_number, series: r.series, title: r.title, files: r.files ?? [] }))
-  const { payments: found, paths } = loanPaths(c, ctx)
+  const { payments: found, paths } = c.loans
   const paid = [...found.months.values()].flatMap((m) => m.rows)
   const lineRefs = loadVoucherRefs(db, new Set(paid.map((r) => r.voucher_id)))
   const payees = loadPartners(db, new Set(paid.flatMap((r) => (r.partner_id != null ? [r.partner_id] : []))))

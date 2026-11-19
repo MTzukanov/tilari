@@ -53,8 +53,8 @@ describe('portfolioChart', () => {
       { id: 2, status: 'active', months: [owed(month('2026-02', 50, 0), 500), owed(month('2026-03', 50, 80), 530)] },
     ])
     expect(chart.keys).toEqual(['2026-01', '2026-02', '2026-03'])
-    expect(chart.objects[0]).toEqual({ id: 1, cash_snt: [60, 120, 180], unrecovered_snt: [900, 840, 780] })
-    expect(chart.objects[1]).toEqual({ id: 2, cash_snt: [null, 50, 20], unrecovered_snt: [null, 500, 530] })
+    expect(chart.objects[0]).toEqual({ id: 1, cash_snt: [60, 120, 180], unrecovered_snt: [900, 840, 780], share_snt: [null, null, null] })
+    expect(chart.objects[1]).toEqual({ id: 2, cash_snt: [null, 50, 20], unrecovered_snt: [null, 500, 530], share_snt: [null, null, null] })
     expect(chart.total_cash_snt).toEqual([60, 170, 200])
     expect(chart.total_unrecovered_snt).toEqual([900, 1340, 1310])
   })
@@ -69,9 +69,24 @@ describe('portfolioChart', () => {
     expect(chart.objects.map((o) => o.id)).toEqual([1, 2, 3])
     expect(chart.objects[1].cash_snt).toEqual([30, 60, null])
     // Nothing invested linked: a cash flow, nothing to recover.
-    expect(chart.objects[2]).toEqual({ id: 3, cash_snt: [5, null, null], unrecovered_snt: [null, null, null] })
+    expect(chart.objects[2]).toEqual({ id: 3, cash_snt: [5, null, null], unrecovered_snt: [null, null, null], share_snt: [null, null, null] })
     expect(chart.total_cash_snt).toEqual([45, 85, 95])
     expect(chart.total_unrecovered_snt).toEqual([500, 100, 100])
+  })
+
+  it('puts each object\'s housing-company loan share on the axis where known, and sums them', () => {
+    const chart = portfolioChart([
+      { id: 1, status: 'active', months: ['2026-01', '2026-02', '2026-03'].map((k) => owed(month(k, 10, 0), 100)), shares: new Map([['2026-02', 900], ['2026-03', 880]]) },
+      { id: 2, status: 'active', months: ['2026-01', '2026-02'].map((k) => owed(month(k, 10, 0), 100)), shares: new Map([['2026-01', 500], ['2026-02', 490]]) },
+    ])
+    expect(chart.objects.map((o) => o.share_snt)).toEqual([
+      [null, 900, 880],
+      [500, 490, null],
+    ])
+    expect(chart.total_share_snt).toEqual([500, 1390, 880])
+    // Before any share is known the total is not 0 but unknown.
+    const later = portfolioChart([{ id: 1, status: 'active', months: ['2026-01', '2026-02'].map((k) => owed(month(k, 10, 0), 100)), shares: new Map([['2026-02', 900]]) }])
+    expect(later.total_share_snt).toEqual([null, 900])
   })
 
   it('is empty without objects', () => {

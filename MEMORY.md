@@ -7,6 +7,20 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-19 - Rental objects: the loan share in the figures (`feature/housing-loans-figures`, ADR-034, step 4c)
+
+- The share at the as-of month (`housing_share_snt`) is followed in `computeObjects` once per object
+  (`followLoans`, kept on `Computed.loans`; reminders and the Taloyhtiö tab reuse it). It is null rather than a
+  partial sum when one loan's path does not reach that month, so a debt-free figure never leaves a loan out quietly.
+- The rahastoitu view recomputes the object (`computeObject` with `capitalized`) after the loans are followed: the
+  payments and the purchase the loans need do not change with it. A moved amount is a cost row with an id below 0
+  (`takenBack`) plus an operating flow and a capital flow on the same day, so the cash nets to zero; its month
+  line points at the payment's own ledger line (row key per loan).
+- Sale costs stay a percentage of the selling price; a broker's fee on the debt-free price would be another rule
+  (open with the owner).
+- Found on the way, not from this step: at 360 px the Talous tab scrolls sideways by a few pixels on objects
+  whose acquisition-cost movement table has long rows (7 px on one without loans).
+
 ## 2026-11-17 - Rental objects: a loan's share month by month (`feature/housing-loans-month`, ADR-034, step 4b)
 
 - `loanPath` (`domain/housingLoan.ts`) follows each loan's share from its certificates and the payments to the

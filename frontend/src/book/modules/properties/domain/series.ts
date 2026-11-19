@@ -145,16 +145,20 @@ export function yearTable(
 
 /**
  * Every object's months on one month axis (`PortfolioChart`): from the earliest object's first
- * month to the latest month any object has. `months` are each object's own (`monthlySeries`).
+ * month to the latest month any object has. `months` are each object's own (`monthlySeries`);
+ * `shares` its housing-company loan share by month where known (`housingShareMonths`).
  */
-export function portfolioChart(objects: { id: number; status: PropertyStatus; months: MonthPoint[] }[]): PortfolioChart {
+export function portfolioChart(
+  objects: { id: number; status: PropertyStatus; months: MonthPoint[]; shares?: Map<string, number> }[],
+): PortfolioChart {
   const shown = objects.filter((o) => o.months.length && o.status !== 'excluded')
-  if (!shown.length) return { keys: [], objects: [], total_cash_snt: [], total_unrecovered_snt: [] }
+  if (!shown.length) return { keys: [], objects: [], total_cash_snt: [], total_unrecovered_snt: [], total_share_snt: [] }
   const from = shown.map((o) => o.months[0].key).sort()[0]
   const to = shown.map((o) => o.months[o.months.length - 1].key).sort().at(-1)!
   const keys = monthKeys(`${from}-01`, `${to}-01`)
   const totalCash = keys.map(() => 0)
   const totalUnrecovered = keys.map(() => 0)
+  const totalShare: (number | null)[] = keys.map(() => null)
   const rows = shown.map((o) => {
     const at = new Map(o.months.map((m) => [m.key, m]))
     const sold = o.status === 'sold' ? o.months[o.months.length - 1].key : null
@@ -163,6 +167,7 @@ export function portfolioChart(objects: { id: number; status: PropertyStatus; mo
     let sum = 0
     const cash: (number | null)[] = []
     const unrecovered: (number | null)[] = []
+    const share: (number | null)[] = []
     keys.forEach((key, i) => {
       const m = at.get(key)
       if (m) sum += m.income_snt - m.expense_snt - m.interest_snt
@@ -171,8 +176,11 @@ export function portfolioChart(objects: { id: number; status: PropertyStatus; mo
       if (m && invested && !(sold && key >= sold)) totalUnrecovered[i] += m.unrecovered_snt
       cash.push(m ? sum : null)
       unrecovered.push(m && invested ? m.unrecovered_snt : null)
+      const owed = o.shares?.get(key) ?? null
+      if (owed != null) totalShare[i] = (totalShare[i] ?? 0) + owed
+      share.push(owed)
     })
-    return { id: o.id, cash_snt: cash, unrecovered_snt: unrecovered }
+    return { id: o.id, cash_snt: cash, unrecovered_snt: unrecovered, share_snt: share }
   })
-  return { keys, objects: rows, total_cash_snt: totalCash, total_unrecovered_snt: totalUnrecovered }
+  return { keys, objects: rows, total_cash_snt: totalCash, total_unrecovered_snt: totalUnrecovered, total_share_snt: totalShare }
 }

@@ -9,10 +9,10 @@ import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import type { Disposal, PropertyDetail, PropertyDoc, YearRow } from '../api'
 import { CashFlowChart, PaybackChart } from './Charts'
 import { CapitalSection, ErasSection, FinancingSection, SaleSection, ValuationsSection } from './FinanceEdits'
-import { runningTotals, type CashFlowOptions } from './chartOptions'
+import { hasRahastoitu, runningTotals, type CashFlowOptions } from './chartOptions'
 import { VoucherOpen } from './FormParts'
 import { formatEuro } from './format'
-import { IrrKpi, Kpi, ResultKpi, T12mKpi } from './Kpi'
+import { HousingShareKpi, IrrKpi, Kpi, ResultKpi, T12mKpi } from './Kpi'
 import { MonthLinesPanel } from './MonthLines'
 
 function BreakEvenPanel({ d, onTarget }: { d: PropertyDetail; onTarget: (bp: number | null) => void }) {
@@ -22,12 +22,22 @@ function BreakEvenPanel({ d, onTarget }: { d: PropertyDetail; onTarget: (bp: num
   if (!be) return null
   const costs = be.sale_costs
   const noBookLoss = grossPriceFor(d.summary.book_value_snt, costs)
+  // A debt-free price takes the housing-company loan share with it (ADR-034).
+  const share = d.summary.housing_share_snt
   return (
     <section className="overview-panel property-breakeven">
       <h3>{t('properties.breakEven.title')}</h3>
-      <div className="property-breakeven-main">
-        <strong className="property-big">{formatEuro(be.price_snt)}</strong>
-        <span className="muted">{t('properties.breakEven.caption')}</span>
+      <div className="property-breakeven-figures">
+        <div className="property-breakeven-main">
+          <strong className="property-big">{formatEuro(be.price_snt)}</strong>
+          <span className="muted">{t('properties.breakEven.caption')}</span>
+        </div>
+        {share != null ? (
+          <div className="property-breakeven-main">
+            <strong className="property-big">{formatEuro(be.price_snt + share)}</strong>
+            <span className="muted">{t('properties.breakEven.debtFreeCaption', { share: formatEuro(share), date: formatDate(d.as_of) })}</span>
+          </div>
+        ) : null}
       </div>
       <p>
         {be.already_recovered
@@ -40,7 +50,6 @@ function BreakEvenPanel({ d, onTarget }: { d: PropertyDetail; onTarget: (bp: num
       </p>
       <p className="muted">{t('properties.breakEven.bookLoss', { price: formatEuro(noBookLoss) })}</p>
       <p className="muted">{t('properties.breakEven.taxNote')}</p>
-      <p className="muted">{t('properties.breakEven.debtFree')}</p>
       <div className="property-target">
         <label>
           {t('properties.field.targetReturn')}
@@ -71,6 +80,7 @@ function BreakEvenPanel({ d, onTarget }: { d: PropertyDetail; onTarget: (bp: num
         {d.target ? (
           <span>
             {t('properties.breakEven.targetPrice', { pct: formatBp(d.target.rate_bp), price: formatEuro(d.target.price_snt) })}
+            {share != null ? ` · ${t('properties.breakEven.targetDebtFree', { price: formatEuro(d.target.price_snt + share) })}` : ''}
           </span>
         ) : null}
       </div>
@@ -138,12 +148,16 @@ function Sales({ disposals, onOpenVoucher }: { disposals: Disposal[]; onOpenVouc
   )
 }
 
-function yearColumns(t: (key: string, vars?: Record<string, string | number>) => string, withInterest: boolean): TableColumn<YearRow>[] {
-  const money = (id: keyof YearRow & string, label: string, title?: string, signed = false): TableColumn<YearRow> => ({
+function yearColumns(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  withInterest: boolean,
+  withHousing: boolean,
+): TableColumn<YearRow>[] {
+  const money = (id: keyof YearRow & string, label: string, title?: string, signed = false, width = 120): TableColumn<YearRow> => ({
     id,
     label,
     title,
-    width: 120,
+    width,
     align: 'right',
     sortValue: (y) => Number(y[id]),
     cellClass: (y) => (signed && Number(y[id]) < 0 ? 'neg' : ''),
@@ -161,6 +175,12 @@ function yearColumns(t: (key: string, vars?: Record<string, string | number>) =>
     money('expense_snt', t('properties.years.expense')),
     money('net_snt', t('properties.years.net'), t('properties.years.netHint'), true),
     ...(withInterest ? [money('interest_snt', t('properties.years.interest'))] : []),
+    ...(withHousing
+      ? [
+          money('housing_interest_snt', t('properties.years.housingInterest'), t('properties.years.housingInterestHint'), false, 165),
+          money('housing_principal_snt', t('properties.years.housingPrincipal'), t('properties.years.housingPrincipalHint'), true, 190),
+        ]
+      : []),
     money('capex_snt', t('properties.years.capex'), t('properties.years.capexHint'), true),
     money('proceeds_snt', t('properties.years.proceeds'), t('properties.years.proceedsHint')),
     money('kitsas_result_snt', t('properties.years.result'), t('properties.years.resultHint'), true),
@@ -280,12 +300,17 @@ export function CashFlowPanel({
 export function PropertyFinance({
   d,
   onTarget,
+  rahastoituCapital,
+  onRahastoituCapital,
   onSave,
   addValuation = 0,
   onOpenVoucher,
 }: {
   d: PropertyDetail
   onTarget: (bp: number | null) => void
+  /** The view option "Rahastoitu rahoitusvastike pääomana" (ADR-034), offered when a loan has a rahastoitu period. */
+  rahastoituCapital: boolean
+  onRahastoituCapital: (on: boolean) => void
   /** Saves the object as a section changed it; none when it cannot be changed (read-only). */
   onSave?: (doc: PropertyDoc) => Promise<void>
   /** Changes when the overview's "+ Hinta-arvio" asks for a new price estimate. */
@@ -304,8 +329,22 @@ export function PropertyFinance({
           </button>
         </div>
       ) : null}
+      {hasRahastoitu(d.doc.housing_loans) ? (
+        <label className="allocation-check property-view-option">
+          <input type="checkbox" checked={rahastoituCapital} onChange={() => onRahastoituCapital(!rahastoituCapital)} />
+          {t('properties.view.rahastoituCapital')}
+        </label>
+      ) : null}
       <div className="overview-kpis">
-        <Kpi label={t('properties.kpi.invested')} value={formatEuro(s.invested_snt)} hint={t('properties.kpi.investedHint')} />
+        <Kpi
+          label={t('properties.kpi.invested')}
+          value={formatEuro(s.invested_snt)}
+          hint={
+            s.capitalized_snt
+              ? t('properties.kpi.investedCapitalized', { amount: formatEuro(s.capitalized_snt) })
+              : t('properties.kpi.investedHint')
+          }
+        />
         {d.status !== 'sold' ? (
           <Kpi label={t('properties.kpi.bookValue')} value={formatEuro(s.book_value_snt)} />
         ) : (
@@ -322,6 +361,7 @@ export function PropertyFinance({
         />
         {s.interest_snt != null ? <Kpi label={t('properties.kpi.interest')} value={formatEuro(s.interest_snt)} /> : null}
         <ResultKpi d={d} />
+        <HousingShareKpi d={d} />
         <T12mKpi d={d} />
         <IrrKpi d={d} />
       </div>
@@ -331,7 +371,7 @@ export function PropertyFinance({
           <h3>{t('properties.years.title')}</h3>
           <SortableTable
             storageKey="tilari.properties.years.cols"
-            columns={yearColumns(t, d.summary.interest_snt != null)}
+            columns={yearColumns(t, d.summary.interest_snt != null, Boolean(d.doc.housing_loans?.length))}
             rows={d.years}
             rowKey={(y) => y.starts}
             className="compact"

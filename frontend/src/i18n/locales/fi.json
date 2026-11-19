@@ -1060,7 +1060,13 @@
       "portfolioIrr": "Salkun vuosituotto (IRR)",
       "portfolioIrrHint": "myydyt toteutuneina, muut kirjanpitoarvoon",
       "totalResult": "Kokonaistulos",
-      "totalResultHint": "Myynti + kassavirta - sijoitettu"
+      "totalResultHint": "Myynti + kassavirta - sijoitettu",
+      "housingShare": "Velkaosuus",
+      "housingShares": "Yhtiölainaosuudet",
+      "housingShareUnknown": "ei tiedossa tilannepäivänä",
+      "debtFreeUnrecovered": "velattomana palauttamatta {amount}",
+      "investedCapitalized": "josta rahastoitua rahoitusvastiketta {amount}",
+      "rahastoituCapital": "rahastoitu rahoitusvastike pääomana"
     },
     "col": {
       "object": "Kohde",
@@ -1092,7 +1098,10 @@
       "bookGainHint": "Kirjanpidon myyntivoitto tai -tappio: myyntihinta - myyntikulut - hankintameno",
       "totalResult": "Kokonaistulos",
       "irrSoldHint": "Sisäinen korko eli vuosituotto (IRR) omistusajalta: vuotuinen korko, jolla osto, vuokrat, kulut ja myynti kumoavat toisensa. Ei sama kuin kokonaistulos jaettuna hankintamenolla: -20 % 16 kuukaudessa on noin -15 % vuodessa. Yhteensä-rivillä kaikkien myytyjen rahavirrat yhdessä.",
-      "totalResultHint": "Myynti + kassavirta - hankintameno euroina; alla prosentteina hankintamenosta (koko omistusajalta, ei vuotta kohden)."
+      "totalResultHint": "Myynti + kassavirta - hankintameno euroina; alla prosentteina hankintamenosta (koko omistusajalta, ei vuotta kohden).",
+      "housingShare": "Velkaosuus",
+      "housingShareHint": "Yhtiölainaosuus tilannepäivänä, laskettuna maksuista ja isännöitsijäntodistuksista (Taloyhtiö-välilehti)",
+      "breakEvenDebtFree": "velaton {price}"
     },
     "status": {
       "active": "Omistuksessa",
@@ -1172,9 +1181,10 @@
       "recovered": "Kohde on jo tuonut sijoitetun rahan takaisin; mikä tahansa myyntihinta myyntikulujen jälkeen on voittoa.",
       "bookLoss": "Kirjanpidollista tappiota ei synny, kun hinta on vähintään {price} (kirjanpitoarvo + myyntikulut).",
       "taxNote": "Verot: kun voitto ja tappio verotetaan samalla 20 %:lla ja tappio voidaan vähentää muusta tuloksesta, verojen jälkeinen nollahinta on sama luku.",
-      "debtFree": "Velaton hinta = myyntihinta + jäljellä oleva yhtiölainaosuus. Lainaosuuden seuranta tulee seuraavassa vaiheessa.",
       "calculate": "Laske",
-      "targetPrice": "Vuosituotto {pct}: myyntihinta {price}"
+      "targetPrice": "Vuosituotto {pct}: myyntihinta {price}",
+      "debtFreeCaption": "velaton hinta, velkaosuus {share} {date}",
+      "targetDebtFree": "velaton {price}"
     },
     "portfolioChart": {
       "title": "Kohteet kuukausittain",
@@ -1182,7 +1192,8 @@
       "unrecovered": "Palauttamatta kuukauden lopussa",
       "total": "Kaikki yhteensä",
       "allMonths": "Kaikki kuukaudet",
-      "lead": "Yhteensä-viiva laskee aina kaikki kohteet: valinnat piilottavat vain viivoja. Myyty kohde jää kassavirran summaan, mutta ei palauttamattomaan myyntikuusta alkaen."
+      "lead": "Yhteensä-viiva laskee aina kaikki kohteet: valinnat piilottavat vain viivoja. Myyty kohde jää kassavirran summaan, mutta ei palauttamattomaan myyntikuusta alkaen.",
+      "shares": "Yhtiölainaosuudet kuukauden lopussa"
     },
     "chart": {
       "cashFlow": "Kassavirta kuukausittain",
@@ -1210,7 +1221,11 @@
       "resultHint": "Kustannuspaikan tulos kirjanpidossa: kaikki tulosviennit, myös jaksotukset ja myynti",
       "netHint": "Tuotot - kulut sille kuukaudelle, jota ne koskevat: jaksotukset ja myöhemmät oikaisut mukana",
       "capexHint": "Muutos hankintamenossa. Negatiivinen = pääomaa palautui, esim. varainsiirtoveron palautus. Rivit näkyvät alla tase-erän kohdalla.",
-      "proceedsHint": "Myynnistä saatu raha myyntikulujen jälkeen"
+      "proceedsHint": "Myynnistä saatu raha myyntikulujen jälkeen",
+      "housingInterest": "Yhtiölainan korko",
+      "housingInterestHint": "Maksetusta rahoitusvastikkeesta velkaosuuden korko, kuukausittain laskettuna",
+      "housingPrincipal": "Yhtiölainan lyhennys",
+      "housingPrincipalHint": "Maksetusta rahoitusvastikkeesta se osa, joka lyhensi velkaosuutta. Kuukausi ilman maksua kasvattaa velkaosuutta korolla."
     },
     "eras": {
       "title": "Hankintameno (tase-erät)",
@@ -1539,7 +1554,9 @@
       "accrual": "jaksotus",
       "interest": "lainan korko",
       "recounted": "lasketaan tilille {account}",
-      "recountedHint": "Kirjattu tilille {booked}. Oikaisutositteen lisätiedoissa rivi on jätetty oikaisematta, koska tilikausi on suljettu; Tilari laskee sen tilille {account}. Kustannuspaikan raportissa se näkyy kirjatulla tilillä."
+      "recountedHint": "Kirjattu tilille {booked}. Oikaisutositteen lisätiedoissa rivi on jätetty oikaisematta, koska tilikausi on suljettu; Tilari laskee sen tilille {account}. Kustannuspaikan raportissa se näkyy kirjatulla tilillä.",
+      "capitalized": "rahastoitu → pääomaa",
+      "capitalizedHint": "{loan}: rahastoitu rahoitusvastike lasketaan tässä näkymässä pääomaksi eikä kuluksi; rivi ottaa sen pois maksun kulusta."
     },
     "notice": {
       "voucherTitle": "Vuokrankorotusilmoitus {object} {date}",
@@ -1850,6 +1867,12 @@
         "term": "Laina-aika",
         "span": "{from}–{to}"
       }
+    },
+    "view": {
+      "rahastoituCapital": "Rahastoitu rahoitusvastike pääomana"
+    },
+    "valuation": {
+      "debtFreeComputed": "Velaton hinta {price} (+ velkaosuus {share})"
     }
   },
   "company": {

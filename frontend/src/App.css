@@ -5520,6 +5520,18 @@ tr.tax-total td {
   margin-top: 0.6rem;
 }
 
+/* The break-even price and, with a housing-company loan, the debt-free one beside it. */
+.property-breakeven-figures {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 2.5rem;
+}
+
+/* A view option over a page's figures (e.g. rahastoitu rahoitusvastike as capital). */
+.property-view-option {
+  margin: 0.75rem 0 0;
+}
+
 .property-breakeven-main {
   display: flex;
   flex-wrap: wrap;

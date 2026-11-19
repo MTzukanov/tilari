@@ -42,7 +42,8 @@ export function T12mKpi({ d }: { d: PropertyDetail }) {
       neg={d.t12m.net_snt < 0}
       hint={
         (d.t12m.net_yield_bp != null ? t('properties.kpi.yieldHint', { pct: formatBp(d.t12m.net_yield_bp) }) : '') +
-        (d.t12m.annualized ? ` · ${t('properties.kpi.annualized', { n: d.t12m.months })}` : '')
+        (d.t12m.annualized ? ` · ${t('properties.kpi.annualized', { n: d.t12m.months })}` : '') +
+        (d.summary.capitalized_snt ? ` · ${t('properties.kpi.rahastoituCapital')}` : '')
       }
     />
   )
@@ -65,6 +66,27 @@ export function IrrKpi({ d }: { d: PropertyDetail }) {
       neg={(irr ?? 0) < 0}
       hint={hint}
       title={d.status === 'sold' ? t('properties.col.irrSoldHint') : t('properties.col.irrHint')}
+    />
+  )
+}
+
+/**
+ * The object's share of its housing-company loans at the as-of date (ADR-034), and while held what
+ * is still to recover counting it: what a debt-free price has to bring back. None without loans.
+ */
+export function HousingShareKpi({ d }: { d: PropertyDetail }) {
+  const { t } = useI18n()
+  if (!d.doc.housing_loans?.length || d.status === 'sold') return null
+  const share = d.summary.housing_share_snt
+  return (
+    <Kpi
+      label={t('properties.kpi.housingShare')}
+      value={share != null ? formatEuro(share) : ''}
+      hint={
+        share == null
+          ? t('properties.kpi.housingShareUnknown')
+          : t('properties.kpi.debtFreeUnrecovered', { amount: formatEuro(d.summary.unrecovered_snt + share) })
+      }
     />
   )
 }

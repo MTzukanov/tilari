@@ -297,6 +297,13 @@ export type ObjectSummary = {
   disposed_cost_snt: number
   /** Money not yet recovered: -(capital + operating + interest + proceeds flows). */
   unrecovered_snt: number
+  /**
+   * The object's share of its housing-company loans at the as-of month's end (ADR-034); null without
+   * loans, once sold, or when a loan's share is not known then.
+   */
+  housing_share_snt: number | null
+  /** Rahastoitu rahoitusvastike paid, counted as capital put in: only in that view (ADR-034). */
+  capitalized_snt?: number
 }
 
 export type Trailing12 = {
@@ -334,6 +341,9 @@ export type YearRow = {
   proceeds_snt: number
   /** Every posted P&L line of the cost centre in the year, as Kitsas reports it. */
   kitsas_result_snt: number
+  /** The rahoitusvastike paid in the year split by the loans' paths (ADR-034): only on an object with loans. */
+  housing_interest_snt?: number
+  housing_principal_snt?: number
 }
 
 export type Disposal = {
@@ -713,7 +723,11 @@ export type PortfolioResponse = {
     held_irr_bp: number | null
     /** IRR of the sold objects together (actual flows). */
     sold_irr_bp: number | null
+    /** The held objects' housing-company loan shares where known; null when none has a loan. */
+    housing_share_snt: number | null
   }
+  /** Some object has a rahastoitu rahoitusvastike period: the view that shows it as capital is offered. */
+  has_rahastoitu: boolean
 }
 
 /**
@@ -724,9 +738,11 @@ export type PortfolioResponse = {
  */
 export type PortfolioChart = {
   keys: string[]
-  objects: { id: number; cash_snt: (number | null)[]; unrecovered_snt: (number | null)[] }[]
+  objects: { id: number; cash_snt: (number | null)[]; unrecovered_snt: (number | null)[]; share_snt: (number | null)[] }[]
   total_cash_snt: number[]
   total_unrecovered_snt: number[]
+  /** The housing-company loan shares (ADR-034), each object's where known; null where none is. */
+  total_share_snt: (number | null)[]
 }
 
 /** The header's count of warnings to act on (ADR-030). */
@@ -839,6 +855,11 @@ export type MonthLine = {
   amount_snt: number
   /** The account it counts on, when a correction voucher's notes say it belongs there (ADR-024). */
   counted_account?: { account: number; name: string }
+  /**
+   * The loan's rahastoitu rahoitusvastike in this payment, moved out of the costs to capital put in
+   * (that view, ADR-034): `amount_snt` takes it back from the expense.
+   */
+  capitalized?: { loan_key: string; loan: string }
   /** The line as Selaa shows it. */
   entry: BrowseEntry
 }

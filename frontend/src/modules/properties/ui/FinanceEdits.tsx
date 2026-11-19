@@ -4,6 +4,7 @@
  * Tallenna and Peru. A save writes the object with only that section changed.
  */
 import { useEffect, useState, type ReactNode } from 'react'
+import { housingShare } from '../../../book/modules/properties/domain/housingLoan'
 import { fetchPropertySetup } from '../api'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
@@ -200,9 +201,14 @@ export function ErasSection({ d, onSave, view }: SectionProps & { view: ReactNod
 
 const newValuation = (): ValuationDraft => ({ date: new Date().toISOString().slice(0, 10), price: '', debtFree: '', source: '' })
 
-/** Hinta-arviot: the owner's estimates of the selling price. `addRequest` changing opens the form with a new row. */
+/**
+ * Hinta-arviot: the owner's estimates of the selling price. A debt-free price not typed is the price
+ * and the housing-company loan share at the estimate's month end (ADR-034). `addRequest` changing
+ * opens the form with a new row.
+ */
 export function ValuationsSection({ d, onSave, addRequest = 0 }: SectionProps & { addRequest?: number }) {
   const { t } = useI18n()
+  const shareOn = (date: string) => (date ? housingShare(d.doc.housing_loans ?? [], d.housing.paths, date.slice(0, 7)) : null)
   const edit = useSectionEdit<ValuationDraft[]>(
     t,
     d.doc,
@@ -250,6 +256,13 @@ export function ValuationsSection({ d, onSave, addRequest = 0 }: SectionProps & 
                   <span className="muted">
                     {t('properties.field.debtFreePrice')} {formatCents(v.debt_free_price_snt)}
                   </span>
+                ) : shareOn(v.date) != null ? (
+                  <span className="muted">
+                    {t('properties.valuation.debtFreeComputed', {
+                      price: formatCents(v.price_snt + shareOn(v.date)!),
+                      share: formatCents(shareOn(v.date)!),
+                    })}
+                  </span>
                 ) : null}
                 {v.source ? <span className="muted">{v.source}</span> : null}
               </li>
@@ -269,7 +282,11 @@ export function ValuationsSection({ d, onSave, addRequest = 0 }: SectionProps & 
               </label>
               <label>
                 {t('properties.field.debtFreePrice')}
-                <EuroInput value={v.debtFree} onChange={(debtFree) => set(i, { debtFree })} />
+                <EuroInput
+                  value={v.debtFree}
+                  onChange={(debtFree) => set(i, { debtFree })}
+                  placeholder={v.price && shareOn(v.date) != null ? formatEurInput(parseEurInput(v.price) + shareOn(v.date)!) : undefined}
+                />
               </label>
               <label>
                 {t('properties.field.source')}

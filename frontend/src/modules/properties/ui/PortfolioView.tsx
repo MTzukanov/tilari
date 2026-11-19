@@ -9,6 +9,7 @@ import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import { fetchPortfolio, savePortfolioSettings, skipPropertyDocument, type DocumentSkip, type PortfolioResponse, type PortfolioSettings, type PropertyRow } from '../api'
 import { rowAlerts } from '../../../book/modules/properties/domain/reminders'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
+import { loadRahastoituCapital, saveRahastoituCapital } from './chartOptions'
 import { formatEuro, holdingText, periodLabel, saveErrorText, statusClass, tenantSide, warningText } from './format'
 import { PortfolioCharts } from './PortfolioCharts'
 import { Warnings } from './Warnings'
@@ -302,6 +303,20 @@ function heldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
       render: (r) => (r.status === 'unlinked' ? '' : formatEuro(r.summary.unrecovered_snt)),
       footer: formatEuro(data.totals.unrecovered_snt),
     },
+    ...(rows.some((r) => r.summary.housing_share_snt != null)
+      ? [
+          {
+            id: 'housingShare',
+            label: t('properties.col.housingShare'),
+            title: t('properties.col.housingShareHint'),
+            width: 125,
+            align: 'right',
+            sortValue: (r) => r.summary.housing_share_snt ?? -1,
+            render: (r) => (r.summary.housing_share_snt != null ? formatEuro(r.summary.housing_share_snt) : ''),
+            footer: formatEuro(data.totals.housing_share_snt),
+          } satisfies TableColumn<PropertyRow>,
+        ]
+      : []),
     {
       id: 'breakEven',
       label: t('properties.col.breakEven'),
@@ -309,7 +324,19 @@ function heldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
       width: 125,
       align: 'right',
       sortValue: (r) => r.break_even?.price_snt ?? -1,
-      render: (r) => (r.break_even ? formatEuro(r.break_even.price_snt) : ''),
+      render: (r) =>
+        r.break_even ? (
+          <>
+            {formatEuro(r.break_even.price_snt)}
+            {r.summary.housing_share_snt ? (
+              <span className="muted property-sub">
+                {t('properties.col.breakEvenDebtFree', { price: formatEuro(r.break_even.price_snt + r.summary.housing_share_snt) })}
+              </span>
+            ) : null}
+          </>
+        ) : (
+          ''
+        ),
     },
   ]
   if (hasValuations) {
@@ -453,7 +480,8 @@ function soldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
 export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen: (id: number) => void; onSetup: () => void; focusAlerts?: boolean }) {
   const { t } = useI18n()
   const [reload, setReload] = useState(0)
-  const { data, error, loading } = usePeriodQuery(() => fetchPortfolio(), [reload])
+  const [rahastoituCapital, setRahastoituCapital] = useState(loadRahastoituCapital)
+  const { data, error, loading } = usePeriodQuery(() => fetchPortfolio(rahastoituCapital ? { rahastoituCapital } : {}), [reload, rahastoituCapital])
 
   const all = (data?.rows ?? []).filter((r) => r.status !== 'excluded')
   const held = all.filter((r) => r.status !== 'sold')
@@ -489,6 +517,20 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
         </div>
       ) : null}
 
+      {data?.has_rahastoitu ? (
+        <label className="allocation-check property-view-option">
+          <input
+            type="checkbox"
+            checked={rahastoituCapital}
+            onChange={() => {
+              saveRahastoituCapital(!rahastoituCapital)
+              setRahastoituCapital(!rahastoituCapital)
+            }}
+          />
+          {t('properties.view.rahastoituCapital')}
+        </label>
+      ) : null}
+
       {data ? (
         <div className="overview-kpis">
           <Kpi label={t('properties.kpi.bookValue')} value={formatEuro(data.totals.book_value_snt)} hint={t('properties.kpi.bookValueHint')} />
@@ -499,6 +541,13 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
             hint={data.totals.net_yield_bp != null ? t('properties.kpi.yieldHint', { pct: formatBp(data.totals.net_yield_bp) }) : undefined}
           />
           <Kpi label={t('properties.kpi.unrecovered')} value={formatEuro(data.totals.unrecovered_snt)} hint={t('properties.kpi.unrecoveredHint')} />
+          {data.totals.housing_share_snt != null ? (
+            <Kpi
+              label={t('properties.kpi.housingShares')}
+              value={formatEuro(data.totals.housing_share_snt)}
+              hint={t('properties.kpi.debtFreeUnrecovered', { amount: formatEuro(data.totals.unrecovered_snt + data.totals.housing_share_snt) })}
+            />
+          ) : null}
           <Kpi
             label={t('properties.kpi.portfolioIrr')}
             value={formatBp(data.totals.irr_bp)}

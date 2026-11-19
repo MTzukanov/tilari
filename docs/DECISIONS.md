@@ -852,7 +852,22 @@ correction would change the open year's income statement lines. The rental-objec
   stays and runs the share to 0. The last month pays what is left. No forecast when the charge would never clear it.
   Two more checkboxes add the interest, and the repayment with it, summed from the path's first month: on the
   share's scale, where a month's own figures would not show. The chart's choices are remembered in the browser.
-- **Next steps:** the figures that depend on the share (debt-free values, the rahoitusvastike split into interest
-  and principal, the rahastoitu view option); rate estimates per reference rate for the forecast; then
-  tilari-bank-import reading the vastike invoices into facts on the voucher.
+- **The share in the figures** (2026-11-19, step 4c): `ObjectSummary.housing_share_snt` is the share of all the
+  object's loans at the as-of month's end - not known when a loan's path does not reach back to it, none once sold.
+  It is a "Velkaosuus" tile on the overview and Talous, with what is still to recover debt-free (unrecovered +
+  share), and on the Properties page a total, a column and a chart of the shares by month (the total is empty where
+  no share is known, not 0). A debt-free price is the price plus the share: beside the break-even and the target
+  price, and on a price estimate without a typed one (the share at the estimate's month end; the path's last after
+  it). Sale costs stay a percentage of the selling price, not of the debt-free price.
+- **The rahoitusvastike split** on Talous: per fiscal year the paths' interest and repayment over the months the
+  book follows, each month in the year its first day falls in; extra repayments are not rahoitusvastike.
+- **"Rahastoitu rahoitusvastike pääomana"**, a view option (owner: try the figures both ways): off by default, kept
+  in the browser, one choice for the object pages and the Properties page, offered where a loan has a rahastoitu
+  period. The rahastoitu rahoitusvastike paid (payments known) leaves the costs and counts as capital put in, on the
+  month's first payment to the housing company: invested, book value, the cash flow and its yields change, and the
+  month's lines show a line that takes it back from the payment, so they still add up to the bar. The cash flows
+  themselves do not change, so unrecovered and the IRR at the estimate stay; the IRR at book value follows the
+  higher book value. Kitsas's own result per year stays as booked. The query carries it as `rahastoitu=capital`.
+- **Next steps:** rate estimates per reference rate for the forecast; then tilari-bank-import reading the vastike
+  invoices into facts on the voucher.
 
