@@ -497,3 +497,135 @@ test.describe('voucher editor', () => {
     await expect(page.getByRole('option', { name: 'Siirto' })).toBeVisible()
   })
 })
+
+/** Account cells of the "Viennit" table, in order (a new line's is empty). */
+async function lineAccounts(page: Page): Promise<string[]> {
+  const tab = page.getByRole('tab', { name: 'Viennit' })
+  await tab.click()
+  await expect(tab).toHaveAttribute('aria-selected', 'true')
+  const cells = page.locator('table.editor-table tbody tr td:first-child input')
+  await expect(cells.first()).toBeVisible()
+  const values = await cells.evaluateAll((els) => els.map((el) => (el as HTMLInputElement).value))
+  return values.map((v) => v.split(' ')[0])
+}
+
+function openVoucherId(page: Page): number {
+  const m = page.url().match(/voucher\/(\d+)(?:\/v\/\d+)?\/edit/)
+  return m ? Number(m[1]) : 0
+}
+
+// The editor stays mounted while only the address changes from one voucher to another.
+test.describe('voucher editor between vouchers', () => {
+  test('a new voucher straight after saving a stored one starts clean and saves on its own lines', async ({
+    page,
+  }) => {
+    await openBook(page)
+    await page.goto('/#/voucher/3/edit')
+    const title = page.getByRole('textbox', { name: 'Otsikko' })
+    await expect(title).toHaveValue('Vuokra Toimisto')
+    await title.fill('Vuokra Toimisto tarkistettu')
+    await editorSaveButton(page).click()
+    await expect(editorSaveButton(page)).toBeDisabled()
+    await expect(title).toHaveValue('Vuokra Toimisto tarkistettu')
+
+    // No other page in between: the stored voucher's lines, ids and number must not come along.
+    await page.goto('/#/voucher/new/200')
+    await expect(page.locator('.editor-footer')).toContainText('Uusi tosite')
+    await expect(title).toHaveValue('')
+    await expect(page.getByText('Tulotili')).toBeVisible()
+    expect(await lineAccounts(page)).toEqual(['', ''])
+
+    await page.getByRole('tab', { name: 'Kirjaa' }).click()
+    await page.getByLabel('Tositteen pvm').fill('2025-06-15')
+    await title.fill('Uusi myynti')
+    const tulotili = page.locator('label').filter({ hasText: 'Tulotili' }).locator('input')
+    await tulotili.fill('3000')
+    await tulotili.press('Tab')
+    await page.locator('.assistant-vat .vat-select-type .icon-select-btn').click()
+    await page.getByRole('option', { name: 'Veroton', exact: true }).click()
+    await maaraInput(page).fill('80,00')
+    await editorSaveButton(page).click()
+    await expect(page).toHaveURL(/voucher\/\d+(\/v\/\d+)?\/edit/)
+    // Loaded as stored once it has its number.
+    await expect(page.locator('.editor-doc-number')).toHaveText(/^\d+$/)
+    await expect(page.locator('.editor .error')).toHaveCount(0)
+    const savedId = openVoucherId(page)
+    expect(savedId).toBeGreaterThan(10)
+    await expect(title).toHaveValue('Uusi myynti')
+    expect((await lineAccounts(page)).sort()).toEqual(['1910', '3000'])
+
+    // The stored voucher keeps its own two lines.
+    await page.goto('/#/voucher/3/edit')
+    await expect(title).toHaveValue('Vuokra Toimisto tarkistettu')
+    expect(await lineAccounts(page)).toEqual(['4000', '1910'])
+  })
+
+  test('Uusi tosite from a stored voucher, and a new voucher of another type, start clean', async ({
+    page,
+  }) => {
+    await openBook(page)
+    await page.goto('/#/voucher/4/edit')
+    const title = page.getByRole('textbox', { name: 'Otsikko' })
+    await expect(title).toHaveValue('Palvelut Projekti A')
+
+    const nav = page.getByRole('navigation', { name: 'Päävalikko' })
+    await nav.getByRole('link', { name: 'Uusi tosite' }).click()
+    await expect(page).toHaveURL(/#\/voucher\/new\/100$/)
+    await expect(page.locator('.editor-footer')).toContainText('Uusi tosite')
+    await expect(title).toHaveValue('')
+    await expect(page.getByText('Menotili')).toBeVisible()
+    expect(await lineAccounts(page)).toEqual(['', ''])
+
+    // A purchase begun, then a sale's address: after the leave prompt, a sale's empty form.
+    await page.getByRole('tab', { name: 'Kirjaa' }).click()
+    await title.fill('Kesken jäänyt osto')
+    page.once('dialog', (dialog) => dialog.accept())
+    await page.goto('/#/voucher/new/200')
+    await expect(page.getByText('Tulotili')).toBeVisible()
+    await expect(title).toHaveValue('')
+    await expect(page.getByRole('button', { name: 'Tallenna luonnos' })).toBeDisabled()
+  })
+
+  test("another stored voucher's address shows and saves its own lines; the way back and a copy still work", async ({
+    page,
+  }) => {
+    await openBook(page)
+    await page.goto('/#/account/4000/voucher/3/edit')
+    const title = page.getByRole('textbox', { name: 'Otsikko' })
+    await expect(title).toHaveValue('Vuokra Toimisto')
+    expect(await lineAccounts(page)).toEqual(['4000', '1910'])
+
+    await page.goto('/#/account/4000/voucher/4/edit')
+    await expect(title).toHaveValue('Palvelut Projekti A')
+    expect(await lineAccounts(page)).toEqual(['5000', '1910'])
+    await title.fill('Palvelut Projekti A tarkistettu')
+    await editorSaveButton(page).click()
+    await expect(editorSaveButton(page)).toBeDisabled()
+    await expect(page.locator('.editor .error')).toHaveCount(0)
+    expect(await lineAccounts(page)).toEqual(['5000', '1910'])
+
+    // Back to the page the voucher was opened from.
+    await page.getByRole('button', { name: 'Sulje' }).click()
+    await expect(page).toHaveURL(/#\/account\/4000$/)
+    await expect(page.locator('.ledger-num')).toHaveText('4000')
+
+    // A copy is a new voucher of its own; the original keeps its lines.
+    await page.goto('/#/voucher/4/edit')
+    await expect(title).toHaveValue('Palvelut Projekti A tarkistettu')
+    await page.getByRole('button', { name: 'Lisää toimintoja' }).click()
+    await page.getByRole('menuitem', { name: /Kopioi uuden pohjaksi/ }).click()
+    await expect(page).toHaveURL(/#\/voucher\/new\/100\/from\/4$/)
+    await expect(page.locator('.editor-footer')).toContainText('Uusi tosite')
+    await expect(title).toHaveValue('Palvelut Projekti A tarkistettu')
+    // The form rebuilds a copy's lines with the payment line first.
+    expect((await lineAccounts(page)).sort()).toEqual(['1910', '5000'])
+    await editorSaveButton(page).click()
+    await expect(page).toHaveURL(/voucher\/\d+(\/v\/\d+)?\/edit/)
+    await expect(page.locator('.editor-doc-number')).toHaveText(/^\d+$/)
+    await expect(page.locator('.editor .error')).toHaveCount(0)
+    expect(openVoucherId(page)).toBeGreaterThan(10)
+    await page.goto('/#/voucher/4/edit')
+    await expect(title).toHaveValue('Palvelut Projekti A tarkistettu')
+    expect(await lineAccounts(page)).toEqual(['5000', '1910'])
+  })
+})

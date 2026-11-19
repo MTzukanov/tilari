@@ -59,6 +59,7 @@ import {
   voucherTypeDef,
   type EditorTab,
 } from '../catalog'
+import { newVoucherForm, nextEditorKey, type EditorKey } from '../editorKey'
 import { wallToday } from '../../../book/clock'
 import { AttachmentDropzone } from './AttachmentDropzone'
 import { AttachmentGallery } from './AttachmentGallery'
@@ -141,16 +142,7 @@ function packEditor(fields: {
   })
 }
 
-export function VoucherEditor({
-  voucherId,
-  defaultType,
-  defaultDate,
-  copyFromId,
-  onSaved,
-  onCancel,
-  onOpenVoucher,
-  onCopyAsNew,
-}: {
+type VoucherEditorProps = {
   voucherId: number | null
   defaultType: number | null
   defaultDate?: string
@@ -159,7 +151,32 @@ export function VoucherEditor({
   onCancel: () => void
   onOpenVoucher: (id: number, opts?: { fromStatementId?: number }) => void
   onCopyAsNew: (type: number, fromId: number) => void
-}) {
+}
+
+/**
+ * The voucher editor. A new voucher's form (`#/voucher/new/{type}`, a copy) is always a fresh
+ * editor (`editorKey.ts`): the editor kept from the voucher shown before carried that voucher's
+ * lines, with their Vienti ids, into the new one. Stored vouchers load into the editor in place.
+ */
+export function VoucherEditor(props: VoucherEditorProps) {
+  const form = newVoucherForm(props.voucherId, props.defaultType, props.copyFromId)
+  const [shown, setShown] = useState<EditorKey>({ form, key: 0 })
+  const next = nextEditorKey(shown, form)
+  // Adjusted while rendering: React renders again before the form below sees the new address.
+  if (next !== shown) setShown(next)
+  return <VoucherForm key={next.key} {...props} />
+}
+
+function VoucherForm({
+  voucherId,
+  defaultType,
+  defaultDate,
+  copyFromId,
+  onSaved,
+  onCancel,
+  onOpenVoucher,
+  onCopyAsNew,
+}: VoucherEditorProps) {
   const { t, locale } = useI18n()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [allocations, setAllocations] = useState<Allocation[]>([])
@@ -212,6 +229,9 @@ export function VoucherEditor({
   const [vatLiable, setVatLiable] = useState(true)
   const vatLiableRef = useRef(true)
   vatLiableRef.current = vatLiable
+  /** The voucher the address names now: a save or attachment delete that ends later reloads only it. */
+  const shownIdRef = useRef(voucherId)
+  shownIdRef.current = voucherId
   const actionsRef = useRef({
     requestCancel: () => undefined as void,
     savePosted: (_opts?: { close?: boolean }) => undefined as void,
@@ -439,8 +459,16 @@ export function VoucherEditor({
       return
     }
     const asCopy = voucherId == null && copyFromId != null
+    let current = true
     setBaseline(null)
-    fetchVoucher(sourceId).then((data) => applyLoaded(data, { asCopy }))
+    setError(null)
+    // Stored vouchers load in place: a late answer for the voucher shown before is not applied.
+    fetchVoucher(sourceId).then((data) => {
+      if (current) applyLoaded(data, { asCopy })
+    })
+    return () => {
+      current = false
+    }
   }, [voucherId, copyFromId, accounts])
 
   const editorPack = packEditor({
@@ -924,7 +952,8 @@ export function VoucherEditor({
       if (unchangedDraft && existing && nextTila >= 100) {
         // Status + number only; lines are not rewritten (Kitsas PATCH).
         await postVoucher(existing.id)
-        applyLoaded(await fetchVoucher(existing.id), { asCopy: false, keepTab: true })
+        const posted = await fetchVoucher(existing.id)
+        if (shownIdRef.current === existing.id) applyLoaded(posted, { asCopy: false, keepTab: true })
         return
       }
       let entries: SaveVoucherInput['entries']
@@ -971,7 +1000,9 @@ export function VoucherEditor({
         onSaved(saved.id, { stay: true })
         return
       }
-      applyLoaded(await fetchVoucher(saved.id), { asCopy: false, keepTab: true })
+      const fresh = await fetchVoucher(saved.id)
+      // The address moved to another voucher during the save: that one is loading, not this.
+      if (shownIdRef.current === saved.id) applyLoaded(fresh, { asCopy: false, keepTab: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -1135,7 +1166,7 @@ export function VoucherEditor({
       try {
         await deleteAttachment(id)
         const fresh = await fetchVoucher(existing.id)
-        setExisting(fresh)
+        if (shownIdRef.current === existing.id) setExisting(fresh)
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err))
       }

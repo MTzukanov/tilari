@@ -100,9 +100,38 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   the owner wants went behind an "i" (`InfoButton`, the loan card's, now shared): the exception form's note on the
   prefill or the change, and why the owner keeps or bears a water settlement's difference. On a phone the exception
   form stays in view inside its scrolling month table (sticky, at the width shown), so its "i" is reachable.
-- Seen while testing, not fixed here: right after saving a voucher, changing the address to `#/voucher/new/200`
-  (no other page between) refused the next save with "Virheellinen viennin id N"; the new form seems to keep the
-  saved voucher's line ids. Opened via another page, the same voucher saves.
+- Seen while testing: right after saving a voucher, changing the address to `#/voucher/new/200` (no other page
+  between) refused the next save with "Virheellinen viennin id N". Fixed on `fix/new-voucher-line-ids` (the entry
+  "Voucher editor: ..." below).
+
+## 2026-11-19 - Voucher editor: a new voucher's form after another voucher (`fix/new-voucher-line-ids`)
+
+- Defect: with a voucher open in the editor (saved or not), changing the address straight to
+  `#/voucher/new/{type}`, or clicking "Uusi tosite" in the side nav, showed that voucher again under
+  "Uusi tosite": its type (not the address's), date, title, notes and lines with their Vienti ids. Its save
+  was refused, "Virheellinen viennin id N" (`posting.ts saveVoucher`). Through another page first it was fine.
+- Cause: every voucher address renders the same `VoucherEditor` element (`modules/vouchers/screen.tsx`), so
+  React kept the editor's state when only its props changed. `useState` reads `defaultType`/`defaultDate`
+  only on mount, and the load effect (`useEffect` on `[voucherId, copyFromId, accounts]`) cleared only
+  `existing`, `huomio` and `docNumber` when there was nothing to load.
+- Fix: `VoucherEditor` keys its form (`modules/vouchers/editorKey.ts`): a new voucher's form (`#/voucher/new/{type}`,
+  a copy) other than the one shown is a fresh editor. Stored vouchers, and a new one once saved, still load
+  into the editor in place (`applyLoaded` sets every loaded field; no empty form flashes, and typing straight
+  after Ctrl+Shift+S is not lost to a second load). In place, late answers are dropped: a load for an address
+  left is not applied (A's answer arriving after B's showed A at B's address), and a save or attachment delete
+  that ends after the address moved on does not reload its voucher over the next one. A load clears the
+  previous voucher's error message.
+- No data damage: `saveVoucher` takes only line ids of the voucher saved (`Vienti WHERE tosite = id`; a new
+  voucher has none), in both engines, so stale ids were refused, never written to another voucher; statement
+  split takes only the statement's own lines. Only the races above could have hurt: with A shown at B's
+  address, a save with A's line ids is refused, but one whose lines had all been replaced would have written
+  the form's header and A's `Tosite.json` over B. Never seen; closed by the same guards.
+- Tests: e2e `voucher-editor.spec.ts` "voucher editor between vouchers" (a new sale straight after a save;
+  "Uusi tosite" from a stored voucher, then another type; another stored voucher's address, the way back to
+  the account page, a copy) - the first two fail without the fix. `ui/VoucherEditor.test.ts` renders the
+  editor on a `Ledger` over the golden book through the same address changes; its new-form, late-load and
+  late-save tests each fail without their part of the fix. `editorKey.test.ts`; `saveRoundTrip.test.ts`
+  pins the refusal of stale ids on a new voucher.
 
 ## 2026-11-17 - Rental objects: a loan's share month by month (`feature/housing-loans-month`, ADR-034, step 4b)
 
