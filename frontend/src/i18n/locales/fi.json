@@ -1282,14 +1282,6 @@
       "vat": "+ ALV {pct} {amount} = {total}/kk",
       "vatHint": "Summat ilman ALV:tä · ALV {pct} {amount} · yhteensä {total}/kk",
       "due": "eräpäivä {day}.",
-      "increase": {
-        "percent": "korotus {pct} vuodessa",
-        "percentMonth": "korotus {pct} vuodessa ({month})",
-        "amount": "korotus {amount} vuodessa",
-        "amountMonth": "korotus {amount} vuodessa ({month})",
-        "index": "indeksikorotus",
-        "indexMonth": "indeksikorotus ({month})"
-      },
       "contract": "Sopimus",
       "others": "Muut vuokrasopimukset",
       "state": {
@@ -1330,7 +1322,18 @@
       "exceptionNow": "Nyt poikkeava vuokra",
       "normal": "normaali {amount}",
       "exceptionNormal": "Normaali vuokra tällöin {amount}/kk",
-      "edit": "Muokkaa"
+      "edit": "Muokkaa",
+      "figure": {
+        "rent": "Vuokra",
+        "nextIncrease": "Seuraava korotus",
+        "increase": "Korotus",
+        "ruleIndex": "Indeksi",
+        "ruleAmount": "{amount} vuodessa",
+        "rulePercent": "{pct} vuodessa",
+        "ruleMonth": "{month}",
+        "lastIncrease": "edellinen {date}",
+        "water": "Vesi"
+      }
     },
     "deposit": {
       "title": "Vuokravakuus",
@@ -1350,7 +1353,8 @@
       },
       "deductionsHint": "Samalla maksulla kirjatut tuotot ja kulut: pidätetty vuokra, vesitasaus tai kulut.",
       "missingCount": "{n} linkitettyä vientiä puuttuu kirjanpidosta",
-      "returnedOn": "palautettu {date}"
+      "returnedOn": "palautettu {date}",
+      "movementsTitle": "Vakuuden kirjaukset"
     },
     "edit": {
       "noDocument": "Ei asiakirjaa",
@@ -1594,7 +1598,6 @@
       "none": "Ei vesitasauksia.",
       "remove": "Poista vesitasaus",
       "period": "Tasausjakso {period}",
-      "company": "taloyhtiö: {text}",
       "usage": "kulutus {amount}",
       "advances": "ennakot {amount}",
       "companyRefund": "hyvitys {amount}",
@@ -1617,8 +1620,6 @@
       },
       "noShares": "Jaksolla ei ole vuokrasuhteita, joissa vesimaksu tasataan.",
       "other": "Muut vuokralaisen kirjaukset",
-      "ownerKeeps": "Omistajalle jää {amount}.",
-      "ownerBears": "Omistaja maksaa itse {amount} (esim. tyhjät päivät).",
       "suggestions": "Ehdotukset kirjanpidosta ({n})",
       "suggestionsLead": "Kohteelle kirjatuista vesitasauksista. Mitään ei ole tallennettu: Lisää avaa ehdotuksen omalle kortilleen; tarkista summat taloyhtiön tasauslaskelmasta.",
       "flat": "vesimaksua ei tasata",
@@ -1658,7 +1659,18 @@
         "refundText": "Palautamme {amount} tilillenne. Ilmoittakaa tilinumeronne, jos se on muuttunut.",
         "chargeText": "Pyydämme maksamaan {amount} seuraavan vuokranmaksun yhteydessä samalle tilille ja samalla viitteellä kuin vuokran."
       },
-      "confirmRemove": "Poistetaanko tämä vesitasaus kohteelta?"
+      "confirmRemove": "Poistetaanko tämä vesitasaus kohteelta?",
+      "figure": {
+        "company": "Taloyhtiön tasaus",
+        "companyRefund": "Taloyhtiön hyvitys",
+        "companyCharge": "Taloyhtiön lisälasku",
+        "notBooked": "ei löydy kirjanpidosta",
+        "companyLines": "Taloyhtiö",
+        "lines": "Kirjaukset",
+        "ownerKeeps": "Omistajalle jää",
+        "ownerBears": "Omistaja maksaa itse",
+        "ownerBearsWhy": "esim. tyhjät päivät"
+      }
     },
     "rent": {
       "balanceOn": "Vuokrasaldo {date}",
@@ -1715,6 +1727,11 @@
         "unexpected": "kirjattu ALV:n kanssa, vaikka vuokrasuhde on ilman ALV:tä",
         "row_missing": "ALV-koodi ilman omaa ALV-riviä",
         "rate": "eri ALV-kanta kuin päivän yleinen kanta"
+      },
+      "monthsTitle": "Kuukausittain",
+      "figure": {
+        "arrears": "Vuokrarästi {date}",
+        "ahead": "Maksettu ennakkoon {date}"
       }
     },
     "finance": {

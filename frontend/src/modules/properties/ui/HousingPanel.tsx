@@ -15,6 +15,7 @@ import { monthLabel } from './Charts'
 import { loadLoanChartOptions, saveLoanChartOptions, type LoanChartOptions } from './chartOptions'
 import { DocPicker } from './DocPicker'
 import { monthName, periodText } from './format'
+import { Figure, Figures, Folds, type Fold } from './FigureTiles'
 import { DocSlot, LineLink, VoucherOpen } from './FormParts'
 
 /** Titles a housing company's document has: starred in the pick. */
@@ -375,23 +376,6 @@ function LoanMonths({
   )
 }
 
-/** One figure on a loan card: what it is, the figure, and a line or two under it. */
-function Figure({ label, value, sub = [] }: { label: ReactNode; value: string; sub?: ReactNode[] }) {
-  return (
-    <div className="property-loan-figure">
-      <span className="property-loan-figure-label">{label}</span>
-      <strong>{value || '–'}</strong>
-      {sub.map((line, i) => (
-        <span key={i} className="property-loan-figure-sub">
-          {line}
-        </span>
-      ))}
-    </div>
-  )
-}
-
-type LoanFold = 'months' | 'certificates' | 'charges' | 'rates' | 'events'
-
 /** A loan as the tab shows it on `on` (`loanNow`): the share, the rahoitusvastike, the rate, the term; every row folded below. */
 function LoanCard({
   loan,
@@ -414,7 +398,6 @@ function LoanCard({
   onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
-  const [open, setOpen] = useState<LoanFold | null>(null)
   const [noteOpen, setNoteOpen] = useState(false)
   const voucher = (id: number | undefined) => (id != null ? (vouchers.get(id) ?? null) : null)
   const { certificate, charge, rate } = loanNow(loan, on)
@@ -427,8 +410,8 @@ function LoanCard({
   const certificateSlot = certificate ? (
     <DocSlot voucher={voucher(certificate.voucher_id)} noDocument={certificate.no_document} held={held} onOpen={onOpenVoucher} />
   ) : null
-  const list = (rows: ReactNode[]) => <ul className="property-doc-list property-loan-fold-body">{rows}</ul>
-  const folds: { key: LoanFold; title: string; n: number; body: () => ReactNode }[] = [
+  const list = (rows: ReactNode[]) => <ul className="property-doc-list property-fold-body">{rows}</ul>
+  const folds: Fold[] = [
     {
       key: 'months',
       title: t('properties.housing.path.months'),
@@ -503,8 +486,6 @@ function LoanCard({
         ),
     },
   ]
-  const shown = folds.filter((f) => f.n > 0)
-  const opened = shown.find((f) => f.key === open)
   return (
     <div className="property-lease-card property-loan-card">
       <p className="property-lease-head">
@@ -517,7 +498,7 @@ function LoanCard({
           </button>
         ) : null}
       </p>
-      <div className="property-loan-figures">
+      <Figures>
         <Figure
           label={
             <>
@@ -602,24 +583,9 @@ function LoanCard({
             ...(loan.grace ?? []).map((g) => t('properties.housing.graceText', { period: periodText(t, g.from, g.to) })),
           ]}
         />
-      </div>
+      </Figures>
       {note && noteOpen ? <p className="muted property-lease-hint property-loan-note">{note}</p> : null}
-      {shown.length ? (
-        <div className="property-loan-folds">
-          {shown.map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              className={`property-loan-fold${open === f.key ? ' is-open' : ''}`}
-              aria-expanded={open === f.key}
-              onClick={() => setOpen(open === f.key ? null : f.key)}
-            >
-              {f.title} <span className="tabs-count">{f.n}</span>
-            </button>
-          ))}
-        </div>
-      ) : null}
-      {opened ? opened.body() : null}
+      <Folds folds={folds} />
     </div>
   )
 }

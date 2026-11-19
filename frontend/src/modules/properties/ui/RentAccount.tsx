@@ -4,7 +4,7 @@ import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
 import { formatCents, formatEurInput, parseEurInput } from '../../../shared/money'
 import type { LeaseException, LeaseRentAccount, RentMonth, RentPeriod } from '../api'
-import { monthName, periodText, rentBalanceText, saveErrorText, tenantSide } from './format'
+import { monthName, periodText, rentBalanceText, rentCountedText, saveErrorText, tenantSide } from './format'
 import { LineLink, Shown } from './FormParts'
 
 const eur = (snt: number | undefined) => (snt ? formatEurInput(snt) : '')
@@ -136,11 +136,8 @@ function ExceptionForm({
 }
 
 /**
- * A lease's rent account (ADR-026): its balance on the as-of date, exact, and its months folded,
- * newest first, each payment a link to its voucher. Figures stand as the tenant does: a month paid
- * short and arrears are red and minus, so the month where it went wrong shows in the change. A month
- * that moved the balance offers an agreed exception, prefilled, and a month with one offers to change
- * or remove it, when `onSaveException` is given (ADR-027).
+ * A lease's rent account (ADR-026) on a list row: its balance on the as-of date, exact, and its
+ * months folded (`RentMonths`). The lease's own card shows the balance as a tile instead.
  */
 export function RentAccountView({
   account,
@@ -166,6 +163,51 @@ export function RentAccountView({
   parkingObject: boolean
 }) {
   const { t } = useI18n()
+  return (
+    <div className="property-rent">
+      <p className="property-lease-terms">
+        {t('properties.rent.balanceOn', { date: formatDate(asOf) })}:{' '}
+        <strong className={account.balance_snt > 0 ? 'neg' : ''}>{rentBalanceText(t, account.balance_snt)}</strong>
+        {rentCountedText(t, account, leaseStarts, period).map((text) => (
+          <span key={text} className="muted">
+            {' '}
+            · {text}
+          </span>
+        ))}
+      </p>
+      {account.months.length ? (
+        <details className="property-sources">
+          <summary>{t('properties.rent.months', { n: account.months.length })}</summary>
+          <RentMonths account={account} onOpen={onOpen} onSaveException={onSaveException} parkingObject={parkingObject} />
+        </details>
+      ) : null}
+    </div>
+  )
+}
+
+/**
+ * A lease's months, newest first, each payment a link to its voucher. Figures stand as the tenant
+ * does: a month paid short and arrears are red and minus, so the month where it went wrong shows in
+ * the change. A month that moved the balance offers an agreed exception, prefilled, and a month with
+ * one offers to change or remove it, when `onSaveException` is given (ADR-027).
+ */
+export function RentMonths({
+  account,
+  onOpen,
+  onSaveException,
+  parkingObject,
+}: {
+  account: LeaseRentAccount
+  onOpen: (voucherId: number) => void
+  /**
+   * Saves an exception to this lease, new or in place of `replaces` (null removes that one); the
+   * page then shows the account again.
+   */
+  onSaveException?: (exception: LeaseException | null, replaces?: LeaseException) => Promise<void>
+  /** A parking space or garage: its exceptions have no water to give. */
+  parkingObject: boolean
+}) {
+  const { t } = useI18n()
   /** The month whose form is open, and the stored exception it changes (none: a new one). */
   const [open, setOpen] = useState<{ key: string; stored?: LeaseException } | null>(null)
   /** Saves the open form (null removes its stored exception) and closes it. */
@@ -176,123 +218,102 @@ export function RentAccountView({
   const exceptionHint = (e: NonNullable<RentMonth['exception']>) =>
     [t('properties.rent.exceptionHint', { amount: formatCents(e.normal_snt) }), ...e.agreed.flatMap((x) => (x.note ? [x.note] : []))].join(' · ')
   return (
-    <div className="property-rent">
-      <p className="property-lease-terms">
-        {t('properties.rent.balanceOn', { date: formatDate(asOf) })}:{' '}
-        <strong className={account.balance_snt > 0 ? 'neg' : ''}>{rentBalanceText(t, account.balance_snt)}</strong>
-        {account.counted_from > leaseStarts ? (
-          <span className="muted">
-            {' '}
-            · {t('properties.rent.countedFrom', { date: formatDate(account.counted_from), reason: t(`properties.rent.start.${period.start.source}`) })}
-          </span>
-        ) : null}
-        {period.end && account.counted_until === period.end.until ? (
-          <span className="muted">
-            {' '}
-            · {t('properties.rent.countedUntil', { date: formatDate(period.end.until), reason: t(`properties.rent.end.${period.end.source}`) })}
-          </span>
-        ) : null}
-      </p>
-      {account.months.length ? (
-        <details className="property-sources">
-          <summary>{t('properties.rent.months', { n: account.months.length })}</summary>
-          <table className="ledger-table compact property-rent-table">
-            <thead>
-              <tr>
-                <th>{t('properties.rent.col.month')}</th>
-                <th className="amount">{t('properties.rent.col.rent')}</th>
-                <th className="amount">{t('properties.rent.col.water')}</th>
-                {account.vat ? (
-                  <th className="amount" title={t('properties.rent.col.vatHint')}>
-                    {t('properties.rent.col.vat')}
-                  </th>
-                ) : null}
-                <th className="amount">{t('properties.rent.col.received')}</th>
-                <th className="amount" title={t('properties.rent.col.changeHint')}>
-                  {t('properties.rent.col.change')}
-                </th>
-                <th className="amount" title={t('properties.rent.col.balanceHint')}>
-                  {t('properties.rent.col.balance')}
-                </th>
-                <th>{t('properties.rent.col.lines')}</th>
-                {onSaveException ? <th /> : null}
-              </tr>
-            </thead>
-            <tbody>
-              {[...account.months].reverse().map((m) => {
-                const change = m.received_snt - m.rent_snt - m.water_snt - (m.vat_snt ?? 0)
-                const balance = tenantSide(m.balance_snt)
-                const formFrom = open?.key === m.key ? (open.stored ?? m.exception_prefill) : undefined
-                return (
-                  <Fragment key={m.key}>
-                    <tr>
-                      <td>{monthName(m.key, getBcp47())}</td>
-                      {m.exception ? (
-                        <td className="amount property-rent-exception" title={exceptionHint(m.exception)}>
-                          {formatCents(m.rent_snt)}*
-                        </td>
-                      ) : (
-                        <td className="amount">{formatCents(m.rent_snt)}</td>
-                      )}
-                      <td className="amount">{m.water_snt ? formatCents(m.water_snt) : ''}</td>
-                      {account.vat ? <td className="amount">{formatCents(m.vat_snt ?? 0, { emptyZero: true })}</td> : null}
-                      <td className="amount" title={m.received_vat_snt ? t('properties.rent.vatPart', { amount: formatCents(m.received_vat_snt) }) : undefined}>
-                        {formatCents(m.received_snt)}
-                      </td>
-                      <td className={`amount ${change < 0 ? 'neg' : ''}`}>
-                        {change > 0 ? '+' : ''}
-                        {formatCents(change, { emptyZero: true })}
-                      </td>
-                      <td className={`amount ${balance < 0 ? 'neg' : balance > 0 ? 'pos' : ''}`}>
-                        {balance > 0 ? '+' : ''}
-                        {formatCents(balance)}
-                      </td>
-                      <td className="property-rent-lines">
-                        {m.lines.map((line) => (
-                          <LineLink key={line.line_id} line={line} onOpen={onOpen} />
-                        ))}
-                      </td>
-                      {onSaveException ? (
-                        <td>
-                          {m.exception_prefill && !formFrom ? (
-                            <button type="button" className="btn-small" onClick={() => setOpen({ key: m.key })}>
-                              {t('properties.rent.addException')}
-                            </button>
-                          ) : null}
-                          {!formFrom
-                            ? m.exception?.agreed.map((e) => (
-                                <button key={e.from} type="button" className="btn-small" onClick={() => setOpen({ key: m.key, stored: e })}>
-                                  {m.exception!.agreed.length > 1
-                                    ? t('properties.rent.editExceptionOf', { period: periodText(t, e.from, e.to) })
-                                    : t('properties.rent.editException')}
-                                </button>
-                              ))
-                            : null}
-                        </td>
+    <div className="property-rent-months">
+      <table className="ledger-table compact property-rent-table">
+        <thead>
+          <tr>
+            <th>{t('properties.rent.col.month')}</th>
+            <th className="amount">{t('properties.rent.col.rent')}</th>
+            <th className="amount">{t('properties.rent.col.water')}</th>
+            {account.vat ? (
+              <th className="amount" title={t('properties.rent.col.vatHint')}>
+                {t('properties.rent.col.vat')}
+              </th>
+            ) : null}
+            <th className="amount">{t('properties.rent.col.received')}</th>
+            <th className="amount" title={t('properties.rent.col.changeHint')}>
+              {t('properties.rent.col.change')}
+            </th>
+            <th className="amount" title={t('properties.rent.col.balanceHint')}>
+              {t('properties.rent.col.balance')}
+            </th>
+            <th>{t('properties.rent.col.lines')}</th>
+            {onSaveException ? <th /> : null}
+          </tr>
+        </thead>
+        <tbody>
+          {[...account.months].reverse().map((m) => {
+            const change = m.received_snt - m.rent_snt - m.water_snt - (m.vat_snt ?? 0)
+            const balance = tenantSide(m.balance_snt)
+            const formFrom = open?.key === m.key ? (open.stored ?? m.exception_prefill) : undefined
+            return (
+              <Fragment key={m.key}>
+                <tr>
+                  <td>{monthName(m.key, getBcp47())}</td>
+                  {m.exception ? (
+                    <td className="amount property-rent-exception" title={exceptionHint(m.exception)}>
+                      {formatCents(m.rent_snt)}*
+                    </td>
+                  ) : (
+                    <td className="amount">{formatCents(m.rent_snt)}</td>
+                  )}
+                  <td className="amount">{m.water_snt ? formatCents(m.water_snt) : ''}</td>
+                  {account.vat ? <td className="amount">{formatCents(m.vat_snt ?? 0, { emptyZero: true })}</td> : null}
+                  <td className="amount" title={m.received_vat_snt ? t('properties.rent.vatPart', { amount: formatCents(m.received_vat_snt) }) : undefined}>
+                    {formatCents(m.received_snt)}
+                  </td>
+                  <td className={`amount ${change < 0 ? 'neg' : ''}`}>
+                    {change > 0 ? '+' : ''}
+                    {formatCents(change, { emptyZero: true })}
+                  </td>
+                  <td className={`amount ${balance < 0 ? 'neg' : balance > 0 ? 'pos' : ''}`}>
+                    {balance > 0 ? '+' : ''}
+                    {formatCents(balance)}
+                  </td>
+                  <td className="property-rent-lines">
+                    {m.lines.map((line) => (
+                      <LineLink key={line.line_id} line={line} onOpen={onOpen} />
+                    ))}
+                  </td>
+                  {onSaveException ? (
+                    <td>
+                      {m.exception_prefill && !formFrom ? (
+                        <button type="button" className="btn-small" onClick={() => setOpen({ key: m.key })}>
+                          {t('properties.rent.addException')}
+                        </button>
                       ) : null}
-                    </tr>
-                    {onSaveException && formFrom ? (
-                      <tr className="property-rent-form-row">
-                        <td colSpan={account.vat ? 9 : 8}>
-                          <ExceptionForm
-                            month={m}
-                            prefill={formFrom}
-                            onSave={saveOpen}
-                            onRemove={open?.stored ? () => saveOpen(null) : undefined}
-                            onClose={() => setOpen(null)}
-                            parkingObject={parkingObject}
-                          />
-                        </td>
-                      </tr>
-                    ) : null}
-                  </Fragment>
-                )
-              })}
-            </tbody>
-          </table>
-          {account.months.some((m) => m.exception) ? <p className="muted property-lease-hint">{t('properties.rent.exceptionLegend')}</p> : null}
-        </details>
-      ) : null}
+                      {!formFrom
+                        ? m.exception?.agreed.map((e) => (
+                            <button key={e.from} type="button" className="btn-small" onClick={() => setOpen({ key: m.key, stored: e })}>
+                              {m.exception!.agreed.length > 1
+                                ? t('properties.rent.editExceptionOf', { period: periodText(t, e.from, e.to) })
+                                : t('properties.rent.editException')}
+                            </button>
+                          ))
+                        : null}
+                    </td>
+                  ) : null}
+                </tr>
+                {onSaveException && formFrom ? (
+                  <tr className="property-rent-form-row">
+                    <td colSpan={account.vat ? 9 : 8}>
+                      <ExceptionForm
+                        month={m}
+                        prefill={formFrom}
+                        onSave={saveOpen}
+                        onRemove={open?.stored ? () => saveOpen(null) : undefined}
+                        onClose={() => setOpen(null)}
+                        parkingObject={parkingObject}
+                      />
+                    </td>
+                  </tr>
+                ) : null}
+              </Fragment>
+            )
+          })}
+        </tbody>
+      </table>
+      {account.months.some((m) => m.exception) ? <p className="muted property-lease-hint">{t('properties.rent.exceptionLegend')}</p> : null}
     </div>
   )
 }

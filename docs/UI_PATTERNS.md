@@ -62,6 +62,10 @@ stand out. Here colour and a filled button mark what needs doing, and everything
    scrolls away with the page: pinned, the rows would cover too much of the screen. A tab's "+" action sits in
    its panel's title row; the first tab has them all at its top.
 
+10. **A card shows figures, not sentences.** A lease, a water settlement or a loan is a row of tiles: what it
+   is, the figure big, a line or two under it (owner, 2026-11-18: the cards read "like a novel"). Its lists
+   fold under the tiles as small tabs. No line says how to use the card; the clicks are found by trying.
+
 ## Parts
 
 | Part | File | Use it for |
@@ -76,6 +80,8 @@ stand out. Here colour and a filled button mark what needs doing, and everything
 | `StepRail` | `shared/StepRail.tsx` | Steps that follow each other, each with its state as a `Pill` and a date; the line turns green between steps done. Under 34rem it lists them one under the other. The company page's dividend card uses it |
 | `Tabs`, `TabPanel` | `shared/Tabs.tsx` | Tabs that switch a page's content (rule 9): each with a `count` and a `mark` (tone and hover text); arrow keys move between them. `TabPanel` with `keep` stays mounted while hidden, for a form |
 | `SuggestBanner` | `shared/SuggestBanner.tsx` | Suggestions from the book: a blue banner with a title, a line on where they come from, one `action` for all of them (add them all, or review them) and the suggestions below, as `DocLine`s with a filled "Lisää" in `end` |
+| `Figures`, `Figure` | `modules/properties/ui/FigureTiles.tsx` | A card's figures as tiles (rule 10): a short `label`, the figure big (`value`, red with `neg`), a line or two under it (`sub`); without a `value` the lines are the tile, such as a document's pills. As many a row as fit, two on a phone |
+| `Folds` | `modules/properties/ui/FigureTiles.tsx` | A card's lists under its tiles as small tabs, one open at a time; each with its row count and a dot in the tone of what is wrong there (`mark`, as a page tab's). A list with no rows has no tab |
 
 CSS, in the "Documents and status" part of `App.css`:
 
@@ -86,6 +92,9 @@ CSS, in the "Documents and status" part of `App.css`:
 - `.num-text`: a date or code in `--font-num`.
 - `.btn-small.is-primary`: the row's filled button.
 - `.btn-link.btn-quiet`: a secondary action such as "Poista linkki" or "Ei tarvita".
+- `.property-figures`, `.property-figure` and `.property-folds`, `.property-fold` (with the rental objects' CSS): the
+  tiles and the small tabs under them. A tile is a `figure` container: one too narrow for a voucher's date and
+  number shows the date, and a file's pill in a tile is cut, not wrapped.
 - `.suggest-banner`: the banner; `.suggest-banner-list` folds a long list of suggestions under it (the company page).
 - Tokens on `:root`: `--ok`, `--warn`, `--crit`, `--doc`, `--voucher`, each with a `-soft` background;
   `--card`, `--sunk` and `--font-num`. Each text and soft pair has at least 4.5:1 contrast. Keep that
@@ -128,6 +137,7 @@ Moved onto these parts in four steps (2026-11-02 and -03), visual only: no chang
 | `PropertyView.tsx` `Documents`, `DocPicker.tsx` | The Asiakirjat tab's "+ Asiakirja" opens the picker at the top; a linked row nothing else holds ends in a quiet "Poista linkki"; the picked document shows its `FilePill`s |
 | `LeasesPanel.tsx`, `WaterPanel.tsx` | Suggestions in `shared/SuggestBanner` at the top of the tab, each with a "Lisää" that opens a prefilled card under it |
 | `FinanceEdits.tsx` | Each Talous section's title row carries a small "Muokkaa"; linked balance-sheet items in its form are `DocLine`s with a quiet "Poista" |
+| `HousingPanel.tsx`, `LeasesPanel.tsx`, `WaterPanel.tsx` (2026-11-19) | A loan, the running lease and a water settlement are `Figure` tiles with their lists in `Folds`. Lease: rent, an exception in force, the rent balance, the next increase or the clause, water, the latest water settlement, the deposit, the contract; folds: months (with the exception forms), increases, exceptions, the deposit's bookings. Water: the housing company's result, the statement, a tile per tenant's share, what the owner keeps or bears; the booked lines fold. Ended leases stay rows in a list |
 | `ui/Warnings.tsx` (object page and the portfolio's "Huomioitavaa") | A lease ending or a rent increase is a `DueTile` (days left, or "Myöhässä" once past); every other warning is a line led by a `Pill`: Virhe and Puuttuu red, Hoidettava amber, Ehdotus blue, Huomio grey (`warningTone` in `format.ts`) |
 
 Since 2026-11-15 everything but the basics is edited where it is shown: a lease or water card's

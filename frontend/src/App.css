@@ -5746,15 +5746,17 @@ tr.tax-total td {
   fill: #2f6fed;
 }
 
-/* A loan's figures at a glance: a tile each, as many in a row as fit (two on a phone). */
-.property-loan-figures {
+/* A card's figures at a glance (a loan, a lease, a water settlement): a tile each, as many in a row
+   as fit (two on a phone). */
+.property-figures {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
   gap: 0.5rem;
   margin: 0.5rem 0;
 }
 
-.property-loan-figure {
+.property-figure {
+  container: figure / inline-size;
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
@@ -5764,7 +5766,7 @@ tr.tax-total td {
   border-radius: 8px;
 }
 
-.property-loan-figure-label {
+.property-figure-label {
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -5773,12 +5775,17 @@ tr.tax-total td {
   color: var(--muted);
 }
 
-.property-loan-figure > strong {
+.property-figure > strong {
   font-size: 1.1rem;
   font-variant-numeric: tabular-nums;
 }
 
-.property-loan-figure-sub {
+/* Arrears, as the rent table's minus figures. */
+.property-figure > strong.neg {
+  color: var(--neg);
+}
+
+.property-figure-sub {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -5787,23 +5794,40 @@ tr.tax-total td {
   color: var(--muted);
 }
 
-/* A pill in a narrow tile wraps rather than run past its edge. */
-.property-loan-figure-sub .pill {
+/* A pill in a narrow tile wraps rather than run past its edge; a document's pills stay on one line,
+   a long file name cut (in full on hover). */
+.property-figure-sub .pill {
   white-space: normal;
+}
+
+.property-figure-sub .pill-action {
+  white-space: nowrap;
+}
+
+/* A tile too narrow for a voucher's date and number shows the date, as a document line on a phone does. */
+@container figure (max-width: 10rem) {
+  .property-figure-sub .pill-number {
+    display: none;
+  }
+
+  .property-figure-sub .pill-date {
+    min-width: 0;
+    margin-right: 0;
+  }
 }
 
 /* Two tiles a row on a phone. */
 @media (max-width: 640px) {
-  .property-loan-figures {
+  .property-figures {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.4rem;
   }
 
-  .property-loan-figure {
+  .property-figure {
     padding: 0.45rem 0.55rem;
   }
 
-  .property-loan-figure > strong {
+  .property-figure > strong {
     font-size: 1rem;
   }
 }
@@ -5835,15 +5859,15 @@ tr.tax-total td {
   margin: 0 0 0.5rem;
 }
 
-/* The loan's lists as small tabs, like the page's own: one opens under them, a click on it closes it. */
-.property-loan-folds {
+/* A card's lists as small tabs, like the page's own: one opens under them, a click on it closes it. */
+.property-folds {
   display: flex;
   flex-wrap: wrap;
   margin-top: 0.4rem;
   border-bottom: 1px solid var(--line);
 }
 
-.property-loan-fold {
+.property-fold {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -5860,33 +5884,33 @@ tr.tax-total td {
   cursor: pointer;
 }
 
-.property-loan-fold:first-child {
+.property-fold:first-child {
   padding-left: 0.1rem;
 }
 
-.property-loan-fold:hover {
+.property-fold:hover {
   color: var(--ink);
 }
 
-.property-loan-fold.is-open {
+.property-fold.is-open {
   color: var(--accent);
   border-bottom-color: var(--accent);
 }
 
 .property-loan-months,
-.property-loan-fold-body {
+.property-fold-body {
   margin-top: 0.5rem;
 }
 
 @media (max-width: 640px) {
-  .property-loan-fold {
+  .property-fold {
     padding: 0.4rem 0.5rem 0.3rem;
     font-size: 0.84rem;
   }
 }
 
 /* An open list ends with its last row, not with a line under it. */
-.property-loan-fold-body > li:last-child {
+.property-fold-body > li:last-child {
   border-bottom: 0;
 }
 
@@ -6522,22 +6546,12 @@ div:has(> .property-lease-card) + .property-lease-card {
   font-size: 0.9rem;
 }
 
-.property-lease-card details {
-  margin-top: 0.4rem;
-  font-size: 0.88rem;
-}
-
 /* A suggestion's source: hover tells what it was built from. */
 .property-lease-source {
   cursor: help;
 }
 
-/* A lease's contract and a settlement's statement, between the card's lines of text. */
-.property-lease-card > .doc-lines {
-  margin: 0.3rem 0;
-}
-
-/* The card's document lines have no actions, so no column is kept for them. */
+/* The card's document lines (a lease's increases and exceptions) have no actions, so no column is kept for them. */
 .property-lease-card .doc-lines {
   --doc-end: 0rem;
 }
@@ -6599,6 +6613,12 @@ div:has(> .property-lease-card) + .property-lease-card {
 .property-doc-list li > .property-rent {
   flex-basis: 100%;
   min-width: 0;
+}
+
+/* A lease card's months under its tiles: a table wider than the card scrolls on its own. */
+.property-rent-months {
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 .property-rent-table {

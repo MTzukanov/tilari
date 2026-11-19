@@ -1282,14 +1282,6 @@
       "vat": "+ USt {pct} {amount} = {total}/Monat",
       "vatHint": "Beträge ohne USt · USt {pct} {amount} · gesamt {total}/Monat",
       "due": "fällig am {day}.",
-      "increase": {
-        "percent": "Erhöhung {pct} pro Jahr",
-        "percentMonth": "Erhöhung {pct} pro Jahr ({month})",
-        "amount": "Erhöhung {amount} pro Jahr",
-        "amountMonth": "Erhöhung {amount} pro Jahr ({month})",
-        "index": "Indexerhöhung",
-        "indexMonth": "Indexerhöhung ({month})"
-      },
       "contract": "Vertrag",
       "others": "Weitere Mietverträge",
       "state": {
@@ -1330,7 +1322,18 @@
       "exceptionNow": "Derzeit abweichende Miete",
       "normal": "regulär {amount}",
       "exceptionNormal": "Reguläre Miete dann {amount}/Monat",
-      "edit": "Bearbeiten"
+      "edit": "Bearbeiten",
+      "figure": {
+        "rent": "Miete",
+        "nextIncrease": "Nächste Erhöhung",
+        "increase": "Erhöhung",
+        "ruleIndex": "Index",
+        "ruleAmount": "{amount} pro Jahr",
+        "rulePercent": "{pct} pro Jahr",
+        "ruleMonth": "im {month}",
+        "lastIncrease": "zuletzt {date}",
+        "water": "Wasser"
+      }
     },
     "deposit": {
       "title": "Mietkaution",
@@ -1350,7 +1353,8 @@
       },
       "deductionsHint": "Mit derselben Zahlung gebuchte Erträge und Kosten: einbehaltene Miete, Wasserabrechnung oder Kosten.",
       "missingCount": "{n} verknüpfte Buchungen fehlen im Buch",
-      "returnedOn": "zurückgezahlt {date}"
+      "returnedOn": "zurückgezahlt {date}",
+      "movementsTitle": "Buchungen der Kaution"
     },
     "edit": {
       "noDocument": "Kein Dokument",
@@ -1594,7 +1598,6 @@
       "none": "Keine Wasserabrechnungen.",
       "remove": "Wasserabrechnung entfernen",
       "period": "Abrechnungszeitraum {period}",
-      "company": "Wohnungsgesellschaft: {text}",
       "usage": "Verbrauch {amount}",
       "advances": "Vorauszahlungen {amount}",
       "companyRefund": "Gutschrift {amount}",
@@ -1617,8 +1620,6 @@
       },
       "noShares": "Keine Mietverhältnisse im Zeitraum, deren Wasser abgerechnet wird.",
       "other": "Weitere Buchungen mit dem Mieter",
-      "ownerKeeps": "Dem Eigentümer bleiben {amount}.",
-      "ownerBears": "Der Eigentümer trägt {amount} (z. B. Leerstandstage).",
       "suggestions": "Vorschläge aus der Buchhaltung ({n})",
       "suggestionsLead": "Aus den auf dem Objekt gebuchten Wasserabrechnungen. Nichts ist gespeichert: Hinzufügen öffnet den Vorschlag auf einer eigenen Karte; Beträge mit der Abrechnung der Gesellschaft prüfen.",
       "flat": "Wasser wird nicht abgerechnet",
@@ -1658,7 +1659,18 @@
         "refundText": "Wir überweisen {amount} auf Ihr Konto. Bitte teilen Sie uns mit, falls sich Ihre Kontonummer geändert hat.",
         "chargeText": "Bitte zahlen Sie {amount} mit der nächsten Miete auf dasselbe Konto und mit derselben Referenz wie die Miete."
       },
-      "confirmRemove": "Diese Wasserabrechnung vom Objekt entfernen?"
+      "confirmRemove": "Diese Wasserabrechnung vom Objekt entfernen?",
+      "figure": {
+        "company": "Abrechnung der Gesellschaft",
+        "companyRefund": "Gutschrift der Gesellschaft",
+        "companyCharge": "Nachzahlung an die Gesellschaft",
+        "notBooked": "nicht in der Buchhaltung",
+        "companyLines": "Wohnungsgesellschaft",
+        "lines": "Buchungen",
+        "ownerKeeps": "Dem Eigentümer bleiben",
+        "ownerBears": "Der Eigentümer trägt",
+        "ownerBearsWhy": "z. B. Leerstandstage"
+      }
     },
     "rent": {
       "balanceOn": "Mietsaldo {date}",
@@ -1715,6 +1727,11 @@
         "unexpected": "mit USt gebucht, obwohl das Mietverhältnis ohne USt ist",
         "row_missing": "USt-Code ohne eigene USt-Zeile",
         "rate": "anderer USt-Satz als der Regelsatz des Tages"
+      },
+      "monthsTitle": "Monatlich",
+      "figure": {
+        "arrears": "Mietrückstand {date}",
+        "ahead": "Im Voraus bezahlt {date}"
       }
     },
     "finance": {

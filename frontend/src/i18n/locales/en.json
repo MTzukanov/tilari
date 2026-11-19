@@ -1282,14 +1282,6 @@
       "vat": "+ VAT {pct} {amount} = {total}/month",
       "vatHint": "Amounts without VAT · VAT {pct} {amount} · total {total}/month",
       "due": "due on day {day}",
-      "increase": {
-        "percent": "increase {pct} a year",
-        "percentMonth": "increase {pct} a year ({month})",
-        "amount": "increase {amount} a year",
-        "amountMonth": "increase {amount} a year ({month})",
-        "index": "index-linked increase",
-        "indexMonth": "index-linked increase ({month})"
-      },
       "contract": "Contract",
       "others": "Other leases",
       "state": {
@@ -1330,7 +1322,18 @@
       "exceptionNow": "Exception now",
       "normal": "normally {amount}",
       "exceptionNormal": "Normal rent then {amount}/month",
-      "edit": "Edit"
+      "edit": "Edit",
+      "figure": {
+        "rent": "Rent",
+        "nextIncrease": "Next increase",
+        "increase": "Increase",
+        "ruleIndex": "Index-linked",
+        "ruleAmount": "{amount} a year",
+        "rulePercent": "{pct} a year",
+        "ruleMonth": "in {month}",
+        "lastIncrease": "last on {date}",
+        "water": "Water"
+      }
     },
     "deposit": {
       "title": "Rent deposit",
@@ -1350,7 +1353,8 @@
       },
       "deductionsHint": "Income and costs booked in the same payment: rent kept, a water settlement or costs.",
       "missingCount": "{n} linked lines are no longer in the book",
-      "returnedOn": "returned {date}"
+      "returnedOn": "returned {date}",
+      "movementsTitle": "Deposit bookings"
     },
     "edit": {
       "noDocument": "No document",
@@ -1594,7 +1598,6 @@
       "none": "No water settlements.",
       "remove": "Remove water settlement",
       "period": "Settlement period {period}",
-      "company": "housing company: {text}",
       "usage": "use {amount}",
       "advances": "advances {amount}",
       "companyRefund": "refund {amount}",
@@ -1617,8 +1620,6 @@
       },
       "noShares": "No leases in the period whose water is settled.",
       "other": "Other tenant bookings",
-      "ownerKeeps": "The owner keeps {amount}.",
-      "ownerBears": "The owner bears {amount} (e.g. vacant days).",
       "suggestions": "Suggestions from the books ({n})",
       "suggestionsLead": "From water settlements booked on the object. Nothing is saved: Add opens a suggestion on its own card; check the amounts against the housing company's statement.",
       "flat": "water is not settled",
@@ -1658,7 +1659,18 @@
         "refundText": "We will refund {amount} to your account. Please tell us if your account number has changed.",
         "chargeText": "Please pay {amount} with your next rent, to the same account and with the same reference as the rent."
       },
-      "confirmRemove": "Remove this water settlement from the object?"
+      "confirmRemove": "Remove this water settlement from the object?",
+      "figure": {
+        "company": "Housing company's settlement",
+        "companyRefund": "Housing company's refund",
+        "companyCharge": "Housing company's extra charge",
+        "notBooked": "not found in the books",
+        "companyLines": "Housing company",
+        "lines": "Bookings",
+        "ownerKeeps": "The owner keeps",
+        "ownerBears": "The owner bears",
+        "ownerBearsWhy": "e.g. vacant days"
+      }
     },
     "rent": {
       "balanceOn": "Rent balance {date}",
@@ -1715,6 +1727,11 @@
         "unexpected": "booked with VAT, though the lease has none",
         "row_missing": "VAT code without its own VAT row",
         "rate": "another VAT rate than the day's general rate"
+      },
+      "monthsTitle": "By month",
+      "figure": {
+        "arrears": "Rent arrears {date}",
+        "ahead": "Paid ahead {date}"
       }
     },
     "finance": {

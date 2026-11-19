@@ -1282,14 +1282,6 @@
       "vat": "+ moms {pct} {amount} = {total}/mån",
       "vatHint": "Belopp utan moms · moms {pct} {amount} · totalt {total}/mån",
       "due": "förfallodag {day}.",
-      "increase": {
-        "percent": "höjning {pct} per år",
-        "percentMonth": "höjning {pct} per år ({month})",
-        "amount": "höjning {amount} per år",
-        "amountMonth": "höjning {amount} per år ({month})",
-        "index": "indexhöjning",
-        "indexMonth": "indexhöjning ({month})"
-      },
       "contract": "Avtal",
       "others": "Andra hyresavtal",
       "state": {
@@ -1330,7 +1322,18 @@
       "exceptionNow": "Nu avvikande hyra",
       "normal": "normalt {amount}",
       "exceptionNormal": "Normal hyra då {amount}/mån",
-      "edit": "Redigera"
+      "edit": "Redigera",
+      "figure": {
+        "rent": "Hyra",
+        "nextIncrease": "Nästa höjning",
+        "increase": "Höjning",
+        "ruleIndex": "Index",
+        "ruleAmount": "{amount} per år",
+        "rulePercent": "{pct} per år",
+        "ruleMonth": "i {month}",
+        "lastIncrease": "senast {date}",
+        "water": "Vatten"
+      }
     },
     "deposit": {
       "title": "Hyresdeposition",
@@ -1350,7 +1353,8 @@
       },
       "deductionsHint": "Intäkter och kostnader bokförda med samma betalning: innehållen hyra, vattenutjämning eller kostnader.",
       "missingCount": "{n} kopplade konteringar finns inte längre",
-      "returnedOn": "återbetald {date}"
+      "returnedOn": "återbetald {date}",
+      "movementsTitle": "Depositionens konteringar"
     },
     "edit": {
       "noDocument": "Inget dokument",
@@ -1594,7 +1598,6 @@
       "none": "Inga vattenutjämningar.",
       "remove": "Ta bort vattenutjämning",
       "period": "Utjämningsperiod {period}",
-      "company": "bostadsbolaget: {text}",
       "usage": "förbrukning {amount}",
       "advances": "förskott {amount}",
       "companyRefund": "gottgörelse {amount}",
@@ -1617,8 +1620,6 @@
       },
       "noShares": "Inga hyresförhållanden under perioden där vattenavgiften utjämnas.",
       "other": "Övriga bokningar med hyresgästen",
-      "ownerKeeps": "Ägaren behåller {amount}.",
-      "ownerBears": "Ägaren står för {amount} (t.ex. tomma dagar).",
       "suggestions": "Förslag från bokföringen ({n})",
       "suggestionsLead": "Från vattenutjämningar bokförda på objektet. Inget har sparats: Lägg till öppnar förslaget på ett eget kort; kontrollera beloppen mot bostadsbolagets kalkyl.",
       "flat": "vattenavgiften utjämnas inte",
@@ -1658,7 +1659,18 @@
         "refundText": "Vi återbetalar {amount} till ert konto. Meddela oss om ert kontonummer har ändrats.",
         "chargeText": "Vi ber er betala {amount} tillsammans med nästa hyra, till samma konto och med samma referens som hyran."
       },
-      "confirmRemove": "Ta bort den här vattenutjämningen från objektet?"
+      "confirmRemove": "Ta bort den här vattenutjämningen från objektet?",
+      "figure": {
+        "company": "Bolagets utjämning",
+        "companyRefund": "Bolagets gottgörelse",
+        "companyCharge": "Bolagets tilläggsfaktura",
+        "notBooked": "hittas inte i bokföringen",
+        "companyLines": "Bostadsbolaget",
+        "lines": "Bokningar",
+        "ownerKeeps": "Ägaren behåller",
+        "ownerBears": "Ägaren står för",
+        "ownerBearsWhy": "t.ex. tomma dagar"
+      }
     },
     "rent": {
       "balanceOn": "Hyressaldo {date}",
@@ -1715,6 +1727,11 @@
         "unexpected": "bokförd med moms, fast hyresförhållandet är utan moms",
         "row_missing": "momskod utan egen momsrad",
         "rate": "annan momssats än dagens allmänna sats"
+      },
+      "monthsTitle": "Per månad",
+      "figure": {
+        "arrears": "Hyresskuld {date}",
+        "ahead": "Betalt i förskott {date}"
       }
     },
     "finance": {
