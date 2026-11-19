@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { getBcp47, useI18n } from '../../../i18n'
 import { LineChart, type LineSeries, type PointTip } from '../../../shared/LineChart'
 import { formatCents } from '../../../shared/money'
@@ -59,14 +59,16 @@ function Swatch({ color, dashed }: { color: string; dashed: boolean }) {
 }
 
 /**
- * The Properties page's charts: every object's cash flow summed month by month, its money still to
- * recover, and its housing-company loan share (ADR-034), one coloured line each, with all of them
- * together. One row of checkboxes serves them all.
+ * The Properties page's charts: every object's money still to recover, its cash flow summed month by
+ * month (the two one under the other, so they can be seen to meet or part), and its housing-company
+ * loan share (ADR-034), one coloured line each, with all of them together. One set of checkboxes
+ * serves them all: the total and the months, then the objects in columns with "all" and "none".
  */
 export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: PropertyRow[] }) {
   const { t } = useI18n()
   const locale = getBcp47()
   const [options, setOptionsState] = useState(loadPortfolioChartOptions)
+  const objectsLabelId = useId()
   if (!chart.keys.length) return null
   const setOptions = (next: PortfolioChartOptions) => {
     setOptionsState(next)
@@ -100,6 +102,9 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
 
   const toggle = (id: number) =>
     setOptions({ ...options, hidden: hidden.has(id) ? options.hidden.filter((h) => h !== id) : [...options.hidden, id] })
+  // "All" and "none" act on the objects' lines only: the total and the months are choices of their own.
+  const noneHidden = objects.every((o) => !hidden.has(o.id))
+  const allHidden = objects.every((o) => hidden.has(o.id))
   const cash = seriesOf((o) => o.cash_snt, chart.total_cash_snt)
   // Objects without an investment linked have nothing to recover: no line there, maybe no chart.
   const unrecovered = seriesOf((o) => o.unrecovered_snt, chart.total_unrecovered_snt).filter(
@@ -119,19 +124,12 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
   return (
     <section className="overview-panel property-section portfolio-charts">
       <h3>{t('properties.portfolioChart.title')}</h3>
-      <div className="overview-legend">
+      <div className="overview-legend legend-columns">
         <label className="allocation-check">
           <input type="checkbox" checked={options.total} onChange={() => setOptions({ ...options, total: !options.total })} />
           <i className="overview-swatch portfolio-swatch-total" />
           {totalLabel}
         </label>
-        {objects.map((o) => (
-          <label key={o.id} className="allocation-check">
-            <input type="checkbox" checked={!hidden.has(o.id)} onChange={() => toggle(o.id)} />
-            <Swatch color={o.color} dashed={o.dashed} />
-            {o.name}
-          </label>
-        ))}
         {long ? (
           <label className="allocation-check">
             <input type="checkbox" checked={options.allMonths} onChange={() => setOptions({ ...options, allMonths: !options.allMonths })} />
@@ -139,9 +137,32 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
           </label>
         ) : null}
       </div>
+      <div className="portfolio-objects-head">
+        <span id={objectsLabelId} className="portfolio-objects-label">
+          {t('properties.portfolioChart.objects')}
+        </span>
+        <button type="button" className="btn-link btn-quiet" disabled={noneHidden} onClick={() => setOptions({ ...options, hidden: [] })}>
+          {t('properties.portfolioChart.checkAll')}
+        </button>
+        <button
+          type="button"
+          className="btn-link btn-quiet"
+          disabled={allHidden}
+          onClick={() => setOptions({ ...options, hidden: objects.map((o) => o.id) })}
+        >
+          {t('properties.portfolioChart.uncheckAll')}
+        </button>
+      </div>
+      <div className="overview-legend legend-columns portfolio-objects" role="group" aria-labelledby={objectsLabelId}>
+        {objects.map((o) => (
+          <label key={o.id} className="allocation-check">
+            <input type="checkbox" checked={!hidden.has(o.id)} onChange={() => toggle(o.id)} />
+            <Swatch color={o.color} dashed={o.dashed} />
+            {o.name}
+          </label>
+        ))}
+      </div>
       <p className="muted property-kpi-hint">{t('properties.portfolioChart.lead')}</p>
-      <h4>{t('properties.portfolioChart.cash')}</h4>
-      <LineChart {...chartProps} series={cash} label={t('properties.portfolioChart.cash')} pointTip={pointTip(cash)} />
       {invested ? (
         <>
           <h4>{t('properties.portfolioChart.unrecovered')}</h4>
@@ -153,6 +174,8 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
           />
         </>
       ) : null}
+      <h4>{t('properties.portfolioChart.cash')}</h4>
+      <LineChart {...chartProps} series={cash} label={t('properties.portfolioChart.cash')} pointTip={pointTip(cash)} />
       {owed ? (
         <>
           <h4>{t('properties.portfolioChart.shares')}</h4>

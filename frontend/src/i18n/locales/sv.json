@@ -1190,8 +1190,11 @@
       "unrecovered": "Ej återfått vid månadens slut",
       "total": "Alla tillsammans",
       "allMonths": "Alla månader",
-      "lead": "Totallinjen räknar alltid alla objekt: kryssrutorna döljer bara linjer. Ett sålt objekt stannar i kassaflödets total men lämnar det ej återfångna från försäljningsmånaden.",
-      "shares": "Bolagslåneandelar vid månadens slut"
+      "lead": "Totallinjen räknar alltid alla objekt: kryssrutorna döljer bara linjer. Ett sålt objekt lämnar det ej återfångna från försäljningsmånaden men stannar i kassaflödets total.",
+      "shares": "Bolagslåneandelar vid månadens slut",
+      "objects": "Objekt",
+      "checkAll": "Markera alla",
+      "uncheckAll": "Avmarkera alla"
     },
     "chart": {
       "cashFlow": "Kassaflöde per månad",

@@ -7,6 +7,29 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-19 - Rental objects: chart checkboxes in columns, all or none, the defaults form lined up (`feature/portfolio-chart-legends`)
+
+- Owner's look at the Properties page. The defaults form's euro field stood higher than the two beside it and
+  looked different. Cause: the form (`details.property-defaults`) sat outside every container the app's
+  form-input rule lists (`.property-section`, `.editor`, the card forms), so its text inputs got the browser's
+  look (white, 2 px grey border, about 21 px tall). `EuroInput` brings `.amount-input`, which is in that same
+  rule (tinted `#fffef9`, 1 px border, 2.15rem). The grid lines up the bottoms of its fields
+  (`align-items: end`), so the taller field's label rose. Fix: the defaults form is now in the rule, and its
+  three fields look like Talous's "Myynti ja tavoite". The tint is how every editable field looks, not a mark
+  of money. Right-aligned amounts are the money mark (the placeholder "0,00" too), and they stay.
+- Owner: checkboxes one under another, in equal columns when there is room. The portfolio, cash-flow and loan
+  legends are `.legend-columns`: CSS columns at least 13rem wide, as many as fit, filled top to bottom.
+  Each row is the click target (a tint on hover, 2.5rem tall on a touch screen). With few rows the balanced
+  columns put one item in each, so a short legend reads as a single row. The payback chart's legend has no
+  checkboxes and stays inline. The loan chart's two lines that are always drawn sit in its columns, without
+  a box.
+- The portfolio chart has "Kaikki yhteensä" and "Kaikki kuukaudet" on top. Below them, "Kohteet" with "Valitse
+  kaikki" and "Poista valinnat" (disabled when they would change nothing). These two act on the objects'
+  lines only (`hidden` empty, or every object's id). The total is a line of its own and the months are a
+  range, so neither is touched. The stored options keep their shape.
+- Chart order, owner's wish: "Palauttamatta kuukauden lopussa" first, then "Kertynyt kassavirta" under it, to
+  see the two meet or part, then the shares. The lead's sentence on a sold object follows that order.
+
 ## 2026-11-19 - Rental objects: the loan share in the figures (`feature/housing-loans-figures`, ADR-034, step 4c)
 
 - The share at the as-of month (`housing_share_snt`) is followed in `computeObjects` once per object

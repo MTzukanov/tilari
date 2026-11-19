@@ -228,7 +228,7 @@ export function CashFlowPanel({
   return (
     <section className="overview-panel">
       <h3>{t('properties.chart.cashFlow')}</h3>
-      <div className="overview-legend">
+      <div className="overview-legend legend-columns">
         {check('income', t('properties.chart.income'), 'property-swatch-income')}
         {check('expense', t('properties.chart.expense'), 'property-swatch-expense')}
         {check('net', t('properties.chart.net'), 'property-swatch-net')}

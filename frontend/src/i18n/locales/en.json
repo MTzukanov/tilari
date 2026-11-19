@@ -1190,8 +1190,11 @@
       "unrecovered": "Not yet recovered at month end",
       "total": "All together",
       "allMonths": "All months",
-      "lead": "The total line always counts every object: the checkboxes only hide lines. A sold object stays in the cash flow total but leaves the unrecovered total from its sale month.",
-      "shares": "Housing-company loan shares at month end"
+      "lead": "The total line always counts every object: the checkboxes only hide lines. A sold object leaves the unrecovered total from its sale month but stays in the cash flow total.",
+      "shares": "Housing-company loan shares at month end",
+      "objects": "Objects",
+      "checkAll": "Select all",
+      "uncheckAll": "Clear all"
     },
     "chart": {
       "cashFlow": "Cash flow by month",

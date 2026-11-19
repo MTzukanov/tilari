@@ -241,7 +241,7 @@ function LoanMonths({
   const sum = (pick: (y: (typeof years)[number]) => number) => years.reduce((total, y) => total + pick(y), 0)
   return (
     <div className="property-loan-months">
-      <div className="overview-legend">
+      <div className="overview-legend legend-columns">
         <span className="allocation-check">
           <i className="overview-swatch property-swatch-loan" />
           {t('properties.housing.path.share')}

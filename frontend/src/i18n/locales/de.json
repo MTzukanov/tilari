@@ -1190,8 +1190,11 @@
       "unrecovered": "Noch nicht zurück am Monatsende",
       "total": "Alle zusammen",
       "allMonths": "Alle Monate",
-      "lead": "Die Summenlinie zählt immer alle Objekte: die Kästchen blenden nur Linien aus. Ein verkauftes Objekt bleibt in der Cashflow-Summe, fällt aber ab dem Verkaufsmonat aus der Summe des noch nicht Zurückgeflossenen.",
-      "shares": "Darlehensanteile am Monatsende"
+      "lead": "Die Summenlinie zählt immer alle Objekte: die Kästchen blenden nur Linien aus. Ein verkauftes Objekt fällt ab dem Verkaufsmonat aus der Summe des noch nicht Zurückgeflossenen, bleibt aber in der Cashflow-Summe.",
+      "shares": "Darlehensanteile am Monatsende",
+      "objects": "Objekte",
+      "checkAll": "Alle auswählen",
+      "uncheckAll": "Auswahl aufheben"
     },
     "chart": {
       "cashFlow": "Cashflow pro Monat",
