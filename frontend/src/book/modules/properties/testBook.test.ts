@@ -45,5 +45,7 @@ describe('testdb/tilari-properties.kitsas', () => {
     const invested = p.chart.objects.filter((o) => o.unrecovered_snt.some((v) => v != null))
     expect(invested.length).toBeGreaterThan(3)
     expect(p.chart.total_unrecovered_snt.at(-1)).toBe(p.totals.unrecovered_snt)
+    // The combined chart's capital put in less what came back is what is still to recover, every month.
+    p.chart.keys.forEach((key, i) => expect(p.chart.total_invested_snt[i] - p.chart.total_back_snt[i], key).toBe(p.chart.total_unrecovered_snt[i]))
   })
 })

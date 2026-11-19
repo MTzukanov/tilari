@@ -1194,7 +1194,10 @@
       "shares": "Housing-company loan shares at month end",
       "objects": "Objects",
       "checkAll": "Select all",
-      "uncheckAll": "Clear all"
+      "uncheckAll": "Clear all",
+      "combined": "Combined chart",
+      "combinedTitle": "All objects together at month end",
+      "back": "Come back"
     },
     "chart": {
       "cashFlow": "Cash flow by month",

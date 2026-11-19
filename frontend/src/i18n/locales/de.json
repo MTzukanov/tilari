@@ -1194,7 +1194,10 @@
       "shares": "Darlehensanteile am Monatsende",
       "objects": "Objekte",
       "checkAll": "Alle auswählen",
-      "uncheckAll": "Auswahl aufheben"
+      "uncheckAll": "Auswahl aufheben",
+      "combined": "Gemeinsames Diagramm",
+      "combinedTitle": "Alle Objekte zusammen am Monatsende",
+      "back": "Zurückgekommen"
     },
     "chart": {
       "cashFlow": "Cashflow pro Monat",

@@ -89,6 +89,22 @@ describe('portfolioChart', () => {
     expect(later.total_share_snt).toEqual([null, 900])
   })
 
+  it('sums the capital put in and what came back over the objects the unrecovered total counts: their difference is it', () => {
+    const at = (m: MonthPoint, capex: number, proceeds: number, unrecovered: number): MonthPoint => ({ ...m, capex_snt: capex, proceeds_snt: proceeds, unrecovered_snt: unrecovered })
+    const chart = portfolioChart([
+      // Bought for 1 000, 10 a month back, a refund of 100 in March.
+      { id: 1, status: 'active', months: [at(month('2026-01', 0, 0), 1_000, 0, 1_000), at(month('2026-02', 10, 0), 0, 0, 990), at(month('2026-03', 10, 0), -100, 0, 880)] },
+      // Bought for 500 in January, sold in February for 520: out of the totals from its sale month.
+      { id: 2, status: 'sold', months: [at(month('2026-01', 0, 0), 500, 0, 500), at(month('2026-02', 0, 0), 0, 520, -20)] },
+      // Nothing invested linked: only in the cash flow.
+      { id: 3, status: 'unlinked', months: [at(month('2026-01', 7, 0), 0, 0, -7)] },
+    ])
+    expect(chart.total_invested_snt).toEqual([1_500, 1_000, 900])
+    expect(chart.total_back_snt).toEqual([0, 10, 20])
+    expect(chart.total_unrecovered_snt).toEqual([1_500, 990, 880])
+    chart.keys.forEach((_, i) => expect(chart.total_invested_snt[i] - chart.total_back_snt[i]).toBe(chart.total_unrecovered_snt[i]))
+  })
+
   it('is empty without objects', () => {
     expect(portfolioChart([]).keys).toEqual([])
   })

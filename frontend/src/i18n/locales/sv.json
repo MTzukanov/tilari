@@ -1194,7 +1194,10 @@
       "shares": "Bolagslåneandelar vid månadens slut",
       "objects": "Objekt",
       "checkAll": "Markera alla",
-      "uncheckAll": "Avmarkera alla"
+      "uncheckAll": "Avmarkera alla",
+      "combined": "Gemensamt diagram",
+      "combinedTitle": "Alla objekt tillsammans vid månadens slut",
+      "back": "Tillbaka"
     },
     "chart": {
       "cashFlow": "Kassaflöde per månad",
