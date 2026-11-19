@@ -635,6 +635,10 @@ test.describe('rental object housing-company loans', () => {
     await loans.locator('.property-loan-card').getByRole('button', { name: 'Muokkaa', exact: true }).click()
     await expect(card).toHaveCount(1)
     expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'loan card').toBeLessThanOrEqual(0)
+    // Talous too, with long words in its acquisition-cost movements: each takes two lines.
+    await page.goto('/#/property/60/finance')
+    await expect(page.locator('.property-era td.property-col-text').first()).toBeVisible()
+    expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'finance tab').toBeLessThanOrEqual(0)
   })
 })
 

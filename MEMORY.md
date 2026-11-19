@@ -18,8 +18,10 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   line points at the payment's own ledger line (row key per loan).
 - Sale costs stay a percentage of the selling price; a broker's fee on the debt-free price would be another rule
   (open with the owner).
-- Found on the way, not from this step: at 360 px the Talous tab scrolls sideways by a few pixels on objects
-  whose acquisition-cost movement table has long rows (7 px on one without loans).
+- Found on the way, not from this step: at 360 px the Talous tab scrolled sideways (up to 38 px in the test book)
+  where the acquisition-cost movements hold a long Finnish compound - a word does not wrap, and the date and kind
+  columns kept their widths. On a phone a movement now takes two lines (date, kind, amount; then its text), a grid
+  over the table rows; the old phone check ran on the golden book, whose texts are short.
 
 ## 2026-11-17 - Rental objects: a loan's share month by month (`feature/housing-loans-month`, ADR-034, step 4b)
 

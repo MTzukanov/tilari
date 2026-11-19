@@ -406,7 +406,7 @@ export function PropertyFinance({
                         <td className="property-col-kind">
                           <span className={`property-move property-move-${m.kind}`}>{t(`properties.eras.kind.${m.kind}`)}</span>
                         </td>
-                        <td>{m.description}</td>
+                        <td className="property-col-text">{m.description}</td>
                         <td className={`amount ${m.amount_snt < 0 ? 'neg' : ''}`}>{formatCents(m.amount_snt)}</td>
                       </tr>
                     ))}

@@ -6799,6 +6799,33 @@ tr.property-needs-choice td:first-child {
   width: 7.5rem;
 }
 
+/* On a phone a movement takes two lines: its date, kind and amount, then its text across the row. */
+@media (max-width: 640px) {
+  .property-era table,
+  .property-era tbody {
+    display: block;
+  }
+
+  .property-era tr {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    column-gap: 0.5rem;
+    align-items: baseline;
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  }
+
+  .property-era td {
+    width: auto;
+    border-bottom: none;
+  }
+
+  .property-era td.property-col-text {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding-top: 0;
+  }
+}
+
 .property-move {
   font-size: 0.75rem;
   padding: 0.05rem 0.45rem;
