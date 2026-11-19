@@ -5,7 +5,7 @@ import { formatDate } from '../../../shared/dates'
 import type { DocumentSkip, PropertyDetail, Warning } from '../api'
 import { companyResultText, depositText, leasePeriod, leaseRentText, periodText, waterBalanceText } from './format'
 import { DocSlotLine, WaterStatusPill } from './FormParts'
-import { IrrKpi, RentKpi, ResultKpi, T12mKpi } from './Kpi'
+import { HousingShareKpi, IrrKpi, RentKpi, ResultKpi, T12mKpi } from './Kpi'
 import { LeaseStatePill } from './LeasesPanel'
 import { Warnings } from './Warnings'
 
@@ -26,7 +26,7 @@ function NowCard({ title, more, onMore, children }: { title: string; more: strin
 
 /**
  * The object at a glance (the first tab): the things most often added, every warning, the running
- * lease and the latest water settlement, four key figures, the cash flow, and the note.
+ * lease and the latest water settlement, the key figures, the cash flow, and the note.
  */
 export function PropertyOverview({
   d,
@@ -140,6 +140,7 @@ export function PropertyOverview({
         <T12mKpi d={d} />
         <IrrKpi d={d} />
         <ResultKpi d={d} />
+        <HousingShareKpi d={d} />
       </div>
 
       {cashFlow}

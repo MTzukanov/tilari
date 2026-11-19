@@ -1060,7 +1060,11 @@
       "portfolioIrr": "Jahresrendite des Portfolios (IRR)",
       "portfolioIrrHint": "verkaufte tatsächlich, übrige zum Buchwert",
       "totalResult": "Gesamtergebnis",
-      "totalResultHint": "Verkauf + Cashflow - investiert"
+      "totalResultHint": "Verkauf + Cashflow - investiert",
+      "housingShare": "Darlehensanteil",
+      "housingShares": "Darlehensanteile",
+      "housingShareUnknown": "am Stichtag nicht bekannt",
+      "debtFreeUnrecovered": "schuldenfrei noch nicht zurück {amount}"
     },
     "col": {
       "object": "Objekt",
@@ -1092,7 +1096,10 @@
       "bookGainHint": "Buchhalterischer Gewinn oder Verlust: Verkaufspreis - Verkaufskosten - Anschaffungskosten",
       "totalResult": "Gesamtergebnis",
       "irrSoldHint": "Interner Zinsfuß (IRR) über die Besitzzeit: der jährliche Zinssatz, bei dem sich Kauf, Mieten, Kosten und Verkauf aufheben. Nicht das Gesamtergebnis geteilt durch die Anschaffungskosten: -20 % in 16 Monaten sind etwa -15 % pro Jahr. Die Summenzeile nimmt die Zahlungen aller verkauften Objekte zusammen.",
-      "totalResultHint": "Verkauf + Cashflow - Anschaffungskosten in Euro; darunter in Prozent der Anschaffungskosten (gesamte Besitzzeit, nicht pro Jahr)."
+      "totalResultHint": "Verkauf + Cashflow - Anschaffungskosten in Euro; darunter in Prozent der Anschaffungskosten (gesamte Besitzzeit, nicht pro Jahr).",
+      "housingShare": "Darlehensanteil",
+      "housingShareHint": "Darlehensanteil am Stichtag, aus den Zahlungen und den Bescheinigungen berechnet (Reiter Wohnungsgesellschaft)",
+      "breakEvenDebtFree": "schuldenfrei {price}"
     },
     "status": {
       "active": "Im Besitz",
@@ -1116,7 +1123,7 @@
     "field": {
       "kind": "Art",
       "excluded": "Kein Mietobjekt (in der Liste ausblenden)",
-      "salePct": "Verkaufskosten, % vom Preis",
+      "salePct": "Verkaufskosten, % vom schuldenfreien Preis",
       "saleFixed": "Verkaufskosten, fest €",
       "targetReturn": "Zielrendite, % pro Jahr",
       "price": "Verkaufspreis (ohne Darlehensanteil)",
@@ -1168,13 +1175,14 @@
     "breakEven": {
       "title": "Break-even-Preis: der Preis, der das Geld zurückbringt",
       "caption": "Verkaufspreis ohne Darlehensanteil der Wohnungsgesellschaft",
-      "explain": "Noch nicht zurück {unrecovered}. Verkaufskosten {pct} und {fixed} gehen vom Preis ab; zu diesem Preis ist jeder investierte Euro zurück.",
+      "explain": "Noch nicht zurück {unrecovered}. Verkaufskosten von {pct} des schuldenfreien Preises und {fixed} gehen ab; zu diesem Preis ist jeder investierte Euro zurück.",
       "recovered": "Das Objekt hat das investierte Geld bereits zurückgebracht; jeder Preis nach Verkaufskosten ist Gewinn.",
       "bookLoss": "Kein buchhalterischer Verlust ab einem Preis von {price} (Buchwert + Verkaufskosten).",
       "taxNote": "Steuern: Werden Gewinne und Verluste mit denselben 20 % besteuert und ist ein Verlust mit anderem Gewinn verrechenbar, ist der Break-even nach Steuern dieselbe Zahl.",
-      "debtFree": "Schuldenfreier Preis = Verkaufspreis + verbleibender Darlehensanteil. Die Verfolgung des Darlehensanteils kommt in der nächsten Phase.",
       "calculate": "Berechnen",
-      "targetPrice": "Jahresrendite {pct}: Verkaufspreis {price}"
+      "targetPrice": "Jahresrendite {pct}: Verkaufspreis {price}",
+      "debtFreeCaption": "schuldenfreier Preis, Darlehensanteil {share} am {date}",
+      "targetDebtFree": "schuldenfrei {price}"
     },
     "portfolioChart": {
       "title": "Objekte nach Monat",
@@ -1182,7 +1190,11 @@
       "unrecovered": "Noch nicht zurück am Monatsende",
       "total": "Alle zusammen",
       "allMonths": "Alle Monate",
-      "lead": "Die Summenlinie zählt immer alle Objekte: die Kästchen blenden nur Linien aus. Ein verkauftes Objekt bleibt in der Cashflow-Summe, fällt aber ab dem Verkaufsmonat aus der Summe des noch nicht Zurückgeflossenen."
+      "lead": "Die Summenlinie zählt immer alle Objekte: die Kästchen blenden nur Linien aus. Ein verkauftes Objekt fällt ab dem Verkaufsmonat aus der Summe des noch nicht Zurückgeflossenen, bleibt aber in der Cashflow-Summe.",
+      "shares": "Darlehensanteile am Monatsende",
+      "objects": "Objekte",
+      "checkAll": "Alle auswählen",
+      "uncheckAll": "Auswahl aufheben"
     },
     "chart": {
       "cashFlow": "Cashflow pro Monat",
@@ -1210,7 +1222,11 @@
       "resultHint": "Ergebnis der Kostenstelle in der Buchhaltung: alle GuV-Buchungen, auch Abgrenzungen und Verkauf",
       "netHint": "Erträge - Kosten im Monat, zu dem sie gehören: Abgrenzungen und spätere Korrekturen enthalten",
       "capexHint": "Änderung der Anschaffungskosten. Negativ = Kapital floss zurück, z. B. Erstattung der Grunderwerbsteuer. Die Buchungen stehen unten beim Bilanzposten.",
-      "proceedsHint": "Geld aus dem Verkauf nach Verkaufskosten"
+      "proceedsHint": "Geld aus dem Verkauf nach Verkaufskosten",
+      "housingInterest": "Zins Gesellschaftsdarlehen",
+      "housingInterestHint": "Der Zins auf den Darlehensanteil im gezahlten Finanzierungsentgelt, Monat für Monat berechnet",
+      "housingPrincipal": "Tilgung Gesellschaftsdarlehen",
+      "housingPrincipalHint": "Der Teil des gezahlten Finanzierungsentgelts, der den Darlehensanteil tilgte. Ein Monat ohne Zahlung erhöht den Anteil um den Zins."
     },
     "eras": {
       "title": "Anschaffungskosten (Bilanzposten)",
@@ -1850,6 +1866,9 @@
         "term": "Laufzeit",
         "span": "{from}–{to}"
       }
+    },
+    "valuation": {
+      "debtFreeComputed": "Schuldenfreier Preis {price} (+ Darlehensanteil {share})"
     }
   },
   "company": {

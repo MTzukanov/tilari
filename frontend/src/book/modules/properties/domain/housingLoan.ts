@@ -321,6 +321,69 @@ export function loanForecast(loan: HousingLoan, path: LoanPath): LoanMonth[] {
   return []
 }
 
+/**
+ * A loan's share at the end of `month` (`YYYY-MM`) as its path follows it: 0 before it was drawn and
+ * from its payoff, the month's share on the path, and the path's last after it (the path runs to the
+ * as-of month or a later certificate). Null where the path does not reach back to, or without one.
+ */
+export function shareAt(loan: HousingLoan, path: LoanPath | undefined, month: string): number | null {
+  if (month < monthOf(loan.starts)) return 0
+  const paidOff = paidOffOn(loan)
+  if (paidOff && monthOf(paidOff) <= month) return 0
+  const months = path?.months ?? []
+  if (!months.length || month < months[0].month) return null
+  return (months.find((m) => m.month === month) ?? months.at(-1)!).closing_snt
+}
+
+/** The object's share of all its loans at the end of `month`; null without loans or when one's is not known then. */
+export function housingShare(loans: HousingLoan[], paths: LoanPath[], month: string): number | null {
+  if (!loans.length) return null
+  let total = 0
+  for (const loan of loans) {
+    const share = shareAt(loan, paths.find((p) => p.loan_key === loan.key), month)
+    if (share == null) return null
+    total += share
+  }
+  return total
+}
+
+/** The object's share month by month over the months its paths cover, where every loan's is known. */
+export function housingShareMonths(loans: HousingLoan[], paths: LoanPath[]): Map<string, number> {
+  const covered = paths.flatMap((p) => (p.months.length ? [p.months[0].month, p.months.at(-1)!.month] : [])).sort()
+  const out = new Map<string, number>()
+  if (!covered.length) return out
+  for (const month of monthKeys(`${covered[0]}-01`, `${covered.at(-1)}-01`)) {
+    const share = housingShare(loans, paths, month)
+    if (share != null) out.set(month, share)
+  }
+  return out
+}
+
+/** A fiscal year's rahoitusvastike paid, all loans together, split by the paths into interest and repayment. */
+export type VastikeYear = { starts: string; paid_snt: number; interest_snt: number; principal_snt: number }
+
+/**
+ * The rahoitusvastike paid in each fiscal year (ADR-034): the paths' months from `from` (the first the
+ * book follows) to `through` (the as-of or sale month), each in the year its first day falls in. A
+ * month left unpaid still has its interest, so its repayment is below 0. Extra repayments are not
+ * rahoitusvastike and stay out. Only years with a month followed.
+ */
+export function vastikeYears(paths: LoanPath[], periods: { starts: string; ends: string }[], from: string | null, through: string): VastikeYear[] {
+  const years = new Map<string, VastikeYear>()
+  for (const m of paths.flatMap((p) => p.months)) {
+    if (m.forecast || (from && m.month < from) || m.month > through) continue
+    const day = `${m.month}-01`
+    const period = periods.find((p) => p.starts <= day && day <= p.ends)
+    if (!period) continue
+    const year = years.get(period.starts) ?? { starts: period.starts, paid_snt: 0, interest_snt: 0, principal_snt: 0 }
+    year.paid_snt += m.paid_snt
+    year.interest_snt += m.interest_snt
+    year.principal_snt += m.principal_snt
+    years.set(period.starts, year)
+  }
+  return [...years.values()]
+}
+
 /** The next reset of the reference rate after the latest rate row, if its interval is known. */
 export function nextReset(loan: HousingLoan): string | null {
   const last = loan.rates?.at(-1)

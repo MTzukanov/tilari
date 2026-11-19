@@ -302,6 +302,20 @@ function heldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
       render: (r) => (r.status === 'unlinked' ? '' : formatEuro(r.summary.unrecovered_snt)),
       footer: formatEuro(data.totals.unrecovered_snt),
     },
+    ...(rows.some((r) => r.summary.housing_share_snt != null)
+      ? [
+          {
+            id: 'housingShare',
+            label: t('properties.col.housingShare'),
+            title: t('properties.col.housingShareHint'),
+            width: 125,
+            align: 'right',
+            sortValue: (r) => r.summary.housing_share_snt ?? -1,
+            render: (r) => (r.summary.housing_share_snt != null ? formatEuro(r.summary.housing_share_snt) : ''),
+            footer: formatEuro(data.totals.housing_share_snt),
+          } satisfies TableColumn<PropertyRow>,
+        ]
+      : []),
     {
       id: 'breakEven',
       label: t('properties.col.breakEven'),
@@ -309,7 +323,19 @@ function heldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
       width: 125,
       align: 'right',
       sortValue: (r) => r.break_even?.price_snt ?? -1,
-      render: (r) => (r.break_even ? formatEuro(r.break_even.price_snt) : ''),
+      render: (r) =>
+        r.break_even ? (
+          <>
+            {formatEuro(r.break_even.price_snt)}
+            {r.summary.housing_share_snt ? (
+              <span className="muted property-sub">
+                {t('properties.col.breakEvenDebtFree', { price: formatEuro(r.break_even.price_snt + r.summary.housing_share_snt) })}
+              </span>
+            ) : null}
+          </>
+        ) : (
+          ''
+        ),
     },
   ]
   if (hasValuations) {
@@ -499,6 +525,13 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
             hint={data.totals.net_yield_bp != null ? t('properties.kpi.yieldHint', { pct: formatBp(data.totals.net_yield_bp) }) : undefined}
           />
           <Kpi label={t('properties.kpi.unrecovered')} value={formatEuro(data.totals.unrecovered_snt)} hint={t('properties.kpi.unrecoveredHint')} />
+          {data.totals.housing_share_snt != null ? (
+            <Kpi
+              label={t('properties.kpi.housingShares')}
+              value={formatEuro(data.totals.housing_share_snt)}
+              hint={t('properties.kpi.debtFreeUnrecovered', { amount: formatEuro(data.totals.unrecovered_snt + data.totals.housing_share_snt) })}
+            />
+          ) : null}
           <Kpi
             label={t('properties.kpi.portfolioIrr')}
             value={formatBp(data.totals.irr_bp)}

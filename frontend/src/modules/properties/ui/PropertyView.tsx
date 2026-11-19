@@ -202,6 +202,8 @@ export function PropertyView({
 }) {
   const { t } = useI18n()
   const [targetBp, setTargetBp] = useState<number | null>(null)
+  /** What the figures are computed with: the target return asked for. */
+  const query = targetBp != null ? { targetBp } : {}
   const [chartOptions, setChartOptions] = useState<CashFlowOptions>(loadCashFlowOptions)
   const [tab, setTab] = useState<ViewTab>(tabOf({ month, tab: routeTab }))
   const [selected, setSelected] = useState<string | null>(month ?? null)
@@ -210,7 +212,7 @@ export function PropertyView({
   const [bank, setBank] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
   const { data: d, error, loading, setData } = usePeriodQuery(
-    () => fetchProperty(id, targetBp != null ? { targetBp } : {}),
+    () => fetchProperty(id, query),
     [id, targetBp],
   )
   const docs = usePeriodQuery<PropertyDocuments>(() => fetchPropertyDocuments(id, bank), [id, bank])
@@ -236,14 +238,14 @@ export function PropertyView({
 
   /** Saves the object as a card changed it and shows it as saved, with the documents it linked. */
   async function saveDoc(next: PropertyDoc) {
-    setData(await saveProperty(id, next, targetBp != null ? { targetBp } : {}))
+    setData(await saveProperty(id, next, query))
     // The saved object stands even when the list does not come: it then shows at the next visit.
     fetchPropertyDocuments(id, bank).then(docs.setData, () => undefined)
   }
 
   /** Saves the owner's word that a missing document has none (ADR-030) and shows the object as saved. */
   async function skipDoc(detail: PropertyDetail, skip: DocumentSkip) {
-    setData(await saveProperty(id, skipDocument(detail.doc, skip), targetBp != null ? { targetBp } : {}))
+    setData(await saveProperty(id, skipDocument(detail.doc, skip), query))
   }
 
   /**
@@ -254,7 +256,7 @@ export function PropertyView({
   async function saveException(detail: PropertyDetail, leaseKey: string, exception: LeaseException | null, replaces?: LeaseException) {
     const saved = (list: LeaseException[]) => [...list.filter((e) => e.from !== replaces?.from), ...(exception ? [exception] : [])]
     const leases = (detail.doc.leases ?? []).map((l) => (l.key === leaseKey ? { ...l, exceptions: saved(l.exceptions ?? []) } : l))
-    setData(await saveProperty(id, { ...detail.doc, leases }, targetBp != null ? { targetBp } : {}))
+    setData(await saveProperty(id, { ...detail.doc, leases }, query))
   }
 
   // A tab or month typed or linked in the address while this page is open. Read the address itself:

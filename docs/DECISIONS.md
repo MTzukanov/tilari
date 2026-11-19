@@ -819,7 +819,7 @@ correction would change the open year's income statement lines. The rental-objec
   voucher a loan links) and the loans as cards edited in place, like leases and water settlements.
 - **Rahastoitu / tuloutettu** is a checkbox on each rahoitusvastike period, tuloutettu by default (owner): a
   rahastoitu charge belongs to the shares' acquisition cost in the shareholder's taxation. Later steps warn when
-  the ledger books one as a cost and offer a view that counts it as capital.
+  the ledger books one as a cost.
 - **What a loan needs** (owner, 2026-11-17): the form saves a loan only with its name, drawdown and last due date,
   its margin and reset interval (not for a fixed rate, which is all in its rate rows), and at least one share, one
   rahoitusvastike and one rate: what following the share and a forecast need. The company's whole loan is optional
@@ -852,7 +852,21 @@ correction would change the open year's income statement lines. The rental-objec
   stays and runs the share to 0. The last month pays what is left. No forecast when the charge would never clear it.
   Two more checkboxes add the interest, and the repayment with it, summed from the path's first month: on the
   share's scale, where a month's own figures would not show. The chart's choices are remembered in the browser.
-- **Next steps:** the figures that depend on the share (debt-free values, the rahoitusvastike split into interest
-  and principal, the rahastoitu view option); rate estimates per reference rate for the forecast; then
-  tilari-bank-import reading the vastike invoices into facts on the voucher.
+- **The share in the figures** (2026-11-19, step 4c): `ObjectSummary.housing_share_snt` is the share of all the
+  object's loans at the as-of month's end - not known when a loan's path does not reach back to it, none once sold.
+  It is a "Velkaosuus" tile on the overview and Talous, with what is still to recover debt-free (unrecovered +
+  share), and on the Properties page a total, a column and a chart of the shares by month (the total is empty where
+  no share is known, not 0). A debt-free price is the price plus the share: beside the break-even and the target
+  price, and on a price estimate without a typed one (the share at the estimate's month end; the path's last after
+  it).
+- **Sale costs are a percentage of the debt-free price** (owner, 2026-11-19: a broker's fee is): the selling price
+  plus the share the buyer takes over. The break-even, the target price, the IRR's sale at the estimate or book value
+  and the portfolio's IRRs count it; without loans nothing changes.
+- **The rahoitusvastike split** on Talous: per fiscal year the paths' interest and repayment over the months the
+  book follows, each month in the year its first day falls in; extra repayments are not rahoitusvastike.
+- **No "Rahastoitu rahoitusvastike pääomana" view** (2026-11-19): built on the 4c branch and taken out before merging,
+  as the owner asked if it added complexity - they have not seen a rahastoitu vastike, and the view needed a second
+  pass over the figures with made-up cost rows. The checkbox on a charge and its warning stay.
+- **Next steps:** rate estimates per reference rate for the forecast; then tilari-bank-import reading the vastike
+  invoices into facts on the voucher.
 

@@ -69,6 +69,27 @@ export function IrrKpi({ d }: { d: PropertyDetail }) {
   )
 }
 
+/**
+ * The object's share of its housing-company loans at the as-of date (ADR-034), and while held what
+ * is still to recover counting it: what a debt-free price has to bring back. None without loans.
+ */
+export function HousingShareKpi({ d }: { d: PropertyDetail }) {
+  const { t } = useI18n()
+  if (!d.doc.housing_loans?.length || d.status === 'sold') return null
+  const share = d.summary.housing_share_snt
+  return (
+    <Kpi
+      label={t('properties.kpi.housingShare')}
+      value={share != null ? formatEuro(share) : ''}
+      hint={
+        share == null
+          ? t('properties.kpi.housingShareUnknown')
+          : t('properties.kpi.debtFreeUnrecovered', { amount: formatEuro(d.summary.unrecovered_snt + share) })
+      }
+    />
+  )
+}
+
 /** What is still to recover (or the gain), and once sold the total result. */
 export function ResultKpi({ d }: { d: PropertyDetail }) {
   const { t } = useI18n()

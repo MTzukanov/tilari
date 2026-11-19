@@ -39,6 +39,8 @@ export type ObjectInput = {
   periods: { starts: string; ends: string }[]
   asOf: string
   targetBp?: number | null
+  /** The housing-company loan share at the as-of date: sale costs are a percentage of the debt-free price (ADR-034). */
+  housingShare?: number | null
 }
 
 /** A line behind a month's bars (`MonthLine` without the ledger details). */
@@ -150,6 +152,7 @@ export function computeObject(input: ObjectInput): ObjectResult {
     sale_price_snt: disposals.reduce((sum, d) => sum + d.price_snt, 0),
     disposed_cost_snt: disposals.reduce((sum, d) => sum + d.eras.reduce((t, e) => t + e.credit_snt, 0), 0),
     unrecovered_snt: unrecovered,
+    housing_share_snt: input.housingShare ?? null,
   }
 
   // Months from the first activity to the as-of month (at most 25 years back).
@@ -193,11 +196,12 @@ export function computeObject(input: ObjectInput): ObjectResult {
   )
 
   const { costs } = resolveSaleCosts(doc, input.settings)
+  const share = input.housingShare ?? 0
   const cash = toFlows(flows, asOf)
   const valuation = [...(doc.valuations ?? [])].filter((v) => v.date <= asOf).pop() ?? null
   const holding = status === 'active' || status === 'partly_sold'
-  const market = holding && valuation ? xirr([...cash, { date: asOf, amount_snt: saleNet(valuation.price_snt, costs) }]) : null
-  const atCost = holding && bookValue > 0 ? xirr([...cash, { date: asOf, amount_snt: saleNet(bookValue, costs) }]) : null
+  const market = holding && valuation ? xirr([...cash, { date: asOf, amount_snt: saleNet(valuation.price_snt, costs, share) }]) : null
+  const atCost = holding && bookValue > 0 ? xirr([...cash, { date: asOf, amount_snt: saleNet(bookValue, costs, share) }]) : null
   const actual = status === 'sold' ? xirr(cash) : null
   const returns: Returns = {
     market_bp: toBp(market?.rate ?? null),
@@ -209,11 +213,11 @@ export function computeObject(input: ObjectInput): ObjectResult {
   let breakEven: BreakEven | null = null
   let target: { rate_bp: number; price_snt: number } | null = null
   if (holding) {
-    const be = breakEvenPrice(unrecovered, costs)
+    const be = breakEvenPrice(unrecovered, costs, share)
     breakEven = { ...be, unrecovered_snt: unrecovered, sale_costs: costs }
     const rateBp = input.targetBp ?? doc.target_return_bp ?? input.settings.target_return_bp ?? null
     if (rateBp != null) {
-      target = { rate_bp: rateBp, price_snt: requiredSalePrice(cash, asOf, rateBp / 10000, costs) }
+      target = { rate_bp: rateBp, price_snt: requiredSalePrice(cash, asOf, rateBp / 10000, costs, share) }
     }
   }
 

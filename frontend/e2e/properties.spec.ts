@@ -17,6 +17,32 @@ async function saveLeaseCard(page: Page) {
   await expect(page).toHaveURL(/#\/property\/4\/leases$/)
 }
 
+/** Where each row of a legend sits: its left edge, top and width, rounded. */
+async function legendRows(rows: Locator) {
+  return rows.evaluateAll((els) =>
+    els.map((el) => {
+      const r = el.getBoundingClientRect()
+      return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width) }
+    }),
+  )
+}
+
+/**
+ * A legend's rows run top to bottom in equal columns: the rows of a column share a left edge, the next
+ * row is under the last or starts the next column to the right, and every row is as wide as the others.
+ */
+function expectColumns(rows: { x: number; y: number; w: number }[], columns: number | 'several') {
+  const xs = [...new Set(rows.map((r) => r.x))]
+  if (columns === 'several') expect(xs.length).toBeGreaterThan(1)
+  else expect(xs.length).toBe(columns)
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i].x === rows[i - 1].x) expect(rows[i].y, `row ${i}`).toBeGreaterThan(rows[i - 1].y)
+    else expect(rows[i].x, `row ${i}`).toBeGreaterThan(rows[i - 1].x)
+  }
+  const ws = rows.map((r) => r.w)
+  expect(Math.max(...ws) - Math.min(...ws)).toBeLessThanOrEqual(1)
+}
+
 test.describe('rental objects', () => {
   test('setup links a cost centre and the object page shows its figures', async ({ page }) => {
     await openBook(page)
@@ -58,7 +84,7 @@ test.describe('rental objects', () => {
 })
 
 test.describe('rental objects chart', () => {
-  test('every object has a line and a checkbox, the total stays; the choice is remembered; it fits a phone', async ({ page }) => {
+  test('every object has a line and a checkbox, all or none at once, the total stays; the choice is remembered; the defaults line up; it fits a phone', async ({ page }) => {
     await openBook(page)
     await page.goto('/#/properties')
     const panel = page.locator('section.portfolio-charts')
@@ -75,20 +101,70 @@ test.describe('rental objects chart', () => {
     await page.reload()
     await expect(panel.getByRole('checkbox', { name: 'Asunto' })).not.toBeChecked()
     await expect(cash.locator('.portfolio-line')).toHaveCount(2)
+    // "Valitse kaikki" and "Poista valinnat" act on the objects' lines; the total is a choice of its own.
+    const objects = panel.getByRole('group', { name: 'Kohteet' })
+    const checkAll = panel.getByRole('button', { name: 'Valitse kaikki' })
+    const uncheckAll = panel.getByRole('button', { name: 'Poista valinnat' })
+    await uncheckAll.click()
+    await expect(objects.getByRole('checkbox', { checked: true })).toHaveCount(0)
+    await expect(cash.locator('.portfolio-line')).toHaveCount(0)
+    await expect(cash.locator('.portfolio-total')).toHaveCount(1)
+    await expect(uncheckAll).toBeDisabled()
+    await page.reload()
+    await expect(cash.locator('.portfolio-line')).toHaveCount(0)
+    await checkAll.click()
+    await expect(objects.getByRole('checkbox', { checked: false })).toHaveCount(0)
+    await expect(cash.locator('.portfolio-line')).toHaveCount(3)
+    await expect(checkAll).toBeDisabled()
+    expect(JSON.parse((await page.evaluate(() => localStorage.getItem('tilari.properties.portfolioChart')))!)).toEqual({
+      hidden: [],
+      total: true,
+      allMonths: false,
+    })
     await panel.getByRole('checkbox', { name: 'Kaikki yhteensä' }).uncheck()
     await expect(cash.locator('.portfolio-total')).toHaveCount(0)
+
+    // The defaults at the bottom: the three fields line up and look alike (the euro field too).
+    const defaults = page.locator('details.property-defaults')
+    await defaults.locator('summary').click()
+    const fields = defaults.locator('.property-form-grid input')
+    await expect(fields).toHaveCount(3)
+    const looks = await fields.evaluateAll((els) =>
+      els.map((el) => {
+        const r = el.getBoundingClientRect()
+        const css = getComputedStyle(el)
+        return [Math.round(r.y), Math.round(r.height), css.backgroundColor, css.borderTopWidth, css.borderTopColor].join(' ')
+      }),
+    )
+    expect(new Set(looks).size, looks.join(' | ')).toBe(1)
 
     await page.setViewportSize({ width: 360, height: 800 })
     await expect
       .poll(() => page.evaluate(() => { const w = document.querySelector('main.workspace')!; return w.scrollWidth - w.clientWidth }))
       .toBe(0)
   })
-  test('a book with investments linked draws the unrecovered chart too', async ({ page }) => {
+  test('a book with investments linked draws the unrecovered chart first; the objects in columns', async ({ page }) => {
     await openBook(page, propertiesBook, 'Esimerkki Vuokraus Oy')
     await page.goto('/#/properties')
     const panel = page.locator('section.portfolio-charts')
     const unrecovered = panel.getByRole('group', { name: 'Palauttamatta kuukauden lopussa' })
     await expect(unrecovered).toBeVisible()
+    // Still to recover first, the cash flow under it: the two can be seen to meet or part.
+    await expect(panel.locator('h4')).toHaveText(['Palauttamatta kuukauden lopussa', 'Kertynyt kassavirta'])
+    // The objects' checkboxes top to bottom in equal columns, on the same columns as the total's.
+    const objects = panel.getByRole('group', { name: 'Kohteet' }).locator('label')
+    expect(await objects.count()).toBeGreaterThan(6)
+    const rows = await legendRows(objects)
+    expectColumns(rows, 'several')
+    const total = (await panel.locator('label', { hasText: 'Kaikki yhteensä' }).boundingBox())!
+    expect(Math.round(total.x)).toBe(rows[0].x)
+    // A row is a click target along its width, not only at the box.
+    const first = objects.first()
+    const box = (await first.boundingBox())!
+    await first.click({ position: { x: box.width - 4, y: box.height / 2 } })
+    await expect(first.getByRole('checkbox')).not.toBeChecked()
+    await first.click({ position: { x: box.width - 4, y: box.height / 2 } })
+    await expect(first.getByRole('checkbox')).toBeChecked()
     expect(await unrecovered.locator('.portfolio-line').count()).toBeGreaterThan(3)
     await expect(unrecovered.locator('.portfolio-total')).toHaveCount(1)
     // Pointing at a month lists every shown line, the total first; a click keeps it.
@@ -96,6 +172,14 @@ test.describe('rental objects chart', () => {
     await unrecovered.locator('.chart-point-hit').last().click()
     await expect(tip.locator('.chart-tip-row').first()).toContainText('Kaikki yhteensä')
     expect(await tip.locator('.chart-tip-row').count()).toBeGreaterThan(3)
+
+    // A phone: one column, nothing to scroll sideways.
+    await page.setViewportSize({ width: 360, height: 800 })
+    await expect.poll(async () => new Set((await legendRows(objects)).map((r) => r.x)).size).toBe(1)
+    expectColumns(await legendRows(objects), 1)
+    await expect
+      .poll(() => page.locator('main.workspace').evaluate((w) => w.scrollWidth - w.clientWidth))
+      .toBe(0)
   })
 })
 
@@ -566,6 +650,22 @@ test.describe('rental object housing-company loans', () => {
     await expect(docLine).toBeVisible()
     await expect(docLine.getByRole('button', { name: 'Poista linkki' })).toHaveCount(0)
 
+    // The share in the figures: a tile on the overview, with what is still to recover debt-free.
+    const kpi = (label: string) => page.locator('.overview-kpi', { has: page.locator('.overview-kpi-label', { hasText: new RegExp(`^${label}$`) }) })
+    await page.getByRole('tab', { name: /^Yleiskatsaus/ }).click()
+    await expect(kpi('Velkaosuus')).toContainText(/^Velkaosuus11\s898\s€velattomana palauttamatta \d/)
+    // On Talous: the rahoitusvastike paid in 2026 split as on the card, the break-even price debt-free.
+    await page.getByRole('tab', { name: /^Talous/ }).click()
+    const years = page.locator('.property-section', { has: page.getByRole('heading', { name: 'Tilikausittain' }) })
+    await expect(years.locator('thead')).toContainText(/Yhtiölainan korko.*Yhtiölainan lyhennys/)
+    await expect(years.locator('tbody tr', { hasText: '1.1.2026' })).toContainText(/145,62\s€254,38\s€/)
+    await expect(page.locator('.property-breakeven')).toContainText(/velaton hinta, velkaosuus 11\s898\s€ 31\.5\.2026/)
+    // The portfolio: the shares together, a column, and a chart of them.
+    await page.goto('/#/properties')
+    await expect(kpi('Yhtiölainaosuudet')).toContainText(/11\s898\s€/)
+    await expect(page.locator('.property-table').first().locator('thead')).toContainText('Velkaosuus')
+    await expect(page.getByRole('heading', { name: 'Yhtiölainaosuudet kuukauden lopussa' })).toBeVisible()
+
     // Another object copies the loan's terms; its share and charges are its own.
     await page.goto('/#/property/30/housing')
     await loans.getByRole('button', { name: 'Kopioi toisesta kohteesta' }).click()
@@ -610,6 +710,10 @@ test.describe('rental object housing-company loans', () => {
     await loans.locator('.property-loan-card').getByRole('button', { name: 'Muokkaa', exact: true }).click()
     await expect(card).toHaveCount(1)
     expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'loan card').toBeLessThanOrEqual(0)
+    // Talous too, with long words in its acquisition-cost movements: each takes two lines.
+    await page.goto('/#/property/60/finance')
+    await expect(page.locator('.property-era td.property-col-text').first()).toBeVisible()
+    expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'finance tab').toBeLessThanOrEqual(0)
   })
 })
 
@@ -620,16 +724,16 @@ test.describe('rental object figures edited on Talous', () => {
 
     // Sale costs and target: a wrong percentage is refused in the section, which stays open.
     const sale = page.locator('.property-finance-sale')
-    await expect(sale).toContainText('Myyntikulut, % hinnasta: – · Myyntikulut, kiinteä €: – · Tavoitetuotto, % vuodessa: –')
+    await expect(sale).toContainText('Myyntikulut, % velattomasta hinnasta: – · Myyntikulut, kiinteä €: – · Tavoitetuotto, % vuodessa: –')
     await sale.getByRole('button', { name: 'Muokkaa', exact: true }).click()
-    await sale.getByLabel('Myyntikulut, % hinnasta').fill('kaksi')
+    await sale.getByLabel('Myyntikulut, % velattomasta hinnasta').fill('kaksi')
     await sale.getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(sale.locator('.error')).toHaveText('Prosentti muodossa 3,5.')
-    await sale.getByLabel('Myyntikulut, % hinnasta').fill('2,5')
+    await sale.getByLabel('Myyntikulut, % velattomasta hinnasta').fill('2,5')
     await sale.getByLabel('Myyntikulut, kiinteä €').fill('1000')
     await sale.getByLabel('Tavoitetuotto, % vuodessa').fill('6')
     await sale.getByRole('button', { name: 'Tallenna', exact: true }).click()
-    await expect(sale).toContainText(/Myyntikulut, % hinnasta: 2,5 % · Myyntikulut, kiinteä €: 1\s000,00\s€ · Tavoitetuotto, % vuodessa: 6 %/)
+    await expect(sale).toContainText(/Myyntikulut, % velattomasta hinnasta: 2,5 % · Myyntikulut, kiinteä €: 1\s000,00\s€ · Tavoitetuotto, % vuodessa: 6 %/)
 
     // Other capital: a row added and saved.
     const capital = page.locator('.property-finance-capital')
@@ -1222,7 +1326,7 @@ test.describe('rental object month lines', () => {
     await expect(page).toHaveURL(/#\/property\/4$/)
   })
 
-  test('the chart turns costs up, shows any of its bars and the running total, remembers them; a month shows its cash flow; a phone stacks the legend', async ({ page }) => {
+  test('the chart turns costs up, shows any of its bars and the running total, remembers them; a month shows its cash flow; the legend in columns, one on a phone', async ({ page }) => {
     await openBook(page)
     await page.goto('/#/property/4')
     const chart = page.locator('svg.property-chart').first()
@@ -1287,9 +1391,11 @@ test.describe('rental object month lines', () => {
     await expect(net).toBeChecked()
     await expect(page.getByRole('checkbox', { name: 'Kulut ylöspäin' })).toBeChecked()
 
-    // A phone: one legend item per line, the chart drawn at its own width (text keeps its size).
-    await page.setViewportSize({ width: 360, height: 740 })
+    // The checkboxes run top to bottom in columns; a phone has one, the chart drawn at its own width
+    // (text keeps its size).
     const items = page.locator('.overview-legend').first().locator('> *')
+    expectColumns(await legendRows(items), 'several')
+    await page.setViewportSize({ width: 360, height: 740 })
     const xs = await items.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().x)))
     expect(new Set(xs).size).toBe(1)
     await expect

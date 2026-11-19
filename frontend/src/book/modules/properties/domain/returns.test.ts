@@ -92,6 +92,20 @@ describe('break-even and required price', () => {
     expect(grossPriceFor(-10, costs)).toBe(Math.ceil(49_990 / 0.97))
   })
 
+  it('takes the percentage of the debt-free price: the price plus the housing-company loan share', () => {
+    const share = 2_000_000
+    const price = grossPriceFor(10_000_000, costs, share)
+    // 3 % of 20 000,00 € more to pay, grossed up: price (1 - 3 %) = 100 000,00 + 500,00 + 600,00.
+    expect(price).toBe(Math.ceil(10_110_000 / 0.97))
+    expect(price - grossPriceFor(10_000_000, costs)).toBe(Math.ceil(10_110_000 / 0.97) - Math.ceil(10_050_000 / 0.97))
+    expect(saleNet(price, costs, share)).toBeGreaterThanOrEqual(10_000_000)
+    expect(saleNet(price - 100, costs, share)).toBeLessThan(10_000_000)
+    expect(saleNet(price, costs, share)).toBe(price - Math.round((price + share) * 0.03) - 50_000)
+    // Recovered on a price alone, but the share's sale costs are still to come.
+    expect(breakEvenPrice(-60_000, costs, share)).toEqual({ price_snt: Math.ceil(50_000 / 0.97), already_recovered: false })
+    expect(requiredSalePrice([{ date: '2025-01-01', amount_snt: -10_000_000 }], '2026-01-01', 0, costs, share)).toBe(price)
+  })
+
   it('reports an object that has already paid itself back', () => {
     expect(breakEvenPrice(-60_000, costs)).toEqual({ price_snt: 0, already_recovered: true })
     expect(breakEvenPrice(100, { pct_bp: 0, fixed_snt: 0 })).toEqual({ price_snt: 100, already_recovered: false })

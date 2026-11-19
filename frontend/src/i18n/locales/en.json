@@ -1060,7 +1060,11 @@
       "portfolioIrr": "Portfolio annual return (IRR)",
       "portfolioIrrHint": "sold objects actual, others at book value",
       "totalResult": "Total result",
-      "totalResultHint": "Sale + cash flow - invested"
+      "totalResultHint": "Sale + cash flow - invested",
+      "housingShare": "Loan share",
+      "housingShares": "Housing-company loan shares",
+      "housingShareUnknown": "not known on the as-of date",
+      "debtFreeUnrecovered": "debt-free not yet recovered {amount}"
     },
     "col": {
       "object": "Object",
@@ -1092,7 +1096,10 @@
       "bookGainHint": "Accounting gain or loss: selling price - sale costs - acquisition cost",
       "totalResult": "Total result",
       "irrSoldHint": "Internal rate of return (IRR) over the holding time: the yearly rate at which purchase, rents, costs and sale cancel out. Not the total result divided by the acquisition cost: -20 % over 16 months is about -15 % a year. The total row takes all sold objects' flows together.",
-      "totalResultHint": "Sale + cash flow - acquisition cost in euros; below as a percentage of the acquisition cost (whole holding time, not per year)."
+      "totalResultHint": "Sale + cash flow - acquisition cost in euros; below as a percentage of the acquisition cost (whole holding time, not per year).",
+      "housingShare": "Loan share",
+      "housingShareHint": "Housing-company loan share on the as-of date, worked out from the payments and the certificates (Housing company tab)",
+      "breakEvenDebtFree": "debt-free {price}"
     },
     "status": {
       "active": "Owned",
@@ -1116,7 +1123,7 @@
     "field": {
       "kind": "Kind",
       "excluded": "Not a rental object (hide from the list)",
-      "salePct": "Sale costs, % of price",
+      "salePct": "Sale costs, % of debt-free price",
       "saleFixed": "Sale costs, fixed €",
       "targetReturn": "Target return, % per year",
       "price": "Selling price (without loan share)",
@@ -1168,13 +1175,14 @@
     "breakEven": {
       "title": "Break-even price: the price that returns the money",
       "caption": "selling price without the housing-company loan share",
-      "explain": "Not yet recovered {unrecovered}. Sale costs {pct} and {fixed} come off the price; at this price every euro put into the object has come back.",
+      "explain": "Not yet recovered {unrecovered}. Sale costs of {pct} of the debt-free price and {fixed} come off; at this price every euro put into the object has come back.",
       "recovered": "The object has already returned the money invested; any price after sale costs is a gain.",
       "bookLoss": "No accounting loss at a price of at least {price} (book value + sale costs).",
       "taxNote": "Taxes: when gains and losses are taxed at the same 20 % and a loss can be deducted from other profit, the after-tax break-even is the same figure.",
-      "debtFree": "Debt-free price = selling price + remaining housing-company loan share. Loan-share tracking comes in the next phase.",
       "calculate": "Calculate",
-      "targetPrice": "Annual return {pct}: selling price {price}"
+      "targetPrice": "Annual return {pct}: selling price {price}",
+      "debtFreeCaption": "debt-free price, loan share {share} on {date}",
+      "targetDebtFree": "debt-free {price}"
     },
     "portfolioChart": {
       "title": "Objects by month",
@@ -1182,7 +1190,11 @@
       "unrecovered": "Not yet recovered at month end",
       "total": "All together",
       "allMonths": "All months",
-      "lead": "The total line always counts every object: the checkboxes only hide lines. A sold object stays in the cash flow total but leaves the unrecovered total from its sale month."
+      "lead": "The total line always counts every object: the checkboxes only hide lines. A sold object leaves the unrecovered total from its sale month but stays in the cash flow total.",
+      "shares": "Housing-company loan shares at month end",
+      "objects": "Objects",
+      "checkAll": "Select all",
+      "uncheckAll": "Clear all"
     },
     "chart": {
       "cashFlow": "Cash flow by month",
@@ -1210,7 +1222,11 @@
       "resultHint": "The cost centre's result in the books: every P&L line, accruals and the sale included",
       "netHint": "Income - costs in the month they belong to: accruals and later corrections included",
       "capexHint": "Change in acquisition cost. Negative = capital came back, e.g. a transfer-tax refund. The lines are listed below under the item.",
-      "proceedsHint": "Money from the sale after sale costs"
+      "proceedsHint": "Money from the sale after sale costs",
+      "housingInterest": "Company loan interest",
+      "housingInterestHint": "The interest on the loan share in the financing charge paid, worked out month by month",
+      "housingPrincipal": "Company loan repaid",
+      "housingPrincipalHint": "The part of the financing charge paid that lowered the loan share. A month without a payment adds its interest to the share."
     },
     "eras": {
       "title": "Acquisition cost (balance-sheet items)",
@@ -1850,6 +1866,9 @@
         "term": "Loan term",
         "span": "{from}–{to}"
       }
+    },
+    "valuation": {
+      "debtFreeComputed": "Debt-free price {price} (+ loan share {share})"
     }
   },
   "company": {

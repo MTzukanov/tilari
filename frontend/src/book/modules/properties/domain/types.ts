@@ -297,6 +297,11 @@ export type ObjectSummary = {
   disposed_cost_snt: number
   /** Money not yet recovered: -(capital + operating + interest + proceeds flows). */
   unrecovered_snt: number
+  /**
+   * The object's share of its housing-company loans at the as-of month's end (ADR-034); null without
+   * loans, once sold, or when a loan's share is not known then.
+   */
+  housing_share_snt: number | null
 }
 
 export type Trailing12 = {
@@ -334,6 +339,9 @@ export type YearRow = {
   proceeds_snt: number
   /** Every posted P&L line of the cost centre in the year, as Kitsas reports it. */
   kitsas_result_snt: number
+  /** The rahoitusvastike paid in the year split by the loans' paths (ADR-034): only on an object with loans. */
+  housing_interest_snt?: number
+  housing_principal_snt?: number
 }
 
 export type Disposal = {
@@ -713,6 +721,8 @@ export type PortfolioResponse = {
     held_irr_bp: number | null
     /** IRR of the sold objects together (actual flows). */
     sold_irr_bp: number | null
+    /** The held objects' housing-company loan shares where known; null when none has a loan. */
+    housing_share_snt: number | null
   }
 }
 
@@ -724,9 +734,11 @@ export type PortfolioResponse = {
  */
 export type PortfolioChart = {
   keys: string[]
-  objects: { id: number; cash_snt: (number | null)[]; unrecovered_snt: (number | null)[] }[]
+  objects: { id: number; cash_snt: (number | null)[]; unrecovered_snt: (number | null)[]; share_snt: (number | null)[] }[]
   total_cash_snt: number[]
   total_unrecovered_snt: number[]
+  /** The housing-company loan shares (ADR-034), each object's where known; null where none is. */
+  total_share_snt: (number | null)[]
 }
 
 /** The header's count of warnings to act on (ADR-030). */

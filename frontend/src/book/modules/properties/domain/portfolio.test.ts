@@ -19,6 +19,7 @@ import {
   saveProperty,
 } from './portfolio'
 import { rowAlerts } from './reminders'
+import { grossPriceFor } from './returns'
 import type { SetupApplyInput, SetupResponse } from './types'
 
 const E = 100
@@ -1147,6 +1148,39 @@ describe('rental objects: housing-company loans', () => {
     expect(path.months.at(-1)!.closing_snt).toBeLessThan(10_000 * E)
     const codes = detail.warnings.map((w) => w.code).filter((c) => c.startsWith('loan_'))
     expect(codes).toEqual(['loan_rate_missing', 'loan_rahastoitu_expensed'])
+  })
+
+  it('the share in the figures: the summary, the years\' rahoitusvastike split, the portfolio', async () => {
+    const { db } = await setUp()
+    const doc = computeDetail(db, CC.bundle, { today: TODAY }).doc
+    const stored = loan({
+      rates: [{ from: '2025-01-01', reference_pcm: 2200 }],
+      charges: [{ from: '2025-01-01', amount_snt: 80 * E, no_document: true }],
+      certificates: [{ date: '2025-12-31', share_snt: 10_000 * E, no_document: true }],
+    })
+    const costs = { pct_bp: 300, fixed_snt: 500 * E }
+    saveProperty(db, CC.bundle, { ...doc, housing_loans: [stored], sale_costs: costs }, 'now')
+    const detail = computeDetail(db, CC.bundle, { today: TODAY })
+    const [path] = detail.housing.paths
+    const share = path.months.find((m) => m.month === detail.as_of.slice(0, 7))!.closing_snt
+    expect(detail.summary.housing_share_snt).toBe(share)
+    // Sale costs are a percentage of the debt-free price: the share's 3 % is still to be recovered.
+    expect(detail.break_even!.price_snt).toBe(grossPriceFor(detail.summary.unrecovered_snt, costs, share))
+    expect(detail.break_even!.price_snt).toBeGreaterThan(grossPriceFor(detail.summary.unrecovered_snt, costs))
+    // 2025: twelve payments of 80,00 split into the interest on the share and what repaid it.
+    const y2025 = detail.years.find((y) => y.starts === '2025-01-01')!
+    expect(y2025.housing_interest_snt! + y2025.housing_principal_snt!).toBe(12 * 80 * E)
+    expect(y2025.housing_interest_snt).toBe(path.months.filter((m) => m.month.startsWith('2025')).reduce((s, m) => s + m.interest_snt, 0))
+    // An object without loans has no share and no split.
+    const garage = computeDetail(db, CC.garage, { today: TODAY })
+    expect(garage.summary.housing_share_snt).toBeNull()
+    expect(garage.years.every((y) => y.housing_interest_snt === undefined)).toBe(true)
+
+    const portfolio = computePortfolio(db, { today: TODAY })
+    expect(portfolio.totals.housing_share_snt).toBe(share)
+    const charted = portfolio.chart.objects.find((o) => o.id === CC.bundle)!
+    expect(charted.share_snt.at(-1)).toBe(share)
+    expect(portfolio.chart.total_share_snt.at(-1)).toBe(share)
   })
 
   it('copy sources: the other objects\' loans, those paying the same housing company first', async () => {

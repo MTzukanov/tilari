@@ -1060,7 +1060,11 @@
       "portfolioIrr": "Portföljens årsavkastning (IRR)",
       "portfolioIrrHint": "sålda faktiska, övriga till bokfört värde",
       "totalResult": "Totalt resultat",
-      "totalResultHint": "Försäljning + kassaflöde - investerat"
+      "totalResultHint": "Försäljning + kassaflöde - investerat",
+      "housingShare": "Låneandel",
+      "housingShares": "Bolagslåneandelar",
+      "housingShareUnknown": "inte känd på lägesdagen",
+      "debtFreeUnrecovered": "skuldfritt ej återfått {amount}"
     },
     "col": {
       "object": "Objekt",
@@ -1092,7 +1096,10 @@
       "bookGainHint": "Bokföringsmässig vinst eller förlust: försäljningspris - försäljningskostnader - anskaffningsutgift",
       "totalResult": "Totalt resultat",
       "irrSoldHint": "Internränta (IRR) under ägartiden: den årliga räntan vid vilken köp, hyror, kostnader och försäljning tar ut varandra. Inte totalresultatet delat med anskaffningsutgiften: -20 % på 16 månader är cirka -15 % per år. Totalraden tar alla sålda objekts flöden tillsammans.",
-      "totalResultHint": "Försäljning + kassaflöde - anskaffningsutgift i euro; nedan i procent av anskaffningsutgiften (hela ägartiden, inte per år)."
+      "totalResultHint": "Försäljning + kassaflöde - anskaffningsutgift i euro; nedan i procent av anskaffningsutgiften (hela ägartiden, inte per år).",
+      "housingShare": "Låneandel",
+      "housingShareHint": "Bolagslåneandel på lägesdagen, beräknad från betalningarna och disponentintygen (fliken Bostadsbolag)",
+      "breakEvenDebtFree": "skuldfritt {price}"
     },
     "status": {
       "active": "Ägs",
@@ -1116,7 +1123,7 @@
     "field": {
       "kind": "Typ",
       "excluded": "Inte hyresobjekt (dölj i listan)",
-      "salePct": "Försäljningskostnader, % av priset",
+      "salePct": "Försäljningskostnader, % av skuldfritt pris",
       "saleFixed": "Försäljningskostnader, fast €",
       "targetReturn": "Målavkastning, % per år",
       "price": "Försäljningspris (utan låneandel)",
@@ -1168,13 +1175,14 @@
     "breakEven": {
       "title": "Nollpris: priset som ger pengarna tillbaka",
       "caption": "försäljningspris utan bolagslåneandel",
-      "explain": "Ej återfått {unrecovered}. Försäljningskostnader {pct} och {fixed} dras av från priset; till detta pris har alla pengar som satts in i objektet kommit tillbaka.",
+      "explain": "Ej återfått {unrecovered}. Försäljningskostnader {pct} av det skuldfria priset och {fixed} dras av; till detta pris har alla pengar som satts in i objektet kommit tillbaka.",
       "recovered": "Objektet har redan gett tillbaka de investerade pengarna; varje pris efter försäljningskostnader är vinst.",
       "bookLoss": "Ingen bokföringsmässig förlust vid ett pris på minst {price} (bokfört värde + försäljningskostnader).",
       "taxNote": "Skatt: när vinst och förlust beskattas med samma 20 % och en förlust kan dras av från annan vinst är nollpriset efter skatt samma siffra.",
-      "debtFree": "Skuldfritt pris = försäljningspris + återstående bolagslåneandel. Uppföljning av låneandelen kommer i nästa skede.",
       "calculate": "Beräkna",
-      "targetPrice": "Årsavkastning {pct}: försäljningspris {price}"
+      "targetPrice": "Årsavkastning {pct}: försäljningspris {price}",
+      "debtFreeCaption": "skuldfritt pris, låneandel {share} {date}",
+      "targetDebtFree": "skuldfritt {price}"
     },
     "portfolioChart": {
       "title": "Objekt per månad",
@@ -1182,7 +1190,11 @@
       "unrecovered": "Ej återfått vid månadens slut",
       "total": "Alla tillsammans",
       "allMonths": "Alla månader",
-      "lead": "Totallinjen räknar alltid alla objekt: kryssrutorna döljer bara linjer. Ett sålt objekt stannar i kassaflödets total men lämnar det ej återfångna från försäljningsmånaden."
+      "lead": "Totallinjen räknar alltid alla objekt: kryssrutorna döljer bara linjer. Ett sålt objekt lämnar det ej återfångna från försäljningsmånaden men stannar i kassaflödets total.",
+      "shares": "Bolagslåneandelar vid månadens slut",
+      "objects": "Objekt",
+      "checkAll": "Markera alla",
+      "uncheckAll": "Avmarkera alla"
     },
     "chart": {
       "cashFlow": "Kassaflöde per månad",
@@ -1210,7 +1222,11 @@
       "resultHint": "Kostnadsställets resultat i bokföringen: alla resultatposter, även periodiseringar och försäljning",
       "netHint": "Intäkter - kostnader för den månad de gäller: periodiseringar och senare rättelser ingår",
       "capexHint": "Ändring i anskaffningsutgiften. Negativt = kapital kom tillbaka, t.ex. återbäring av överlåtelseskatt. Posterna visas nedan under balansposten.",
-      "proceedsHint": "Pengar från försäljningen efter försäljningskostnader"
+      "proceedsHint": "Pengar från försäljningen efter försäljningskostnader",
+      "housingInterest": "Bolagslånets ränta",
+      "housingInterestHint": "Låneandelens ränta i det betalda finansieringsvederlaget, beräknad månad för månad",
+      "housingPrincipal": "Bolagslånets amortering",
+      "housingPrincipalHint": "Den del av det betalda finansieringsvederlaget som amorterade låneandelen. En månad utan betalning ökar låneandelen med räntan."
     },
     "eras": {
       "title": "Anskaffningsutgift (balansposter)",
@@ -1850,6 +1866,9 @@
         "term": "Lånetid",
         "span": "{from}–{to}"
       }
+    },
+    "valuation": {
+      "debtFreeComputed": "Skuldfritt pris {price} (+ låneandel {share})"
     }
   },
   "company": {
