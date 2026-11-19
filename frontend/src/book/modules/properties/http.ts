@@ -15,7 +15,6 @@ function queryString(query: PropertyQuery = {}, extra: Record<string, string> = 
   const q = new URLSearchParams(extra)
   if (query.asOf) q.set('as_of', query.asOf)
   if (query.targetBp != null) q.set('target_bp', String(query.targetBp))
-  if (query.rahastoituCapital) q.set('rahastoitu', 'capital')
   const qs = q.toString()
   return qs ? `?${qs}` : ''
 }

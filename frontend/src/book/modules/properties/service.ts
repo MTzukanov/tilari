@@ -24,8 +24,7 @@ import type {
 } from './domain/types'
 import type { KernelContext } from '../types'
 
-/** `rahastoituCapital`: rahastoitu rahoitusvastike paid counts as capital put in (a view option, ADR-034). */
-export type PropertyQuery = { asOf?: string | null; targetBp?: number | null; rahastoituCapital?: boolean }
+export type PropertyQuery = { asOf?: string | null; targetBp?: number | null }
 
 /** Rental objects (vuokrakohteet): reads from the ledger, writes only the TilariData table. */
 export class PropertiesService {
@@ -40,7 +39,7 @@ export class PropertiesService {
   }
 
   async listProperties(query: PropertyQuery = {}): Promise<PortfolioResponse> {
-    return computePortfolio(this.kernel.requireDb(), { today: this.kernel.today(), asOf: query.asOf, capitalize: query.rahastoituCapital })
+    return computePortfolio(this.kernel.requireDb(), { today: this.kernel.today(), asOf: query.asOf })
   }
 
   /** The header's count of warnings to act on (ADR-030). */
@@ -53,7 +52,6 @@ export class PropertiesService {
       today: this.kernel.today(),
       asOf: query.asOf,
       targetBp: query.targetBp,
-      capitalize: query.rahastoituCapital,
     })
   }
 

@@ -1064,9 +1064,7 @@
       "housingShare": "Låneandel",
       "housingShares": "Bolagslåneandelar",
       "housingShareUnknown": "inte känd på lägesdagen",
-      "debtFreeUnrecovered": "skuldfritt ej återfått {amount}",
-      "investedCapitalized": "varav fonderat finansieringsvederlag {amount}",
-      "rahastoituCapital": "fonderat finansieringsvederlag som kapital"
+      "debtFreeUnrecovered": "skuldfritt ej återfått {amount}"
     },
     "col": {
       "object": "Objekt",
@@ -1125,7 +1123,7 @@
     "field": {
       "kind": "Typ",
       "excluded": "Inte hyresobjekt (dölj i listan)",
-      "salePct": "Försäljningskostnader, % av priset",
+      "salePct": "Försäljningskostnader, % av skuldfritt pris",
       "saleFixed": "Försäljningskostnader, fast €",
       "targetReturn": "Målavkastning, % per år",
       "price": "Försäljningspris (utan låneandel)",
@@ -1177,7 +1175,7 @@
     "breakEven": {
       "title": "Nollpris: priset som ger pengarna tillbaka",
       "caption": "försäljningspris utan bolagslåneandel",
-      "explain": "Ej återfått {unrecovered}. Försäljningskostnader {pct} och {fixed} dras av från priset; till detta pris har alla pengar som satts in i objektet kommit tillbaka.",
+      "explain": "Ej återfått {unrecovered}. Försäljningskostnader {pct} av det skuldfria priset och {fixed} dras av; till detta pris har alla pengar som satts in i objektet kommit tillbaka.",
       "recovered": "Objektet har redan gett tillbaka de investerade pengarna; varje pris efter försäljningskostnader är vinst.",
       "bookLoss": "Ingen bokföringsmässig förlust vid ett pris på minst {price} (bokfört värde + försäljningskostnader).",
       "taxNote": "Skatt: när vinst och förlust beskattas med samma 20 % och en förlust kan dras av från annan vinst är nollpriset efter skatt samma siffra.",
@@ -1554,9 +1552,7 @@
       "accrual": "periodisering",
       "interest": "lånets ränta",
       "recounted": "räknas på konto {account}",
-      "recountedHint": "Bokförd på {booked}. Enligt anteckningarna i ett rättelseverifikat lämnades raden orättad eftersom räkenskapsperioden är stängd; Tilari räknar den på {account}. Kostnadsställesrapporten visar den som bokförd.",
-      "capitalized": "fonderat → kapital",
-      "capitalizedHint": "{loan}: fonderat finansieringsvederlag räknas i den här vyn som kapital, inte som kostnad; raden tar bort det från betalningens kostnad."
+      "recountedHint": "Bokförd på {booked}. Enligt anteckningarna i ett rättelseverifikat lämnades raden orättad eftersom räkenskapsperioden är stängd; Tilari räknar den på {account}. Kostnadsställesrapporten visar den som bokförd."
     },
     "notice": {
       "voucherTitle": "Meddelande om hyreshöjning {object} {date}",
@@ -1867,9 +1863,6 @@
         "term": "Lånetid",
         "span": "{from}–{to}"
       }
-    },
-    "view": {
-      "rahastoituCapital": "Fonderat finansieringsvederlag som kapital"
     },
     "valuation": {
       "debtFreeComputed": "Skuldfritt pris {price} (+ låneandel {share})"

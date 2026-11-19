@@ -9,7 +9,7 @@ import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import type { Disposal, PropertyDetail, PropertyDoc, YearRow } from '../api'
 import { CashFlowChart, PaybackChart } from './Charts'
 import { CapitalSection, ErasSection, FinancingSection, SaleSection, ValuationsSection } from './FinanceEdits'
-import { hasRahastoitu, runningTotals, type CashFlowOptions } from './chartOptions'
+import { runningTotals, type CashFlowOptions } from './chartOptions'
 import { VoucherOpen } from './FormParts'
 import { formatEuro } from './format'
 import { HousingShareKpi, IrrKpi, Kpi, ResultKpi, T12mKpi } from './Kpi'
@@ -21,9 +21,9 @@ function BreakEvenPanel({ d, onTarget }: { d: PropertyDetail; onTarget: (bp: num
   const be = d.break_even
   if (!be) return null
   const costs = be.sale_costs
-  const noBookLoss = grossPriceFor(d.summary.book_value_snt, costs)
-  // A debt-free price takes the housing-company loan share with it (ADR-034).
+  // A debt-free price takes the housing-company loan share with it, and the sale costs' percentage is of it (ADR-034).
   const share = d.summary.housing_share_snt
+  const noBookLoss = grossPriceFor(d.summary.book_value_snt, costs, share ?? 0)
   return (
     <section className="overview-panel property-breakeven">
       <h3>{t('properties.breakEven.title')}</h3>
@@ -300,17 +300,12 @@ export function CashFlowPanel({
 export function PropertyFinance({
   d,
   onTarget,
-  rahastoituCapital,
-  onRahastoituCapital,
   onSave,
   addValuation = 0,
   onOpenVoucher,
 }: {
   d: PropertyDetail
   onTarget: (bp: number | null) => void
-  /** The view option "Rahastoitu rahoitusvastike pääomana" (ADR-034), offered when a loan has a rahastoitu period. */
-  rahastoituCapital: boolean
-  onRahastoituCapital: (on: boolean) => void
   /** Saves the object as a section changed it; none when it cannot be changed (read-only). */
   onSave?: (doc: PropertyDoc) => Promise<void>
   /** Changes when the overview's "+ Hinta-arvio" asks for a new price estimate. */
@@ -329,22 +324,8 @@ export function PropertyFinance({
           </button>
         </div>
       ) : null}
-      {hasRahastoitu(d.doc.housing_loans) ? (
-        <label className="allocation-check property-view-option">
-          <input type="checkbox" checked={rahastoituCapital} onChange={() => onRahastoituCapital(!rahastoituCapital)} />
-          {t('properties.view.rahastoituCapital')}
-        </label>
-      ) : null}
       <div className="overview-kpis">
-        <Kpi
-          label={t('properties.kpi.invested')}
-          value={formatEuro(s.invested_snt)}
-          hint={
-            s.capitalized_snt
-              ? t('properties.kpi.investedCapitalized', { amount: formatEuro(s.capitalized_snt) })
-              : t('properties.kpi.investedHint')
-          }
-        />
+        <Kpi label={t('properties.kpi.invested')} value={formatEuro(s.invested_snt)} hint={t('properties.kpi.investedHint')} />
         {d.status !== 'sold' ? (
           <Kpi label={t('properties.kpi.bookValue')} value={formatEuro(s.book_value_snt)} />
         ) : (

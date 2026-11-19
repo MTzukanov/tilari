@@ -92,11 +92,6 @@ export function MonthLinesPanel({
         <>
           {lineText(l)}
           {l.kind === 'interest' ? <span className="property-line-tag">{t('properties.month.interest')}</span> : null}
-          {l.capitalized ? (
-            <span className="property-line-tag" title={t('properties.month.capitalizedHint', { loan: l.capitalized.loan })}>
-              {t('properties.month.capitalized')}
-            </span>
-          ) : null}
           {l.entry.voucher.type === TYPE_ACCRUAL ? (
             <span className="property-line-tag">{t('properties.month.accrual')}</span>
           ) : null}
@@ -141,8 +136,7 @@ export function MonthLinesPanel({
           storageKey="tilari.properties.monthLines.cols"
           columns={columns}
           rows={lines}
-          // A rahastoitu part taken back from a payment shares the payment's line: one per loan.
-          rowKey={(l) => (l.capitalized ? `${l.entry.id}-${l.capitalized.loan_key}` : l.entry.id)}
+          rowKey={(l) => l.entry.id}
           onRowClick={(l) => onOpenVoucher(l.entry.voucher.id, l.entry.id)}
         />
       ) : (

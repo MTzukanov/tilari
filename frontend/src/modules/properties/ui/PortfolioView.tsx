@@ -9,7 +9,6 @@ import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import { fetchPortfolio, savePortfolioSettings, skipPropertyDocument, type DocumentSkip, type PortfolioResponse, type PortfolioSettings, type PropertyRow } from '../api'
 import { rowAlerts } from '../../../book/modules/properties/domain/reminders'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
-import { loadRahastoituCapital, saveRahastoituCapital } from './chartOptions'
 import { formatEuro, holdingText, periodLabel, saveErrorText, statusClass, tenantSide, warningText } from './format'
 import { PortfolioCharts } from './PortfolioCharts'
 import { Warnings } from './Warnings'
@@ -480,8 +479,7 @@ function soldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
 export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen: (id: number) => void; onSetup: () => void; focusAlerts?: boolean }) {
   const { t } = useI18n()
   const [reload, setReload] = useState(0)
-  const [rahastoituCapital, setRahastoituCapital] = useState(loadRahastoituCapital)
-  const { data, error, loading } = usePeriodQuery(() => fetchPortfolio(rahastoituCapital ? { rahastoituCapital } : {}), [reload, rahastoituCapital])
+  const { data, error, loading } = usePeriodQuery(() => fetchPortfolio(), [reload])
 
   const all = (data?.rows ?? []).filter((r) => r.status !== 'excluded')
   const held = all.filter((r) => r.status !== 'sold')
@@ -515,20 +513,6 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
             {t('properties.setupOpen')}
           </button>
         </div>
-      ) : null}
-
-      {data?.has_rahastoitu ? (
-        <label className="allocation-check property-view-option">
-          <input
-            type="checkbox"
-            checked={rahastoituCapital}
-            onChange={() => {
-              saveRahastoituCapital(!rahastoituCapital)
-              setRahastoituCapital(!rahastoituCapital)
-            }}
-          />
-          {t('properties.view.rahastoituCapital')}
-        </label>
       ) : null}
 
       {data ? (

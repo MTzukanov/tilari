@@ -12,12 +12,12 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 - The share at the as-of month (`housing_share_snt`) is followed in `computeObjects` once per object
   (`followLoans`, kept on `Computed.loans`; reminders and the Taloyhtiö tab reuse it). It is null rather than a
   partial sum when one loan's path does not reach that month, so a debt-free figure never leaves a loan out quietly.
-- The rahastoitu view recomputes the object (`computeObject` with `capitalized`) after the loans are followed: the
-  payments and the purchase the loans need do not change with it. A moved amount is a cost row with an id below 0
-  (`takenBack`) plus an operating flow and a capital flow on the same day, so the cash nets to zero; its month
-  line points at the payment's own ledger line (row key per loan).
-- Sale costs stay a percentage of the selling price; a broker's fee on the debt-free price would be another rule
-  (open with the owner).
+- Sale costs are a percentage of the debt-free price (owner): an object with a share is computed again
+  (`computeObject` with `housingShare`) once the loans are followed, since the share needs the payments and the
+  purchase the first pass finds; the share does not change those.
+- The view "Rahastoitu rahoitusvastike pääomana" was built here and taken out before merging, as the owner asked if
+  it added complexity (no rahastoitu vastike seen; it needed made-up cost rows and a second pass). The charge's
+  checkbox and warning stay.
 - Found on the way, not from this step: at 360 px the Talous tab scrolled sideways (up to 38 px in the test book)
   where the acquisition-cost movements hold a long Finnish compound - a word does not wrap, and the date and kind
   columns kept their widths. On a phone a movement now takes two lines (date, kind, amount; then its text), a grid

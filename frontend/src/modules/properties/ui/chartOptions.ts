@@ -81,33 +81,6 @@ export function saveLoanChartOptions(options: LoanChartOptions): void {
   }
 }
 
-export const RAHASTOITU_CAPITAL_KEY = 'tilari.properties.rahastoituCapital'
-
-/**
- * The view option "Rahastoitu rahoitusvastike pääomana" (ADR-034): rahastoitu rahoitusvastike paid
- * counts as capital put in, not a cost. Off by default; one choice for every object, in this browser.
- */
-export function loadRahastoituCapital(): boolean {
-  try {
-    return localStorage.getItem(RAHASTOITU_CAPITAL_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-export function saveRahastoituCapital(on: boolean): void {
-  try {
-    localStorage.setItem(RAHASTOITU_CAPITAL_KEY, on ? '1' : '0')
-  } catch {
-    // Private window or blocked storage: the choice lasts until the page closes.
-  }
-}
-
-/** Some loan has a rahastoitu rahoitusvastike period: the view option is offered. */
-export function hasRahastoitu(loans: { charges?: { rahastoitu?: true }[] }[] | undefined): boolean {
-  return (loans ?? []).some((l) => (l.charges ?? []).some((c) => c.rahastoitu))
-}
-
 /** Income less expenses and interest: the month's cash flow (the net bar, the month lines' sum). */
 export function monthNet(m: MonthPoint): number {
   return m.income_snt - m.expense_snt - m.interest_snt

@@ -1064,9 +1064,7 @@
       "housingShare": "Loan share",
       "housingShares": "Housing-company loan shares",
       "housingShareUnknown": "not known on the as-of date",
-      "debtFreeUnrecovered": "debt-free not yet recovered {amount}",
-      "investedCapitalized": "of which capitalised financing charge {amount}",
-      "rahastoituCapital": "capitalised financing charge as capital"
+      "debtFreeUnrecovered": "debt-free not yet recovered {amount}"
     },
     "col": {
       "object": "Object",
@@ -1125,7 +1123,7 @@
     "field": {
       "kind": "Kind",
       "excluded": "Not a rental object (hide from the list)",
-      "salePct": "Sale costs, % of price",
+      "salePct": "Sale costs, % of debt-free price",
       "saleFixed": "Sale costs, fixed €",
       "targetReturn": "Target return, % per year",
       "price": "Selling price (without loan share)",
@@ -1177,7 +1175,7 @@
     "breakEven": {
       "title": "Break-even price: the price that returns the money",
       "caption": "selling price without the housing-company loan share",
-      "explain": "Not yet recovered {unrecovered}. Sale costs {pct} and {fixed} come off the price; at this price every euro put into the object has come back.",
+      "explain": "Not yet recovered {unrecovered}. Sale costs of {pct} of the debt-free price and {fixed} come off; at this price every euro put into the object has come back.",
       "recovered": "The object has already returned the money invested; any price after sale costs is a gain.",
       "bookLoss": "No accounting loss at a price of at least {price} (book value + sale costs).",
       "taxNote": "Taxes: when gains and losses are taxed at the same 20 % and a loss can be deducted from other profit, the after-tax break-even is the same figure.",
@@ -1554,9 +1552,7 @@
       "accrual": "accrual",
       "interest": "loan interest",
       "recounted": "counted as {account}",
-      "recountedHint": "Booked on {booked}. A correction voucher's notes list this line as left uncorrected because the year is closed; Tilari counts it on {account}. The cost-centre report shows it as booked.",
-      "capitalized": "capitalised → capital",
-      "capitalizedHint": "{loan}: in this view a capitalised financing charge counts as capital, not as a cost; the line takes it out of the payment's cost."
+      "recountedHint": "Booked on {booked}. A correction voucher's notes list this line as left uncorrected because the year is closed; Tilari counts it on {account}. The cost-centre report shows it as booked."
     },
     "notice": {
       "voucherTitle": "Rent increase notice {object} {date}",
@@ -1867,9 +1863,6 @@
         "term": "Loan term",
         "span": "{from}–{to}"
       }
-    },
-    "view": {
-      "rahastoituCapital": "Capitalised financing charge as capital"
     },
     "valuation": {
       "debtFreeComputed": "Debt-free price {price} (+ loan share {share})"

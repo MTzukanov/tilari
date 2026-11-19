@@ -42,8 +42,7 @@ export function T12mKpi({ d }: { d: PropertyDetail }) {
       neg={d.t12m.net_snt < 0}
       hint={
         (d.t12m.net_yield_bp != null ? t('properties.kpi.yieldHint', { pct: formatBp(d.t12m.net_yield_bp) }) : '') +
-        (d.t12m.annualized ? ` · ${t('properties.kpi.annualized', { n: d.t12m.months })}` : '') +
-        (d.summary.capitalized_snt ? ` · ${t('properties.kpi.rahastoituCapital')}` : '')
+        (d.t12m.annualized ? ` · ${t('properties.kpi.annualized', { n: d.t12m.months })}` : '')
       }
     />
   )

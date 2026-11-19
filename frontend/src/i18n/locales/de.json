@@ -1064,9 +1064,7 @@
       "housingShare": "Darlehensanteil",
       "housingShares": "Darlehensanteile",
       "housingShareUnknown": "am Stichtag nicht bekannt",
-      "debtFreeUnrecovered": "schuldenfrei noch nicht zurück {amount}",
-      "investedCapitalized": "davon kapitalisiertes Finanzierungsentgelt {amount}",
-      "rahastoituCapital": "kapitalisiertes Finanzierungsentgelt als Kapital"
+      "debtFreeUnrecovered": "schuldenfrei noch nicht zurück {amount}"
     },
     "col": {
       "object": "Objekt",
@@ -1125,7 +1123,7 @@
     "field": {
       "kind": "Art",
       "excluded": "Kein Mietobjekt (in der Liste ausblenden)",
-      "salePct": "Verkaufskosten, % vom Preis",
+      "salePct": "Verkaufskosten, % vom schuldenfreien Preis",
       "saleFixed": "Verkaufskosten, fest €",
       "targetReturn": "Zielrendite, % pro Jahr",
       "price": "Verkaufspreis (ohne Darlehensanteil)",
@@ -1177,7 +1175,7 @@
     "breakEven": {
       "title": "Break-even-Preis: der Preis, der das Geld zurückbringt",
       "caption": "Verkaufspreis ohne Darlehensanteil der Wohnungsgesellschaft",
-      "explain": "Noch nicht zurück {unrecovered}. Verkaufskosten {pct} und {fixed} gehen vom Preis ab; zu diesem Preis ist jeder investierte Euro zurück.",
+      "explain": "Noch nicht zurück {unrecovered}. Verkaufskosten von {pct} des schuldenfreien Preises und {fixed} gehen ab; zu diesem Preis ist jeder investierte Euro zurück.",
       "recovered": "Das Objekt hat das investierte Geld bereits zurückgebracht; jeder Preis nach Verkaufskosten ist Gewinn.",
       "bookLoss": "Kein buchhalterischer Verlust ab einem Preis von {price} (Buchwert + Verkaufskosten).",
       "taxNote": "Steuern: Werden Gewinne und Verluste mit denselben 20 % besteuert und ist ein Verlust mit anderem Gewinn verrechenbar, ist der Break-even nach Steuern dieselbe Zahl.",
@@ -1554,9 +1552,7 @@
       "accrual": "Abgrenzung",
       "interest": "Darlehenszinsen",
       "recounted": "gezählt auf Konto {account}",
-      "recountedHint": "Gebucht auf {booked}. Laut den Notizen eines Korrekturbelegs blieb die Buchung unkorrigiert, weil das Geschäftsjahr abgeschlossen ist; Tilari zählt sie auf {account}. Der Kostenstellenbericht zeigt sie wie gebucht.",
-      "capitalized": "kapitalisiert → Kapital",
-      "capitalizedHint": "{loan}: in dieser Ansicht zählt kapitalisiertes Finanzierungsentgelt als Kapital, nicht als Kosten; die Zeile nimmt es aus den Kosten der Zahlung."
+      "recountedHint": "Gebucht auf {booked}. Laut den Notizen eines Korrekturbelegs blieb die Buchung unkorrigiert, weil das Geschäftsjahr abgeschlossen ist; Tilari zählt sie auf {account}. Der Kostenstellenbericht zeigt sie wie gebucht."
     },
     "notice": {
       "voucherTitle": "Mieterhöhungsmitteilung {object} {date}",
@@ -1867,9 +1863,6 @@
         "term": "Laufzeit",
         "span": "{from}–{to}"
       }
-    },
-    "view": {
-      "rahastoituCapital": "Kapitalisiertes Finanzierungsentgelt als Kapital"
     },
     "valuation": {
       "debtFreeComputed": "Schuldenfreier Preis {price} (+ Darlehensanteil {share})"

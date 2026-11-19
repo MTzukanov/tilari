@@ -5527,11 +5527,6 @@ tr.tax-total td {
   column-gap: 2.5rem;
 }
 
-/* A view option over a page's figures (e.g. rahastoitu rahoitusvastike as capital). */
-.property-view-option {
-  margin: 0.75rem 0 0;
-}
-
 .property-breakeven-main {
   display: flex;
   flex-wrap: wrap;

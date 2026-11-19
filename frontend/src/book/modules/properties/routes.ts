@@ -9,7 +9,6 @@ function propertyQuery(query: URLSearchParams): PropertyQuery {
   return {
     asOf: query.get('as_of') || null,
     targetBp: target != null && /^\d+$/.test(target) ? Number(target) : null,
-    rahastoituCapital: query.get('rahastoitu') === 'capital',
   }
 }
 

@@ -576,20 +576,11 @@ test.describe('rental object housing-company loans', () => {
     await expect(years.locator('thead')).toContainText(/Yhtiölainan korko.*Yhtiölainan lyhennys/)
     await expect(years.locator('tbody tr', { hasText: '1.1.2026' })).toContainText(/145,62\s€254,38\s€/)
     await expect(page.locator('.property-breakeven')).toContainText(/velaton hinta, velkaosuus 11\s898\s€ 31\.5\.2026/)
-    // The rahastoitu rahoitusvastike as capital, a view option kept in this browser: out of the costs.
-    const asCapital = page.getByRole('checkbox', { name: 'Rahastoitu rahoitusvastike pääomana' })
-    await expect(kpi('Sijoitettu')).toContainText('Hankintameno ja muut pääomat')
-    await asCapital.check()
-    await expect(kpi('Sijoitettu')).toContainText('josta rahastoitua rahoitusvastiketta 400 €')
-    expect(await page.evaluate(() => localStorage.getItem('tilari.properties.rahastoituCapital'))).toBe('1')
-    await asCapital.uncheck()
-    await expect(kpi('Sijoitettu')).toContainText('Hankintameno ja muut pääomat')
     // The portfolio: the shares together, a column, and a chart of them.
     await page.goto('/#/properties')
     await expect(kpi('Yhtiölainaosuudet')).toContainText(/11\s898\s€/)
     await expect(page.locator('.property-table').first().locator('thead')).toContainText('Velkaosuus')
     await expect(page.getByRole('heading', { name: 'Yhtiölainaosuudet kuukauden lopussa' })).toBeVisible()
-    await expect(page.getByRole('checkbox', { name: 'Rahastoitu rahoitusvastike pääomana' })).not.toBeChecked()
 
     // Another object copies the loan's terms; its share and charges are its own.
     await page.goto('/#/property/30/housing')
@@ -649,16 +640,16 @@ test.describe('rental object figures edited on Talous', () => {
 
     // Sale costs and target: a wrong percentage is refused in the section, which stays open.
     const sale = page.locator('.property-finance-sale')
-    await expect(sale).toContainText('Myyntikulut, % hinnasta: – · Myyntikulut, kiinteä €: – · Tavoitetuotto, % vuodessa: –')
+    await expect(sale).toContainText('Myyntikulut, % velattomasta hinnasta: – · Myyntikulut, kiinteä €: – · Tavoitetuotto, % vuodessa: –')
     await sale.getByRole('button', { name: 'Muokkaa', exact: true }).click()
-    await sale.getByLabel('Myyntikulut, % hinnasta').fill('kaksi')
+    await sale.getByLabel('Myyntikulut, % velattomasta hinnasta').fill('kaksi')
     await sale.getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(sale.locator('.error')).toHaveText('Prosentti muodossa 3,5.')
-    await sale.getByLabel('Myyntikulut, % hinnasta').fill('2,5')
+    await sale.getByLabel('Myyntikulut, % velattomasta hinnasta').fill('2,5')
     await sale.getByLabel('Myyntikulut, kiinteä €').fill('1000')
     await sale.getByLabel('Tavoitetuotto, % vuodessa').fill('6')
     await sale.getByRole('button', { name: 'Tallenna', exact: true }).click()
-    await expect(sale).toContainText(/Myyntikulut, % hinnasta: 2,5 % · Myyntikulut, kiinteä €: 1\s000,00\s€ · Tavoitetuotto, % vuodessa: 6 %/)
+    await expect(sale).toContainText(/Myyntikulut, % velattomasta hinnasta: 2,5 % · Myyntikulut, kiinteä €: 1\s000,00\s€ · Tavoitetuotto, % vuodessa: 6 %/)
 
     // Other capital: a row added and saved.
     const capital = page.locator('.property-finance-capital')

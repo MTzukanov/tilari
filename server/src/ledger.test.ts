@@ -255,9 +255,6 @@ describe('ledger http', () => {
     expected.doc.updated_at = remote.doc.updated_at
     assert.deepEqual(remote, expected)
     assert.equal(remote.doc.rev, 1)
-    // The view option "Rahastoitu rahoitusvastike pääomana" rides the query (ADR-034).
-    const capital = await fetch(`${base}/api/properties/4?as_of=${asOf}&rahastoitu=capital`).then((r) => r.json())
-    assert.deepEqual(capital, { ...JSON.parse(JSON.stringify(computeDetail(local, 4, { today: asOf, asOf, capitalize: true }))), doc: remote.doc })
     const alerts = await fetch(`${base}/api/properties/alerts?as_of=${asOf}`).then((r) => r.json())
     assert.deepEqual(alerts, computeAlerts(local, { today: asOf, asOf }))
     assert.ok((alerts as { warnings: number }).warnings > 0)

@@ -19,6 +19,7 @@ import {
   saveProperty,
 } from './portfolio'
 import { rowAlerts } from './reminders'
+import { grossPriceFor } from './returns'
 import type { SetupApplyInput, SetupResponse } from './types'
 
 const E = 100
@@ -1149,20 +1150,23 @@ describe('rental objects: housing-company loans', () => {
     expect(codes).toEqual(['loan_rate_missing', 'loan_rahastoitu_expensed'])
   })
 
-  it('the share in the figures: the summary, the years\' rahoitusvastike split, the portfolio; rahastoitu as capital on request', async () => {
+  it('the share in the figures: the summary, the years\' rahoitusvastike split, the portfolio', async () => {
     const { db } = await setUp()
     const doc = computeDetail(db, CC.bundle, { today: TODAY }).doc
     const stored = loan({
       rates: [{ from: '2025-01-01', reference_pcm: 2200 }],
-      charges: [{ from: '2025-01-01', amount_snt: 80 * E, rahastoitu: true, no_document: true }],
+      charges: [{ from: '2025-01-01', amount_snt: 80 * E, no_document: true }],
       certificates: [{ date: '2025-12-31', share_snt: 10_000 * E, no_document: true }],
     })
-    saveProperty(db, CC.bundle, { ...doc, housing_loans: [stored] }, 'now')
+    const costs = { pct_bp: 300, fixed_snt: 500 * E }
+    saveProperty(db, CC.bundle, { ...doc, housing_loans: [stored], sale_costs: costs }, 'now')
     const detail = computeDetail(db, CC.bundle, { today: TODAY })
     const [path] = detail.housing.paths
     const share = path.months.find((m) => m.month === detail.as_of.slice(0, 7))!.closing_snt
     expect(detail.summary.housing_share_snt).toBe(share)
-    expect(detail.summary.capitalized_snt).toBeUndefined()
+    // Sale costs are a percentage of the debt-free price: the share's 3 % is still to be recovered.
+    expect(detail.break_even!.price_snt).toBe(grossPriceFor(detail.summary.unrecovered_snt, costs, share))
+    expect(detail.break_even!.price_snt).toBeGreaterThan(grossPriceFor(detail.summary.unrecovered_snt, costs))
     // 2025: twelve payments of 80,00 split into the interest on the share and what repaid it.
     const y2025 = detail.years.find((y) => y.starts === '2025-01-01')!
     expect(y2025.housing_interest_snt! + y2025.housing_principal_snt!).toBe(12 * 80 * E)
@@ -1174,32 +1178,9 @@ describe('rental objects: housing-company loans', () => {
 
     const portfolio = computePortfolio(db, { today: TODAY })
     expect(portfolio.totals.housing_share_snt).toBe(share)
-    expect(portfolio.has_rahastoitu).toBe(true)
     const charted = portfolio.chart.objects.find((o) => o.id === CC.bundle)!
     expect(charted.share_snt.at(-1)).toBe(share)
     expect(portfolio.chart.total_share_snt.at(-1)).toBe(share)
-
-    // Rahastoitu as capital: January 2025 - September 2026 paid 21 x 80,00, out of the costs and into the
-    // capital put in. The cash flows stay: unrecovered and the IRR at the estimate do not change.
-    const capital = computeDetail(db, CC.bundle, { today: TODAY, capitalize: true })
-    const moved = 21 * 80 * E
-    expect(capital.summary.capitalized_snt).toBe(moved)
-    expect(capital.summary.invested_snt).toBe(detail.summary.invested_snt + moved)
-    expect(capital.summary.book_value_snt).toBe(detail.summary.book_value_snt + moved)
-    expect(capital.summary.operating.expense_snt).toBe(detail.summary.operating.expense_snt - moved)
-    expect(capital.summary.unrecovered_snt).toBe(detail.summary.unrecovered_snt)
-    expect(capital.returns.market_bp).toBe(detail.returns.market_bp)
-    const c2025 = capital.years.find((y) => y.starts === '2025-01-01')!
-    expect([c2025.expense_snt, c2025.capex_snt]).toEqual([y2025.expense_snt - 12 * 80 * E, y2025.capex_snt + 12 * 80 * E])
-    expect(c2025.kitsas_result_snt).toBe(y2025.kitsas_result_snt)
-    // The month's lines take it back from the payment, so they still add up to the bars.
-    const september = capital.month_lines.filter((l) => l.month === '2026-09')
-    expect(september.filter((l) => l.capitalized)).toEqual([
-      expect.objectContaining({ kind: 'expense', amount_snt: 80 * E, capitalized: { loan_key: 'h1', loan: 'Putkiremontti' } }),
-    ])
-    const bar = capital.months.find((m) => m.key === '2026-09')!
-    expect(september.reduce((s, l) => s + l.amount_snt, 0)).toBe(bar.income_snt - bar.expense_snt - bar.interest_snt)
-    expect(computePortfolio(db, { today: TODAY, capitalize: true }).totals.unrecovered_snt).toBe(portfolio.totals.unrecovered_snt)
   })
 
   it('copy sources: the other objects\' loans, those paying the same housing company first', async () => {

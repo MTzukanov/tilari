@@ -302,8 +302,6 @@ export type ObjectSummary = {
    * loans, once sold, or when a loan's share is not known then.
    */
   housing_share_snt: number | null
-  /** Rahastoitu rahoitusvastike paid, counted as capital put in: only in that view (ADR-034). */
-  capitalized_snt?: number
 }
 
 export type Trailing12 = {
@@ -726,8 +724,6 @@ export type PortfolioResponse = {
     /** The held objects' housing-company loan shares where known; null when none has a loan. */
     housing_share_snt: number | null
   }
-  /** Some object has a rahastoitu rahoitusvastike period: the view that shows it as capital is offered. */
-  has_rahastoitu: boolean
 }
 
 /**
@@ -855,11 +851,6 @@ export type MonthLine = {
   amount_snt: number
   /** The account it counts on, when a correction voucher's notes say it belongs there (ADR-024). */
   counted_account?: { account: number; name: string }
-  /**
-   * The loan's rahastoitu rahoitusvastike in this payment, moved out of the costs to capital put in
-   * (that view, ADR-034): `amount_snt` takes it back from the expense.
-   */
-  capitalized?: { loan_key: string; loan: string }
   /** The line as Selaa shows it. */
   entry: BrowseEntry
 }

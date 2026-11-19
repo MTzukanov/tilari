@@ -39,7 +39,6 @@ import {
   loanPath,
   loanWarnings,
   paymentsMissing,
-  rahastoituPaid,
   vastikeYears,
   type PaymentUnits,
 } from './housingLoan'
@@ -189,8 +188,6 @@ type ComputeOptions = {
   asOf: string
   today: string
   targetBp?: number | null
-  /** Rahastoitu rahoitusvastike paid counts as capital put in, not as a cost (a view option, ADR-034). */
-  capitalize?: boolean
 }
 
 function computeObjects(db: SqliteDb, loaded: Loaded, centres: CostCentre[], opts: ComputeOptions): Computed[] {
@@ -248,16 +245,14 @@ function computeObjects(db: SqliteDb, loaded: Loaded, centres: CostCentre[], opt
     }
     let result = computeObject(input)
     const housingLoans = parsed.doc.housing_loans ?? []
-    // The loans follow the payments and the purchase, which the rahastoitu view leaves as they are.
     const loans = followLoans(result, reversed, housingLoans, window)
-    if (opts.capitalize) {
-      const first = (month: string) => loans.payments.months.get(month)?.rows.reduce<PnlRow | null>((a, r) => (!a || byDate(r, a) < 0 ? r : a), null) ?? null
-      const capitalized = rahastoituPaid(housingLoans, loans.paths, first, loans.from, loans.through)
-      if (capitalized.length) result = computeObject({ ...input, capitalized })
-    }
     if (housingLoans.length) {
       const held = result.status !== 'sold' && result.status !== 'excluded'
-      result.summary.housing_share_snt = held ? housingShare(housingLoans, loans.paths, asOf.slice(0, 7)) : null
+      const share = held ? housingShare(housingLoans, loans.paths, asOf.slice(0, 7)) : null
+      // Sale costs are a percentage of the debt-free price: a sale now takes the share along. The loans
+      // follow the payments and the purchase, which the share does not change.
+      if (share) result = computeObject({ ...input, housingShare: share })
+      result.summary.housing_share_snt = share
       const split = new Map(vastikeYears(loans.paths, periods, loans.from, loans.through).map((y) => [y.starts, y]))
       for (const year of result.years) {
         year.housing_interest_snt = split.get(year.starts)?.interest_snt ?? 0
@@ -532,11 +527,11 @@ function resolveAsOf(db: SqliteDb, today: string, asOf?: string | null): { asOf:
   return { asOf: asOf || defaultAsOf(today, dataThrough), dataThrough }
 }
 
-export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: string | null; capitalize?: boolean }): PortfolioResponse {
+export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: string | null }): PortfolioResponse {
   const loaded = loadStored(db)
   const { asOf, dataThrough } = resolveAsOf(db, opts.today, opts.asOf)
   const centres = loaded.centres.filter((c) => !docFor(loaded, c.id).doc.excluded)
-  const computed = computeObjects(db, loaded, centres, { asOf, today: opts.today, capitalize: opts.capitalize })
+  const computed = computeObjects(db, loaded, centres, { asOf, today: opts.today })
   const ctx = leaseContext(db, loaded, computed, asOf, opts.today)
   const rows = computed.map((c) => toRow(c, ctx))
 
@@ -554,13 +549,14 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
       continue
     }
     const { costs } = resolveSaleCosts(c.parsed.doc, loaded.settings.doc)
+    const share = c.result.summary.housing_share_snt ?? 0
     if (c.result.summary.book_value_snt > 0) {
-      portfolioFlows.push({ date: asOf, amount_snt: saleNet(c.result.summary.book_value_snt, costs) })
+      portfolioFlows.push({ date: asOf, amount_snt: saleNet(c.result.summary.book_value_snt, costs, share) })
     }
     // Held objects: sold now at the owner's estimate, else at book value (as their own IRR).
     const exit = c.result.valuation?.price_snt ?? c.result.summary.book_value_snt
     heldFlows.push(...c.result.cash)
-    if (exit > 0) heldFlows.push({ date: asOf, amount_snt: saleNet(exit, costs) })
+    if (exit > 0) heldFlows.push({ date: asOf, amount_snt: saleNet(exit, costs, share) })
   }
   const linkedRows = computed.filter((c) => c.result.status !== 'unlinked')
   const shares = computed.flatMap((c) => (c.result.summary.housing_share_snt != null ? [c.result.summary.housing_share_snt] : []))
@@ -593,7 +589,6 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
       sold_irr_bp: toBp(xirr(soldFlows).rate),
       housing_share_snt: shares.length ? shares.reduce((s, n) => s + n, 0) : null,
     },
-    has_rahastoitu: computed.some((c) => (c.parsed.doc.housing_loans ?? []).some((l) => (l.charges ?? []).some((ch) => ch.rahastoitu))),
   }
 }
 
@@ -610,13 +605,13 @@ export function computeAlerts(db: SqliteDb, opts: { today: string; asOf?: string
 export function computeDetail(
   db: SqliteDb,
   id: number,
-  opts: { today: string; asOf?: string | null; targetBp?: number | null; capitalize?: boolean },
+  opts: { today: string; asOf?: string | null; targetBp?: number | null },
 ): PropertyDetail {
   const loaded = loadStored(db)
   const centre = loaded.centres.find((c) => c.id === id)
   if (!centre) throw new BookError('not_found', 404)
   const { asOf, dataThrough } = resolveAsOf(db, opts.today, opts.asOf)
-  const [computed] = computeObjects(db, loaded, [centre], { asOf, today: opts.today, targetBp: opts.targetBp, capitalize: opts.capitalize })
+  const [computed] = computeObjects(db, loaded, [centre], { asOf, today: opts.today, targetBp: opts.targetBp })
   const ctx = leaseContext(db, loaded, [computed], asOf, opts.today)
   const { water, latest } = waterDetail(db, computed, ctx)
   const suggestions = ctx.suggestions.get(id) ?? []

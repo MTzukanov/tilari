@@ -384,36 +384,6 @@ export function vastikeYears(paths: LoanPath[], periods: { starts: string; ends:
   return [...years.values()]
 }
 
-/** A month's rahastoitu rahoitusvastike paid for a loan, on the month's first payment to the housing company. */
-export type RahastoituPaid = { loan_key: string; month: string; date: string; line_id: number; amount_snt: number }
-
-/**
- * The rahastoitu rahoitusvastike paid (ADR-034), for the view that shows it as capital put in: each
- * month from `from` to `through` that a rahastoitu charge was in force and the book has a payment
- * for (`firstPayment`: the month's first payment line to the housing company). None for a loan
- * whose payments are not known: nothing of it is booked to move.
- */
-export function rahastoituPaid(
-  loans: HousingLoan[],
-  paths: LoanPath[],
-  firstPayment: (month: string) => { id: number; date: string } | null,
-  from: string | null,
-  through: string,
-): RahastoituPaid[] {
-  const out: RahastoituPaid[] = []
-  for (const loan of loans) {
-    const path = paths.find((p) => p.loan_key === loan.key)
-    if (!path?.payments_known) continue
-    for (const m of path.months) {
-      if (m.forecast || m.paid_snt <= 0 || (from && m.month < from) || m.month > through) continue
-      if (!chargeAt(loan, monthEnd(m.month))?.rahastoitu) continue
-      const line = firstPayment(m.month)
-      if (line) out.push({ loan_key: loan.key, month: m.month, date: line.date, line_id: line.id, amount_snt: m.paid_snt })
-    }
-  }
-  return out
-}
-
 /** The next reset of the reference rate after the latest rate row, if its interval is known. */
 export function nextReset(loan: HousingLoan): string | null {
   const last = loan.rates?.at(-1)

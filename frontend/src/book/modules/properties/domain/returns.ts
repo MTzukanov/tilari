@@ -23,26 +23,31 @@ export function mergeFlows(flows: Flow[]): Flow[] {
     .map(([date, amount_snt]) => ({ date, amount_snt }))
 }
 
-/** Price whose proceeds after `costs` equal `net_snt`: ceil((net + fixed) / (1 - pct)). */
-export function grossPriceFor(net_snt: number, costs: SaleCosts): number {
-  const needed = net_snt + costs.fixed_snt
+/*
+ * Sale costs: the percentage is of the debt-free price (velaton hinta), the selling price plus the
+ * housing-company loan share `share_snt` the buyer takes over (ADR-034); 0 without loans.
+ */
+
+/** Price whose proceeds after `costs` equal `net_snt`: ceil((net + fixed + share * pct) / (1 - pct)). */
+export function grossPriceFor(net_snt: number, costs: SaleCosts, share_snt = 0): number {
+  const needed = (net_snt + costs.fixed_snt) * 10000 + share_snt * costs.pct_bp
   if (needed <= 0) return 0
-  return Math.ceil((needed * 10000) / (10000 - costs.pct_bp))
+  return Math.ceil(needed / (10000 - costs.pct_bp))
 }
 
 /** Proceeds of a sale at `price_snt` after `costs`. */
-export function saleNet(price_snt: number, costs: SaleCosts): number {
-  return price_snt - Math.round((price_snt * costs.pct_bp) / 10000) - costs.fixed_snt
+export function saleNet(price_snt: number, costs: SaleCosts, share_snt = 0): number {
+  return price_snt - Math.round(((price_snt + share_snt) * costs.pct_bp) / 10000) - costs.fixed_snt
 }
 
 /**
  * Selling price that returns every euro not yet recovered. Pre-tax: with a flat income tax
  * and losses usable against other profit, the after-tax break-even is the same price.
  */
-export function breakEvenPrice(unrecovered_snt: number, costs: SaleCosts): { price_snt: number; already_recovered: boolean } {
+export function breakEvenPrice(unrecovered_snt: number, costs: SaleCosts, share_snt = 0): { price_snt: number; already_recovered: boolean } {
   return {
-    price_snt: grossPriceFor(unrecovered_snt, costs),
-    already_recovered: unrecovered_snt + costs.fixed_snt <= 0,
+    price_snt: grossPriceFor(unrecovered_snt, costs, share_snt),
+    already_recovered: (unrecovered_snt + costs.fixed_snt) * 10000 + share_snt * costs.pct_bp <= 0,
   }
 }
 
@@ -55,12 +60,12 @@ export function futureValue(flows: Flow[], at: string, rate: number): number {
 }
 
 /** Selling price at `at` that makes the flows earn `rate` per year. rate 0 = break-even. */
-export function requiredSalePrice(flows: Flow[], at: string, rate: number, costs: SaleCosts): number {
+export function requiredSalePrice(flows: Flow[], at: string, rate: number, costs: SaleCosts, share_snt = 0): number {
   if (rate === 0) {
     const unrecovered = -flows.reduce((s, f) => s + f.amount_snt, 0)
-    return grossPriceFor(unrecovered, costs)
+    return grossPriceFor(unrecovered, costs, share_snt)
   }
-  return grossPriceFor(Math.ceil(-futureValue(flows, at, rate)), costs)
+  return grossPriceFor(Math.ceil(-futureValue(flows, at, rate)), costs, share_snt)
 }
 
 function npv(flows: { t: number; amount: number }[], rate: number): number {

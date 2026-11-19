@@ -819,7 +819,7 @@ correction would change the open year's income statement lines. The rental-objec
   voucher a loan links) and the loans as cards edited in place, like leases and water settlements.
 - **Rahastoitu / tuloutettu** is a checkbox on each rahoitusvastike period, tuloutettu by default (owner): a
   rahastoitu charge belongs to the shares' acquisition cost in the shareholder's taxation. Later steps warn when
-  the ledger books one as a cost and offer a view that counts it as capital.
+  the ledger books one as a cost.
 - **What a loan needs** (owner, 2026-11-17): the form saves a loan only with its name, drawdown and last due date,
   its margin and reset interval (not for a fixed rate, which is all in its rate rows), and at least one share, one
   rahoitusvastike and one rate: what following the share and a forecast need. The company's whole loan is optional
@@ -858,16 +858,15 @@ correction would change the open year's income statement lines. The rental-objec
   share), and on the Properties page a total, a column and a chart of the shares by month (the total is empty where
   no share is known, not 0). A debt-free price is the price plus the share: beside the break-even and the target
   price, and on a price estimate without a typed one (the share at the estimate's month end; the path's last after
-  it). Sale costs stay a percentage of the selling price, not of the debt-free price.
+  it).
+- **Sale costs are a percentage of the debt-free price** (owner, 2026-11-19: a broker's fee is): the selling price
+  plus the share the buyer takes over. The break-even, the target price, the IRR's sale at the estimate or book value
+  and the portfolio's IRRs count it; without loans nothing changes.
 - **The rahoitusvastike split** on Talous: per fiscal year the paths' interest and repayment over the months the
   book follows, each month in the year its first day falls in; extra repayments are not rahoitusvastike.
-- **"Rahastoitu rahoitusvastike pääomana"**, a view option (owner: try the figures both ways): off by default, kept
-  in the browser, one choice for the object pages and the Properties page, offered where a loan has a rahastoitu
-  period. The rahastoitu rahoitusvastike paid (payments known) leaves the costs and counts as capital put in, on the
-  month's first payment to the housing company: invested, book value, the cash flow and its yields change, and the
-  month's lines show a line that takes it back from the payment, so they still add up to the bar. The cash flows
-  themselves do not change, so unrecovered and the IRR at the estimate stay; the IRR at book value follows the
-  higher book value. Kitsas's own result per year stays as booked. The query carries it as `rahastoitu=capital`.
+- **No "Rahastoitu rahoitusvastike pääomana" view** (2026-11-19): built on the 4c branch and taken out before merging,
+  as the owner asked if it added complexity - they have not seen a rahastoitu vastike, and the view needed a second
+  pass over the figures with made-up cost rows. The checkbox on a charge and its warning stay.
 - **Next steps:** rate estimates per reference rate for the forecast; then tilari-bank-import reading the vastike
   invoices into facts on the voucher.
 

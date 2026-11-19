@@ -15,7 +15,6 @@ import {
   loanWarnings,
   nextReset,
   paymentsMissing,
-  rahastoituPaid,
   rateAt,
   rowAt,
   shareAt,
@@ -434,16 +433,5 @@ describe('housing-company loans: the figures that use the share', () => {
       ['2024-03-15', 300_00],
       ['2025-03-15', 100_00],
     ])
-  })
-
-  it('the rahastoitu rahoitusvastike paid, each month on its first payment; none when the payments are not known', () => {
-    const l = loan({ ...first(), charges: [{ from: '2025-01-01', amount_snt: 100_00 }, { from: '2025-03-01', amount_snt: 100_00, rahastoitu: true }] })
-    const path = follow(l)
-    const firstPayment = (m: string) => (m === '2025-04' ? null : { id: 7, date: `${m}-03` })
-    expect(rahastoituPaid([l], [path], firstPayment, '2025-01', '2025-04')).toEqual([
-      { loan_key: 'h1', month: '2025-03', date: '2025-03-03', line_id: 7, amount_snt: 100_00 },
-    ])
-    expect(rahastoituPaid([l], [path], firstPayment, '2025-01', '2025-02')).toEqual([])
-    expect(rahastoituPaid([l], [{ ...path, payments_known: false }], firstPayment, '2025-01', '2025-04')).toEqual([])
   })
 })
