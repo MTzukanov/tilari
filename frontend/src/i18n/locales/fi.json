@@ -481,6 +481,8 @@
     "changeDocNumber": "Vaihda tunnistenumero",
     "goToPrompt": "Tositenumero:",
     "goToNotFound": "Tositetta ei löytynyt.",
+    "notFound": "Tositetta {id} ei löydy.",
+    "loadFailed": "Tositetta {id} ei voitu avata: {error}",
     "changeDocNumberPrompt": "Uusi tositenumero:",
     "shortcutGo": "Ctrl+G",
     "shortcutPrint": "Ctrl+P",

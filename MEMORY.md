@@ -7,6 +7,18 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-20 - Voucher editor: a voucher that cannot be loaded says so (`fix/voucher-load-error`)
+
+- A wrong id in the address (`#/voucher/99999/edit`, or a copy `#/voucher/new/100/from/99999`) left a blank
+  form, or the voucher shown before, and the failed `fetchVoucher` was an uncaught promise error. The editor
+  now shows "Tositetta N ei löydy." (404) or "Tositetta N ei voitu avata: ..." with the way back the screen
+  names (`backLabel`, the same "Selaukseen" / "Tiliin N" as the editor's own back link), in place of the
+  form. Esc goes back; the other shortcuts do nothing there.
+- Server mode: `http.ts` throws a `BookError` with the HTTP status, so a 404 reads as "not found" there as in
+  the browser engine, where the ledger throws `BookError(..., 404)`.
+- Covered by `VoucherEditor.test.ts` ("when a voucher cannot be loaded") and an e2e test in
+  `voucher-editor.spec.ts`, which also checks no page error is thrown.
+
 ## 2026-11-20 - Rental objects: a price estimate's "Poista" level with its inputs (`fix/valuation-row-remove`)
 
 - Talous's Hinta-arviot form had a small framed "Poista" (`btn-small`) per row, shorter than the inputs and

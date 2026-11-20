@@ -1,19 +1,21 @@
 import { withoutLeaveGuard } from '../../app/leaveGuard'
-import { voucherHash, voucherParentHash } from '../../app/routing'
+import { voucherHash, voucherParentHash, voucherUpI18n } from '../../app/routing'
 import type { ModuleNavItem } from '../nav'
 import type { BookViewCtx, UiModule } from '../ui'
 import { viaKind } from '../ui'
 import { VoucherEditor } from './ui/VoucherEditor'
 import { VoucherListView } from './ui/VoucherListView'
 
-function VouchersScreen({ route, meta, goTo }: BookViewCtx) {
+function VouchersScreen({ route, meta, goTo, t }: BookViewCtx) {
   if (route.view === 'edit' && meta) {
+    const up = voucherUpI18n(route.via)
     return (
       <VoucherEditor
         voucherId={route.voucherId}
         defaultType={route.type}
         defaultDate={meta.book_date}
         copyFromId={route.copyFromId}
+        backLabel={t(up.key, up.vars)}
         onCancel={() => withoutLeaveGuard(() => goTo(voucherParentHash(route.via)))}
         onSaved={(id) => withoutLeaveGuard(() => goTo(voucherHash(route.via, id, null)))}
         onOpenVoucher={(id, opts) => {

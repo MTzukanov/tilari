@@ -61,6 +61,7 @@ import {
 } from '../catalog'
 import { newVoucherForm, nextEditorKey, type EditorKey } from '../editorKey'
 import { wallToday } from '../../../book/clock'
+import { BookError } from '../../../book/errors'
 import { AttachmentDropzone } from './AttachmentDropzone'
 import { AttachmentGallery } from './AttachmentGallery'
 import { EditorMenu, ToolGlyph } from './EditorMenu'
@@ -147,6 +148,8 @@ type VoucherEditorProps = {
   defaultType: number | null
   defaultDate?: string
   copyFromId?: number
+  /** The way back's label when the voucher cannot be loaded ("Selaukseen"); it calls `onCancel`. */
+  backLabel?: string
   onSaved: (id: number, opts?: { stay?: boolean }) => void
   onCancel: () => void
   onOpenVoucher: (id: number, opts?: { fromStatementId?: number }) => void
@@ -172,6 +175,7 @@ function VoucherForm({
   defaultType,
   defaultDate,
   copyFromId,
+  backLabel,
   onSaved,
   onCancel,
   onOpenVoucher,
@@ -190,6 +194,8 @@ function VoucherForm({
   const [status, setStatus] = useState(100)
   const [lines, setLines] = useState<LineDraft[]>([{ ...EMPTY_LINE }, { ...EMPTY_LINE }])
   const [error, setError] = useState<string | null>(null)
+  /** The voucher (or the one copied) that could not be loaded: shown instead of a blank or stale form. */
+  const [loadFailure, setLoadFailure] = useState<{ id: number; notFound: boolean; detail: string } | null>(null)
   const [saving, setSaving] = useState(false)
   const [files, setFiles] = useState<File[]>([])
   const [existing, setExisting] = useState<VoucherDetail | null>(null)
@@ -246,6 +252,7 @@ function VoucherForm({
     showDraft: true,
     canPost: false,
     canSaveDraft: false,
+    loadFailed: false,
   })
 
   const accountItems: SearchItem[] = useMemo(
@@ -463,9 +470,20 @@ function VoucherForm({
     setBaseline(null)
     setError(null)
     // Stored vouchers load in place: a late answer for the voucher shown before is not applied.
-    fetchVoucher(sourceId).then((data) => {
-      if (current) applyLoaded(data, { asCopy })
-    })
+    fetchVoucher(sourceId)
+      .then((data) => {
+        if (!current) return
+        setLoadFailure(null)
+        applyLoaded(data, { asCopy })
+      })
+      .catch((err: unknown) => {
+        if (!current) return
+        setLoadFailure({
+          id: sourceId,
+          notFound: err instanceof BookError && err.status === 404,
+          detail: err instanceof Error ? err.message : String(err),
+        })
+      })
     return () => {
       current = false
     }
@@ -1175,6 +1193,8 @@ function VoucherForm({
   const blockedReason = postBlockedReason()
   const readyToPost = blockedReason == null
   const readyToDraft = canSaveDraft()
+  // An earlier failure of another voucher is not shown: that address loads (or fails) on its own.
+  const loadFailed = loadFailure != null && loadFailure.id === (voucherId ?? copyFromId ?? null)
 
   actionsRef.current = {
     requestCancel,
@@ -1198,6 +1218,7 @@ function VoucherForm({
     showDraft,
     canPost: readyToPost,
     canSaveDraft: readyToDraft,
+    loadFailed,
   }
 
   useEffect(() => {
@@ -1210,6 +1231,8 @@ function VoucherForm({
         a.requestCancel()
         return
       }
+      // Nothing to save, print or copy: only Esc (back) works while the voucher could not be loaded.
+      if (a.loadFailed) return
       if (e.altKey && e.key === 'ArrowLeft') {
         e.preventDefault()
         a.goPrev()
@@ -1249,6 +1272,21 @@ function VoucherForm({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  if (loadFailed) {
+    return (
+      <div className="ledger voucher-load-failed">
+        <button type="button" className="back-btn" onClick={onCancel}>
+          {backLabel ?? t('editor.cancel')}
+        </button>
+        <p className="error" role="alert">
+          {loadFailure.notFound
+            ? t('editor.notFound', { id: loadFailure.id })
+            : t('editor.loadFailed', { id: loadFailure.id, error: loadFailure.detail })}
+        </p>
+      </div>
+    )
+  }
 
   const year = date.slice(0, 4)
   const visibleTabs = EDITOR_TABS.filter(
