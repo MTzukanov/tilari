@@ -1,3 +1,5 @@
+import { BookError } from './errors'
+
 type AddressSpace = 'local' | 'loopback'
 
 function targetAddressSpace(): AddressSpace | undefined {
@@ -44,9 +46,10 @@ export async function parseHttpError(res: Response): Promise<string> {
   return text || res.statusText
 }
 
+/** A failed read keeps its HTTP status (`BookError.status`): 404 is "not in the book", as in the browser engine. */
 export async function getJson<T>(path: string): Promise<T> {
   const res = await apiFetch(path)
-  if (!res.ok) throw new Error(await parseHttpError(res))
+  if (!res.ok) throw new BookError(await parseHttpError(res), res.status)
   return res.json() as Promise<T>
 }
 

@@ -481,6 +481,8 @@
     "changeDocNumber": "Byt dokumentnummer",
     "goToPrompt": "Verifikatnummer:",
     "goToNotFound": "Verifikatet hittades inte.",
+    "notFound": "Verifikatet {id} hittades inte.",
+    "loadFailed": "Verifikatet {id} kunde inte öppnas: {error}",
     "changeDocNumberPrompt": "Nytt verifikatnummer:",
     "shortcutGo": "Ctrl+G",
     "shortcutPrint": "Ctrl+P",

@@ -26,6 +26,7 @@ let container: HTMLElement
 let heldLoads: Map<number, Promise<void>>
 let heldSave: Promise<void> | null
 const onSaved = vi.fn()
+const onCancel = vi.fn()
 
 function gate(): { wait: Promise<void>; release: () => void } {
   let release = () => undefined as void
@@ -42,6 +43,7 @@ beforeEach(async () => {
   heldLoads = new Map()
   heldSave = null
   onSaved.mockReset()
+  onCancel.mockReset()
   book.service = new Proxy(ledger, {
     get(target, prop) {
       if (prop === 'fetchVoucher') {
@@ -80,8 +82,9 @@ async function show(address: Address) {
         createElement(VoucherEditor, {
           ...address,
           defaultDate: '2025-06-15',
+          backLabel: 'Selaukseen',
           onSaved,
-          onCancel: () => undefined,
+          onCancel,
           onOpenVoucher: () => undefined,
           onCopyAsNew: () => undefined,
         }),
@@ -101,11 +104,15 @@ async function waitFor(check: () => boolean, what: string) {
     if (check()) return
     await settle(5)
   }
-  throw new Error(`not seen: ${what} (title "${titleInput().value}")`)
+  throw new Error(`not seen: ${what} (title "${titleInput()?.value}")`)
 }
 
 function titleInput(): HTMLInputElement {
   return container.querySelector<HTMLInputElement>('.voucher-meta-row label.grow input')!
+}
+
+function loadError(): string | null {
+  return container.querySelector('.voucher-load-failed [role=alert]')?.textContent ?? null
 }
 
 function footerText(): string {
@@ -213,5 +220,52 @@ describe('VoucherEditor between addresses', () => {
     expect(copyId).not.toBe(4)
     expect((await ledger.fetchVoucher(copyId)).entries.map((e) => e.account).sort()).toEqual([1910, 5000])
     expect(await lineIds(4)).toEqual([7, 8])
+  })
+})
+
+describe('VoucherEditor when a voucher cannot be loaded', () => {
+  it('a voucher not in the book says so, with the way back, instead of an empty form', async () => {
+    await show({ voucherId: 99999, defaultType: null })
+    await waitFor(() => loadError() != null, 'load error shown')
+    expect(loadError()).toBe('Tositetta 99999 ei löydy.')
+    expect(container.querySelector('form.editor')).toBeNull()
+    await act(async () => button('Selaukseen').click())
+    expect(onCancel).toHaveBeenCalledTimes(1)
+
+    // A copy of a voucher not in the book the same.
+    await show({ voucherId: null, defaultType: 100, copyFromId: 99999 })
+    await waitFor(() => loadError() === 'Tositetta 99999 ei löydy.', 'copy load error shown')
+    expect(container.querySelector('form.editor')).toBeNull()
+  })
+
+  it("the voucher shown before does not stay at the address; shortcuts but Esc do nothing; the next voucher loads", async () => {
+    // Ctrl+S on a form that cannot be saved explains why in an alert; there is no form here.
+    const before = window.alert
+    const alert = vi.fn()
+    window.alert = alert
+    try {
+      await show({ voucherId: 3, defaultType: null })
+      await waitFor(() => titleInput()?.value === 'Vuokra Toimisto', 'voucher 3 loaded')
+      await show({ voucherId: 99999, defaultType: null })
+      await waitFor(() => loadError() != null, 'load error shown')
+      expect(container.querySelector('form.editor')).toBeNull()
+      expect(container.textContent).not.toContain('Vuokra Toimisto')
+      await act(async () => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true }))
+      })
+      expect(alert).not.toHaveBeenCalled()
+      expect(onSaved).not.toHaveBeenCalled()
+      await act(async () => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      })
+      expect(onCancel).toHaveBeenCalledTimes(1)
+
+      await show({ voucherId: 4, defaultType: null })
+      await waitFor(() => titleInput()?.value === 'Palvelut Projekti A', 'voucher 4 loaded')
+      expect(loadError()).toBeNull()
+      expect(container.querySelector('.editor-doc-number')?.textContent).toBe('4')
+    } finally {
+      window.alert = before
+    }
   })
 })

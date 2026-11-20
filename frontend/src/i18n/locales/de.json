@@ -481,6 +481,8 @@
     "changeDocNumber": "Belegnummer ändern",
     "goToPrompt": "Belegnummer:",
     "goToNotFound": "Beleg nicht gefunden.",
+    "notFound": "Beleg {id} nicht gefunden.",
+    "loadFailed": "Beleg {id} konnte nicht geöffnet werden: {error}",
     "changeDocNumberPrompt": "Neue Belegnummer:",
     "shortcutGo": "Strg+G",
     "shortcutPrint": "Strg+P",

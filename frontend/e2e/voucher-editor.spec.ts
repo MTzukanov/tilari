@@ -628,4 +628,37 @@ test.describe('voucher editor between vouchers', () => {
     await expect(title).toHaveValue('Palvelut Projekti A tarkistettu')
     expect(await lineAccounts(page)).toEqual(['5000', '1910'])
   })
+
+  test('a voucher that cannot be loaded says so, with the way back, instead of a blank or stale form', async ({
+    page,
+  }) => {
+    const pageErrors: string[] = []
+    page.on('pageerror', (err) => pageErrors.push(err.message))
+    await openBook(page)
+    const failed = page.locator('.voucher-load-failed')
+    await page.goto('/#/voucher/99999/edit')
+    await expect(failed.getByRole('alert')).toHaveText('Tositetta 99999 ei löydy.')
+    await expect(page.locator('form.editor')).toHaveCount(0)
+    await failed.getByRole('button', { name: 'Selaukseen' }).click()
+    await expectBrowse(page)
+
+    // Straight from a stored voucher: its form does not stay at the wrong address.
+    await page.goto('/#/account/4000/voucher/3/edit')
+    await expect(page.getByRole('textbox', { name: 'Otsikko' })).toHaveValue('Vuokra Toimisto')
+    await page.goto('/#/account/4000/voucher/99999/edit')
+    await expect(failed.getByRole('alert')).toHaveText('Tositetta 99999 ei löydy.')
+    await expect(page.locator('form.editor')).toHaveCount(0)
+    await expect(page.locator('main')).not.toContainText('Vuokra Toimisto')
+    // The way back leads where the voucher was opened from; Esc too.
+    await failed.getByRole('button', { name: 'Tiliin 4000' }).click()
+    await expect(page).toHaveURL(/#\/account\/4000$/)
+    await page.goto('/#/voucher/new/100/from/99999')
+    await expect(failed.getByRole('alert')).toHaveText('Tositetta 99999 ei löydy.')
+    await page.keyboard.press('Escape')
+    await expectBrowse(page)
+    // The next voucher loads as usual.
+    await page.goto('/#/voucher/4/edit')
+    await expect(page.getByRole('textbox', { name: 'Otsikko' })).toHaveValue('Palvelut Projekti A')
+    expect(pageErrors).toEqual([])
+  })
 })

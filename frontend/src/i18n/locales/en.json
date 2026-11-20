@@ -481,6 +481,8 @@
     "changeDocNumber": "Change document number",
     "goToPrompt": "Voucher number:",
     "goToNotFound": "Voucher not found.",
+    "notFound": "Voucher {id} not found.",
+    "loadFailed": "Voucher {id} could not be opened: {error}",
     "changeDocNumberPrompt": "New voucher number:",
     "shortcutGo": "Ctrl+G",
     "shortcutPrint": "Ctrl+P",
