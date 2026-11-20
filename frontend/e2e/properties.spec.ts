@@ -863,6 +863,17 @@ test.describe('rental object deposits', () => {
     await expect(tile(card, 'Vuokravakuus')).toContainText(/Vuokravakuus500,00\s€saatu 500,00\s€$/)
     await card.getByRole('button', { name: 'Vakuuden kirjaukset 1', exact: true }).click()
     await expect(card.locator('.property-deposit-lines li')).toContainText(/Saatu\s*5\.1\.2025 500,00\s€/)
+
+    // The overview shows the running lease in the same tiles: rent, its balance, the deposit, the contract.
+    const balance = (await card.locator('.property-figure', { hasText: /^(Vuokrarästi|Maksettu ennakkoon|Vuokrasaldo) / }).textContent()) ?? ''
+    await page.getByRole('tab', { name: 'Yleiskatsaus' }).click()
+    const now = page.locator('.property-now', { hasText: 'Vuokrasuhde nyt' })
+    await expect(now.locator('.property-lease-head')).toContainText('Testi Vuokralainen')
+    await expect(now.locator('.property-figure-label')).toHaveText(['Vuokra', /^(Vuokrarästi|Maksettu ennakkoon|Vuokrasaldo) /, 'Vuokravakuus', 'Sopimus'])
+    await expect(tile(now, /^Vuokra$/).locator('strong')).toHaveText(/^650,00\s€\/kk$/)
+    await expect(now.locator('.property-figure').nth(1)).toHaveText(balance)
+    await expect(tile(now, 'Vuokravakuus')).toContainText(/Vuokravakuus500,00\s€saatu 500,00\s€$/)
+    await expect(tile(now, 'Sopimus').locator('.pill-crit')).toHaveText('Asiakirja puuttuu')
   })
 })
 
@@ -1284,9 +1295,9 @@ test.describe('rental object water settlements', () => {
 
     // The overview shows the latest settlement of the running lease.
     await page.getByRole('tab', { name: 'Yleiskatsaus' }).click()
-    await expect(page.locator('.property-now', { has: page.getByRole('heading', { name: 'Vesi', exact: true }) })).toContainText(
-      'Vesitasaus 1.1.2025–30.6.2025: palautetaan 39,56 €',
-    )
+    const waterNow = page.locator('.property-now', { has: page.getByRole('heading', { name: 'Vesi', exact: true }) })
+    await expect(tile(waterNow, 'Vesitasaus 1.1.2025–30.6.2025').locator('strong')).toHaveText(/^palautetaan 39,56\s€$/)
+    await expect(tile(waterNow, 'Vesitasaus 1.1.2025–30.6.2025').locator('.pill-warn')).toHaveText('avoin')
     await page.getByRole('tab', { name: /^Vesimaksut/ }).click()
     const settled = panel.locator('.property-water-card')
     await expect(settled.locator('.property-lease-head')).toContainText('Tasausjakso 1.1.2025–30.6.2025')

@@ -86,6 +86,82 @@ function absentMark(t: (key: string) => string, items: { voucher: unknown; no_do
   return held && items.some((i) => !i.voucher && !i.no_document) ? { tone: 'crit', title: t('properties.docs.absent') } : undefined
 }
 
+/** The rent in force a month, its parts, VAT and due day; on the lease card and the overview. */
+export function RentFigure({ lease }: { lease: LeaseView }) {
+  const { t } = useI18n()
+  const rent = lease.rent
+  return (
+    <Figure
+      label={t('properties.lease.figure.rent')}
+      value={rent ? t('properties.lease.perMonth', { amount: formatCents(rentTotal(rent)) }) : ''}
+      sub={
+        rent
+          ? [
+              rentPartsText(t, rent),
+              lease.vat ? rentVatText(t, rent, lease.vat) : '',
+              lease.due_day != null ? t('properties.lease.due', { day: lease.due_day }) : '',
+            ].filter(Boolean)
+          : []
+      }
+    />
+  )
+}
+
+/** The lease's rent balance on the as-of date: arrears red, paid ahead, or even. */
+export function RentBalanceFigure({ lease, account, period, asOf }: { lease: LeaseView; account: LeaseRentAccount; period: RentPeriod; asOf: string }) {
+  const { t } = useI18n()
+  const balance = account.balance_snt
+  return (
+    <Figure
+      label={t(balance > 0 ? 'properties.rent.figure.arrears' : balance < 0 ? 'properties.rent.figure.ahead' : 'properties.rent.balanceOn', {
+        date: formatDate(asOf),
+      })}
+      value={formatCents(Math.abs(balance))}
+      neg={balance > 0}
+      sub={rentCountedText(t, account, lease.starts, period)}
+    />
+  )
+}
+
+/** The tenant's share of the latest water settlement, with its pill. */
+export function WaterLatestFigure({ latest }: { latest: NonNullable<LeaseView['water_latest']> }) {
+  const { t } = useI18n()
+  return (
+    <Figure
+      label={t('properties.water.latest', { period: periodText(t, latest.from, latest.to) })}
+      value={waterBalanceText(t, latest.balance_snt)}
+      sub={latest.status !== 'none' ? [<WaterStatusPill key="status" share={latest} />] : []}
+    />
+  )
+}
+
+/** The deposit held: received, returned and kept back, and lines no longer found. */
+export function DepositFigure({ deposit }: { deposit: DepositView }) {
+  const { t } = useI18n()
+  return (
+    <Figure
+      label={t('properties.deposit.title')}
+      value={formatCents(deposit.balance_snt)}
+      neg={deposit.balance_snt < 0}
+      sub={[
+        t('properties.deposit.received', { amount: formatCents(deposit.received_snt) }),
+        deposit.returned_snt
+          ? [t('properties.deposit.returned', { amount: formatCents(deposit.returned_snt) }), deposit.deducted_snt ? deductedText(t, deposit.deducted_snt) : '']
+              .filter(Boolean)
+              .join(', ')
+          : '',
+        deposit.missing ? t('properties.deposit.missingCount', { n: deposit.missing }) : '',
+      ].filter(Boolean)}
+    />
+  )
+}
+
+/** The lease's contract: its pill, or a missing one marked while the object is held. */
+export function ContractFigure({ lease, held, onOpenVoucher }: { lease: LeaseView; held: boolean; onOpenVoucher: (voucherId: number) => void }) {
+  const { t } = useI18n()
+  return <Figure label={t('properties.lease.contract')} sub={[<DocSlot key="contract" voucher={lease.contract} held={held} onOpen={onOpenVoucher} />]} />
+}
+
 /**
  * A stored lease as figure tiles: the rent, an exception in force, the rent balance, the next
  * increase or the clause, the water, the latest water settlement, the deposit and the contract; the
@@ -131,7 +207,6 @@ function LeaseCard({
   const next = nextAt > 0 ? lease.steps[nextAt] : null
   const raise = next ? rentTotal(next) - rentTotal(lease.steps[nextAt - 1]) : 0
   const lastIncrease = lease.steps.slice(1).findLast((step) => step.from <= asOf)
-  const balance = account?.balance_snt ?? 0
   const folds: Fold[] = [
     {
       key: 'months',
@@ -204,19 +279,7 @@ function LeaseCard({
         ) : null}
       </p>
       <Figures>
-        <Figure
-          label={t('properties.lease.figure.rent')}
-          value={rent ? perMonth(rentTotal(rent)) : ''}
-          sub={
-            rent
-              ? [
-                  rentPartsText(t, rent),
-                  lease.vat ? rentVatText(t, rent, lease.vat) : '',
-                  lease.due_day != null ? t('properties.lease.due', { day: lease.due_day }) : '',
-                ].filter(Boolean)
-              : []
-          }
-        />
+        <RentFigure lease={lease} />
         {exceptionNow ? (
           <Figure
             label={t('properties.lease.exceptionNow')}
@@ -228,16 +291,7 @@ function LeaseCard({
             ].filter(Boolean)}
           />
         ) : null}
-        {account ? (
-          <Figure
-            label={t(balance > 0 ? 'properties.rent.figure.arrears' : balance < 0 ? 'properties.rent.figure.ahead' : 'properties.rent.balanceOn', {
-              date: formatDate(asOf),
-            })}
-            value={formatCents(Math.abs(balance))}
-            neg={balance > 0}
-            sub={rentCountedText(t, account, lease.starts, period)}
-          />
-        ) : null}
+        {account ? <RentBalanceFigure lease={lease} account={account} period={period} asOf={asOf} /> : null}
         {next ? (
           <Figure
             label={t('properties.lease.figure.nextIncrease')}
@@ -262,32 +316,9 @@ function LeaseCard({
             sub={[t(lease.water === 'flat' ? 'properties.water.flat' : 'properties.water.advance')]}
           />
         ) : null}
-        {latest ? (
-          <Figure
-            label={t('properties.water.latest', { period: periodText(t, latest.from, latest.to) })}
-            value={waterBalanceText(t, latest.balance_snt)}
-            sub={latest.status !== 'none' ? [<WaterStatusPill key="status" share={latest} />] : []}
-          />
-        ) : null}
-        {deposit ? (
-          <Figure
-            label={t('properties.deposit.title')}
-            value={formatCents(deposit.balance_snt)}
-            neg={deposit.balance_snt < 0}
-            sub={[
-              t('properties.deposit.received', { amount: formatCents(deposit.received_snt) }),
-              deposit.returned_snt
-                ? [t('properties.deposit.returned', { amount: formatCents(deposit.returned_snt) }), deposit.deducted_snt ? deductedText(t, deposit.deducted_snt) : '']
-                    .filter(Boolean)
-                    .join(', ')
-                : '',
-              deposit.missing ? t('properties.deposit.missingCount', { n: deposit.missing }) : '',
-            ].filter(Boolean)}
-          />
-        ) : null}
-        {lease.contract || held ? (
-          <Figure label={t('properties.lease.contract')} sub={[<DocSlot key="contract" voucher={lease.contract} held={held} onOpen={onOpenVoucher} />]} />
-        ) : null}
+        {latest ? <WaterLatestFigure latest={latest} /> : null}
+        {deposit ? <DepositFigure deposit={deposit} /> : null}
+        {lease.contract || held ? <ContractFigure lease={lease} held={held} onOpenVoucher={onOpenVoucher} /> : null}
       </Figures>
       <Folds folds={folds} />
     </div>

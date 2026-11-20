@@ -3,13 +3,13 @@ import type { PropertyTab } from '../../../app/routing'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import type { DocumentSkip, PropertyDetail, Warning } from '../api'
-import { companyResultText, depositText, leasePeriod, leaseRentText, periodText, waterBalanceText } from './format'
-import { DocSlotLine, WaterStatusPill } from './FormParts'
+import { Figure, Figures } from './FigureTiles'
+import { companyResultText, leasePeriod, periodText } from './format'
 import { HousingShareKpi, IrrKpi, RentKpi, ResultKpi, T12mKpi } from './Kpi'
-import { LeaseStatePill } from './LeasesPanel'
+import { ContractFigure, DepositFigure, LeaseStatePill, RentBalanceFigure, RentFigure, WaterLatestFigure } from './LeasesPanel'
 import { Warnings } from './Warnings'
 
-/** A card on the overview: its title, a quiet link to its tab, then a few lines. */
+/** A card on the overview: its title, a quiet link to its tab, then a few figures. */
 function NowCard({ title, more, onMore, children }: { title: string; more: string; onMore: () => void; children: ReactNode }) {
   return (
     <section className="overview-panel property-now">
@@ -56,9 +56,7 @@ export function PropertyOverview({
   const lease = d.lease && !d.lease.suggested ? d.lease : null
   const latestShare = lease?.water_latest ?? null
   const latest = d.water.settlements[0] ?? null
-  const terms = lease
-    ? [leaseRentText(t, lease.rent, lease.vat), lease.due_day != null ? t('properties.lease.due', { day: lease.due_day }) : ''].filter(Boolean)
-    : []
+  const account = lease ? d.rent_account?.leases.find((a) => a.lease_key === lease.key) : undefined
   return (
     <>
       <div className="property-quick">
@@ -100,15 +98,12 @@ export function PropertyOverview({
                 <span className="muted">{leasePeriod(t, lease)}</span>
                 <LeaseStatePill state={lease.state} />
               </p>
-              {terms.length ? <p className="property-lease-terms">{terms.join(' · ')}</p> : null}
-              {lease.deposit ? (
-                <p className="property-lease-terms">
-                  {t('properties.deposit.title')}: {depositText(t, lease.deposit)}
-                </p>
-              ) : null}
-              {lease.contract || held ? (
-                <DocSlotLine label={t('properties.lease.contract')} voucher={lease.contract} onOpen={onOpenVoucher} />
-              ) : null}
+              <Figures>
+                <RentFigure lease={lease} />
+                {account ? <RentBalanceFigure lease={lease} account={account} period={{ start: d.rent_start, end: d.rent_end }} asOf={d.as_of} /> : null}
+                {lease.deposit ? <DepositFigure deposit={lease.deposit} /> : null}
+                {lease.contract || held ? <ContractFigure lease={lease} held={held} onOpenVoucher={onOpenVoucher} /> : null}
+              </Figures>
             </>
           ) : (
             <p className="muted">
@@ -120,14 +115,16 @@ export function PropertyOverview({
         {showWater ? (
           <NowCard title={t('properties.overview.water')} more={t('properties.overview.allWater')} onMore={() => onTab('water')}>
             {latestShare ? (
-              <p className="property-lease-terms">
-                {t('properties.water.latest', { period: periodText(t, latestShare.from, latestShare.to) })}:{' '}
-                {waterBalanceText(t, latestShare.balance_snt)} <WaterStatusPill share={latestShare} />
-              </p>
+              <Figures>
+                <WaterLatestFigure latest={latestShare} />
+              </Figures>
             ) : latest ? (
-              <p className="property-lease-terms">
-                {t('properties.water.latest', { period: periodText(t, latest.from, latest.to) })}: {companyResultText(t, latest.difference_snt)}
-              </p>
+              <Figures>
+                <Figure
+                  label={t('properties.water.latest', { period: periodText(t, latest.from, latest.to) })}
+                  value={companyResultText(t, latest.difference_snt)}
+                />
+              </Figures>
             ) : (
               <p className="muted">{t('properties.water.none')}</p>
             )}

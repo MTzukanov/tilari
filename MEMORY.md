@@ -7,6 +7,20 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-20 - Rental objects: the overview's running lease and water as figure tiles (`feature/overview-now-tiles`)
+
+- The overview's "Vuokrasuhde nyt" and "Vesi" cards were the last sentences left on the object page (UI rule
+  10). "Vuokrasuhde nyt" keeps its head line (tenant, period, state pill) and shows the lease card's own tiles:
+  Vuokra, the rent balance, Vuokravakuus, Sopimus. "Vesi" shows the running lease's share of the latest
+  settlement with its pill, or the company's result when no lease has a share. Each keeps its quiet link to
+  its tab.
+- The tiles are the lease card's, not copies: `RentFigure`, `RentBalanceFigure`, `DepositFigure`,
+  `ContractFigure` and `WaterLatestFigure` in `LeasesPanel.tsx`, used by both. `DocSlotLine` and `depositText`
+  had no other user and are gone.
+- The overview's panels are tinted like the tiles (`--surface`), so the tiles vanished there: the two
+  now-cards are white (`--card`), like a lease card.
+- The deposit e2e test checks the overview's tiles against the lease card's (the balance depends on today).
+
 ## 2026-11-20 - Rental objects: the lease and water forms' notes behind an "i" (`fix/edit-form-hints`)
 
 - UI rule 10 carried into the edit forms (owner: "all yes" to the leftovers). Behind an "i" now, because each
