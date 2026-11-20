@@ -7,6 +7,21 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-20 - Rental objects: the lease and water forms' notes behind an "i" (`fix/edit-form-hints`)
+
+- UI rule 10 carried into the edit forms (owner: "all yes" to the leftovers). Behind an "i" now, because each
+  says something the form does not show: the deposit's lead (what can be linked, what ★ means) and the
+  exceptions' lead (how an exception counts against the rent balance), each beside its heading
+  (`InfoHeading` in `FigureTiles.tsx`); how the tenants' water shares are counted (by use or by the company's
+  difference), beside "Vuokralaisten osuudet"; and by the statement's buttons, what the ★ guesses mean while
+  none is picked, or that a picked statement's period was guessed from its date.
+- Dropped: "Anna jakson alku- ja loppupäivä." under the shares (the empty date fields and the save's marks say
+  it; the key stays, the statement upload still uses it as an error). Kept as lines: the VAT line under the
+  amounts (figures, not a hint), "no leases in the period" (why the shares are empty), errors and marks.
+- No locale key became unused. The loan form and the Taloyhtiö tab still have lead lines; not in this round.
+- `WaterEditor.test.ts` renders the form for the statement notes, which no test book can show (no water
+  statements in either).
+
 ## 2026-11-20 - Voucher editor: a voucher that cannot be loaded says so (`fix/voucher-load-error`)
 
 - A wrong id in the address (`#/voucher/99999/edit`, or a copy `#/voucher/new/100/from/99999`) left a blank

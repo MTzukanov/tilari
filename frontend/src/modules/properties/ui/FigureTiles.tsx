@@ -73,3 +73,17 @@ export function InfoButton({ note, open, onToggle }: { note: string; open: boole
 export function InfoNote({ note }: { note: string }) {
   return <p className="muted property-lease-hint property-info-note">{note}</p>
 }
+
+/** A form section's heading with its note behind an "i", the note under the heading while open. */
+export function InfoHeading({ title, note }: { title: string; note: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <h4 className="property-info-head">
+        {title}
+        <InfoButton note={note} open={open} onToggle={() => setOpen(!open)} />
+      </h4>
+      {open ? <InfoNote note={note} /> : null}
+    </>
+  )
+}

@@ -5866,6 +5866,13 @@ tr.tax-total td {
   margin: 0 0 0.5rem;
 }
 
+/* A form section's heading with its "i" beside it. */
+.property-info-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 /* A card's lists as small tabs, like the page's own: one opens under them, a click on it closes it. */
 .property-folds {
   display: flex;

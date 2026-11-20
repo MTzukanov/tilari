@@ -16,6 +16,7 @@ import {
 } from '../api'
 import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
+import { InfoHeading } from './FigureTiles'
 import { invalidProps, issueOf, type FormIssue } from './formIssues'
 import { Field, NoDocumentCheck, Shown } from './FormParts'
 import { depositOptionText, vatPctText } from './format'
@@ -128,8 +129,7 @@ function DepositField({
     .sort((a, b) => Number(fits(b)) - Number(fits(a)) || b.date.localeCompare(a.date) || b.id - a.id)
   return (
     <div className="property-lease-deposit">
-      <h4>{t('properties.deposit.title')}</h4>
-      <p className="muted property-lease-hint">{t('properties.deposit.lead')}</p>
+      <InfoHeading title={t('properties.deposit.title')} note={t('properties.deposit.lead')} />
       {draft.deposits.length ? (
         <ul className="property-doc-list property-linked-list">
           {draft.deposits.map((key) => {
@@ -418,8 +418,7 @@ export function LeasesEditor({
             </button>
           </div>
 
-          <h4>{t('properties.lease.exceptions')}</h4>
-          <p className="muted property-lease-hint">{t('properties.edit.exceptionsLead')}</p>
+          <InfoHeading title={t('properties.lease.exceptions')} note={t('properties.edit.exceptionsLead')} />
           {d.exceptions.map((e, k) => {
             const total = exceptionTotal(e, d)
             return (

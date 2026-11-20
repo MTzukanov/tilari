@@ -84,6 +84,7 @@ stand out. Here colour and a filled button mark what needs doing, and everything
 | `SuggestBanner` | `shared/SuggestBanner.tsx` | Suggestions from the book: a blue banner with a title, a line on where they come from, one `action` for all of them (add them all, or review them) and the suggestions below, as `DocLine`s with a filled "Lisää" in `end` |
 | `Figures`, `Figure` | `modules/properties/ui/FigureTiles.tsx` | A card's figures as tiles (rule 10): a short `label`, the figure big (`value`, red with `neg`), a line or two under it (`sub`); without a `value` the lines are the tile, such as a document's pills. As many a row as fit, two on a phone |
 | `InfoButton`, `InfoNote` | `modules/properties/ui/FigureTiles.tsx` | A small "i" for a fact a card or form does not spell out (rule 10): the note on hover, and `InfoNote` under the element while open |
+| `InfoHeading` | `modules/properties/ui/FigureTiles.tsx` | A form section's heading with its note behind an "i" beside it, the note under the heading while open; in place of a lead line under the heading |
 | `Folds` | `modules/properties/ui/FigureTiles.tsx` | A card's lists under its tiles as small tabs, one open at a time; each with its row count and a dot in the tone of what is wrong there (`mark`, as a page tab's). A list with no rows has no tab |
 
 CSS, in the "Documents and status" part of `App.css`:
