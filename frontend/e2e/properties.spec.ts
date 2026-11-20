@@ -120,6 +120,7 @@ test.describe('rental objects chart', () => {
       hidden: [],
       total: true,
       allMonths: false,
+      combined: true,
     })
     await panel.getByRole('checkbox', { name: 'Kaikki yhteensä' }).uncheck()
     await expect(cash.locator('.portfolio-total')).toHaveCount(0)
@@ -149,8 +150,20 @@ test.describe('rental objects chart', () => {
     const panel = page.locator('section.portfolio-charts')
     const unrecovered = panel.getByRole('group', { name: 'Palauttamatta kuukauden lopussa' })
     await expect(unrecovered).toBeVisible()
-    // Still to recover first, the cash flow under it: the two can be seen to meet or part.
+    // The totals on one chart first: the capital put in, what came back and what is still to recover on one
+    // scale (no loan shares in this book). Then still to recover, the cash flow under it: they meet or part.
+    await expect(panel.locator('h4')).toHaveText(['Kaikki kohteet yhdessä kuukauden lopussa', 'Palauttamatta kuukauden lopussa', 'Kertynyt kassavirta'])
+    const combined = panel.getByRole('group', { name: 'Kaikki kohteet yhdessä kuukauden lopussa' })
+    await expect(combined.locator('.portfolio-line')).toHaveCount(3)
+    await combined.locator('.chart-point-hit').last().hover()
+    await expect(combined.locator('xpath=..').locator('.chart-tip')).toContainText(/Palauttamatta[\d\s,−-]+€Takaisin saatu[\d\s,−-]+€Sijoitettu[\d\s,−-]+€$/)
+    // A checkbox takes it away, and the choice is remembered.
+    await panel.getByRole('checkbox', { name: 'Yhteiskaavio' }).uncheck()
+    await expect(combined).toHaveCount(0)
+    await page.reload()
     await expect(panel.locator('h4')).toHaveText(['Palauttamatta kuukauden lopussa', 'Kertynyt kassavirta'])
+    await panel.getByRole('checkbox', { name: 'Yhteiskaavio' }).check()
+    await expect(combined).toBeVisible()
     // The objects' checkboxes top to bottom in equal columns, on the same columns as the total's.
     const objects = panel.getByRole('group', { name: 'Kohteet' }).locator('label')
     expect(await objects.count()).toBeGreaterThan(6)

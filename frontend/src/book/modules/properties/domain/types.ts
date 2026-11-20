@@ -737,6 +737,13 @@ export type PortfolioChart = {
   objects: { id: number; cash_snt: (number | null)[]; unrecovered_snt: (number | null)[]; share_snt: (number | null)[] }[]
   total_cash_snt: number[]
   total_unrecovered_snt: number[]
+  /**
+   * The objects the unrecovered total counts (linked to an investment, until their sale): the capital
+   * put in so far (refunds lower it), and what has come back - cash flow and sale proceeds. Their
+   * difference is the unrecovered total.
+   */
+  total_invested_snt: number[]
+  total_back_snt: number[]
   /** The housing-company loan shares (ADR-034), each object's where known; null where none is. */
   total_share_snt: (number | null)[]
 }

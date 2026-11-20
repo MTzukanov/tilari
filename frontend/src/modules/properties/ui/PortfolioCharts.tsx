@@ -16,9 +16,11 @@ export type PortfolioChartOptions = {
   hidden: number[]
   total: boolean
   allMonths: boolean
+  /** The totals on one chart first: capital put in, cash flow, money to recover, loan shares. */
+  combined: boolean
 }
 
-const DEFAULTS: PortfolioChartOptions = { hidden: [], total: true, allMonths: false }
+const DEFAULTS: PortfolioChartOptions = { hidden: [], total: true, allMonths: false, combined: true }
 
 export function loadPortfolioChartOptions(): PortfolioChartOptions {
   try {
@@ -28,6 +30,7 @@ export function loadPortfolioChartOptions(): PortfolioChartOptions {
       hidden: Array.isArray(stored.hidden) ? stored.hidden.filter((n): n is number => typeof n === 'number') : [],
       total: typeof stored.total === 'boolean' ? stored.total : DEFAULTS.total,
       allMonths: typeof stored.allMonths === 'boolean' ? stored.allMonths : DEFAULTS.allMonths,
+      combined: typeof stored.combined === 'boolean' ? stored.combined : DEFAULTS.combined,
     }
   } catch {
     return { ...DEFAULTS }
@@ -41,6 +44,14 @@ function savePortfolioChartOptions(options: PortfolioChartOptions): void {
     // Private window or blocked storage: the choice lasts until the page closes.
   }
 }
+
+/** The combined chart's lines: one colour each, the loan shares dashed (they are owed, not paid). */
+const COMBINED = {
+  invested: '#6b7280',
+  back: 'var(--ink)',
+  unrecovered: '#2f6fed',
+  shares: '#c45c26',
+} as const
 
 /** An object's colour and dash by its place in the chart (not by what is shown, so hiding one repaints none). */
 export function objectStyle(index: number): { color: string; dashed: boolean } {
@@ -59,10 +70,13 @@ function Swatch({ color, dashed }: { color: string; dashed: boolean }) {
 }
 
 /**
- * The Properties page's charts: every object's money still to recover, its cash flow summed month by
- * month (the two one under the other, so they can be seen to meet or part), and its housing-company
- * loan share (ADR-034), one coloured line each, with all of them together. One set of checkboxes
- * serves them all: the total and the months, then the objects in columns with "all" and "none".
+ * The Properties page's charts. First, when chosen, the totals on one chart, over the objects the
+ * unrecovered total counts: the capital put in, what has come back (cash flow and sale proceeds),
+ * the gap between them that is still to recover, and the housing-company loan shares (ADR-034) - on
+ * one scale, where they meet or part.
+ * Then each measure on its own chart: every object's money still to recover, its cash flow, its
+ * share, one coloured line each, with all of them together. One set of checkboxes serves them: the
+ * combined chart, the total and the months, then the objects in columns with "all" and "none".
  */
 export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: PropertyRow[] }) {
   const { t } = useI18n()
@@ -113,6 +127,16 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
   const invested = chart.objects.some((o) => o.unrecovered_snt.some((v) => v != null))
   const shares = seriesOf((o) => o.share_snt, chart.total_share_snt).filter((s) => s.key === 'total' || s.values.some((v) => v != null))
   const owed = chart.objects.some((o) => o.share_snt.some((v) => v != null))
+  const combined: LineSeries[] = [
+    { key: 'invested', label: t('properties.kpi.invested'), values: chart.total_invested_snt.slice(from), className: 'portfolio-line', color: COMBINED.invested },
+    { key: 'back', label: t('properties.portfolioChart.back'), values: chart.total_back_snt.slice(from), className: 'portfolio-line', color: COMBINED.back },
+    ...(invested
+      ? [{ key: 'unrecovered', label: t('properties.kpi.unrecovered'), values: chart.total_unrecovered_snt.slice(from), className: 'portfolio-line', color: COMBINED.unrecovered }]
+      : []),
+    ...(owed
+      ? [{ key: 'shares', label: t('properties.kpi.housingShares'), values: chart.total_share_snt.slice(from), className: 'portfolio-line', color: COMBINED.shares, dashed: true }]
+      : []),
+  ]
   const chartProps = {
     keys,
     labelFor: (key: string) => monthLabel(key, locale, true),
@@ -129,6 +153,10 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
           <input type="checkbox" checked={options.total} onChange={() => setOptions({ ...options, total: !options.total })} />
           <i className="overview-swatch portfolio-swatch-total" />
           {totalLabel}
+        </label>
+        <label className="allocation-check">
+          <input type="checkbox" checked={options.combined} onChange={() => setOptions({ ...options, combined: !options.combined })} />
+          {t('properties.portfolioChart.combined')}
         </label>
         {long ? (
           <label className="allocation-check">
@@ -163,6 +191,20 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
         ))}
       </div>
       <p className="muted property-kpi-hint">{t('properties.portfolioChart.lead')}</p>
+      {options.combined ? (
+        <>
+          <h4>{t('properties.portfolioChart.combinedTitle')}</h4>
+          <div className="overview-legend">
+            {combined.map((s) => (
+              <span key={s.key} className="allocation-check">
+                <Swatch color={s.color!} dashed={Boolean(s.dashed)} />
+                {s.label}
+              </span>
+            ))}
+          </div>
+          <LineChart {...chartProps} series={combined} label={t('properties.portfolioChart.combinedTitle')} pointTip={pointTip(combined)} />
+        </>
+      ) : null}
       {invested ? (
         <>
           <h4>{t('properties.portfolioChart.unrecovered')}</h4>

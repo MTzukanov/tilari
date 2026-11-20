@@ -7,6 +7,18 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-19 - Rental objects: the Properties page's totals on one chart (`feature/portfolio-summary-chart`)
+
+- Owner's ask (option A of four): the measures on one chart, to see whether the money comes back. "Yhteiskaavio"
+  (a remembered checkbox, on by default) draws first: Sijoitettu, Takaisin saatu (cash flow and sale proceeds),
+  Palauttamatta and Yhtiölainaosuudet (dashed), totals only, on one scale.
+- All its lines count the objects the unrecovered total counts - linked to an investment, until their sale -
+  so Sijoitettu less Takaisin saatu is Palauttamatta every month (`testBook.test.ts` checks it). A first try
+  kept a sold object's capital in Sijoitettu and left sale proceeds out of the cash line: the gap then showed
+  neither what was left to recover nor the sale, so it was dropped. A sale steps all the lines down.
+- Not built (owner to decide): an object picker on it (B), and still to recover as a % of what each object
+  needed (D).
+
 ## 2026-11-19 - Rental objects: chart checkboxes in columns, all or none, the defaults form lined up (`feature/portfolio-chart-legends`)
 
 - Owner's look at the Properties page. The defaults form's euro field stood higher than the two beside it and

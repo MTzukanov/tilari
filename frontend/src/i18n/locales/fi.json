@@ -1194,7 +1194,10 @@
       "shares": "Yhtiölainaosuudet kuukauden lopussa",
       "objects": "Kohteet",
       "checkAll": "Valitse kaikki",
-      "uncheckAll": "Poista valinnat"
+      "uncheckAll": "Poista valinnat",
+      "combined": "Yhteiskaavio",
+      "combinedTitle": "Kaikki kohteet yhdessä kuukauden lopussa",
+      "back": "Takaisin saatu"
     },
     "chart": {
       "cashFlow": "Kassavirta kuukausittain",
