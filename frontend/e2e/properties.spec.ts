@@ -804,6 +804,12 @@ test.describe('rental object figures edited on Talous', () => {
     await page.getByRole('button', { name: '+ Hinta-arvio' }).click()
     await expect(page).toHaveURL(/#\/property\/4\/finance$/)
     const valuations = page.locator('.property-finance-valuations')
+    // The row's "Poista" stands level with its inputs: same top, same height.
+    const remove = (await valuations.getByRole('button', { name: 'Poista', exact: true }).boundingBox())!
+    const source = (await valuations.getByLabel('Lähde').boundingBox())!
+    expect(Math.abs(remove.y - source.y)).toBeLessThanOrEqual(1)
+    expect(Math.abs(remove.height - source.height)).toBeLessThanOrEqual(1)
+    expect(remove.x).toBeGreaterThan(source.x + source.width)
     await valuations.getByLabel('Myyntihinta (ilman lainaosuutta)').fill('120000')
     await valuations.getByLabel('Lähde').fill('Oma arvio')
     await valuations.getByRole('button', { name: 'Tallenna', exact: true }).click()
