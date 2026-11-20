@@ -292,7 +292,11 @@ export function ValuationsSection({ d, onSave, addRequest = 0 }: SectionProps & 
                 {t('properties.field.source')}
                 <input type="text" value={v.source} onChange={(e) => set(i, { source: e.target.value })} />
               </label>
-              <button type="button" className="btn-small" onClick={() => edit.setState(rows.filter((_, j) => j !== i))}>
+              <button
+                type="button"
+                className="btn-link property-delete property-row-end"
+                onClick={() => edit.setState(rows.filter((_, j) => j !== i))}
+              >
                 {t('properties.edit.remove')}
               </button>
             </div>
@@ -469,7 +473,11 @@ export function CapitalSection({ d, onSave }: SectionProps) {
               <input type="date" aria-label={t('properties.field.date')} value={c.date} onChange={(e) => set(i, { date: e.target.value })} />
               <EuroInput value={c.amount} aria-label={t('properties.field.amount')} onChange={(amount) => set(i, { amount })} />
               <input type="text" value={c.note} placeholder={t('properties.field.note')} onChange={(e) => set(i, { note: e.target.value })} />
-              <button type="button" className="btn-small" onClick={() => edit.setState(rows.filter((_, j) => j !== i))}>
+              <button
+                type="button"
+                className="btn-link property-delete property-row-end"
+                onClick={() => edit.setState(rows.filter((_, j) => j !== i))}
+              >
                 {t('properties.edit.remove')}
               </button>
             </div>

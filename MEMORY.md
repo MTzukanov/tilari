@@ -7,6 +7,14 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-20 - Rental objects: a price estimate's "Poista" level with its inputs (`fix/valuation-row-remove`)
+
+- Talous's Hinta-arviot form had a small framed "Poista" (`btn-small`) per row, shorter than the inputs and
+  sitting at their bottom edge. It is now a quiet red link at the row's end (`btn-link property-delete
+  property-row-end`), as tall as the inputs (`.property-form-row > .property-row-end`), like a loan row's
+  "Poista rivi". The "Muu sijoitettu pääoma" rows had the same button and got the same fix. Where the row
+  wraps, it keeps to the row's end. The Talous e2e test checks it stands level with the "Lähde" field.
+
 ## 2026-11-20 - Rental objects: the loan share on the payback chart, still to recover in percent (`feature/charts-share-percent`)
 
 - Owner's picks from the chart options: B as recommended (not an object picker on the combined chart, which the

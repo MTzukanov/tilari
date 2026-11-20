@@ -5471,6 +5471,13 @@ tr.tax-total td {
   min-width: 0;
 }
 
+/* A row's "Poista" (a price estimate, other capital): at the row's end and as tall as the inputs, so it
+   stands level with them, like a loan row's "Poista rivi". */
+.property-form-row > .property-row-end {
+  min-height: 2.15rem;
+  padding-block: 0;
+}
+
 /* The overview tab: the running lease and the water side by side, then the key figures and actions. */
 .property-now-cards {
   display: grid;
