@@ -10,6 +10,8 @@ Layers below run against the golden book in [`testdb/`](../testdb/).
 
 Rental objects with investments linked are in a second, invented book, `testdb/tilari-properties.kitsas`,
 generated from the unit-test fixture (`cd frontend && npm run build:testdb:properties`); see [testdb/README.md](../testdb/README.md).
+The same command writes `testdb/tilari-properties-loans.kitsas`, that book with housing-company loans stored, for
+demos of the loan figures.
 
 | What it covers | How |
 |----------------|-----|

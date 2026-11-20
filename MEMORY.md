@@ -16,6 +16,10 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   .invested_snt`, the same months as its unrecovered line); the total line uses the combined chart's totals, so it
   is total unrecovered over total invested. 100 % at the purchase, 0 % paid back, below 0 a gain; a sale drops a
   line at its last month. `LineChart` takes a `tickFormat` for values that are not cents (basis points here).
+- `testdb/tilari-properties-loans.kitsas` (owner's ask, for demos): the invented book with two loans stored, built
+  by `npm run build:testdb:properties` with the other one. The rebuild rewrites `tilari-properties.kitsas` too,
+  but only its creation time, UID and attachment times change (the fixture is not fixed in time): left out of
+  commits unless the fixture changed.
 
 ## 2026-11-19 - Rental objects: the Properties page's totals on one chart (`feature/portfolio-summary-chart`)
 
