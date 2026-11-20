@@ -146,6 +146,18 @@ describe('saveVoucher round trip', () => {
     expect(() => saveVoucher(db, payload, ids.C)).toThrow(/viennin id/)
   })
 
+  it("refuses a new voucher that carries a stored voucher's line ids, and changes nothing", async () => {
+    // The editor once kept the voucher shown before under #/voucher/new/{type} (MEMORY 2026-11-19).
+    const { db, ids } = await loadImportedFixture()
+    const before = voucherSnapshot(db, ids.C)
+    const count = (table: string) => db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM ${table}`)!.n
+    const counts = [count('Tosite'), count('Vienti')]
+    const payload = payloadFromLoaded(db, ids.C)
+    expect(() => saveVoucher(db, { ...payload, type: 200, title: 'Uusi' })).toThrow(/viennin id/)
+    expect(voucherSnapshot(db, ids.C)).toEqual(before)
+    expect([count('Tosite'), count('Vienti')]).toEqual(counts)
+  })
+
   it('callers without line ids still replace all lines', async () => {
     const { db, ids } = await loadImportedFixture()
     const before = voucherSnapshot(db, ids.E)
