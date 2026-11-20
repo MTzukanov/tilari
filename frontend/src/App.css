@@ -5485,6 +5485,11 @@ tr.tax-total td {
   gap: 0 1rem;
 }
 
+/* Its cards hold figure tiles: white like a lease card, so the tiles stand out. */
+.property-now-cards > .overview-panel {
+  background: var(--card);
+}
+
 /* A panel's title with its action at the far side: "Kaikki vuokrasuhteet", "+ Vuokrasopimus". */
 .property-panel-head {
   display: flex;

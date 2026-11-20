@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
-import { DocLine, DocLines } from '../../../shared/DocRows'
 import { formatVoucherId } from '../../../shared/formatVoucherId'
 import { formatCents } from '../../../shared/money'
 import { FilePill, Pill, VoucherPill } from '../../../shared/Pill'
@@ -114,39 +113,6 @@ export function DocSlot({
         <FilePill key={f.id} id={f.id} name={f.name} />
       ))}
     </>
-  )
-}
-
-/**
- * A document such as the contract in a card: a line with its voucher, its title and what it is, its
- * files. With no voucher, a line of text like the card's others, what it is and the slot's state.
- */
-export function DocSlotLine({
-  label,
-  voucher,
-  noDocument,
-  onOpen,
-}: {
-  label: string
-  voucher: LeaseVoucher | null
-  noDocument?: boolean
-  onOpen: (voucherId: number) => void
-}) {
-  if (!voucher) {
-    return (
-      <p className="property-lease-terms property-doc-slot">
-        {label} <DocSlot voucher={null} noDocument={noDocument} onOpen={onOpen} />
-      </p>
-    )
-  }
-  return (
-    <DocLines>
-      <DocLine voucher={<VoucherOpen voucher={voucher} onOpen={onOpen} />} title={voucher.title || label} mark={<Pill>{label}</Pill>}>
-        {voucher.files.map((f) => (
-          <FilePill key={f.id} id={f.id} name={f.name} />
-        ))}
-      </DocLine>
-    </DocLines>
   )
 }
 
