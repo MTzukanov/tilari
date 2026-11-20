@@ -682,6 +682,11 @@ test.describe('rental object housing-company loans', () => {
     // The payback chart under the cash flow draws the share too, dashed, from the months it is followed.
     await expect(page.locator('.property-share-line .chart-line')).toHaveCount(1)
     await expect(page.locator('.overview-legend', { has: page.locator('.property-swatch-share') })).toContainText('Velkaosuus')
+    // A month's box names each line with its colour, as the legend does.
+    const payback = page.locator('.line-chart', { has: page.locator('.property-share-line') })
+    await payback.locator('.chart-point-hit').last().hover()
+    await expect(payback.locator('.chart-tip-row')).toHaveText([/^Palauttamatta/, /^Kertynyt kassavirta/, /^Velkaosuus/])
+    await expect(payback.locator('.chart-tip-row .chart-tip-swatch')).toHaveCount(3)
     // On Talous: the rahoitusvastike paid in 2026 split as on the card, the break-even price debt-free.
     await page.getByRole('tab', { name: /^Talous/ }).click()
     const years = page.locator('.property-section', { has: page.getByRole('heading', { name: 'Tilikausittain' }) })
