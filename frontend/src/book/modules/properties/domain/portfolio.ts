@@ -688,7 +688,8 @@ function housingDetail(db: SqliteDb, loaded: Loaded, c: Computed): HousingDetail
     .sort(([a], [b]) => b.localeCompare(a))
     .map(([month, m]) => ({ month, units: m.units, lines: m.rows.map((r) => bookedLine(r, -r.net_snt, lineCtx)) }))
   const others = loaded.centres.filter((centre) => centre.id !== c.centre.id && (docFor(loaded, centre.id).doc.housing_loans ?? []).length)
-  if (!others.length) return { vouchers, copy_sources: [], paths, payments }
+  const rate_forecast = loaded.settings.doc.rate_forecast ?? []
+  if (!others.length) return { vouchers, copy_sources: [], paths, payments, rate_forecast }
   const own = housingCompanyPartners(c.result.classified.operating, c.reversed)
   const rows = groupBy(loadPnlRows(db, new Set(others.flatMap((centre) => [...allocationSet(centre)]))), (r) => r.allocation)
   const sources: HousingCopySource[] = others.flatMap((centre) => {
@@ -702,6 +703,7 @@ function housingDetail(db: SqliteDb, loaded: Loaded, c: Computed): HousingDetail
     copy_sources: sources.sort((a, b) => order(a) - order(b) || a.object_name.localeCompare(b.object_name, 'fi') || a.loan.name.localeCompare(b.loan.name, 'fi')),
     paths,
     payments,
+    rate_forecast,
   }
 }
 

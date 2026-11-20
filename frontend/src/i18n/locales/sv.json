@@ -1120,7 +1120,8 @@
     },
     "defaults": {
       "title": "Standardvärden för alla objekt",
-      "lead": "Försäljningskostnader (t.ex. mäklararvode och disponentintyg) och målavkastning. Objektets egna värden går före."
+      "lead": "Försäljningskostnader (t.ex. mäklararvode och disponentintyg) och målavkastning. Objektets egna värden går före.",
+      "estimates": "Ränteantaganden"
     },
     "field": {
       "kind": "Typ",
@@ -1418,7 +1419,9 @@
         "overlapsSettlement": "samma dagar som utjämningen {period}",
         "dueDay": "ange en dag 1-31",
         "percent": "ange en procentsats, t.ex. 3,5",
-        "sameAsStart": "samma dag som starthyran"
+        "sameAsStart": "samma dag som starthyran",
+        "floorOrCeiling": "ange golv, tak eller båda",
+        "floorOverCeiling": "golvet är högre än taket"
       }
     },
     "setup": {
@@ -1503,7 +1506,8 @@
       "loan_payment_missing": "Ingen betalning till bostadsbolaget är bokförd för {count} månader från {from} (bolagslånet {loan}): låneandelen minskade inte för dem.",
       "loan_payment_missing_one": "Ingen betalning till bostadsbolaget är bokförd för månaden {from} (bolagslånet {loan}): låneandelen minskade inte.",
       "loan_rate_missing": "Referensräntan för bolagslånet {loan} justerades {reset}: lägg till den nya referensräntan.",
-      "loan_rahastoitu_expensed": "Finansieringsvederlaget för bolagslånet {loan} från {from} är fonderat men bokfört som kostnad: i beskattningen hör det till aktiernas anskaffningsutgift. Kontrollera med revisorn."
+      "loan_rahastoitu_expensed": "Finansieringsvederlaget för bolagslånet {loan} från {from} är fonderat men bokfört som kostnad: i beskattningen hör det till aktiernas anskaffningsutgift. Kontrollera med revisorn.",
+      "loan_grace_ending": "Bolagslånet {loan}: den amorteringsfria perioden slutar {to}; finansieringsvederlaget stiger när amorteringarna börjar."
     },
     "warnCount": "Anmärkningar: {count}",
     "alerts": {
@@ -1537,7 +1541,9 @@
       "loan_linked": "Lånekonto {path} är redan ett annat objekts banklån. Ett lån kan höra till bara ett objekt, annars räknas räntan två gånger.",
       "deposit_linked": "Depositionen hör redan till ett annat hyresförhållande.",
       "overlap": "Perioder överlappar: kontrollera fältet {path}.",
-      "rentDates": "Hyrans sista dag ligger före den första."
+      "rentDates": "Hyrans sista dag ligger före den första.",
+      "estimateRow": "Ränteantagande rad {n}: ange startdag och referensränta.",
+      "estimateSameDay": "Ränteantagande rad {n}: samma referensränta har redan ett antagande samma dag."
     },
     "total": "Totalt",
     "holding": "{years} år {months} mån",
@@ -1758,7 +1764,9 @@
         "eventKind": "Händelse",
         "amount": "Belopp",
         "note": "Anmärkning",
-        "fixedRate": "Fast ränta %"
+        "fixedRate": "Fast ränta %",
+        "floor": "Golv %",
+        "ceiling": "Tak %"
       },
       "namePlaceholder": "t.ex. Rörrenovering 2019",
       "type": {
@@ -1854,7 +1862,6 @@
         "forecast": "Uppskattning till lånets slut",
         "forecastMonth": "{month} (uppskattning)",
         "forecastYears": "Uppskattning per år",
-        "forecastSummary": "Låneandelen betald senast {date}, om räntan förblir {rate}.",
         "forecastTotal": "Totalt",
         "forecastRule": {
           "annuity": "Finansieringsvederlaget räknas om vid ränteändringar så att lånet är betalt vid lånetidens slut.",
@@ -1880,7 +1887,32 @@
         "fixed": "fast",
         "term": "Lånetid",
         "span": "{from}–{to}"
-      }
+      },
+      "termUntil": "till {date}",
+      "startsFromPurchase": "räknas från förvärvet",
+      "limit": {
+        "floor": "golv {rate}",
+        "ceiling": "tak {rate}",
+        "until": "till {date}"
+      },
+      "forecast": {
+        "payoff": "Betalt enligt uppskattning",
+        "interest": "Ränta enligt uppskattning",
+        "interestHigher": "+1 %-enh.: {amount} (+{diff})",
+        "rate": "Ränta i slutet",
+        "byCurve": "enligt ränteantagandena",
+        "held": "senaste räntan består",
+        "plus1": "Referensränta +1 %-enh. från nästa ränteändring",
+        "beforeEnds": "{count} mån före sista förfallodagen {date}",
+        "beforeEnds_one": "1 mån före sista förfallodagen {date}",
+        "afterEnds": "{count} mån efter sista förfallodagen {date}",
+        "afterEnds_one": "1 mån efter sista förfallodagen {date}",
+        "atEnds": "på sista förfallodagen {date}",
+        "col": {
+          "paidHigher": "Betalningar +1 %-enh."
+        }
+      },
+      "limits": "Räntegolv och -tak"
     },
     "valuation": {
       "debtFreeComputed": "Skuldfritt pris {price} (+ låneandel {share})"

@@ -867,6 +867,20 @@ correction would change the open year's income statement lines. The rental-objec
 - **No "Rahastoitu rahoitusvastike pääomana" view** (2026-11-19): built on the 4c branch and taken out before merging,
   as the owner asked if it added complexity - they have not seen a rahastoitu vastike, and the view needed a second
   pass over the figures with made-up cost rows. The checkbox on a charge and its warning stay.
-- **Next steps:** rate estimates per reference rate for the forecast; then tilari-bank-import reading the vastike
-  invoices into facts on the voucher.
+- **Rate estimates** (2026-11-20, step 4d): nothing is fetched (owner: rates by hand; Euribor history could be
+  fetched later, a future rate cannot). The Properties defaults hold one curve per reference rate
+  (`rate_forecast`). The forecast keeps the latest actual rate until the next reset, then at each reset takes the
+  curve's value for that reset (else keeps the latest). "+1 %-yks." adds a point from the next reset on, not to
+  the rate already fixed; for an annuity it shows in the payments (shown by year), as the term stays. The forecast
+  shows the payoff against the last due date, the interest ahead and the rate it ends at, as tiles; the rule
+  behind it is behind an (i). An interest-only period ending within 6 months warns (`loan_grace_ending`).
+- **Floors and ceilings** (owner, 2026-11-20): `rate_limits[]` - a floor and/or a ceiling with an optional start
+  (the loan's) and a required end. They hold the reference rate (not reference + margin, as korkokatto and
+  korkolattia are usually written) in every month they meet, in the path and in the forecast; a fixed rate has
+  none. One at a time.
+- **The drawdown is optional** (owner, 2026-11-20): without it the loan counts from the purchase. Months before
+  the object was the owner's (before the purchase, or the books' first year) count every due month as paid - by
+  whoever owned it - and the path shows only the owner's months, so a certificate from before the purchase rolls
+  on to it instead of growing with unpaid interest.
+- **Next steps:** tilari-bank-import reading the vastike invoices into facts on the voucher (4e).
 

@@ -53,11 +53,13 @@ export type LoanChartOptions = {
   paid: boolean
   /** The share on to the loan's end, an estimate. */
   forecast: boolean
+  /** The estimate also with the reference rate 1 percentage point higher from the next reset (a sensitivity). */
+  plus1: boolean
 }
 
 export const LOAN_CHART_STORAGE_KEY = 'tilari.properties.loanChart'
 
-export const DEFAULT_LOAN_CHART: LoanChartOptions = { interest: false, paid: false, forecast: false }
+export const DEFAULT_LOAN_CHART: LoanChartOptions = { interest: false, paid: false, forecast: false, plus1: false }
 
 export function loadLoanChartOptions(): LoanChartOptions {
   try {

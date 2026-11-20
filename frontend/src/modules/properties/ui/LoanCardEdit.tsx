@@ -33,7 +33,7 @@ const CERTIFICATE_WORDS = /is[äa]nn[öo]itsij[äa]ntodistu|lainaosuu|velkaosuu/
 const CHARGE_WORDS = /vastike|yhti[öo]kokou/i
 const RATE_WORDS = /korko|euribor/i
 
-type RowKey = 'rates' | 'grace' | 'certificates' | 'charges' | 'events'
+type RowKey = 'rates' | 'grace' | 'limits' | 'certificates' | 'charges' | 'events'
 
 /**
  * A section of rows with its heading, a hint, and "Lisää rivi". `issue`: what a save found missing
@@ -501,6 +501,46 @@ export function LoanCardEdit({
             </div>
           ))}
         </RowSection>
+
+        {!fixed ? (
+          <RowSection title={t('properties.housing.limits')} onAdd={() => addRow('limits', { from: '', to: '', floor: '', ceiling: '' })}>
+            {draft.limits.map((l, i) => (
+              <div key={i} className="property-lease-grid property-lease-increase">
+                <Field label={t('properties.housing.field.from')} issue={issueOf(`limits.${i}.from`)}>
+                  <input type="date" value={l.from} onChange={(e) => setRow('limits', i, { from: e.target.value })} {...invalid(`limits.${i}.from`)} />
+                </Field>
+                <Field label={t('properties.housing.field.to')} issue={issueOf(`limits.${i}.to`)}>
+                  <input type="date" value={l.to} onChange={(e) => setRow('limits', i, { to: e.target.value })} {...invalid(`limits.${i}.to`)} />
+                </Field>
+                <Field label={t('properties.housing.field.floor')} issue={issueOf(`limits.${i}.floor`)}>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={l.floor}
+                    placeholder="0,000"
+                    onChange={(e) => setRow('limits', i, { floor: e.target.value })}
+                    {...invalid(`limits.${i}.floor`)}
+                  />
+                </Field>
+                <Field label={t('properties.housing.field.ceiling')} issue={issueOf(`limits.${i}.ceiling`)}>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={l.ceiling}
+                    placeholder="3,000"
+                    onChange={(e) => setRow('limits', i, { ceiling: e.target.value })}
+                    {...invalid(`limits.${i}.ceiling`)}
+                  />
+                </Field>
+                <div className="property-lease-actions property-row-end">
+                  <button type="button" className="btn-link property-delete" onClick={() => removeRow('limits', i)}>
+                    {t('properties.housing.removeRow')}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </RowSection>
+        ) : null}
 
         <RowSection
           title={t('properties.housing.events')}
