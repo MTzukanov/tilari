@@ -9,6 +9,11 @@ async function newLeaseCard(page: Page): Promise<Locator> {
   return page.locator('.property-lease-card-edit .property-lease-edit')
 }
 
+/** A card's figure tile (a lease, a water settlement, a loan) by its label. */
+function tile(card: Locator, label: string | RegExp): Locator {
+  return card.locator('.property-figure', { has: card.page().locator('.property-figure-label', { hasText: label }) })
+}
+
 /** Saves the open lease card: it turns back into the lease, on the tab. */
 async function saveLeaseCard(page: Page) {
   const card = page.locator('.property-lease-card-edit')
@@ -302,7 +307,7 @@ test.describe('rental object on a phone', () => {
     await expect(card.getByRole('textbox', { name: 'Sopimus' })).toHaveValue(/Vuokrasopimus Asunto/)
     expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'card').toBeLessThanOrEqual(0)
     await card.getByRole('button', { name: 'Peru', exact: true }).click()
-    await page.locator('.property-leases li').filter({ hasText: 'Testi Vuokralainen' }).getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    await page.locator('.property-lease-card.is-other', { hasText: 'Testi Vuokralainen' }).getByRole('button', { name: 'Muokkaa', exact: true }).click()
     await expect(card).toHaveCount(1)
     expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'lease card').toBeLessThanOrEqual(0)
     // So do a water card and a Talous section in edit.
@@ -375,10 +380,15 @@ test.describe('rental object leases', () => {
     const card = page.locator('.property-lease-card')
     await expect(card).toContainText('Testi Vuokralainen')
     await expect(card).toContainText('1.1.2025 alkaen')
-    // On the as-of date (31.12.2025) the starting rent is in force; the increase comes in January.
-    await expect(card).toContainText('670,00 €/kk (vuokra 650,00 €, vesi 20,00 €) · eräpäivä 2. · korotus 15,00 € vuodessa')
-    await card.getByText('Korotukset (1)').click()
-    await expect(card.getByRole('button', { name: /Vuokrankorotusilmoitus .* 1\.1\.2026/ })).toHaveCount(1)
+    // On the as-of date the starting rent is in force; the increase comes in January, with its notice.
+    await expect(tile(card, /^Vuokra$/)).toContainText(/670,00\s€\/kkvuokra 650,00\s€, vesi 20,00\s€eräpäivä 2\./)
+    const next = tile(card, 'Seuraava korotus')
+    await expect(next).toContainText(/685,00\s€\/kk1\.1\.2026 alkaen · \+15,00\s€15,00\s€ vuodessa/)
+    await expect(next.getByRole('button', { name: /Vuokrankorotusilmoitus .* 1\.1\.2026/ })).toHaveCount(1)
+    // The lists are small tabs under the tiles, one open at a time.
+    await expect(card.locator('.property-fold')).toHaveText([/^Kuukausittain \d+$/, 'Korotukset 1'])
+    await card.getByRole('button', { name: 'Korotukset 1', exact: true }).click()
+    await expect(card.locator('.property-fold-body').getByRole('button', { name: /Vuokrankorotusilmoitus .* 1\.1\.2026/ })).toHaveCount(1)
     // The undone notice is gone from the book: the card's pickers offer only the kept one.
     await card.getByRole('button', { name: 'Muokkaa', exact: true }).click()
     const form = page.locator('.property-lease-card-edit')
@@ -424,8 +434,8 @@ test.describe('rental object leases', () => {
     await expect(page.getByText(/Vuokrasta puuttuu ALV \(Testi Yritys Oy\)/)).toBeVisible()
     await page.getByRole('tab', { name: /^Vuokrasuhteet/ }).click()
     const card = page.locator('.property-lease-card')
-    await expect(card).toContainText('500,00 €/kk + ALV 25,5 % 127,50 € = 627,50 €/kk')
-    await card.getByText(/^Kuukausittain/).click()
+    await expect(tile(card, /^Vuokra$/)).toContainText(/500,00\s€\/kk\+ ALV 25,5\s%\s127,50\s€\s=\s627,50\s€\/kk/)
+    await card.getByRole('button', { name: /^Kuukausittain \d+$/ }).click()
     await expect(card.locator('.property-rent-table th', { hasText: /^ALV$/ })).toBeVisible()
     await expect(card.locator('.property-rent-table .btn-link.neg').first()).toContainText('⚠')
   })
@@ -615,18 +625,18 @@ test.describe('rental object housing-company loans', () => {
     await expect(page).toHaveURL(/#\/property\/10\/housing$/)
     const saved = loans.locator('.property-loan-card')
     // The card's figures, a tile each: label, figure, what it rests on.
-    const figure = (label: string) => saved.locator('.property-loan-figure', { has: page.locator('.property-loan-figure-label', { hasText: label }) })
+    const figure = (label: string) => tile(saved, label)
     // The share month by month from the payments to the housing company, to the as-of month (May):
     // April 12 000,00 - (80,00 - 29,00), May 11 949,00 - (80,00 - 28,88).
     await expect(figure('Laskettu velkaosuus 31.5.2026')).toContainText(/11\s897,88\s€Todistus 1\.3\.2026: 12\s000,00\s€/)
     // Repaid since the share is followed (here the books' first month), and the interest with it.
     await expect(figure('Lyhennetty yhteensä')).toContainText(/254,38\s€1\/2026–5\/2026korkoa 145,62\s€/)
     await expect(figure('Rahoitusvastike')).toContainText(/80,00\s€\/kk1\.1\.2026 alkaenRahastoitu/)
-    await expect(saved.locator('.property-loan-figure .pill', { hasText: 'Rahastoitu' })).toHaveCount(1)
+    await expect(saved.locator('.property-figure .pill', { hasText: 'Rahastoitu' })).toHaveCount(1)
     await expect(figure('Korko')).toContainText(/2,900\s%12 kk Euribor 2,100\s% \+ 0,800\s%1\.3\.2026 alkaen/)
     await expect(figure('Laina-aika')).toContainText(/1\.1\.2020.31\.12\.2044korko muuttuu/)
     // Its lists as small tabs, one open at a time.
-    await expect(saved.locator('.property-loan-fold')).toHaveText(['Kuukausittain 5', 'Velkaosuudet 1', 'Rahoitusvastikkeet 1', 'Viitekorot 1'])
+    await expect(saved.locator('.property-fold')).toHaveText(['Kuukausittain 5', 'Velkaosuudet 1', 'Rahoitusvastikkeet 1', 'Viitekorot 1'])
     await saved.getByRole('button', { name: 'Kuukausittain 5', exact: true }).click()
     const table = saved.locator('.property-loan-table')
     await expect(table.locator('tbody tr').first()).toContainText(/toukokuu 2026.*5\.5\.2026 300,00\s€.*80,00\s€.*28,88\s€.*51,12\s€.*11\s897,88\s€/)
@@ -726,14 +736,14 @@ test.describe('rental object housing-company loans', () => {
     await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(card).toHaveCount(0)
     const garage = loans.locator('.property-loan-card')
-    await expect(garage.locator('.property-loan-figure').first()).toContainText(/Todistus 1\.1\.2025: 5\s000,00\s€/)
+    await expect(garage.locator('.property-figure').first()).toContainText(/Todistus 1\.1\.2025: 5\s000,00\s€/)
     // The garage pays no housing company in the book: each charge counts as paid. An "i" by the share
     // says so on hover, and under the figures on a click.
     const info = garage.getByRole('button', { name: /^Kirjanpidosta ei löytynyt kohteen kuukausittaisia maksuja taloyhtiölle/ })
     await expect(info).toHaveAttribute('title', /olettaa jokaisen kuukauden rahoitusvastikkeen maksetuksi/)
-    await expect(garage.locator('.property-loan-note')).toHaveCount(0)
+    await expect(garage.locator('.property-info-note')).toHaveCount(0)
     await info.click()
-    await expect(garage.locator('.property-loan-note')).toContainText('olettaa jokaisen kuukauden rahoitusvastikkeen maksetuksi')
+    await expect(garage.locator('.property-info-note')).toContainText('olettaa jokaisen kuukauden rahoitusvastikkeen maksetuksi')
     // The share's and the charge's documents are missing: they mark the tab.
     await expect(page.getByRole('tab', { name: /^Taloyhtiö/ }).locator('.tabs-mark-crit')).toHaveCount(1)
 
@@ -840,9 +850,10 @@ test.describe('rental object deposits', () => {
     await saveLeaseCard(page)
 
     const card = page.locator('.property-lease-card')
-    await expect(card).toContainText(/Vuokravakuus: saatu 500,00\s€ · saldo 500,00\s€/)
-    await card.getByText('Vakuuden kirjaukset (1)').click()
-    await expect(card.locator('.property-deposit li')).toContainText(/Saatu\s*5\.1\.2025 500,00\s€/)
+    // The balance big, what was received under it; each booking in its list.
+    await expect(tile(card, 'Vuokravakuus')).toContainText(/Vuokravakuus500,00\s€saatu 500,00\s€$/)
+    await card.getByRole('button', { name: 'Vakuuden kirjaukset 1', exact: true }).click()
+    await expect(card.locator('.property-deposit-lines li')).toContainText(/Saatu\s*5\.1\.2025 500,00\s€/)
   })
 })
 
@@ -863,14 +874,22 @@ test.describe('rental object lease cards in place', () => {
     await expect(form).toHaveCount(0)
     await expect(page).toHaveURL(/#\/property\/4\/leases$/)
     const card = page.locator('.property-lease-card')
-    await expect(card).toContainText('670,00 €/kk')
+    await expect(tile(card, /^Vuokra$/).locator('strong')).toHaveText(/^670,00\s€\/kk$/)
+    await expect(tile(card, 'Nyt poikkeava vuokra')).toHaveCount(0)
 
-    // The card turns into its form and saves only that lease.
+    // The card turns into its form and saves only that lease; an exception in force is a tile of its own.
     await card.getByRole('button', { name: 'Muokkaa', exact: true }).click()
     await form.getByLabel('Vuokra €/kk').first().fill('700')
+    await form.getByRole('button', { name: 'Lisää poikkeava vuokra' }).click()
+    const exception = form.locator('.property-lease-exception').first()
+    await exception.getByLabel('Alkaen').fill('2025-11-01')
+    await exception.getByLabel('Päättyen').fill('2025-12-31')
+    await exception.getByLabel('Vuokra €/kk').fill('400')
+    await exception.getByLabel('Syy').fill('Remonttihyvitys')
     await form.getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(form).toHaveCount(0)
-    await expect(card).toContainText('720,00 €/kk')
+    await expect(tile(card, /^Vuokra$/).locator('strong')).toHaveText(/^720,00\s€\/kk$/)
+    await expect(tile(card, 'Nyt poikkeava vuokra')).toContainText(/420,00\s€\/kk1\.11\.2025–31\.12\.2025normaali 720,00\s€Remonttihyvitys/)
 
     // A second lease on the same days is refused on its own card.
     await page.locator('.property-leases').getByRole('button', { name: '+ Vuokrasopimus' }).click()
@@ -956,10 +975,15 @@ test.describe('rental object rent exceptions', () => {
 
     const card = page.locator('.property-lease-card').first()
     // No rent is booked on the object: nine months of 670,00 €, May 200,00 € less.
-    await expect(card).toContainText(/Vuokrasaldo 30\.11\.2025: vuokrarästi 5\s830,00\s€/)
-    await card.getByText('Poikkeava vuokra (1)').click()
+    const arrears = tile(card, 'Vuokrarästi 30.11.2025').locator('strong')
+    await expect(arrears).toHaveText(/^5\s830,00\s€$/)
+    await expect(arrears).toHaveClass('neg')
+    // The agreement is not linked: the exceptions' tab is marked.
+    const exceptions = (n: number) => card.getByRole('button', { name: new RegExp(`^Poikkeava vuokra ${n}`) })
+    await expect(exceptions(1).locator('.tabs-mark-crit')).toHaveAttribute('title', 'Asiakirja puuttuu')
+    await exceptions(1).click()
     await expect(card).toContainText(/1\.5\.2025–31\.5\.2025 · 470,00\s€\/kk \(vuokra 450,00\s€, vesi 20,00\s€\), normaali 670,00\s€ · Remonttihyvitys/)
-    await card.getByText(/^Kuukausittain \(\d+\)$/).click()
+    await card.getByRole('button', { name: /^Kuukausittain \d+$/ }).click()
     const may = card.locator('.property-rent-table tr', { hasText: 'toukokuu 2025' })
     await expect(may.locator('.property-rent-exception')).toHaveText(/470,00\s€\*/)
     await expect(may.locator('.property-rent-exception')).toHaveAttribute('title', /ilman poikkeusta 670,00\s€ · Remonttihyvitys/)
@@ -967,17 +991,23 @@ test.describe('rental object rent exceptions', () => {
     const october = card.locator('.property-rent-table tr', { hasText: 'lokakuu 2025' })
     await october.getByRole('button', { name: 'Lisää poikkeus' }).click()
     const form = card.locator('.property-rent-exception-form')
+    // What the prefill means is behind an "i": on hover, and under the form on a click.
+    const why = form.getByRole('button', { name: /^Esitäytetty niin, että lokakuu 2025 odottaa sen, mitä maksettiin \(0,00\s€\)/ })
+    await expect(why).toHaveAttribute('title', /Normaali vuokra ja korotukset eivät muutu\.$/)
+    await expect(form.locator('.property-info-note')).toHaveCount(0)
+    await why.click()
+    await expect(form.locator('.property-info-note')).toContainText('Normaali vuokra ja korotukset eivät muutu.')
     await expect(form.getByLabel('Alkaen')).toHaveValue('2025-10-01')
     await expect(form.getByLabel('Päättyen')).toHaveValue('2025-10-31')
     await expect(form.getByLabel('Vuokra €/kk')).toHaveValue('0,00')
     await form.getByLabel('Syy').fill('Vuokravapaa kuukausi')
     await form.getByRole('button', { name: 'Tallenna poikkeus' }).click()
     await expect(form).toHaveCount(0)
-    await expect(card).toContainText(/Vuokrasaldo 30\.11\.2025: vuokrarästi 5\s160,00\s€/)
+    await expect(arrears).toHaveText(/^5\s160,00\s€$/)
     await expect(october.locator('.property-rent-exception')).toHaveText(/0,00\s€\*/)
     await expect(october.getByRole('button', { name: 'Lisää poikkeus' })).toHaveCount(0)
     await expect(october.getByRole('button', { name: 'Muokkaa poikkeusta' })).toBeVisible()
-    await expect(card.getByText('Poikkeava vuokra (2)')).toBeVisible()
+    await expect(exceptions(2)).toBeVisible()
     // A month with an exception changes it in place, the stored one filled in.
     await may.getByRole('button', { name: 'Muokkaa poikkeusta' }).click()
     await expect(form.getByLabel('Alkaen')).toHaveValue('2025-05-01')
@@ -987,9 +1017,9 @@ test.describe('rental object rent exceptions', () => {
     await form.getByLabel('Vuokra €/kk').fill('500')
     await form.getByRole('button', { name: 'Tallenna poikkeus' }).click()
     await expect(form).toHaveCount(0)
-    await expect(card).toContainText(/Vuokrasaldo 30\.11\.2025: vuokrarästi 5\s210,00\s€/)
+    await expect(arrears).toHaveText(/^5\s210,00\s€$/)
     await expect(may.locator('.property-rent-exception')).toHaveText(/520,00\s€\*/)
-    await expect(card.getByText('Poikkeava vuokra (2)')).toBeVisible()
+    await expect(exceptions(2)).toBeVisible()
     // The same form removes it, once confirmed: the month expects the normal rent again.
     await october.getByRole('button', { name: 'Muokkaa poikkeusta' }).click()
     let asked = ''
@@ -1000,10 +1030,10 @@ test.describe('rental object rent exceptions', () => {
     await form.getByRole('button', { name: 'Poista poikkeus' }).click()
     await expect(form).toHaveCount(0)
     expect(asked).toMatch(/^Poistetaanko poikkeus 1\.10\.2025–31\.10\.2025\?/)
-    await expect(card).toContainText(/Vuokrasaldo 30\.11\.2025: vuokrarästi 5\s880,00\s€/)
+    await expect(arrears).toHaveText(/^5\s880,00\s€$/)
     await expect(october.locator('.property-rent-exception')).toHaveCount(0)
     await expect(october.getByRole('button', { name: 'Lisää poikkeus' })).toBeVisible()
-    await expect(card.getByText('Poikkeava vuokra (1)')).toBeVisible()
+    await expect(exceptions(1)).toBeVisible()
 
     // The card turns into its form, in place, where exceptions are entered.
     await card.getByRole('button', { name: 'Muokkaa', exact: true }).click()
@@ -1014,7 +1044,7 @@ test.describe('rental object rent exceptions', () => {
     // Peruuta gives the card back unchanged.
     await cardForm.getByRole('button', { name: 'Peru', exact: true }).click()
     await expect(cardForm).toHaveCount(0)
-    await expect(card.getByText('Poikkeava vuokra (1)')).toBeVisible()
+    await expect(exceptions(1)).toBeVisible()
   })
 })
 
@@ -1053,8 +1083,19 @@ test.describe('rental object lease dates', () => {
     await rentDates.getByLabel('Vuokra omistajalle alkaen').fill('2025-02-01')
     await rentDates.getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(rentDates).toHaveCount(0)
-    // The ended lease's account starts after the lease: on the owner's day.
-    await expect(page.locator('.property-leases')).toContainText('laskettu 1.2.2025 alkaen: omistajan antama päivä')
+    // The ended lease is a card of its own under the running one, quieter; its account starts on the owner's day.
+    const ended = page.locator('.property-lease-card.is-other')
+    await expect(ended).toHaveCount(1)
+    await expect(ended.locator('.property-lease-head')).toContainText('Testi Vuokralainen')
+    await expect(page.locator('.property-lease-card:not(.is-other) .property-lease-head')).toContainText('Toinen Vuokralainen')
+    const left = tile(ended, 'Vuokrarästi 30.11.2025')
+    await expect(left.locator('strong')).toHaveClass('neg')
+    await expect(left).toContainText(/laskettu 1\.2\.2025 alkaen: omistajan antama päivä$/)
+    await expect(tile(ended, 'Sopimus').locator('.pill-crit')).toHaveText('Asiakirja puuttuu')
+    // Its Muokkaa turns it into its form, in place.
+    await ended.getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    await expect(page.locator('.property-lease-card-edit')).toHaveCount(1)
+    await expect(page).toHaveURL(/#\/property\/4\/leases\/lease\/[^/]+$/)
   })
 })
 
@@ -1228,16 +1269,26 @@ test.describe('rental object water settlements', () => {
       'Vesitasaus 1.1.2025–30.6.2025: palautetaan 39,56 €',
     )
     await page.getByRole('tab', { name: /^Vesimaksut/ }).click()
-    await expect(panel).toContainText('Tasausjakso 1.1.2025–30.6.2025')
-    await expect(panel).toContainText('taloyhtiö: hyvitys 36,20 €, kulutus 60,00 €, ennakot 96,20 €')
-    await expect(panel).toContainText('Taloyhtiön tasausta ei löydy kirjanpidosta.')
-    const row = panel.locator('.property-water-shares li').first()
-    await expect(row).toContainText('Testi Vuokralainen')
-    await expect(row).toContainText('palautetaan 39,56 €')
+    const settled = panel.locator('.property-water-card')
+    await expect(settled.locator('.property-lease-head')).toContainText('Tasausjakso 1.1.2025–30.6.2025')
+    // The housing company's result with its use and advances; the book has no line of it.
+    await expect(tile(settled, 'Taloyhtiön hyvitys')).toContainText(/36,20\s€kulutus 60,00\s€ennakot 96,20\s€ei löydy kirjanpidosta$/)
+    const row = tile(settled, 'Testi Vuokralainen')
+    await expect(row.locator('strong')).toHaveText(/^palautetaan 39,56\s€$/)
+    await expect(row).toContainText('1.3.2025–30.6.2025, 122 pv')
     await expect(row.locator('.pill-warn')).toHaveText('avoin')
     await expect(row.getByRole('button', { name: /Vesitasaus Asunto/ })).toBeVisible()
+    // The tenant's refund is more than the company's: the owner bears the rest.
+    const owner = tile(settled, 'Omistaja maksaa itse')
+    await expect(owner.locator('strong')).toHaveText(/^3,36\s€$/)
+    const ownerWhy = owner.getByRole('button', { name: /^Vuokralaisten osuudet ja taloyhtiön tasaus eroavat tämän verran/ })
+    await expect(ownerWhy).toHaveAttribute('title', /tyhjien päivien vuoksi\.$/)
+    await ownerWhy.click()
+    await expect(owner).toContainText('esimerkiksi tyhjien päivien vuoksi')
     // No statement linked: the settlement's place for it says so.
-    await expect(panel.locator('.property-doc-slot', { hasText: 'Tasauslaskelma' }).locator('.pill-crit')).toHaveText('Asiakirja puuttuu')
+    await expect(tile(settled, 'Tasauslaskelma').locator('.pill-crit')).toHaveText('Asiakirja puuttuu')
+    // Nothing booked yet: no list of bookings.
+    await expect(settled.locator('.property-fold')).toHaveCount(0)
     // The stored settlement opens its own card again, named in the address.
     await panel.locator('.property-water-card').getByRole('button', { name: 'Muokkaa', exact: true }).click()
     await expect(page).toHaveURL(/#\/property\/4\/water\/settlement\/[^/]+$/)
@@ -1246,14 +1297,27 @@ test.describe('rental object water settlements', () => {
     await expect(page).toHaveURL(/#\/property\/4\/water$/)
     await page.getByRole('tab', { name: /^Vuokrasuhteet/ }).click()
     const card = page.locator('.property-lease-card').first()
-    await expect(card).toContainText('vesimaksu tasataan kulutuksen mukaan')
-    const latest = card.locator('.property-lease-terms', { hasText: 'Vesitasaus 1.1.2025–30.6.2025: palautetaan 39,56 €' })
+    await expect(tile(card, /^Vesi$/)).toContainText(/20,00\s€\/kkvesimaksu tasataan kulutuksen mukaan$/)
+    const latest = tile(card, 'Vesitasaus 1.1.2025–30.6.2025')
+    await expect(latest.locator('strong')).toHaveText(/^palautetaan 39,56\s€$/)
     await expect(latest.locator('.pill-warn')).toHaveText('avoin')
     // The lease's own rent account on the as-of date: the test book has no rent on the object,
     // so all nine months are owed; the letter's refund is due after the as-of date.
-    await expect(card).toContainText(/Vuokrasaldo 30\.11\.2025: vuokrarästi 6\s030,00\s€/)
-    await card.getByText(/^Kuukausittain \(\d+\)$/).click()
+    await expect(tile(card, 'Vuokrarästi 30.11.2025').locator('strong')).toHaveText(/^6\s030,00\s€$/)
+    await card.getByRole('button', { name: /^Kuukausittain \d+$/ }).click()
     await expect(card.locator('.property-rent-table')).toContainText('Vesitasaus')
+
+    // On a phone the tiles go two a row, and nothing runs past the screen: the months table scrolls on its own.
+    await page.setViewportSize({ width: 360, height: 740 })
+    const workspace = page.locator('main.workspace')
+    const tops = (box: Locator) => box.locator('.property-figure').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)))
+    const [first, second, third] = await tops(card)
+    expect(second).toBe(first)
+    expect(third).toBeGreaterThan(first)
+    expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'lease card').toBeLessThanOrEqual(0)
+    await page.getByRole('tab', { name: /^Vesimaksut/ }).click()
+    await expect(settled).toBeVisible()
+    expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'water card').toBeLessThanOrEqual(0)
   })
 })
 

@@ -6,7 +6,7 @@ import type { DueTone } from '../../../shared/DueTile'
 import { formatCents } from '../../../shared/money'
 import { formatBp } from '../../../shared/percent'
 import type { PillTone } from '../../../shared/Pill'
-import type { DepositCandidate, DepositView, LeaseIncrease, LeaseView, MonthLine, PropertyStatus, Warning, WaterShareStatus } from '../api'
+import type { DepositCandidate, DepositView, LeaseIncrease, LeaseRentAccount, LeaseView, MonthLine, PropertyStatus, RentPeriod, Warning, WaterShareStatus } from '../api'
 
 const wholeEuro = new Map<string, Intl.NumberFormat>()
 
@@ -260,22 +260,33 @@ export function leaseRentText(
   vat?: { pct: number; snt: number } | null,
 ): string {
   if (!rent) return ''
-  const total = rent.rent_snt + (rent.water_snt ?? 0) + (rent.parking_snt ?? 0)
+  const parts = rentPartsText(t, rent)
+  const base = t('properties.lease.perMonth', { amount: formatCents(rentTotal(rent)) })
+  const text = parts ? `${base} (${parts})` : base
+  return vat ? `${text} ${rentVatText(t, rent, vat)}` : text
+}
+
+/** What a month's rent adds up to: rent, water and a parking space. */
+export function rentTotal(rent: { rent_snt: number; water_snt?: number; parking_snt?: number }): number {
+  return rent.rent_snt + (rent.water_snt ?? 0) + (rent.parking_snt ?? 0)
+}
+
+/** "vuokra 655,00 €, vesi 20,00 €, autopaikka 15,00 €"; empty when the rent is all there is. */
+export function rentPartsText(t: T, rent: { rent_snt: number; water_snt?: number; parking_snt?: number }): string {
   const parts = [
     rent.water_snt ? t('properties.lease.water', { amount: formatCents(rent.water_snt) }) : '',
     rent.parking_snt ? t('properties.lease.parking', { amount: formatCents(rent.parking_snt) }) : '',
   ].filter(Boolean)
-  const base = t('properties.lease.perMonth', { amount: formatCents(total) })
-  const text = parts.length ? `${base} (${t('properties.lease.rentPart', { amount: formatCents(rent.rent_snt) })}, ${parts.join(', ')})` : base
-  return vat ? `${text} ${t('properties.lease.vat', { pct: vatPctText(vat.pct), amount: formatCents(vat.snt), total: formatCents(total + vat.snt) })}` : text
+  return parts.length ? `${t('properties.lease.rentPart', { amount: formatCents(rent.rent_snt) })}, ${parts.join(', ')}` : ''
 }
 
-/** An exception as the lease card lists it: "1.3.2025–31.3.2025 · 470,00 €/kk, normaali 670,00 € · Remonttihyvitys". */
+/** A VAT lease's VAT on a month (ADR-033): "+ ALV 25,5 % 175,95 € = 865,95 €/kk". */
+export function rentVatText(t: T, rent: { rent_snt: number; water_snt?: number; parking_snt?: number }, vat: { pct: number; snt: number }): string {
+  return t('properties.lease.vat', { pct: vatPctText(vat.pct), amount: formatCents(vat.snt), total: formatCents(rentTotal(rent) + vat.snt) })
+}
+
+/** An agreed exception with the rent it stands for. */
 type ExceptionFigures = { from: string; to: string; rent_snt: number; water_snt?: number; parking_snt?: number; normal_snt: number; note?: string }
-
-export function exceptionText(t: T, e: ExceptionFigures): string {
-  return [periodText(t, e.from, e.to), exceptionTerms(t, e)].join(' · ')
-}
 
 /** An exception's line, whose first day is in the date column: "–31.5.2025 · 470,00 €/kk (...), normaali 670,00 € · Remonttihyvitys". */
 export function exceptionLineText(t: T, e: ExceptionFigures): string {
@@ -290,14 +301,15 @@ function longMonth(month: number): string {
   return new Intl.DateTimeFormat(getBcp47(), { month: 'long' }).format(new Date(2024, month - 1, 1))
 }
 
-/** The increase clause in words: "korotus 3 % vuodessa (maaliskuu)", "korotus 20,00 € vuodessa", "indeksikorotus". */
-export function increaseText(t: T, rule: LeaseIncrease | null | undefined): string {
-  if (!rule || rule.kind === 'none') return ''
-  const month = rule.month ? longMonth(rule.month) : ''
-  const key = (base: string) => `properties.lease.increase.${base}${month ? 'Month' : ''}`
-  if (rule.kind === 'index') return t(key('index'), { month })
-  if (rule.kind === 'amount') return t(key('amount'), { amount: formatCents(rule.amount_snt ?? 0), month })
-  return t(key('percent'), { pct: formatBp(rule.pct_bp ?? 0), month })
+/** The increase clause as a lease card's figure: "3 % vuodessa", "15,00 € vuodessa", "Indeksi", and its month when it has one. */
+export function increaseFigure(t: T, rule: LeaseIncrease): { value: string; month: string } {
+  const value =
+    rule.kind === 'index'
+      ? t('properties.lease.figure.ruleIndex')
+      : rule.kind === 'amount'
+        ? t('properties.lease.figure.ruleAmount', { amount: formatCents(rule.amount_snt ?? 0) })
+        : t('properties.lease.figure.rulePercent', { pct: formatBp(rule.pct_bp ?? 0) })
+  return { value, month: rule.month ? t('properties.lease.figure.ruleMonth', { month: longMonth(rule.month) }) : '' }
 }
 
 /** The increase clause for a letter: "3,0 % vuodessa", "15,00 € vuodessa", "indeksiin sidottu". */
@@ -323,10 +335,19 @@ export function tenantSide(snt: number): number {
   return snt === 0 ? 0 : -snt
 }
 
-/** A rent account's balance, exact: "vuokrarästi 120,00 €", "maksettu ennakkoon 45,83 €", "täsmää, 0,00 €". */
-export function rentBalanceText(t: T, balance: number): string {
-  if (balance === 0) return t('properties.rent.even')
-  return t(balance > 0 ? 'properties.rent.arrears' : 'properties.rent.ahead', { amount: formatCents(Math.abs(balance)) })
+/**
+ * Why a lease's account counts fewer days than the lease: from a later day (the purchase, the owner's
+ * day, the books' start), or until the owner's last day of rent.
+ */
+export function rentCountedText(t: T, account: Pick<LeaseRentAccount, 'counted_from' | 'counted_until'>, leaseStarts: string, period: RentPeriod): string[] {
+  return [
+    account.counted_from > leaseStarts
+      ? t('properties.rent.countedFrom', { date: formatDate(account.counted_from), reason: t(`properties.rent.start.${period.start.source}`) })
+      : '',
+    period.end && account.counted_until === period.end.until
+      ? t('properties.rent.countedUntil', { date: formatDate(period.end.until), reason: t(`properties.rent.end.${period.end.source}`) })
+      : '',
+  ].filter(Boolean)
 }
 
 /** A tenant's water balance: "palautetaan 12,30 €", "peritään 88,00 €", "ei tasattavaa". */

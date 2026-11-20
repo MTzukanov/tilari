@@ -72,6 +72,38 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   columns kept their widths. On a phone a movement now takes two lines (date, kind, amount; then its text), a grid
   over the table rows; the old phone check ran on the golden book, whose texts are short.
 
+## 2026-11-19 - Rental objects: lease and water cards as figure tiles (`feature/lease-water-tiles`)
+
+- The owner liked the loan card's tiles and found the lease and water cards text-heavy. `Figure`, `Figures` and
+  `Folds` moved out of `HousingPanel.tsx` into `ui/FigureTiles.tsx`, and their CSS has generic names
+  (`.property-figure*`, `.property-fold*`); the loan card renders the same. Two changes reach it too: a file's pill
+  in a tile is cut, not wrapped into a blob, and a tile narrower than 10rem (a `figure` container query) shows a
+  voucher's date without its number, as a document line does on a phone.
+- The running lease's card: Vuokra (€/kk, its parts, VAT, due day), "Nyt poikkeava vuokra" (an exception in force,
+  as a tile, not a sentence), Vuokrarästi / Maksettu ennakkoon / Vuokrasaldo on the as-of date (arrears red, the
+  "laskettu ... alkaen" reasons under it), Seuraava korotus (the next stored step, its rise and notice) or Korotus
+  (the clause, its month, the last increase), Vesi, Vesitasaus (the latest share with its pill), Vuokravakuus (the
+  balance, received, returned) and Sopimus (the slot's pills, "Asiakirja puuttuu" while held). The months, the
+  increases, the exceptions and the deposit's bookings fold as small tabs; a missing document marks its tab with
+  a red dot instead of a pill in a `<details>` summary. `RentMonths` was split out of `RentAccountView`; ended
+  leases stay list rows with the sentence and `<details>`.
+- A water settlement's card: Taloyhtiön hyvitys / lisälasku (use, advances, "ei löydy kirjanpidosta"),
+  Tasauslaskelma, a tile per tenant's share (balance, stay, status pill, letter) and Omistajalle jää / Omistaja
+  maksaa itse. The booked lines (the company's, each tenant's, others) fold as "Kirjaukset", by whose they are.
+- Dropped as unused: `increaseText`, `exceptionText` and the keys `properties.lease.increase.*`,
+  `properties.water.company`, `ownerKeeps`, `ownerBears`.
+- 2026-11-20, owner's look: the ended and upcoming leases are the same cards too, under "Muut vuokrasopimukset",
+  quieter (`.is-other`: no white box, smaller figures), with their Muokkaa, folds and missing-document marks (the
+  reminders ask for every stored lease's documents, so the marks match). `RentAccountView` and `DepositSummary`
+  went with the list rows; the suggestions keep their rows. Text that only said what the cards show went (the
+  suggestion banners' leads, the month table's "*" footnote, the exception form's "check the days" line); facts
+  the owner wants went behind an "i" (`InfoButton`, the loan card's, now shared): the exception form's note on the
+  prefill or the change, and why the owner keeps or bears a water settlement's difference. On a phone the exception
+  form stays in view inside its scrolling month table (sticky, at the width shown), so its "i" is reachable.
+- Seen while testing, not fixed here: right after saving a voucher, changing the address to `#/voucher/new/200`
+  (no other page between) refused the next save with "Virheellinen viennin id N"; the new form seems to keep the
+  saved voucher's line ids. Opened via another page, the same voucher saves.
+
 ## 2026-11-17 - Rental objects: a loan's share month by month (`feature/housing-loans-month`, ADR-034, step 4b)
 
 - `loanPath` (`domain/housingLoan.ts`) follows each loan's share from its certificates and the payments to the

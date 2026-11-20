@@ -2,22 +2,26 @@ import type { ReactNode } from 'react'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { DocLine, DocLines } from '../../../shared/DocRows'
+import { formatCents } from '../../../shared/money'
 import { Pill } from '../../../shared/Pill'
 import { SuggestBanner } from '../../../shared/SuggestBanner'
 import type { BookedLine, DepositView, LeaseException, LeaseRentAccount, LeaseState, LeaseView, RentPeriod } from '../api'
 import {
   deductedText,
-  depositText,
   exceptionLineText,
-  exceptionText,
-  increaseText,
+  increaseFigure,
   leasePeriod,
   leaseRentText,
   periodText,
+  rentCountedText,
+  rentPartsText,
+  rentTotal,
+  rentVatText,
   waterBalanceText,
 } from './format'
-import { DocSlot, DocSlotLine, LineLink, LineSources, VoucherLink, WaterStatusPill } from './FormParts'
-import { RentAccountView } from './RentAccount'
+import { Figure, Figures, Folds, type Fold } from './FigureTiles'
+import { DocSlot, LineLink, LineSources, VoucherLink, WaterStatusPill } from './FormParts'
+import { RentMonths } from './RentAccount'
 
 /**
  * Where a suggestion comes from (hover explains): a lease from a linked contract or from rent
@@ -38,12 +42,6 @@ export function LeaseStatePill({ state }: { state: LeaseState }) {
   return <Pill tone={state === 'current' ? 'accent' : 'neutral'}>{t(`properties.lease.state.${state}`)}</Pill>
 }
 
-/** "Puuttuu" in a closed list's summary when a line in it has no document, so it shows without opening. */
-function AbsentMark({ items, held }: { items: { voucher: unknown; no_document?: true }[]; held: boolean }) {
-  const { t } = useI18n()
-  return held && items.some((i) => !i.voucher && !i.no_document) ? <Pill tone="crit">{t('properties.docs.absent')}</Pill> : null
-}
-
 /** What a suggested lease was read from, each to open: the contract, the increase notices, the rent payments. */
 function LeaseSources({ lease, onOpen }: { lease: LeaseView; onOpen: (voucherId: number) => void }) {
   const { t } = useI18n()
@@ -60,43 +58,40 @@ function LeaseSources({ lease, onOpen }: { lease: LeaseView; onOpen: (voucherId:
   )
 }
 
-/**
- * A lease's deposit (ADR-029): received, returned and kept, and the balance on the as-of date;
- * each booking folded below, a return with the income or costs booked in the same payment.
- */
-function DepositSummary({ deposit, onOpen }: { deposit: DepositView; onOpen: (voucherId: number) => void }) {
+/** A deposit's booked lines: received or returned, a return with the income or costs booked in the same payment. */
+function DepositMovements({ deposit, onOpen }: { deposit: DepositView; onOpen: (voucherId: number) => void }) {
   const { t } = useI18n()
   return (
-    <div className="property-lease-terms property-deposit">
-      <p>
-        {t('properties.deposit.title')}: {depositText(t, deposit)}
-        {deposit.missing ? <span className="muted"> · {t('properties.deposit.missingCount', { n: deposit.missing })}</span> : null}
-      </p>
-      {deposit.movements.length ? (
-        <details className="property-sources">
-          <summary>{t('properties.deposit.movements', { n: deposit.movements.length })}</summary>
-          <ul className="property-doc-list">
-            {deposit.movements.map((m) => (
-              <li key={m.line_id}>
-                <span>{t(`properties.deposit.kind.${m.kind}`)}</span>
-                <LineLink line={m} onOpen={onOpen} />
-                {m.deductions.length ? (
-                  <span title={t('properties.deposit.deductionsHint')}>
-                    {deductedText(t, m.deducted_snt)}:{' '}
-                    {m.deductions.map((d) => (
-                      <LineLink key={d.line_id} line={d} onOpen={onOpen} />
-                    ))}
-                  </span>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
-    </div>
+    <ul className="property-doc-list property-fold-body property-deposit-lines">
+      {deposit.movements.map((m) => (
+        <li key={m.line_id}>
+          <span>{t(`properties.deposit.kind.${m.kind}`)}</span>
+          <LineLink line={m} onOpen={onOpen} />
+          {m.deductions.length ? (
+            <span title={t('properties.deposit.deductionsHint')}>
+              {deductedText(t, m.deducted_snt)}:{' '}
+              {m.deductions.map((d) => (
+                <LineLink key={d.line_id} line={d} onOpen={onOpen} />
+              ))}
+            </span>
+          ) : null}
+        </li>
+      ))}
+    </ul>
   )
 }
 
+/** The dot on a list's tab when a line in it has no document, so it shows without opening. */
+function absentMark(t: (key: string) => string, items: { voucher: unknown; no_document?: true }[], held: boolean): Fold['mark'] {
+  return held && items.some((i) => !i.voucher && !i.no_document) ? { tone: 'crit', title: t('properties.docs.absent') } : undefined
+}
+
+/**
+ * A stored lease as figure tiles: the rent, an exception in force, the rent balance, the next
+ * increase or the clause, the water, the latest water settlement, the deposit and the contract; the
+ * months, increases, exceptions and the deposit's bookings fold under them. The running lease's card
+ * leads the tab; the others (ended, upcoming) follow it, quieter (`other`).
+ */
 function LeaseCard({
   lease,
   account,
@@ -107,6 +102,7 @@ function LeaseCard({
   onOpenVoucher,
   onSaveException,
   parkingObject,
+  other = false,
 }: {
   lease: LeaseView
   account: LeaseRentAccount | undefined
@@ -119,18 +115,84 @@ function LeaseCard({
   onOpenVoucher: (voucherId: number) => void
   onSaveException?: (leaseKey: string, exception: LeaseException | null, replaces?: LeaseException) => Promise<void>
   parkingObject: boolean
+  /** Not the running lease: under it, quieter. */
+  other?: boolean
 }) {
   const { t } = useI18n()
-  const terms = [
-    leaseRentText(t, lease.rent, lease.vat),
-    lease.due_day != null ? t('properties.lease.due', { day: lease.due_day }) : '',
-    increaseText(t, lease.increase),
-    t(lease.water === 'flat' ? 'properties.water.flat' : 'properties.water.advance'),
-  ].filter(Boolean)
+  const rent = lease.rent
+  const perMonth = (snt: number) => t('properties.lease.perMonth', { amount: formatCents(snt) })
   const latest = lease.water_latest
   const exceptionNow = lease.exceptions.find((e) => e.from <= asOf && asOf <= e.to)
+  const deposit = lease.deposit
+  const rule = lease.increase && lease.increase.kind !== 'none' ? lease.increase : null
+  const ruleFigure = rule ? increaseFigure(t, rule) : null
+  /** The next increase after the as-of date, and the step it raises. */
+  const nextAt = lease.steps.findIndex((step, i) => i > 0 && step.from > asOf)
+  const next = nextAt > 0 ? lease.steps[nextAt] : null
+  const raise = next ? rentTotal(next) - rentTotal(lease.steps[nextAt - 1]) : 0
+  const lastIncrease = lease.steps.slice(1).findLast((step) => step.from <= asOf)
+  const balance = account?.balance_snt ?? 0
+  const folds: Fold[] = [
+    {
+      key: 'months',
+      title: t('properties.rent.monthsTitle'),
+      n: account?.months.length ?? 0,
+      body: () =>
+        account ? (
+          <div className="property-fold-body">
+            <RentMonths
+              account={account}
+              onOpen={onOpenVoucher}
+              onSaveException={onSaveException ? (e, replaces) => onSaveException(lease.key, e, replaces) : undefined}
+              parkingObject={parkingObject}
+            />
+          </div>
+        ) : null,
+    },
+    {
+      key: 'increases',
+      title: t('properties.lease.increases'),
+      n: lease.steps.length - 1,
+      mark: absentMark(t, lease.steps.slice(1), held),
+      body: () => (
+        // The day an increase applies from says more than its notice's date, which its pill shows.
+        <div className="property-fold-body">
+          <DocLines>
+            {lease.steps.slice(1).map((step) => (
+              <DocLine key={step.from} date={formatDate(step.from)} title={leaseRentText(t, step)}>
+                <DocSlot voucher={step.voucher} noDocument={step.no_document} held={held} onOpen={onOpenVoucher} />
+              </DocLine>
+            ))}
+          </DocLines>
+        </div>
+      ),
+    },
+    {
+      key: 'exceptions',
+      title: t('properties.lease.exceptions'),
+      n: lease.exceptions.length,
+      mark: absentMark(t, lease.exceptions, held),
+      body: () => (
+        <div className="property-fold-body">
+          <DocLines>
+            {lease.exceptions.map((e) => (
+              <DocLine key={e.from} date={formatDate(e.from)} title={exceptionLineText(t, e)}>
+                <DocSlot voucher={e.voucher} noDocument={e.no_document} held={held} onOpen={onOpenVoucher} />
+              </DocLine>
+            ))}
+          </DocLines>
+        </div>
+      ),
+    },
+    {
+      key: 'deposit',
+      title: t('properties.deposit.movementsTitle'),
+      n: deposit?.movements.length ?? 0,
+      body: () => (deposit ? <DepositMovements deposit={deposit} onOpen={onOpenVoucher} /> : null),
+    },
+  ]
   return (
-    <div className="property-lease-card">
+    <div className={`property-lease-card${other ? ' is-other' : ''}`}>
       <p className="property-lease-head">
         <strong>{lease.tenant ?? t('properties.lease.tenantUnknown')}</strong>
         <span className="muted">{leasePeriod(t, lease)}</span>
@@ -141,62 +203,93 @@ function LeaseCard({
           </button>
         ) : null}
       </p>
-      {terms.length ? <p className="property-lease-terms">{terms.join(' · ')}</p> : null}
-      {exceptionNow ? (
-        <p className="property-lease-terms">
-          {t('properties.lease.exceptionNow')}: {exceptionText(t, exceptionNow)}
-        </p>
-      ) : null}
-      {lease.contract || held ? (
-        <DocSlotLine label={t('properties.lease.contract')} voucher={lease.contract} onOpen={onOpenVoucher} />
-      ) : null}
-      {account ? (
-        <RentAccountView
-          account={account}
-          asOf={asOf}
-          leaseStarts={lease.starts}
-          period={period}
-          onOpen={onOpenVoucher}
-          onSaveException={onSaveException ? (e, replaces) => onSaveException(lease.key, e, replaces) : undefined}
-          parkingObject={parkingObject}
+      <Figures>
+        <Figure
+          label={t('properties.lease.figure.rent')}
+          value={rent ? perMonth(rentTotal(rent)) : ''}
+          sub={
+            rent
+              ? [
+                  rentPartsText(t, rent),
+                  lease.vat ? rentVatText(t, rent, lease.vat) : '',
+                  lease.due_day != null ? t('properties.lease.due', { day: lease.due_day }) : '',
+                ].filter(Boolean)
+              : []
+          }
         />
-      ) : null}
-      {latest ? (
-        <p className="property-lease-terms">
-          {t('properties.water.latest', { period: periodText(t, latest.from, latest.to) })}: {waterBalanceText(t, latest.balance_snt)}{' '}
-          <WaterStatusPill share={latest} />
-        </p>
-      ) : null}
-      {lease.deposit ? <DepositSummary deposit={lease.deposit} onOpen={onOpenVoucher} /> : null}
-      {lease.steps.length > 1 ? (
-        <details>
-          <summary>
-            {t('properties.lease.increases')} ({lease.steps.length - 1}) <AbsentMark items={lease.steps.slice(1)} held={held} />
-          </summary>
-          {/* The day an increase applies from says more than its notice's date, which its pill shows. */}
-          <DocLines>
-            {lease.steps.slice(1).map((step) => (
-              <DocLine key={step.from} date={formatDate(step.from)} title={leaseRentText(t, step)}>
-                <DocSlot voucher={step.voucher} noDocument={step.no_document} held={held} onOpen={onOpenVoucher} />
-              </DocLine>
-            ))}
-          </DocLines>
-        </details>
-      ) : null}
-      {lease.exceptions.length ? (
-        <details>
-          <summary>
-            {t('properties.lease.exceptions')} ({lease.exceptions.length}) <AbsentMark items={lease.exceptions} held={held} />
-          </summary>
-          <DocLines>
-            {lease.exceptions.map((e) => (
-              <DocLine key={e.from} date={formatDate(e.from)} title={exceptionLineText(t, e)}>
-                <DocSlot voucher={e.voucher} noDocument={e.no_document} held={held} onOpen={onOpenVoucher} />
-              </DocLine>
-            ))}
-          </DocLines>
-        </details>
-      ) : null}
+        {exceptionNow ? (
+          <Figure
+            label={t('properties.lease.exceptionNow')}
+            value={perMonth(rentTotal(exceptionNow))}
+            sub={[
+              periodText(t, exceptionNow.from, exceptionNow.to),
+              t('properties.lease.normal', { amount: formatCents(exceptionNow.normal_snt) }),
+              exceptionNow.note ?? '',
+            ].filter(Boolean)}
+          />
+        ) : null}
+        {account ? (
+          <Figure
+            label={t(balance > 0 ? 'properties.rent.figure.arrears' : balance < 0 ? 'properties.rent.figure.ahead' : 'properties.rent.balanceOn', {
+              date: formatDate(asOf),
+            })}
+            value={formatCents(Math.abs(balance))}
+            neg={balance > 0}
+            sub={rentCountedText(t, account, lease.starts, period)}
+          />
+        ) : null}
+        {next ? (
+          <Figure
+            label={t('properties.lease.figure.nextIncrease')}
+            value={perMonth(rentTotal(next))}
+            sub={[
+              `${t('properties.lease.since', { date: formatDate(next.from) })} · ${raise >= 0 ? '+' : ''}${formatCents(raise)}`,
+              ruleFigure ? [ruleFigure.value, ruleFigure.month].filter(Boolean).join(', ') : '',
+              <DocSlot key="notice" voucher={next.voucher} noDocument={next.no_document} held={held} onOpen={onOpenVoucher} />,
+            ].filter(Boolean)}
+          />
+        ) : ruleFigure ? (
+          <Figure
+            label={t('properties.lease.figure.increase')}
+            value={ruleFigure.value}
+            sub={[ruleFigure.month, lastIncrease ? t('properties.lease.figure.lastIncrease', { date: formatDate(lastIncrease.from) }) : ''].filter(Boolean)}
+          />
+        ) : null}
+        {rent?.water_snt || lease.water === 'flat' ? (
+          <Figure
+            label={t('properties.lease.figure.water')}
+            value={rent?.water_snt ? perMonth(rent.water_snt) : ''}
+            sub={[t(lease.water === 'flat' ? 'properties.water.flat' : 'properties.water.advance')]}
+          />
+        ) : null}
+        {latest ? (
+          <Figure
+            label={t('properties.water.latest', { period: periodText(t, latest.from, latest.to) })}
+            value={waterBalanceText(t, latest.balance_snt)}
+            sub={latest.status !== 'none' ? [<WaterStatusPill key="status" share={latest} />] : []}
+          />
+        ) : null}
+        {deposit ? (
+          <Figure
+            label={t('properties.deposit.title')}
+            value={formatCents(deposit.balance_snt)}
+            neg={deposit.balance_snt < 0}
+            sub={[
+              t('properties.deposit.received', { amount: formatCents(deposit.received_snt) }),
+              deposit.returned_snt
+                ? [t('properties.deposit.returned', { amount: formatCents(deposit.returned_snt) }), deposit.deducted_snt ? deductedText(t, deposit.deducted_snt) : '']
+                    .filter(Boolean)
+                    .join(', ')
+                : '',
+              deposit.missing ? t('properties.deposit.missingCount', { n: deposit.missing }) : '',
+            ].filter(Boolean)}
+          />
+        ) : null}
+        {lease.contract || held ? (
+          <Figure label={t('properties.lease.contract')} sub={[<DocSlot key="contract" voucher={lease.contract} held={held} onOpen={onOpenVoucher} />]} />
+        ) : null}
+      </Figures>
+      <Folds folds={folds} />
     </div>
   )
 }
@@ -266,12 +359,8 @@ export function LeasesPanel({
       {rentDates}
       {/* What the book suggests comes first: its "Lisää" opens the new card right under it. */}
       {suggestions.length ? (
-        <SuggestBanner
-          heading="h4"
-          title={t('properties.lease.suggestions', { n: suggestions.length })}
-          lead={t('properties.lease.suggestionsLead')}
-        >
-          <LeaseList leases={suggestions} onOpenVoucher={onOpenVoucher} onAdd={onAddSuggestion} />
+        <SuggestBanner heading="h4" title={t('properties.lease.suggestions', { n: suggestions.length })}>
+          <SuggestionList leases={suggestions} onOpenVoucher={onOpenVoucher} onAdd={onAddSuggestion} />
         </SuggestBanner>
       ) : null}
       {editing === 'new' ? form : null}
@@ -294,18 +383,25 @@ export function LeasesPanel({
       {others.length ? (
         <>
           <h4 className="property-lease-others">{t('properties.lease.others')}</h4>
-          <LeaseList
-            leases={others}
-            accounts={accounts}
-            period={period}
-            asOf={asOf}
-            onOpenVoucher={onOpenVoucher}
-            onSaveException={onSaveException}
-            parkingObject={parkingObject}
-            editing={editing}
-            form={form}
-            onEdit={onEditLease}
-          />
+          {others.map((lease) =>
+            editing === lease.key ? (
+              <div key={lease.key}>{form}</div>
+            ) : (
+              <LeaseCard
+                key={lease.key}
+                lease={lease}
+                account={accounts.find((a) => a.lease_key === lease.key)}
+                period={period}
+                asOf={asOf}
+                held={held}
+                onEdit={onEditLease ? () => onEditLease(lease.key) : undefined}
+                onOpenVoucher={onOpenVoucher}
+                onSaveException={onSaveException}
+                parkingObject={parkingObject}
+                other
+              />
+            ),
+          )}
         </>
       ) : null}
       {unassigned.length ? (
@@ -317,81 +413,35 @@ export function LeasesPanel({
   )
 }
 
-function LeaseList({
+/** The book's suggested leases, a row each: what it was read from, and a "Lisää" that opens it on a new card. */
+function SuggestionList({
   leases,
-  accounts = [],
-  period,
-  asOf = '',
   onOpenVoucher,
-  onSaveException,
-  parkingObject = false,
-  editing = null,
-  form = null,
-  onEdit,
   onAdd,
 }: {
   leases: LeaseView[]
-  accounts?: LeaseRentAccount[]
-  /** With the accounts: the owner's rent days on the object. */
-  period?: RentPeriod
-  asOf?: string
   onOpenVoucher: (voucherId: number) => void
-  onSaveException?: (leaseKey: string, exception: LeaseException | null, replaces?: LeaseException) => Promise<void>
-  /** With the accounts: a parking space or garage. */
-  parkingObject?: boolean
-  /** The lease key whose row shows `form` instead. */
-  editing?: string | null
-  form?: ReactNode
-  /** A stored lease's "Muokkaa". */
-  onEdit?: (key: string) => void
-  /** A suggestion's "Lisää" (row `i`). */
+  /** A suggestion's "Lisää" (row `i`); none when no lease can be added. */
   onAdd?: (i: number) => void
 }) {
   const { t } = useI18n()
   return (
     <ul className="property-doc-list">
-      {leases.map((lease, i) =>
-        !lease.suggested && editing === lease.key ? (
-          <li key={`${lease.key}-${lease.starts}-${i}`} className="property-lease-row-edit">
-            {form}
-          </li>
-        ) : (
+      {leases.map((lease, i) => (
         <li key={`${lease.key}-${lease.starts}-${i}`}>
           <LeaseStatePill state={lease.state} />
           <span>{lease.tenant ?? t('properties.lease.tenantUnknown')}</span>
           <span className="muted">{leasePeriod(t, lease)}</span>
           <span>{leaseRentText(t, lease.rent, lease.vat)}</span>
           {lease.suggested ? <SuggestionSource source={lease.suggested} /> : null}
-          {lease.suggested ? (
-            <LeaseSources lease={lease} onOpen={onOpenVoucher} />
-          ) : lease.contract ? (
-            <VoucherLink voucher={lease.contract} onOpen={onOpenVoucher} />
-          ) : null}
-          {period && !lease.suggested && accounts.some((a) => a.lease_key === lease.key) ? (
-            <RentAccountView
-              account={accounts.find((a) => a.lease_key === lease.key)!}
-              asOf={asOf}
-              leaseStarts={lease.starts}
-              period={period}
-              onOpen={onOpenVoucher}
-              onSaveException={onSaveException ? (e, replaces) => onSaveException(lease.key, e, replaces) : undefined}
-              parkingObject={parkingObject}
-            />
-          ) : null}
-          {!lease.suggested && lease.deposit ? <DepositSummary deposit={lease.deposit} onOpen={onOpenVoucher} /> : null}
-          {!lease.suggested && onEdit ? (
-            <button type="button" className="btn-link" onClick={() => onEdit(lease.key)}>
-              {t('properties.lease.edit')}
-            </button>
-          ) : null}
-          {lease.suggested && onAdd ? (
+          <LeaseSources lease={lease} onOpen={onOpenVoucher} />
+          {onAdd ? (
             <button type="button" className="btn-small is-primary" onClick={() => onAdd(i)}>
               {t('properties.edit.addSuggestion')}
             </button>
           ) : null}
         </li>
-        ),
-      )}
+      ))}
     </ul>
   )
 }

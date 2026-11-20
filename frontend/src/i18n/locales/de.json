@@ -1282,14 +1282,6 @@
       "vat": "+ USt {pct} {amount} = {total}/Monat",
       "vatHint": "Beträge ohne USt · USt {pct} {amount} · gesamt {total}/Monat",
       "due": "fällig am {day}.",
-      "increase": {
-        "percent": "Erhöhung {pct} pro Jahr",
-        "percentMonth": "Erhöhung {pct} pro Jahr ({month})",
-        "amount": "Erhöhung {amount} pro Jahr",
-        "amountMonth": "Erhöhung {amount} pro Jahr ({month})",
-        "index": "Indexerhöhung",
-        "indexMonth": "Indexerhöhung ({month})"
-      },
       "contract": "Vertrag",
       "others": "Weitere Mietverträge",
       "state": {
@@ -1305,7 +1297,6 @@
         "index": "Index"
       },
       "suggestions": "Vorschläge aus der Buchhaltung ({n})",
-      "suggestionsLead": "Aus den verknüpften Mietverträgen und Mietzahlungen. Nichts ist gespeichert: Hinzufügen öffnet den Vorschlag zur Prüfung auf einer eigenen Karte.",
       "source": {
         "contract": "Quelle: Mietvertrag",
         "payments": "Quelle: Mietzahlungen",
@@ -1330,7 +1321,18 @@
       "exceptionNow": "Derzeit abweichende Miete",
       "normal": "regulär {amount}",
       "exceptionNormal": "Reguläre Miete dann {amount}/Monat",
-      "edit": "Bearbeiten"
+      "edit": "Bearbeiten",
+      "figure": {
+        "rent": "Miete",
+        "nextIncrease": "Nächste Erhöhung",
+        "increase": "Erhöhung",
+        "ruleIndex": "Index",
+        "ruleAmount": "{amount} pro Jahr",
+        "rulePercent": "{pct} pro Jahr",
+        "ruleMonth": "im {month}",
+        "lastIncrease": "zuletzt {date}",
+        "water": "Wasser"
+      }
     },
     "deposit": {
       "title": "Mietkaution",
@@ -1343,14 +1345,14 @@
       "deducted": "davon einbehalten {amount}",
       "paidOnTop": "zusätzlich gezahlt {amount}",
       "balance": "Saldo {amount}",
-      "movements": "Buchungen der Kaution ({n})",
       "kind": {
         "received": "Erhalten",
         "returned": "Zurückgezahlt"
       },
       "deductionsHint": "Mit derselben Zahlung gebuchte Erträge und Kosten: einbehaltene Miete, Wasserabrechnung oder Kosten.",
       "missingCount": "{n} verknüpfte Buchungen fehlen im Buch",
-      "returnedOn": "zurückgezahlt {date}"
+      "returnedOn": "zurückgezahlt {date}",
+      "movementsTitle": "Buchungen der Kaution"
     },
     "edit": {
       "noDocument": "Kein Dokument",
@@ -1594,7 +1596,6 @@
       "none": "Keine Wasserabrechnungen.",
       "remove": "Wasserabrechnung entfernen",
       "period": "Abrechnungszeitraum {period}",
-      "company": "Wohnungsgesellschaft: {text}",
       "usage": "Verbrauch {amount}",
       "advances": "Vorauszahlungen {amount}",
       "companyRefund": "Gutschrift {amount}",
@@ -1617,10 +1618,7 @@
       },
       "noShares": "Keine Mietverhältnisse im Zeitraum, deren Wasser abgerechnet wird.",
       "other": "Weitere Buchungen mit dem Mieter",
-      "ownerKeeps": "Dem Eigentümer bleiben {amount}.",
-      "ownerBears": "Der Eigentümer trägt {amount} (z. B. Leerstandstage).",
       "suggestions": "Vorschläge aus der Buchhaltung ({n})",
-      "suggestionsLead": "Aus den auf dem Objekt gebuchten Wasserabrechnungen. Nichts ist gespeichert: Hinzufügen öffnet den Vorschlag auf einer eigenen Karte; Beträge mit der Abrechnung der Gesellschaft prüfen.",
       "flat": "Wasser wird nicht abgerechnet",
       "advance": "Wasser wird nach Verbrauch abgerechnet",
       "latest": "Wasserabrechnung {period}",
@@ -1658,13 +1656,21 @@
         "refundText": "Wir überweisen {amount} auf Ihr Konto. Bitte teilen Sie uns mit, falls sich Ihre Kontonummer geändert hat.",
         "chargeText": "Bitte zahlen Sie {amount} mit der nächsten Miete auf dasselbe Konto und mit derselben Referenz wie die Miete."
       },
-      "confirmRemove": "Diese Wasserabrechnung vom Objekt entfernen?"
+      "confirmRemove": "Diese Wasserabrechnung vom Objekt entfernen?",
+      "figure": {
+        "company": "Abrechnung der Gesellschaft",
+        "companyRefund": "Gutschrift der Gesellschaft",
+        "companyCharge": "Nachzahlung an die Gesellschaft",
+        "notBooked": "nicht in der Buchhaltung",
+        "companyLines": "Wohnungsgesellschaft",
+        "lines": "Buchungen",
+        "ownerKeeps": "Dem Eigentümer bleiben",
+        "ownerBears": "Der Eigentümer trägt",
+        "ownerNote": "Die Anteile der Mieter und die Abrechnung der Gesellschaft weichen um diesen Betrag ab, zum Beispiel wegen Leerstandstagen."
+      }
     },
     "rent": {
       "balanceOn": "Mietsaldo {date}",
-      "arrears": "Mietrückstand {amount}",
-      "ahead": "im Voraus bezahlt {amount}",
-      "even": "ausgeglichen, 0,00 €",
       "countedFrom": "gezählt ab {date}: {reason}",
       "start": {
         "own": "Datum des Eigentümers",
@@ -1677,7 +1683,6 @@
         "own": "Datum des Eigentümers",
         "sale": "Ende des Verkaufsmonats"
       },
-      "months": "Monatlich ({n})",
       "col": {
         "month": "Monat",
         "rent": "Miete",
@@ -1700,7 +1705,6 @@
       "kpiHint": "laufendes Mietverhältnis",
       "othersHint": "andere Mietverhältnisse: {amount}",
       "exceptionHint": "Abweichende Miete, ohne die Ausnahme {amount}",
-      "exceptionLegend": "* abweichende Miete: der vereinbarte Betrag. Die reguläre Miete und der Grund erscheinen, wenn der Mauszeiger darauf zeigt.",
       "addException": "Ausnahme hinzufügen",
       "saveException": "Ausnahme speichern",
       "editException": "Ausnahme bearbeiten",
@@ -1708,13 +1712,18 @@
       "editLead": "Die Änderung gilt für die ganze Ausnahme, alle ihre Tage. Die reguläre Miete und ihre Erhöhungen bleiben; eine angehängte Vereinbarung bleibt erhalten.",
       "removeException": "Ausnahme entfernen",
       "removeExceptionConfirm": "Ausnahme {period} entfernen? An ihren Tagen wird wieder die reguläre Miete erwartet.",
-      "prefillLead": "Vorausgefüllt, sodass {month} das Gezahlte erwartet ({paid}). Die reguläre Miete und ihre Erhöhungen bleiben. Tage und Beträge prüfen und den Grund angeben; die Vereinbarung lässt sich auf der Bearbeitungsseite anhängen.",
+      "prefillLead": "Vorausgefüllt, sodass {month} das Gezahlte erwartet ({paid}). Die reguläre Miete und ihre Erhöhungen bleiben.",
       "vatPart": "davon USt {amount}",
       "vatIssue": {
         "missing": "ohne USt gebucht, obwohl das Mietverhältnis umsatzsteuerpflichtig ist",
         "unexpected": "mit USt gebucht, obwohl das Mietverhältnis ohne USt ist",
         "row_missing": "USt-Code ohne eigene USt-Zeile",
         "rate": "anderer USt-Satz als der Regelsatz des Tages"
+      },
+      "monthsTitle": "Monatlich",
+      "figure": {
+        "arrears": "Mietrückstand {date}",
+        "ahead": "Im Voraus bezahlt {date}"
       }
     },
     "finance": {
