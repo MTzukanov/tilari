@@ -1197,7 +1197,8 @@
       "uncheckAll": "Avmarkera alla",
       "combined": "Gemensamt diagram",
       "combinedTitle": "Alla objekt tillsammans vid månadens slut",
-      "back": "Tillbaka"
+      "back": "Tillbaka",
+      "percent": "I procent av det investerade"
     },
     "chart": {
       "cashFlow": "Kassaflöde per månad",

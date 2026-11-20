@@ -121,6 +121,7 @@ test.describe('rental objects chart', () => {
       total: true,
       allMonths: false,
       combined: true,
+      percent: false,
     })
     await panel.getByRole('checkbox', { name: 'Kaikki yhteensä' }).uncheck()
     await expect(cash.locator('.portfolio-total')).toHaveCount(0)
@@ -164,6 +165,17 @@ test.describe('rental objects chart', () => {
     await expect(panel.locator('h4')).toHaveText(['Palauttamatta kuukauden lopussa', 'Kertynyt kassavirta'])
     await panel.getByRole('checkbox', { name: 'Yhteiskaavio' }).check()
     await expect(combined).toBeVisible()
+    // Still to recover as a percentage of each object's capital put in: objects of any size on one scale.
+    const percent = panel.getByRole('checkbox', { name: 'Prosentteina sijoitetusta' })
+    await expect(unrecovered.locator('.overview-y-tick').first()).toHaveText(/€$/)
+    await percent.check()
+    await expect(unrecovered.locator('.overview-y-tick').first()).toHaveText(/%$/)
+    await unrecovered.locator('.chart-point-hit').last().hover()
+    await expect(unrecovered.locator('xpath=..').locator('.chart-tip-row').first()).toContainText(/^Kaikki yhteensä[\d\s,−-]+%$/)
+    await page.reload()
+    await expect(percent).toBeChecked()
+    await percent.uncheck()
+    await expect(unrecovered.locator('.overview-y-tick').first()).toHaveText(/€$/)
     // The objects' checkboxes top to bottom in equal columns, on the same columns as the total's.
     const objects = panel.getByRole('group', { name: 'Kohteet' }).locator('label')
     expect(await objects.count()).toBeGreaterThan(6)
@@ -667,6 +679,14 @@ test.describe('rental object housing-company loans', () => {
     const kpi = (label: string) => page.locator('.overview-kpi', { has: page.locator('.overview-kpi-label', { hasText: new RegExp(`^${label}$`) }) })
     await page.getByRole('tab', { name: /^Yleiskatsaus/ }).click()
     await expect(kpi('Velkaosuus')).toContainText(/^Velkaosuus11\s898\s€velattomana palauttamatta \d/)
+    // The payback chart under the cash flow draws the share too, dashed, from the months it is followed.
+    await expect(page.locator('.property-share-line .chart-line')).toHaveCount(1)
+    await expect(page.locator('.overview-legend', { has: page.locator('.property-swatch-share') })).toContainText('Velkaosuus')
+    // A month's box names each line with its colour, as the legend does.
+    const payback = page.locator('.line-chart', { has: page.locator('.property-share-line') })
+    await payback.locator('.chart-point-hit').last().hover()
+    await expect(payback.locator('.chart-tip-row')).toHaveText([/^Palauttamatta/, /^Kertynyt kassavirta/, /^Velkaosuus/])
+    await expect(payback.locator('.chart-tip-row .chart-tip-swatch')).toHaveCount(3)
     // On Talous: the rahoitusvastike paid in 2026 split as on the card, the break-even price debt-free.
     await page.getByRole('tab', { name: /^Talous/ }).click()
     const years = page.locator('.property-section', { has: page.getByRole('heading', { name: 'Tilikausittain' }) })

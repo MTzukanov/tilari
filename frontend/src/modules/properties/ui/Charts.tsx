@@ -99,23 +99,32 @@ export function CashFlowChart({
 }
 
 /**
- * Money still to recover at each month end (falls as rent comes in, drops to zero on a sale), and
- * the cash flow summed from the first month (`totals`, the upper chart's line) on the same axis.
+ * Money still to recover at each month end (falls as rent comes in, drops to zero on a sale), the
+ * cash flow summed from the first month (`totals`, the upper chart's line) and the housing-company
+ * loan share (`shares`, dashed) on the same axis.
  */
+/** The payback chart's lines, as their legend swatches draw them (`.property-payback`, `.property-total`). */
+const PAYBACK_COLORS = { payback: '#2f6fed', total: 'var(--ink)', share: '#c45c26' } as const
+
 export function PaybackChart({
   months,
   totals,
+  shares,
   labels,
 }: {
   months: MonthPoint[]
   totals?: number[]
-  labels: { payback: string; total: string }
+  /** The housing-company loan share at each month's end (ADR-034), null where not known; dashed. */
+  shares?: (number | null)[]
+  labels: { payback: string; total: string; share?: string }
 }) {
   const locale = getBcp47()
   const series: LineSeries[] = [
     { key: 'payback', label: labels.payback, values: months.map((m) => m.unrecovered_snt), className: 'property-payback', dots: 'spaced' },
     ...(totals ? [{ key: 'total', label: labels.total, values: totals, className: 'property-total', dots: 'spaced' as const }] : []),
+    ...(shares ? [{ key: 'share', label: labels.share ?? '', values: shares, className: 'property-share-line', color: PAYBACK_COLORS.share, dashed: true }] : []),
   ]
+  const colorOf = (key: string) => PAYBACK_COLORS[key as keyof typeof PAYBACK_COLORS]
   return (
     <LineChart
       className="overview-chart property-chart"
@@ -123,7 +132,7 @@ export function PaybackChart({
       series={series}
       pointTip={(i) => ({
         title: monthName(months[i].key, locale),
-        rows: series.flatMap((s) => (s.values[i] == null ? [] : [{ label: s.label, value: formatCents(s.values[i]!) }])),
+        rows: series.flatMap((s) => (s.values[i] == null ? [] : [{ label: s.label, value: formatCents(s.values[i]!), color: colorOf(s.key) }])),
       })}
       labelFor={(key) => monthLabel(key, locale, true)}
       nameFor={(key) => monthName(key, locale)}

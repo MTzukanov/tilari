@@ -7,6 +7,20 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-20 - Rental objects: the loan share on the payback chart, still to recover in percent (`feature/charts-share-percent`)
+
+- Owner's picks from the chart options: B as recommended (not an object picker on the combined chart, which the
+  object page's payback chart already covers, but the loan share added to that chart, dashed) and D (the
+  Properties page's unrecovered chart as a percentage, behind a remembered checkbox, off by default).
+- The percentage is an object's still to recover over its own capital put in so far (`PortfolioChart.objects[]
+  .invested_snt`, the same months as its unrecovered line); the total line uses the combined chart's totals, so it
+  is total unrecovered over total invested. 100 % at the purchase, 0 % paid back, below 0 a gain; a sale drops a
+  line at its last month. `LineChart` takes a `tickFormat` for values that are not cents (basis points here).
+- `testdb/tilari-properties-loans.kitsas` (owner's ask, for demos): the invented book with two loans stored, built
+  by `npm run build:testdb:properties` with the other one. The rebuild rewrites `tilari-properties.kitsas` too,
+  but only its creation time, UID and attachment times change (the fixture is not fixed in time): left out of
+  commits unless the fixture changed.
+
 ## 2026-11-19 - Rental objects: the Properties page's totals on one chart (`feature/portfolio-summary-chart`)
 
 - Owner's ask (option A of four): the measures on one chart, to see whether the money comes back. "Yhteiskaavio"

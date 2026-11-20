@@ -6176,6 +6176,18 @@ tr.tax-total td {
   background: #2f6fed;
 }
 
+/* The housing-company loan share on the payback chart: dashed, the colour it has on the combined chart. */
+.property-share-line .chart-line {
+  fill: none;
+  stroke: #c45c26;
+  stroke-width: 2;
+}
+
+.overview-swatch.property-swatch-share {
+  height: 2px;
+  background: repeating-linear-gradient(90deg, #c45c26 0 4px, transparent 4px 6px);
+}
+
 .property-section {
   margin: 1.5rem 0;
 }

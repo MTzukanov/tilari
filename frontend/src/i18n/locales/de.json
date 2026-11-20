@@ -1197,7 +1197,8 @@
       "uncheckAll": "Auswahl aufheben",
       "combined": "Gemeinsames Diagramm",
       "combinedTitle": "Alle Objekte zusammen am Monatsende",
-      "back": "Zurückgekommen"
+      "back": "Zurückgekommen",
+      "percent": "In Prozent des eingesetzten Kapitals"
     },
     "chart": {
       "cashFlow": "Cashflow pro Monat",

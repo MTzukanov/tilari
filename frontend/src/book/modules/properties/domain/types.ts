@@ -734,7 +734,14 @@ export type PortfolioResponse = {
  */
 export type PortfolioChart = {
   keys: string[]
-  objects: { id: number; cash_snt: (number | null)[]; unrecovered_snt: (number | null)[]; share_snt: (number | null)[] }[]
+  /** `invested_snt`: the capital put in so far, in the months `unrecovered_snt` has (the base of its percentage). */
+  objects: {
+    id: number
+    cash_snt: (number | null)[]
+    unrecovered_snt: (number | null)[]
+    invested_snt: (number | null)[]
+    share_snt: (number | null)[]
+  }[]
   total_cash_snt: number[]
   total_unrecovered_snt: number[]
   /**

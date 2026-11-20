@@ -1197,7 +1197,8 @@
       "uncheckAll": "Poista valinnat",
       "combined": "Yhteiskaavio",
       "combinedTitle": "Kaikki kohteet yhdessä kuukauden lopussa",
-      "back": "Takaisin saatu"
+      "back": "Takaisin saatu",
+      "percent": "Prosentteina sijoitetusta"
     },
     "chart": {
       "cashFlow": "Kassavirta kuukausittain",
