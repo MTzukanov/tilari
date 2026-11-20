@@ -75,6 +75,7 @@ export function LineChart({
   height = 200,
   pointTip,
   onSelect,
+  tickFormat,
 }: {
   keys: string[]
   series: LineSeries[]
@@ -92,6 +93,8 @@ export function LineChart({
   pointTip?: (index: number) => PointTip
   /** Told the point picked, or null when let go. */
   onSelect?: (index: number | null) => void
+  /** The value axis' labels, for values that are not cents (e.g. basis points as percentages); euros by default. */
+  tickFormat?: (value: number) => string
 }) {
   const { ref, width } = useChartWidth(680)
   const [hover, setHover] = useState<number | null>(null)
@@ -157,7 +160,7 @@ export function LineChart({
         <g key={v}>
           <line x1={padL} x2={width - padR} y1={y(v)} y2={y(v)} className={v === 0 ? 'overview-axis' : 'overview-grid'} />
           <text className="overview-y-tick" x={padL - 6} y={y(v) + 3} textAnchor="end">
-            {formatAxisEur(v, locale)}
+            {tickFormat ? tickFormat(v) : formatAxisEur(v, locale)}
           </text>
         </g>
       ))}

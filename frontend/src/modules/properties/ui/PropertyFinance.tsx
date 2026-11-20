@@ -1,4 +1,5 @@
 import { useState, type RefObject } from 'react'
+import { housingShareMonths } from '../../../book/modules/properties/domain/housingLoan'
 import { grossPriceFor } from '../../../book/modules/properties/domain/returns'
 import { getBcp47, useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
@@ -212,6 +213,9 @@ export function CashFlowPanel({
 }) {
   const { t } = useI18n()
   const months = options.allMonths ? d.months : d.months.slice(-24)
+  // The loan share by month on the payback chart, where known (ADR-034); none without loans.
+  const owed = housingShareMonths(d.doc.housing_loans ?? [], d.housing.paths)
+  const shares = owed.size ? d.months.map((m) => owed.get(m.key) ?? null) : undefined
   if (!d.months.length) return null
   const check = (key: keyof CashFlowOptions, label: string, swatch?: string, disabled = false) => (
     <label className="allocation-check">
@@ -281,11 +285,18 @@ export function CashFlowPanel({
               <i className="overview-swatch property-swatch-total" />
               {t('properties.chart.total')}
             </span>
+            {shares ? (
+              <span className="allocation-check">
+                <i className="overview-swatch property-swatch-share" />
+                {t('properties.kpi.housingShare')}
+              </span>
+            ) : null}
           </div>
           <PaybackChart
             months={d.months}
             totals={runningTotals(d.months)}
-            labels={{ payback: t('properties.chart.paybackLine'), total: t('properties.chart.total') }}
+            shares={shares}
+            labels={{ payback: t('properties.chart.paybackLine'), total: t('properties.chart.total'), share: t('properties.kpi.housingShare') }}
           />
         </>
       ) : null}

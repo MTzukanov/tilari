@@ -171,6 +171,7 @@ export function portfolioChart(
     let proceeds = 0
     const cash: (number | null)[] = []
     const unrecovered: (number | null)[] = []
+    const capitalIn: (number | null)[] = []
     const share: (number | null)[] = []
     keys.forEach((key, i) => {
       const m = at.get(key)
@@ -188,11 +189,12 @@ export function portfolioChart(
       }
       cash.push(m ? sum : null)
       unrecovered.push(m && invested ? m.unrecovered_snt : null)
+      capitalIn.push(m && invested ? capital : null)
       const owed = o.shares?.get(key) ?? null
       if (owed != null) totalShare[i] = (totalShare[i] ?? 0) + owed
       share.push(owed)
     })
-    return { id: o.id, cash_snt: cash, unrecovered_snt: unrecovered, share_snt: share }
+    return { id: o.id, cash_snt: cash, unrecovered_snt: unrecovered, invested_snt: capitalIn, share_snt: share }
   })
   return {
     keys,

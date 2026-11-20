@@ -1197,7 +1197,8 @@
       "uncheckAll": "Clear all",
       "combined": "Combined chart",
       "combinedTitle": "All objects together at month end",
-      "back": "Come back"
+      "back": "Come back",
+      "percent": "As a percentage of capital put in"
     },
     "chart": {
       "cashFlow": "Cash flow by month",

@@ -2,6 +2,7 @@ import { useId, useState } from 'react'
 import { getBcp47, useI18n } from '../../../i18n'
 import { LineChart, type LineSeries, type PointTip } from '../../../shared/LineChart'
 import { formatCents } from '../../../shared/money'
+import { formatBp } from '../../../shared/percent'
 import type { PortfolioChart, PropertyRow } from '../api'
 import { monthLabel } from './Charts'
 import { monthName } from './format'
@@ -18,9 +19,11 @@ export type PortfolioChartOptions = {
   allMonths: boolean
   /** The totals on one chart first: capital put in, cash flow, money to recover, loan shares. */
   combined: boolean
+  /** The unrecovered chart as a percentage of each object's capital put in, so objects of any size compare. */
+  percent: boolean
 }
 
-const DEFAULTS: PortfolioChartOptions = { hidden: [], total: true, allMonths: false, combined: true }
+const DEFAULTS: PortfolioChartOptions = { hidden: [], total: true, allMonths: false, combined: true, percent: false }
 
 export function loadPortfolioChartOptions(): PortfolioChartOptions {
   try {
@@ -31,6 +34,7 @@ export function loadPortfolioChartOptions(): PortfolioChartOptions {
       total: typeof stored.total === 'boolean' ? stored.total : DEFAULTS.total,
       allMonths: typeof stored.allMonths === 'boolean' ? stored.allMonths : DEFAULTS.allMonths,
       combined: typeof stored.combined === 'boolean' ? stored.combined : DEFAULTS.combined,
+      percent: typeof stored.percent === 'boolean' ? stored.percent : DEFAULTS.percent,
     }
   } catch {
     return { ...DEFAULTS }
@@ -52,6 +56,11 @@ const COMBINED = {
   unrecovered: '#2f6fed',
   shares: '#c45c26',
 } as const
+
+/** `part` of `whole` in basis points (10 000 = 100 %); null without a whole to measure against. */
+export function shareBp(part: number | null, whole: number | null): number | null {
+  return part == null || whole == null || whole <= 0 ? null : Math.round((part * 10000) / whole)
+}
 
 /** An object's colour and dash by its place in the chart (not by what is shown, so hiding one repaints none). */
 export function objectStyle(index: number): { color: string; dashed: boolean } {
@@ -104,13 +113,13 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
   ]
   // A month's box: all of them together first, then each object's line in its colour.
   const pointTip =
-    (series: LineSeries[]) =>
+    (series: LineSeries[], format: (v: number) => string = formatCents) =>
     (i: number): PointTip => ({
       title: monthName(keys[i], locale),
       rows: [...series]
         .reverse()
         .flatMap((s) =>
-          s.values[i] == null ? [] : [{ label: s.label, value: formatCents(s.values[i]!), color: s.color ?? (s.key === 'total' ? 'var(--ink)' : undefined) }],
+          s.values[i] == null ? [] : [{ label: s.label, value: format(s.values[i]!), color: s.color ?? (s.key === 'total' ? 'var(--ink)' : undefined) }],
         ),
     })
 
@@ -121,9 +130,15 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
   const allHidden = objects.every((o) => hidden.has(o.id))
   const cash = seriesOf((o) => o.cash_snt, chart.total_cash_snt)
   // Objects without an investment linked have nothing to recover: no line there, maybe no chart.
-  const unrecovered = seriesOf((o) => o.unrecovered_snt, chart.total_unrecovered_snt).filter(
-    (s) => s.key === 'total' || s.values.some((v) => v != null),
-  )
+  // In percent: each object's still to recover against its own capital put in, the total against the total.
+  const unrecovered = (
+    options.percent
+      ? seriesOf(
+          (o) => o.unrecovered_snt.map((v, i) => shareBp(v, o.invested_snt[i])),
+          chart.total_unrecovered_snt.map((v, i) => shareBp(v, chart.total_invested_snt[i])),
+        )
+      : seriesOf((o) => o.unrecovered_snt, chart.total_unrecovered_snt)
+  ).filter((s) => s.key === 'total' || s.values.some((v) => v != null))
   const invested = chart.objects.some((o) => o.unrecovered_snt.some((v) => v != null))
   const shares = seriesOf((o) => o.share_snt, chart.total_share_snt).filter((s) => s.key === 'total' || s.values.some((v) => v != null))
   const owed = chart.objects.some((o) => o.share_snt.some((v) => v != null))
@@ -208,11 +223,18 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
       {invested ? (
         <>
           <h4>{t('properties.portfolioChart.unrecovered')}</h4>
+          <div className="overview-legend">
+            <label className="allocation-check">
+              <input type="checkbox" checked={options.percent} onChange={() => setOptions({ ...options, percent: !options.percent })} />
+              {t('properties.portfolioChart.percent')}
+            </label>
+          </div>
           <LineChart
             {...chartProps}
             series={unrecovered}
             label={t('properties.portfolioChart.unrecovered')}
-            pointTip={pointTip(unrecovered)}
+            pointTip={options.percent ? pointTip(unrecovered, (v) => formatBp(v)) : pointTip(unrecovered)}
+            tickFormat={options.percent ? (v) => formatBp(v, 0) : undefined}
           />
         </>
       ) : null}
