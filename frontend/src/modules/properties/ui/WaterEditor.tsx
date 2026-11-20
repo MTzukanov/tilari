@@ -7,6 +7,7 @@ import { formatCents, parseEurInput } from '../../../shared/money'
 import type { DocCandidate, Lease, WaterBookedLine, WaterSettlement, WaterStatementCandidate } from '../api'
 import { DocPicker } from './DocPicker'
 import type { DocEdit } from './editDraft'
+import { InfoButton, InfoHeading, InfoNote } from './FigureTiles'
 import { periodText, waterBalanceText } from './format'
 import { invalidProps, issueOf, type FormIssue } from './formIssues'
 import { Field, LineLink, NoDocumentCheck, Shown, WaterStatusPill } from './FormParts'
@@ -70,7 +71,9 @@ export function WaterEditor({
 }) {
   const { t } = useI18n()
   const [creating, setCreating] = useState<string | null>(null)
-  const all = [...otherDrafts, ...drafts]
+  /** The settlement whose statement note is open under its fields. */
+  const [noteOpen, setNoteOpen] = useState<number | null>(null)
+  const all =[...otherDrafts, ...drafts]
   const settlements = all.map(draftSettlement)
   const dated = settlements.filter((s): s is WaterSettlement => s != null)
   const picked = new Set(all.flatMap((d) => (d.voucherId ? [Number(d.voucherId)] : [])))
@@ -119,6 +122,13 @@ export function WaterEditor({
         const pick = statementPick(d)
         const picked = candidates.find((c) => String(c.voucher.voucher_id) === d.voucherId)
         const fill = picked ? statementFill(picked, othersOf(i)) : null
+        // What the stars mean while nothing is picked; once a pick filled the period, that it is a guess.
+        const note =
+          pick.guesses.vouchers.size && !d.voucherId
+            ? t(pick.guesses.exact ? 'properties.water.guessExact' : 'properties.water.guessSuspect')
+            : fill && d.from === fill.from && d.to === fill.to
+              ? t('properties.water.periodEstimated')
+              : null
         return (
           <div key={d.base?.key || `new-${i}`} className="property-lease-edit property-water-edit">
             <div className="property-lease-grid">
@@ -164,13 +174,11 @@ export function WaterEditor({
                     </button>
                   ) : null}
                   <FileButton onFiles={(files) => void onUpload(i, null, files)}>{t('properties.water.uploadStatement')}</FileButton>
+                  {note ? <InfoButton note={note} open={noteOpen === i} onToggle={() => setNoteOpen(noteOpen === i ? null : i)} /> : null}
                 </div>
               </div>
             </div>
-            {pick.guesses.vouchers.size && !d.voucherId ? (
-              <p className="muted property-lease-hint">{t(pick.guesses.exact ? 'properties.water.guessExact' : 'properties.water.guessSuspect')}</p>
-            ) : null}
-            {fill && d.from === fill.from && d.to === fill.to ? <p className="muted property-lease-hint">{t('properties.water.periodEstimated')}</p> : null}
+            {note && noteOpen === i ? <InfoNote note={note} /> : null}
             {view ? (
               <p className="property-lease-terms">
                 {view.booked.length ? (
@@ -186,9 +194,10 @@ export function WaterEditor({
               </p>
             ) : null}
 
-            <h4>{t('properties.water.shares')}</h4>
-            <p className="muted property-lease-hint">{t(d.usage.trim() ? 'properties.water.sharesByUsage' : 'properties.water.sharesByDifference')}</p>
-            {!settlement ? <p className="muted property-lease-hint">{t('properties.water.needPeriod')}</p> : null}
+            <InfoHeading
+              title={t('properties.water.shares')}
+              note={t(d.usage.trim() ? 'properties.water.sharesByUsage' : 'properties.water.sharesByDifference')}
+            />
             {settlement && !shares.length ? <p className="muted property-lease-hint">{t('properties.water.noShares')}</p> : null}
             {shares.map((share) => {
               const key = share.lease_key

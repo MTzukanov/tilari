@@ -851,6 +851,9 @@ test.describe('rental object deposits', () => {
     await page.getByRole('option', { name: /^★ 5\.1\.2025 · Vuokravakuus Asunto · Testi Vuokralainen · 500,00\s€$/ }).click()
     const linked = lease.locator('.property-lease-deposit .property-doc-list')
     await expect(linked).toContainText('5.1.2025 · Vuokravakuus Asunto')
+    // What the star means is behind the heading's "i".
+    await lease.locator('.property-lease-deposit h4 .property-info').click()
+    await expect(lease.locator('.property-lease-deposit .property-info-note')).toContainText('★ = kirjattu tälle kohteelle')
     // Each booking opens its voucher from the form.
     await expect(linked.getByRole('button', { name: /^Saatu 5\.1\.2025 500,00\s€$/ })).toBeVisible()
     await saveLeaseCard(page)
@@ -970,6 +973,11 @@ test.describe('rental object rent exceptions', () => {
 
     await lease.getByRole('button', { name: 'Lisää poikkeava vuokra' }).click()
     const exception = lease.locator('.property-lease-exception').first()
+    // How an exception counts is behind the heading's "i", not a line in the form.
+    const exceptionsHead = lease.getByRole('heading', { name: /^Poikkeava vuokra/ })
+    await expect(lease.locator('.property-info-note')).toHaveCount(0)
+    await exceptionsHead.locator('.property-info').click()
+    await expect(lease.locator('.property-info-note')).toContainText('vuokrasaldo laskee niillä')
     // Prefilled with the amounts in force; a discount is typed as the lower rent.
     await expect(exception.getByLabel('Vesi €/kk')).toHaveValue('20,00')
     await exception.getByLabel('Alkaen').fill('2025-05-01')
@@ -1253,6 +1261,9 @@ test.describe('rental object water settlements', () => {
     await expect(share).toContainText('1.3.2025–30.6.2025, 122 pv')
     await expect(share).toContainText('80,00 €')
     await expect(share).toContainText('palautetaan 24,40 €')
+    // How the shares are counted is behind the heading's "i", and follows the use.
+    const sharesInfo = water.getByRole('heading', { name: /^Vuokralaisten osuudet/ }).locator('.property-info')
+    await expect(sharesInfo).toHaveAttribute('aria-label', /^Kulutusta ei ole annettu/)
     // The form shows what the book has for the period, as the page will: nothing yet.
     await expect(water).toContainText('Taloyhtiön tasausta ei löydy kirjanpidosta.')
     await expect(share.locator('.pill-warn')).toHaveText('avoin')
@@ -1260,6 +1271,8 @@ test.describe('rental object water settlements', () => {
     await water.getByLabel('Toteutunut kulutus €').fill('60')
     await expect(share).toContainText('palautetaan 39,56 €')
     await expect(water).toContainText('96,20 €')
+    await sharesInfo.click()
+    await expect(water.locator('.property-info-note')).toHaveText(/^Kulutus jaetaan asumispäivien mukaan/)
 
     const download = page.waitForEvent('download')
     await share.getByRole('button', { name: 'Luo vesitasauslaskelma' }).click()
