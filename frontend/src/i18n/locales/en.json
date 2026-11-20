@@ -1297,7 +1297,6 @@
         "index": "Index"
       },
       "suggestions": "Suggestions from the books ({n})",
-      "suggestionsLead": "From the linked lease contracts and rent payments. Nothing is saved: Add opens a suggestion on its own card to review.",
       "source": {
         "contract": "source: lease contract",
         "payments": "source: rent payments",
@@ -1346,7 +1345,6 @@
       "deducted": "of which kept {amount}",
       "paidOnTop": "paid on top {amount}",
       "balance": "balance {amount}",
-      "movements": "Deposit bookings ({n})",
       "kind": {
         "received": "Received",
         "returned": "Returned"
@@ -1621,7 +1619,6 @@
       "noShares": "No leases in the period whose water is settled.",
       "other": "Other tenant bookings",
       "suggestions": "Suggestions from the books ({n})",
-      "suggestionsLead": "From water settlements booked on the object. Nothing is saved: Add opens a suggestion on its own card; check the amounts against the housing company's statement.",
       "flat": "water is not settled",
       "advance": "water is settled by actual use",
       "latest": "Water settlement {period}",
@@ -1669,14 +1666,11 @@
         "lines": "Bookings",
         "ownerKeeps": "The owner keeps",
         "ownerBears": "The owner bears",
-        "ownerBearsWhy": "e.g. vacant days"
+        "ownerNote": "The tenants' shares and the housing company's settlement differ by this much, for example because of vacant days."
       }
     },
     "rent": {
       "balanceOn": "Rent balance {date}",
-      "arrears": "rent arrears {amount}",
-      "ahead": "paid ahead {amount}",
-      "even": "settled, 0,00 €",
       "countedFrom": "counted from {date}: {reason}",
       "start": {
         "own": "the owner's date",
@@ -1689,7 +1683,6 @@
         "own": "the owner's date",
         "sale": "the end of the month of sale"
       },
-      "months": "By month ({n})",
       "col": {
         "month": "Month",
         "rent": "Rent",
@@ -1712,7 +1705,6 @@
       "kpiHint": "the running lease",
       "othersHint": "other leases: {amount}",
       "exceptionHint": "Agreed exception, without it {amount}",
-      "exceptionLegend": "* agreed exception: the agreed amount. Hover it for the normal rent and the reason.",
       "addException": "Add exception",
       "saveException": "Save exception",
       "editException": "Edit exception",
@@ -1720,7 +1712,7 @@
       "editLead": "The change applies to the whole exception, all its days. The normal rent and its increases do not change; an attached agreement stays.",
       "removeException": "Remove exception",
       "removeExceptionConfirm": "Remove the exception {period}? Its days expect the normal rent again.",
-      "prefillLead": "Prefilled so that {month} expects what was paid ({paid}). The normal rent and its increases do not change. Check the days and amounts and give the reason; the agreement can be attached on the edit page.",
+      "prefillLead": "Prefilled so that {month} expects what was paid ({paid}). The normal rent and its increases do not change.",
       "vatPart": "of which VAT {amount}",
       "vatIssue": {
         "missing": "booked without VAT, though the lease carries VAT",

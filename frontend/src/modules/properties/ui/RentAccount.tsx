@@ -1,10 +1,10 @@
 import { Fragment, useState } from 'react'
 import { getBcp47, useI18n } from '../../../i18n'
-import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
 import { formatCents, formatEurInput, parseEurInput } from '../../../shared/money'
-import type { LeaseException, LeaseRentAccount, RentMonth, RentPeriod } from '../api'
-import { monthName, periodText, rentBalanceText, rentCountedText, saveErrorText, tenantSide } from './format'
+import type { LeaseException, LeaseRentAccount, RentMonth } from '../api'
+import { InfoButton, InfoNote } from './FigureTiles'
+import { monthName, periodText, saveErrorText, tenantSide } from './format'
 import { LineLink, Shown } from './FormParts'
 
 const eur = (snt: number | undefined) => (snt ? formatEurInput(snt) : '')
@@ -43,6 +43,10 @@ function ExceptionForm({
   })
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [noteOpen, setNoteOpen] = useState(false)
+  const note = stored
+    ? t('properties.rent.editLead')
+    : t('properties.rent.prefillLead', { month: monthName(month.key, getBcp47()), paid: formatCents(month.received_snt) })
   const parking = prefill.parking_snt != null
   const withWater = !parkingObject || prefill.water_snt != null
   const set = (patch: Partial<typeof draft>) => setDraft((d) => ({ ...d, ...patch }))
@@ -79,11 +83,6 @@ function ExceptionForm({
 
   return (
     <div className="property-rent-exception-form">
-      <p className="muted property-lease-hint">
-        {stored
-          ? t('properties.rent.editLead')
-          : t('properties.rent.prefillLead', { month: monthName(month.key, getBcp47()), paid: formatCents(month.received_snt) })}
-      </p>
       <div className={`property-lease-grid property-lease-amounts property-lease-exception${parking ? '' : ' no-parking'}${withWater ? '' : ' no-water'}`}>
         <label>
           {t('properties.field.exceptionFrom')}
@@ -127,66 +126,18 @@ function ExceptionForm({
                 {t('properties.rent.removeException')}
               </button>
             ) : null}
+            <InfoButton note={note} open={noteOpen} onToggle={() => setNoteOpen(!noteOpen)} />
           </div>
         </div>
       </div>
+      {noteOpen ? <InfoNote note={note} /> : null}
       {error ? <p className="error">{error}</p> : null}
     </div>
   )
 }
 
 /**
- * A lease's rent account (ADR-026) on a list row: its balance on the as-of date, exact, and its
- * months folded (`RentMonths`). The lease's own card shows the balance as a tile instead.
- */
-export function RentAccountView({
-  account,
-  asOf,
-  leaseStarts,
-  period,
-  onOpen,
-  onSaveException,
-  parkingObject,
-}: {
-  account: LeaseRentAccount
-  asOf: string
-  leaseStarts: string
-  /** The owner's rent days on the object: why a lease's account starts after the lease, or ends before it. */
-  period: RentPeriod
-  onOpen: (voucherId: number) => void
-  /**
-   * Saves an exception to this lease, new or in place of `replaces` (null removes that one); the
-   * page then shows the account again.
-   */
-  onSaveException?: (exception: LeaseException | null, replaces?: LeaseException) => Promise<void>
-  /** A parking space or garage: its exceptions have no water to give. */
-  parkingObject: boolean
-}) {
-  const { t } = useI18n()
-  return (
-    <div className="property-rent">
-      <p className="property-lease-terms">
-        {t('properties.rent.balanceOn', { date: formatDate(asOf) })}:{' '}
-        <strong className={account.balance_snt > 0 ? 'neg' : ''}>{rentBalanceText(t, account.balance_snt)}</strong>
-        {rentCountedText(t, account, leaseStarts, period).map((text) => (
-          <span key={text} className="muted">
-            {' '}
-            · {text}
-          </span>
-        ))}
-      </p>
-      {account.months.length ? (
-        <details className="property-sources">
-          <summary>{t('properties.rent.months', { n: account.months.length })}</summary>
-          <RentMonths account={account} onOpen={onOpen} onSaveException={onSaveException} parkingObject={parkingObject} />
-        </details>
-      ) : null}
-    </div>
-  )
-}
-
-/**
- * A lease's months, newest first, each payment a link to its voucher. Figures stand as the tenant
+ * A lease's rent account (ADR-026) month by month, newest first, each payment a link to its voucher. Figures stand as the tenant
  * does: a month paid short and arrears are red and minus, so the month where it went wrong shows in
  * the change. A month that moved the balance offers an agreed exception, prefilled, and a month with
  * one offers to change or remove it, when `onSaveException` is given (ADR-027).
@@ -313,7 +264,6 @@ export function RentMonths({
           })}
         </tbody>
       </table>
-      {account.months.some((m) => m.exception) ? <p className="muted property-lease-hint">{t('properties.rent.exceptionLegend')}</p> : null}
     </div>
   )
 }

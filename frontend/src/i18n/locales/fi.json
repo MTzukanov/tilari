@@ -1297,7 +1297,6 @@
         "index": "Indeksi"
       },
       "suggestions": "Ehdotukset kirjanpidosta ({n})",
-      "suggestionsLead": "Linkitetyistä vuokrasopimuksista ja vuokrasuorituksista. Mitään ei ole tallennettu: Lisää avaa ehdotuksen omalle kortilleen tarkistettavaksi.",
       "source": {
         "contract": "lähde: vuokrasopimus",
         "payments": "lähde: vuokrasuoritukset",
@@ -1346,7 +1345,6 @@
       "deducted": "josta pidätetty {amount}",
       "paidOnTop": "lisäksi maksettu {amount}",
       "balance": "saldo {amount}",
-      "movements": "Vakuuden kirjaukset ({n})",
       "kind": {
         "received": "Saatu",
         "returned": "Palautettu"
@@ -1621,7 +1619,6 @@
       "noShares": "Jaksolla ei ole vuokrasuhteita, joissa vesimaksu tasataan.",
       "other": "Muut vuokralaisen kirjaukset",
       "suggestions": "Ehdotukset kirjanpidosta ({n})",
-      "suggestionsLead": "Kohteelle kirjatuista vesitasauksista. Mitään ei ole tallennettu: Lisää avaa ehdotuksen omalle kortilleen; tarkista summat taloyhtiön tasauslaskelmasta.",
       "flat": "vesimaksua ei tasata",
       "advance": "vesimaksu tasataan kulutuksen mukaan",
       "latest": "Vesitasaus {period}",
@@ -1669,14 +1666,11 @@
         "lines": "Kirjaukset",
         "ownerKeeps": "Omistajalle jää",
         "ownerBears": "Omistaja maksaa itse",
-        "ownerBearsWhy": "esim. tyhjät päivät"
+        "ownerNote": "Vuokralaisten osuudet ja taloyhtiön tasaus eroavat tämän verran, esimerkiksi tyhjien päivien vuoksi."
       }
     },
     "rent": {
       "balanceOn": "Vuokrasaldo {date}",
-      "arrears": "vuokrarästi {amount}",
-      "ahead": "maksettu ennakkoon {amount}",
-      "even": "täsmää, 0,00 €",
       "countedFrom": "laskettu {date} alkaen: {reason}",
       "start": {
         "own": "omistajan antama päivä",
@@ -1689,7 +1683,6 @@
         "own": "omistajan antama päivä",
         "sale": "myyntikuun loppu"
       },
-      "months": "Kuukausittain ({n})",
       "col": {
         "month": "Kuukausi",
         "rent": "Vuokra",
@@ -1712,7 +1705,6 @@
       "kpiHint": "voimassa oleva vuokrasuhde",
       "othersHint": "muut vuokrasuhteet: {amount}",
       "exceptionHint": "Poikkeava vuokra, ilman poikkeusta {amount}",
-      "exceptionLegend": "* poikkeava vuokra: sovittu summa. Normaali vuokra ja syy näkyvät, kun viet hiiren summan päälle.",
       "addException": "Lisää poikkeus",
       "saveException": "Tallenna poikkeus",
       "editException": "Muokkaa poikkeusta",
@@ -1720,7 +1712,7 @@
       "editLead": "Muutos koskee koko poikkeusta, kaikkia sen päiviä. Normaali vuokra ja korotukset eivät muutu; liitetty sopimus säilyy.",
       "removeException": "Poista poikkeus",
       "removeExceptionConfirm": "Poistetaanko poikkeus {period}? Sen päivinä odotetaan taas normaali vuokra.",
-      "prefillLead": "Esitäytetty niin, että {month} odottaa sen, mitä maksettiin ({paid}). Normaali vuokra ja korotukset eivät muutu. Tarkista päivät ja summat ja kirjoita syy; sopimuksen voi liittää muokkaussivulla.",
+      "prefillLead": "Esitäytetty niin, että {month} odottaa sen, mitä maksettiin ({paid}). Normaali vuokra ja korotukset eivät muutu.",
       "vatPart": "josta ALV {amount}",
       "vatIssue": {
         "missing": "kirjattu ilman ALV:tä, vaikka vuokrasuhde on arvonlisäverollinen",

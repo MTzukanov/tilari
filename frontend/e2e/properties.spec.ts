@@ -307,7 +307,7 @@ test.describe('rental object on a phone', () => {
     await expect(card.getByRole('textbox', { name: 'Sopimus' })).toHaveValue(/Vuokrasopimus Asunto/)
     expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'card').toBeLessThanOrEqual(0)
     await card.getByRole('button', { name: 'Peru', exact: true }).click()
-    await page.locator('.property-leases li').filter({ hasText: 'Testi Vuokralainen' }).getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    await page.locator('.property-lease-card.is-other', { hasText: 'Testi Vuokralainen' }).getByRole('button', { name: 'Muokkaa', exact: true }).click()
     await expect(card).toHaveCount(1)
     expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'lease card').toBeLessThanOrEqual(0)
     // So do a water card and a Talous section in edit.
@@ -741,9 +741,9 @@ test.describe('rental object housing-company loans', () => {
     // says so on hover, and under the figures on a click.
     const info = garage.getByRole('button', { name: /^Kirjanpidosta ei löytynyt kohteen kuukausittaisia maksuja taloyhtiölle/ })
     await expect(info).toHaveAttribute('title', /olettaa jokaisen kuukauden rahoitusvastikkeen maksetuksi/)
-    await expect(garage.locator('.property-loan-note')).toHaveCount(0)
+    await expect(garage.locator('.property-info-note')).toHaveCount(0)
     await info.click()
-    await expect(garage.locator('.property-loan-note')).toContainText('olettaa jokaisen kuukauden rahoitusvastikkeen maksetuksi')
+    await expect(garage.locator('.property-info-note')).toContainText('olettaa jokaisen kuukauden rahoitusvastikkeen maksetuksi')
     // The share's and the charge's documents are missing: they mark the tab.
     await expect(page.getByRole('tab', { name: /^Taloyhtiö/ }).locator('.tabs-mark-crit')).toHaveCount(1)
 
@@ -991,6 +991,12 @@ test.describe('rental object rent exceptions', () => {
     const october = card.locator('.property-rent-table tr', { hasText: 'lokakuu 2025' })
     await october.getByRole('button', { name: 'Lisää poikkeus' }).click()
     const form = card.locator('.property-rent-exception-form')
+    // What the prefill means is behind an "i": on hover, and under the form on a click.
+    const why = form.getByRole('button', { name: /^Esitäytetty niin, että lokakuu 2025 odottaa sen, mitä maksettiin \(0,00\s€\)/ })
+    await expect(why).toHaveAttribute('title', /Normaali vuokra ja korotukset eivät muutu\.$/)
+    await expect(form.locator('.property-info-note')).toHaveCount(0)
+    await why.click()
+    await expect(form.locator('.property-info-note')).toContainText('Normaali vuokra ja korotukset eivät muutu.')
     await expect(form.getByLabel('Alkaen')).toHaveValue('2025-10-01')
     await expect(form.getByLabel('Päättyen')).toHaveValue('2025-10-31')
     await expect(form.getByLabel('Vuokra €/kk')).toHaveValue('0,00')
@@ -1077,8 +1083,19 @@ test.describe('rental object lease dates', () => {
     await rentDates.getByLabel('Vuokra omistajalle alkaen').fill('2025-02-01')
     await rentDates.getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(rentDates).toHaveCount(0)
-    // The ended lease's account starts after the lease: on the owner's day.
-    await expect(page.locator('.property-leases')).toContainText('laskettu 1.2.2025 alkaen: omistajan antama päivä')
+    // The ended lease is a card of its own under the running one, quieter; its account starts on the owner's day.
+    const ended = page.locator('.property-lease-card.is-other')
+    await expect(ended).toHaveCount(1)
+    await expect(ended.locator('.property-lease-head')).toContainText('Testi Vuokralainen')
+    await expect(page.locator('.property-lease-card:not(.is-other) .property-lease-head')).toContainText('Toinen Vuokralainen')
+    const left = tile(ended, 'Vuokrarästi 30.11.2025')
+    await expect(left.locator('strong')).toHaveClass('neg')
+    await expect(left).toContainText(/laskettu 1\.2\.2025 alkaen: omistajan antama päivä$/)
+    await expect(tile(ended, 'Sopimus').locator('.pill-crit')).toHaveText('Asiakirja puuttuu')
+    // Its Muokkaa turns it into its form, in place.
+    await ended.getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    await expect(page.locator('.property-lease-card-edit')).toHaveCount(1)
+    await expect(page).toHaveURL(/#\/property\/4\/leases\/lease\/[^/]+$/)
   })
 })
 
@@ -1262,7 +1279,12 @@ test.describe('rental object water settlements', () => {
     await expect(row.locator('.pill-warn')).toHaveText('avoin')
     await expect(row.getByRole('button', { name: /Vesitasaus Asunto/ })).toBeVisible()
     // The tenant's refund is more than the company's: the owner bears the rest.
-    await expect(tile(settled, 'Omistaja maksaa itse')).toContainText(/3,36\s€esim\. tyhjät päivät$/)
+    const owner = tile(settled, 'Omistaja maksaa itse')
+    await expect(owner.locator('strong')).toHaveText(/^3,36\s€$/)
+    const ownerWhy = owner.getByRole('button', { name: /^Vuokralaisten osuudet ja taloyhtiön tasaus eroavat tämän verran/ })
+    await expect(ownerWhy).toHaveAttribute('title', /tyhjien päivien vuoksi\.$/)
+    await ownerWhy.click()
+    await expect(owner).toContainText('esimerkiksi tyhjien päivien vuoksi')
     // No statement linked: the settlement's place for it says so.
     await expect(tile(settled, 'Tasauslaskelma').locator('.pill-crit')).toHaveText('Asiakirja puuttuu')
     // Nothing booked yet: no list of bookings.

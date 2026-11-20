@@ -15,7 +15,7 @@ import { monthLabel } from './Charts'
 import { loadLoanChartOptions, saveLoanChartOptions, type LoanChartOptions } from './chartOptions'
 import { DocPicker } from './DocPicker'
 import { monthName, periodText } from './format'
-import { Figure, Figures, Folds, type Fold } from './FigureTiles'
+import { Figure, Figures, Folds, InfoButton, InfoNote, type Fold } from './FigureTiles'
 import { DocSlot, LineLink, VoucherOpen } from './FormParts'
 
 /** Titles a housing company's document has: starred in the pick. */
@@ -507,18 +507,7 @@ function LoanCard({
                 : certificate
                   ? t('properties.housing.figure.share', { date: formatDate(certificate.date) })
                   : t('properties.housing.figure.shareLabel')}
-              {note ? (
-                <button
-                  type="button"
-                  className="property-loan-info"
-                  aria-label={note}
-                  aria-expanded={noteOpen}
-                  title={noteOpen ? undefined : note}
-                  onClick={() => setNoteOpen(!noteOpen)}
-                >
-                  i
-                </button>
-              ) : null}
+              {note ? <InfoButton note={note} open={noteOpen} onToggle={() => setNoteOpen(!noteOpen)} /> : null}
             </>
           }
           value={last ? formatCents(last.closing_snt) : certificate ? formatCents(certificate.share_snt) : ''}
@@ -584,7 +573,7 @@ function LoanCard({
           ]}
         />
       </Figures>
-      {note && noteOpen ? <p className="muted property-lease-hint property-loan-note">{note}</p> : null}
+      {note && noteOpen ? <InfoNote note={note} /> : null}
       <Folds folds={folds} />
     </div>
   )

@@ -1297,7 +1297,6 @@
         "index": "Index"
       },
       "suggestions": "Vorschläge aus der Buchhaltung ({n})",
-      "suggestionsLead": "Aus den verknüpften Mietverträgen und Mietzahlungen. Nichts ist gespeichert: Hinzufügen öffnet den Vorschlag zur Prüfung auf einer eigenen Karte.",
       "source": {
         "contract": "Quelle: Mietvertrag",
         "payments": "Quelle: Mietzahlungen",
@@ -1346,7 +1345,6 @@
       "deducted": "davon einbehalten {amount}",
       "paidOnTop": "zusätzlich gezahlt {amount}",
       "balance": "Saldo {amount}",
-      "movements": "Buchungen der Kaution ({n})",
       "kind": {
         "received": "Erhalten",
         "returned": "Zurückgezahlt"
@@ -1621,7 +1619,6 @@
       "noShares": "Keine Mietverhältnisse im Zeitraum, deren Wasser abgerechnet wird.",
       "other": "Weitere Buchungen mit dem Mieter",
       "suggestions": "Vorschläge aus der Buchhaltung ({n})",
-      "suggestionsLead": "Aus den auf dem Objekt gebuchten Wasserabrechnungen. Nichts ist gespeichert: Hinzufügen öffnet den Vorschlag auf einer eigenen Karte; Beträge mit der Abrechnung der Gesellschaft prüfen.",
       "flat": "Wasser wird nicht abgerechnet",
       "advance": "Wasser wird nach Verbrauch abgerechnet",
       "latest": "Wasserabrechnung {period}",
@@ -1669,14 +1666,11 @@
         "lines": "Buchungen",
         "ownerKeeps": "Dem Eigentümer bleiben",
         "ownerBears": "Der Eigentümer trägt",
-        "ownerBearsWhy": "z. B. Leerstandstage"
+        "ownerNote": "Die Anteile der Mieter und die Abrechnung der Gesellschaft weichen um diesen Betrag ab, zum Beispiel wegen Leerstandstagen."
       }
     },
     "rent": {
       "balanceOn": "Mietsaldo {date}",
-      "arrears": "Mietrückstand {amount}",
-      "ahead": "im Voraus bezahlt {amount}",
-      "even": "ausgeglichen, 0,00 €",
       "countedFrom": "gezählt ab {date}: {reason}",
       "start": {
         "own": "Datum des Eigentümers",
@@ -1689,7 +1683,6 @@
         "own": "Datum des Eigentümers",
         "sale": "Ende des Verkaufsmonats"
       },
-      "months": "Monatlich ({n})",
       "col": {
         "month": "Monat",
         "rent": "Miete",
@@ -1712,7 +1705,6 @@
       "kpiHint": "laufendes Mietverhältnis",
       "othersHint": "andere Mietverhältnisse: {amount}",
       "exceptionHint": "Abweichende Miete, ohne die Ausnahme {amount}",
-      "exceptionLegend": "* abweichende Miete: der vereinbarte Betrag. Die reguläre Miete und der Grund erscheinen, wenn der Mauszeiger darauf zeigt.",
       "addException": "Ausnahme hinzufügen",
       "saveException": "Ausnahme speichern",
       "editException": "Ausnahme bearbeiten",
@@ -1720,7 +1712,7 @@
       "editLead": "Die Änderung gilt für die ganze Ausnahme, alle ihre Tage. Die reguläre Miete und ihre Erhöhungen bleiben; eine angehängte Vereinbarung bleibt erhalten.",
       "removeException": "Ausnahme entfernen",
       "removeExceptionConfirm": "Ausnahme {period} entfernen? An ihren Tagen wird wieder die reguläre Miete erwartet.",
-      "prefillLead": "Vorausgefüllt, sodass {month} das Gezahlte erwartet ({paid}). Die reguläre Miete und ihre Erhöhungen bleiben. Tage und Beträge prüfen und den Grund angeben; die Vereinbarung lässt sich auf der Bearbeitungsseite anhängen.",
+      "prefillLead": "Vorausgefüllt, sodass {month} das Gezahlte erwartet ({paid}). Die reguläre Miete und ihre Erhöhungen bleiben.",
       "vatPart": "davon USt {amount}",
       "vatIssue": {
         "missing": "ohne USt gebucht, obwohl das Mietverhältnis umsatzsteuerpflichtig ist",

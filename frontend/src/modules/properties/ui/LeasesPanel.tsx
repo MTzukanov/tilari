@@ -8,7 +8,6 @@ import { SuggestBanner } from '../../../shared/SuggestBanner'
 import type { BookedLine, DepositView, LeaseException, LeaseRentAccount, LeaseState, LeaseView, RentPeriod } from '../api'
 import {
   deductedText,
-  depositText,
   exceptionLineText,
   increaseFigure,
   leasePeriod,
@@ -22,7 +21,7 @@ import {
 } from './format'
 import { Figure, Figures, Folds, type Fold } from './FigureTiles'
 import { DocSlot, LineLink, LineSources, VoucherLink, WaterStatusPill } from './FormParts'
-import { RentAccountView, RentMonths } from './RentAccount'
+import { RentMonths } from './RentAccount'
 
 /**
  * Where a suggestion comes from (hover explains): a lease from a linked contract or from rent
@@ -59,33 +58,11 @@ function LeaseSources({ lease, onOpen }: { lease: LeaseView; onOpen: (voucherId:
   )
 }
 
-/**
- * A lease's deposit (ADR-029) on a list row: received, returned and kept, and the balance on the
- * as-of date; each booking folded below. The lease's own card shows it as a tile.
- */
-function DepositSummary({ deposit, onOpen }: { deposit: DepositView; onOpen: (voucherId: number) => void }) {
-  const { t } = useI18n()
-  return (
-    <div className="property-lease-terms property-deposit">
-      <p>
-        {t('properties.deposit.title')}: {depositText(t, deposit)}
-        {deposit.missing ? <span className="muted"> · {t('properties.deposit.missingCount', { n: deposit.missing })}</span> : null}
-      </p>
-      {deposit.movements.length ? (
-        <details className="property-sources">
-          <summary>{t('properties.deposit.movements', { n: deposit.movements.length })}</summary>
-          <DepositMovements deposit={deposit} onOpen={onOpen} />
-        </details>
-      ) : null}
-    </div>
-  )
-}
-
 /** A deposit's booked lines: received or returned, a return with the income or costs booked in the same payment. */
-function DepositMovements({ deposit, onOpen, className = 'property-doc-list' }: { deposit: DepositView; onOpen: (voucherId: number) => void; className?: string }) {
+function DepositMovements({ deposit, onOpen }: { deposit: DepositView; onOpen: (voucherId: number) => void }) {
   const { t } = useI18n()
   return (
-    <ul className={className}>
+    <ul className="property-doc-list property-fold-body property-deposit-lines">
       {deposit.movements.map((m) => (
         <li key={m.line_id}>
           <span>{t(`properties.deposit.kind.${m.kind}`)}</span>
@@ -110,9 +87,10 @@ function absentMark(t: (key: string) => string, items: { voucher: unknown; no_do
 }
 
 /**
- * The lease running on the as-of date as figure tiles: the rent, an exception in force, the rent
- * balance, the next increase or the clause, the water, the latest water settlement, the deposit and
- * the contract; the months, increases, exceptions and the deposit's bookings fold under them.
+ * A stored lease as figure tiles: the rent, an exception in force, the rent balance, the next
+ * increase or the clause, the water, the latest water settlement, the deposit and the contract; the
+ * months, increases, exceptions and the deposit's bookings fold under them. The running lease's card
+ * leads the tab; the others (ended, upcoming) follow it, quieter (`other`).
  */
 function LeaseCard({
   lease,
@@ -124,6 +102,7 @@ function LeaseCard({
   onOpenVoucher,
   onSaveException,
   parkingObject,
+  other = false,
 }: {
   lease: LeaseView
   account: LeaseRentAccount | undefined
@@ -136,6 +115,8 @@ function LeaseCard({
   onOpenVoucher: (voucherId: number) => void
   onSaveException?: (leaseKey: string, exception: LeaseException | null, replaces?: LeaseException) => Promise<void>
   parkingObject: boolean
+  /** Not the running lease: under it, quieter. */
+  other?: boolean
 }) {
   const { t } = useI18n()
   const rent = lease.rent
@@ -207,11 +188,11 @@ function LeaseCard({
       key: 'deposit',
       title: t('properties.deposit.movementsTitle'),
       n: deposit?.movements.length ?? 0,
-      body: () => (deposit ? <DepositMovements deposit={deposit} onOpen={onOpenVoucher} className="property-doc-list property-fold-body property-deposit-lines" /> : null),
+      body: () => (deposit ? <DepositMovements deposit={deposit} onOpen={onOpenVoucher} /> : null),
     },
   ]
   return (
-    <div className="property-lease-card">
+    <div className={`property-lease-card${other ? ' is-other' : ''}`}>
       <p className="property-lease-head">
         <strong>{lease.tenant ?? t('properties.lease.tenantUnknown')}</strong>
         <span className="muted">{leasePeriod(t, lease)}</span>
@@ -378,12 +359,8 @@ export function LeasesPanel({
       {rentDates}
       {/* What the book suggests comes first: its "Lisää" opens the new card right under it. */}
       {suggestions.length ? (
-        <SuggestBanner
-          heading="h4"
-          title={t('properties.lease.suggestions', { n: suggestions.length })}
-          lead={t('properties.lease.suggestionsLead')}
-        >
-          <LeaseList leases={suggestions} onOpenVoucher={onOpenVoucher} onAdd={onAddSuggestion} />
+        <SuggestBanner heading="h4" title={t('properties.lease.suggestions', { n: suggestions.length })}>
+          <SuggestionList leases={suggestions} onOpenVoucher={onOpenVoucher} onAdd={onAddSuggestion} />
         </SuggestBanner>
       ) : null}
       {editing === 'new' ? form : null}
@@ -406,18 +383,25 @@ export function LeasesPanel({
       {others.length ? (
         <>
           <h4 className="property-lease-others">{t('properties.lease.others')}</h4>
-          <LeaseList
-            leases={others}
-            accounts={accounts}
-            period={period}
-            asOf={asOf}
-            onOpenVoucher={onOpenVoucher}
-            onSaveException={onSaveException}
-            parkingObject={parkingObject}
-            editing={editing}
-            form={form}
-            onEdit={onEditLease}
-          />
+          {others.map((lease) =>
+            editing === lease.key ? (
+              <div key={lease.key}>{form}</div>
+            ) : (
+              <LeaseCard
+                key={lease.key}
+                lease={lease}
+                account={accounts.find((a) => a.lease_key === lease.key)}
+                period={period}
+                asOf={asOf}
+                held={held}
+                onEdit={onEditLease ? () => onEditLease(lease.key) : undefined}
+                onOpenVoucher={onOpenVoucher}
+                onSaveException={onSaveException}
+                parkingObject={parkingObject}
+                other
+              />
+            ),
+          )}
         </>
       ) : null}
       {unassigned.length ? (
@@ -429,81 +413,35 @@ export function LeasesPanel({
   )
 }
 
-function LeaseList({
+/** The book's suggested leases, a row each: what it was read from, and a "Lisää" that opens it on a new card. */
+function SuggestionList({
   leases,
-  accounts = [],
-  period,
-  asOf = '',
   onOpenVoucher,
-  onSaveException,
-  parkingObject = false,
-  editing = null,
-  form = null,
-  onEdit,
   onAdd,
 }: {
   leases: LeaseView[]
-  accounts?: LeaseRentAccount[]
-  /** With the accounts: the owner's rent days on the object. */
-  period?: RentPeriod
-  asOf?: string
   onOpenVoucher: (voucherId: number) => void
-  onSaveException?: (leaseKey: string, exception: LeaseException | null, replaces?: LeaseException) => Promise<void>
-  /** With the accounts: a parking space or garage. */
-  parkingObject?: boolean
-  /** The lease key whose row shows `form` instead. */
-  editing?: string | null
-  form?: ReactNode
-  /** A stored lease's "Muokkaa". */
-  onEdit?: (key: string) => void
-  /** A suggestion's "Lisää" (row `i`). */
+  /** A suggestion's "Lisää" (row `i`); none when no lease can be added. */
   onAdd?: (i: number) => void
 }) {
   const { t } = useI18n()
   return (
     <ul className="property-doc-list">
-      {leases.map((lease, i) =>
-        !lease.suggested && editing === lease.key ? (
-          <li key={`${lease.key}-${lease.starts}-${i}`} className="property-lease-row-edit">
-            {form}
-          </li>
-        ) : (
+      {leases.map((lease, i) => (
         <li key={`${lease.key}-${lease.starts}-${i}`}>
           <LeaseStatePill state={lease.state} />
           <span>{lease.tenant ?? t('properties.lease.tenantUnknown')}</span>
           <span className="muted">{leasePeriod(t, lease)}</span>
           <span>{leaseRentText(t, lease.rent, lease.vat)}</span>
           {lease.suggested ? <SuggestionSource source={lease.suggested} /> : null}
-          {lease.suggested ? (
-            <LeaseSources lease={lease} onOpen={onOpenVoucher} />
-          ) : lease.contract ? (
-            <VoucherLink voucher={lease.contract} onOpen={onOpenVoucher} />
-          ) : null}
-          {period && !lease.suggested && accounts.some((a) => a.lease_key === lease.key) ? (
-            <RentAccountView
-              account={accounts.find((a) => a.lease_key === lease.key)!}
-              asOf={asOf}
-              leaseStarts={lease.starts}
-              period={period}
-              onOpen={onOpenVoucher}
-              onSaveException={onSaveException ? (e, replaces) => onSaveException(lease.key, e, replaces) : undefined}
-              parkingObject={parkingObject}
-            />
-          ) : null}
-          {!lease.suggested && lease.deposit ? <DepositSummary deposit={lease.deposit} onOpen={onOpenVoucher} /> : null}
-          {!lease.suggested && onEdit ? (
-            <button type="button" className="btn-link" onClick={() => onEdit(lease.key)}>
-              {t('properties.lease.edit')}
-            </button>
-          ) : null}
-          {lease.suggested && onAdd ? (
+          <LeaseSources lease={lease} onOpen={onOpenVoucher} />
+          {onAdd ? (
             <button type="button" className="btn-small is-primary" onClick={() => onAdd(i)}>
               {t('properties.edit.addSuggestion')}
             </button>
           ) : null}
         </li>
-        ),
-      )}
+      ))}
     </ul>
   )
 }

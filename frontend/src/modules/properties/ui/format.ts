@@ -350,12 +350,6 @@ export function rentCountedText(t: T, account: Pick<LeaseRentAccount, 'counted_f
   ].filter(Boolean)
 }
 
-/** A rent account's balance, exact: "vuokrarästi 120,00 €", "maksettu ennakkoon 45,83 €", "täsmää, 0,00 €". */
-export function rentBalanceText(t: T, balance: number): string {
-  if (balance === 0) return t('properties.rent.even')
-  return t(balance > 0 ? 'properties.rent.arrears' : 'properties.rent.ahead', { amount: formatCents(Math.abs(balance)) })
-}
-
 /** A tenant's water balance: "palautetaan 12,30 €", "peritään 88,00 €", "ei tasattavaa". */
 export function waterBalanceText(t: T, balance: number): string {
   if (balance === 0) return t('properties.water.nothing')

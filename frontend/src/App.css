@@ -5832,8 +5832,8 @@ tr.tax-total td {
   }
 }
 
-/* An "i" by a figure: its note on hover, and under the figures on a click or a tap. */
-.property-loan-info {
+/* An "i" by a figure or a form: its note on hover, and under it on a click or a tap. */
+.property-info {
   display: inline-grid;
   place-items: center;
   flex: none;
@@ -5848,14 +5848,14 @@ tr.tax-total td {
   cursor: pointer;
 }
 
-.property-loan-info:hover,
-.property-loan-info[aria-expanded='true'] {
+.property-info:hover,
+.property-info[aria-expanded='true'] {
   color: var(--card);
   background: var(--muted);
   border-color: var(--muted);
 }
 
-.property-loan-note {
+.property-info-note {
   margin: 0 0 0.5rem;
 }
 
@@ -6400,6 +6400,10 @@ tr.tax-total td {
   padding-block: 0;
 }
 
+.property-lease-actions > button.property-info {
+  min-height: 0;
+}
+
 /* "Ei asiakirjaa" before the buttons: a checkbox on one line, at the inputs' height. */
 .property-lease-actions > label.property-no-doc {
   flex-direction: row;
@@ -6529,10 +6533,6 @@ div:has(> .property-lease-card) + .property-lease-card {
   margin-top: 0;
 }
 
-.property-doc-list > li.property-lease-row-edit {
-  display: block;
-}
-
 .property-lease-head {
   display: flex;
   flex-wrap: wrap;
@@ -6567,9 +6567,27 @@ div:has(> .property-lease-card) + .property-lease-card {
 }
 
 .property-lease-others {
-  margin: 1rem 0 0.25rem;
+  margin: 1.25rem 0 0.5rem;
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+/* Other leases (ended or upcoming) under the running one: the same card, quieter. */
+.property-lease-card.is-other {
+  background: none;
+}
+
+.property-lease-card.is-other .property-lease-head > strong {
+  font-weight: 600;
+}
+
+.property-lease-card.is-other .property-figure {
+  background: var(--sunk);
+}
+
+.property-lease-card.is-other .property-figure > strong {
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 /* A suggestion's booked lines, folded; open, they take the row's width. */
@@ -6595,28 +6613,10 @@ div:has(> .property-lease-card) + .property-lease-card {
   flex-direction: column;
 }
 
-/* A lease's deposit: its line, and its bookings folded below; on a list row it takes the row's width. */
-.property-deposit p {
-  margin: 0;
-}
-
-.property-doc-list li > .property-deposit {
-  flex-basis: 100%;
-}
-
-/* A lease's rent account: on a list row it takes the row's width; payments sit in the last column.
-   A table wider than the page scrolls sideways instead of running past its edge. */
-.property-rent {
-  overflow-x: auto;
-}
-
-.property-doc-list li > .property-rent {
-  flex-basis: 100%;
-  min-width: 0;
-}
-
-/* A lease card's months under its tiles: a table wider than the card scrolls on its own. */
+/* A lease card's months under its tiles, payments in the last column: a table wider than the card
+   scrolls on its own. */
 .property-rent-months {
+  container: rent-months / inline-size;
   overflow-x: auto;
   max-width: 100%;
 }
@@ -6642,6 +6642,14 @@ div:has(> .property-lease-card) + .property-lease-card {
 /* The exception form under a month: the table's compact cells do not squeeze it. */
 .property-rent-exception-form {
   padding: 0.3rem 0 0.6rem;
+}
+
+/* Under a month in a table wider than a phone, the form stays in view at the width shown. */
+.property-rent-months .property-rent-exception-form {
+  position: sticky;
+  left: 0;
+  box-sizing: border-box;
+  max-width: calc(100cqi - 0.7rem);
 }
 
 /* A month with an agreed exception: the normal rent and the reason on hover. */

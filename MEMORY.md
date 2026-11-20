@@ -92,6 +92,14 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   maksaa itse. The booked lines (the company's, each tenant's, others) fold as "Kirjaukset", by whose they are.
 - Dropped as unused: `increaseText`, `exceptionText` and the keys `properties.lease.increase.*`,
   `properties.water.company`, `ownerKeeps`, `ownerBears`.
+- 2026-11-20, owner's look: the ended and upcoming leases are the same cards too, under "Muut vuokrasopimukset",
+  quieter (`.is-other`: no white box, smaller figures), with their Muokkaa, folds and missing-document marks (the
+  reminders ask for every stored lease's documents, so the marks match). `RentAccountView` and `DepositSummary`
+  went with the list rows; the suggestions keep their rows. Text that only said what the cards show went (the
+  suggestion banners' leads, the month table's "*" footnote, the exception form's "check the days" line); facts
+  the owner wants went behind an "i" (`InfoButton`, the loan card's, now shared): the exception form's note on the
+  prefill or the change, and why the owner keeps or bears a water settlement's difference. On a phone the exception
+  form stays in view inside its scrolling month table (sticky, at the width shown), so its "i" is reachable.
 - Seen while testing, not fixed here: right after saving a voucher, changing the address to `#/voucher/new/200`
   (no other page between) refused the next save with "Virheellinen viennin id N"; the new form seems to keep the
   saved voucher's line ids. Opened via another page, the same voucher saves.

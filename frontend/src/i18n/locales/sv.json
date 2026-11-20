@@ -1297,7 +1297,6 @@
         "index": "Index"
       },
       "suggestions": "Förslag från bokföringen ({n})",
-      "suggestionsLead": "Från de länkade hyresavtalen och hyresbetalningarna. Inget har sparats: Lägg till öppnar förslaget på ett eget kort för granskning.",
       "source": {
         "contract": "källa: hyresavtal",
         "payments": "källa: hyresbetalningar",
@@ -1346,7 +1345,6 @@
       "deducted": "varav innehållen {amount}",
       "paidOnTop": "betalt därtill {amount}",
       "balance": "saldo {amount}",
-      "movements": "Depositionens konteringar ({n})",
       "kind": {
         "received": "Mottagen",
         "returned": "Återbetald"
@@ -1621,7 +1619,6 @@
       "noShares": "Inga hyresförhållanden under perioden där vattenavgiften utjämnas.",
       "other": "Övriga bokningar med hyresgästen",
       "suggestions": "Förslag från bokföringen ({n})",
-      "suggestionsLead": "Från vattenutjämningar bokförda på objektet. Inget har sparats: Lägg till öppnar förslaget på ett eget kort; kontrollera beloppen mot bostadsbolagets kalkyl.",
       "flat": "vattenavgiften utjämnas inte",
       "advance": "vattenavgiften utjämnas enligt förbrukning",
       "latest": "Vattenutjämning {period}",
@@ -1669,14 +1666,11 @@
         "lines": "Bokningar",
         "ownerKeeps": "Ägaren behåller",
         "ownerBears": "Ägaren står för",
-        "ownerBearsWhy": "t.ex. tomma dagar"
+        "ownerNote": "Hyresgästernas andelar och bolagets utjämning skiljer sig så här mycket, till exempel på grund av tomma dagar."
       }
     },
     "rent": {
       "balanceOn": "Hyressaldo {date}",
-      "arrears": "hyresskuld {amount}",
-      "ahead": "betalt i förskott {amount}",
-      "even": "stämmer, 0,00 €",
       "countedFrom": "räknat från {date}: {reason}",
       "start": {
         "own": "ägarens datum",
@@ -1689,7 +1683,6 @@
         "own": "ägarens datum",
         "sale": "försäljningsmånadens slut"
       },
-      "months": "Per månad ({n})",
       "col": {
         "month": "Månad",
         "rent": "Hyra",
@@ -1712,7 +1705,6 @@
       "kpiHint": "gällande hyresförhållande",
       "othersHint": "övriga hyresförhållanden: {amount}",
       "exceptionHint": "Avvikande hyra, utan undantaget {amount}",
-      "exceptionLegend": "* avvikande hyra: det överenskomna beloppet. Normal hyra och orsak visas när du håller musen över beloppet.",
       "addException": "Lägg till undantag",
       "saveException": "Spara undantaget",
       "editException": "Redigera undantaget",
@@ -1720,7 +1712,7 @@
       "editLead": "Ändringen gäller hela undantaget, alla dess dagar. Den normala hyran och höjningarna ändras inte; ett bifogat avtal finns kvar.",
       "removeException": "Ta bort undantaget",
       "removeExceptionConfirm": "Ta bort undantaget {period}? Dess dagar väntar åter den normala hyran.",
-      "prefillLead": "Förifyllt så att {month} väntar det som betalades ({paid}). Den normala hyran och höjningarna ändras inte. Kontrollera dagar och belopp och skriv orsaken; avtalet kan bifogas på redigeringssidan.",
+      "prefillLead": "Förifyllt så att {month} väntar det som betalades ({paid}). Den normala hyran och höjningarna ändras inte.",
       "vatPart": "varav moms {amount}",
       "vatIssue": {
         "missing": "bokförd utan moms, fast hyresförhållandet är momspliktigt",

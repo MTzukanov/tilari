@@ -1,9 +1,9 @@
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, useState, type ReactNode } from 'react'
 import { useI18n } from '../../../i18n'
 import { formatCents } from '../../../shared/money'
 import { SuggestBanner } from '../../../shared/SuggestBanner'
 import type { BookedLine, WaterDetail, WaterSettlementView } from '../api'
-import { Figure, Figures, Folds } from './FigureTiles'
+import { Figure, Figures, Folds, InfoButton } from './FigureTiles'
 import { periodText, waterBalanceText } from './format'
 import { DocSlot, LineLink, WaterStatusPill } from './FormParts'
 import { SuggestionSource } from './LeasesPanel'
@@ -32,6 +32,8 @@ function SettlementCard({
   onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
+  const [ownerNoteOpen, setOwnerNoteOpen] = useState(false)
+  const ownerNote = t('properties.water.figure.ownerNote')
   const difference = s.difference_snt
   const lineRows: { key: string; label: string; lines: BookedLine[] }[] = [
     { key: 'company', label: t('properties.water.figure.companyLines'), lines: s.booked },
@@ -86,9 +88,14 @@ function SettlementCard({
         ))}
         {s.shares.length && s.owner_snt !== 0 ? (
           <Figure
-            label={t(s.owner_snt < 0 ? 'properties.water.figure.ownerBears' : 'properties.water.figure.ownerKeeps')}
+            label={
+              <>
+                {t(s.owner_snt < 0 ? 'properties.water.figure.ownerBears' : 'properties.water.figure.ownerKeeps')}
+                <InfoButton note={ownerNote} open={ownerNoteOpen} onToggle={() => setOwnerNoteOpen(!ownerNoteOpen)} />
+              </>
+            }
             value={formatCents(Math.abs(s.owner_snt))}
-            sub={s.owner_snt < 0 ? [t('properties.water.figure.ownerBearsWhy')] : []}
+            sub={ownerNoteOpen ? [ownerNote] : []}
           />
         ) : null}
       </Figures>
@@ -158,11 +165,7 @@ export function WaterPanel({
         ) : null}
       </div>
       {water.suggestions.length ? (
-        <SuggestBanner
-          heading="h4"
-          title={t('properties.water.suggestions', { n: water.suggestions.length })}
-          lead={t('properties.water.suggestionsLead')}
-        >
+        <SuggestBanner heading="h4" title={t('properties.water.suggestions', { n: water.suggestions.length })}>
           {water.suggestions.map((s, i) => (
             <SettlementCard
               key={`${s.settlement.from}-${s.settlement.to}`}

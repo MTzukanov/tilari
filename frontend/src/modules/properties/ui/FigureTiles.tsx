@@ -56,3 +56,20 @@ export function Folds({ folds }: { folds: Fold[] }) {
     </>
   )
 }
+
+/**
+ * A small "i" for a fact the card does not spell out: the note on hover, and on a click or a tap
+ * under the element it explains, where the caller puts `InfoNote` while `open`.
+ */
+export function InfoButton({ note, open, onToggle }: { note: string; open: boolean; onToggle: () => void }) {
+  return (
+    <button type="button" className="property-info" aria-label={note} aria-expanded={open} title={open ? undefined : note} onClick={onToggle}>
+      i
+    </button>
+  )
+}
+
+/** The note an `InfoButton` opened. */
+export function InfoNote({ note }: { note: string }) {
+  return <p className="muted property-lease-hint property-info-note">{note}</p>
+}
