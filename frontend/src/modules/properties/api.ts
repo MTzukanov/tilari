@@ -25,6 +25,8 @@ export type {
   LoanMonth,
   LoanPath,
   LoanRate,
+  LoanRateLimit,
+  RateForecast,
   RateReference,
   Lease,
   LeaseException,

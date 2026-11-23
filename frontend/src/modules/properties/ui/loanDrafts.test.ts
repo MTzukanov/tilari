@@ -79,11 +79,10 @@ describe('housing-company loan drafts', () => {
     })
   })
 
-  it('a new loan needs its name, term, margin, a share, a rahoitusvastike and a rate; each is named', () => {
+  it('a new loan needs its name, last due date, margin, a share, a rahoitusvastike and a rate; each is named', () => {
     const issues = buildLoan(t, newLoanDraft())
     expect(Array.isArray(issues) && issues.map((i) => [i.field, i.message])).toEqual([
       ['name', 'properties.form.issue.required'],
-      ['starts', 'properties.form.issue.required'],
       ['ends', 'properties.form.issue.required'],
       ['margin', 'properties.form.issue.required'],
       ['certificates.0.date', 'properties.form.issue.required'],
@@ -96,6 +95,48 @@ describe('housing-company loan drafts', () => {
     // A section whose rows were all removed is itself to fix.
     const none = buildLoan(t, { ...complete(), charges: [] })
     expect(none).toEqual([{ field: 'charges', label: 'properties.housing.charges', message: 'properties.form.issue.atLeastOne' }])
+  })
+
+  it('the drawdown may stay empty: the loan counts from the purchase', () => {
+    const loan = buildLoan(t, { ...complete(), starts: '' })
+    expect(Array.isArray(loan)).toBe(false)
+    expect(loan).not.toHaveProperty('starts')
+    expect(buildLoan(t, { ...complete(), starts: '2023-02' })).toEqual([
+      { field: 'starts', label: 'properties.housing.field.starts', message: 'properties.form.issue.date' },
+    ])
+  })
+
+  it('a rate floor or ceiling needs its end and at least one of the two; one at a time', () => {
+    const limited = buildLoan(t, {
+      ...complete(),
+      limits: [
+        { from: '', to: '2027-12-31', floor: '0', ceiling: '3,0' },
+        { from: '2028-01-01', to: '2030-12-31', floor: '', ceiling: '4,25' },
+      ],
+    })
+    expect(limited).toMatchObject({ rate_limits: [{ to: '2027-12-31', floor_pcm: 0, ceiling_pcm: 3000 }, { from: '2028-01-01', to: '2030-12-31', ceiling_pcm: 4250 }] })
+    expect((limited as { rate_limits: object[] }).rate_limits[0]).not.toHaveProperty('from')
+    const issues = buildLoan(t, {
+      ...complete(),
+      limits: [
+        { from: '', to: '', floor: '1,0', ceiling: '' },
+        { from: '2026-01-01', to: '2027-01-01', floor: '', ceiling: '' },
+        { from: '2026-01-01', to: '2027-01-01', floor: '3,0', ceiling: '2,0' },
+      ],
+    })
+    expect(Array.isArray(issues) && issues.map((i) => [i.field, i.message])).toEqual([
+      ['limits.0.to', 'properties.form.issue.required'],
+      ['limits.1.floor', 'properties.form.issue.floorOrCeiling'],
+      ['limits.2.ceiling', 'properties.form.issue.floorOverCeiling'],
+    ])
+    const overlapping = buildLoan(t, {
+      ...complete(),
+      limits: [
+        { from: '2026-01-01', to: '2027-12-31', floor: '', ceiling: '3,0' },
+        { from: '2027-06-01', to: '2029-12-31', floor: '', ceiling: '4,0' },
+      ],
+    })
+    expect(Array.isArray(overlapping) && overlapping.map((i) => [i.field, i.message])).toEqual([['limits.1.from', 'properties.form.issue.overlapsRow {"n":1}']])
   })
 
   it('a fixed rate needs no margin and no resets: its rate rows hold it', () => {

@@ -7,6 +7,7 @@ import {
   housingShareMonths,
   housingVoucherIds,
   latestCertificate,
+  limitedReference,
   loanDay,
   loanForecast,
   loanNow,
@@ -23,7 +24,7 @@ import {
   type PaymentUnits,
 } from './housingLoan'
 import { skipDocument } from './reminders'
-import type { HousingLoan, LoanPath, PropertyDoc } from './types'
+import type { HousingLoan, LoanMonth, LoanPath, PropertyDoc, RateForecast } from './types'
 
 function loan(extra: Partial<HousingLoan> = {}): HousingLoan {
   return { key: 'h1', name: 'Putkiremontti', starts: '2020-01-01', type: 'annuity', reference: 'euribor_12m', margin_pcm: 800, ...extra }
@@ -433,5 +434,96 @@ describe('housing-company loans: the figures that use the share', () => {
       ['2024-03-15', 300_00],
       ['2025-03-15', 100_00],
     ])
+  })
+})
+
+describe('housing-company loans: rate estimates, floors and ceilings (4d)', () => {
+  const pathTo = (month: string, share: number): LoanPath => ({
+    loan_key: 'h1',
+    months: [{ month, opening_snt: share, due_snt: 0, payments: 0, paid_snt: 0, rate_pcm: 0, interest_snt: 0, principal_snt: 0, extra_snt: 0, closing_snt: share }],
+    payments_known: true,
+    missing: null,
+  })
+  /** An annuity to 2034 at 12 kk Euribor + 0,8 %, reset yearly from its latest rate (January 2025). */
+  const annuity = (extra: Partial<HousingLoan> = {}) =>
+    loan({
+      ends: '2034-12-31',
+      reset_months: 12,
+      rates: [{ from: '2025-01-01', reference_pcm: 2200 }],
+      charges: [{ from: '2025-01-01', amount_snt: 100_00 }],
+      ...extra,
+    })
+  const rateOf = (rows: LoanMonth[], month: string) => rows.find((m) => m.month === month)?.rate_pcm
+  const curve: RateForecast[] = [
+    { reference: 'euribor_12m', from: '2025-06-01', reference_pcm: 3000 },
+    { reference: 'euribor_12m', from: '2027-01-01', reference_pcm: 2000 },
+    // Another reference's estimate is not this loan's.
+    { reference: 'euribor_3m', from: '2025-01-01', reference_pcm: 9000 },
+  ]
+
+  it('the latest rate holds until the next reset; each reset takes the estimate for its day', () => {
+    const rows = loanForecast(annuity(), pathTo('2025-04', 10_000_00), { curve })
+    expect(rateOf(rows, '2025-12')).toBe(3000)
+    expect(rateOf(rows, '2026-01')).toBe(3800)
+    expect(rateOf(rows, '2026-12')).toBe(3800)
+    expect(rateOf(rows, '2027-01')).toBe(2800)
+    // Without a curve the latest rate holds, as before.
+    expect(rateOf(loanForecast(annuity(), pathTo('2025-04', 10_000_00)), '2027-01')).toBe(3000)
+  })
+
+  it('"+1 %-yks." raises the reference from the next reset on, not the rate already fixed', () => {
+    const base = loanForecast(annuity(), pathTo('2025-04', 10_000_00), { curve })
+    const higher = loanForecast(annuity(), pathTo('2025-04', 10_000_00), { curve, shift_pcm: 1000 })
+    expect(rateOf(higher, '2025-12')).toBe(3000)
+    expect(rateOf(higher, '2026-01')).toBe(4800)
+    const interest = (rows: LoanMonth[]) => rows.reduce((sum, m) => sum + m.interest_snt, 0)
+    expect(interest(higher)).toBeGreaterThan(interest(base))
+    // An annuity still clears the share by its end: the payments rise instead.
+    expect(higher.at(-1)!.month).toBe(base.at(-1)!.month)
+  })
+
+  it('a floor and a ceiling hold the reference rate in their days, in the path and in the forecast', () => {
+    const limited = annuity({
+      certificates: [{ date: '2025-01-31', share_snt: 10_000_00 }],
+      rate_limits: [
+        { to: '2025-02-28', floor_pcm: 2500 },
+        { from: '2026-01-01', to: '2026-12-31', ceiling_pcm: 2500 },
+      ],
+    })
+    // The floor from the loan's start: January and February 2025 at 2,5 %, March on at 2,2 %.
+    expect(limitedReference(limited, '2025-02', 2200)).toBe(2500)
+    expect(limitedReference(limited, '2025-03', 2200)).toBe(2200)
+    const path = loanPath(limited, { payments: { units: () => 1, known: true }, from: '2025-01', to: '2025-04' })
+    expect(path.months.map((m) => m.rate_pcm)).toEqual([3300, 3300, 3000, 3000])
+    const rows = loanForecast(limited, { ...path, missing: null }, { curve })
+    expect(rateOf(rows, '2026-01')).toBe(3300)
+    expect(rateOf(rows, '2027-01')).toBe(2800)
+    // A negative reference held at a zero floor.
+    expect(limitedReference(annuity({ rate_limits: [{ to: '2030-12-31', floor_pcm: 0 }] }), '2025-06', -350)).toBe(0)
+    // A fixed rate has no reference to hold.
+    expect(limitedReference(annuity({ reference: 'fixed', rate_limits: [{ to: '2030-12-31', ceiling_pcm: 1000 }] }), '2025-06', 4000)).toBe(4000)
+  })
+
+  it('a loan with no drawdown counts from the purchase; the months before it are not the owner\'s', () => {
+    const undated = annuity({ starts: undefined, certificates: [{ date: '2025-01-31', share_snt: 10_000_00 }] })
+    expect(loanRunning(undated, '2020-01-01')).toBe(true)
+    // Payments to the housing company booked from March, the object bought in March: January and
+    // February were the seller's, paid in full, and the path starts at the purchase.
+    const fromMarch: PaymentUnits = { units: (m) => (m >= '2025-03' ? 1 : 0), known: true }
+    const path = loanPath(undated, { payments: fromMarch, from: '2025-03', to: '2025-04' })
+    expect(path.months.map((m) => m.month)).toEqual(['2025-03', '2025-04'])
+    const paidEachMonth = loanPath(undated, { payments: { units: () => 1, known: true }, from: '2025-01', to: '2025-04' })
+    expect(path.months[0].opening_snt).toBe(paidEachMonth.months.find((m) => m.month === '2025-03')!.opening_snt)
+    expect(shareAt(undated, { ...path, missing: null }, '2025-02')).toBeNull()
+    expect(shareAt(undated, { ...path, missing: null }, '2025-04')).toBe(path.months[1].closing_snt)
+  })
+
+  it('reminds of an interest-only period ending within six months', () => {
+    const graced = annuity({ grace: [{ from: '2024-01-01', to: '2026-03-31' }], certificates: [{ date: '2025-12-31', share_snt: 9_000_00 }] })
+    const codes = (on: string) => loanWarnings([graced], on, true).filter((w) => w.code === 'loan_grace_ending')
+    expect(codes('2025-12-15')).toEqual([{ code: 'loan_grace_ending', params: { loan: 'Putkiremontti', to_date: '2026-03-31' } }])
+    expect(codes('2025-08-15')).toEqual([])
+    expect(codes('2026-04-15')).toEqual([])
+    expect(loanWarnings([graced], '2025-12-15', false)).toEqual([])
   })
 })

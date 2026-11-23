@@ -580,14 +580,14 @@ test.describe('rental object housing-company loans', () => {
     await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(card).toHaveCount(1)
     const issues = card.locator('.form-issues li')
-    await expect(issues).toHaveCount(10)
+    await expect(issues).toHaveCount(9)
     await expect(issues.first()).toHaveText('Laina: puuttuu')
     await expect(issues.last()).toHaveText('Viitekorot, rivi 1: Viitekorko %: puuttuu')
     const name = card.getByLabel('Laina · puuttuu')
     await expect(name).toHaveAttribute('aria-invalid', 'true')
     await expect(name).toBeFocused()
     await name.fill('Putkiremontti')
-    await expect(issues).toHaveCount(9)
+    await expect(issues).toHaveCount(8)
     await expect(card.getByLabel('Laina', { exact: true })).not.toHaveAttribute('aria-invalid')
     await card.getByRole('button', { name: 'Peru', exact: true }).click()
     await expect(card).toHaveCount(0)
@@ -660,7 +660,20 @@ test.describe('rental object housing-company loans', () => {
     await saved.getByRole('checkbox', { name: 'Arvio laina-ajan loppuun' }).check()
     await expect(chart.locator('.property-loan-share.property-loan-ahead .chart-line')).toHaveCount(1)
     const ahead = saved.locator('.property-loan-forecast-years')
-    await expect(ahead).toContainText(/Velkaosuus maksettu 31\.12\.2044 mennessä, kun korko pysyy 2,900\s%\./)
+    // Its figures: paid off on the last due date (an annuity is worked out to it), the interest ahead, and
+    // the rate: no estimates are entered, so the latest holds.
+    await expect(tile(ahead, 'Maksettu arviolta')).toContainText(/31\.12\.2044viimeisenä eräpäivänä 31\.12\.2044/)
+    await expect(tile(ahead, 'Korko lopussa')).toContainText(/2,900\s%viimeisin korko pysyy/)
+    // The rule behind the figures sits behind an (i).
+    await expect(ahead.getByRole('button', { name: /^Rahoitusvastike lasketaan koronmuutoksissa/ })).toHaveCount(1)
+    // "+1 %-yks.": the interest ahead with the reference a point higher from the next reset, and its payments by year.
+    const interestAhead = tile(ahead, 'Korkoa arviolta')
+    await expect(interestAhead).not.toContainText('+1 %-yks.')
+    await ahead.getByRole('checkbox', { name: /^Viitekorko \+1 %-yks\./ }).check()
+    await expect(interestAhead).toContainText(/\+1 %-yks\.: [\d\s]+,\d\d\s€ \(\+[\d\s]+,\d\d\s€\)/)
+    await expect(ahead.locator('thead')).toContainText('Maksut +1 %-yks.')
+    await ahead.getByRole('checkbox', { name: /^Viitekorko \+1 %-yks\./ }).uncheck()
+    await expect(ahead.locator('thead')).not.toContainText('Maksut +1 %-yks.')
     await expect(ahead.locator('tbody tr').first()).toContainText(/^2026/)
     await expect(ahead.locator('tbody tr').last()).toContainText(/^2044.*0,00\s€$/)
     await expect(ahead.locator('tfoot')).toContainText(/11\s897,88\s€/)
@@ -676,7 +689,7 @@ test.describe('rental object housing-company loans', () => {
     await chart.locator('.chart-point-hit').last().hover()
     await expect(tip).toContainText(/Lyhennys \+ korko yhteensä400,00\s€Korko yhteensä145,62\s€$/)
     // The choices hold for every loan in this browser.
-    expect(await page.evaluate(() => localStorage.getItem('tilari.properties.loanChart'))).toBe('{"interest":true,"paid":true,"forecast":false}')
+    expect(await page.evaluate(() => localStorage.getItem('tilari.properties.loanChart'))).toBe('{"interest":true,"paid":true,"forecast":false,"plus1":false}')
     // The certificate is the housing company's document, held by the loan: not unlinked on Asiakirjat.
     const housingDocs = page.locator('.property-housing-docs')
     await expect(housingDocs.locator('.doc-line', { hasText: 'Isännöitsijäntodistus' })).toContainText('Velkaosuus 1.3.2026, Putkiremontti')
@@ -757,6 +770,72 @@ test.describe('rental object housing-company loans', () => {
     await page.goto('/#/property/60/finance')
     await expect(page.locator('.property-era td.property-col-text').first()).toBeVisible()
     expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'finance tab').toBeLessThanOrEqual(0)
+  })
+})
+
+test.describe('rental object loan rate estimates', () => {
+  test('an estimate in the defaults, a loan with no drawdown and a ceiling: the forecast takes the estimate, held at the ceiling', async ({ page }) => {
+    await openBook(page, propertiesBook, 'Esimerkki Vuokraus Oy')
+    await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2026-06-15')
+    // The estimate: 12 kk Euribor 3,5 % from 2027 on, for every object's loans.
+    await page.goto('/#/properties')
+    const defaults = page.locator('details.property-defaults')
+    await defaults.locator('summary').click()
+    await defaults.getByRole('button', { name: '+ Lisää rivi' }).click()
+    await expect(defaults.locator('.property-estimate-row select')).toHaveValue('euribor_12m')
+    await defaults.getByLabel('Alkaen').fill('2027-01-01')
+    await defaults.getByLabel('Viitekorko %').fill('3,5')
+    await defaults.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(defaults.locator('.error')).toHaveCount(0)
+    // Saved, the form is built again from the stored settings: the row is there, as stored.
+    await expect(page.locator('details.property-defaults').getByLabel('Viitekorko %')).toHaveValue('3,5')
+
+    // A loan saved without its drawdown, with a ceiling of 3 % on the reference to the end of 2028.
+    await page.goto('/#/property/10/housing')
+    const loans = page.locator('.property-housing-loans')
+    await loans.getByRole('button', { name: '+ Lisää laina' }).click()
+    const card = page.locator('.property-loan-card-edit')
+    await card.getByLabel('Laina', { exact: true }).fill('Putkiremontti')
+    await card.getByLabel('Viimeinen eräpäivä').fill('2044-12-31')
+    await card.getByLabel('Marginaali %').fill('0,8')
+    const rows = card.locator('.property-lease-increase')
+    await rows.nth(0).getByLabel('Päivä', { exact: true }).fill('2026-03-01')
+    await rows.nth(0).getByLabel('Velkaosuus').fill('12000')
+    await rows.nth(0).getByRole('checkbox', { name: 'Ei asiakirjaa' }).check()
+    await rows.nth(1).getByLabel('Alkaen').fill('2026-01-01')
+    await rows.nth(1).getByLabel('Rahoitusvastike €/kk').fill('80')
+    await rows.nth(1).getByRole('checkbox', { name: 'Ei asiakirjaa' }).check()
+    await rows.nth(2).getByLabel('Alkaen').fill('2026-03-01')
+    await rows.nth(2).getByLabel('Viitekorko %').fill('2,1')
+    await card.locator('h4', { hasText: 'Korkolattia ja -katto' }).locator('xpath=following-sibling::button[1]').click()
+    const limit = rows.nth(3)
+    await limit.getByLabel('Päättyen').fill('2028-12-31')
+    await limit.getByLabel('Katto %').fill('3,0')
+    await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(card).toHaveCount(0)
+    const saved = loans.locator('.property-loan-card')
+    await expect(tile(saved, 'Laina-aika')).toContainText(/31\.12\.2044 astilasketaan hankinnasta/)
+    await expect(tile(saved, 'Korko')).toContainText(/katto 3,000\s% · 31\.12\.2028 asti/)
+
+    // The estimate to the end: the rate from the reset in March 2027 is 3,5 % held at 3 % until 2028 ends,
+    // then 3,5 % (+ 0,8 % margin) to the end.
+    await saved.getByRole('button', { name: /^Kuukausittain/ }).click()
+    await saved.getByRole('checkbox', { name: 'Arvio laina-ajan loppuun' }).check()
+    const ahead = saved.locator('.property-loan-forecast-years')
+    await expect(tile(ahead, 'Korko lopussa')).toContainText(/4,300\s%korkoarvioiden mukaan/)
+    const chart = saved.locator('.line-chart')
+    const tip = chart.locator('.chart-tip')
+    const pointAt = async (month: string) => {
+      const keys = await chart.locator('.chart-point-hit').count()
+      // The months run from January 2026 (the first charge) to the end of 2044.
+      const index = (Number(month.slice(0, 4)) - 2026) * 12 + Number(month.slice(5, 7)) - 1
+      expect(index).toBeLessThan(keys)
+      await chart.locator('.chart-point-hit').nth(index).hover()
+    }
+    await pointAt('2027-04')
+    await expect(tip).toContainText(/\(3,800\s%\)/)
+    await pointAt('2029-04')
+    await expect(tip).toContainText(/\(4,300\s%\)/)
   })
 })
 

@@ -1120,7 +1120,8 @@
     },
     "defaults": {
       "title": "Standardwerte für alle Objekte",
-      "lead": "Verkaufskosten (z. B. Maklerprovision und Verwalterbescheinigung) und Zielrendite. Eigene Werte eines Objekts gehen vor."
+      "lead": "Verkaufskosten (z. B. Maklerprovision und Verwalterbescheinigung) und Zielrendite. Eigene Werte eines Objekts gehen vor.",
+      "estimates": "Zinsannahmen"
     },
     "field": {
       "kind": "Art",
@@ -1418,7 +1419,9 @@
         "overlapsSettlement": "gleiche Tage wie die Abrechnung {period}",
         "dueDay": "Tag 1-31 angeben",
         "percent": "Prozentsatz angeben, z. B. 3,5",
-        "sameAsStart": "gleicher Tag wie die Anfangsmiete"
+        "sameAsStart": "gleicher Tag wie die Anfangsmiete",
+        "floorOrCeiling": "Untergrenze, Obergrenze oder beides angeben",
+        "floorOverCeiling": "die Untergrenze liegt über der Obergrenze"
       }
     },
     "setup": {
@@ -1503,7 +1506,8 @@
       "loan_payment_missing": "Für {count} Monate ab {from} ist keine Zahlung an die Wohnungsgesellschaft gebucht (Gesellschaftsdarlehen {loan}): der Darlehensanteil sank für sie nicht.",
       "loan_payment_missing_one": "Für den Monat {from} ist keine Zahlung an die Wohnungsgesellschaft gebucht (Gesellschaftsdarlehen {loan}): der Darlehensanteil sank nicht.",
       "loan_rate_missing": "Der Referenzzins des Gesellschaftsdarlehens {loan} wurde am {reset} angepasst: neuen Referenzzins hinzufügen.",
-      "loan_rahastoitu_expensed": "Das Finanzierungsentgelt des Gesellschaftsdarlehens {loan} ab {from} ist kapitalisiert, aber als Aufwand gebucht: steuerlich gehört es zu den Anschaffungskosten der Anteile. Mit dem Abschlussprüfer klären."
+      "loan_rahastoitu_expensed": "Das Finanzierungsentgelt des Gesellschaftsdarlehens {loan} ab {from} ist kapitalisiert, aber als Aufwand gebucht: steuerlich gehört es zu den Anschaffungskosten der Anteile. Mit dem Abschlussprüfer klären.",
+      "loan_grace_ending": "Gesellschaftsdarlehen {loan}: die tilgungsfreie Zeit endet am {to}; das Finanzierungsentgelt steigt, wenn die Tilgung beginnt."
     },
     "warnCount": "Hinweise: {count}",
     "alerts": {
@@ -1537,7 +1541,9 @@
       "loan_linked": "Darlehenskonto {path} ist bereits das Bankdarlehen eines anderen Objekts. Ein Darlehen kann nur zu einem Objekt gehören, sonst würden die Zinsen doppelt gezählt.",
       "deposit_linked": "Die Kaution gehört bereits zu einem anderen Mietverhältnis.",
       "overlap": "Zeiträume überschneiden sich: Feld {path} prüfen.",
-      "rentDates": "Der letzte Miettag liegt vor dem ersten."
+      "rentDates": "Der letzte Miettag liegt vor dem ersten.",
+      "estimateRow": "Zinsannahme Zeile {n}: Anfangstag und Referenzzins angeben.",
+      "estimateSameDay": "Zinsannahme Zeile {n}: für diesen Referenzzins gibt es an diesem Tag schon eine Annahme."
     },
     "total": "Summe",
     "holding": "{years} J. {months} Mon.",
@@ -1758,7 +1764,9 @@
         "eventKind": "Ereignis",
         "amount": "Betrag",
         "note": "Anmerkung",
-        "fixedRate": "Festzins %"
+        "fixedRate": "Festzins %",
+        "floor": "Untergrenze %",
+        "ceiling": "Obergrenze %"
       },
       "namePlaceholder": "z. B. Rohrsanierung 2019",
       "type": {
@@ -1854,7 +1862,6 @@
         "forecast": "Schätzung bis Laufzeitende",
         "forecastMonth": "{month} (Schätzung)",
         "forecastYears": "Schätzung nach Jahren",
-        "forecastSummary": "Anteil bis {date} getilgt, wenn der Zins bei {rate} bleibt.",
         "forecastTotal": "Gesamt",
         "forecastRule": {
           "annuity": "Das Finanzierungsentgelt wird bei jeder Zinsanpassung neu berechnet, sodass das Darlehen zum Laufzeitende getilgt ist.",
@@ -1880,7 +1887,32 @@
         "fixed": "fest",
         "term": "Laufzeit",
         "span": "{from}–{to}"
-      }
+      },
+      "termUntil": "bis {date}",
+      "startsFromPurchase": "ab dem Kauf gerechnet",
+      "limit": {
+        "floor": "Untergrenze {rate}",
+        "ceiling": "Obergrenze {rate}",
+        "until": "bis {date}"
+      },
+      "forecast": {
+        "payoff": "Getilgt, geschätzt",
+        "interest": "Zinsen, geschätzt",
+        "interestHigher": "+1 Pp.: {amount} (+{diff})",
+        "rate": "Zins am Ende",
+        "byCurve": "nach den Zinsannahmen",
+        "held": "letzter Zins bleibt",
+        "plus1": "Referenzzins +1 Pp. ab der nächsten Zinsanpassung",
+        "beforeEnds": "{count} Monate vor der letzten Fälligkeit {date}",
+        "beforeEnds_one": "1 Monat vor der letzten Fälligkeit {date}",
+        "afterEnds": "{count} Monate nach der letzten Fälligkeit {date}",
+        "afterEnds_one": "1 Monat nach der letzten Fälligkeit {date}",
+        "atEnds": "an der letzten Fälligkeit {date}",
+        "col": {
+          "paidHigher": "Zahlungen +1 Pp."
+        }
+      },
+      "limits": "Zinsuntergrenze und -obergrenze"
     },
     "valuation": {
       "debtFreeComputed": "Schuldenfreier Preis {price} (+ Darlehensanteil {share})"

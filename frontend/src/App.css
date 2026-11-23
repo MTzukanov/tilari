@@ -3383,6 +3383,7 @@ tr.is-ended td {
 .property-section input:not([type='checkbox']):not([type='radio']),
 .property-section select,
 .property-defaults input:not([type='checkbox']):not([type='radio']),
+.property-defaults select,
 .property-rent-dates-edit input:not([type='checkbox']):not([type='radio']),
 .property-rent-exception-form input:not([type='checkbox']):not([type='radio']),
 .filters input:not([type='checkbox']):not([type='radio']),
@@ -5427,6 +5428,16 @@ tr.tax-total td {
   border-radius: 8px;
   background: var(--surface);
   padding: 0.75rem 1rem;
+}
+
+/* The reference rate estimates' rows, then their "+ Lisää rivi" on a line of its own above the save. */
+.property-estimate-row {
+  align-items: end;
+}
+
+.property-defaults .property-lease-add {
+  display: block;
+  margin: 0.25rem 0 0.75rem;
 }
 
 .property-defaults summary {

@@ -1120,7 +1120,8 @@
     },
     "defaults": {
       "title": "Defaults for all objects",
-      "lead": "Sale costs (e.g. broker fee and manager's certificate) and target return. An object's own values override these."
+      "lead": "Sale costs (e.g. broker fee and manager's certificate) and target return. An object's own values override these.",
+      "estimates": "Rate estimates"
     },
     "field": {
       "kind": "Kind",
@@ -1418,7 +1419,9 @@
         "overlapsSettlement": "same days as the settlement {period}",
         "dueDay": "give a day 1-31",
         "percent": "give a percentage, e.g. 3,5",
-        "sameAsStart": "same day as the starting rent"
+        "sameAsStart": "same day as the starting rent",
+        "floorOrCeiling": "give a floor, a ceiling or both",
+        "floorOverCeiling": "the floor is above the ceiling"
       }
     },
     "setup": {
@@ -1503,7 +1506,8 @@
       "loan_payment_missing": "No payment to the housing company is booked for {count} months from {from} (company loan {loan}): the loan share did not fall for them.",
       "loan_payment_missing_one": "No payment to the housing company is booked for the month {from} (company loan {loan}): the loan share did not fall.",
       "loan_rate_missing": "The reference rate of the company loan {loan} was reset on {reset}: add the new reference rate.",
-      "loan_rahastoitu_expensed": "The financing charge of the company loan {loan} from {from} is capitalised but booked as a cost: in taxation it belongs to the shares' acquisition cost. Check with the auditor."
+      "loan_rahastoitu_expensed": "The financing charge of the company loan {loan} from {from} is capitalised but booked as a cost: in taxation it belongs to the shares' acquisition cost. Check with the auditor.",
+      "loan_grace_ending": "Housing-company loan {loan}: the interest-only period ends {to}; the financing charge rises when repayments start."
     },
     "warnCount": "Notes: {count}",
     "alerts": {
@@ -1537,7 +1541,9 @@
       "loan_linked": "Loan account {path} is already another object's bank loan. A loan can belong to one object only; otherwise its interest would count twice.",
       "deposit_linked": "The deposit already belongs to another lease.",
       "overlap": "Periods overlap: check the field {path}.",
-      "rentDates": "The last day of rent is before the first."
+      "rentDates": "The last day of rent is before the first.",
+      "estimateRow": "Rate estimate row {n}: give a first day and a reference rate.",
+      "estimateSameDay": "Rate estimate row {n}: that reference rate already has an estimate on that day."
     },
     "total": "Total",
     "holding": "{years} y {months} mo",
@@ -1758,7 +1764,9 @@
         "eventKind": "Event",
         "amount": "Amount",
         "note": "Note",
-        "fixedRate": "Fixed rate %"
+        "fixedRate": "Fixed rate %",
+        "floor": "Floor %",
+        "ceiling": "Ceiling %"
       },
       "namePlaceholder": "e.g. Pipe renovation 2019",
       "type": {
@@ -1854,7 +1862,6 @@
         "forecast": "Estimate to the loan's end",
         "forecastMonth": "{month} (estimate)",
         "forecastYears": "Estimate by year",
-        "forecastSummary": "The share paid off by {date} if the rate stays at {rate}.",
         "forecastTotal": "Total",
         "forecastRule": {
           "annuity": "The financing charge is worked out again at each rate reset so that the loan is paid off by the end of its term.",
@@ -1880,7 +1887,32 @@
         "fixed": "fixed",
         "term": "Loan term",
         "span": "{from}–{to}"
-      }
+      },
+      "termUntil": "until {date}",
+      "startsFromPurchase": "counted from the purchase",
+      "limit": {
+        "floor": "floor {rate}",
+        "ceiling": "ceiling {rate}",
+        "until": "until {date}"
+      },
+      "forecast": {
+        "payoff": "Paid off, estimated",
+        "interest": "Interest, estimated",
+        "interestHigher": "+1 pp: {amount} (+{diff})",
+        "rate": "Rate at the end",
+        "byCurve": "by the rate estimates",
+        "held": "the latest rate held",
+        "plus1": "Reference rate +1 pp from the next reset",
+        "beforeEnds": "{count} months before the last due date {date}",
+        "beforeEnds_one": "1 month before the last due date {date}",
+        "afterEnds": "{count} months after the last due date {date}",
+        "afterEnds_one": "1 month after the last due date {date}",
+        "atEnds": "on the last due date {date}",
+        "col": {
+          "paidHigher": "Payments +1 pp"
+        }
+      },
+      "limits": "Rate floor and ceiling"
     },
     "valuation": {
       "debtFreeComputed": "Debt-free price {price} (+ loan share {share})"

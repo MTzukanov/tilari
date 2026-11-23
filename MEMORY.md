@@ -18,6 +18,19 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   span (a yearly charge of the same amount does not lift the level). Outside every span, the latest level before
   (the first before any), as before. Test: two lines on one day in both orders, a raise, a double month, a yearly charge.
 
+## 2026-11-20 - Rental objects: rate estimates, floors and ceilings, an optional drawdown (`feature/loan-rate-estimates`, ADR-034, step 4d)
+
+- Owner: nothing fetched; one estimate curve per reference rate in the Properties defaults (`rate_forecast`). The
+  forecast (`loanForecast(loan, path, { curve, shift_pcm })`) holds the latest rate row until the next reset, then
+  takes the curve at each reset; "+1 %-yks." shifts from that reset on. The loan card's forecast is tiles (payoff
+  against `ends`, interest ahead with the +1 amount, rate at the end); the years table gets "Maksut +1 %-yks.".
+- Floors and ceilings (`rate_limits[]`, owner's ask) hold the reference rate, not the total: `limitedReference`
+  in `rateIn` and the forecast. A limit meeting any day of a month holds that whole month.
+- No drawdown: the loan counts from the purchase (`loanPath`'s `from`); months before `from` count due months as
+  paid and are dropped from the path. Before, a certificate dated before the purchase grew with "unpaid" interest
+  until the purchase, because payments were known (none booked) there.
+- `loan_grace_ending`: an interest-only period ending within 6 months (`GRACE_ENDING_MONTHS`).
+
 ## 2026-11-20 - Rental objects: the overview's running lease and water as figure tiles (`feature/overview-now-tiles`)
 
 - The overview's "Vuokrasuhde nyt" and "Vesi" cards were the last sentences left on the object page (UI rule

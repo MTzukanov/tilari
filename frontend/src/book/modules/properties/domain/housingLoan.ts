@@ -5,10 +5,19 @@
  */
 import { addMonths, monthEnd, monthKeys } from '../../../months'
 import { monthsBefore } from './reminders'
-import type { HousingLoan, LoanCertificate, LoanCharge, LoanMonth, LoanPath, LoanRate, Warning } from './types'
+import type { HousingLoan, LoanCertificate, LoanCharge, LoanMonth, LoanPath, LoanRate, LoanRateLimit, RateForecast, Warning } from './types'
+
+/**
+ * Reference rate estimates for a forecast: the portfolio's curves (`PortfolioSettings.rate_forecast`;
+ * the loan's reference is picked), and a shift on every reset after the latest rate (`shift_pcm`).
+ */
+export type RateEstimate = { curve: RateForecast[]; shift_pcm?: number }
 
 /** A share older than this on the as-of date asks for a new isännöitsijäntodistus. */
 export const CERTIFICATE_STALE_MONTHS = 12
+
+/** An interest-only period ending this soon reminds the owner that the charge will rise. */
+export const GRACE_ENDING_MONTHS = 6
 
 /** The row in force on `date`: the last one from that day or before; rows are oldest first. */
 export function rowAt<T extends { from: string }>(rows: T[] | undefined, date: string): T | null {
@@ -59,10 +68,26 @@ export function paidOffOn(loan: HousingLoan): string | null {
   return (loan.events ?? []).find((e) => e.kind === 'paid_off')?.date ?? null
 }
 
-/** Drawn, not past its last due date, and not paid off on `date`. */
+/** Drawn (a loan with no drawdown counts as drawn), not past its last due date, and not paid off on `date`. */
 export function loanRunning(loan: HousingLoan, date: string): boolean {
   const paidOff = paidOffOn(loan)
-  return loan.starts <= date && (!loan.ends || loan.ends >= date) && (!paidOff || paidOff > date)
+  return (!loan.starts || loan.starts <= date) && (!loan.ends || loan.ends >= date) && (!paidOff || paidOff > date)
+}
+
+/** The floor or ceiling in force in `month`: one whose days meet the month's (an open start is the loan's). */
+export function limitIn(loan: HousingLoan, month: string): LoanRateLimit | null {
+  const first = `${month}-01`
+  const last = monthEnd(month)
+  return (loan.rate_limits ?? []).find((l) => (l.from ?? loan.starts ?? '') <= last && l.to >= first) ?? null
+}
+
+/** `reference` held between the floor and the ceiling in force in `month`; a fixed rate has none. */
+export function limitedReference(loan: HousingLoan, month: string, reference: number): number {
+  const limit = loan.reference === 'fixed' ? null : limitIn(loan, month)
+  if (!limit) return reference
+  if (limit.floor_pcm != null && reference < limit.floor_pcm) return limit.floor_pcm
+  if (limit.ceiling_pcm != null && reference > limit.ceiling_pcm) return limit.ceiling_pcm
+  return reference
 }
 
 /** Every voucher a loan links: rate notices, certificates, charge notices and events' documents. */
@@ -81,10 +106,13 @@ export type PaymentUnits = { units: (month: string) => number; known: boolean }
 
 const monthOf = (date: string) => date.slice(0, 7)
 
-/** The rate in force at a month's end: the reference rate (the first row before any) plus the margin; a fixed rate has none. */
+/**
+ * The rate in force at a month's end: the reference rate (the first row before any), held between a
+ * floor and a ceiling in force, plus the margin; a fixed rate has none of them.
+ */
 function rateIn(loan: HousingLoan, month: string): number {
   const reference = (rateAt(loan, monthEnd(month)) ?? loan.rates?.[0])?.reference_pcm ?? 0
-  return reference + (loan.reference === 'fixed' ? 0 : loan.margin_pcm)
+  return loan.reference === 'fixed' ? reference : limitedReference(loan, month, reference) + loan.margin_pcm
 }
 
 /** The rahoitusvastike in force for a month: a row from any day of it counts for it. */
@@ -120,7 +148,10 @@ export function splitByWeight(total: number, weights: number[]): number[] {
  * computed months are fitted to meet the later one - its gap, computed less certified, is taken from
  * their interest by weight - and the gap and the rate the fitted interest implies are kept on the
  * certificate's month. After the last one it runs on to `to`.
- * `from`: the earliest month the book can follow (the object's purchase, the books' start).
+ * `from`: the earliest month the book can follow (the object's purchase, the books' start). A loan with
+ * no drawdown counts from it. Months before it are not the owner's: every due month there counts as
+ * paid (by the one who owned the object then), so a certificate dated before the purchase rolls on to
+ * it, and the path shows only the months from it.
  */
 export function loanPath(loan: HousingLoan, opts: { payments: PaymentUnits; from: string | null; to: string }): Omit<LoanPath, 'missing'> {
   const known = opts.payments.known
@@ -130,7 +161,7 @@ export function loanPath(loan: HousingLoan, opts: { payments: PaymentUnits; from
   const anchors = [...new Map(certificates.map((c) => [monthOf(c.date), c])).entries()]
   const first = anchors[0][0]
   const paidOff = paidOffOn(loan)
-  const floor = [monthOf(loan.starts), opts.from, loan.charges?.[0] ? monthOf(loan.charges[0].from) : null]
+  const floor = [loan.starts ? monthOf(loan.starts) : null, opts.from, loan.charges?.[0] ? monthOf(loan.charges[0].from) : null]
     .filter((m): m is string => m != null)
     .sort()
     .at(-1)!
@@ -139,7 +170,8 @@ export function loanPath(loan: HousingLoan, opts: { payments: PaymentUnits; from
   const end = ends > anchors.at(-1)![0] ? ends : anchors.at(-1)![0]
   const keys = monthKeys(`${start}-01`, `${end}-01`)
 
-  const payments = (m: string) => (known ? opts.payments.units(m) : dueIn(loan, m) > 0 ? 1 : 0)
+  const owned = (m: string) => !opts.from || m >= opts.from
+  const payments = (m: string) => (known && owned(m) ? opts.payments.units(m) : dueIn(loan, m) > 0 ? 1 : 0)
   const extraIn = (m: string) =>
     (loan.events ?? []).filter((e) => e.kind === 'extra_payment' && monthOf(e.date) === m).reduce((sum, e) => sum + (e.amount_snt ?? 0), 0)
   const base = (m: string) => {
@@ -218,7 +250,7 @@ export function loanPath(loan: HousingLoan, opts: { payments: PaymentUnits; from
     rows[i] = forward(keys[i], opening)
     opening = rows[i].closing_snt
   }
-  return { loan_key: loan.key, months: rows, payments_known: known }
+  return { loan_key: loan.key, months: rows.filter((r) => owned(r.month)), payments_known: known }
 }
 
 const voucherOf = (c: LoanCertificate) => (c.voucher_id != null ? { voucher_id: c.voucher_id } : {})
@@ -233,7 +265,7 @@ export function paymentsMissing(loan: HousingLoan, payments: PaymentUnits, from:
   const paidOff = paidOffOn(loan)
   const last = [through, loan.ends ? monthOf(loan.ends) : null, paidOff ? monthOf(paidOff) : null].filter((m): m is string => m != null).sort()[0]
   const firstDue = monthOf(loan.charges[0].from)
-  const start = [firstDue, monthOf(loan.starts), from].filter((m): m is string => m != null).sort().at(-1)!
+  const start = [firstDue, loan.starts ? monthOf(loan.starts) : null, from].filter((m): m is string => m != null).sort().at(-1)!
   if (start > last) return null
   let deficit = 0
   let since: string | null = null
@@ -247,7 +279,7 @@ export function paymentsMissing(loan: HousingLoan, payments: PaymentUnits, from:
 }
 
 /** Months from `a` to `b` (`YYYY-MM`): 0 in the same month. */
-const monthsBetween = (a: string, b: string) => (Number(b.slice(0, 4)) - Number(a.slice(0, 4))) * 12 + Number(b.slice(5, 7)) - Number(a.slice(5, 7))
+export const monthsBetween = (a: string, b: string) => (Number(b.slice(0, 4)) - Number(a.slice(0, 4))) * 12 + Number(b.slice(5, 7)) - Number(a.slice(5, 7))
 
 /** A forecast that has not cleared the share in this many months never will: there is none. */
 const FORECAST_MAX_MONTHS = 600
@@ -261,30 +293,43 @@ export function annuityPayment(share: number, pcm: number, months: number): numb
 }
 
 /**
- * The share's months after the path, to the loan's end (ADR-034): an estimate, at the rates the rows
- * give and the latest one after them (estimates per reference rate come later). The rahoitusvastike in
- * force - or a later row of it, the company's own figure - is paid until the next rate reset (every
- * `reset_months`, 12 when not known, from the latest rate row) or the end of an interest-only period;
+ * The share's months after the path, to the loan's end (ADR-034): an estimate. The latest rate row
+ * holds until the next rate reset (every `reset_months`, 12 when not known, from it); at each reset
+ * after it the reference rate is the estimate for that day (`estimate.curve`, the portfolio's for the
+ * loan's reference; without one the latest row's), plus `estimate.shift_pcm` (the "+1 %-yks." view),
+ * held between a floor and a ceiling in force. A fixed rate stays. The rahoitusvastike in
+ * force - or a later row of it, the company's own figure - is paid until the next rate reset
+ * or the end of an interest-only period;
  * from there an annuity pays what clears the share by `ends` and a tasalyhennys the share over the
  * months left plus the interest, both worked out again at each reset. A fixed payment stays as it is
  * and runs the share to 0, whatever `ends` says. An interest-only month pays the interest; the last
  * month pays what is left. None without a path, a share left or a rate, once paid off, or when the
  * charge would never clear the share.
  */
-export function loanForecast(loan: HousingLoan, path: LoanPath): LoanMonth[] {
+export function loanForecast(loan: HousingLoan, path: LoanPath, estimate: RateEstimate = { curve: [] }): LoanMonth[] {
   const last = path.months.at(-1)
   if (!last || last.closing_snt <= 0 || paidOffOn(loan) || !loan.rates?.length) return []
   const end = loan.type !== 'fixed_payment' && loan.ends ? monthOf(loan.ends) : null
   if (end && end <= last.month) return []
-  const anchor = monthOf(loan.rates.at(-1)!.from)
+  const latest = loan.rates.at(-1)!
+  const anchor = monthOf(latest.from)
   const every = loan.reset_months ?? 12
+  const curve = estimate.curve.filter((r) => r.reference === loan.reference)
+  /** The rate a month pays: the rows' until the first reset after the latest, then the estimate taken at its reset. */
+  const rateFor = (m: string) => {
+    const since = monthsBetween(anchor, m)
+    if (loan.reference === 'fixed' || since < every) return rateIn(loan, m)
+    const reset = addMonths(anchor, Math.floor(since / every) * every)
+    const reference = (rowAt(curve, monthEnd(reset))?.reference_pcm ?? latest.reference_pcm) + (estimate.shift_pcm ?? 0)
+    return limitedReference(loan, m, reference) + loan.margin_pcm
+  }
   const inGrace = (m: string) => (loan.grace ?? []).some((g) => monthOf(g.from) <= m && m <= monthOf(g.to))
   const newCharge = (m: string) => (loan.charges ?? []).some((c) => monthOf(c.from) === m)
   const rows: LoanMonth[] = []
   let opening = last.closing_snt
   let worked: { annuity: number; principal: number } | null = null
   for (let m = addMonths(last.month, 1); rows.length < FORECAST_MAX_MONTHS; m = addMonths(m, 1)) {
-    const rate = rateIn(loan, m)
+    const rate = rateFor(m)
     const interest = interestOn(opening, rate)
     const since = monthsBetween(anchor, m)
     const reset = (since >= 0 && since % every === 0) || (rows.length > 0 && inGrace(rows.at(-1)!.month) && !inGrace(m))
@@ -327,7 +372,7 @@ export function loanForecast(loan: HousingLoan, path: LoanPath): LoanMonth[] {
  * as-of month or a later certificate). Null where the path does not reach back to, or without one.
  */
 export function shareAt(loan: HousingLoan, path: LoanPath | undefined, month: string): number | null {
-  if (month < monthOf(loan.starts)) return 0
+  if (loan.starts && month < monthOf(loan.starts)) return 0
   const paidOff = paidOffOn(loan)
   if (paidOff && monthOf(paidOff) <= month) return 0
   const months = path?.months ?? []
@@ -421,6 +466,10 @@ export function loanWarnings(loans: HousingLoan[], on: string, held: boolean, pa
       }
     }
     if (loanRunning(loan, on)) {
+      // An interest-only period ending soon: the rahoitusvastike will rise with the repayments.
+      for (const g of loan.grace ?? []) {
+        if (g.to >= on && g.to <= monthsBefore(on, -GRACE_ENDING_MONTHS)) out.push({ code: 'loan_grace_ending', params: { loan: loan.name, to_date: g.to } })
+      }
       const latest = loan.certificates?.at(-1)
       if (!latest) out.push({ code: 'loan_share_missing', params: { loan: loan.name } })
       else if (latest.date < monthsBefore(on, CERTIFICATE_STALE_MONTHS)) {

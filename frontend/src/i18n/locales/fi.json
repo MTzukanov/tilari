@@ -1120,7 +1120,8 @@
     },
     "defaults": {
       "title": "Oletukset kaikille kohteille",
-      "lead": "Myyntikulut (esim. välityspalkkio ja isännöitsijäntodistus) ja tavoitetuotto. Kohteen omat arvot ohittavat nämä."
+      "lead": "Myyntikulut (esim. välityspalkkio ja isännöitsijäntodistus) ja tavoitetuotto. Kohteen omat arvot ohittavat nämä.",
+      "estimates": "Korkoarviot"
     },
     "field": {
       "kind": "Laji",
@@ -1418,7 +1419,9 @@
         "overlapsSettlement": "samoina päivinä kuin tasaus {period}",
         "dueDay": "anna päivä 1-31",
         "percent": "anna prosentti, esim. 3,5",
-        "sameAsStart": "sama päivä kuin alkuvuokralla"
+        "sameAsStart": "sama päivä kuin alkuvuokralla",
+        "floorOrCeiling": "anna lattia, katto tai molemmat",
+        "floorOverCeiling": "lattia on kattoa suurempi"
       }
     },
     "setup": {
@@ -1503,7 +1506,8 @@
       "loan_payment_missing": "Taloyhtiölle ei ole kirjattu maksua {count} kuukaudelta {from} alkaen (yhtiölaina {loan}): velkaosuus ei pienentynyt niiltä.",
       "loan_payment_missing_one": "Taloyhtiölle ei ole kirjattu maksua kuukaudelta {from} (yhtiölaina {loan}): velkaosuus ei pienentynyt.",
       "loan_rate_missing": "Yhtiölainan {loan} viitekorko tarkistettiin {reset}: lisää uusi viitekorko.",
-      "loan_rahastoitu_expensed": "Yhtiölainan {loan} rahoitusvastike {from} alkaen on rahastoitu, mutta kirjattu kuluksi: verotuksessa se kuuluu osakkeiden hankintamenoon. Tarkista tilintarkastajan kanssa."
+      "loan_rahastoitu_expensed": "Yhtiölainan {loan} rahoitusvastike {from} alkaen on rahastoitu, mutta kirjattu kuluksi: verotuksessa se kuuluu osakkeiden hankintamenoon. Tarkista tilintarkastajan kanssa.",
+      "loan_grace_ending": "Yhtiölainan {loan} lyhennysvapaa päättyy {to}: rahoitusvastike nousee lyhennysten alkaessa."
     },
     "warnCount": "Huomautuksia: {count}",
     "alerts": {
@@ -1537,7 +1541,9 @@
       "loan_linked": "Lainatili {path} on jo toisen kohteen pankkilaina. Laina voi kuulua vain yhdelle kohteelle, muuten sen korot laskettaisiin kahdesti.",
       "deposit_linked": "Vakuus kuuluu jo toiseen vuokrasuhteeseen.",
       "overlap": "Ajanjaksot menevät päällekkäin: tarkista kenttä {path}.",
-      "rentDates": "Vuokran päättymispäivä on ennen alkamispäivää."
+      "rentDates": "Vuokran päättymispäivä on ennen alkamispäivää.",
+      "estimateRow": "Korkoarvion rivi {n}: anna alkupäivä ja viitekorko.",
+      "estimateSameDay": "Korkoarvion rivi {n}: samalla viitekorolla on jo arvio samana päivänä."
     },
     "total": "Yhteensä",
     "holding": "{years} v {months} kk",
@@ -1758,7 +1764,9 @@
         "eventKind": "Tapahtuma",
         "amount": "Summa",
         "note": "Huomautus",
-        "fixedRate": "Kiinteä korko %"
+        "fixedRate": "Kiinteä korko %",
+        "floor": "Lattia %",
+        "ceiling": "Katto %"
       },
       "namePlaceholder": "esim. Putkiremontti 2019",
       "type": {
@@ -1854,7 +1862,6 @@
         "forecast": "Arvio laina-ajan loppuun",
         "forecastMonth": "{month} (arvio)",
         "forecastYears": "Arvio vuosittain",
-        "forecastSummary": "Velkaosuus maksettu {date} mennessä, kun korko pysyy {rate}.",
         "forecastTotal": "Yhteensä",
         "forecastRule": {
           "annuity": "Rahoitusvastike lasketaan koronmuutoksissa uudelleen niin, että laina on maksettu laina-ajan loppuun.",
@@ -1880,7 +1887,32 @@
         "fixed": "kiinteä",
         "term": "Laina-aika",
         "span": "{from}–{to}"
-      }
+      },
+      "termUntil": "{date} asti",
+      "startsFromPurchase": "lasketaan hankinnasta",
+      "limit": {
+        "floor": "lattia {rate}",
+        "ceiling": "katto {rate}",
+        "until": "{date} asti"
+      },
+      "forecast": {
+        "payoff": "Maksettu arviolta",
+        "interest": "Korkoa arviolta",
+        "interestHigher": "+1 %-yks.: {amount} (+{diff})",
+        "rate": "Korko lopussa",
+        "byCurve": "korkoarvioiden mukaan",
+        "held": "viimeisin korko pysyy",
+        "plus1": "Viitekorko +1 %-yks. seuraavasta koronmuutoksesta",
+        "beforeEnds": "{count} kk ennen viimeistä eräpäivää {date}",
+        "beforeEnds_one": "1 kk ennen viimeistä eräpäivää {date}",
+        "afterEnds": "{count} kk viimeisen eräpäivän {date} jälkeen",
+        "afterEnds_one": "1 kk viimeisen eräpäivän {date} jälkeen",
+        "atEnds": "viimeisenä eräpäivänä {date}",
+        "col": {
+          "paidHigher": "Maksut +1 %-yks."
+        }
+      },
+      "limits": "Korkolattia ja -katto"
     },
     "valuation": {
       "debtFreeComputed": "Velaton hinta {price} (+ velkaosuus {share})"

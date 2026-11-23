@@ -182,6 +182,18 @@ export type LoanCharge = { from: string; amount_snt: number; rahastoitu?: true; 
 export type LoanEvent = { date: string; kind: LoanEventKind; amount_snt?: number; voucher_id?: number; note?: string }
 
 /**
+ * A floor (korkolattia) and/or a ceiling (korkokatto) on the reference rate, from `from` (the loan's
+ * start when missing) to `to`, both days included. Rates in 1/1000 %.
+ */
+export type LoanRateLimit = { from?: string; to: string; floor_pcm?: number; ceiling_pcm?: number }
+
+/**
+ * An estimate of a reference rate from `from` on (ADR-034), one curve per reference for every object:
+ * the forecast takes it at each rate reset after a loan's latest actual rate.
+ */
+export type RateForecast = { reference: RateReference; from: string; reference_pcm: number }
+
+/**
  * A housing-company loan (yhtiölaina) the object has a share of, entered by hand (ADR-034). The
  * loan is the object's own; a copy from another object of the same housing company keeps the
  * original's `group`, so later steps can treat them as one company loan.
@@ -193,7 +205,8 @@ export type HousingLoan = {
   /** What it is for: "Putkiremontti 2019". */
   name: string
   lender?: string
-  starts: string
+  /** The drawdown; missing, the loan counts from the object's purchase (the book follows it from there anyway). */
+  starts?: string
   /** The last due date in the loan's terms. */
   ends?: string
   type: HousingLoanType
@@ -207,6 +220,8 @@ export type HousingLoan = {
   rates?: LoanRate[]
   /** Periods with no repayment (lyhennysvapaa), oldest first. */
   grace?: { from: string; to: string }[]
+  /** Floors and ceilings on the reference rate, oldest first, not overlapping. */
+  rate_limits?: LoanRateLimit[]
   certificates?: LoanCertificate[]
   charges?: LoanCharge[]
   events?: LoanEvent[]
@@ -259,6 +274,8 @@ export type PortfolioSettings = {
   target_return_bp?: number
   /** Dismissed setup suggestions: `era:{eraid}` or `doc:{voucherId}:{costCentreId}`. */
   dismissed?: string[]
+  /** Reference rate estimates for the loans' forecasts (ADR-034), by reference then day. */
+  rate_forecast?: RateForecast[]
   [key: string]: unknown
 }
 
@@ -850,6 +867,8 @@ export type HousingDetail = {
   paths: LoanPath[]
   /** The object's payments to its housing company by month (YYYY-MM), newest first. */
   payments: { month: string; units: number; lines: BookedLine[] }[]
+  /** The portfolio's reference rate estimates (`PortfolioSettings.rate_forecast`), for the loans' forecasts. */
+  rate_forecast: RateForecast[]
 }
 
 export type MonthLineKind = 'income' | 'expense' | 'interest'

@@ -359,5 +359,67 @@ describe('housing-company loans', () => {
     expect(() => normalizePropertyDoc({ eras: [], housing_loans: [loan({ key: 'h1' }), loan({ key: 'h1' })] })).toThrow(
       'invalid_field:housing_loans[1].key',
     )
+    // Floors and ceilings: an end, a floor or a ceiling (the floor not above it), one at a time.
+    expect(save({ rate_limits: [{ ceiling_pcm: 3000 }] })).toThrow('invalid_field:housing_loans[0].rate_limits[0].to')
+    expect(save({ rate_limits: [{ to: '2030-12-31' }] })).toThrow('invalid_field:housing_loans[0].rate_limits[0].ceiling_pcm')
+    expect(save({ rate_limits: [{ to: '2030-12-31', floor_pcm: 3000, ceiling_pcm: 2000 }] })).toThrow('invalid_field:housing_loans[0].rate_limits[0].ceiling_pcm')
+    expect(save({ rate_limits: [{ from: '2031-01-01', to: '2030-12-31', ceiling_pcm: 2000 }] })).toThrow('invalid_field:housing_loans[0].rate_limits[0].to')
+    expect(
+      save({
+        rate_limits: [
+          { to: '2027-12-31', ceiling_pcm: 3000 },
+          { from: '2027-06-01', to: '2030-12-31', ceiling_pcm: 4000 },
+        ],
+      }),
+    ).toThrow('invalid_field:housing_loans[0].rate_limits[1].from')
+  })
+
+  it('keeps a loan without a drawdown, and its floors and ceilings in order', () => {
+    const { starts: _starts, ...undated } = loan({})
+    const doc = normalizePropertyDoc({
+      eras: [],
+      housing_loans: [
+        {
+          ...undated,
+          rate_limits: [
+            { from: '2028-01-01', to: '2030-12-31', floor_pcm: 0 },
+            { to: '2027-12-31', floor_pcm: -500, ceiling_pcm: 3000 },
+          ],
+        },
+      ],
+    })
+    expect(doc.housing_loans![0]).not.toHaveProperty('starts')
+    expect(doc.housing_loans![0].rate_limits).toEqual([
+      { to: '2027-12-31', floor_pcm: -500, ceiling_pcm: 3000 },
+      { from: '2028-01-01', to: '2030-12-31', floor_pcm: 0 },
+    ])
+  })
+})
+
+describe('portfolio settings: reference rate estimates', () => {
+  it('keeps the curves by reference and day; a fixed rate has none, and a day is given once', () => {
+    const settings = normalizePortfolioSettings({
+      rate_forecast: [
+        { reference: 'euribor_12m', from: '2027-01-01', reference_pcm: 2000 },
+        { reference: 'euribor_3m', from: '2026-01-01', reference_pcm: 1900 },
+        { reference: 'euribor_12m', from: '2026-01-01', reference_pcm: -100 },
+      ],
+    })
+    expect(settings.rate_forecast!.map((r) => `${r.reference} ${r.from} ${r.reference_pcm}`)).toEqual([
+      'euribor_12m 2026-01-01 -100',
+      'euribor_12m 2027-01-01 2000',
+      'euribor_3m 2026-01-01 1900',
+    ])
+    expect(() => normalizePortfolioSettings({ rate_forecast: [{ reference: 'fixed', from: '2026-01-01', reference_pcm: 1 }] })).toThrow(
+      'invalid_field:rate_forecast[0].reference',
+    )
+    expect(() =>
+      normalizePortfolioSettings({
+        rate_forecast: [
+          { reference: 'prime', from: '2026-01-01', reference_pcm: 1 },
+          { reference: 'prime', from: '2026-01-01', reference_pcm: 2 },
+        ],
+      }),
+    ).toThrow('invalid_field:rate_forecast[1].from')
   })
 })

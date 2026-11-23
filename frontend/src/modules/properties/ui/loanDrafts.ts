@@ -9,6 +9,7 @@ type T = (key: string, vars?: Record<string, string | number>) => string
 
 export type RateDraft = { from: string; rate: string; voucherId: string }
 export type GraceDraft = { from: string; to: string }
+export type LimitDraft = { from: string; to: string; floor: string; ceiling: string }
 export type CertificateDraft = { date: string; share: string; voucherId: string; noDocument: boolean }
 export type ChargeDraft = { from: string; amount: string; rahastoitu: boolean; voucherId: string; noDocument: boolean }
 export type EventDraft = { date: string; kind: LoanEventKind; amount: string; voucherId: string; note: string }
@@ -28,6 +29,7 @@ export type LoanDraft = {
   resetMonths: string
   rates: RateDraft[]
   grace: GraceDraft[]
+  limits: LimitDraft[]
   certificates: CertificateDraft[]
   charges: ChargeDraft[]
   events: EventDraft[]
@@ -61,6 +63,7 @@ export function newLoanDraft(): LoanDraft {
     resetMonths: '12',
     rates: [emptyRate()],
     grace: [],
+    limits: [],
     certificates: [emptyCertificate()],
     charges: [emptyCharge()],
     events: [],
@@ -89,12 +92,12 @@ export function loanDraft(loan: HousingLoan): LoanDraft {
   }
 }
 
-/** The loan's terms, rates and grace periods: what objects of one housing company share. */
+/** The loan's terms, rates, grace periods and rate limits: what objects of one housing company share. */
 function terms(loan: HousingLoan): Omit<LoanDraft, 'base' | 'group' | 'certificates' | 'charges' | 'events'> {
   return {
     name: loan.name,
     lender: loan.lender ?? '',
-    starts: loan.starts,
+    starts: loan.starts ?? '',
     ends: loan.ends ?? '',
     type: loan.type,
     total: eurText(loan.total_snt),
@@ -103,6 +106,12 @@ function terms(loan: HousingLoan): Omit<LoanDraft, 'base' | 'group' | 'certifica
     resetMonths: loan.reset_months != null ? String(loan.reset_months) : '',
     rates: (loan.rates ?? []).map((r) => ({ from: r.from, rate: formatPcmInput(r.reference_pcm), voucherId: idText(r.voucher_id) })),
     grace: (loan.grace ?? []).map((g) => ({ from: g.from, to: g.to })),
+    limits: (loan.rate_limits ?? []).map((l) => ({
+      from: l.from ?? '',
+      to: l.to,
+      floor: l.floor_pcm != null ? formatPcmInput(l.floor_pcm) : '',
+      ceiling: l.ceiling_pcm != null ? formatPcmInput(l.ceiling_pcm) : '',
+    })),
   }
 }
 
@@ -168,7 +177,8 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | FormIssue[] {
   const fixed = d.reference === 'fixed'
 
   if (!d.name.trim()) issue('name', 'properties.housing.field.name', 'properties.form.issue.required')
-  needDate('starts', 'properties.housing.field.starts', d.starts)
+  // The drawdown may stay empty: the loan then counts from the purchase.
+  if (d.starts && !startsOk) issue('starts', 'properties.housing.field.starts', 'properties.form.issue.date')
   needDate('ends', 'properties.housing.field.ends', d.ends)
   if (startsOk && endsOk && d.ends < d.starts) issue('ends', 'properties.housing.field.ends', 'properties.form.issue.endsBeforeStarts')
   const total = amountOf(d.total)
@@ -261,6 +271,39 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | FormIssue[] {
     if (!has(`grace.${i}.from`) && !has(`grace.${i}.to`)) grace.push({ from: g.from, to: g.to })
   })
 
+  const limits: NonNullable<HousingLoan['rate_limits']> = []
+  d.limits.forEach((l, i) => {
+    if (blank(l)) return
+    const at = { section: 'properties.housing.limits', n: i + 1 }
+    if (l.from && !okDate(l.from)) issue(`limits.${i}.from`, 'properties.housing.field.from', 'properties.form.issue.date', at)
+    needDate(`limits.${i}.to`, 'properties.housing.field.to', l.to, at)
+    if (okDate(l.from) && okDate(l.to) && l.to < l.from) issue(`limits.${i}.to`, 'properties.housing.field.to', 'properties.form.issue.toBeforeFrom', at)
+    const floor = parsePcmInput(l.floor)
+    const ceiling = parsePcmInput(l.ceiling)
+    if (floor != null && Number.isNaN(floor)) issue(`limits.${i}.floor`, 'properties.housing.field.floor', 'properties.form.issue.rate', at)
+    if (ceiling != null && Number.isNaN(ceiling)) issue(`limits.${i}.ceiling`, 'properties.housing.field.ceiling', 'properties.form.issue.rate', at)
+    if (floor == null && ceiling == null) issue(`limits.${i}.floor`, 'properties.housing.field.floor', 'properties.form.issue.floorOrCeiling', at)
+    else if (floor != null && ceiling != null && !Number.isNaN(floor) && !Number.isNaN(ceiling) && floor > ceiling) {
+      issue(`limits.${i}.ceiling`, 'properties.housing.field.ceiling', 'properties.form.issue.floorOverCeiling', at)
+    }
+    const fields = [`limits.${i}.from`, `limits.${i}.to`, `limits.${i}.floor`, `limits.${i}.ceiling`]
+    if (fields.some(has)) return
+    limits.push({
+      ...(l.from ? { from: l.from } : {}),
+      to: l.to,
+      ...(floor != null ? { floor_pcm: floor } : {}),
+      ...(ceiling != null ? { ceiling_pcm: ceiling } : {}),
+    })
+  })
+  // One limit at a time: a later one starts after the one before has ended.
+  const ordered = limits.map((l, i) => ({ l, i })).sort((a, b) => (a.l.from ?? '').localeCompare(b.l.from ?? '') || a.l.to.localeCompare(b.l.to))
+  ordered.forEach(({ l, i }, k) => {
+    const before = ordered[k - 1]
+    if (before && (l.from ?? '') <= before.l.to) {
+      issue(`limits.${i}.from`, 'properties.housing.field.from', 'properties.form.issue.overlapsRow', { section: 'properties.housing.limits', n: i + 1 }, { n: before.i + 1 })
+    }
+  })
+
   const events: NonNullable<HousingLoan['events']> = []
   d.events.forEach((e, i) => {
     if (!e.date && !e.amount && !e.voucherId && !e.note) return
@@ -285,12 +328,12 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | FormIssue[] {
     ...(d.base ?? {}),
     key: d.base?.key ?? '',
     name: d.name.trim(),
-    starts: d.starts,
     type: d.type,
     reference: d.reference,
     margin_pcm: margin ?? 0,
   }
-  for (const key of ['group', 'lender', 'ends', 'total_snt', 'reset_months', 'rates', 'grace', 'certificates', 'charges', 'events'] as const) delete loan[key]
+  for (const key of ['group', 'lender', 'starts', 'ends', 'total_snt', 'reset_months', 'rates', 'grace', 'rate_limits', 'certificates', 'charges', 'events'] as const) delete loan[key]
+  if (d.starts) loan.starts = d.starts
   if (d.group) loan.group = d.group
   if (d.lender.trim()) loan.lender = d.lender.trim()
   if (d.ends) loan.ends = d.ends
@@ -298,6 +341,7 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | FormIssue[] {
   if (reset != null) loan.reset_months = reset
   if (rates.length) loan.rates = rates
   if (grace.length) loan.grace = grace
+  if (limits.length) loan.rate_limits = limits
   if (certificates.length) loan.certificates = certificates
   if (charges.length) loan.charges = charges
   if (events.length) loan.events = events

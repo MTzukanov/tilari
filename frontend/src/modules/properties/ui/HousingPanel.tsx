@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { loanForecast, loanNow, paidOffOn } from '../../../book/modules/properties/domain/housingLoan'
+import { limitedReference, loanForecast, loanNow, monthsBetween, paidOffOn } from '../../../book/modules/properties/domain/housingLoan'
 import { monthEnd } from '../../../book/months'
 import { getBcp47, useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
@@ -10,7 +10,7 @@ import { LineChart, type LineSeries, type PointTip } from '../../../shared/LineC
 import { formatPcm } from '../../../shared/percent'
 import { FilePill, Pill } from '../../../shared/Pill'
 import { SearchSelect } from '../../../shared/SearchSelect'
-import type { BookedLine, DocCandidate, HousingCopySource, HousingLoan, LeaseVoucher, LoanMonth, LoanPath, PropertyDetail } from '../api'
+import type { BookedLine, DocCandidate, HousingCopySource, HousingLoan, LeaseVoucher, LoanMonth, LoanPath, PropertyDetail, RateForecast } from '../api'
 import { monthLabel } from './Charts'
 import { loadLoanChartOptions, saveLoanChartOptions, type LoanChartOptions } from './chartOptions'
 import { DocPicker } from './DocPicker'
@@ -176,11 +176,14 @@ function LoanMonths({
   loan,
   path,
   payments,
+  estimates,
   onOpenVoucher,
 }: {
   loan: HousingLoan
   path: LoanPath
   payments: MonthPayments
+  /** The portfolio's reference rate estimates, for the forecast (ADR-034). */
+  estimates: RateForecast[]
   onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
@@ -192,7 +195,11 @@ function LoanMonths({
     setOptionsState(next)
     saveLoanChartOptions(next)
   }
-  const future = loanForecast(loan, path)
+  const future = loanForecast(loan, path, { curve: estimates })
+  // The same with the reference rate a point higher from the next reset: what a rise would cost.
+  const higher = options.plus1 ? loanForecast(loan, path, { curve: estimates, shift_pcm: 1000 }) : []
+  const curved = estimates.some((r) => r.reference === loan.reference) && loan.reference !== 'fixed'
+  const [ruleOpen, setRuleOpen] = useState(false)
   const shown = options.forecast && future.length ? [...months, ...future] : months
   const known = months.length
   let interestSoFar = 0
@@ -239,7 +246,22 @@ function LoanMonths({
     }
   }
   const years = forecastYears(future)
+  const higherYears = new Map(forecastYears(higher).map((y) => [y.year, y]))
   const sum = (pick: (y: (typeof years)[number]) => number) => years.reduce((total, y) => total + pick(y), 0)
+  const interestAhead = future.reduce((total, m) => total + m.interest_snt, 0)
+  const interestHigher = higher.reduce((total, m) => total + m.interest_snt, 0)
+  /** The estimated payoff against the loan's last due date, in whole months. */
+  const payoffText = () => {
+    if (!loan.ends || !future.length) return null
+    const early = monthsBetween(future.at(-1)!.month, loan.ends.slice(0, 7))
+    const ends = formatDate(loan.ends)
+    return early > 0
+      ? t('properties.housing.forecast.beforeEnds', { count: early, date: ends })
+      : early < 0
+        ? t('properties.housing.forecast.afterEnds', { count: -early, date: ends })
+        : t('properties.housing.forecast.atEnds', { date: ends })
+  }
+  const payoff = payoffText()
   return (
     <div className="property-loan-months">
       <div className="overview-legend legend-columns">
@@ -280,13 +302,35 @@ function LoanMonths({
       {shown.length > months.length ? (
         <div className="property-loan-forecast-years">
           <h5>{t('properties.housing.path.forecastYears')}</h5>
-          <p className="muted property-lease-hint">
-            {t('properties.housing.path.forecastSummary', {
-              date: formatDate(monthEnd(future.at(-1)!.month)),
-              rate: formatPcm(future.at(-1)!.rate_pcm),
-            })}{' '}
-            {t(`properties.housing.path.forecastRule.${loan.type}`)}
-          </p>
+          <Figures>
+            <Figure
+              label={
+                <>
+                  {t('properties.housing.forecast.payoff')}{' '}
+                  <InfoButton note={t(`properties.housing.path.forecastRule.${loan.type}`)} open={ruleOpen} onToggle={() => setRuleOpen(!ruleOpen)} />
+                </>
+              }
+              value={formatDate(monthEnd(future.at(-1)!.month))}
+              sub={payoff ? [payoff] : []}
+            />
+            <Figure
+              label={t('properties.housing.forecast.interest')}
+              value={formatCents(interestAhead)}
+              sub={higher.length ? [t('properties.housing.forecast.interestHigher', { amount: formatCents(interestHigher), diff: formatCents(interestHigher - interestAhead) })] : []}
+            />
+            <Figure
+              label={t('properties.housing.forecast.rate')}
+              value={formatPcm(future.at(-1)!.rate_pcm)}
+              sub={[curved ? t('properties.housing.forecast.byCurve') : t('properties.housing.forecast.held')]}
+            />
+          </Figures>
+          {ruleOpen ? <InfoNote note={t(`properties.housing.path.forecastRule.${loan.type}`)} /> : null}
+          {loan.reference !== 'fixed' ? (
+            <label className="allocation-check property-loan-plus1">
+              <input type="checkbox" checked={options.plus1} onChange={() => setOptions({ ...options, plus1: !options.plus1 })} />
+              {t('properties.housing.forecast.plus1')}
+            </label>
+          ) : null}
           <div className="property-loan-table-scroll">
             <table className="ledger-table compact property-rent-table property-loan-table">
               <thead>
@@ -296,6 +340,7 @@ function LoanMonths({
                   <th className="amount">{t('properties.housing.path.col.interest')}</th>
                   <th className="amount">{t('properties.housing.path.col.principal')}</th>
                   <th className="amount">{t('properties.housing.path.col.shareYearEnd')}</th>
+                  {higher.length ? <th className="amount">{t('properties.housing.forecast.col.paidHigher')}</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -306,6 +351,7 @@ function LoanMonths({
                     <td className="amount">{formatCents(y.interest)}</td>
                     <td className="amount">{formatCents(y.principal)}</td>
                     <td className="amount">{formatCents(y.closing)}</td>
+                    {higher.length ? <td className="amount">{formatCents(higherYears.get(y.year)?.paid ?? 0, { emptyZero: true })}</td> : null}
                   </tr>
                 ))}
               </tbody>
@@ -316,6 +362,7 @@ function LoanMonths({
                   <td className="amount">{formatCents(sum((y) => y.interest))}</td>
                   <td className="amount">{formatCents(sum((y) => y.principal))}</td>
                   <td />
+                  {higher.length ? <td className="amount">{formatCents(higher.reduce((total, m) => total + m.paid_snt, 0))}</td> : null}
                 </tr>
               </tfoot>
             </table>
@@ -384,6 +431,7 @@ function LoanCard({
   payments,
   vouchers,
   held,
+  estimates,
   onEdit,
   onOpenVoucher,
 }: {
@@ -394,6 +442,7 @@ function LoanCard({
   payments: MonthPayments
   vouchers: Map<number, LeaseVoucher>
   held: boolean
+  estimates: RateForecast[]
   onEdit?: () => void
   onOpenVoucher: (voucherId: number) => void
 }) {
@@ -404,6 +453,19 @@ function LoanCard({
   const paidOff = paidOffOn(loan)
   const reference = t(`properties.housing.reference.${loan.reference}`)
   const fixed = loan.reference === 'fixed'
+  // The reference rate as the loan pays it: held between a floor and a ceiling in force (ADR-034).
+  const bounded = rate ? limitedReference(loan, on.slice(0, 7), rate.reference_pcm) : null
+  const limitLines = (loan.rate_limits ?? [])
+    .filter((l) => l.to >= on)
+    .map((l) =>
+      [
+        l.floor_pcm != null ? t('properties.housing.limit.floor', { rate: formatPcm(l.floor_pcm) }) : '',
+        l.ceiling_pcm != null ? t('properties.housing.limit.ceiling', { rate: formatPcm(l.ceiling_pcm) }) : '',
+        l.from && l.from > on ? periodText(t, l.from, l.to) : t('properties.housing.limit.until', { date: formatDate(l.to) }),
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    )
   const first = path?.months[0]
   const last = path?.months.at(-1)
   const note = path && !path.payments_known ? t('properties.housing.path.paymentsUnknown') : null
@@ -416,7 +478,7 @@ function LoanCard({
       key: 'months',
       title: t('properties.housing.path.months'),
       n: path?.months.length ?? 0,
-      body: () => (path ? <LoanMonths loan={loan} path={path} payments={payments} onOpenVoucher={onOpenVoucher} /> : null),
+      body: () => (path ? <LoanMonths loan={loan} path={path} payments={payments} estimates={estimates} onOpenVoucher={onOpenVoucher} /> : null),
     },
     {
       key: 'certificates',
@@ -549,7 +611,7 @@ function LoanCard({
         />
         <Figure
           label={t('properties.housing.figure.rate')}
-          value={rate ? formatPcm(rate.reference_pcm + (fixed ? 0 : loan.margin_pcm)) : ''}
+          value={rate ? formatPcm((fixed ? rate.reference_pcm : bounded!) + (fixed ? 0 : loan.margin_pcm)) : ''}
           sub={
             fixed
               ? rate
@@ -557,16 +619,26 @@ function LoanCard({
                 : [t('properties.housing.rateNoneFixed')]
               : rate
                 ? [
-                    t('properties.housing.figure.rateParts', { reference, rate: formatPcm(rate.reference_pcm), margin: formatPcm(loan.margin_pcm) }),
+                    t('properties.housing.figure.rateParts', { reference, rate: formatPcm(bounded!), margin: formatPcm(loan.margin_pcm) }),
                     t('properties.housing.fromDate', { date: formatDate(rate.from) }),
+                    ...limitLines,
                   ]
-                : [t('properties.housing.figure.rateMissing', { reference, margin: formatPcm(loan.margin_pcm) })]
+                : [t('properties.housing.figure.rateMissing', { reference, margin: formatPcm(loan.margin_pcm) }), ...limitLines]
           }
         />
         <Figure
           label={t('properties.housing.figure.term')}
-          value={loan.ends ? periodText(t, loan.starts, loan.ends) : t('properties.housing.termOpen', { date: formatDate(loan.starts) })}
+          value={
+            loan.starts && loan.ends
+              ? periodText(t, loan.starts, loan.ends)
+              : loan.starts
+                ? t('properties.housing.termOpen', { date: formatDate(loan.starts) })
+                : loan.ends
+                  ? t('properties.housing.termUntil', { date: formatDate(loan.ends) })
+                  : ''
+          }
           sub={[
+            ...(loan.starts ? [] : [t('properties.housing.startsFromPurchase')]),
             ...(loan.reset_months ? [t('properties.housing.reset', { months: loan.reset_months })] : []),
             ...(loan.total_snt != null ? [t('properties.housing.total', { amount: formatCents(loan.total_snt) })] : []),
             ...(loan.grace ?? []).map((g) => t('properties.housing.graceText', { period: periodText(t, g.from, g.to) })),
@@ -673,6 +745,7 @@ export function HousingPanel({
               payments={payments}
               vouchers={vouchers}
               held={held}
+              estimates={d.housing.rate_forecast}
               onEdit={onEditLoan ? () => onEditLoan(loan.key) : undefined}
               onOpenVoucher={onOpenVoucher}
             />

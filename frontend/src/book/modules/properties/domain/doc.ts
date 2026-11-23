@@ -23,6 +23,8 @@ import {
   type LoanEvent,
   type LoanEventKind,
   type LoanRate,
+  type LoanRateLimit,
+  type RateForecast,
   type RateReference,
   type Lease,
   type LeaseDeposit,
@@ -387,6 +389,7 @@ const LOAN_KEYS = new Set([
   'reset_months',
   'rates',
   'grace',
+  'rate_limits',
   'certificates',
   'charges',
   'events',
@@ -418,12 +421,12 @@ function housingLoan(item: unknown, path: string): HousingLoan {
   const out: HousingLoan = {
     key: '',
     name,
-    starts: date(item.starts, `${path}.starts`),
     type: item.type as HousingLoanType,
     reference: item.reference as RateReference,
     margin_pcm: int(item.margin_pcm ?? 0, `${path}.margin_pcm`, 0, MAX_PCM),
   }
   keep(out, item, LOAN_KEYS)
+  if (item.starts != null && item.starts !== '') out.starts = date(item.starts, `${path}.starts`)
   if (item.key != null && item.key !== '') {
     if (typeof item.key !== 'string' || !LEASE_KEY.test(item.key)) fail(`${path}.key`)
     out.key = item.key
@@ -436,7 +439,7 @@ function housingLoan(item: unknown, path: string): HousingLoan {
   if (lender) out.lender = lender
   if (item.ends != null) {
     out.ends = date(item.ends, `${path}.ends`)
-    if (out.ends < out.starts) fail(`${path}.ends`)
+    if (out.starts && out.ends < out.starts) fail(`${path}.ends`)
   }
   if (item.total_snt != null) out.total_snt = snt(item.total_snt, `${path}.total_snt`, 0)
   if (item.reset_months != null) out.reset_months = int(item.reset_months, `${path}.reset_months`, 1, 120)
@@ -471,6 +474,29 @@ function housingLoan(item: unknown, path: string): HousingLoan {
     if (i > 0 && g.from <= grace[i - 1].to) fail(`${path}.grace[${i}].from`)
   })
   if (grace.length) out.grace = grace
+
+  const limits = array(item.rate_limits, `${path}.rate_limits`, 24)
+    .map((raw, i): LoanRateLimit => {
+      const at = `${path}.rate_limits[${i}]`
+      if (!isObject(raw)) fail(at)
+      const limit: LoanRateLimit = { to: date(raw.to, `${at}.to`) }
+      if (raw.from != null && raw.from !== '') {
+        limit.from = date(raw.from, `${at}.from`)
+        if (limit.to < limit.from) fail(`${at}.to`)
+      }
+      if (raw.floor_pcm != null) limit.floor_pcm = int(raw.floor_pcm, `${at}.floor_pcm`, -MAX_PCM, MAX_PCM)
+      if (raw.ceiling_pcm != null) limit.ceiling_pcm = int(raw.ceiling_pcm, `${at}.ceiling_pcm`, -MAX_PCM, MAX_PCM)
+      // A floor, a ceiling or both; a floor above the ceiling bounds nothing.
+      if (limit.floor_pcm == null && limit.ceiling_pcm == null) fail(`${at}.ceiling_pcm`)
+      if (limit.floor_pcm != null && limit.ceiling_pcm != null && limit.floor_pcm > limit.ceiling_pcm) fail(`${at}.ceiling_pcm`)
+      return limit
+    })
+    .sort((a, b) => (a.from ?? '').localeCompare(b.from ?? '') || a.to.localeCompare(b.to))
+  // One limit at a time: each starts after the one before has ended (an open start is the loan's).
+  limits.forEach((l, i) => {
+    if (i > 0 && (l.from ?? '') <= limits[i - 1].to) fail(`${path}.rate_limits[${i}].from`)
+  })
+  if (limits.length) out.rate_limits = limits
 
   const certificates = datedRows(
     item.certificates,
@@ -530,7 +556,7 @@ function housingLoan(item: unknown, path: string): HousingLoan {
 function housingLoans(value: unknown): HousingLoan[] {
   const list = array(value, 'housing_loans', 50).map((item, i) => housingLoan(item, `housing_loans[${i}]`))
   assignKeys(list, 'h', 'housing_loans')
-  return list.sort((a, b) => a.starts.localeCompare(b.starts) || a.key.localeCompare(b.key))
+  return list.sort((a, b) => (a.starts ?? '').localeCompare(b.starts ?? '') || a.key.localeCompare(b.key))
 }
 
 function checkVersion(value: unknown): void {
@@ -716,7 +742,7 @@ export function mergePropertyDoc(
   return mergeForSave(stored, input, now, DOC_KEYS)
 }
 
-const SETTINGS_KEYS = new Set(['v', 'rev', 'updated_at', 'sale_costs', 'target_return_bp', 'dismissed'])
+const SETTINGS_KEYS = new Set(['v', 'rev', 'updated_at', 'sale_costs', 'target_return_bp', 'dismissed', 'rate_forecast'])
 
 export function normalizePortfolioSettings(input: unknown): PortfolioSettings {
   if (!isObject(input)) fail('')
@@ -738,6 +764,23 @@ export function normalizePortfolioSettings(input: unknown): PortfolioSettings {
     return s
   })
   if (dismissed.length) out.dismissed = [...new Set(dismissed)].sort()
+  const forecast = array(input.rate_forecast, 'rate_forecast', 600)
+    .map((raw, i): RateForecast => {
+      const at = `rate_forecast[${i}]`
+      if (!isObject(raw)) fail(at)
+      // A fixed rate has no reference to estimate.
+      if (!RATE_REFERENCES.includes(raw.reference as RateReference) || raw.reference === 'fixed') fail(`${at}.reference`)
+      return {
+        reference: raw.reference as RateReference,
+        from: date(raw.from, `${at}.from`),
+        reference_pcm: int(raw.reference_pcm, `${at}.reference_pcm`, -MAX_PCM, MAX_PCM),
+      }
+    })
+    .sort((a, b) => a.reference.localeCompare(b.reference) || a.from.localeCompare(b.from))
+  forecast.forEach((r, i) => {
+    if (i > 0 && r.reference === forecast[i - 1].reference && r.from === forecast[i - 1].from) fail(`rate_forecast[${i}].from`)
+  })
+  if (forecast.length) out.rate_forecast = forecast
   checkSize(out)
   return out
 }

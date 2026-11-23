@@ -107,12 +107,13 @@ negative.
 | `group?` | Shared by copies of one company loan on objects of the same housing company: a copy takes the original's group, or `o{objectId}-{key}` of the original |
 | `name` | What the loan is for ("Putkiremontti 2019") |
 | `lender?`, `total_snt?` | The bank, and the company's whole loan, for information |
-| `starts`, `ends?` | Drawn; the last due date in the terms |
+| `starts?`, `ends?` | Drawn (missing: the loan counts from the object's purchase); the last due date in the terms |
 | `type` | `annuity` (annuiteetti), `equal_principal` (tasalyhennys) or `fixed_payment` (kiinteä tasaerä: the payment stays, the term moves) |
 | `reference`, `margin_pcm` | The reference rate (`euribor_12m`, `euribor_6m`, `euribor_3m`, `prime`, `fixed`, `other`) and the margin |
 | `reset_months?` | How often the reference rate is reset |
 | `rates[]?` | `{ from, reference_pcm, voucher_id? }`: the actual reference rate from `from` on, by hand; no two on one day |
 | `grace[]?` | `{ from, to }`: periods with no repayment (lyhennysvapaa), not overlapping |
+| `rate_limits[]?` | `{ from?, to, floor_pcm?, ceiling_pcm? }`: a floor (korkolattia) and/or a ceiling (korkokatto) on the reference rate, from `from` (missing: the loan's start) to `to`; at least one of the two, the floor not above the ceiling, not overlapping |
 | `certificates[]?` | `{ date, share_snt, voucher_id?, no_document? }`: the object's share (velkaosuus) on `date` from an isännöitsijäntodistus or the purchase deed; no two on one day |
 | `charges[]?` | `{ from, amount_snt, rahastoitu?, voucher_id?, no_document? }`: this loan's rahoitusvastike a month from `from` on, with the invoice or notice; `rahastoitu: true` when the company puts it into its equity instead of its income (tuloutettu, the default); no two on one day |
 | `events[]?` | `{ date, kind, amount_snt?, voucher_id?, note? }`: `paid_off` (the share paid off), `extra_payment` (with an amount), `terms`, `note` |
@@ -123,7 +124,9 @@ or rahoitusvastike notice uploaded on a loan card is a posted type-800 voucher t
 `housing_doc_voucher_ids`.
 
 `portfolio`: `v`, `rev`, `sale_costs`, `target_return_bp`, `dismissed[]` (setup suggestions
-the owner rejected: `era:{eraid}`, `doc:{voucherId}`).
+the owner rejected: `era:{eraid}`, `doc:{voucherId}`), `rate_forecast[]?` (`{ reference, from, reference_pcm }`:
+the owner's estimate of a reference rate from `from` on, one curve per reference, not `fixed`; the loans'
+forecasts take it at each rate reset, ADR-034).
 
 `company` (ADR-031): `v`, `rev`, `updated_at`; `settings` (`audited`, `annual_report`, `balance_sheet_specs`, `prh_receipt`, only when on);
 `documents[]`, one link each: `key` (stable, `d12`), `kind`, `period_ends` (`Tilikausi.loppuu`, null
