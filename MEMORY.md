@@ -7,6 +7,17 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-23 - Rental objects: two amounts paid to the housing company each month count as one payment (`fix/housing-payment-levels`)
+
+- Found entering real loans (2026-11-20): `housingPayments()` took a month's regular level from the last repeating
+  amount booked in it, so an object paying two amounts a month (an apartment and a parking space as one object, two
+  invoices on one day) got the small one as the level whenever it sorted last, and one month counted as dozens of
+  payments; `loanPath()` then took the rahoitusvastike that many times and the share went negative.
+- Now `regularLevel()`: the level is the sum of the repeating amounts whose months span the month, each as many times
+  as it mostly comes in a month. An amount counts as monthly only when it comes in at least half the months of its
+  span (a yearly charge of the same amount does not lift the level). Outside every span, the latest level before
+  (the first before any), as before. Test: two lines on one day in both orders, a raise, a double month, a yearly charge.
+
 ## 2026-11-20 - Rental objects: the overview's running lease and water as figure tiles (`feature/overview-now-tiles`)
 
 - The overview's "Vuokrasuhde nyt" and "Vesi" cards were the last sentences left on the object page (UI rule

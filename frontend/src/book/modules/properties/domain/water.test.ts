@@ -333,6 +333,27 @@ describe('water settlements: the company\'s statement without water in its text'
     expect(housingPayments([pnl(40, '2027-09-10', -250_00, 'Putkimies', { partner_id: 8 })]).known).toBe(false)
   })
 
+  it('two amounts paid apart every month count as one payment, in either order on the same day', () => {
+    // An apartment and a parking space bought as one object: two invoices, same day, same company.
+    const months = ['2027-03', '2027-04', '2027-05', '2027-06', '2027-07', '2027-08']
+    const rows = (parkingFirst: boolean) => months.flatMap((m, i) => {
+      const flat = pnl(100 + i, `${m}-05`, i >= 3 ? -431_00 : -412_30, REF)
+      const parking = pnl(200 + i, `${m}-05`, -25_00, 'Autopaikka')
+      return parkingFirst === (i % 2 === 0) ? [parking, flat] : [flat, parking]
+    })
+    for (const parkingFirst of [true, false]) {
+      const list = rows(parkingFirst)
+      // July paid twice over: both invoices again.
+      list.push(pnl(300, '2027-07-20', -431_00, REF), pnl(301, '2027-07-20', -25_00, 'Autopaikka'))
+      // A yearly charge of one amount is no monthly payment.
+      list.push(pnl(302, '2027-03-15', -120_00, 'Saunamaksu'), pnl(303, '2028-03-15', -120_00, 'Saunamaksu'))
+      const units = [...housingPayments(list).months].map(([m, x]) => [m, x.units]).sort()
+      expect(units).toEqual([
+        ['2027-03', 1], ['2027-04', 1], ['2027-05', 1], ['2027-06', 1], ['2027-07', 2], ['2027-08', 1], ['2028-03', 0],
+      ])
+    }
+  })
+
   it('guesses: the voucher that matches the difference to the cent, else the suspects near the period', () => {
     const candidate = (voucher_id: number, date: string, line_snt: number, suspect: WaterStatementCandidate['suspect']): WaterStatementCandidate => ({
       voucher: { voucher_id, date, doc_number: null, series: null, title: '', files: [] },

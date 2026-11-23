@@ -4,7 +4,7 @@
  * turn. Shares are computed from the leases: the period's use (or, without it, the company's
  * difference) split by the lease's days, less the advances the lease agreed. Pure (ADR-025).
  */
-import { addDays, addMonths, dayCount, monthEnd } from '../../../months'
+import { addDays, addMonths, dayCount, monthEnd, monthKeys } from '../../../months'
 import type { PnlRow, VoucherRef } from './ledger'
 import { isWaterSettlementText, mentionsRent, titlePeriod } from './leaseSuggest'
 import { leaseState, rentTotal, termsAt } from './rent'
@@ -505,17 +505,16 @@ export function housingCompanyPartners(rows: PnlRow[], reversed: ReadonlySet<num
 /**
  * The object's payments to its housing company, month by month (ADR-034): every expense line in a
  * `regularPayees` group, counted as whole payments - the month's total over the regular amount in
- * force then (the latest repeating amount, or the first one before any), rounded. A month that
- * pays two months counts 2, a small extra invoice 0, a raised amount still 1. With several groups
- * (vastike and water paid apart) a month counts as its most. `known`: some payee was found.
+ * force then (`regularLevel`), rounded. A month that pays two months counts 2, a small extra
+ * invoice 0, a raised amount still 1, two amounts paid apart each month (an apartment and a parking
+ * space) 1. With several groups (vastike and water paid apart) a month counts as its most.
+ * `known`: some payee was found.
  */
 export function housingPayments(rows: PnlRow[], reversed: ReadonlySet<number> = new Set()): { months: Map<string, { units: number; rows: PnlRow[] }>; known: boolean } {
   const months = new Map<string, { units: number; rows: PnlRow[] }>()
   const payees = regularPayees(rows, reversed)
   for (const { group, regular } of payees) {
-    // The regular amount from each month on, oldest first.
-    const levels = [...new Map([...regular].sort((a, b) => a.date.localeCompare(b.date)).map((r) => [r.date.slice(0, 7), -r.net_snt])).entries()]
-    const levelAt = (month: string) => levels.filter(([m]) => m <= month).at(-1)?.[1] ?? levels[0][1]
+    const levelAt = regularLevel(regular)
     const byMonth = new Map<string, PnlRow[]>()
     for (const r of group) byMonth.set(r.date.slice(0, 7), [...(byMonth.get(r.date.slice(0, 7)) ?? []), r])
     for (const [month, list] of byMonth) {
@@ -527,6 +526,38 @@ export function housingPayments(rows: PnlRow[], reversed: ReadonlySet<number> = 
     }
   }
   return { months, known: payees.length > 0 }
+}
+
+/**
+ * The regular amount in force each month: the sum of the repeating amounts whose months span it,
+ * each as many times as it mostly comes in a month. An amount counts as monthly when it comes in at
+ * least half the months of its span (a yearly charge of the same amount does not). Before the first
+ * month, the first level; in a gap or after the last, the latest one before.
+ */
+function regularLevel(regular: PnlRow[]): (month: string) => number {
+  const counts = new Map<number, Map<string, number>>()
+  for (const r of regular) {
+    const byMonth = counts.get(-r.net_snt) ?? new Map<string, number>()
+    byMonth.set(r.date.slice(0, 7), (byMonth.get(r.date.slice(0, 7)) ?? 0) + 1)
+    counts.set(-r.net_snt, byMonth)
+  }
+  const spans = [...counts].map(([amount, byMonth]) => {
+    const months = [...byMonth.keys()].sort()
+    const times = new Map<number, number>()
+    for (const n of byMonth.values()) times.set(n, (times.get(n) ?? 0) + 1)
+    const usual = [...times].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0]
+    return { amount: amount * usual, first: months[0], last: months.at(-1)!, months: months.length }
+  })
+  const monthly = spans.filter((s) => s.months * 2 >= monthKeys(s.first, s.last).length)
+  const used = monthly.length ? monthly : spans
+  const inForce = (month: string) => used.filter((s) => s.first <= month && month <= s.last).reduce((sum, s) => sum + s.amount, 0)
+  const earliest = used.map((s) => s.first).sort()[0]
+  return (month) => {
+    const level = inForce(month)
+    if (level > 0) return level
+    const before = used.filter((s) => s.last < month).sort((a, b) => a.last.localeCompare(b.last)).at(-1)
+    return inForce(before?.last ?? earliest)
+  }
 }
 
 function monthsBy<K>(list: PnlRow[], key: (r: PnlRow) => K | null): Map<K, Set<string>> {
