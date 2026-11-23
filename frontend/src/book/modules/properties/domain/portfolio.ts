@@ -31,7 +31,16 @@ import {
   suggestDeposit,
 } from './deposits'
 import { listNoteVouchers } from './documents'
-import { DEFAULT_OTHER_COSTS_X100, DEFAULT_RAISE_BP, FORECAST_YEARS, forecastAssumptions, objectForecast, otherCostsMonths, trailingCosts } from './forecast'
+import {
+  DEFAULT_OTHER_COSTS_X100,
+  DEFAULT_RAISE_BP,
+  FORECAST_YEARS,
+  forecastAssumptions,
+  objectForecast,
+  otherCostsMonths,
+  trailingCosts,
+  usualHoitovastike,
+} from './forecast'
 import {
   housingShare,
   housingShareForecast,
@@ -637,16 +646,19 @@ function forecastObjects(computed: Computed[], loaded: Loaded, asOf: string): { 
 }
 
 /**
- * The hoitovastike a month on `month` (ADR-035): the latest month by then that paid the housing company
- * one month's worth, less the rahoitusvastike the loans' paths have in it; 0 when none is found.
+ * The hoitovastike a month on `month` (ADR-035, `usualHoitovastike`): over the months by then that paid
+ * the housing company one month's worth, what each paid less the rahoitusvastike the loans' paths have in it.
  */
 function hoitovastikeIn(c: Computed, month: string): number {
-  const latest = [...c.loans.payments.months].filter(([m, p]) => m <= month && p.units === 1).sort(([a], [b]) => a.localeCompare(b)).at(-1)
-  if (!latest) return 0
-  const [paidIn, { rows }] = latest
-  const payment = rows.reduce((sum, r) => sum - r.net_snt, 0)
-  const rahoitus = c.loans.paths.reduce((sum, p) => sum + (p.months.find((m) => m.month === paidIn)?.paid_snt ?? 0), 0)
-  return Math.max(0, payment - rahoitus)
+  return usualHoitovastike(
+    [...c.loans.payments.months]
+      .filter(([m, p]) => m <= month && p.units === 1)
+      .map(([m, { rows }]) => ({
+        month: m,
+        paid_snt: rows.reduce((sum, r) => sum - r.net_snt, 0),
+        rahoitus_snt: c.loans.paths.reduce((sum, p) => sum + (p.months.find((pm) => pm.month === m)?.paid_snt ?? 0), 0),
+      })),
+  )
 }
 
 export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: string | null }): PortfolioResponse {

@@ -91,6 +91,23 @@ export function objectForecast(input: {
   })
 }
 
+/** How many of the latest months the hoitovastike is read from: one month with an extra payment does not count. */
+const USUAL_MONTHS = 3
+
+/**
+ * The hoitovastike a month (ADR-035): of the latest `USUAL_MONTHS` months that paid the housing company
+ * one month's worth, the middle one of what each paid less the rahoitusvastike in it - so a month with
+ * an extra payment on top (a water settlement, a one-off charge) does not stand for the rest. 0 without
+ * any such month, and never below 0.
+ */
+export function usualHoitovastike(months: { month: string; paid_snt: number; rahoitus_snt: number }[]): number {
+  const latest = [...months].sort((a, b) => b.month.localeCompare(a.month)).slice(0, USUAL_MONTHS)
+  if (!latest.length) return 0
+  const hoito = latest.map((m) => m.paid_snt - m.rahoitus_snt).sort((a, b) => a - b)
+  const middle = hoito.length % 2 ? hoito[(hoito.length - 1) / 2] : Math.round((hoito[hoito.length / 2 - 1] + hoito[hoito.length / 2]) / 2)
+  return Math.max(0, middle)
+}
+
 /**
  * The object's last 12 months to the as-of month (`months` its own, `housing` what it paid the
  * housing company in each): the income, and the other costs - expenses less the payments to the

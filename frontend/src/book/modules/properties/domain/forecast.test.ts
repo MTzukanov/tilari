@@ -9,6 +9,7 @@ import {
   raisesBetween,
   rentAhead,
   trailingCosts,
+  usualHoitovastike,
 } from './forecast'
 import type { Lease, MonthPoint } from './types'
 
@@ -106,5 +107,16 @@ describe('forecast: other costs in the last 12 months', () => {
     expect(costs).toEqual({ months: 12, income_snt: 12_000_00, other_snt: 1_200_00 })
     expect(otherCostsMonths([costs])).toBe(120)
     expect(otherCostsMonths([{ income_snt: 0, other_snt: 5_00 }])).toBeNull()
+  })
+})
+
+describe('forecast: the hoitovastike a month', () => {
+  it('the middle of the latest three months, so an extra payment in one does not count; never below 0', () => {
+    const month = (m: string, paid: number, rahoitus = 480_00) => ({ month: m, paid_snt: paid, rahoitus_snt: rahoitus })
+    // October paid a one-off 240,00 on top of the usual 590,00.
+    expect(usualHoitovastike([month('2026-08', 590_00), month('2026-09', 590_00), month('2026-10', 830_00), month('2026-01', 999_00)])).toBe(110_00)
+    expect(usualHoitovastike([month('2026-09', 590_00), month('2026-10', 600_00)])).toBe(115_00)
+    expect(usualHoitovastike([month('2026-10', 400_00)])).toBe(0)
+    expect(usualHoitovastike([])).toBe(0)
   })
 })

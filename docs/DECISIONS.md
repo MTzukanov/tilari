@@ -942,8 +942,9 @@ correction would change the open year's income statement lines. The rental-objec
 - **An object's month ahead** (`objectForecast`): what the tenant pays (rent, water, parking) of the lease's step in
   force - the lease running at the month's end, else the last one, re-let at its rent; a later step typed on it from
   its day - raised each year in the lease's increase month, else the month it started; an object with no lease at all
-  takes its last 12 months' income a month, raised each January. Out: the hoitovastike - the latest month's payment of
-  one month's worth to the housing company, less the loans' rahoitusvastike in it, so water paid there stays in, as
+  takes its last 12 months' income a month, raised each January. Out: the hoitovastike - of the latest three months that paid
+  the housing company one month's worth, the middle one of each less the loans' rahoitusvastike in it (a one-off
+  on top in one month does not count), so water paid there stays in, as
   the tenant's water does - raised each **June** (owner); the rahoitusvastike the loans' estimates pay
   (`vastikeAhead`; a loan still owing with no estimate pays its charge in force to its last due date); other costs, the
   month's income times the months a year over 12. The owner's own bank loans' interest is left out for now (owner:

@@ -24,6 +24,9 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   rebuilt too by the script but only its timestamps changed, so it was left as committed).
 - Pitfall: with no typed estimate the default makes almost every Euribor loan "estimated", so the forecast tile
   reads "korkoarvioiden mukaan" where it said "viimeisin korko pysyy" before.
+- Found on the owner's book (figures not here): the latest month's payment to the housing company can carry a
+  one-off on top (a water settlement), which made that object's hoitovastike far too high. `usualHoitovastike` takes
+  the middle of the latest three months that paid one month's worth, each less its rahoitusvastike.
 
 ## 2026-11-23 - Properties page: the loan shares chart on to the payoff (`feature/portfolio-share-forecast`, ADR-034)
 
