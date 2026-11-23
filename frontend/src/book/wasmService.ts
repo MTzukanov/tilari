@@ -36,7 +36,7 @@ import {
 import { deleteAttachment as deleteAttachmentRow, deleteVoucher as deleteVoucherRow } from './posting'
 import { readFileBytes } from './readFileBytes'
 import { isoFromFileLastModified } from './timestamps'
-import type { AttachmentSyncState, BookService, SessionPersistState } from './service'
+import type { AskFileName, AttachmentSyncState, BookService, SessionPersistState } from './service'
 import type { Meta } from './types'
 import { SqliteDb } from './sqlite'
 
@@ -847,7 +847,7 @@ export class WasmBookService extends Ledger implements BookService {
     })
   }
 
-  async downloadCopy(promptForName: (suggested: string) => string | null) {
+  async downloadCopy(promptForName: AskFileName) {
     const bytes = await this.exportPackedKitsas()
     const name = this.sourceName || 'book.kitsas'
     await saveKitsasAs(bytes, name, promptForName)
@@ -862,7 +862,7 @@ export class WasmBookService extends Ledger implements BookService {
     })
   }
 
-  async downloadLeanCopy(promptForName: (suggested: string) => string | null) {
+  async downloadLeanCopy(promptForName: AskFileName) {
     const bytes = this.requireDb().export()
     const name = this.sourceName || 'book.kitsas'
     await saveKitsasAs(bytes, name, promptForName)

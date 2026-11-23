@@ -109,6 +109,8 @@ export function EditorMenu({
                     disabled={item.disabled}
                     onClick={() => {
                       if (item.disabled) return
+                      // Focus back on the button (as the book menu does), where a prompt the item opens returns it.
+                      btnRef.current?.focus()
                       setOpen(false)
                       item.onSelect()
                     }}

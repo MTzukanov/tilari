@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, type Page } from '@playwright/test'
-import { chooseFileMenu } from './helpers'
+import { answerPrompt, chooseFileMenu } from './helpers'
 
 export const SETTINGS_CHANGE = 'Muokattiin yrityksen asetuksia'
 export const ALLOCATION_CHANGE = 'Muokattiin kohdennus'
@@ -133,10 +133,7 @@ export async function saveBookInBrowser(page: Page, book = 'tilari-test.kitsas')
 
 /** Http session engine: first save goes through the file menu. */
 export async function saveBookToLocker(page: Page, name = `e2e-session-${Date.now()}.kitsas`) {
-  page.once('dialog', async (dialog) => {
-    expect(dialog.type()).toBe('prompt')
-    await dialog.accept(name)
-  })
   await chooseFileMenu(page, 'Tallenna säilytykseen nimellä…')
+  await answerPrompt(page, 'Tiedoston nimi säilytyksessä', name)
   await expect(page.getByText('Tallennettu omaan säilytykseen.')).toBeVisible({ timeout: 60_000 })
 }

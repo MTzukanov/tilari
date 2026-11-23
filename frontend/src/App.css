@@ -3389,6 +3389,7 @@ tr.is-ended td {
 .filters input:not([type='checkbox']):not([type='radio']),
 .filters select,
 .search-select input,
+.prompt-dialog input,
 .amount-input {
   font-size: 0.92rem;
   color: var(--ink);
@@ -5018,6 +5019,22 @@ select.field-invalid {
 
 .vat-dialog-wide {
   width: min(100%, 62rem);
+}
+
+/* shared/PromptDialog.tsx: Tilari's own window.prompt, a label and one field. */
+.prompt-dialog {
+  width: min(100%, 26rem);
+}
+
+.prompt-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem 1.1rem;
+}
+
+.prompt-dialog-body label {
+  font-weight: 600;
 }
 
 .year-end-body {

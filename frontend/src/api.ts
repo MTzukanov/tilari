@@ -1,6 +1,6 @@
 /** Ledger façade. Browser wasm (default) or Node HTTP engine (ADR-016). */
 import { getBookService } from './book/engine'
-import type { LockerBook } from './book/service'
+import type { AskFileName, LockerBook } from './book/service'
 import type { TransferOpts } from './book/http'
 import type { NewBookInput } from './book/newBook/createBook'
 import type { Meta, SaveAllocationInput, SaveVoucherInput, FetchBrowseEntriesParams } from './book/types'
@@ -132,11 +132,11 @@ export function saveLocal() {
   return getBookService().saveLocal()
 }
 
-export function downloadCopy(promptForName: (suggested: string) => string | null) {
+export function downloadCopy(promptForName: AskFileName) {
   return getBookService().downloadCopy(promptForName)
 }
 
-export function downloadLeanCopy(promptForName: (suggested: string) => string | null) {
+export function downloadLeanCopy(promptForName: AskFileName) {
   const svc = getBookService()
   if (!svc.downloadLeanCopy) throw new Error('lean_download_unsupported')
   return svc.downloadLeanCopy(promptForName)

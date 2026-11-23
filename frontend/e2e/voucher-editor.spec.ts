@@ -629,6 +629,58 @@ test.describe('voucher editor between vouchers', () => {
     expect(await lineAccounts(page)).toEqual(['5000', '1910'])
   })
 
+  test('go to and change number ask in the page, not in a browser prompt', async ({ page }) => {
+    // A native prompt blocks the tab (browser automation cannot type into it): none may open here.
+    const native: string[] = []
+    page.on('dialog', (dialog) => {
+      native.push(dialog.type())
+      void dialog.dismiss()
+    })
+    await openBook(page)
+    await page.goto('/#/voucher/4/edit')
+    const title = page.getByRole('textbox', { name: 'Otsikko' })
+    await expect(title).toHaveValue('Palvelut Projekti A')
+
+    // Ctrl+G: this voucher's number, selected. Esc closes it and only it.
+    await page.keyboard.press('Control+g')
+    const goTo = page.getByRole('dialog', { name: 'Tositenumero:', exact: true })
+    const goToField = goTo.getByRole('textbox', { name: 'Tositenumero:', exact: true })
+    await expect(goToField).toBeFocused()
+    await expect(goToField).toHaveValue('4')
+    await page.keyboard.press('Escape')
+    await expect(goTo).toHaveCount(0)
+    await expect(title).toHaveValue('Palvelut Projekti A')
+    expect(openVoucherId(page)).toBe(4)
+
+    // Typing replaces the selected number, and Enter goes there.
+    await page.keyboard.press('Control+g')
+    await expect(goToField).toBeFocused()
+    await page.keyboard.type('3')
+    await page.keyboard.press('Enter')
+    await expect(title).toHaveValue('Vuokra Toimisto')
+    expect(openVoucherId(page)).toBe(3)
+
+    // Vaihda tunnistenumero: Peru keeps the number, OK sets it (saved with the voucher).
+    const more = page.getByRole('button', { name: 'Lisää toimintoja' })
+    const change = page.getByRole('dialog', { name: 'Uusi tositenumero:', exact: true })
+    await more.click()
+    await page.getByRole('menuitem', { name: 'Vaihda tunnistenumero' }).click()
+    await expect(change.getByRole('textbox')).toHaveValue('3')
+    await change.getByRole('button', { name: 'Peru' }).click()
+    await expect(change).toHaveCount(0)
+    await expect(page.locator('.editor-doc-number')).toHaveText('3')
+    await expect(more).toBeFocused()
+
+    await more.click()
+    await page.getByRole('menuitem', { name: 'Vaihda tunnistenumero' }).click()
+    await change.getByRole('textbox').fill('33')
+    await change.getByRole('button', { name: 'OK' }).click()
+    await expect(change).toHaveCount(0)
+    await expect(page.locator('.editor-doc-number')).toHaveText('33')
+    await expect(editorSaveButton(page)).toBeEnabled()
+    expect(native).toEqual([])
+  })
+
   test('a voucher that cannot be loaded says so, with the way back, instead of a blank or stale form', async ({
     page,
   }) => {

@@ -46,6 +46,35 @@ Pages app; noted on the local branch `docs/loan-entry-defects`), fixed on the ow
   span (a yearly charge of the same amount does not lift the level). Outside every span, the latest level before
   (the first before any), as before. Test: two lines on one day in both orders, a raise, a double month, a yearly charge.
 
+## 2026-11-23 - File names and voucher numbers asked in the page, not in `window.prompt` (`fix/in-app-name-dialog`)
+
+- A native prompt blocks the whole tab, and browser automation (Claude in Chrome) cannot type into it: the
+  owner had to. Every `window.prompt` is now Tilari's own dialog: the file menu's "Tallenna tiedostoksi…"
+  (and the primary save of a book with no file to write to), "Lataa kevyt kopio…", "Tallenna säilytykseen
+  nimellä…", and the voucher editor's "Siirry tositteeseen" (Ctrl+G) and "Vaihda tunnistenumero".
+- `shared/usePrompt.tsx`: `await ask(label, suggestion)` gives the text, or null when cancelled, as
+  `window.prompt` did, so the callers kept their checks; the caller renders `dialog`.
+  `shared/PromptDialog.tsx`: the prompt's own text labels one field, filled with the suggestion and
+  selected; OK or Enter answers, Peru, Esc or a press outside gives null. Tab stays in it, focus goes back
+  where it was, and keys typed in it do not reach the page (the editor's Esc, Ctrl+S, Ctrl+G). It is a
+  portal, but React events still bubble to the opener: its submit stops there, or the editor's form would
+  save. The voucher number gets the phone's number keys (`inputMode`).
+- `downloadCopy` / `downloadLeanCopy` take an `AskFileName` that may answer later (a Promise). The name is
+  still asked only where the browser has no save picker (Firefox, Safari, or a picker that fails), so it
+  could not be asked before the export.
+- Not `ModalShell`: that one has a title row (the prompt has only its label, and no new strings were
+  wanted) and lives in `periodEnd`. The prompt uses the same `vat-dialog` look, 26rem wide; new key
+  `common.ok` ("OK"); Peru is `common.cancel`.
+- Focus: choosing an item of the editor's "Lisää toimintoja" menu puts focus back on its button; the file menu's
+  button gets it back after an action that disabled it (a save, with its name prompt) is done.
+- Pitfall: the hook's `dialog` is a fragment of its own. Its `key` met `BookViews`' `key={dbKey}` among
+  `BookShell`'s children, and a cancelled prompt stayed on screen.
+- `window.confirm` and `window.alert` are unchanged (leaving with unsaved changes, deletes, "Ei voi
+  tallentaa" and others).
+- Tests: `shared/PromptDialog.test.ts`, two in `VoucherEditor.test.ts`, e2e in `fileMenu.spec.ts` (no save
+  picker: save as, lean copy) and `voucher-editor.spec.ts`; the desktop specs answer the in-app prompt
+  (`answerPrompt` in `e2e/helpers.ts`).
+
 ## 2026-11-20 - Rental objects: rate estimates, floors and ceilings, an optional drawdown (`feature/loan-rate-estimates`, ADR-034, step 4d)
 
 - Owner: nothing fetched; one estimate curve per reference rate in the Properties defaults (`rate_forecast`). The
