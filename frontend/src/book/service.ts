@@ -25,6 +25,12 @@ import type { FiscalPeriodSummary } from './fiscalPeriods'
 import type { BookModules } from './modules/types'
 import type { SessionChange } from './sessionLog'
 
+/**
+ * Asks a file's name where the browser has no save picker: the name, or null when cancelled.
+ * May answer later (the in-app prompt, `shared/usePrompt`).
+ */
+export type AskFileName = (suggested: string) => string | null | Promise<string | null>
+
 export type AttachmentSyncState = {
   status: 'idle' | 'syncing' | 'ready' | 'error'
   loaded: number
@@ -136,8 +142,8 @@ export interface BookService {
   linkWritableFile(): Promise<void>
   onLocalLinkChange?(listener: () => void): () => void
   saveLocal(): Promise<void>
-  downloadCopy(promptForName: (suggested: string) => string | null): Promise<void>
-  downloadLeanCopy?(promptForName: (suggested: string) => string | null): Promise<void>
+  downloadCopy(promptForName: AskFileName): Promise<void>
+  downloadLeanCopy?(promptForName: AskFileName): Promise<void>
   listLockerBooks(): Promise<LockerBook[]>
   deleteLockerBook(id: string): Promise<void>
   openLockerBook(id: string, opts?: TransferOpts): Promise<Meta>

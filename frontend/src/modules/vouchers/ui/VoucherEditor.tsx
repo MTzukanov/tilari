@@ -52,6 +52,7 @@ import { useLeaveGuard } from '../../../app/leaveGuard'
 import { getBcp47, useI18n } from '../../../i18n'
 import { nativePickerFocusProps } from '../../../shared/nativePicker'
 import { voucherStatusName } from '../../../shared/voucherTypes'
+import { usePrompt } from '../../../shared/usePrompt'
 import {
   defaultEditorTab,
   EDITOR_TABS,
@@ -220,6 +221,8 @@ function VoucherForm({
   const [baseline, setBaseline] = useState<string | null>(null)
   const [huomio, setHuomio] = useState(false)
   const [docNumber, setDocNumber] = useState<number | null>(null)
+  /** "Siirry tositteeseen" and "Vaihda tunnistenumero" ask the number in the page, not in `window.prompt`. */
+  const numberPrompt = usePrompt()
   /** Loaded voucher fits the expense/income assistant / transfer form (see editorLines). */
   const [assistantFits, setAssistantFits] = useState(true)
   const [transferFitsLoaded, setTransferFitsLoaded] = useState(true)
@@ -576,8 +579,12 @@ function VoucherForm({
     onOpenVoucher(id)
   }
 
-  function goToVoucher() {
-    const raw = window.prompt(t('editor.goToPrompt'), docNumber != null ? String(docNumber) : '')
+  async function goToVoucher() {
+    const raw = await numberPrompt.ask(
+      t('editor.goToPrompt'),
+      docNumber != null ? String(docNumber) : '',
+      { inputMode: 'numeric' },
+    )
     if (raw == null) return
     const n = Number(raw.trim())
     if (!n) return
@@ -602,10 +609,11 @@ function VoucherForm({
     onCopyAsNew(type, voucherId)
   }
 
-  function changeDocNumber() {
-    const raw = window.prompt(
+  async function changeDocNumber() {
+    const raw = await numberPrompt.ask(
       t('editor.changeDocNumberPrompt'),
       docNumber != null ? String(docNumber) : '',
+      { inputMode: 'numeric' },
     )
     if (raw == null) return
     const n = Number(raw.trim())
@@ -1209,7 +1217,7 @@ function VoucherForm({
     explainCannotSave: () => {
       if (blockedReason) window.alert(blockedReason)
     },
-    goToVoucher,
+    goToVoucher: () => void goToVoucher(),
     printVoucher,
     copyAsNew,
     toggleHuomio: () => setHuomio((v) => !v),
@@ -1633,7 +1641,7 @@ function VoucherForm({
                 label: t('editor.goToVoucher'),
                 shortcut: t('editor.shortcutGo'),
                 icon: 'search',
-                onSelect: goToVoucher,
+                onSelect: () => void goToVoucher(),
               },
               {
                 id: 'print',
@@ -1674,12 +1682,13 @@ function VoucherForm({
                 id: 'number',
                 label: t('editor.changeDocNumber'),
                 icon: 'numbers',
-                onSelect: changeDocNumber,
+                onSelect: () => void changeDocNumber(),
               },
             ]}
           />
         </div>
       </div>
+      {numberPrompt.dialog}
     </form>
   )
 }

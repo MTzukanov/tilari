@@ -64,6 +64,7 @@ import { parseRoute, routeAllowsNoBook, type Route } from './routing'
 import { periodContaining } from '../shared/periodNav'
 import { normalizeSessionChanges } from '../book/sessionLog'
 import { resetBodyScrollLock } from '../shared/scrollLock'
+import { usePrompt } from '../shared/usePrompt'
 import { getBookServiceEpoch, getEngine, resetBookService, resolveEngine, setEngine, withEngine } from '../book/engine'
 import { getLockerConnection, lockerSupportsHttpEngine, probeSameOriginNode, subscribeLockerConnection } from '../book/persist/locker'
 import { forcedEngineForPath } from '../book/openPath'
@@ -151,6 +152,8 @@ export function BookShell() {
   const [saveCancelOpen, setSaveCancelOpen] = useState(false)
   const [saveCancelCreatedNew, setSaveCancelCreatedNew] = useState(false)
   const saveCancelResolver = useRef<((choice: SaveCancelChoice) => void) | null>(null)
+  /** File names are asked in the page: a native prompt blocks the tab (and browser automation). */
+  const namePrompt = usePrompt()
   const [dirty, setDirty] = useState(false)
   const [sessionChanges, setSessionChanges] = useState<SessionChange[]>([])
   const [writableLinked, setWritableLinked] = useState(false)
@@ -914,7 +917,7 @@ export function BookShell() {
           const m = await fetchMeta()
           await applyMeta(m, openEngine ?? resolveEngine())
         } else {
-          await downloadCopy((suggested) => window.prompt(t('file.saveAsPrompt'), suggested))
+          await downloadCopy((suggested) => namePrompt.ask(t('file.saveAsPrompt'), suggested))
           const m = await fetchMeta()
           await applyMeta(m, openEngine ?? resolveEngine())
         }
@@ -947,7 +950,7 @@ export function BookShell() {
     setSaving(true)
     setError(null)
     try {
-      await downloadCopy((suggested) => window.prompt(t('file.saveAsPrompt'), suggested))
+      await downloadCopy((suggested) => namePrompt.ask(t('file.saveAsPrompt'), suggested))
     } catch (err) {
       const msg = mapFileError(err)
       if (msg) setError(msg)
@@ -960,7 +963,7 @@ export function BookShell() {
     setSaving(true)
     setError(null)
     try {
-      await downloadLeanCopy((suggested) => window.prompt(t('file.downloadLeanPrompt'), suggested))
+      await downloadLeanCopy((suggested) => namePrompt.ask(t('file.downloadLeanPrompt'), suggested))
       setFileNote(t('file.downloadedLean'))
     } catch (err) {
       const msg = mapFileError(err)
@@ -972,7 +975,7 @@ export function BookShell() {
 
   async function onSaveServerAs() {
     const defaultName = meta?.source_name ?? 'book.kitsas'
-    const picked = window.prompt(t('file.saveServerAsPrompt'), defaultName)
+    const picked = await namePrompt.ask(t('file.saveServerAsPrompt'), defaultName)
     if (!picked?.trim()) return
     const name = picked.trim()
     try {
@@ -1272,6 +1275,8 @@ export function BookShell() {
         createdNew={saveCancelCreatedNew}
         onChoose={onSaveCancelChoose}
       />
+
+      {namePrompt.dialog}
 
       <BookViews
         key={dbKey}

@@ -83,6 +83,15 @@ export function FilePick({
     if (busy) setOpen(false)
   }, [busy])
 
+  // close() leaves focus on the button. An item's action that disables it while it runs (a save and
+  // its name prompt, an open) loses it to the page; it comes back once the button is on again.
+  const refocusRef = useRef(false)
+  useEffect(() => {
+    if (busy) return
+    if (refocusRef.current && document.activeElement === document.body) toggleRef.current?.focus()
+    refocusRef.current = false
+  }, [busy])
+
   useLayoutEffect(() => {
     if (!open || !toggleRef.current) {
       setPanelStyle(undefined)
@@ -134,6 +143,7 @@ export function FilePick({
   function close() {
     setOpen(false)
     toggleRef.current?.focus()
+    refocusRef.current = true
   }
 
   function onPanelKey(e: KeyboardEvent<HTMLDivElement>) {

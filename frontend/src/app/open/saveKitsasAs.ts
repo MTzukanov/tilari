@@ -1,4 +1,5 @@
 import { downloadBytes } from '../../book/download'
+import type { AskFileName } from '../../book/service'
 
 const KITSAS_TYPE = {
   description: 'Kitsas',
@@ -15,13 +16,13 @@ export function canSaveKitsasAs(): boolean {
 }
 
 /**
- * Save bytes via native save dialog, or prompt + download when unavailable.
+ * Save bytes via native save dialog, or ask the name (the in-app prompt) + download when unavailable.
  * @throws DOMException AbortError when the user cancels.
  */
 export async function saveKitsasAs(
   bytes: Uint8Array,
   suggestedName: string,
-  promptForName: (suggested: string) => string | null,
+  promptForName: AskFileName,
 ): Promise<void> {
   const suggested = kitsasFileName(suggestedName)
   if (canSaveKitsasAs()) {
@@ -38,7 +39,7 @@ export async function saveKitsasAs(
       if (err instanceof DOMException && err.name === 'AbortError') throw err
     }
   }
-  const picked = promptForName(suggested)
+  const picked = await promptForName(suggested)
   if (!picked?.trim()) throw new DOMException('Aborted', 'AbortError')
   downloadBytes(bytes, picked.trim())
 }

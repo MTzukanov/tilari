@@ -27,6 +27,7 @@ let heldLoads: Map<number, Promise<void>>
 let heldSave: Promise<void> | null
 const onSaved = vi.fn()
 const onCancel = vi.fn()
+const onOpenVoucher = vi.fn()
 
 function gate(): { wait: Promise<void>; release: () => void } {
   let release = () => undefined as void
@@ -44,6 +45,7 @@ beforeEach(async () => {
   heldSave = null
   onSaved.mockReset()
   onCancel.mockReset()
+  onOpenVoucher.mockReset()
   book.service = new Proxy(ledger, {
     get(target, prop) {
       if (prop === 'fetchVoucher') {
@@ -85,7 +87,7 @@ async function show(address: Address) {
           backLabel: 'Selaukseen',
           onSaved,
           onCancel,
-          onOpenVoucher: () => undefined,
+          onOpenVoucher,
           onCopyAsNew: () => undefined,
         }),
       ),
@@ -267,5 +269,74 @@ describe('VoucherEditor when a voucher cannot be loaded', () => {
     } finally {
       window.alert = before
     }
+  })
+})
+
+describe('VoucherEditor number prompts', () => {
+  /** The in-app prompt (`shared/usePrompt`), portalled to the body. */
+  function prompt(): HTMLElement | null {
+    return document.querySelector<HTMLElement>('[role=dialog]')
+  }
+
+  function promptInput(): HTMLInputElement {
+    return prompt()!.querySelector('input')!
+  }
+
+  async function pressInPrompt(key: string, ctrlKey = false) {
+    await act(async () => {
+      promptInput().dispatchEvent(new KeyboardEvent('keydown', { key, ctrlKey, bubbles: true, cancelable: true }))
+    })
+  }
+
+  async function chooseMenu(label: string) {
+    await act(async () => container.querySelector<HTMLButtonElement>('.editor-menu-btn')!.click())
+    const item = [...document.querySelectorAll<HTMLButtonElement>('.editor-menu-item')].find(
+      (b) => b.querySelector('.editor-menu-label')?.textContent === label,
+    )
+    await act(async () => item!.click())
+  }
+
+  it('"Vaihda tunnistenumero" asks in the page: Esc keeps the editor, OK sets the number without saving', async () => {
+    await show({ voucherId: 4, defaultType: null })
+    await waitFor(() => titleInput().value === 'Palvelut Projekti A', 'voucher 4 loaded')
+
+    await chooseMenu('Vaihda tunnistenumero')
+    expect(prompt()?.textContent).toContain('Uusi tositenumero:')
+    expect(promptInput().value).toBe('4')
+    expect(promptInput().inputMode).toBe('numeric')
+    // The editor's own Esc (back to the list) does not see it.
+    await pressInPrompt('Escape')
+    expect(prompt()).toBeNull()
+    expect(onCancel).not.toHaveBeenCalled()
+    expect(container.querySelector('.editor-doc-number')?.textContent).toBe('4')
+
+    await chooseMenu('Vaihda tunnistenumero')
+    await act(async () => typeInto(promptInput(), '42'))
+    await pressInPrompt('s', true)
+    expect(prompt()).not.toBeNull()
+    const ok = [...prompt()!.querySelectorAll('button')].find((b) => b.textContent === 'OK')!
+    await act(async () => ok.click())
+    await settle()
+    expect(prompt()).toBeNull()
+    expect(container.querySelector('.editor-doc-number')?.textContent).toBe('42')
+    // The prompt's form is not the editor's: nothing was saved.
+    expect(onSaved).not.toHaveBeenCalled()
+    expect((await ledger.fetchVoucher(4)).doc_number).toBe(4)
+  })
+
+  it('Ctrl+G asks the number in the page and opens that voucher', async () => {
+    await show({ voucherId: 4, defaultType: null })
+    await waitFor(() => titleInput().value === 'Palvelut Projekti A', 'voucher 4 loaded')
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g', ctrlKey: true }))
+    })
+    expect(prompt()?.textContent).toContain('Tositenumero:')
+    expect(promptInput().value).toBe('4')
+    await act(async () => typeInto(promptInput(), '3'))
+    const ok = [...prompt()!.querySelectorAll('button')].find((b) => b.textContent === 'OK')!
+    await act(async () => ok.click())
+    await waitFor(() => onOpenVoucher.mock.calls.length > 0, 'voucher 3 opened')
+    expect(onOpenVoucher).toHaveBeenCalledWith(3)
+    expect(prompt()).toBeNull()
   })
 })

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
-import { clearTilariStorage, confirmEngineOpen, openBook, periodEndBook, testBook } from './helpers'
+import { chooseFileMenu, clearTilariStorage, confirmEngineOpen, openBook, periodEndBook, testBook } from './helpers'
 
 const PICKED = 'e2e-period-end.kitsas'
 
@@ -115,6 +115,51 @@ test.describe('book file menu', () => {
     await page.keyboard.press('Escape')
     await expect(menu).toBeHidden()
     await expect(toggle).toBeFocused()
+  })
+
+  test('without a save picker, save as and the lean copy ask the name in the page', async ({ page }) => {
+    // A native prompt blocks the tab (browser automation cannot type into it): none may open here.
+    const native: string[] = []
+    page.on('dialog', (dialog) => {
+      native.push(dialog.type())
+      void dialog.dismiss()
+    })
+    await openBook(page)
+    // As in Firefox and Safari: no save picker, so Tilari asks the name and downloads the file.
+    const hasPicker = await page.evaluate(() => {
+      delete (window as Partial<Window>).showSaveFilePicker
+      delete (Window.prototype as Partial<Window>).showSaveFilePicker
+      return 'showSaveFilePicker' in window
+    })
+    expect(hasPicker).toBe(false)
+
+    const saveAs = page.getByRole('dialog', { name: 'Tiedoston nimi', exact: true })
+    const name = saveAs.getByRole('textbox', { name: 'Tiedoston nimi', exact: true })
+    await chooseFileMenu(page, 'Tallenna tiedostoksi…')
+    await expect(name).toBeFocused()
+    await expect(name).toHaveValue('tilari-test.kitsas')
+    // Esc: no file and no error, and focus is back on the menu's button.
+    await page.keyboard.press('Escape')
+    await expect(saveAs).toHaveCount(0)
+    await expect(bookToggle(page)).toBeFocused()
+    await expect(page.locator('.app-alert')).toHaveCount(0)
+
+    await chooseFileMenu(page, 'Tallenna tiedostoksi…')
+    await expect(name).toBeFocused()
+    await page.keyboard.type('e2e-kopio')
+    const download = page.waitForEvent('download')
+    await page.keyboard.press('Enter')
+    expect((await download).suggestedFilename()).toBe('e2e-kopio.kitsas')
+    await expect(saveAs).toHaveCount(0)
+
+    await chooseFileMenu(page, 'Lataa kevyt kopio (ilman liitteitä)…')
+    const lean = page.getByRole('dialog', { name: 'Kevyen tiedoston nimi (ilman liitteitä)', exact: true })
+    await expect(lean.getByRole('textbox')).toHaveValue('tilari-test.kitsas')
+    const leanDownload = page.waitForEvent('download')
+    await lean.getByRole('button', { name: 'OK' }).click()
+    expect((await leanDownload).suggestedFilename()).toBe('tilari-test.kitsas')
+    await expect(page.getByText('Ladattiin kevyt .kitsas (ilman liitetavuja).')).toBeVisible()
+    expect(native).toEqual([])
   })
 
   test('create opens the new book dialog', async ({ page }) => {

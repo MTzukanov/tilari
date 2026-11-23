@@ -145,6 +145,14 @@ export async function confirmEngineOpen(page: Page, engine: 'wasm' | 'http') {
 }
 
 /** Topbar book file menu: open it and pick an item by its label. */
+/** Answers Tilari's in-app prompt (`shared/usePrompt`, not `window.prompt`): `text` in its field, then OK. */
+export async function answerPrompt(page: Page, label: string, text: string) {
+  const dialog = page.getByRole('dialog', { name: label, exact: true })
+  await dialog.getByRole('textbox', { name: label, exact: true }).fill(text)
+  await dialog.getByRole('button', { name: 'OK', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+}
+
 export async function chooseFileMenu(page: Page, item: string | RegExp) {
   await page.getByRole('button', { name: /^Kirjanpitotiedosto/ }).click()
   await page

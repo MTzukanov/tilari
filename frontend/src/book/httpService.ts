@@ -19,7 +19,7 @@ import type { FiscalPeriodSummary } from './fiscalPeriods'
 import { newLedgerId } from './ledger'
 import { resolveLockerPutId } from './lockerSave'
 import type { BookModules } from './modules/types'
-import type { BookService } from './service'
+import type { AskFileName, BookService } from './service'
 import { normalizeSessionChanges } from './sessionLog'
 import type { OverviewResponse } from './overview'
 import type {
@@ -376,7 +376,7 @@ export class HttpBookService implements BookService {
   async saveLocal() {
     /* server already wrote */
   }
-  async downloadCopy(promptForName: (suggested: string) => string | null) {
+  async downloadCopy(promptForName: AskFileName) {
     const meta = await this.fetchMeta()
     // pack=1: attachment bytes included (a locker book is lean on the server).
     const res = await fetch('/api/export?pack=1', { cache: 'no-store' })

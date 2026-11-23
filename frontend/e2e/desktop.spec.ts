@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import {
+  answerPrompt,
   chooseFileMenu,
   eur,
   lockerBookRow,
@@ -57,10 +58,8 @@ test('http engine saves book to locker with a non-empty body', async ({ page }) 
     return /\/api\/objects\/.+\/book\.kitsas$/.test(new URL(res.url()).pathname)
   })
 
-  page.once('dialog', async (dialog) => {
-    await dialog.accept(name)
-  })
   await chooseFileMenu(page, 'Tallenna säilytykseen nimellä…')
+  await answerPrompt(page, 'Tiedoston nimi säilytyksessä', name)
 
   const exportRes = await exportWait
   expect(exportRes.status()).toBe(200)
