@@ -441,6 +441,41 @@ export function housingShareMonths(loans: HousingLoan[], paths: LoanPath[]): Map
   return out
 }
 
+/**
+ * The object's share month by month after `after` (`YYYY-MM`, the last month followed) until every
+ * loan is paid: each loan's path where it runs on (a later certificate), then its estimate
+ * (`loanForecast` on the portfolio's `curve`, as the Taloyhtiö tab draws it), 0 once paid. Ends with
+ * the month the share reaches 0, or before the first month a loan still owing has no estimate.
+ * Empty when nothing is owed after `after`.
+ */
+export function housingShareForecast(loans: HousingLoan[], paths: LoanPath[], curve: RateForecast[], after: string): Map<string, number> {
+  const out = new Map<string, number>()
+  if (!housingShare(loans, paths, after)) return out
+  const lines = loans.map((loan) => {
+    const path = paths.find((p) => p.loan_key === loan.key)
+    const months = path ? [...path.months, ...loanForecast(loan, path, { curve })] : []
+    return { loan, closing: new Map(months.map((m) => [m.month, m.closing_snt])), last: months.at(-1) }
+  })
+  const shareIn = ({ loan, closing, last }: (typeof lines)[number], month: string): number | null => {
+    const drawn = drawnOn(loan)
+    if (drawn && month < monthOf(drawn)) return 0
+    const paidOff = paidOffOn(loan)
+    if (paidOff && monthOf(paidOff) <= month) return 0
+    return closing.get(month) ?? (last && last.month < month && last.closing_snt <= 0 ? 0 : null)
+  }
+  for (let month = addMonths(after, 1); out.size < FORECAST_MAX_MONTHS; month = addMonths(month, 1)) {
+    let total = 0
+    for (const line of lines) {
+      const share = shareIn(line, month)
+      if (share == null) return out
+      total += share
+    }
+    out.set(month, total)
+    if (total <= 0) return out
+  }
+  return out
+}
+
 /** A fiscal year's rahoitusvastike paid, all loans together, split by the paths into interest and repayment. */
 export type VastikeYear = { starts: string; paid_snt: number; interest_snt: number; principal_snt: number }
 

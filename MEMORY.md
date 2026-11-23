@@ -7,6 +7,19 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-23 - Properties page: the loan shares chart on to the payoff (`feature/portfolio-share-forecast`, ADR-034)
+
+- Owner asked for the shares chart projected to 0, as each object's Taloyhtiö tab already does.
+  `housingShareForecast` (pure, `housingLoan.ts`) sums an object's loans after the as-of month: the path where it
+  runs on (a later certificate), then `loanForecast` on `rate_forecast`, 0 once paid; it ends at 0 or before a month
+  a loan still owing has no estimate. `portfolioChart` takes it as `ahead` (held objects only) and gives
+  `ahead_keys`, `share_ahead_snt` per object and `total_share_ahead_snt` (null from a month an object still owing has
+  none, not that object left out).
+- UI: checkbox "Arvio lainojen loppuun" over the shares chart (off by default, remembered as `forecast` in
+  `tilari.properties.portfolioChart`); the lines run on in their own colour and dash at 45 % opacity
+  (`.portfolio-ahead`), because dashes already mark objects 9 and on; a month's box says "(arvio)" and lists each line
+  once. The combined chart is unchanged (its other lines have no estimate).
+
 ## 2026-11-23 - Rental objects: the rahoitusvastike paid read from the vastike invoices (`feature/vastike-facts`, ADR-034 step 4e)
 
 - Owner: "4e seems to be the most needed, go ahead". The importer side is tilari-bank-import's `vastike.py`

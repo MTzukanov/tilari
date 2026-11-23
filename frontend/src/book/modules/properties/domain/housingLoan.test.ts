@@ -5,6 +5,7 @@ import {
   copyGroup,
   drawnOn,
   housingShare,
+  housingShareForecast,
   housingShareMonths,
   housingVoucherIds,
   latestCertificate,
@@ -599,5 +600,56 @@ describe('housing-company loans: rate estimates, floors and ceilings (4d)', () =
     expect(codes('2025-08-15')).toEqual([])
     expect(codes('2026-04-15')).toEqual([])
     expect(loanWarnings([graced], '2025-12-15', false)).toEqual([])
+  })
+})
+
+describe('housing-company loans: the object\'s share on to the payoff', () => {
+  /** 0 % fixed, a charge a month from January 2026: the share falls by the charge. */
+  const owing = (key: string, charge: number, extra: Partial<HousingLoan> = {}) =>
+    loan({ key, reference: 'fixed', margin_pcm: 0, rates: [{ from: '2026-01-01', reference_pcm: 0 }], charges: [{ from: '2026-01-01', amount_snt: charge }], ...extra })
+  const pathOf = (key: string, ...shares: [string, number][]): LoanPath => ({
+    loan_key: key,
+    months: shares.map(([month, share]) => ({ month, opening_snt: share, due_snt: 0, payments: 0, paid_snt: 0, rate_pcm: 0, interest_snt: 0, principal_snt: 0, extra_snt: 0, closing_snt: share })),
+    payments_known: true,
+    missing: null,
+  })
+  const loans = [owing('h1', 100_00), owing('h2', 50_00)]
+
+  it('sums each loan\'s estimate month by month, 0 once a loan is paid, to the month the share reaches 0', () => {
+    const paths = [pathOf('h1', ['2026-05', 300_00]), pathOf('h2', ['2026-05', 100_00])]
+    expect([...housingShareForecast(loans, paths, [], '2026-05')]).toEqual([
+      ['2026-06', 250_00],
+      ['2026-07', 100_00],
+      ['2026-08', 0],
+    ])
+  })
+
+  it('takes a path that runs on (a later certificate) before the estimate from its end', () => {
+    const paths = [pathOf('h1', ['2026-05', 300_00], ['2026-06', 180_00]), pathOf('h2', ['2026-05', 100_00])]
+    expect([...housingShareForecast(loans, paths, [], '2026-05')]).toEqual([
+      ['2026-06', 180_00 + 50_00],
+      ['2026-07', 80_00],
+      ['2026-08', 0],
+    ])
+  })
+
+  it('stops before a month a loan still owing has no estimate; a curve gives one, a payoff ends it', () => {
+    const unrated = [owing('h1', 100_00), owing('h2', 50_00, { reference: 'euribor_12m', rates: [] })]
+    const paths = [pathOf('h1', ['2026-05', 300_00]), pathOf('h2', ['2026-05', 100_00])]
+    expect([...housingShareForecast(unrated, paths, [], '2026-05')]).toEqual([])
+    const curve: RateForecast[] = [{ reference: 'euribor_12m', from: '2026-01-01', reference_pcm: 0 }]
+    expect(housingShareForecast(unrated, paths, curve, '2026-05').get('2026-06')).toBe(250_00)
+    const paidOff = [owing('h1', 100_00), owing('h2', 50_00, { rates: [], events: [{ date: '2026-06-15', kind: 'paid_off' }] })]
+    expect([...housingShareForecast(paidOff, paths, [], '2026-05')]).toEqual([
+      ['2026-06', 200_00],
+      ['2026-07', 100_00],
+      ['2026-08', 0],
+    ])
+  })
+
+  it('is empty when nothing is owed after the month', () => {
+    const paths = [pathOf('h1', ['2026-05', 0]), pathOf('h2', ['2026-05', 0])]
+    expect(housingShareForecast(loans, paths, [], '2026-05').size).toBe(0)
+    expect(housingShareForecast([], [], [], '2026-05').size).toBe(0)
   })
 })

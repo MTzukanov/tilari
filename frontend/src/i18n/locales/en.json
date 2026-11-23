@@ -1196,6 +1196,7 @@
       "allMonths": "All months",
       "lead": "The total line always counts every object: the checkboxes only hide lines. A sold object leaves the unrecovered total from its sale month but stays in the cash flow total.",
       "shares": "Housing-company loan shares at month end",
+      "forecast": "Estimate to the loans' end",
       "objects": "Objects",
       "checkAll": "Select all",
       "uncheckAll": "Clear all",

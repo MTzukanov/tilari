@@ -53,8 +53,8 @@ describe('portfolioChart', () => {
       { id: 2, status: 'active', months: [owed(month('2026-02', 50, 0), 500), owed(month('2026-03', 50, 80), 530)] },
     ])
     expect(chart.keys).toEqual(['2026-01', '2026-02', '2026-03'])
-    expect(chart.objects[0]).toEqual({ id: 1, cash_snt: [60, 120, 180], unrecovered_snt: [900, 840, 780], invested_snt: [0, 0, 0], share_snt: [null, null, null] })
-    expect(chart.objects[1]).toEqual({ id: 2, cash_snt: [null, 50, 20], unrecovered_snt: [null, 500, 530], invested_snt: [null, 0, 0], share_snt: [null, null, null] })
+    expect(chart.objects[0]).toEqual({ id: 1, cash_snt: [60, 120, 180], unrecovered_snt: [900, 840, 780], invested_snt: [0, 0, 0], share_snt: [null, null, null], share_ahead_snt: [] })
+    expect(chart.objects[1]).toEqual({ id: 2, cash_snt: [null, 50, 20], unrecovered_snt: [null, 500, 530], invested_snt: [null, 0, 0], share_snt: [null, null, null], share_ahead_snt: [] })
     expect(chart.total_cash_snt).toEqual([60, 170, 200])
     expect(chart.total_unrecovered_snt).toEqual([900, 1340, 1310])
   })
@@ -69,7 +69,7 @@ describe('portfolioChart', () => {
     expect(chart.objects.map((o) => o.id)).toEqual([1, 2, 3])
     expect(chart.objects[1].cash_snt).toEqual([30, 60, null])
     // Nothing invested linked: a cash flow, nothing to recover.
-    expect(chart.objects[2]).toEqual({ id: 3, cash_snt: [5, null, null], unrecovered_snt: [null, null, null], invested_snt: [null, null, null], share_snt: [null, null, null] })
+    expect(chart.objects[2]).toEqual({ id: 3, cash_snt: [5, null, null], unrecovered_snt: [null, null, null], invested_snt: [null, null, null], share_snt: [null, null, null], share_ahead_snt: [] })
     expect(chart.total_cash_snt).toEqual([45, 85, 95])
     expect(chart.total_unrecovered_snt).toEqual([500, 100, 100])
   })
@@ -120,5 +120,32 @@ describe('portfolioChart', () => {
 
   it('is empty without objects', () => {
     expect(portfolioChart([]).keys).toEqual([])
+  })
+
+  it('runs the held objects\' shares on to their payoff; the total stops where an object still owing has no estimate', () => {
+    const months = (keys: string[]) => keys.map((k) => owed(month(k, 10, 0), 100))
+    const first = { id: 1, status: 'active' as const, months: months(['2026-01', '2026-02']), shares: new Map([['2026-02', 300]]), ahead: new Map([['2026-03', 200], ['2026-04', 100], ['2026-05', 0]]) }
+    const chart = portfolioChart([
+      first,
+      { id: 2, status: 'active', months: months(['2026-01', '2026-02']), shares: new Map([['2026-02', 50]]), ahead: new Map([['2026-03', 0]]) },
+      // Sold: its share is the buyer's, an estimate does not count.
+      { id: 3, status: 'sold', months: months(['2026-01']), shares: new Map([['2026-01', 900]]), ahead: new Map([['2026-03', 800]]) },
+      // Nothing owed: 0 in the total.
+      { id: 4, status: 'active', months: months(['2026-01', '2026-02']), shares: new Map([['2026-02', 0]]), ahead: new Map() },
+    ])
+    expect(chart.ahead_keys).toEqual(['2026-03', '2026-04', '2026-05'])
+    expect(chart.objects.map((o) => o.share_ahead_snt)).toEqual([
+      [200, 100, 0],
+      [0, null, null],
+      [null, null, null],
+      [null, null, null],
+    ])
+    expect(chart.total_share_ahead_snt).toEqual([200, 100, 0])
+    const stops = portfolioChart([
+      first,
+      { id: 2, status: 'active', months: months(['2026-01', '2026-02']), shares: new Map([['2026-02', 50]]), ahead: new Map([['2026-03', 40]]) },
+    ])
+    expect(stops.total_share_ahead_snt).toEqual([240, null, null])
+    expect(portfolioChart([{ id: 1, status: 'active', months: months(['2026-01']) }]).ahead_keys).toEqual([])
   })
 })

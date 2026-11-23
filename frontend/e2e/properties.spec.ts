@@ -127,6 +127,7 @@ test.describe('rental objects chart', () => {
       allMonths: false,
       combined: true,
       percent: false,
+      forecast: false,
     })
     await panel.getByRole('checkbox', { name: 'Kaikki yhteensä' }).uncheck()
     await expect(cash.locator('.portfolio-total')).toHaveCount(0)
@@ -722,6 +723,17 @@ test.describe('rental object housing-company loans', () => {
     await expect(kpi('Yhtiölainaosuudet')).toContainText(/11\s898\s€/)
     await expect(page.locator('.property-table').first().locator('thead')).toContainText('Velkaosuus')
     await expect(page.getByRole('heading', { name: 'Yhtiölainaosuudet kuukauden lopussa' })).toBeVisible()
+    // On to the payoff with the estimate on: each line runs on faded, the last month's box at 0.
+    const sharesChart = page.getByRole('group', { name: 'Yhtiölainaosuudet kuukauden lopussa' })
+    await expect(sharesChart.locator('.portfolio-ahead')).toHaveCount(0)
+    await page.getByRole('checkbox', { name: 'Arvio lainojen loppuun' }).check()
+    await expect(sharesChart.locator('.portfolio-total.portfolio-ahead')).toHaveCount(1)
+    await sharesChart.locator('.chart-point-hit').last().hover()
+    const sharesTip = sharesChart.locator('xpath=..').locator('.chart-tip')
+    await expect(sharesTip.locator('.chart-tip-title')).toHaveText(/\(arvio\)$/)
+    await expect(sharesTip.locator('.chart-tip-row').first()).toHaveText(/^Kaikki yhteensä\s*0,00\s€$/)
+    await page.reload()
+    await expect(page.getByRole('checkbox', { name: 'Arvio lainojen loppuun' })).toBeChecked()
 
     // Another object copies the loan's terms; its share and charges are its own.
     await page.goto('/#/property/30/housing')

@@ -783,6 +783,8 @@ export type PortfolioChart = {
     unrecovered_snt: (number | null)[]
     invested_snt: (number | null)[]
     share_snt: (number | null)[]
+    /** The share's estimate in `ahead_keys`: null where there is none, and after its payoff. */
+    share_ahead_snt: (number | null)[]
   }[]
   total_cash_snt: number[]
   total_unrecovered_snt: number[]
@@ -795,6 +797,13 @@ export type PortfolioChart = {
   total_back_snt: number[]
   /** The housing-company loan shares (ADR-034), each object's where known; null where none is. */
   total_share_snt: (number | null)[]
+  /**
+   * The months after `keys` the held objects' shares are estimated for (`housingShareForecast`), to
+   * the last one's payoff; empty without an estimate.
+   */
+  ahead_keys: string[]
+  /** The held objects' estimated shares together in `ahead_keys`; null from a month an object still owing has none. */
+  total_share_ahead_snt: (number | null)[]
 }
 
 /** The header's count of warnings to act on (ADR-030). */

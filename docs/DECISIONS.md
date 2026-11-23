@@ -873,6 +873,12 @@ correction would change the open year's income statement lines. The rental-objec
   no share is known, not 0). A debt-free price is the price plus the share: beside the break-even and the target
   price, and on a price estimate without a typed one (the share at the estimate's month end; the path's last after
   it).
+- **The portfolio's shares ahead** (owner, 2026-11-23): a checkbox over the Properties page's shares chart runs each
+  held object's line and the total on, faded, to the last payoff: each loan's `loanForecast` on the portfolio's
+  curves, as its Taloyhtiö tab draws it, summed per object (`housingShareForecast`); a sold object has none. The
+  total stops where an object still owing has no estimate (no rate row and no curve, or a charge that never clears
+  it), rather than leaving that object out. Only a tasalyhennys falls the same at any rate; an annuity's path bends
+  with the rate (its end does not move), and a fixed payment's end moves with it.
 - **Sale costs are a percentage of the debt-free price** (owner, 2026-11-19: a broker's fee is): the selling price
   plus the share the buyer takes over. The break-even, the target price, the IRR's sale at the estimate or book value
   and the portfolio's IRRs count it; without loans nothing changes.
