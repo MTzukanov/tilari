@@ -5484,6 +5484,22 @@ tr.tax-total td {
   flex-direction: row;
 }
 
+/* A figure under a field (the last 12 months' other costs) keeps the row's fields level: it hangs below. */
+.property-form-grid label.property-field-hinted {
+  position: relative;
+}
+
+.property-field-hinted .property-field-hint {
+  position: absolute;
+  top: 100%;
+  margin-top: 0.2rem;
+  white-space: nowrap;
+}
+
+.property-form-grid:has(.property-field-hint) {
+  margin-bottom: 1.9rem;
+}
+
 .property-form-row {
   display: flex;
   flex-wrap: wrap;

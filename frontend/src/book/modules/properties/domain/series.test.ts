@@ -53,8 +53,8 @@ describe('portfolioChart', () => {
       { id: 2, status: 'active', months: [owed(month('2026-02', 50, 0), 500), owed(month('2026-03', 50, 80), 530)] },
     ])
     expect(chart.keys).toEqual(['2026-01', '2026-02', '2026-03'])
-    expect(chart.objects[0]).toEqual({ id: 1, cash_snt: [60, 120, 180], unrecovered_snt: [900, 840, 780], invested_snt: [0, 0, 0], share_snt: [null, null, null], share_ahead_snt: [] })
-    expect(chart.objects[1]).toEqual({ id: 2, cash_snt: [null, 50, 20], unrecovered_snt: [null, 500, 530], invested_snt: [null, 0, 0], share_snt: [null, null, null], share_ahead_snt: [] })
+    expect(chart.objects[0]).toEqual({ id: 1, cash_snt: [60, 120, 180], unrecovered_snt: [900, 840, 780], invested_snt: [0, 0, 0], share_snt: [null, null, null], share_ahead_snt: [], cash_ahead_snt: [], unrecovered_ahead_snt: [], invested_ahead_snt: [] })
+    expect(chart.objects[1]).toEqual({ id: 2, cash_snt: [null, 50, 20], unrecovered_snt: [null, 500, 530], invested_snt: [null, 0, 0], share_snt: [null, null, null], share_ahead_snt: [], cash_ahead_snt: [], unrecovered_ahead_snt: [], invested_ahead_snt: [] })
     expect(chart.total_cash_snt).toEqual([60, 170, 200])
     expect(chart.total_unrecovered_snt).toEqual([900, 1340, 1310])
   })
@@ -69,7 +69,7 @@ describe('portfolioChart', () => {
     expect(chart.objects.map((o) => o.id)).toEqual([1, 2, 3])
     expect(chart.objects[1].cash_snt).toEqual([30, 60, null])
     // Nothing invested linked: a cash flow, nothing to recover.
-    expect(chart.objects[2]).toEqual({ id: 3, cash_snt: [5, null, null], unrecovered_snt: [null, null, null], invested_snt: [null, null, null], share_snt: [null, null, null], share_ahead_snt: [] })
+    expect(chart.objects[2]).toEqual({ id: 3, cash_snt: [5, null, null], unrecovered_snt: [null, null, null], invested_snt: [null, null, null], share_snt: [null, null, null], share_ahead_snt: [], cash_ahead_snt: [], unrecovered_ahead_snt: [], invested_ahead_snt: [] })
     expect(chart.total_cash_snt).toEqual([45, 85, 95])
     expect(chart.total_unrecovered_snt).toEqual([500, 100, 100])
   })
@@ -120,6 +120,32 @@ describe('portfolioChart', () => {
 
   it('is empty without objects', () => {
     expect(portfolioChart([]).keys).toEqual([])
+  })
+
+  it('runs the cash flow, still to recover and the capital put in on with each held object\'s estimated months (ADR-035)', () => {
+    const at = (m: MonthPoint, capex: number, unrecovered: number): MonthPoint => ({ ...m, capex_snt: capex, unrecovered_snt: unrecovered })
+    const flows = (...nets: number[]) => nets.map((net, i) => ({ key: `2026-0${i + 3}`, income_snt: 100 + net, expense_snt: 100 }))
+    const chart = portfolioChart([
+      // Bought for 1 000, 10 back in February; ahead 20 and 30 a month.
+      { id: 1, status: 'active', months: [at(month('2026-01', 0, 0), 1_000, 1_000), at(month('2026-02', 10, 0), 0, 990)], flows: flows(20, 30) },
+      // Sold in January with 40 of cash flow: it stays in the cash total as it ended.
+      { id: 2, status: 'sold', months: [at(month('2026-01', 40, 0), 0, 0)], flows: flows(99, 99) },
+      // Nothing invested linked: only a cash flow, run on.
+      { id: 3, status: 'unlinked', months: [at(month('2026-02', 7, 0), 0, -7)], flows: flows(-5, -5) },
+    ])
+    expect(chart.ahead_keys).toEqual(['2026-03', '2026-04'])
+    expect(chart.objects.map((o) => o.cash_ahead_snt)).toEqual([
+      [30, 60],
+      [null, null],
+      [2, -3],
+    ])
+    expect(chart.objects[0].unrecovered_ahead_snt).toEqual([970, 940])
+    expect(chart.objects[0].invested_ahead_snt).toEqual([1_000, 1_000])
+    expect(chart.objects[2].unrecovered_ahead_snt).toEqual([null, null])
+    expect(chart.total_cash_ahead_snt).toEqual([30 + 40 + 2, 60 + 40 - 3])
+    expect(chart.total_unrecovered_ahead_snt).toEqual([970, 940])
+    expect(chart.total_invested_ahead_snt).toEqual([1_000, 1_000])
+    expect(chart.total_back_ahead_snt).toEqual([30, 60])
   })
 
   it('runs the held objects\' shares on to their payoff; the total stops where an object still owing has no estimate', () => {

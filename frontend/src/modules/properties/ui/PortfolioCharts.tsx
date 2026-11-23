@@ -21,7 +21,7 @@ export type PortfolioChartOptions = {
   combined: boolean
   /** The unrecovered chart as a percentage of each object's capital put in, so objects of any size compare. */
   percent: boolean
-  /** The loan shares chart on to the payoff, an estimate (`PortfolioChart.ahead_keys`). */
+  /** Every chart run on over the months ahead, an estimate (`PortfolioChart.ahead_keys`, ADR-035). */
   forecast: boolean
 }
 
@@ -87,9 +87,9 @@ function Swatch({ color, dashed }: { color: string; dashed: boolean }) {
  * the gap between them that is still to recover, and the housing-company loan shares (ADR-034) - on
  * one scale, where they meet or part.
  * Then each measure on its own chart: every object's money still to recover, its cash flow, its
- * share, one coloured line each, with all of them together; the shares, when chosen, run on faded
- * to the last payoff (`ahead_keys`). One set of checkboxes serves them: the combined chart, the total
- * and the months, then the objects in columns with "all" and "none".
+ * share, one coloured line each, with all of them together. With the forecast chosen every line runs
+ * on faded over the months ahead (`ahead_keys`, ADR-035). One set of checkboxes serves them: the total,
+ * the combined chart, the months and the forecast, then the objects in columns with "all" and "none".
  */
 export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: PropertyRow[] }) {
   const { t } = useI18n()
@@ -108,16 +108,39 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
   const from = options.allMonths || !long ? 0 : chart.keys.length - 24
   const keys = chart.keys.slice(from)
   const totalLabel = t('properties.portfolioChart.total')
+  // With the forecast on, every line runs on over `ahead_keys` (ADR-035).
+  const ahead = options.forecast && chart.ahead_keys.length > 0
+  const allKeys = ahead ? [...keys, ...chart.ahead_keys] : keys
+  /** A line's values over the months shown: followed, then estimated with the forecast on. */
+  const runOn = (values: (number | null)[], after: (number | null)[]) => (ahead ? [...values.slice(from), ...after] : values.slice(from))
 
-  const seriesOf = (pick: (o: (typeof objects)[number]) => (number | null)[], total: (number | null)[]): LineSeries[] => [
+  const seriesOf = (
+    pick: (o: (typeof objects)[number]) => (number | null)[],
+    total: (number | null)[],
+    pickAhead: (o: (typeof objects)[number]) => (number | null)[],
+    totalAhead: (number | null)[],
+  ): LineSeries[] => [
     ...objects
       .filter((o) => !hidden.has(o.id))
-      .map((o) => ({ key: String(o.id), label: o.name, values: pick(o).slice(from), className: 'portfolio-line', color: o.color, dashed: o.dashed })),
-    ...(options.total ? [{ key: 'total', label: totalLabel, values: total.slice(from), className: 'portfolio-total' }] : []),
+      .map((o) => ({ key: String(o.id), label: o.name, values: runOn(pick(o), pickAhead(o)), className: 'portfolio-line', color: o.color, dashed: o.dashed })),
+    ...(options.total ? [{ key: 'total', label: totalLabel, values: runOn(total, totalAhead), className: 'portfolio-total' }] : []),
   ]
+  /**
+   * The lines as drawn: solid over the months followed and, with the forecast on, faded from the last
+   * of them in their own colour and dash. A month's box reads each line whole.
+   */
+  const drawn = (series: LineSeries[]): LineSeries[] =>
+    ahead
+      ? series.flatMap((s): LineSeries[] => {
+          const solid = { ...s, values: s.values.map((v, i) => (i < keys.length ? v : null)) }
+          if (!s.values.slice(keys.length).some((v) => v != null)) return [solid]
+          const after = s.values.map((v, i) => (i >= keys.length - 1 ? v : null))
+          return [solid, { ...s, key: `${s.key}-ahead`, className: `${s.className} portfolio-ahead`, values: after }]
+        })
+      : series
   // A month's box: all of them together first, then each object's line in its colour; a month after `keys` is an estimate.
   const pointTip =
-    (series: LineSeries[], format: (v: number) => string = formatCents, months: string[] = keys) =>
+    (series: LineSeries[], format: (v: number) => string = formatCents, months: string[] = allKeys) =>
     (i: number): PointTip => ({
       title: i < keys.length ? monthName(months[i], locale) : t('properties.housing.path.forecastMonth', { month: monthName(months[i], locale) }),
       rows: [...series]
@@ -132,7 +155,7 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
   // "All" and "none" act on the objects' lines only: the total and the months are choices of their own.
   const noneHidden = objects.every((o) => !hidden.has(o.id))
   const allHidden = objects.every((o) => hidden.has(o.id))
-  const cash = seriesOf((o) => o.cash_snt, chart.total_cash_snt)
+  const cash = seriesOf((o) => o.cash_snt, chart.total_cash_snt, (o) => o.cash_ahead_snt, chart.total_cash_ahead_snt)
   // Objects without an investment linked have nothing to recover: no line there, maybe no chart.
   // In percent: each object's still to recover against its own capital put in, the total against the total.
   const unrecovered = (
@@ -140,39 +163,51 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
       ? seriesOf(
           (o) => o.unrecovered_snt.map((v, i) => shareBp(v, o.invested_snt[i])),
           chart.total_unrecovered_snt.map((v, i) => shareBp(v, chart.total_invested_snt[i])),
+          (o) => o.unrecovered_ahead_snt.map((v, i) => shareBp(v, o.invested_ahead_snt[i])),
+          chart.total_unrecovered_ahead_snt.map((v, i) => shareBp(v, chart.total_invested_ahead_snt[i])),
         )
-      : seriesOf((o) => o.unrecovered_snt, chart.total_unrecovered_snt)
+      : seriesOf((o) => o.unrecovered_snt, chart.total_unrecovered_snt, (o) => o.unrecovered_ahead_snt, chart.total_unrecovered_ahead_snt)
   ).filter((s) => s.key === 'total' || s.values.some((v) => v != null))
   const invested = chart.objects.some((o) => o.unrecovered_snt.some((v) => v != null))
-  const shares = seriesOf((o) => o.share_snt, chart.total_share_snt).filter((s) => s.key === 'total' || s.values.some((v) => v != null))
+  const shares = seriesOf((o) => o.share_snt, chart.total_share_snt, (o) => o.share_ahead_snt, chart.total_share_ahead_snt).filter(
+    (s) => s.key === 'total' || s.values.some((v) => v != null),
+  )
   const owed = chart.objects.some((o) => o.share_snt.some((v) => v != null))
-  // With the estimate on, each share line runs on faded from its last month followed: the box reads a
-  // line whole, the chart draws its two parts.
-  const ahead = options.forecast && chart.ahead_keys.length > 0
-  const shareKeys = ahead ? [...keys, ...chart.ahead_keys] : keys
-  const aheadOf = new Map<string, (number | null)[]>([...chart.objects.map((o) => [String(o.id), o.share_ahead_snt] as const), ['total', chart.total_share_ahead_snt]])
-  const sharesWhole = ahead ? shares.map((s) => ({ ...s, values: [...s.values, ...(aheadOf.get(s.key) ?? [])] })) : shares
-  const sharesDrawn = ahead
-    ? shares.flatMap((s): LineSeries[] => {
-        const solid = { ...s, values: [...s.values, ...chart.ahead_keys.map(() => null)] }
-        const after = aheadOf.get(s.key) ?? []
-        if (!after.some((v) => v != null)) return [solid]
-        const joint = s.values.length - 1
-        return [solid, { ...s, key: `${s.key}-ahead`, className: `${s.className} portfolio-ahead`, values: [...s.values.map((v, i) => (i === joint ? v : null)), ...after] }]
-      })
-    : shares
   const combined: LineSeries[] = [
-    { key: 'invested', label: t('properties.kpi.invested'), values: chart.total_invested_snt.slice(from), className: 'portfolio-line', color: COMBINED.invested },
-    { key: 'back', label: t('properties.portfolioChart.back'), values: chart.total_back_snt.slice(from), className: 'portfolio-line', color: COMBINED.back },
+    {
+      key: 'invested',
+      label: t('properties.kpi.invested'),
+      values: runOn(chart.total_invested_snt, chart.total_invested_ahead_snt),
+      className: 'portfolio-line',
+      color: COMBINED.invested,
+    },
+    { key: 'back', label: t('properties.portfolioChart.back'), values: runOn(chart.total_back_snt, chart.total_back_ahead_snt), className: 'portfolio-line', color: COMBINED.back },
     ...(invested
-      ? [{ key: 'unrecovered', label: t('properties.kpi.unrecovered'), values: chart.total_unrecovered_snt.slice(from), className: 'portfolio-line', color: COMBINED.unrecovered }]
+      ? [
+          {
+            key: 'unrecovered',
+            label: t('properties.kpi.unrecovered'),
+            values: runOn(chart.total_unrecovered_snt, chart.total_unrecovered_ahead_snt),
+            className: 'portfolio-line',
+            color: COMBINED.unrecovered,
+          },
+        ]
       : []),
     ...(owed
-      ? [{ key: 'shares', label: t('properties.kpi.housingShares'), values: chart.total_share_snt.slice(from), className: 'portfolio-line', color: COMBINED.shares, dashed: true }]
+      ? [
+          {
+            key: 'shares',
+            label: t('properties.kpi.housingShares'),
+            values: runOn(chart.total_share_snt, chart.total_share_ahead_snt),
+            className: 'portfolio-line',
+            color: COMBINED.shares,
+            dashed: true,
+          },
+        ]
       : []),
   ]
   const chartProps = {
-    keys,
+    keys: allKeys,
     labelFor: (key: string) => monthLabel(key, locale, true),
     nameFor: (key: string) => monthName(key, locale),
     locale,
@@ -196,6 +231,13 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
           <label className="allocation-check">
             <input type="checkbox" checked={options.allMonths} onChange={() => setOptions({ ...options, allMonths: !options.allMonths })} />
             {t('properties.portfolioChart.allMonths')}
+          </label>
+        ) : null}
+        {chart.ahead_keys.length ? (
+          <label className="allocation-check">
+            <input type="checkbox" checked={options.forecast} onChange={() => setOptions({ ...options, forecast: !options.forecast })} />
+            <i className="overview-swatch portfolio-swatch-ahead" />
+            {t('properties.portfolioChart.forecast')}
           </label>
         ) : null}
       </div>
@@ -236,7 +278,7 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
               </span>
             ))}
           </div>
-          <LineChart {...chartProps} series={combined} label={t('properties.portfolioChart.combinedTitle')} pointTip={pointTip(combined)} />
+          <LineChart {...chartProps} series={drawn(combined)} label={t('properties.portfolioChart.combinedTitle')} pointTip={pointTip(combined)} />
         </>
       ) : null}
       {invested ? (
@@ -250,7 +292,7 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
           </div>
           <LineChart
             {...chartProps}
-            series={unrecovered}
+            series={drawn(unrecovered)}
             label={t('properties.portfolioChart.unrecovered')}
             pointTip={options.percent ? pointTip(unrecovered, (v) => formatBp(v)) : pointTip(unrecovered)}
             tickFormat={options.percent ? (v) => formatBp(v, 0) : undefined}
@@ -258,26 +300,11 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
         </>
       ) : null}
       <h4>{t('properties.portfolioChart.cash')}</h4>
-      <LineChart {...chartProps} series={cash} label={t('properties.portfolioChart.cash')} pointTip={pointTip(cash)} />
+      <LineChart {...chartProps} series={drawn(cash)} label={t('properties.portfolioChart.cash')} pointTip={pointTip(cash)} />
       {owed ? (
         <>
           <h4>{t('properties.portfolioChart.shares')}</h4>
-          {chart.ahead_keys.length ? (
-            <div className="overview-legend">
-              <label className="allocation-check">
-                <input type="checkbox" checked={options.forecast} onChange={() => setOptions({ ...options, forecast: !options.forecast })} />
-                <i className="overview-swatch portfolio-swatch-ahead" />
-                {t('properties.portfolioChart.forecast')}
-              </label>
-            </div>
-          ) : null}
-          <LineChart
-            {...chartProps}
-            keys={shareKeys}
-            series={sharesDrawn}
-            label={t('properties.portfolioChart.shares')}
-            pointTip={pointTip(sharesWhole, formatCents, shareKeys)}
-          />
+          <LineChart {...chartProps} series={drawn(shares)} label={t('properties.portfolioChart.shares')} pointTip={pointTip(shares)} />
         </>
       ) : null}
     </section>

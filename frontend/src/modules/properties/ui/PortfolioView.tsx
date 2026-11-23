@@ -8,15 +8,14 @@ import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import {
   fetchPortfolio,
-  RATE_REFERENCES,
   savePortfolioSettings,
   skipPropertyDocument,
   type DocumentSkip,
+  type ForecastDefaults,
+  type ForecastSettings,
   type PortfolioResponse,
   type PortfolioSettings,
   type PropertyRow,
-  type RateForecast,
-  type RateReference,
 } from '../api'
 import { rowAlerts } from '../../../book/modules/properties/domain/reminders'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
@@ -34,53 +33,55 @@ function Kpi({ label, value, neg, hint }: { label: string; value: string; neg?: 
   )
 }
 
-/** A reference rate estimate being edited: the rate as typed. */
-type EstimateDraft = { reference: RateReference; from: string; rate: string }
+/** Hundredths as the form shows them, one decimal at least: 100 -> "1,0". */
+function hundredths(n: number | null): string {
+  if (n == null) return ''
+  return (n / 100).toFixed(n % 10 ? 2 : 1).replace('.', ',')
+}
 
-/** The references a curve can be drawn for: a fixed rate has none. */
-const CURVE_REFERENCES = RATE_REFERENCES.filter((r) => r !== 'fixed')
-
-function DefaultsForm({ settings, onSaved }: { settings: PortfolioSettings; onSaved: () => void }) {
+/**
+ * The portfolio's defaults: sale costs and the target return, and the estimates for the months ahead
+ * (ADR-035), each one number for the whole period. An empty estimate takes its default, shown in the
+ * field: the newest rate typed on a loan, 1 % a year, one month's rent; the last 12 months' other
+ * costs stand beside theirs.
+ */
+function DefaultsForm({ settings, defaults, onSaved }: { settings: PortfolioSettings; defaults: ForecastDefaults; onSaved: () => void }) {
   const { t } = useI18n()
   const [pct, setPct] = useState(formatPercentInput(settings.sale_costs?.pct_bp))
   const [fixed, setFixed] = useState(settings.sale_costs ? formatEurInput(settings.sale_costs.fixed_snt) : '')
   const [target, setTarget] = useState(formatPercentInput(settings.target_return_bp))
-  const [estimates, setEstimates] = useState<EstimateDraft[]>(() =>
-    (settings.rate_forecast ?? []).map((r) => ({ reference: r.reference, from: r.from, rate: formatPcmInput(r.reference_pcm) })),
-  )
+  const typed = settings.forecast ?? {}
+  const [euribor12, setEuribor12] = useState(formatPcmInput(typed.euribor_12m_pcm))
+  const [euribor6, setEuribor6] = useState(formatPcmInput(typed.euribor_6m_pcm))
+  const [raise, setRaise] = useState(formatPercentInput(typed.raise_bp))
+  // Months of rent a year travel in hundredths, as percentages do in basis points.
+  const [other, setOther] = useState(formatPercentInput(typed.other_costs_months_x100))
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const setEstimate = (i: number, patch: Partial<EstimateDraft>) => setEstimates(estimates.map((e, j) => (j === i ? { ...e, ...patch } : e)))
 
   async function save() {
     const pctBp = parsePercentInput(pct)
     const targetBp = parsePercentInput(target)
-    if (Number.isNaN(pctBp) || Number.isNaN(targetBp)) {
+    const raiseBp = parsePercentInput(raise)
+    const otherX100 = parsePercentInput(other)
+    const rate12 = parsePcmInput(euribor12)
+    const rate6 = parsePcmInput(euribor6)
+    if ([pctBp, targetBp, raiseBp, otherX100, rate12, rate6].some((n) => Number.isNaN(n)) || (otherX100 != null && otherX100 < 0)) {
       setError(t('properties.error.percent'))
       return
     }
-    // The reference rate estimates: a row needs its first day and a rate; one left empty is dropped.
-    const curve: RateForecast[] = []
-    for (const [i, e] of estimates.entries()) {
-      if (!e.from && !e.rate.trim()) continue
-      const rate = parsePcmInput(e.rate)
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(e.from) || rate == null || Number.isNaN(rate)) {
-        setError(t('properties.error.estimateRow', { n: i + 1 }))
-        return
-      }
-      if (curve.some((c) => c.reference === e.reference && c.from === e.from)) {
-        setError(t('properties.error.estimateSameDay', { n: i + 1 }))
-        return
-      }
-      curve.push({ reference: e.reference, from: e.from, reference_pcm: rate })
-    }
+    const forecast: ForecastSettings = {}
+    if (rate12 != null) forecast.euribor_12m_pcm = rate12
+    if (rate6 != null) forecast.euribor_6m_pcm = rate6
+    if (raiseBp != null) forecast.raise_bp = raiseBp
+    if (otherX100 != null) forecast.other_costs_months_x100 = otherX100
     const next: PortfolioSettings = { ...settings }
     if (pctBp != null || fixed) next.sale_costs = { pct_bp: pctBp ?? 0, fixed_snt: parseEurInput(fixed) }
     else delete next.sale_costs
     if (targetBp != null) next.target_return_bp = targetBp
     else delete next.target_return_bp
-    if (curve.length) next.rate_forecast = curve
-    else delete next.rate_forecast
+    if (Object.keys(forecast).length) next.forecast = forecast
+    else delete next.forecast
     setSaving(true)
     try {
       await savePortfolioSettings(next)
@@ -111,39 +112,28 @@ function DefaultsForm({ settings, onSaved }: { settings: PortfolioSettings; onSa
           <input type="text" inputMode="decimal" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="4,0" />
         </label>
       </div>
-      <h4>{t('properties.defaults.estimates')}</h4>
-      {estimates.map((e, i) => (
-        <div key={i} className="property-form-grid property-estimate-row">
-          <label>
-            {t('properties.housing.field.reference')}
-            <select value={e.reference} onChange={(ev) => setEstimate(i, { reference: ev.target.value as RateReference })}>
-              {CURVE_REFERENCES.map((r) => (
-                <option key={r} value={r}>
-                  {t(`properties.housing.reference.${r}`)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            {t('properties.housing.field.from')}
-            <input type="date" value={e.from} onChange={(ev) => setEstimate(i, { from: ev.target.value })} />
-          </label>
-          <label>
-            {t('properties.housing.field.rate')}
-            <input type="text" inputMode="decimal" value={e.rate} placeholder="2,500" onChange={(ev) => setEstimate(i, { rate: ev.target.value })} />
-          </label>
-          <button type="button" className="btn-link property-delete" onClick={() => setEstimates(estimates.filter((_, j) => j !== i))}>
-            {t('properties.housing.removeRow')}
-          </button>
-        </div>
-      ))}
-      <button
-        type="button"
-        className="btn-link property-lease-add"
-        onClick={() => setEstimates([...estimates, { reference: estimates.at(-1)?.reference ?? 'euribor_12m', from: '', rate: '' }])}
-      >
-        {t('properties.housing.addRow')}
-      </button>
+      <h4>{t('properties.defaults.forecast')}</h4>
+      <div className="property-form-grid">
+        <label>
+          {t('properties.field.euribor12')}
+          <input type="text" inputMode="decimal" value={euribor12} placeholder={formatPcmInput(defaults.euribor_12m_pcm)} onChange={(e) => setEuribor12(e.target.value)} />
+        </label>
+        <label>
+          {t('properties.field.euribor6')}
+          <input type="text" inputMode="decimal" value={euribor6} placeholder={formatPcmInput(defaults.euribor_6m_pcm)} onChange={(e) => setEuribor6(e.target.value)} />
+        </label>
+        <label>
+          {t('properties.field.raise')}
+          <input type="text" inputMode="decimal" value={raise} placeholder={hundredths(defaults.raise_bp)} onChange={(e) => setRaise(e.target.value)} />
+        </label>
+        <label className="property-field-hinted">
+          {t('properties.field.otherCosts')}
+          <input type="text" inputMode="decimal" value={other} placeholder={hundredths(defaults.other_costs_months_x100)} onChange={(e) => setOther(e.target.value)} />
+          {defaults.other_costs_actual_x100 != null ? (
+            <span className="muted property-field-hint">{t('properties.field.otherCostsActual', { months: hundredths(defaults.other_costs_actual_x100) })}</span>
+          ) : null}
+        </label>
+      </div>
       {error ? <p className="error">{error}</p> : null}
       <button type="button" className="btn-primary" disabled={saving} onClick={() => void save()}>
         {saving ? t('common.saving') : t('common.save')}
@@ -678,7 +668,7 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
             </section>
           ) : null}
 
-          <DefaultsForm key={data.settings.rev} settings={data.settings} onSaved={() => setReload((n) => n + 1)} />
+          <DefaultsForm key={data.settings.rev} settings={data.settings} defaults={data.forecast_defaults} onSaved={() => setReload((n) => n + 1)} />
         </>
       ) : null}
     </div>

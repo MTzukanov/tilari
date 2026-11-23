@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { estimateAt, limitedReference, loanForecast, loanNow, monthsBetween, paidOffOn } from '../../../book/modules/properties/domain/housingLoan'
+import { estimateFor, limitedReference, loanForecast, loanNow, monthsBetween, paidOffOn } from '../../../book/modules/properties/domain/housingLoan'
 import { monthEnd } from '../../../book/months'
 import { getBcp47, useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
@@ -10,7 +10,7 @@ import { LineChart, type LineSeries, type PointTip } from '../../../shared/LineC
 import { formatPcm } from '../../../shared/percent'
 import { FilePill, Pill } from '../../../shared/Pill'
 import { SearchSelect } from '../../../shared/SearchSelect'
-import type { BookedLine, DocCandidate, HousingCopySource, HousingLoan, LeaseVoucher, LoanMonth, LoanPath, PropertyDetail, RateForecast } from '../api'
+import type { BookedLine, DocCandidate, HousingCopySource, HousingLoan, LeaseVoucher, LoanMonth, LoanPath, PropertyDetail, RateEstimates } from '../api'
 import { monthLabel } from './Charts'
 import { loadLoanChartOptions, saveLoanChartOptions, type LoanChartOptions } from './chartOptions'
 import { DocPicker } from './DocPicker'
@@ -182,8 +182,8 @@ function LoanMonths({
   loan: HousingLoan
   path: LoanPath
   payments: MonthPayments
-  /** The portfolio's reference rate estimates, for the forecast (ADR-034); null: no forecast (a sold object). */
-  estimates: RateForecast[] | null
+  /** The portfolio's reference rate estimates, for the forecast (ADR-035); null: no forecast (a sold object). */
+  estimates: RateEstimates | null
   onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
@@ -195,10 +195,10 @@ function LoanMonths({
     setOptionsState(next)
     saveLoanChartOptions(next)
   }
-  const future = estimates ? loanForecast(loan, path, { curve: estimates }) : []
+  const future = estimates ? loanForecast(loan, path, { rates: estimates }) : []
   // The same with the reference rate a point higher from the next reset: what a rise would cost.
-  const higher = estimates && options.plus1 ? loanForecast(loan, path, { curve: estimates, shift_pcm: 1000 }) : []
-  const curved = Boolean(estimates?.some((r) => r.reference === loan.reference)) && loan.reference !== 'fixed'
+  const higher = estimates && options.plus1 ? loanForecast(loan, path, { rates: estimates, shift_pcm: 1000 }) : []
+  const curved = estimates != null && estimateFor(loan, estimates) != null
   const [ruleOpen, setRuleOpen] = useState(false)
   const shown = options.forecast && future.length ? [...months, ...future] : months
   const known = months.length
@@ -447,7 +447,7 @@ function LoanCard({
   payments: MonthPayments
   vouchers: Map<number, LeaseVoucher>
   held: boolean
-  estimates: RateForecast[]
+  estimates: RateEstimates
   onEdit?: () => void
   onOpenVoucher: (voucherId: number) => void
 }) {
@@ -459,7 +459,7 @@ function LoanCard({
   const reference = t(`properties.housing.reference.${loan.reference}`)
   const fixed = loan.reference === 'fixed'
   // With no rate row the share is counted on the estimate (ADR-034).
-  const estimate = !rate && !fixed ? estimateAt(loan, estimates, on) : null
+  const estimate = !rate ? estimateFor(loan, estimates) : null
   // The reference rate as the loan pays it: held between a floor and a ceiling in force (ADR-034).
   const bounded = rate ? limitedReference(loan, on.slice(0, 7), rate.reference_pcm) : estimate != null ? limitedReference(loan, on.slice(0, 7), estimate) : null
   const limitLines = (loan.rate_limits ?? [])
@@ -758,7 +758,7 @@ export function HousingPanel({
               payments={payments}
               vouchers={vouchers}
               held={held}
-              estimates={d.housing.rate_forecast}
+              estimates={d.housing.rate_estimates}
               onEdit={onEditLoan ? () => onEditLoan(loan.key) : undefined}
               onOpenVoucher={onOpenVoucher}
             />

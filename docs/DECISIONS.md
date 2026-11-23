@@ -887,7 +887,7 @@ correction would change the open year's income statement lines. The rental-objec
 - **No "Rahastoitu rahoitusvastike pääomana" view** (2026-11-19): built on the 4c branch and taken out before merging,
   as the owner asked if it added complexity - they have not seen a rahastoitu vastike, and the view needed a second
   pass over the figures with made-up cost rows. The checkbox on a charge and its warning stay.
-- **Rate estimates** (2026-11-20, step 4d): nothing is fetched (owner: rates by hand; Euribor history could be
+- **Rate estimates** (2026-11-20, step 4d; the dated rows replaced by one number per Euribor in ADR-035): nothing is fetched (owner: rates by hand; Euribor history could be
   fetched later, a future rate cannot). The Properties defaults hold one curve per reference rate
   (`rate_forecast`). The forecast keeps the latest actual rate until the next reset, then at each reset takes the
   curve's value for that reset (else keeps the latest). "+1 %-yks." adds a point from the next reset on, not to
@@ -924,3 +924,34 @@ correction would change the open year's income statement lines. The rental-objec
 - **Next steps:** the object-wide forecast (rents, hoitovastike, vacancy, projected IRR) and the interest check
   against the payments; both are in the step-4 plan's "Later".
 
+## ADR-035 The portfolio's months ahead, on one estimate each for the whole period (2026-11-23)
+
+**Status:** accepted. The Properties page's forecast; the ledger is not changed and nothing computed is stored.
+
+- **One number each, no dated rows** (owner, 2026-11-23: "we don't need to overengineer ... an average for the
+  whole period"). `PortfolioSettings.forecast` holds four optional inputs: 12 kk and 6 kk Euribor (1/1000 %), a raise
+  a year (bp) for rents and hoitovastike, and other costs in hundredths of a month's rent a year. Market rates
+  (futures, swaps) were dropped; nothing is fetched.
+- **An empty field takes its default, worked out each time** (owner agreed): a Euribor's is the newest rate row typed
+  on any loan with that reference (`newestRates`), so it follows the rows as they are entered; the raise is 1 %, other
+  costs one month's rent. The form shows each default in its empty field, and the last 12 months' other costs (their
+  expenses less the payments to the housing company, against their income) below their field.
+- **The loans** take the estimate of their reference at every reset after their latest rate, and a loan with no rate
+  row all along (`rateEstimates`); 3 kk Euribor and prime keep their latest rate. A book's dated `rate_forecast`
+  rows from step 4d read as their newest row per Euribor and are dropped on the next save.
+- **An object's month ahead** (`objectForecast`): what the tenant pays (rent, water, parking) of the lease's step in
+  force - the lease running at the month's end, else the last one, re-let at its rent; a later step typed on it from
+  its day - raised each year in the lease's increase month, else the month it started; an object with no lease at all
+  takes its last 12 months' income a month, raised each January. Out: the hoitovastike - the latest month's payment of
+  one month's worth to the housing company, less the loans' rahoitusvastike in it, so water paid there stays in, as
+  the tenant's water does - raised each **June** (owner); the rahoitusvastike the loans' estimates pay
+  (`vastikeAhead`; a loan still owing with no estimate pays its charge in force to its last due date); other costs, the
+  month's income times the months a year over 12. The owner's own bank loans' interest is left out for now (owner:
+  later); taxes and sales are not counted.
+- **How far:** to the last loan share's payoff, so every chart's months line up with the shares chart's; with no
+  share to pay, `FORECAST_YEARS` (10). A sold object has none; its cash flow stays in the total as it ended.
+- **The charts:** one checkbox "Ennuste" over all of them runs every line on faded from the as-of month, the combined
+  chart's too: the cash flow summed on, still to recover falling by it (its percentage over the capital put in, which
+  stays), what came back rising, and the shares (ADR-034). A month's box says "(arvio)". Off by default, remembered.
+- **Later:** a payback month per object; a raise or other costs per object; the own bank loans; a forecast on the
+  object's own page.

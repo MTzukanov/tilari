@@ -135,7 +135,7 @@ test.describe('rental objects chart', () => {
     // The defaults at the bottom: the three fields line up and look alike (the euro field too).
     const defaults = page.locator('details.property-defaults')
     await defaults.locator('summary').click()
-    const fields = defaults.locator('.property-form-grid input')
+    const fields = defaults.locator('.property-form-grid').first().locator('input')
     await expect(fields).toHaveCount(3)
     const looks = await fields.evaluateAll((els) =>
       els.map((el) => {
@@ -663,9 +663,9 @@ test.describe('rental object housing-company loans', () => {
     await expect(chart.locator('.property-loan-share.property-loan-ahead .chart-line')).toHaveCount(1)
     const ahead = saved.locator('.property-loan-forecast-years')
     // Its figures: paid off on the last due date (an annuity is worked out to it), the interest ahead, and
-    // the rate: no estimates are entered, so the latest holds.
+    // the rate: no estimate is typed, so the latest known one - this loan's - is the estimate.
     await expect(tile(ahead, 'Maksettu arviolta')).toContainText(/31\.12\.2044viimeisenä eräpäivänä 31\.12\.2044/)
-    await expect(tile(ahead, 'Korko lopussa')).toContainText(/2,900\s%viimeisin korko pysyy/)
+    await expect(tile(ahead, 'Korko lopussa')).toContainText(/2,900\s%korkoarvioiden mukaan/)
     // The rule behind the figures sits behind an (i).
     await expect(ahead.getByRole('button', { name: /^Rahoitusvastike lasketaan koronmuutoksissa/ })).toHaveCount(1)
     // "+1 %-yks.": the interest ahead with the reference a point higher from the next reset, and its payments by year.
@@ -726,14 +726,26 @@ test.describe('rental object housing-company loans', () => {
     // On to the payoff with the estimate on: each line runs on faded, the last month's box at 0.
     const sharesChart = page.getByRole('group', { name: 'Yhtiölainaosuudet kuukauden lopussa' })
     await expect(sharesChart.locator('.portfolio-ahead')).toHaveCount(0)
-    await page.getByRole('checkbox', { name: 'Arvio lainojen loppuun' }).check()
+    await page.getByRole('checkbox', { name: 'Ennuste' }).check()
     await expect(sharesChart.locator('.portfolio-total.portfolio-ahead')).toHaveCount(1)
     await sharesChart.locator('.chart-point-hit').last().hover()
     const sharesTip = sharesChart.locator('xpath=..').locator('.chart-tip')
     await expect(sharesTip.locator('.chart-tip-title')).toHaveText(/\(arvio\)$/)
     await expect(sharesTip.locator('.chart-tip-row').first()).toHaveText(/^Kaikki yhteensä\s*0,00\s€$/)
+    // Every chart runs on with it: the cash flow and the combined chart too (ADR-035).
+    await expect(page.getByRole('group', { name: 'Kertynyt kassavirta' }).locator('.portfolio-total.portfolio-ahead')).toHaveCount(1)
+    await expect(page.getByRole('group', { name: 'Kaikki kohteet yhdessä kuukauden lopussa' }).locator('.portfolio-ahead').first()).toBeAttached()
     await page.reload()
-    await expect(page.getByRole('checkbox', { name: 'Arvio lainojen loppuun' })).toBeChecked()
+    await expect(page.getByRole('checkbox', { name: 'Ennuste' })).toBeChecked()
+    // The forecast's defaults: an empty field shows what it takes - the newest rate typed on a loan, 1 % a
+    // year, one month's rent - and the last 12 months' other costs stand by theirs.
+    const defaults = page.locator('details.property-defaults')
+    await defaults.locator('summary').click()
+    await expect(defaults.getByLabel('12 kk Euribor %')).toHaveAttribute('placeholder', '2,1')
+    await expect(defaults.getByLabel('6 kk Euribor %')).toHaveAttribute('placeholder', '')
+    await expect(defaults.getByLabel('Korotus %/vuosi (vuokrat ja hoitovastike)')).toHaveAttribute('placeholder', '1,0')
+    await expect(defaults.getByLabel(/^Muut kulut/)).toHaveAttribute('placeholder', '1,0')
+    await expect(defaults.getByText(/^toteutunut 12 kk: -?\d+,\d+$/)).toBeVisible()
 
     // Another object copies the loan's terms; its share and charges are its own.
     await page.goto('/#/property/30/housing')
@@ -790,18 +802,15 @@ test.describe('rental object loan rate estimates', () => {
   test('an estimate in the defaults, a loan with no drawdown and a ceiling: the forecast takes the estimate, held at the ceiling', async ({ page }) => {
     await openBook(page, propertiesBook, 'Esimerkki Vuokraus Oy')
     await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2026-06-15')
-    // The estimate: 12 kk Euribor 3,5 % from 2027 on, for every object's loans.
+    // The estimate: 12 kk Euribor 3,5 % for the whole period, for every object's loans.
     await page.goto('/#/properties')
     const defaults = page.locator('details.property-defaults')
     await defaults.locator('summary').click()
-    await defaults.getByRole('button', { name: '+ Lisää rivi' }).click()
-    await expect(defaults.locator('.property-estimate-row select')).toHaveValue('euribor_12m')
-    await defaults.getByLabel('Alkaen').fill('2027-01-01')
-    await defaults.getByLabel('Viitekorko %').fill('3,5')
+    await defaults.getByLabel('12 kk Euribor %').fill('3,5')
     await defaults.getByRole('button', { name: 'Tallenna', exact: true }).click()
     await expect(defaults.locator('.error')).toHaveCount(0)
-    // Saved, the form is built again from the stored settings: the row is there, as stored.
-    await expect(page.locator('details.property-defaults').getByLabel('Viitekorko %')).toHaveValue('3,5')
+    // Saved, the form is built again from the stored settings: the estimate is there, as stored.
+    await expect(page.locator('details.property-defaults').getByLabel('12 kk Euribor %')).toHaveValue('3,5')
 
     // A loan saved without its drawdown, with a ceiling of 3 % on the reference to the end of 2028.
     await page.goto('/#/property/10/housing')
@@ -947,11 +956,9 @@ test.describe('rental object loans of a sold object', () => {
     await page.goto('/#/properties')
     const defaults = page.locator('details.property-defaults')
     await defaults.locator('summary').click()
-    await defaults.getByRole('button', { name: '+ Lisää rivi' }).click()
-    await defaults.getByLabel('Alkaen').fill('2025-01-01')
-    await defaults.getByLabel('Viitekorko %').fill('2,5')
+    await defaults.getByLabel('12 kk Euribor %').fill('2,5')
     await defaults.getByRole('button', { name: 'Tallenna', exact: true }).click()
-    await expect(page.locator('details.property-defaults').getByLabel('Viitekorko %')).toHaveValue('2,5')
+    await expect(page.locator('details.property-defaults').getByLabel('12 kk Euribor %')).toHaveValue('2,5')
 
     await page.goto('/#/property/10/housing')
     const loans = page.locator('.property-housing-loans')

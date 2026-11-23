@@ -1122,7 +1122,7 @@
     "defaults": {
       "title": "Standardvärden för alla objekt",
       "lead": "Försäljningskostnader (t.ex. mäklararvode och disponentintyg) och målavkastning. Objektets egna värden går före.",
-      "estimates": "Ränteantaganden"
+      "forecast": "Prognos"
     },
     "field": {
       "kind": "Typ",
@@ -1130,6 +1130,11 @@
       "salePct": "Försäljningskostnader, % av skuldfritt pris",
       "saleFixed": "Försäljningskostnader, fast €",
       "targetReturn": "Målavkastning, % per år",
+      "euribor12": "12 mån Euribor %",
+      "euribor6": "6 mån Euribor %",
+      "raise": "Höjning %/år (hyror och skötselvederlag)",
+      "otherCosts": "Övriga kostnader, månadshyror per år",
+      "otherCostsActual": "senaste 12 mån: {months}",
       "price": "Försäljningspris (utan låneandel)",
       "debtFreePrice": "Skuldfritt pris",
       "source": "Källa",
@@ -1196,7 +1201,7 @@
       "allMonths": "Alla månader",
       "lead": "Totallinjen räknar alltid alla objekt: kryssrutorna döljer bara linjer. Ett sålt objekt lämnar det ej återfångna från försäljningsmånaden men stannar i kassaflödets total.",
       "shares": "Bolagslåneandelar vid månadens slut",
-      "forecast": "Uppskattning till lånens slut",
+      "forecast": "Prognos",
       "objects": "Objekt",
       "checkAll": "Markera alla",
       "uncheckAll": "Avmarkera alla",
@@ -1547,9 +1552,7 @@
       "loan_linked": "Lånekonto {path} är redan ett annat objekts banklån. Ett lån kan höra till bara ett objekt, annars räknas räntan två gånger.",
       "deposit_linked": "Depositionen hör redan till ett annat hyresförhållande.",
       "overlap": "Perioder överlappar: kontrollera fältet {path}.",
-      "rentDates": "Hyrans sista dag ligger före den första.",
-      "estimateRow": "Ränteantagande rad {n}: ange startdag och referensränta.",
-      "estimateSameDay": "Ränteantagande rad {n}: samma referensränta har redan ett antagande samma dag."
+      "rentDates": "Hyrans sista dag ligger före den första."
     },
     "total": "Totalt",
     "holding": "{years} år {months} mån",

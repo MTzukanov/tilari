@@ -94,7 +94,7 @@ function addParkingVastike(fx: PropertyFixture): void {
 }
 
 /**
- * The review cases on top of `LOANS`: estimates of the 12-month Euribor in the defaults; on Vanhatie 7 C 9 a
+ * The review cases on top of `LOANS`: an estimate of the 12-month Euribor in the defaults; on Vanhatie 7 C 9 a
  * tasalyhennys with no drawdown (counted from the purchase) and no rate row (counted on the estimate),
  * under a ceiling to the end of 2028; the sold flat's first share from the deed on its purchase voucher,
  * dated before the drawdown its certificate gives.
@@ -106,10 +106,7 @@ function addReviewCases(db: SqliteDb): void {
     db,
     {
       ...settings,
-      rate_forecast: [
-        { reference: 'euribor_12m', from: '2027-01-01', reference_pcm: 2400 },
-        { reference: 'euribor_12m', from: '2028-01-01', reference_pcm: 2800 },
-      ],
+      forecast: { euribor_12m_pcm: 2400 },
     },
     now,
   )
@@ -250,10 +247,10 @@ describe('testdb/tilari-properties-loans.kitsas', () => {
     const [lift] = old.doc.housing_loans!
     expect(lift.starts).toBeUndefined()
     expect(lift.rates).toBeUndefined()
-    // Before the estimates begin, their first (2,4 %, under the 2,6 % ceiling), plus the margin.
+    // The estimate (2,4 %, under the 2,6 % ceiling), plus the margin.
     expect(old.housing.paths[0].months.at(-1)!.rate_pcm).toBe(2400 + 850)
     expect(old.warnings.map((w) => w.code)).toContain('loan_rate_estimated')
-    expect(p.settings.rate_forecast).toHaveLength(2)
+    expect(p.settings.forecast).toEqual({ euribor_12m_pcm: 2400 })
   })
 
   it('reads A 1\'s vastike invoices: the rahoitusvastike paid, a raise to take, a second loan\'s row no loan takes', async () => {

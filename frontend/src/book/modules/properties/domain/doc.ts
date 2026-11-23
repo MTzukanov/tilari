@@ -24,6 +24,7 @@ import {
   type LoanEventKind,
   type LoanRate,
   type LoanRateLimit,
+  type ForecastSettings,
   type RateForecast,
   type RateReference,
   type Lease,
@@ -745,7 +746,7 @@ export function mergePropertyDoc(
   return mergeForSave(stored, input, now, DOC_KEYS)
 }
 
-const SETTINGS_KEYS = new Set(['v', 'rev', 'updated_at', 'sale_costs', 'target_return_bp', 'dismissed', 'rate_forecast'])
+const SETTINGS_KEYS = new Set(['v', 'rev', 'updated_at', 'sale_costs', 'target_return_bp', 'dismissed', 'forecast', 'rate_forecast'])
 
 export function normalizePortfolioSettings(input: unknown): PortfolioSettings {
   if (!isObject(input)) fail('')
@@ -767,7 +768,34 @@ export function normalizePortfolioSettings(input: unknown): PortfolioSettings {
     return s
   })
   if (dismissed.length) out.dismissed = [...new Set(dismissed)].sort()
-  const forecast = array(input.rate_forecast, 'rate_forecast', 600)
+  const forecast = forecastSettings(input.forecast, legacyRates(input.rate_forecast))
+  if (forecast) out.forecast = forecast
+  checkSize(out)
+  return out
+}
+
+/**
+ * The estimates for the months ahead (ADR-035), each optional. `legacy`: the rates a book from
+ * before them stores as dated rows, its newest per reference, standing in for a missing rate.
+ */
+function forecastSettings(input: unknown, legacy: ForecastSettings): ForecastSettings | null {
+  if (input != null && !isObject(input)) fail('forecast')
+  const raw = (input ?? {}) as Record<string, unknown>
+  const out: ForecastSettings = {}
+  const rate = (key: 'euribor_12m_pcm' | 'euribor_6m_pcm') => {
+    const value = raw[key] != null ? int(raw[key], `forecast.${key}`, -MAX_PCM, MAX_PCM) : legacy[key]
+    if (value != null) out[key] = value
+  }
+  rate('euribor_12m_pcm')
+  rate('euribor_6m_pcm')
+  if (raw.raise_bp != null) out.raise_bp = int(raw.raise_bp, 'forecast.raise_bp', -5000, 10000)
+  if (raw.other_costs_months_x100 != null) out.other_costs_months_x100 = int(raw.other_costs_months_x100, 'forecast.other_costs_months_x100', 0, 1200)
+  return Object.keys(out).length ? out : null
+}
+
+/** A book's dated reference rate estimates from before ADR-035: each Euribor's newest row; the rest are dropped. */
+function legacyRates(input: unknown): ForecastSettings {
+  const rows = array(input, 'rate_forecast', 600)
     .map((raw, i): RateForecast => {
       const at = `rate_forecast[${i}]`
       if (!isObject(raw)) fail(at)
@@ -779,13 +807,9 @@ export function normalizePortfolioSettings(input: unknown): PortfolioSettings {
         reference_pcm: int(raw.reference_pcm, `${at}.reference_pcm`, -MAX_PCM, MAX_PCM),
       }
     })
-    .sort((a, b) => a.reference.localeCompare(b.reference) || a.from.localeCompare(b.from))
-  forecast.forEach((r, i) => {
-    if (i > 0 && r.reference === forecast[i - 1].reference && r.from === forecast[i - 1].from) fail(`rate_forecast[${i}].from`)
-  })
-  if (forecast.length) out.rate_forecast = forecast
-  checkSize(out)
-  return out
+    .sort((a, b) => a.from.localeCompare(b.from))
+  const newest = (reference: RateReference) => rows.filter((r) => r.reference === reference).at(-1)?.reference_pcm
+  return { euribor_12m_pcm: newest('euribor_12m'), euribor_6m_pcm: newest('euribor_6m') }
 }
 
 export function parsePortfolioSettings(raw: string | null): ParsedDoc<PortfolioSettings> {

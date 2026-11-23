@@ -1122,7 +1122,7 @@
     "defaults": {
       "title": "Oletukset kaikille kohteille",
       "lead": "Myyntikulut (esim. välityspalkkio ja isännöitsijäntodistus) ja tavoitetuotto. Kohteen omat arvot ohittavat nämä.",
-      "estimates": "Korkoarviot"
+      "forecast": "Ennuste"
     },
     "field": {
       "kind": "Laji",
@@ -1130,6 +1130,11 @@
       "salePct": "Myyntikulut, % velattomasta hinnasta",
       "saleFixed": "Myyntikulut, kiinteä €",
       "targetReturn": "Tavoitetuotto, % vuodessa",
+      "euribor12": "12 kk Euribor %",
+      "euribor6": "6 kk Euribor %",
+      "raise": "Korotus %/vuosi (vuokrat ja hoitovastike)",
+      "otherCosts": "Muut kulut, kk:n vuokraa vuodessa",
+      "otherCostsActual": "toteutunut 12 kk: {months}",
       "price": "Myyntihinta (ilman lainaosuutta)",
       "debtFreePrice": "Velaton hinta",
       "source": "Lähde",
@@ -1196,7 +1201,7 @@
       "allMonths": "Kaikki kuukaudet",
       "lead": "Yhteensä-viiva laskee aina kaikki kohteet: valinnat piilottavat vain viivoja. Myyty kohde jää pois palauttamattomasta myyntikuusta alkaen, mutta pysyy kassavirran summassa.",
       "shares": "Yhtiölainaosuudet kuukauden lopussa",
-      "forecast": "Arvio lainojen loppuun",
+      "forecast": "Ennuste",
       "objects": "Kohteet",
       "checkAll": "Valitse kaikki",
       "uncheckAll": "Poista valinnat",
@@ -1547,9 +1552,7 @@
       "loan_linked": "Lainatili {path} on jo toisen kohteen pankkilaina. Laina voi kuulua vain yhdelle kohteelle, muuten sen korot laskettaisiin kahdesti.",
       "deposit_linked": "Vakuus kuuluu jo toiseen vuokrasuhteeseen.",
       "overlap": "Ajanjaksot menevät päällekkäin: tarkista kenttä {path}.",
-      "rentDates": "Vuokran päättymispäivä on ennen alkamispäivää.",
-      "estimateRow": "Korkoarvion rivi {n}: anna alkupäivä ja viitekorko.",
-      "estimateSameDay": "Korkoarvion rivi {n}: samalla viitekorolla on jo arvio samana päivänä."
+      "rentDates": "Vuokran päättymispäivä on ennen alkamispäivää."
     },
     "total": "Yhteensä",
     "holding": "{years} v {months} kk",

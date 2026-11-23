@@ -1122,7 +1122,7 @@
     "defaults": {
       "title": "Defaults for all objects",
       "lead": "Sale costs (e.g. broker fee and manager's certificate) and target return. An object's own values override these.",
-      "estimates": "Rate estimates"
+      "forecast": "Forecast"
     },
     "field": {
       "kind": "Kind",
@@ -1130,6 +1130,11 @@
       "salePct": "Sale costs, % of debt-free price",
       "saleFixed": "Sale costs, fixed €",
       "targetReturn": "Target return, % per year",
+      "euribor12": "12-month Euribor %",
+      "euribor6": "6-month Euribor %",
+      "raise": "Raise % a year (rents and maintenance charge)",
+      "otherCosts": "Other costs, months' rent a year",
+      "otherCostsActual": "last 12 months: {months}",
       "price": "Selling price (without loan share)",
       "debtFreePrice": "Debt-free price",
       "source": "Source",
@@ -1196,7 +1201,7 @@
       "allMonths": "All months",
       "lead": "The total line always counts every object: the checkboxes only hide lines. A sold object leaves the unrecovered total from its sale month but stays in the cash flow total.",
       "shares": "Housing-company loan shares at month end",
-      "forecast": "Estimate to the loans' end",
+      "forecast": "Forecast",
       "objects": "Objects",
       "checkAll": "Select all",
       "uncheckAll": "Clear all",
@@ -1547,9 +1552,7 @@
       "loan_linked": "Loan account {path} is already another object's bank loan. A loan can belong to one object only; otherwise its interest would count twice.",
       "deposit_linked": "The deposit already belongs to another lease.",
       "overlap": "Periods overlap: check the field {path}.",
-      "rentDates": "The last day of rent is before the first.",
-      "estimateRow": "Rate estimate row {n}: give a first day and a reference rate.",
-      "estimateSameDay": "Rate estimate row {n}: that reference rate already has an estimate on that day."
+      "rentDates": "The last day of rent is before the first."
     },
     "total": "Total",
     "holding": "{years} y {months} mo",

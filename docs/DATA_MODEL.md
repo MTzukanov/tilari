@@ -111,7 +111,7 @@ negative.
 | `type` | `annuity` (annuiteetti), `equal_principal` (tasalyhennys) or `fixed_payment` (kiinteä tasaerä: the payment stays, the term moves) |
 | `reference`, `margin_pcm` | The reference rate (`euribor_12m`, `euribor_6m`, `euribor_3m`, `prime`, `fixed`, `other`) and the margin |
 | `reset_months?` | How often the reference rate is reset |
-| `rates[]?` | `{ from, reference_pcm, voucher_id? }`: the actual reference rate from `from` on, by hand; no two on one day. None: the share is counted on the portfolio's `rate_forecast` (a fixed rate needs a row) |
+| `rates[]?` | `{ from, reference_pcm, voucher_id? }`: the actual reference rate from `from` on, by hand; no two on one day. None: the share is counted on the portfolio's estimate (`forecast`, ADR-035; a fixed rate needs a row) |
 | `grace[]?` | `{ from, to }`: periods with no repayment (lyhennysvapaa), not overlapping |
 | `rate_limits[]?` | `{ from?, to, floor_pcm?, ceiling_pcm? }`: a floor (korkolattia) and/or a ceiling (korkokatto) on the reference rate, from `from` (missing: the loan's start) to `to`; at least one of the two, the floor not above the ceiling, not overlapping |
 | `certificates[]?` | `{ date, share_snt, voucher_id?, no_document? }`: the object's share (velkaosuus) on `date` from an isännöitsijäntodistus or the purchase deed; no two on one day |
@@ -124,9 +124,11 @@ or rahoitusvastike notice uploaded on a loan card is a posted type-800 voucher t
 `housing_doc_voucher_ids`.
 
 `portfolio`: `v`, `rev`, `sale_costs`, `target_return_bp`, `dismissed[]` (setup suggestions
-the owner rejected: `era:{eraid}`, `doc:{voucherId}`), `rate_forecast[]?` (`{ reference, from, reference_pcm }`:
-the owner's estimate of a reference rate from `from` on, one curve per reference, not `fixed`; the loans'
-forecasts take it at each rate reset, and a loan with no rate row is counted on it, ADR-034).
+the owner rejected: `era:{eraid}`, `doc:{voucherId}`), `forecast?` (ADR-035: `euribor_12m_pcm?`,
+`euribor_6m_pcm?`, `raise_bp?`, `other_costs_months_x100?`, each one number for the whole period, an empty one
+taking its default; the loans' forecasts take a Euribor's at each rate reset, and a loan with no rate row is counted
+on it). A book from before stores `rate_forecast[]` (`{ reference, from, reference_pcm }`, ADR-034); it reads as its
+newest row per Euribor and is dropped on the next save.
 
 `company` (ADR-031): `v`, `rev`, `updated_at`; `settings` (`audited`, `annual_report`, `balance_sheet_specs`, `prh_receipt`, only when on);
 `documents[]`, one link each: `key` (stable, `d12`), `kind`, `period_ends` (`Tilikausi.loppuu`, null

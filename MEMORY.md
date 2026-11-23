@@ -7,6 +7,24 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-23 - Properties page: the portfolio's months ahead (`feature/portfolio-forecast`, ADR-035)
+
+- Owner simplified the forecast to four inputs, each one number for the whole period: 12 kk and 6 kk Euribor, a raise
+  a year (rents and hoitovastike, default 1 %, hoitovastike in June), other costs as months of rent a year (default
+  1,0). Empty = default, computed each time; a Euribor's default is the newest rate row on any loan (`newestRates`).
+  `PortfolioSettings.forecast`; the 4d `rate_forecast` rows are read as their newest per Euribor and dropped on save.
+- Internals: `RateEstimates` (one number per reference) replaced the curve everywhere (`loanPath`, `loanForecast`,
+  `loanWarnings`, `HousingDetail.rate_estimates`). `forecast.ts` (pure): `rentAhead`, `leaseFor`, `objectForecast`,
+  `trailingCosts`, `otherCostsMonths`; `vastikeAhead` in `housingLoan.ts`; `forecastObjects` + `hoitovastikeIn` in
+  `portfolio.ts`; `portfolioChart` takes `flows` and gives `cash/unrecovered/invested_ahead_snt` and their totals.
+- UI: the shares-only checkbox from #93 became one "Ennuste" checkbox over all charts (same `forecast` option key).
+  The defaults form's rate table became four fields; the last 12 months' other costs hang below their field
+  (`.property-field-hint`, absolutely placed so the row's inputs stay level).
+- The loans test book stores `forecast: { euribor_12m_pcm: 2400 }` now (rebuilt; the base properties book was
+  rebuilt too by the script but only its timestamps changed, so it was left as committed).
+- Pitfall: with no typed estimate the default makes almost every Euribor loan "estimated", so the forecast tile
+  reads "korkoarvioiden mukaan" where it said "viimeisin korko pysyy" before.
+
 ## 2026-11-23 - Properties page: the loan shares chart on to the payoff (`feature/portfolio-share-forecast`, ADR-034)
 
 - Owner asked for the shares chart projected to 0, as each object's Taloyhtiö tab already does.

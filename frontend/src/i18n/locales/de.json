@@ -1122,7 +1122,7 @@
     "defaults": {
       "title": "Standardwerte für alle Objekte",
       "lead": "Verkaufskosten (z. B. Maklerprovision und Verwalterbescheinigung) und Zielrendite. Eigene Werte eines Objekts gehen vor.",
-      "estimates": "Zinsannahmen"
+      "forecast": "Prognose"
     },
     "field": {
       "kind": "Art",
@@ -1130,6 +1130,11 @@
       "salePct": "Verkaufskosten, % vom schuldenfreien Preis",
       "saleFixed": "Verkaufskosten, fest €",
       "targetReturn": "Zielrendite, % pro Jahr",
+      "euribor12": "12-Monats-Euribor %",
+      "euribor6": "6-Monats-Euribor %",
+      "raise": "Erhöhung %/Jahr (Mieten und Hausgeld)",
+      "otherCosts": "Sonstige Kosten, Monatsmieten pro Jahr",
+      "otherCostsActual": "letzte 12 Monate: {months}",
       "price": "Verkaufspreis (ohne Darlehensanteil)",
       "debtFreePrice": "Schuldenfreier Preis",
       "source": "Quelle",
@@ -1196,7 +1201,7 @@
       "allMonths": "Alle Monate",
       "lead": "Die Summenlinie zählt immer alle Objekte: die Kästchen blenden nur Linien aus. Ein verkauftes Objekt fällt ab dem Verkaufsmonat aus der Summe des noch nicht Zurückgeflossenen, bleibt aber in der Cashflow-Summe.",
       "shares": "Darlehensanteile am Monatsende",
-      "forecast": "Schätzung bis zum Ende der Darlehen",
+      "forecast": "Prognose",
       "objects": "Objekte",
       "checkAll": "Alle auswählen",
       "uncheckAll": "Auswahl aufheben",
@@ -1547,9 +1552,7 @@
       "loan_linked": "Darlehenskonto {path} ist bereits das Bankdarlehen eines anderen Objekts. Ein Darlehen kann nur zu einem Objekt gehören, sonst würden die Zinsen doppelt gezählt.",
       "deposit_linked": "Die Kaution gehört bereits zu einem anderen Mietverhältnis.",
       "overlap": "Zeiträume überschneiden sich: Feld {path} prüfen.",
-      "rentDates": "Der letzte Miettag liegt vor dem ersten.",
-      "estimateRow": "Zinsannahme Zeile {n}: Anfangstag und Referenzzins angeben.",
-      "estimateSameDay": "Zinsannahme Zeile {n}: für diesen Referenzzins gibt es an diesem Tag schon eine Annahme."
+      "rentDates": "Der letzte Miettag liegt vor dem ersten."
     },
     "total": "Summe",
     "holding": "{years} J. {months} Mon.",

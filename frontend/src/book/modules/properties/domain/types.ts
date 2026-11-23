@@ -188,10 +188,29 @@ export type LoanEvent = { date: string; kind: LoanEventKind; amount_snt?: number
 export type LoanRateLimit = { from?: string; to: string; floor_pcm?: number; ceiling_pcm?: number }
 
 /**
- * An estimate of a reference rate from `from` on (ADR-034), one curve per reference for every object:
- * the forecast takes it at each rate reset after a loan's latest actual rate.
+ * A dated estimate of a reference rate (ADR-034, step 4d), as books from before ADR-035 store it in
+ * `PortfolioSettings.rate_forecast`; read only to carry it over to `ForecastSettings`.
  */
 export type RateForecast = { reference: RateReference; from: string; reference_pcm: number }
+
+/**
+ * The reference rates a loan's forecast takes at each rate reset after its latest actual rate
+ * (ADR-035): one number for the whole period, by reference; a reference without one keeps the
+ * loan's latest rate.
+ */
+export type RateEstimates = Partial<Record<RateReference, number>>
+
+/**
+ * The owner's estimates for the months ahead (ADR-035), each one number for the whole period; an
+ * empty one takes its default (`forecastAssumptions`). Rates in 1/1000 %, the raise in basis points
+ * a year (rents and hoitovastike), other costs in hundredths of a month's rent a year.
+ */
+export type ForecastSettings = {
+  euribor_12m_pcm?: number
+  euribor_6m_pcm?: number
+  raise_bp?: number
+  other_costs_months_x100?: number
+}
 
 /**
  * A housing-company loan (yhtiölaina) the object has a share of, entered by hand (ADR-034). The
@@ -299,8 +318,8 @@ export type PortfolioSettings = {
   target_return_bp?: number
   /** Dismissed setup suggestions: `era:{eraid}` or `doc:{voucherId}:{costCentreId}`. */
   dismissed?: string[]
-  /** Reference rate estimates for the loans' forecasts (ADR-034), by reference then day. */
-  rate_forecast?: RateForecast[]
+  /** The estimates for the months ahead (ADR-035): the loans' rates, raises and other costs. */
+  forecast?: ForecastSettings
   [key: string]: unknown
 }
 
@@ -749,6 +768,7 @@ export type PortfolioResponse = {
   periods: { starts: string; ends: string }[]
   rows: PropertyRow[]
   chart: PortfolioChart
+  forecast_defaults: ForecastDefaults
   /** Cost centres with no stored decision yet. */
   undecided: number
   totals: {
@@ -785,6 +805,10 @@ export type PortfolioChart = {
     share_snt: (number | null)[]
     /** The share's estimate in `ahead_keys`: null where there is none, and after its payoff. */
     share_ahead_snt: (number | null)[]
+    /** The cash flow, still to recover and capital put in, run on over `ahead_keys` (ADR-035); null where the object has none. */
+    cash_ahead_snt: (number | null)[]
+    unrecovered_ahead_snt: (number | null)[]
+    invested_ahead_snt: (number | null)[]
   }[]
   total_cash_snt: number[]
   total_unrecovered_snt: number[]
@@ -798,12 +822,30 @@ export type PortfolioChart = {
   /** The housing-company loan shares (ADR-034), each object's where known; null where none is. */
   total_share_snt: (number | null)[]
   /**
-   * The months after `keys` the held objects' shares are estimated for (`housingShareForecast`), to
-   * the last one's payoff; empty without an estimate.
+   * The months after `keys` the held objects are estimated for (ADR-035): to the last loan share's
+   * payoff (`housingShareForecast`), else `FORECAST_YEARS` on; empty without an estimate.
    */
   ahead_keys: string[]
   /** The held objects' estimated shares together in `ahead_keys`; null from a month an object still owing has none. */
   total_share_ahead_snt: (number | null)[]
+  /** The totals run on over `ahead_keys` as in `keys` (a sold object's cash flow stays in its total). */
+  total_cash_ahead_snt: number[]
+  total_unrecovered_ahead_snt: number[]
+  total_invested_ahead_snt: number[]
+  total_back_ahead_snt: number[]
+}
+
+/**
+ * The defaults an empty forecast field takes (ADR-035), for the form to show: the newest rate row
+ * typed on any loan by reference, and what other costs came to in the last 12 months, in hundredths
+ * of a month's rent (null without rent then).
+ */
+export type ForecastDefaults = {
+  euribor_12m_pcm: number | null
+  euribor_6m_pcm: number | null
+  raise_bp: number
+  other_costs_months_x100: number
+  other_costs_actual_x100: number | null
 }
 
 /** The header's count of warnings to act on (ADR-030). */
@@ -905,8 +947,8 @@ export type HousingDetail = {
   paths: LoanPath[]
   /** The object's payments to its housing company by month (YYYY-MM), newest first. */
   payments: { month: string; units: number; lines: BookedLine[] }[]
-  /** The portfolio's reference rate estimates (`PortfolioSettings.rate_forecast`), for the loans' forecasts. */
-  rate_forecast: RateForecast[]
+  /** The reference rates the loans' forecasts take (`rateEstimates`: typed, else the newest loan rate row). */
+  rate_estimates: RateEstimates
   /** Rahoitusvastike rows of the invoices paid on the object that the loans' rows do not have, oldest first (4e). */
   charge_suggestions: LoanChargeSuggestion[]
   /** How the object's invoices name their rahoitus rows, for a loan's `invoice_label`. */
