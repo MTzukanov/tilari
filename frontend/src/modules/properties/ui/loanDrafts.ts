@@ -3,7 +3,7 @@ import { copyGroup } from '../../../book/modules/properties/domain/housingLoan'
 import { formatEurInput, parseEurInput } from '../../../shared/money'
 import { formatPcmInput, parsePcmInput } from '../../../shared/percent'
 import { issueCollector, type FormIssue, type RowAt } from './formIssues'
-import type { DocCandidate, HousingCopySource, HousingLoan, HousingLoanType, LeaseVoucher, LoanEventKind, RateReference } from '../api'
+import type { DocCandidate, HousingCopySource, HousingLoan, HousingLoanType, LeaseVoucher, LoanChargeSuggestion, LoanEventKind, RateReference } from '../api'
 
 type T = (key: string, vars?: Record<string, string | number>) => string
 
@@ -33,6 +33,8 @@ export type LoanDraft = {
   certificates: CertificateDraft[]
   charges: ChargeDraft[]
   events: EventDraft[]
+  /** How the vastike invoices name the loan's row (4e); the object's own, so a copy starts empty. */
+  invoiceLabel: string
 }
 
 const idText = (id: number | undefined) => (id != null ? String(id) : '')
@@ -67,6 +69,7 @@ export function newLoanDraft(): LoanDraft {
     certificates: [emptyCertificate()],
     charges: [emptyCharge()],
     events: [],
+    invoiceLabel: '',
   }
 }
 
@@ -89,11 +92,35 @@ export function loanDraft(loan: HousingLoan): LoanDraft {
       noDocument: Boolean(c.no_document),
     })),
     events: (loan.events ?? []).map((e) => ({ date: e.date, kind: e.kind, amount: eurText(e.amount_snt), voucherId: idText(e.voucher_id), note: e.note ?? '' })),
+    invoiceLabel: loan.invoice_label ?? '',
   }
 }
 
+/**
+ * The draft with a rahoitusvastike the invoices suggest (4e): the row of its month gets the amount
+ * and the invoice as its document, or a new row is added (an empty row is filled first); the loan
+ * takes the invoice's name for the row when it has none.
+ */
+export function withSuggestedCharge(d: LoanDraft, s: LoanChargeSuggestion): LoanDraft {
+  const row: ChargeDraft = { from: s.from, amount: formatEurInput(s.amount_snt), rahastoitu: false, voucherId: String(s.voucher_id), noDocument: false }
+  const same = d.charges.findIndex((c) => c.from === s.from)
+  const empty = d.charges.findIndex((c) => blank(c))
+  const charges =
+    same >= 0
+      ? d.charges.map((c, i) => (i === same ? { ...c, amount: row.amount, voucherId: row.voucherId, noDocument: false } : c))
+      : empty >= 0
+        ? d.charges.map((c, i) => (i === empty ? row : c))
+        : [...d.charges, row]
+  return { ...d, charges, invoiceLabel: d.invoiceLabel || s.label }
+}
+
+/** Whether the draft already has the suggested rahoitusvastike from its month. */
+export function hasSuggestedCharge(d: LoanDraft, s: LoanChargeSuggestion): boolean {
+  return d.charges.some((c) => c.from === s.from && amountOf(c.amount) === s.amount_snt)
+}
+
 /** The loan's terms, rates, grace periods and rate limits: what objects of one housing company share. */
-function terms(loan: HousingLoan): Omit<LoanDraft, 'base' | 'group' | 'certificates' | 'charges' | 'events'> {
+function terms(loan: HousingLoan): Omit<LoanDraft, 'base' | 'group' | 'certificates' | 'charges' | 'events' | 'invoiceLabel'> {
   return {
     name: loan.name,
     lender: loan.lender ?? '',
@@ -334,7 +361,7 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | FormIssue[] {
     reference: d.reference,
     margin_pcm: margin ?? 0,
   }
-  for (const key of ['group', 'lender', 'starts', 'ends', 'total_snt', 'reset_months', 'rates', 'grace', 'rate_limits', 'certificates', 'charges', 'events'] as const) delete loan[key]
+  for (const key of ['group', 'lender', 'starts', 'ends', 'total_snt', 'reset_months', 'rates', 'grace', 'rate_limits', 'certificates', 'charges', 'events', 'invoice_label'] as const) delete loan[key]
   if (d.starts) loan.starts = d.starts
   if (d.group) loan.group = d.group
   if (d.lender.trim()) loan.lender = d.lender.trim()
@@ -347,5 +374,6 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | FormIssue[] {
   if (certificates.length) loan.certificates = certificates
   if (charges.length) loan.charges = charges
   if (events.length) loan.events = events
+  if (d.invoiceLabel.trim()) loan.invoice_label = d.invoiceLabel.trim()
   return loan
 }

@@ -225,8 +225,33 @@ export type HousingLoan = {
   certificates?: LoanCertificate[]
   charges?: LoanCharge[]
   events?: LoanEvent[]
+  /**
+   * How the vastike invoices name this loan's rahoitusvastike row ("Pääomavastike 1"): ties the
+   * invoices' rows to this loan when the object has several (ADR-034, 4e).
+   */
+  invoice_label?: string
   [key: string]: unknown
 }
+
+export const VASTIKE_KINDS = ['hoito', 'rahoitus', 'vesi'] as const
+export type VastikeKind = (typeof VASTIKE_KINDS)[number]
+
+/**
+ * A row of a vastike invoice, as tilari-bank-import reads it from the invoice attached to a payment
+ * to the housing company and lists it in the voucher's notes (ADR-034, 4e):
+ * `[hki:vastike:<Vienti.id>:<YYYY-MM>:<kind>=<snt>:<label>]`. `line_id`: the payment's cost line;
+ * `month`: the invoice's period; `label`: the row as the invoice names it.
+ */
+export type VastikeFact = { line_id: number; voucher_id: number; month: string; kind: VastikeKind; amount_snt: number; label: string }
+
+/** A rahoitus row of an invoice the object paid: the month it was paid in, and whether it is an extra charge (ylimääräinen). */
+export type InvoicedCharge = VastikeFact & { paid_month: string; extra: boolean }
+
+/**
+ * A rahoitusvastike the invoices give for a loan that its rows do not (ADR-034, 4e): the amount from
+ * the invoice's month on, the first invoice as its document, and how many invoices in a row had it.
+ */
+export type LoanChargeSuggestion = { loan_key: string; from: string; amount_snt: number; voucher_id: number; label: string; invoices: number }
 
 export type PropertyDoc = {
   v: number
@@ -839,6 +864,8 @@ export type LoanMonth = {
   backward?: true
   /** An estimate after the path (`loanForecast`): the month has not come yet. */
   forecast?: true
+  /** What was paid comes from the vastike invoices' rahoitus rows (4e), not from the charge in force. */
+  invoiced?: true
   /**
    * A certificate (its share at the month's end): with an earlier one, how far the computed path was
    * from it (computed less certified, to the cent) and the rate the fitted months imply.
@@ -871,6 +898,10 @@ export type HousingDetail = {
   payments: { month: string; units: number; lines: BookedLine[] }[]
   /** The portfolio's reference rate estimates (`PortfolioSettings.rate_forecast`), for the loans' forecasts. */
   rate_forecast: RateForecast[]
+  /** Rahoitusvastike rows of the invoices paid on the object that the loans' rows do not have, oldest first (4e). */
+  charge_suggestions: LoanChargeSuggestion[]
+  /** How the object's invoices name their rahoitus rows, for a loan's `invoice_label`. */
+  invoice_labels: string[]
 }
 
 export type MonthLineKind = 'income' | 'expense' | 'interest'

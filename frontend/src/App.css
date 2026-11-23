@@ -6087,6 +6087,12 @@ tr.tax-total td {
   font-weight: 600;
 }
 
+/* Paid as the vastike invoice's rahoitus row gives it (4e), not counted from the charge in force. */
+.property-loan-table td.property-loan-invoiced {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
 .property-loan-table tr.property-loan-certificate-row td {
   font-size: 0.85rem;
   background: color-mix(in srgb, var(--surface) 70%, transparent);

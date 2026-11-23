@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
-import { editorSaveButton, openBook, propertiesBook } from './helpers'
+import { editorSaveButton, openBook, propertiesBook, propertiesLoansBook } from './helpers'
 
 /** Opens a new lease card in place on object 4's Vuokrasuhteet tab; returns the lease's form on it. */
 async function newLeaseCard(page: Page): Promise<Locator> {
@@ -837,6 +837,53 @@ test.describe('rental object loan rate estimates', () => {
     await expect(tip).toContainText(/\(3,800\s%\)/)
     await pointAt('2029-04')
     await expect(tip).toContainText(/\(4,300\s%\)/)
+  })
+})
+
+test.describe('rental object vastike invoices', () => {
+  test('the invoices\' rahoitus rows are what was paid; a new charge from them is taken on the card; a row no loan takes is a reminder', async ({ page }) => {
+    await openBook(page, propertiesLoansBook, 'Esimerkki Vuokraus Oy')
+    await page.locator('.practice-banner').getByLabel('Päivämäärä').fill('2026-10-08')
+    // The overview lists what the invoices ask; they mark the Taloyhtiö tab.
+    await page.goto('/#/property/10')
+    const warnings = page.locator('.property-warnings')
+    await expect(warnings).toContainText('Vastikelaskuilla yhtiölainan Putkiremontti rahoitusvastike on 102,40\u00a0€/kk 1.7.2026 alkaen')
+    await expect(warnings).toContainText('Vastikelaskun rahoitusrivi Pääomavastike 2 (12,00\u00a0€ 1.8.2026 alkaen) ei kohdistu yhteenkään yhtiölainaan')
+    // Two rahoitus rows from August and neither the charge in force: the loan takes neither yet.
+    await expect(warnings).toContainText('Vastikelaskun rahoitusrivi Pääomavastike 1 (102,40\u00a0€ 1.8.2026 alkaen)')
+
+    // The months paid from the invoices are marked.
+    await page.getByRole('tab', { name: /^Taloyhtiö/ }).click()
+    const loan = page.locator('.property-housing-loans .property-loan-card')
+    await loan.getByRole('button', { name: /^Kuukausittain/ }).click()
+    const july = loan.locator('.property-loan-table tbody tr', { hasText: 'heinäkuu 2026' })
+    await expect(july.locator('td.property-loan-invoiced')).toHaveText(/102,40/)
+    await expect(july.locator('td.property-loan-invoiced')).toHaveAttribute('title', 'Vastikelaskun rahoitusrivi')
+
+    // The suggestion on the card: taken, it fills a charge row with the invoice and names the row.
+    await loan.getByRole('button', { name: 'Muokkaa', exact: true }).click()
+    const card = page.locator('.property-loan-card-edit')
+    const suggestion = card.locator('.property-loan-suggestions li')
+    await expect(suggestion).toHaveCount(1)
+    await expect(suggestion).toContainText(/Vastikelaskuilta102,40\s€\/kk 1\.7\.2026 alkaenPääomavastike 1 · 1 lasku/)
+    await page.setViewportSize({ width: 360, height: 740 })
+    const workspace = page.locator('main.workspace')
+    expect(await workspace.evaluate((el) => el.scrollWidth - el.clientWidth), 'loan card with a suggestion').toBeLessThanOrEqual(0)
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await suggestion.getByRole('button', { name: 'Lisää', exact: true }).click()
+    await expect(suggestion).toHaveCount(0)
+    const charge = card.locator('.property-lease-increase', { has: page.getByLabel('Rahoitusvastike €/kk') }).last()
+    await expect(charge.getByLabel('Alkaen')).toHaveValue('2026-07-01')
+    await expect(charge.getByLabel('Rahoitusvastike €/kk')).toHaveValue('102,40')
+    await expect(card.getByLabel('Nimi vastikelaskulla')).toHaveValue('Pääomavastike 1')
+    await card.getByRole('button', { name: 'Tallenna', exact: true }).click()
+    await expect(card).toHaveCount(0)
+    // The rows named Pääomavastike 1 are the loan's now; the second loan's row still asks for its loan.
+    await page.getByRole('tab', { name: 'Yleiskatsaus' }).click()
+    await expect(warnings).toContainText('Vastikelaskun rahoitusrivi Pääomavastike 2')
+    await expect(warnings).not.toContainText('Vastikelaskuilla yhtiölainan Putkiremontti')
+    await expect(warnings).not.toContainText('Vastikelaskun rahoitusrivi Pääomavastike 1')
+    await expect(warnings).toContainText('Vastikelaskun rahoitusrivi Pääomavastike 2')
   })
 })
 

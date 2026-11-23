@@ -422,6 +422,9 @@ correction would change the open year's income statement lines. The rental-objec
 - Why not `TilariData`: the decision belongs with the books (the correction voucher, also in the
   Kitsas archive), and the importer regenerates it from its rules, so there is no second copy to
   keep in sync. Tilari never writes these keys.
+- **Amended 2026-11-23 (ADR-034, step 4e):** `info` is also read for `[hki:vastike:...]` keys, the rows
+  of the vastike invoice paid on a line (below, ADR-034). Same terms: posted vouchers only, read-only,
+  written by the importer, never by Tilari.
 
 ## ADR-025 Leases: manual rent steps; water advances settled per period (2026-10-26)
 
@@ -893,5 +896,25 @@ correction would change the open year's income statement lines. The rental-objec
   the object was the owner's (before the purchase, or the books' first year) count every due month as paid - by
   whoever owned it - and the path shows only the owner's months, so a certificate from before the purchase rolls
   on to it instead of growing with unpaid interest.
-- **Next steps:** tilari-bank-import reading the vastike invoices into facts on the voucher (4e).
+- **Vastike invoices** (2026-11-23, step 4e): the book has one vastike line a month (hoito and rahoitus
+  together); the invoice attached to the payment splits it. tilari-bank-import reads it and lists its rows in the
+  payment voucher's notes, one key per row: `[hki:vastike:<Vienti.id>:<YYYY-MM>:<hoito|rahoitus|vesi>=<snt>:<label>]`
+  (the line it was paid on, the invoice's period, the row as the invoice names it), only when the rows add up to
+  the invoice and the invoice to the line, to the cent. Tilari reads them (`loadVastikeFacts`, ADR-024 amended)
+  and stays the only writer of `TilariData`; nothing is stored from them.
+  - **Rows to loans**, invoice by invoice among the loans running in its month: a row named as a loan's
+    `invoice_label`; else the only row to the only loan left; else a row to the only loan whose charge in force is
+    its amount. An extra charge (ylimääräinen) goes with the loan of its name, or the only loan. A loan takes one
+    regular row of an invoice, so a second company loan not entered yet cannot be counted on the first.
+  - **What was paid:** in a month with invoices (by the payment's date, as the payments count) a loan pays its rows
+    on them; payments beyond the invoices (one without a readable invoice) still pay the charge in force. The month
+    table marks such months.
+  - **Suggestions:** walking a loan's regular rows by the invoice's month, an amount that is not the charge in force
+    starts "Uusi rahoitusvastike X alkaen kk" (`loan_charge_invoiced`), with that invoice as its document; taken on
+    the loan's card it fills a charge row and, when the loan has none, the row's name as `invoice_label`.
+  - **A row no loan takes** reminds (`loan_invoice_unmatched`), once per name from its first month: a loan not
+    entered, or several loans the names and amounts cannot tell apart.
+  - Hoito and vesi rows are read but not used yet: they are for the forecast's hoitovastike trend.
+- **Next steps:** the object-wide forecast (rents, hoitovastike, vacancy, projected IRR) and the interest check
+  against the payments; both are in the step-4 plan's "Later".
 

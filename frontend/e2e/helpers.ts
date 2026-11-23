@@ -7,8 +7,10 @@ const testBook = path.join(repoRoot, 'testdb', 'tilari-test.kitsas')
 const periodEndBook = path.join(repoRoot, 'testdb', 'tilari-period-end.kitsas')
 /** Invented rental objects with investments linked (`npm run build:testdb:properties`). */
 const propertiesBook = path.join(repoRoot, 'testdb', 'tilari-properties.kitsas')
+/** The same with housing-company loans and A 1's vastike invoices of 2026 (`testBook.test.ts`). */
+const propertiesLoansBook = path.join(repoRoot, 'testdb', 'tilari-properties-loans.kitsas')
 
-export { testBook, periodEndBook, propertiesBook }
+export { testBook, periodEndBook, propertiesBook, propertiesLoansBook }
 
 /** Editor primary save — scoped so the topbar book "Tallenna" is not matched. */
 export function editorSaveButton(page: Page): Locator {

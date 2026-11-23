@@ -1510,7 +1510,9 @@
       "loan_rate_estimated": "No actual reference rate is given for the company loan {loan}: the share is counted by the rate estimates.",
       "loan_rate_none": "The company loan {loan} has no rate and no rate estimate: the share is counted without a reference rate. Add the rate or an estimate.",
       "loan_rahastoitu_expensed": "The financing charge of the company loan {loan} from {from} is capitalised but booked as a cost: in taxation it belongs to the shares' acquisition cost. Check with the auditor.",
-      "loan_grace_ending": "Housing-company loan {loan}: the interest-only period ends {to}; the financing charge rises when repayments start."
+      "loan_grace_ending": "Housing-company loan {loan}: the interest-only period ends {to}; the financing charge rises when repayments start.",
+      "loan_charge_invoiced": "The housing company's invoices give the financing charge of the company loan {loan} as {amount}/month from {from}: add it to the loan's financing charges.",
+      "loan_invoice_unmatched": "The financing row {label} on the housing company's invoices ({amount} from {from}) belongs to no company loan: add the loan, or give a loan the row's name on the invoice."
     },
     "warnCount": "Notes: {count}",
     "alerts": {
@@ -1769,7 +1771,8 @@
         "note": "Note",
         "fixedRate": "Fixed rate %",
         "floor": "Floor %",
-        "ceiling": "Ceiling %"
+        "ceiling": "Ceiling %",
+        "invoiceLabel": "Name on the invoice"
       },
       "namePlaceholder": "e.g. Pipe renovation 2019",
       "type": {
@@ -1833,6 +1836,13 @@
       "fromDate": "from {date}",
       "perMonth": "{amount}/month",
       "rateRow": "reference rate {rate}, total {total}",
+      "invoiced": {
+        "title": "From the invoices",
+        "row": "{amount}/month from {from}",
+        "count": "{count} invoices",
+        "count_one": "1 invoice",
+        "add": "Add"
+      },
       "loansTitle": "Company loans",
       "add": "+ Add loan",
       "copy": "Copy from another object",
@@ -1872,7 +1882,8 @@
           "fixed_payment": "The financing charge stays the same until the share is paid off."
         },
         "paidSum": "Repaid + interest in all",
-        "interestSum": "Interest in all"
+        "interestSum": "Interest in all",
+        "invoicedHint": "Financing row of the housing company's invoice"
       },
       "alsoLead": "Add the new reference rates ({dates}) to the loan's copies on other objects too:",
       "alsoFailed": "The loan was saved, but the reference rate could not be added to: {objects}.",

@@ -3,6 +3,8 @@ import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
 import { FileButton } from '../../../shared/FileButton'
+import { formatCents } from '../../../shared/money'
+import { Pill } from '../../../shared/Pill'
 import { formatPcm, parsePcmInput } from '../../../shared/percent'
 import { copyGroup, groupOf } from '../../../book/modules/properties/domain/housingLoan'
 import {
@@ -25,7 +27,18 @@ import { clearCardDraft, loadCardDraft, saveCardDraft } from './editDraft'
 import { saveErrorText } from './format'
 import { invalidProps, issueOf as issueIn, useIssueFocus, type FormIssue } from './formIssues'
 import { Field, FormIssueList, NoDocumentCheck, Shown } from './FormParts'
-import { buildLoan, emptyCertificate, emptyCharge, emptyRate, newLoanDraft, loanDraft, voucherDoc, type LoanDraft } from './loanDrafts'
+import {
+  buildLoan,
+  emptyCertificate,
+  emptyCharge,
+  emptyRate,
+  hasSuggestedCharge,
+  newLoanDraft,
+  loanDraft,
+  voucherDoc,
+  withSuggestedCharge,
+  type LoanDraft,
+} from './loanDrafts'
 import { useDocWriter, type CardInputs } from './useDocWriter'
 import { candidateDoc } from './waterDrafts'
 
@@ -302,6 +315,9 @@ export function LoanCardEdit({
 
   const fixed = draft.reference === 'fixed'
   const margin = fixed ? 0 : (parsePcmInput(draft.margin) ?? 0)
+  // Rahoitusvastike rows the vastike invoices give that the form does not have yet (4e).
+  const suggested = detail.housing.charge_suggestions.filter((s) => s.loan_key === loanKey && !hasSuggestedCharge(draft, s))
+  const labels = detail.housing.invoice_labels
   return (
     <div ref={cardRef} className="property-lease-card property-lease-card-edit property-loan-card-edit">
       <div className="property-lease-edit property-loan-edit">
@@ -370,6 +386,17 @@ export function LoanCardEdit({
               />
             </Field>
           ) : null}
+          {/* How the vastike invoices name this loan's row: needed only when the object has several loans. */}
+          {labels.length || draft.invoiceLabel ? (
+            <Field className="span-2" label={t('properties.housing.field.invoiceLabel')}>
+              <input type="text" list={`loan-invoice-labels-${cardId}`} value={draft.invoiceLabel} onChange={(e) => set({ invoiceLabel: e.target.value })} />
+              <datalist id={`loan-invoice-labels-${cardId}`}>
+                {labels.map((label) => (
+                  <option key={label} value={label} />
+                ))}
+              </datalist>
+            </Field>
+          ) : null}
         </div>
         {draft.group ? <p className="muted property-lease-hint">{t('properties.housing.copiedHint')}</p> : null}
 
@@ -406,6 +433,20 @@ export function LoanCardEdit({
           issue={issueOf('charges')}
           onAdd={() => addRow('charges', emptyCharge())}
         >
+          {suggested.length ? (
+            <ul className="property-doc-list property-loan-suggestions">
+              {suggested.map((s) => (
+                <li key={`${s.from}-${s.amount_snt}`}>
+                  <Pill tone="doc">{t('properties.housing.invoiced.title')}</Pill>
+                  <span>{t('properties.housing.invoiced.row', { amount: formatCents(s.amount_snt), from: formatDate(s.from) })}</span>
+                  <span className="muted">{[s.label, t('properties.housing.invoiced.count', { count: s.invoices })].join(' · ')}</span>
+                  <button type="button" className="btn-secondary" onClick={() => setDraft((d) => withSuggestedCharge(d, s))}>
+                    {t('properties.housing.invoiced.add')}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
           {draft.charges.map((c, i) => (
             <div key={i} className="property-lease-grid property-lease-increase">
               <Field label={t('properties.housing.field.from')} issue={issueOf(`charges.${i}.from`)}>

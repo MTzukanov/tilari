@@ -1510,7 +1510,9 @@
       "loan_rate_estimated": "Für das Gesellschaftsdarlehen {loan} ist kein tatsächlicher Referenzzins angegeben: der Anteil wird nach den Zinsannahmen berechnet.",
       "loan_rate_none": "Das Gesellschaftsdarlehen {loan} hat weder Zins noch Zinsannahme: der Anteil wird ohne Referenzzins berechnet. Zins oder Annahme hinzufügen.",
       "loan_rahastoitu_expensed": "Das Finanzierungsentgelt des Gesellschaftsdarlehens {loan} ab {from} ist kapitalisiert, aber als Aufwand gebucht: steuerlich gehört es zu den Anschaffungskosten der Anteile. Mit dem Abschlussprüfer klären.",
-      "loan_grace_ending": "Gesellschaftsdarlehen {loan}: die tilgungsfreie Zeit endet am {to}; das Finanzierungsentgelt steigt, wenn die Tilgung beginnt."
+      "loan_grace_ending": "Gesellschaftsdarlehen {loan}: die tilgungsfreie Zeit endet am {to}; das Finanzierungsentgelt steigt, wenn die Tilgung beginnt.",
+      "loan_charge_invoiced": "Laut den Rechnungen der Wohnungsgesellschaft beträgt das Finanzierungsentgelt des Gesellschaftsdarlehens {loan} ab {from} {amount}/Monat: tragen Sie es beim Darlehen ein.",
+      "loan_invoice_unmatched": "Die Finanzierungszeile {label} der Rechnungen ({amount} ab {from}) gehört zu keinem Gesellschaftsdarlehen: legen Sie das Darlehen an oder geben Sie einem Darlehen den Namen der Zeile auf der Rechnung."
     },
     "warnCount": "Hinweise: {count}",
     "alerts": {
@@ -1769,7 +1771,8 @@
         "note": "Anmerkung",
         "fixedRate": "Festzins %",
         "floor": "Untergrenze %",
-        "ceiling": "Obergrenze %"
+        "ceiling": "Obergrenze %",
+        "invoiceLabel": "Name auf der Rechnung"
       },
       "namePlaceholder": "z. B. Rohrsanierung 2019",
       "type": {
@@ -1833,6 +1836,13 @@
       "fromDate": "ab {date}",
       "perMonth": "{amount}/Monat",
       "rateRow": "Referenzzins {rate}, gesamt {total}",
+      "invoiced": {
+        "title": "Aus den Rechnungen",
+        "row": "{amount}/Monat ab {from}",
+        "count": "{count} Rechnungen",
+        "count_one": "1 Rechnung",
+        "add": "Hinzufügen"
+      },
       "loansTitle": "Gesellschaftsdarlehen",
       "add": "+ Darlehen hinzufügen",
       "copy": "Von einem anderen Objekt kopieren",
@@ -1872,7 +1882,8 @@
           "fixed_payment": "Das Finanzierungsentgelt bleibt gleich, bis der Anteil getilgt ist."
         },
         "paidSum": "Tilgung + Zins insgesamt",
-        "interestSum": "Zins insgesamt"
+        "interestSum": "Zins insgesamt",
+        "invoicedHint": "Finanzierungszeile der Rechnung"
       },
       "alsoLead": "Die neuen Referenzzinsen ({dates}) auch bei den Kopien des Darlehens in anderen Objekten eintragen:",
       "alsoFailed": "Das Darlehen wurde gespeichert, aber der Referenzzins konnte nicht eingetragen werden bei: {objects}.",

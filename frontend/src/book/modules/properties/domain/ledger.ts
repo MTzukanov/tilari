@@ -7,7 +7,7 @@ import type { SqliteDb } from '../../../sqlite'
 import type { BrowseEntry } from '../../../types'
 import { TYPE_BANK_STATEMENT } from '../../../vouchers'
 import { voucherFiles } from './documents'
-import type { VoucherFile } from './types'
+import type { VastikeFact, VastikeKind, VoucherFile } from './types'
 
 /** Kitsas brutto VAT codes: the line amount includes VAT (sales 12, purchases 22). */
 const BRUTTO_CODES = new Set([12, 22])
@@ -213,6 +213,39 @@ export function loadRecountedLines(db: SqliteDb): Map<number, { account: number;
     const info = accounts.get(account)
     // Only P&L accounts: a balance-sheet target would take the line out of the figures.
     if (info && String(account) >= '3') out.set(lineId, { account, account_type: info.type, account_name: info.name })
+  }
+  return out
+}
+
+const VASTIKE_KEY = /\[hki:vastike:(\d+):(\d{4}-\d{2}):(hoito|rahoitus|vesi)=(-?\d+):([^\]\n]*)\]/g
+
+/**
+ * The vastike invoices' rows (ADR-034 step 4e, ADR-024): tilari-bank-import reads the invoice attached
+ * to a payment to the housing company and lists its rows in the voucher's notes as
+ * `[hki:vastike:<Vienti.id>:<YYYY-MM>:<kind>=<snt>:<label>]`, under a heading line. Posted vouchers
+ * only; a key naming a line of another voucher is left out. Line id -> its invoices' rows.
+ */
+export function loadVastikeFacts(db: SqliteDb): Map<number, VastikeFact[]> {
+  const found: VastikeFact[] = []
+  const rows = db.all<{ id: number; json: unknown }>(
+    `SELECT id, json FROM Tosite WHERE ${SQL_POSTED} AND CAST(json AS TEXT) LIKE '%[hki:vastike:%'`,
+  )
+  for (const row of rows) {
+    const info = String(parseJson(row.json).info ?? '')
+    for (const m of info.matchAll(VASTIKE_KEY)) {
+      found.push({ line_id: Number(m[1]), voucher_id: Number(row.id), month: m[2], kind: m[3] as VastikeKind, amount_snt: Number(m[4]), label: m[5].trim() })
+    }
+  }
+  const out = new Map<number, VastikeFact[]>()
+  if (!found.length) return out
+  const owners = new Map(
+    db
+      .all<{ id: number; tosite: number }>(`SELECT id, tosite FROM Vienti WHERE id IN (${inList(new Set(found.map((f) => f.line_id)))})`)
+      .map((r) => [Number(r.id), Number(r.tosite)]),
+  )
+  for (const fact of found) {
+    if (owners.get(fact.line_id) !== fact.voucher_id) continue
+    out.set(fact.line_id, [...(out.get(fact.line_id) ?? []), fact])
   }
   return out
 }
