@@ -1196,6 +1196,7 @@
       "allMonths": "Alla månader",
       "lead": "Totallinjen räknar alltid alla objekt: kryssrutorna döljer bara linjer. Ett sålt objekt lämnar det ej återfångna från försäljningsmånaden men stannar i kassaflödets total.",
       "shares": "Bolagslåneandelar vid månadens slut",
+      "forecast": "Uppskattning till lånens slut",
       "objects": "Objekt",
       "checkAll": "Markera alla",
       "uncheckAll": "Avmarkera alla",

@@ -32,6 +32,7 @@ import {
 import { listNoteVouchers } from './documents'
 import {
   housingShare,
+  housingShareForecast,
   housingShareMonths,
   housingVoucherIds,
   latestCertificate,
@@ -624,6 +625,10 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
         status: c.result.status,
         months: c.result.months,
         shares: housingShareMonths(c.parsed.doc.housing_loans ?? [], c.loans.paths),
+        ahead:
+          c.result.status === 'sold'
+            ? undefined
+            : housingShareForecast(c.parsed.doc.housing_loans ?? [], c.loans.paths, loaded.settings.doc.rate_forecast ?? [], asOf.slice(0, 7)),
       })),
     ),
     undecided: loaded.centres.filter((c) => !loaded.docs.has(c.id)).length,

@@ -1196,6 +1196,7 @@
       "allMonths": "Alle Monate",
       "lead": "Die Summenlinie zählt immer alle Objekte: die Kästchen blenden nur Linien aus. Ein verkauftes Objekt fällt ab dem Verkaufsmonat aus der Summe des noch nicht Zurückgeflossenen, bleibt aber in der Cashflow-Summe.",
       "shares": "Darlehensanteile am Monatsende",
+      "forecast": "Schätzung bis zum Ende der Darlehen",
       "objects": "Objekte",
       "checkAll": "Alle auswählen",
       "uncheckAll": "Auswahl aufheben",

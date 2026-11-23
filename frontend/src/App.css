@@ -6122,6 +6122,18 @@ tr.tax-total td {
   background: var(--ink);
 }
 
+/* A share line's estimate after the months followed: the line's own colour and dash, faded. */
+.portfolio-ahead .chart-line {
+  opacity: 0.45;
+}
+
+.overview-swatch.portfolio-swatch-ahead {
+  height: 3px;
+  width: 1rem;
+  background: var(--ink);
+  opacity: 0.45;
+}
+
 /* A chart whose points can be picked (LineChart pointTip): the box of figures stands over it. */
 .line-chart {
   position: relative;

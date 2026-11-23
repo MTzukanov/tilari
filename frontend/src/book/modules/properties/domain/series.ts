@@ -146,13 +146,26 @@ export function yearTable(
 /**
  * Every object's months on one month axis (`PortfolioChart`): from the earliest object's first
  * month to the latest month any object has. `months` are each object's own (`monthlySeries`);
- * `shares` its housing-company loan share by month where known (`housingShareMonths`).
+ * `shares` its housing-company loan share by month where known (`housingShareMonths`), and `ahead`
+ * its estimate after the last month (`housingShareForecast`; a sold object's is the buyer's, so none).
  */
 export function portfolioChart(
-  objects: { id: number; status: PropertyStatus; months: MonthPoint[]; shares?: Map<string, number> }[],
+  objects: { id: number; status: PropertyStatus; months: MonthPoint[]; shares?: Map<string, number>; ahead?: Map<string, number> }[],
 ): PortfolioChart {
   const shown = objects.filter((o) => o.months.length && o.status !== 'excluded')
-  if (!shown.length) return { keys: [], objects: [], total_cash_snt: [], total_unrecovered_snt: [], total_invested_snt: [], total_back_snt: [], total_share_snt: [] }
+  if (!shown.length) {
+    return {
+      keys: [],
+      objects: [],
+      total_cash_snt: [],
+      total_unrecovered_snt: [],
+      total_invested_snt: [],
+      total_back_snt: [],
+      total_share_snt: [],
+      ahead_keys: [],
+      total_share_ahead_snt: [],
+    }
+  }
   const from = shown.map((o) => o.months[0].key).sort()[0]
   const to = shown.map((o) => o.months[o.months.length - 1].key).sort().at(-1)!
   const keys = monthKeys(`${from}-01`, `${to}-01`)
@@ -197,13 +210,37 @@ export function portfolioChart(
     })
     return { id: o.id, cash_snt: cash, unrecovered_snt: unrecovered, invested_snt: capitalIn, share_snt: share }
   })
+  // On from the last month: the held objects' estimates, each to its payoff.
+  const last = keys[keys.length - 1]
+  const held = shown.map((o) => (o.status === 'sold' ? null : o.ahead))
+  const aheadTo = held.flatMap((ahead) => [...(ahead?.keys() ?? [])].filter((k) => k > last)).sort().at(-1)
+  const aheadKeys = aheadTo ? monthKeys(`${addMonths(last, 1)}-01`, `${aheadTo}-01`) : []
+  /** An object's share in a month after the last: its estimate, 0 once paid (or with nothing owed), null where it has none. */
+  const aheadAt = (o: (typeof shown)[number], ahead: Map<string, number> | null | undefined, key: string): number | null => {
+    const estimate = ahead?.get(key)
+    if (estimate != null) return estimate
+    const lastOwed = ahead?.size ? [...ahead.values()].at(-1)! : (o.shares?.get(last) ?? 0)
+    return lastOwed > 0 ? null : 0
+  }
+  const totalAhead = aheadKeys.map((key) => {
+    let total = 0
+    for (const [i, o] of shown.entries()) {
+      if (o.status === 'sold') continue
+      const owed = aheadAt(o, held[i], key)
+      if (owed == null) return null
+      total += owed
+    }
+    return total
+  })
   return {
     keys,
-    objects: rows,
+    objects: rows.map((row, i) => ({ ...row, share_ahead_snt: aheadKeys.map((key) => held[i]?.get(key) ?? null) })),
     total_cash_snt: totalCash,
     total_unrecovered_snt: totalUnrecovered,
     total_invested_snt: totalInvested,
     total_back_snt: totalBack,
     total_share_snt: totalShare,
+    ahead_keys: aheadKeys,
+    total_share_ahead_snt: totalAhead,
   }
 }
