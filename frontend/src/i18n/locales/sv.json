@@ -1067,7 +1067,10 @@
       "housingShare": "Låneandel",
       "housingShares": "Bolagslåneandelar",
       "housingShareUnknown": "inte känd på lägesdagen",
-      "debtFreeUnrecovered": "skuldfritt ej återfått {amount}"
+      "debtFreeUnrecovered": "skuldfritt ej återfått {amount}",
+      "cashRepaid": "Kassaflöde + amorteringar 12 mån",
+      "cashRepaidPart": "amorteringar {amount}",
+      "cashRepaidPct": "{pct} av investerat kapital"
     },
     "col": {
       "object": "Objekt",
@@ -1208,7 +1211,10 @@
       "combined": "Gemensamt diagram",
       "combinedTitle": "Alla objekt tillsammans vid månadens slut",
       "back": "Tillbaka",
-      "percent": "I procent av det investerade"
+      "percent": "I procent av det investerade",
+      "repaidTitle": "Kassaflöde och amorteringar vid månadens slut",
+      "repaid": "Amorterat totalt",
+      "gain": "Kassaflöde + amorteringar"
     },
     "chart": {
       "cashFlow": "Kassaflöde per månad",
@@ -1561,7 +1567,10 @@
     },
     "cash": {
       "title": "Kassaflöde per år",
-      "lead": "Intäkter - kostnader för den månad de gäller (periodiseringar och rättelser ingår); inga investeringar eller försäljningar."
+      "lead": "Intäkter - kostnader för den månad de gäller (periodiseringar och rättelser ingår); inga investeringar eller försäljningar.",
+      "net": "Kassaflöde",
+      "repaid": "Amorteringar på bolagslån",
+      "gain": "Kassaflöde + amorteringar"
     },
     "sold": {
       "title": "Sålda objekt ({n})",

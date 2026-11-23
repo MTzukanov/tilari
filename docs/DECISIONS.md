@@ -954,5 +954,12 @@ correction would change the open year's income statement lines. The rental-objec
 - **The charts:** one checkbox "Ennuste" over all of them runs every line on faded from the as-of month, the combined
   chart's too: the cash flow summed on, still to recover falling by it (its percentage over the capital put in, which
   stays), what came back rising, and the shares (ADR-034). A month's box says "(arvio)". Off by default, remembered.
+- **Cash flow against the repayment** (owner, 2026-11-23: "I am gaining if downpaid more than negative cash flow"):
+  the rahoitusvastike's repayment part lowers the shares, so it is saved, not spent. The cash flow by year table's
+  summary adds "Yhtiölainojen lyhennykset" (`vastikeYears`' principal, as on Talous) and "Kassavirta + lyhennykset";
+  a tile "Kassavirta + lyhennykset 12 kk" with the repayment and its percentage of the capital put in the held
+  objects; a chart of the cumulative cash flow, the repayments summed (`repaidMonths`, then the estimates'
+  principal) and their sum, forecast included. Above 0 the owner gains before any change in the prices; the
+  owner's own bank loans' repayment and a rahastoitu rahoitusvastike booked as capital are not counted.
 - **Later:** a payback month per object; a raise or other costs per object; the own bank loans; a forecast on the
   object's own page.

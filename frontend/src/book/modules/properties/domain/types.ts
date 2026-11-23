@@ -451,7 +451,11 @@ export type EraState = EraLink & {
 }
 
 /** Cash flow of one fiscal year: operating net and interest (if financing is linked). */
-export type YearCashFlow = { starts: string; ends: string; net_snt: number; interest_snt: number }
+/**
+ * A fiscal year's operating cash flow; `principal_snt` the housing-company loans' repayment in it (the
+ * rahoitusvastike's part that lowered the shares, ADR-034), missing without loans.
+ */
+export type YearCashFlow = { starts: string; ends: string; net_snt: number; interest_snt: number; principal_snt?: number }
 
 export type BreakEven = {
   price_snt: number
@@ -485,6 +489,8 @@ export type PropertyRow = {
   valuation: Valuation | null
   /** Operating cash flow per fiscal year with activity. */
   cash_years: YearCashFlow[]
+  /** The housing-company loans' repayment in the 12 months to the as-of month; null without loans. */
+  t12m_principal_snt: number | null
   /** The lease running on the as-of date (the latest started when several run); a suggested one when none is stored. */
   lease: LeaseView | null
   /** Rent balances from the stored leases; null without any. */
@@ -785,6 +791,10 @@ export type PortfolioResponse = {
     sold_irr_bp: number | null
     /** The held objects' housing-company loan shares where known; null when none has a loan. */
     housing_share_snt: number | null
+    /** The held objects' housing-company loan repayment in the last 12 months; null when none has a loan. */
+    t12m_principal_snt: number | null
+    /** The capital put in the held objects (linked to an investment). */
+    held_invested_snt: number
   }
 }
 
@@ -828,6 +838,12 @@ export type PortfolioChart = {
   ahead_keys: string[]
   /** The held objects' estimated shares together in `ahead_keys`; null from a month an object still owing has none. */
   total_share_ahead_snt: (number | null)[]
+  /**
+   * The housing-company loans' repayment summed from the first month any loan is followed (ADR-035): what
+   * the rahoitusvastike paid into the shares rather than spent; a sold object's stays as it ended.
+   */
+  total_repaid_snt: number[]
+  total_repaid_ahead_snt: number[]
   /** The totals run on over `ahead_keys` as in `keys` (a sold object's cash flow stays in its total). */
   total_cash_ahead_snt: number[]
   total_unrecovered_ahead_snt: number[]

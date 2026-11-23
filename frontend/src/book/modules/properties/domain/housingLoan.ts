@@ -503,24 +503,44 @@ export function housingShareForecast(loans: HousingLoan[], paths: LoanPath[], ra
 }
 
 /**
- * The rahoitusvastike the object pays in a month after `after` (ADR-035): each loan's path where it
- * runs on, then its estimate (`loanForecast` on `rates`), nothing once paid; a loan still owing with
- * no estimate pays its charge in force to its last due date.
+ * The rahoitusvastike the object pays in a month after `after` (ADR-035), and the part of it that
+ * repays the shares: each loan's path where it runs on, then its estimate (`loanForecast` on `rates`),
+ * nothing once paid; a loan still owing with no estimate pays its charge in force to its last due
+ * date, its repayment not known (0).
  */
-export function vastikeAhead(loans: HousingLoan[], paths: LoanPath[], rates: RateEstimates, after: string): (month: string) => number {
+export function vastikeAhead(
+  loans: HousingLoan[],
+  paths: LoanPath[],
+  rates: RateEstimates,
+  after: string,
+): (month: string) => { paid_snt: number; principal_snt: number } {
   const lines = loans.map((loan) => {
     const path = paths.find((p) => p.loan_key === loan.key)
     const ahead = path ? [...path.months.filter((m) => m.month > after), ...loanForecast(loan, path, { rates })] : []
     const cleared = (ahead.at(-1) ?? path?.months.at(-1))?.closing_snt ?? 0
     const open = cleared > 0 && !paidOffOn(loan)
-    return { loan, paid: new Map(ahead.map((m) => [m.month, m.paid_snt])), open }
+    return { loan, months: new Map(ahead.map((m) => [m.month, m])), open }
   })
   return (month) =>
-    lines.reduce((sum, { loan, paid, open }) => {
-      const known = paid.get(month)
-      if (known != null) return sum + known
-      return sum + (open && !(loan.ends && monthOf(loan.ends) < month) ? dueIn(loan, month) : 0)
-    }, 0)
+    lines.reduce(
+      (sum, { loan, months, open }) => {
+        const known = months.get(month)
+        if (known) return { paid_snt: sum.paid_snt + known.paid_snt, principal_snt: sum.principal_snt + known.principal_snt }
+        const due = open && !(loan.ends && monthOf(loan.ends) < month) ? dueIn(loan, month) : 0
+        return { paid_snt: sum.paid_snt + due, principal_snt: sum.principal_snt }
+      },
+      { paid_snt: 0, principal_snt: 0 },
+    )
+}
+
+/**
+ * The shares' repayment month by month as the paths follow them (the rahoitusvastike's part that
+ * lowered them, unpaid months below 0; extra repayments are not rahoitusvastike), estimates left out.
+ */
+export function repaidMonths(paths: LoanPath[]): Map<string, number> {
+  const out = new Map<string, number>()
+  for (const m of paths.flatMap((p) => p.months)) if (!m.forecast) out.set(m.month, (out.get(m.month) ?? 0) + m.principal_snt)
+  return out
 }
 
 /** A fiscal year's rahoitusvastike paid, all loans together, split by the paths into interest and repayment. */

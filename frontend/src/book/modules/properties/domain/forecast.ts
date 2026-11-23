@@ -64,14 +64,17 @@ export function rentAhead(lease: Lease, month: string, asOf: string, bp: number)
   return raised(rentTotal(step), bp, raisesBetween(since, month, lease.increase?.month ?? Number(lease.starts.slice(5, 7))))
 }
 
-/** An estimated month: what comes in, and what goes out (hoitovastike, rahoitusvastike and other costs). */
-export type ForecastMonth = { key: string; income_snt: number; expense_snt: number }
+/**
+ * An estimated month: what comes in, and what goes out (hoitovastike, rahoitusvastike and other costs),
+ * of which `principal_snt` repays the housing-company loans.
+ */
+export type ForecastMonth = { key: string; income_snt: number; expense_snt: number; principal_snt: number }
 
 /**
  * The object's `keys` (months after `asOf`): the rent (`rentAhead`; an object with no lease its
  * `income_snt` a month, raised each January), the hoitovastike in the as-of month raised each June,
- * the rahoitusvastike its loans pay (`rahoitus`), and other costs, the month's rent times the months
- * a year over 12.
+ * the rahoitusvastike its loans pay and the part of it that repays them (`rahoitus`), and other costs,
+ * the month's rent times the months a year over 12.
  */
 export function objectForecast(input: {
   keys: string[]
@@ -79,7 +82,7 @@ export function objectForecast(input: {
   leases: Lease[]
   income_snt: number
   hoitovastike_snt: number
-  rahoitus: (month: string) => number
+  rahoitus: (month: string) => { paid_snt: number; principal_snt: number }
   assumptions: ForecastAssumptions
 }): ForecastMonth[] {
   const { raise_bp: bp, other_costs_months_x100: other } = input.assumptions
@@ -87,7 +90,8 @@ export function objectForecast(input: {
     const lease = leaseFor(input.leases, key)
     const income = lease ? rentAhead(lease, key, input.asOf, bp) : raised(input.income_snt, bp, raisesBetween(input.asOf, key, 1))
     const hoito = raised(input.hoitovastike_snt, bp, raisesBetween(input.asOf, key, HOITOVASTIKE_RAISE_MONTH))
-    return { key, income_snt: income, expense_snt: hoito + input.rahoitus(key) + Math.round((income * other) / 1200) }
+    const rahoitus = input.rahoitus(key)
+    return { key, income_snt: income, expense_snt: hoito + rahoitus.paid_snt + Math.round((income * other) / 1200), principal_snt: rahoitus.principal_snt }
   })
 }
 

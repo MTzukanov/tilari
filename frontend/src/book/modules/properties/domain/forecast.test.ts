@@ -67,13 +67,13 @@ describe('forecast: an object\'s months', () => {
       leases: [lease({ rents: [{ from: '2024-03-01', rent_snt: 1000_00 }], increase: { kind: 'index', month: 1 } })],
       income_snt: 0,
       hoitovastike_snt: 200_00,
-      rahoitus: () => 50_00,
+      rahoitus: () => ({ paid_snt: 50_00, principal_snt: 30_00 }),
       assumptions: { raise_bp: 100, other_costs_months_x100: 120 },
     })
     const at = (key: string) => rows.find((r) => r.key === key)!
-    expect(at('2026-12')).toEqual({ key: '2026-12', income_snt: 1000_00, expense_snt: 200_00 + 50_00 + 100_00 })
-    expect(at('2027-01')).toEqual({ key: '2027-01', income_snt: 1010_00, expense_snt: 200_00 + 50_00 + 101_00 })
-    expect(at('2027-06')).toEqual({ key: '2027-06', income_snt: 1010_00, expense_snt: 202_00 + 50_00 + 101_00 })
+    expect(at('2026-12')).toEqual({ key: '2026-12', income_snt: 1000_00, expense_snt: 200_00 + 50_00 + 100_00, principal_snt: 30_00 })
+    expect(at('2027-01')).toEqual({ key: '2027-01', income_snt: 1010_00, expense_snt: 200_00 + 50_00 + 101_00, principal_snt: 30_00 })
+    expect(at('2027-06')).toEqual({ key: '2027-06', income_snt: 1010_00, expense_snt: 202_00 + 50_00 + 101_00, principal_snt: 30_00 })
   })
 
   it('an object with no lease takes its income a month, raised each January', () => {
@@ -83,7 +83,7 @@ describe('forecast: an object\'s months', () => {
       leases: [],
       income_snt: 500_00,
       hoitovastike_snt: 0,
-      rahoitus: () => 0,
+      rahoitus: () => ({ paid_snt: 0, principal_snt: 0 }),
       assumptions: { raise_bp: 100, other_costs_months_x100: 0 },
     })
     expect(rows.map((r) => r.income_snt)).toEqual([500_00, 505_00])

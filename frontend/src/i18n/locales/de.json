@@ -1067,7 +1067,10 @@
       "housingShare": "Darlehensanteil",
       "housingShares": "Darlehensanteile",
       "housingShareUnknown": "am Stichtag nicht bekannt",
-      "debtFreeUnrecovered": "schuldenfrei noch nicht zurück {amount}"
+      "debtFreeUnrecovered": "schuldenfrei noch nicht zurück {amount}",
+      "cashRepaid": "Cashflow + Tilgungen 12 Monate",
+      "cashRepaidPart": "Tilgungen {amount}",
+      "cashRepaidPct": "{pct} des investierten Kapitals"
     },
     "col": {
       "object": "Objekt",
@@ -1208,7 +1211,10 @@
       "combined": "Gemeinsames Diagramm",
       "combinedTitle": "Alle Objekte zusammen am Monatsende",
       "back": "Zurückgekommen",
-      "percent": "In Prozent des eingesetzten Kapitals"
+      "percent": "In Prozent des eingesetzten Kapitals",
+      "repaidTitle": "Cashflow und Tilgungen zum Monatsende",
+      "repaid": "Getilgt insgesamt",
+      "gain": "Cashflow + Tilgungen"
     },
     "chart": {
       "cashFlow": "Cashflow pro Monat",
@@ -1561,7 +1567,10 @@
     },
     "cash": {
       "title": "Cashflow pro Jahr",
-      "lead": "Erträge - Kosten im Monat, zu dem sie gehören (Abgrenzungen und Korrekturen enthalten); ohne Investitionen und Verkäufe."
+      "lead": "Erträge - Kosten im Monat, zu dem sie gehören (Abgrenzungen und Korrekturen enthalten); ohne Investitionen und Verkäufe.",
+      "net": "Cashflow",
+      "repaid": "Tilgungen der Gesellschaftsdarlehen",
+      "gain": "Cashflow + Tilgungen"
     },
     "sold": {
       "title": "Verkaufte Objekte ({n})",

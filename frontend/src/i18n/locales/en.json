@@ -1067,7 +1067,10 @@
       "housingShare": "Loan share",
       "housingShares": "Housing-company loan shares",
       "housingShareUnknown": "not known on the as-of date",
-      "debtFreeUnrecovered": "debt-free not yet recovered {amount}"
+      "debtFreeUnrecovered": "debt-free not yet recovered {amount}",
+      "cashRepaid": "Cash flow + repayments, 12 months",
+      "cashRepaidPart": "repayments {amount}",
+      "cashRepaidPct": "{pct} of capital invested"
     },
     "col": {
       "object": "Object",
@@ -1208,7 +1211,10 @@
       "combined": "Combined chart",
       "combinedTitle": "All objects together at month end",
       "back": "Come back",
-      "percent": "As a percentage of capital put in"
+      "percent": "As a percentage of capital put in",
+      "repaidTitle": "Cash flow and repayments at month end",
+      "repaid": "Repaid in total",
+      "gain": "Cash flow + repayments"
     },
     "chart": {
       "cashFlow": "Cash flow by month",
@@ -1561,7 +1567,10 @@
     },
     "cash": {
       "title": "Cash flow by year",
-      "lead": "Income - costs in the month they belong to (accruals and corrections included); no investments or sales."
+      "lead": "Income - costs in the month they belong to (accruals and corrections included); no investments or sales.",
+      "net": "Cash flow",
+      "repaid": "Housing-company loan repayments",
+      "gain": "Cash flow + repayments"
     },
     "sold": {
       "title": "Sold objects ({n})",

@@ -19,6 +19,8 @@ export type TableColumn<T> = {
   render: (row: T) => ReactNode
   cellClass?: (row: T) => string
   footer?: ReactNode
+  /** Further footer rows under `footer`: a summary of several lines. */
+  footers?: ReactNode[]
 }
 
 /**
@@ -58,7 +60,8 @@ export function SortableTable<T>({
   const { sort, toggle } = useTableSort()
   const byId = new Map(columns.map((c) => [c.id, c]))
   const sorted = sortRows(rows, sort, (key, row) => byId.get(key)?.sortValue?.(row) ?? '')
-  const hasFooter = columns.some((c) => c.footer !== undefined)
+  const hasFooter = columns.some((c) => c.footer !== undefined || c.footers?.length)
+  const footerRows = 1 + Math.max(0, ...columns.map((c) => c.footers?.length ?? 0))
   const resizeLabel = t('browse.resizeColumn')
   // Never narrower than its columns: a fixed layout would squeeze the last column to nothing;
   // the wrapper scrolls sideways instead.
@@ -128,13 +131,15 @@ export function SortableTable<T>({
         </tbody>
         {hasFooter ? (
           <tfoot>
-            <tr>
-              {columns.map((c) => (
-                <td key={c.id} className={c.align === 'right' ? 'amount' : undefined}>
-                  {c.footer}
-                </td>
-              ))}
-            </tr>
+            {Array.from({ length: footerRows }, (_, i) => (
+              <tr key={i}>
+                {columns.map((c) => (
+                  <td key={c.id} className={c.align === 'right' ? 'amount' : undefined}>
+                    {i === 0 ? c.footer : c.footers?.[i - 1]}
+                  </td>
+                ))}
+              </tr>
+            ))}
           </tfoot>
         ) : null}
       </table>

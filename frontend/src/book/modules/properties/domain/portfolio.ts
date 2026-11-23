@@ -46,6 +46,7 @@ import {
   housingShareForecast,
   newestRates,
   rateEstimates,
+  repaidMonths,
   vastikeAhead,
   housingShareMonths,
   housingVoucherIds,
@@ -296,6 +297,7 @@ function computeObjects(db: SqliteDb, loaded: Loaded, centres: CostCentre[], opt
         year.housing_interest_snt = split.get(year.starts)?.interest_snt ?? 0
         year.housing_principal_snt = split.get(year.starts)?.principal_snt ?? 0
       }
+      for (const year of result.cash_years) year.principal_snt = split.get(year.starts)?.principal_snt ?? 0
     }
     const shared = (financing?.loan_accounts ?? []).find((a) => (loaded.loanOwners.get(a) ?? []).some((o) => o !== centre.id))
     if (shared != null) result.warnings.push({ code: 'loan_shared', params: { account: shared } })
@@ -504,10 +506,19 @@ function toRow(c: Computed, ctx: LeaseContext, account: RentAccount | null = ren
     break_even: result.break_even,
     valuation: result.valuation,
     cash_years: result.cash_years,
+    t12m_principal_snt: t12mRepaid(c, ctx.asOf),
     lease: rowLease(c, ctx),
     rent,
     warnings,
   }
+}
+
+/** The housing-company loans' repayment in the 12 months to the as-of month (`repaidMonths`); null without loans. */
+function t12mRepaid(c: Computed, asOf: string): number | null {
+  if (!(c.parsed.doc.housing_loans ?? []).length) return null
+  const to = asOf.slice(0, 7)
+  const from = addMonths(to, -11)
+  return [...repaidMonths(c.loans.paths)].reduce((sum, [m, v]) => (m >= from && m <= to ? sum + v : sum), 0)
 }
 
 /**
@@ -630,7 +641,15 @@ function forecastObjects(computed: Computed[], loaded: Loaded, asOf: string): { 
           assumptions,
         })
       : undefined
-    return { id: c.centre.id, status: c.result.status, months: c.result.months, shares: housingShareMonths(loans, c.loans.paths), ahead, flows }
+    return {
+      id: c.centre.id,
+      status: c.result.status,
+      months: c.result.months,
+      shares: housingShareMonths(loans, c.loans.paths),
+      ahead,
+      flows,
+      repaid: repaidMonths(c.loans.paths),
+    }
   })
   const newest = newestRates(loaded.loans)
   return {
@@ -695,6 +714,10 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
   const linkedRows = computed.filter((c) => c.result.status !== 'unlinked')
   const ahead = forecastObjects(computed, loaded, asOf)
   const shares = computed.flatMap((c) => (c.result.summary.housing_share_snt != null ? [c.result.summary.housing_share_snt] : []))
+  const repaid = holding.flatMap((c) => {
+    const v = t12mRepaid(c, asOf)
+    return v != null ? [v] : []
+  })
   return {
     as_of: asOf,
     data_through: dataThrough,
@@ -717,6 +740,8 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
       held_irr_bp: toBp(xirr(heldFlows).rate),
       sold_irr_bp: toBp(xirr(soldFlows).rate),
       housing_share_snt: shares.length ? shares.reduce((s, n) => s + n, 0) : null,
+      t12m_principal_snt: repaid.length ? repaid.reduce((s, n) => s + n, 0) : null,
+      held_invested_snt: holding.reduce((s, c) => s + c.result.summary.invested_snt, 0),
     },
   }
 }

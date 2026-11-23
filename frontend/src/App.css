@@ -2541,6 +2541,12 @@ tfoot td {
   padding-top: 0.65rem;
 }
 
+/* A properties table's summary of several lines: the total's rule above the first only. */
+.property-table tfoot tr + tr td {
+  border-top: none;
+  padding-top: 0.35rem;
+}
+
 tr.clickable {
   cursor: pointer;
 }

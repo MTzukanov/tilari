@@ -1067,7 +1067,10 @@
       "housingShare": "Velkaosuus",
       "housingShares": "Yhtiölainaosuudet",
       "housingShareUnknown": "ei tiedossa tilannepäivänä",
-      "debtFreeUnrecovered": "velattomana palauttamatta {amount}"
+      "debtFreeUnrecovered": "velattomana palauttamatta {amount}",
+      "cashRepaid": "Kassavirta + lyhennykset 12 kk",
+      "cashRepaidPart": "lyhennykset {amount}",
+      "cashRepaidPct": "{pct} sijoitetusta"
     },
     "col": {
       "object": "Kohde",
@@ -1208,7 +1211,10 @@
       "combined": "Yhteiskaavio",
       "combinedTitle": "Kaikki kohteet yhdessä kuukauden lopussa",
       "back": "Takaisin saatu",
-      "percent": "Prosentteina sijoitetusta"
+      "percent": "Prosentteina sijoitetusta",
+      "repaidTitle": "Kassavirta ja lyhennykset kuukauden lopussa",
+      "repaid": "Lyhennetty yhteensä",
+      "gain": "Kassavirta + lyhennykset"
     },
     "chart": {
       "cashFlow": "Kassavirta kuukausittain",
@@ -1561,7 +1567,10 @@
     },
     "cash": {
       "title": "Kassavirta vuosittain",
-      "lead": "Tuotot - kulut kuukaudelle, jota ne koskevat (jaksotukset ja oikaisut mukana); ei sijoituksia eikä myyntiä."
+      "lead": "Tuotot - kulut kuukaudelle, jota ne koskevat (jaksotukset ja oikaisut mukana); ei sijoituksia eikä myyntiä.",
+      "net": "Kassavirta",
+      "repaid": "Yhtiölainojen lyhennykset",
+      "gain": "Kassavirta + lyhennykset"
     },
     "sold": {
       "title": "Myydyt kohteet ({n})",

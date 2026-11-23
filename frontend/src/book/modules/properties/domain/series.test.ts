@@ -124,12 +124,18 @@ describe('portfolioChart', () => {
 
   it('runs the cash flow, still to recover and the capital put in on with each held object\'s estimated months (ADR-035)', () => {
     const at = (m: MonthPoint, capex: number, unrecovered: number): MonthPoint => ({ ...m, capex_snt: capex, unrecovered_snt: unrecovered })
-    const flows = (...nets: number[]) => nets.map((net, i) => ({ key: `2026-0${i + 3}`, income_snt: 100 + net, expense_snt: 100 }))
+    const flows = (...nets: number[]) => nets.map((net, i) => ({ key: `2026-0${i + 3}`, income_snt: 100 + net, expense_snt: 100, principal_snt: 4 }))
     const chart = portfolioChart([
       // Bought for 1 000, 10 back in February; ahead 20 and 30 a month.
-      { id: 1, status: 'active', months: [at(month('2026-01', 0, 0), 1_000, 1_000), at(month('2026-02', 10, 0), 0, 990)], flows: flows(20, 30) },
+      {
+        id: 1,
+        status: 'active',
+        months: [at(month('2026-01', 0, 0), 1_000, 1_000), at(month('2026-02', 10, 0), 0, 990)],
+        flows: flows(20, 30),
+        repaid: new Map([['2026-01', 5], ['2026-02', 5]]),
+      },
       // Sold in January with 40 of cash flow: it stays in the cash total as it ended.
-      { id: 2, status: 'sold', months: [at(month('2026-01', 40, 0), 0, 0)], flows: flows(99, 99) },
+      { id: 2, status: 'sold', months: [at(month('2026-01', 40, 0), 0, 0)], flows: flows(99, 99), repaid: new Map([['2026-01', 3]]) },
       // Nothing invested linked: only a cash flow, run on.
       { id: 3, status: 'unlinked', months: [at(month('2026-02', 7, 0), 0, -7)], flows: flows(-5, -5) },
     ])
@@ -146,6 +152,9 @@ describe('portfolioChart', () => {
     expect(chart.total_unrecovered_ahead_snt).toEqual([970, 940])
     expect(chart.total_invested_ahead_snt).toEqual([1_000, 1_000])
     expect(chart.total_back_ahead_snt).toEqual([30, 60])
+    // The loans' repayment summed: a sold object's stays as it ended, the held ones' run on with their estimates.
+    expect(chart.total_repaid_snt).toEqual([8, 13])
+    expect(chart.total_repaid_ahead_snt).toEqual([14 + 3 + 4, 18 + 3 + 8])
   })
 
   it('runs the held objects\' shares on to their payoff; the total stops where an object still owing has no estimate', () => {

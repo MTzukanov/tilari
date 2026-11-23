@@ -27,6 +27,11 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 - Found on the owner's book (figures not here): the latest month's payment to the housing company can carry a
   one-off on top (a water settlement), which made that object's hoitovastike far too high. `usualHoitovastike` takes
   the middle of the latest three months that paid one month's worth, each less its rahoitusvastike.
+- Owner asked to see the cash flow against the loans' repayment ("gaining if repaid more than the negative cash
+  flow"): `YearCashFlow.principal_snt`, `PropertyRow.t12m_principal_snt`, `totals.t12m_principal_snt` /
+  `held_invested_snt`, `PortfolioChart.total_repaid(_ahead)_snt`, `ForecastMonth.principal_snt` (`vastikeAhead`
+  returns paid + principal). `SortableTable` columns take `footers` (more summary rows; the rule above the first
+  only, `.property-table`). The tile's label has a "+": the e2e `kpi()` helper takes a regex, so escape it.
 
 ## 2026-11-23 - Properties page: the loan shares chart on to the payoff (`feature/portfolio-share-forecast`, ADR-034)
 

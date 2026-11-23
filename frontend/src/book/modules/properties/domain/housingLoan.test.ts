@@ -23,6 +23,7 @@ import {
   rateEstimates,
   rowAt,
   shareAt,
+  repaidMonths,
   splitByWeight,
   vastikeAhead,
   vastikeYears,
@@ -665,10 +666,38 @@ describe('housing-company loans: the estimates ahead (ADR-035)', () => {
       missing: null,
     })
     const paid = vastikeAhead([fixed('h1', 100_00), fixed('h2', 50_00)], [pathOf('h1', 300_00), pathOf('h2', 100_00)], {}, '2026-05')
-    expect(['2026-06', '2026-07', '2026-08', '2026-09'].map(paid)).toEqual([150_00, 150_00, 100_00, 0])
+    // At 0 % all of it repays the shares.
+    expect(['2026-06', '2026-07', '2026-08', '2026-09'].map(paid)).toEqual(
+      [150_00, 150_00, 100_00, 0].map((v) => ({ paid_snt: v, principal_snt: v })),
+    )
     // No rate and no estimate: the charge in force, to the last due date.
     const unrated = loan({ key: 'h3', ends: '2026-07-31', rates: [], charges: [{ from: '2026-01-01', amount_snt: 70_00 }] })
     const charged = vastikeAhead([unrated], [pathOf('h3', 1_000_00)], {}, '2026-05')
-    expect(['2026-06', '2026-07', '2026-08'].map(charged)).toEqual([70_00, 70_00, 0])
+    expect(['2026-06', '2026-07', '2026-08'].map((m) => charged(m).paid_snt)).toEqual([70_00, 70_00, 0])
+    expect(charged('2026-06').principal_snt).toBe(0)
+  })
+
+  it('the repayment month by month as the paths follow the shares, estimates left out', () => {
+    const month = (m: string, principal: number, forecast?: true): LoanMonth => ({
+      month: m,
+      opening_snt: 0,
+      due_snt: 0,
+      payments: 1,
+      paid_snt: 0,
+      rate_pcm: 0,
+      interest_snt: 0,
+      principal_snt: principal,
+      extra_snt: 500_00,
+      closing_snt: 0,
+      ...(forecast ? { forecast } : {}),
+    })
+    const paths: LoanPath[] = [
+      { loan_key: 'h1', months: [month('2026-04', 100_00), month('2026-05', -20_00)], payments_known: true, missing: null },
+      { loan_key: 'h2', months: [month('2026-05', 30_00), month('2026-06', 30_00, true)], payments_known: true, missing: null },
+    ]
+    expect([...repaidMonths(paths)]).toEqual([
+      ['2026-04', 100_00],
+      ['2026-05', 10_00],
+    ])
   })
 })

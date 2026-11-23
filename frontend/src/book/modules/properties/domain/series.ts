@@ -149,7 +149,8 @@ export function yearTable(
  * month to the latest month any object has. `months` are each object's own (`monthlySeries`);
  * `shares` its housing-company loan share by month where known (`housingShareMonths`), and `ahead`
  * its estimate after the last month (`housingShareForecast`; a sold object's is the buyer's, so none);
- * `flows` its estimated months after the last (`objectForecast`, ADR-035; none for a sold object).
+ * `flows` its estimated months after the last (`objectForecast`, ADR-035; none for a sold object);
+ * `repaid` its housing-company loans' repayment by month (`repaidMonths`).
  */
 export function portfolioChart(
   objects: {
@@ -159,6 +160,7 @@ export function portfolioChart(
     shares?: Map<string, number>
     ahead?: Map<string, number>
     flows?: ForecastMonth[]
+    repaid?: Map<string, number>
   }[],
 ): PortfolioChart {
   const shown = objects.filter((o) => o.months.length && o.status !== 'excluded')
@@ -177,6 +179,8 @@ export function portfolioChart(
       total_unrecovered_ahead_snt: [],
       total_invested_ahead_snt: [],
       total_back_ahead_snt: [],
+      total_repaid_snt: [],
+      total_repaid_ahead_snt: [],
     }
   }
   const from = shown.map((o) => o.months[0].key).sort()[0]
@@ -187,6 +191,7 @@ export function portfolioChart(
   const totalInvested = keys.map(() => 0)
   const totalBack = keys.map(() => 0)
   const totalShare: (number | null)[] = keys.map(() => null)
+  const totalRepaid = keys.map(() => 0)
   // On from the last month: the held objects' estimates, to the last share's payoff.
   const last = keys[keys.length - 1]
   const held = shown.map((o) => (o.status === 'sold' ? null : o))
@@ -200,6 +205,7 @@ export function portfolioChart(
   const totalUnrecoveredAhead = aheadKeys.map(() => 0)
   const totalInvestedAhead = aheadKeys.map(() => 0)
   const totalBackAhead = aheadKeys.map(() => 0)
+  const totalRepaidAhead = aheadKeys.map(() => 0)
   const rows = shown.map((o, index) => {
     const at = new Map(o.months.map((m) => [m.key, m]))
     const sold = o.status === 'sold' ? o.months[o.months.length - 1].key : null
@@ -208,6 +214,7 @@ export function portfolioChart(
     let sum = 0
     let capital = 0
     let proceeds = 0
+    let repaid = 0
     const cash: (number | null)[] = []
     const unrecovered: (number | null)[] = []
     const capitalIn: (number | null)[] = []
@@ -219,8 +226,10 @@ export function portfolioChart(
         capital += m.capex_snt
         proceeds += m.proceeds_snt
       }
-      // A sold object's cash flow stays in the total after its last month.
+      // A sold object's cash flow and repayment stay in the totals after its last month.
       if (key >= o.months[0].key) totalCash[i] += sum
+      repaid += o.repaid?.get(key) ?? 0
+      totalRepaid[i] += repaid
       if (m && invested && !(sold && key >= sold)) {
         totalUnrecovered[i] += m.unrecovered_snt
         totalInvested[i] += capital
@@ -242,10 +251,13 @@ export function portfolioChart(
     const unrecoveredAhead: (number | null)[] = []
     const investedAhead: (number | null)[] = []
     let gained = 0
+    let repaidAhead = repaid
     aheadKeys.forEach((key, i) => {
       const f = flows.get(key)
       if (f) gained += f.income_snt - f.expense_snt
+      if (f) repaidAhead += f.principal_snt
       totalCashAhead[i] += sum + gained
+      totalRepaidAhead[i] += repaidAhead
       const on = f != null && lastPoint != null
       cashAhead.push(on ? sum + gained : null)
       if (on && invested) {
@@ -299,5 +311,7 @@ export function portfolioChart(
     total_unrecovered_ahead_snt: totalUnrecoveredAhead,
     total_invested_ahead_snt: totalInvestedAhead,
     total_back_ahead_snt: totalBackAhead,
+    total_repaid_snt: totalRepaid,
+    total_repaid_ahead_snt: totalRepaidAhead,
   }
 }

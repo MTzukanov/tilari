@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
@@ -20,7 +20,7 @@ import {
 import { rowAlerts } from '../../../book/modules/properties/domain/reminders'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
 import { formatEuro, holdingText, periodLabel, saveErrorText, statusClass, tenantSide, warningText } from './format'
-import { PortfolioCharts } from './PortfolioCharts'
+import { PortfolioCharts, shareBp } from './PortfolioCharts'
 import { Warnings } from './Warnings'
 
 function Kpi({ label, value, neg, hint }: { label: string; value: string; neg?: boolean; hint?: string }) {
@@ -413,10 +413,30 @@ function heldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
   return cols
 }
 
+/** A footer figure, red below 0. */
+function footerEuro(n: number): ReactNode {
+  return <span className={negClass(n)}>{formatEuro(n)}</span>
+}
+
+/**
+ * The cash flow by fiscal year, each object a row. With housing-company loans the summary adds the
+ * loans' repayment and the two together (ADR-035): above 0 the shares fell by more than the cash flow
+ * fell short, so the owner gained before any change in the prices.
+ */
 function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableColumn<PropertyRow>[] {
-  const yearValue = (r: PropertyRow, starts: string) => r.cash_years.find((y) => y.starts === starts)?.net_snt ?? null
+  const yearOf = (r: PropertyRow, starts: string) => r.cash_years.find((y) => y.starts === starts)
+  const yearValue = (r: PropertyRow, starts: string) => yearOf(r, starts)?.net_snt ?? null
+  const loans = rows.some((r) => r.t12m_principal_snt != null)
+  /** The summary's repayment and cash flow + repayment rows under a column's cash flow total. */
+  const summary = (net: number, repaid: number): Pick<TableColumn<PropertyRow>, 'footers'> =>
+    loans ? { footers: [footerEuro(repaid), footerEuro(net + repaid)] } : {}
+  const repaidIn = (starts: string) => sum(rows, (r) => yearOf(r, starts)?.principal_snt)
+  const repaidAll = sum(rows, (r) => r.cash_years.reduce((s, y) => s + (y.principal_snt ?? 0), 0))
   return [
-    nameColumn(t, 'none'),
+    {
+      ...nameColumn(t, 'none'),
+      ...(loans ? { footer: t('properties.cash.net'), footers: [t('properties.cash.repaid'), t('properties.cash.gain')] } : {}),
+    },
     ...data.periods.map(
       (p): TableColumn<PropertyRow> => ({
         id: `y${p.starts}`,
@@ -431,6 +451,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
           return v == null ? '' : formatEuro(v)
         },
         footer: formatEuro(sum(rows, (r) => yearValue(r, p.starts))),
+        ...summary(sum(rows, (r) => yearValue(r, p.starts)), repaidIn(p.starts)),
       }),
     ),
     {
@@ -443,6 +464,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
       cellClass: (r) => `property-strong ${negClass(r.summary.operating.net_snt)}`,
       render: (r) => formatEuro(r.summary.operating.net_snt),
       footer: formatEuro(sum(rows, (r) => r.summary.operating.net_snt)),
+      ...summary(sum(rows, (r) => r.summary.operating.net_snt), repaidAll),
     },
     {
       id: 't12m',
@@ -454,6 +476,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
       cellClass: (r) => negClass(r.t12m?.net_snt),
       render: (r) => (r.t12m ? `${formatEuro(r.t12m.net_snt)}${r.t12m.annualized ? '*' : ''}` : ''),
       footer: formatEuro(sum(rows, (r) => r.t12m?.net_snt)),
+      ...summary(sum(rows, (r) => r.t12m?.net_snt), sum(rows, (r) => r.t12m_principal_snt)),
     },
   ]
 }
@@ -585,6 +608,19 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
             neg={data.totals.t12m_net_snt < 0}
             hint={data.totals.net_yield_bp != null ? t('properties.kpi.yieldHint', { pct: formatBp(data.totals.net_yield_bp) }) : undefined}
           />
+          {data.totals.t12m_principal_snt != null ? (
+            <Kpi
+              label={t('properties.kpi.cashRepaid')}
+              value={formatEuro(data.totals.t12m_net_snt + data.totals.t12m_principal_snt)}
+              neg={data.totals.t12m_net_snt + data.totals.t12m_principal_snt < 0}
+              hint={[
+                t('properties.kpi.cashRepaidPart', { amount: formatEuro(data.totals.t12m_principal_snt) }),
+                ...(data.totals.held_invested_snt > 0
+                  ? [t('properties.kpi.cashRepaidPct', { pct: formatBp(shareBp(data.totals.t12m_net_snt + data.totals.t12m_principal_snt, data.totals.held_invested_snt)) })]
+                  : []),
+              ].join(' · ')}
+            />
+          ) : null}
           <Kpi label={t('properties.kpi.unrecovered')} value={formatEuro(data.totals.unrecovered_snt)} hint={t('properties.kpi.unrecoveredHint')} />
           {data.totals.housing_share_snt != null ? (
             <Kpi

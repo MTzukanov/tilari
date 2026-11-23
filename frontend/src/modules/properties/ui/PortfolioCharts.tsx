@@ -65,6 +65,12 @@ export function shareBp(part: number | null, whole: number | null): number | nul
   return part == null || whole == null || whole <= 0 ? null : Math.round((part * 10000) / whole)
 }
 
+/** The cash flow and repayments chart: what went out of pocket, what went into the shares, and the two together (ink). */
+const REPAID = {
+  cash: '#c45c26',
+  repaid: '#1baf7a',
+} as const
+
 /** An object's colour and dash by its place in the chart (not by what is shown, so hiding one repaints none). */
 export function objectStyle(index: number): { color: string; dashed: boolean } {
   return { color: OBJECT_COLORS[index % OBJECT_COLORS.length], dashed: index >= OBJECT_COLORS.length }
@@ -206,6 +212,20 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
         ]
       : []),
   ]
+  // Cash flow against the loans' repayment (ADR-035): above 0 together, the shares fell by more than
+  // the cash flow fell short.
+  const cashLine = runOn(chart.total_cash_snt, chart.total_cash_ahead_snt)
+  const repaidLine = runOn(chart.total_repaid_snt, chart.total_repaid_ahead_snt)
+  const repaidLines: LineSeries[] = [
+    { key: 'cash', label: t('properties.portfolioChart.cash'), values: cashLine, className: 'portfolio-line', color: REPAID.cash },
+    { key: 'repaid', label: t('properties.portfolioChart.repaid'), values: repaidLine, className: 'portfolio-line', color: REPAID.repaid },
+    {
+      key: 'gain',
+      label: t('properties.portfolioChart.gain'),
+      values: cashLine.map((v, i) => (v == null || repaidLine[i] == null ? null : v + repaidLine[i]!)),
+      className: 'portfolio-total',
+    },
+  ]
   const chartProps = {
     keys: allKeys,
     labelFor: (key: string) => monthLabel(key, locale, true),
@@ -301,6 +321,20 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
       ) : null}
       <h4>{t('properties.portfolioChart.cash')}</h4>
       <LineChart {...chartProps} series={drawn(cash)} label={t('properties.portfolioChart.cash')} pointTip={pointTip(cash)} />
+      {owed ? (
+        <>
+          <h4>{t('properties.portfolioChart.repaidTitle')}</h4>
+          <div className="overview-legend">
+            {repaidLines.map((s) => (
+              <span key={s.key} className="allocation-check">
+                {s.color ? <Swatch color={s.color} dashed={false} /> : <i className="overview-swatch portfolio-swatch-total" />}
+                {s.label}
+              </span>
+            ))}
+          </div>
+          <LineChart {...chartProps} series={drawn(repaidLines)} label={t('properties.portfolioChart.repaidTitle')} pointTip={pointTip(repaidLines)} />
+        </>
+      ) : null}
       {owed ? (
         <>
           <h4>{t('properties.portfolioChart.shares')}</h4>
