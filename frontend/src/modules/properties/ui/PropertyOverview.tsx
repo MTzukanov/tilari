@@ -70,11 +70,9 @@ export function PropertyOverview({
             {t('properties.overview.addWater')}
           </button>
         ) : null}
-        {held ? (
-          <button type="button" className="btn-secondary" disabled={d.read_only} onClick={() => onAdd('housing')}>
-            {t('properties.overview.addLoan')}
-          </button>
-        ) : null}
+        <button type="button" className="btn-secondary" disabled={d.read_only} onClick={() => onAdd('housing')}>
+          {t('properties.overview.addLoan')}
+        </button>
         <button type="button" className="btn-secondary" disabled={d.read_only} onClick={() => onAdd('docs')}>
           {t('properties.overview.addDoc')}
         </button>

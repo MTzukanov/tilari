@@ -1111,7 +1111,8 @@ describe('rental objects: housing-company loans', () => {
     const loans = [loan({ charges: [{ from: '2026-01-01', amount_snt: 80 * E }] })]
     for (const id of [CC.bundle, CC.sold]) saveProperty(db, id, { ...computeDetail(db, id, { today: TODAY }).doc, housing_loans: loans }, 'now')
     const codes = (id: number) => computeDetail(db, id, { today: TODAY }).warnings.map((w) => w.code).filter((c) => c.startsWith('loan_'))
-    expect(codes(CC.bundle)).toEqual(['loan_share_missing', 'loan_charge_notice_missing'])
+    // No rate row and no estimate: the share is counted on the margin alone.
+    expect(codes(CC.bundle)).toEqual(['loan_rate_none', 'loan_share_missing', 'loan_charge_notice_missing'])
     expect(codes(CC.sold)).toEqual([])
     expect(computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.bundle)?.warnings.map((w) => w.code)).toEqual(
       expect.arrayContaining(['loan_share_missing', 'loan_charge_notice_missing']),
@@ -1121,7 +1122,7 @@ describe('rental objects: housing-company loans', () => {
     expect(detail.as_of < '2026-10-05').toBe(true)
     const certified = [{ ...loans[0], certificates: [{ date: '2026-10-05', share_snt: 3_000 * E, no_document: true }] }]
     saveProperty(db, CC.bundle, { ...detail.doc, housing_loans: certified }, 'now')
-    expect(codes(CC.bundle)).toEqual(['loan_charge_notice_missing'])
+    expect(codes(CC.bundle)).toEqual(['loan_rate_none', 'loan_charge_notice_missing'])
   })
 
   it('follows the share month by month from the payments to the housing company, and reminds of what they leave', async () => {

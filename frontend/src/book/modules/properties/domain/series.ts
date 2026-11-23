@@ -191,7 +191,8 @@ export function portfolioChart(
       unrecovered.push(m && invested ? m.unrecovered_snt : null)
       capitalIn.push(m && invested ? capital : null)
       const owed = o.shares?.get(key) ?? null
-      if (owed != null) totalShare[i] = (totalShare[i] ?? 0) + owed
+      // A sold object's share is the buyer's from its sale month: its own line shows it, the total not.
+      if (owed != null && !(sold && key >= sold)) totalShare[i] = (totalShare[i] ?? 0) + owed
       share.push(owed)
     })
     return { id: o.id, cash_snt: cash, unrecovered_snt: unrecovered, invested_snt: capitalIn, share_snt: share }

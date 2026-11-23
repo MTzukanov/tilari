@@ -11,6 +11,7 @@ import {
   LOAN_EVENT_KINDS,
   RATE_REFERENCES,
   saveProperty,
+  type DocCandidate,
   type HousingCopySource,
   type LoanRate,
   type HousingLoanType,
@@ -28,7 +29,10 @@ import { buildLoan, emptyCertificate, emptyCharge, emptyRate, newLoanDraft, loan
 import { useDocWriter, type CardInputs } from './useDocWriter'
 import { candidateDoc } from './waterDrafts'
 
-/** Titles that name a certificate (isännöitsijäntodistus), a vastike notice, or a rate notice: starred in the picks. */
+/**
+ * Titles that name a certificate (isännöitsijäntodistus), a vastike notice, or a rate notice: starred
+ * in the picks; a certificate's also stars the purchase's vouchers (the deed).
+ */
 const CERTIFICATE_WORDS = /is[äa]nn[öo]itsij[äa]ntodistu|lainaosuu|velkaosuu/i
 const CHARGE_WORDS = /vastike|yhti[öo]kokou/i
 const RATE_WORDS = /korko|euribor/i
@@ -146,12 +150,21 @@ export function LoanCardEdit({
   const addRow = <K extends RowKey>(key: K, row: LoanDraft[K][number]) => setDraft((d) => ({ ...d, [key]: [...d[key], row] }))
   const removeRow = (key: RowKey, i: number) => setDraft((d) => ({ ...d, [key]: (d[key] as unknown[]).filter((_, j) => j !== i) }))
 
-  /** What a row's document can be: the Liitetieto documents, the object's vouchers with files, and those already linked. */
+  /**
+   * What a row's document can be: the Liitetieto documents, the object's vouchers with files, those
+   * already linked, and the purchase's (a share from the deed).
+   */
   const docs = [
     ...new Map(
-      [...writer.allDocs, ...detail.water.statement_candidates.map(candidateDoc), ...detail.housing.vouchers.map(voucherDoc)].map((d) => [d.voucher_id, d]),
+      [
+        ...writer.allDocs,
+        ...detail.water.statement_candidates.map(candidateDoc),
+        ...detail.housing.vouchers.map(voucherDoc),
+        ...detail.housing.purchase.map(voucherDoc),
+      ].map((d) => [d.voucher_id, d]),
     ).values(),
   ]
+  const purchase = new Set(detail.housing.purchase.map((v) => v.voucher_id))
 
   async function write(remove = false) {
     setError(null)
@@ -261,7 +274,7 @@ export function LoanCardEdit({
   function docRow(opts: {
     label: string
     voucherId: string
-    words: RegExp
+    starred: (doc: DocCandidate) => boolean
     onPick: (voucherId: string) => void
     noDocument?: { checked: boolean; onChange: (checked: boolean) => void }
     onUpload?: (files: File[]) => void
@@ -270,7 +283,7 @@ export function LoanCardEdit({
     const { voucherId } = opts
     return (
       <div className="property-lease-notice">
-        <DocPicker label={opts.label} docs={docs} value={voucherId} starred={(d) => opts.words.test(d.title)} onChange={opts.onPick} />
+        <DocPicker label={opts.label} docs={docs} value={voucherId} starred={opts.starred} onChange={opts.onPick} />
         <div className="property-lease-actions">
           {!voucherId && opts.noDocument ? <NoDocumentCheck checked={opts.noDocument.checked} onChange={opts.noDocument.onChange} /> : null}
           {voucherId && writer.isCreated(Number(voucherId)) ? (
@@ -377,7 +390,7 @@ export function LoanCardEdit({
               {docRow({
                 label: t('properties.housing.field.certificate'),
                 voucherId: c.voucherId,
-                words: CERTIFICATE_WORDS,
+                starred: (d) => CERTIFICATE_WORDS.test(d.title) || purchase.has(d.voucher_id),
                 onPick: (voucherId) => setRow('certificates', i, { voucherId }),
                 noDocument: { checked: c.noDocument, onChange: (noDocument) => setRow('certificates', i, { noDocument }) },
                 onUpload: (files) => void upload('certificates', i, files),
@@ -408,7 +421,7 @@ export function LoanCardEdit({
               {docRow({
                 label: t('properties.housing.field.chargeNotice'),
                 voucherId: c.voucherId,
-                words: CHARGE_WORDS,
+                starred: (d) => CHARGE_WORDS.test(d.title),
                 onPick: (voucherId) => setRow('charges', i, { voucherId }),
                 noDocument: { checked: c.noDocument, onChange: (noDocument) => setRow('charges', i, { noDocument }) },
                 onUpload: (files) => void upload('charges', i, files),
@@ -450,7 +463,7 @@ export function LoanCardEdit({
                 {docRow({
                   label: t('properties.housing.field.document'),
                   voucherId: r.voucherId,
-                  words: RATE_WORDS,
+                  starred: (d) => RATE_WORDS.test(d.title),
                   onPick: (voucherId) => setRow('rates', i, { voucherId }),
                   onRemove: () => removeRow('rates', i),
                 })}
@@ -569,7 +582,7 @@ export function LoanCardEdit({
               {docRow({
                 label: t('properties.housing.field.document'),
                 voucherId: e.voucherId,
-                words: CHARGE_WORDS,
+                starred: (d) => CHARGE_WORDS.test(d.title),
                 onPick: (voucherId) => setRow('events', i, { voucherId }),
                 onRemove: () => removeRow('events', i),
               })}

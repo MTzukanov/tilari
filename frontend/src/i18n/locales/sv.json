@@ -1506,6 +1506,8 @@
       "loan_payment_missing": "Ingen betalning till bostadsbolaget är bokförd för {count} månader från {from} (bolagslånet {loan}): låneandelen minskade inte för dem.",
       "loan_payment_missing_one": "Ingen betalning till bostadsbolaget är bokförd för månaden {from} (bolagslånet {loan}): låneandelen minskade inte.",
       "loan_rate_missing": "Referensräntan för bolagslånet {loan} justerades {reset}: lägg till den nya referensräntan.",
+      "loan_rate_estimated": "Ingen faktisk referensränta har angetts för bolagslånet {loan}: andelen räknas enligt ränteantagandena.",
+      "loan_rate_none": "Bolagslånet {loan} saknar ränta och ränteantagande: andelen räknas utan referensränta. Lägg till räntan eller ett antagande.",
       "loan_rahastoitu_expensed": "Finansieringsvederlaget för bolagslånet {loan} från {from} är fonderat men bokfört som kostnad: i beskattningen hör det till aktiernas anskaffningsutgift. Kontrollera med revisorn.",
       "loan_grace_ending": "Bolagslånet {loan}: den amorteringsfria perioden slutar {to}; finansieringsvederlaget stiger när amorteringarna börjar."
     },
@@ -1793,7 +1795,7 @@
       "charges": "Finansieringsvederlag",
       "chargesHint": "Minst en: detta låns finansieringsvederlag per månad enligt bolagets faktura eller meddelande. Fonderat: bolaget fonderar vederlaget i stället för att intäktsföra det (sällsynt).",
       "rates": "Referensräntor",
-      "ratesHint": "Minst en: den faktiska referensräntan från räntejusteringsdagen. Ränta totalt = referensränta + marginal.",
+      "ratesHint": "Den faktiska referensräntan från räntejusteringsdagen. Ränta totalt = referensränta + marginal. Utan rad räknas andelen enligt ränteantagandena.",
       "ratesHintFixed": "Minst en: den fasta räntan från datumet.",
       "grace": "Amorteringsfria perioder",
       "events": "Händelser",
@@ -1884,6 +1886,7 @@
         "rate": "Ränta",
         "rateParts": "{reference} {rate} + {margin}",
         "rateMissing": "{reference} + {margin}; referensränta saknas",
+        "rateEstimated": "enligt ränteantagandena; faktisk ränta saknas",
         "fixed": "fast",
         "term": "Lånetid",
         "span": "{from}–{to}"

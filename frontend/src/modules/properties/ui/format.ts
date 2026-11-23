@@ -98,6 +98,7 @@ export const WARNING_WORDS: Record<string, WarningWord | 'due'> = {
   loan_certificate_stale: 'todo',
   loan_payment_missing: 'todo',
   loan_rate_missing: 'todo',
+  loan_rate_none: 'todo',
   loan_grace_ending: 'todo',
   lease_suggestions: 'suggestion',
   water_suggestions: 'suggestion',
@@ -105,6 +106,7 @@ export const WARNING_WORDS: Record<string, WarningWord | 'due'> = {
   sale_line_split: 'note',
   sale_carried: 'note',
   loan_rahastoitu_expensed: 'note',
+  loan_rate_estimated: 'note',
   doc_newer: 'note',
 }
 
@@ -139,6 +141,8 @@ export const WARNING_TABS: Record<string, PropertyTab | null> = {
   loan_certificate_stale: 'housing',
   loan_payment_missing: 'housing',
   loan_rate_missing: 'housing',
+  loan_rate_estimated: 'housing',
+  loan_rate_none: 'housing',
   loan_grace_ending: 'housing',
   loan_rahastoitu_expensed: 'housing',
   era_missing: 'finance',

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { limitedReference, loanForecast, loanNow, monthsBetween, paidOffOn } from '../../../book/modules/properties/domain/housingLoan'
+import { estimateAt, limitedReference, loanForecast, loanNow, monthsBetween, paidOffOn } from '../../../book/modules/properties/domain/housingLoan'
 import { monthEnd } from '../../../book/months'
 import { getBcp47, useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
@@ -182,8 +182,8 @@ function LoanMonths({
   loan: HousingLoan
   path: LoanPath
   payments: MonthPayments
-  /** The portfolio's reference rate estimates, for the forecast (ADR-034). */
-  estimates: RateForecast[]
+  /** The portfolio's reference rate estimates, for the forecast (ADR-034); null: no forecast (a sold object). */
+  estimates: RateForecast[] | null
   onOpenVoucher: (voucherId: number) => void
 }) {
   const { t } = useI18n()
@@ -195,10 +195,10 @@ function LoanMonths({
     setOptionsState(next)
     saveLoanChartOptions(next)
   }
-  const future = loanForecast(loan, path, { curve: estimates })
+  const future = estimates ? loanForecast(loan, path, { curve: estimates }) : []
   // The same with the reference rate a point higher from the next reset: what a rise would cost.
-  const higher = options.plus1 ? loanForecast(loan, path, { curve: estimates, shift_pcm: 1000 }) : []
-  const curved = estimates.some((r) => r.reference === loan.reference) && loan.reference !== 'fixed'
+  const higher = estimates && options.plus1 ? loanForecast(loan, path, { curve: estimates, shift_pcm: 1000 }) : []
+  const curved = Boolean(estimates?.some((r) => r.reference === loan.reference)) && loan.reference !== 'fixed'
   const [ruleOpen, setRuleOpen] = useState(false)
   const shown = options.forecast && future.length ? [...months, ...future] : months
   const known = months.length
@@ -453,8 +453,10 @@ function LoanCard({
   const paidOff = paidOffOn(loan)
   const reference = t(`properties.housing.reference.${loan.reference}`)
   const fixed = loan.reference === 'fixed'
+  // With no rate row the share is counted on the estimate (ADR-034).
+  const estimate = !rate && !fixed ? estimateAt(loan, estimates, on) : null
   // The reference rate as the loan pays it: held between a floor and a ceiling in force (ADR-034).
-  const bounded = rate ? limitedReference(loan, on.slice(0, 7), rate.reference_pcm) : null
+  const bounded = rate ? limitedReference(loan, on.slice(0, 7), rate.reference_pcm) : estimate != null ? limitedReference(loan, on.slice(0, 7), estimate) : null
   const limitLines = (loan.rate_limits ?? [])
     .filter((l) => l.to >= on)
     .map((l) =>
@@ -478,7 +480,7 @@ function LoanCard({
       key: 'months',
       title: t('properties.housing.path.months'),
       n: path?.months.length ?? 0,
-      body: () => (path ? <LoanMonths loan={loan} path={path} payments={payments} estimates={estimates} onOpenVoucher={onOpenVoucher} /> : null),
+      body: () => (path ? <LoanMonths loan={loan} path={path} payments={payments} estimates={held ? estimates : null} onOpenVoucher={onOpenVoucher} /> : null),
     },
     {
       key: 'certificates',
@@ -611,7 +613,7 @@ function LoanCard({
         />
         <Figure
           label={t('properties.housing.figure.rate')}
-          value={rate ? formatPcm((fixed ? rate.reference_pcm : bounded!) + (fixed ? 0 : loan.margin_pcm)) : ''}
+          value={rate ? formatPcm((fixed ? rate.reference_pcm : bounded!) + (fixed ? 0 : loan.margin_pcm)) : bounded != null ? formatPcm(bounded + loan.margin_pcm) : ''}
           sub={
             fixed
               ? rate
@@ -623,7 +625,13 @@ function LoanCard({
                     t('properties.housing.fromDate', { date: formatDate(rate.from) }),
                     ...limitLines,
                   ]
-                : [t('properties.housing.figure.rateMissing', { reference, margin: formatPcm(loan.margin_pcm) }), ...limitLines]
+                : bounded != null
+                  ? [
+                      t('properties.housing.figure.rateParts', { reference, rate: formatPcm(bounded), margin: formatPcm(loan.margin_pcm) }),
+                      t('properties.housing.figure.rateEstimated'),
+                      ...limitLines,
+                    ]
+                  : [t('properties.housing.figure.rateMissing', { reference, margin: formatPcm(loan.margin_pcm) }), ...limitLines]
           }
         />
         <Figure
@@ -670,13 +678,13 @@ export function HousingPanel({
   d: PropertyDetail
   /** The day the loans are read on: the later of the as-of date and the book's day (`loanDay`). */
   on: string
-  /** Not sold: only then is a missing document flagged. */
+  /** Not sold: only then is a missing document flagged, and an estimate to the loan's end offered. */
   held: boolean
   /** The loan card in edit: a loan key, 'new', or none. */
   editing?: string | null
   form?: ReactNode
   links?: HousingDocLinks
-  /** Opens a stored loan's card in edit; none when the object cannot change (sold, read-only). */
+  /** Opens a stored loan's card in edit; none on a read-only book (a sold object's loans can change). */
   onEditLoan?: (key: string) => void
   /** Opens a new loan card; none when none can be added. */
   onAdd?: () => void

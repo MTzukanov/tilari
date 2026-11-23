@@ -1506,6 +1506,8 @@
       "loan_payment_missing": "Taloyhtiölle ei ole kirjattu maksua {count} kuukaudelta {from} alkaen (yhtiölaina {loan}): velkaosuus ei pienentynyt niiltä.",
       "loan_payment_missing_one": "Taloyhtiölle ei ole kirjattu maksua kuukaudelta {from} (yhtiölaina {loan}): velkaosuus ei pienentynyt.",
       "loan_rate_missing": "Yhtiölainan {loan} viitekorko tarkistettiin {reset}: lisää uusi viitekorko.",
+      "loan_rate_estimated": "Yhtiölainalle {loan} ei ole annettu toteutunutta viitekorkoa: velkaosuus lasketaan korkoarvioiden mukaan.",
+      "loan_rate_none": "Yhtiölainan {loan} korkoa ei ole annettu eikä sille ole korkoarviota: velkaosuus lasketaan ilman viitekorkoa. Lisää korko tai korkoarvio.",
       "loan_rahastoitu_expensed": "Yhtiölainan {loan} rahoitusvastike {from} alkaen on rahastoitu, mutta kirjattu kuluksi: verotuksessa se kuuluu osakkeiden hankintamenoon. Tarkista tilintarkastajan kanssa.",
       "loan_grace_ending": "Yhtiölainan {loan} lyhennysvapaa päättyy {to}: rahoitusvastike nousee lyhennysten alkaessa."
     },
@@ -1793,7 +1795,7 @@
       "charges": "Rahoitusvastikkeet",
       "chargesHint": "Vähintään yksi: tämän lainan rahoitusvastike kuukaudessa taloyhtiön laskun tai ilmoituksen mukaan. Rahastoitu: taloyhtiö rahastoi vastikkeen eikä tulouta sitä (harvinaista).",
       "rates": "Viitekorot",
-      "ratesHint": "Vähintään yksi: toteutunut viitekorko koronmuutospäivästä alkaen. Korko yhteensä = viitekorko + marginaali.",
+      "ratesHint": "Toteutunut viitekorko koronmuutospäivästä alkaen. Korko yhteensä = viitekorko + marginaali. Ilman riviä velkaosuus lasketaan korkoarvioiden mukaan.",
       "ratesHintFixed": "Vähintään yksi: kiinteä korko päivästä alkaen.",
       "grace": "Lyhennysvapaat",
       "events": "Tapahtumat",
@@ -1884,6 +1886,7 @@
         "rate": "Korko",
         "rateParts": "{reference} {rate} + {margin}",
         "rateMissing": "{reference} + {margin}; viitekorko puuttuu",
+        "rateEstimated": "korkoarvioiden mukaan; toteutunut puuttuu",
         "fixed": "kiinteä",
         "term": "Laina-aika",
         "span": "{from}–{to}"

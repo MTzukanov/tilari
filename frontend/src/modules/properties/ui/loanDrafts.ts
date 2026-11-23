@@ -47,7 +47,7 @@ export const emptyCertificate = (): CertificateDraft => ({ date: '', share: '', 
 export const emptyCharge = (): ChargeDraft => ({ from: '', amount: '', rahastoitu: false, voucherId: '', noDocument: false })
 export const emptyRate = (): RateDraft => ({ from: '', rate: '', voucherId: '' })
 
-/** A new loan: an empty row in each section a loan needs one of (share, rahoitusvastike, rate). */
+/** A new loan: an empty row in each section a loan needs or mostly has one of (share, rahoitusvastike, rate). */
 export function newLoanDraft(): LoanDraft {
   return {
     base: null,
@@ -162,7 +162,7 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | FormIssue[] {
     else issue(field, label, 'properties.form.issue.sameDay', at, { n: before + 1 })
   }
   /**
-   * A section the loan needs a row of (share, rahoitusvastike, rate): with no row at all the
+   * A section the loan needs a row of (share, rahoitusvastike, a fixed rate): with no row at all the
    * section itself is to fix; with only empty rows, the first row's fields.
    */
   const needRows = (section: 'certificates' | 'charges' | 'rates', rows: Record<string, unknown>[], fields: [string, string][]) => {
@@ -200,7 +200,6 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | FormIssue[] {
     const at = { section: 'properties.housing.certificates', n: i + 1 }
     const dateField = `certificates.${i}.date`
     needDate(dateField, 'properties.housing.field.date', c.date, at)
-    if (okDate(c.date) && startsOk && c.date < d.starts) issue(dateField, 'properties.housing.field.date', 'properties.form.issue.beforeStarts', at)
     if (!has(dateField)) sameDay(certificateDays, c.date, i, dateField, 'properties.housing.field.date', at)
     const share = needAmount(`certificates.${i}.share`, 'properties.housing.field.share', c.share, at)
     if (share != null && total != null && !Number.isNaN(total) && share > total) {
@@ -254,10 +253,13 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | FormIssue[] {
     else if (Number.isNaN(rate)) issue(`rates.${i}.rate`, rateLabel, 'properties.form.issue.rate', at)
     else if (!has(`rates.${i}.from`)) rates.push({ from: r.from, reference_pcm: rate, ...(r.voucherId ? { voucher_id: Number(r.voucherId) } : {}) })
   })
-  needRows('rates', d.rates, [
-    ['from', 'properties.housing.field.from'],
-    ['rate', rateLabel],
-  ])
+  // A reference rate may stay out (the share is then counted on the estimate); a fixed rate is all in its rows.
+  if (fixed) {
+    needRows('rates', d.rates, [
+      ['from', 'properties.housing.field.from'],
+      ['rate', rateLabel],
+    ])
+  }
 
   const grace: NonNullable<HousingLoan['grace']> = []
   d.grace.forEach((g, i) => {

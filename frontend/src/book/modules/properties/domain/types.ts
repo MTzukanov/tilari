@@ -861,6 +861,8 @@ export type LoanPath = {
 export type HousingDetail = {
   /** The tab's documents and every voucher a loan links, posted ones only; a missing id was deleted. */
   vouchers: LeaseVoucher[]
+  /** The purchase's vouchers (the tase-erät's acquisitions): a share can come from the deed on one. */
+  purchase: LeaseVoucher[]
   /** Other objects' loans, those paying the same housing company first. */
   copy_sources: HousingCopySource[]
   /** Each stored loan's share month by month, in the loans' order. */

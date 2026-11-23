@@ -68,17 +68,27 @@ export function paidOffOn(loan: HousingLoan): string | null {
   return (loan.events ?? []).find((e) => e.kind === 'paid_off')?.date ?? null
 }
 
+/**
+ * The day the loan was drawn as far as the rows tell: the drawdown, or a share dated before it (the
+ * date given was a later tranche or refinancing); null without a drawdown (it counts from the purchase).
+ */
+export function drawnOn(loan: HousingLoan): string | null {
+  const first = loan.certificates?.[0]?.date
+  return loan.starts && first && first < loan.starts ? first : (loan.starts ?? null)
+}
+
 /** Drawn (a loan with no drawdown counts as drawn), not past its last due date, and not paid off on `date`. */
 export function loanRunning(loan: HousingLoan, date: string): boolean {
   const paidOff = paidOffOn(loan)
-  return (!loan.starts || loan.starts <= date) && (!loan.ends || loan.ends >= date) && (!paidOff || paidOff > date)
+  const drawn = drawnOn(loan)
+  return (!drawn || drawn <= date) && (!loan.ends || loan.ends >= date) && (!paidOff || paidOff > date)
 }
 
 /** The floor or ceiling in force in `month`: one whose days meet the month's (an open start is the loan's). */
 export function limitIn(loan: HousingLoan, month: string): LoanRateLimit | null {
   const first = `${month}-01`
   const last = monthEnd(month)
-  return (loan.rate_limits ?? []).find((l) => (l.from ?? loan.starts ?? '') <= last && l.to >= first) ?? null
+  return (loan.rate_limits ?? []).find((l) => (l.from ?? drawnOn(loan) ?? '') <= last && l.to >= first) ?? null
 }
 
 /** `reference` held between the floor and the ceiling in force in `month`; a fixed rate has none. */
@@ -106,13 +116,25 @@ export type PaymentUnits = { units: (month: string) => number; known: boolean }
 
 const monthOf = (date: string) => date.slice(0, 7)
 
+/** The portfolio's estimates for the loan's reference rate, oldest first. */
+const estimatesFor = (loan: HousingLoan, curve: RateForecast[]) => curve.filter((r) => r.reference === loan.reference)
+
+/** The estimate of the loan's reference rate on `date` (the first one before any); null without one. */
+export function estimateAt(loan: HousingLoan, curve: RateForecast[], date: string): number | null {
+  const own = estimatesFor(loan, curve)
+  return (rowAt(own, date) ?? own[0])?.reference_pcm ?? null
+}
+
 /**
- * The rate in force at a month's end: the reference rate (the first row before any), held between a
- * floor and a ceiling in force, plus the margin; a fixed rate has none of them.
+ * The rate in force at a month's end: the reference rate (the first row before any; with no row the
+ * estimate from `curve`, else 0), held between a floor and a ceiling in force, plus the margin; a
+ * fixed rate has none of them.
  */
-function rateIn(loan: HousingLoan, month: string): number {
-  const reference = (rateAt(loan, monthEnd(month)) ?? loan.rates?.[0])?.reference_pcm ?? 0
-  return loan.reference === 'fixed' ? reference : limitedReference(loan, month, reference) + loan.margin_pcm
+function rateIn(loan: HousingLoan, month: string, curve: RateForecast[] = []): number {
+  const row = rateAt(loan, monthEnd(month)) ?? loan.rates?.[0]
+  if (loan.reference === 'fixed') return row?.reference_pcm ?? 0
+  const reference = row?.reference_pcm ?? estimateAt(loan, curve, monthEnd(month)) ?? 0
+  return limitedReference(loan, month, reference) + loan.margin_pcm
 }
 
 /** The rahoitusvastike in force for a month: a row from any day of it counts for it. */
@@ -152,8 +174,9 @@ export function splitByWeight(total: number, weights: number[]): number[] {
  * no drawdown counts from it. Months before it are not the owner's: every due month there counts as
  * paid (by the one who owned the object then), so a certificate dated before the purchase rolls on to
  * it, and the path shows only the months from it.
+ * `curve`: the portfolio's reference rate estimates, for a loan with no rate row.
  */
-export function loanPath(loan: HousingLoan, opts: { payments: PaymentUnits; from: string | null; to: string }): Omit<LoanPath, 'missing'> {
+export function loanPath(loan: HousingLoan, opts: { payments: PaymentUnits; from: string | null; to: string; curve?: RateForecast[] }): Omit<LoanPath, 'missing'> {
   const known = opts.payments.known
   const certificates = loan.certificates ?? []
   if (!certificates.length) return { loan_key: loan.key, months: [], payments_known: known }
@@ -177,7 +200,7 @@ export function loanPath(loan: HousingLoan, opts: { payments: PaymentUnits; from
   const base = (m: string) => {
     const due = dueIn(loan, m)
     const count = payments(m)
-    return { month: m, due_snt: due, payments: count, paid_snt: due * count, rate_pcm: rateIn(loan, m), extra_snt: extraIn(m) }
+    return { month: m, due_snt: due, payments: count, paid_snt: due * count, rate_pcm: rateIn(loan, m, opts.curve), extra_snt: extraIn(m) }
   }
   const forward = (m: string, opening: number): LoanMonth => {
     const b = base(m)
@@ -265,7 +288,8 @@ export function paymentsMissing(loan: HousingLoan, payments: PaymentUnits, from:
   const paidOff = paidOffOn(loan)
   const last = [through, loan.ends ? monthOf(loan.ends) : null, paidOff ? monthOf(paidOff) : null].filter((m): m is string => m != null).sort()[0]
   const firstDue = monthOf(loan.charges[0].from)
-  const start = [firstDue, loan.starts ? monthOf(loan.starts) : null, from].filter((m): m is string => m != null).sort().at(-1)!
+  const drawn = drawnOn(loan)
+  const start = [firstDue, drawn ? monthOf(drawn) : null, from].filter((m): m is string => m != null).sort().at(-1)!
   if (start > last) return null
   let deficit = 0
   let since: string | null = null
@@ -303,24 +327,27 @@ export function annuityPayment(share: number, pcm: number, months: number): numb
  * from there an annuity pays what clears the share by `ends` and a tasalyhennys the share over the
  * months left plus the interest, both worked out again at each reset. A fixed payment stays as it is
  * and runs the share to 0, whatever `ends` says. An interest-only month pays the interest; the last
- * month pays what is left. None without a path, a share left or a rate, once paid off, or when the
- * charge would never clear the share.
+ * month pays what is left. A loan with no rate row takes the estimate at every reset from its
+ * drawdown (the path's first month without one). None without a path, a share left or a rate (a row
+ * or an estimate), once paid off, or when the charge would never clear the share.
  */
 export function loanForecast(loan: HousingLoan, path: LoanPath, estimate: RateEstimate = { curve: [] }): LoanMonth[] {
   const last = path.months.at(-1)
-  if (!last || last.closing_snt <= 0 || paidOffOn(loan) || !loan.rates?.length) return []
+  if (!last || last.closing_snt <= 0 || paidOffOn(loan)) return []
+  const latest = loan.rates?.at(-1) ?? null
+  const curve = estimatesFor(loan, estimate.curve)
+  if (!latest && (loan.reference === 'fixed' || !curve.length)) return []
   const end = loan.type !== 'fixed_payment' && loan.ends ? monthOf(loan.ends) : null
   if (end && end <= last.month) return []
-  const latest = loan.rates.at(-1)!
-  const anchor = monthOf(latest.from)
+  const drawn = drawnOn(loan)
+  const anchor = latest ? monthOf(latest.from) : drawn ? monthOf(drawn) : path.months[0].month
   const every = loan.reset_months ?? 12
-  const curve = estimate.curve.filter((r) => r.reference === loan.reference)
   /** The rate a month pays: the rows' until the first reset after the latest, then the estimate taken at its reset. */
   const rateFor = (m: string) => {
     const since = monthsBetween(anchor, m)
-    if (loan.reference === 'fixed' || since < every) return rateIn(loan, m)
+    if (loan.reference === 'fixed' || (latest && since < every)) return rateIn(loan, m)
     const reset = addMonths(anchor, Math.floor(since / every) * every)
-    const reference = (rowAt(curve, monthEnd(reset))?.reference_pcm ?? latest.reference_pcm) + (estimate.shift_pcm ?? 0)
+    const reference = (rowAt(curve, monthEnd(reset))?.reference_pcm ?? latest?.reference_pcm ?? curve[0].reference_pcm) + (estimate.shift_pcm ?? 0)
     return limitedReference(loan, m, reference) + loan.margin_pcm
   }
   const inGrace = (m: string) => (loan.grace ?? []).some((g) => monthOf(g.from) <= m && m <= monthOf(g.to))
@@ -372,7 +399,8 @@ export function loanForecast(loan: HousingLoan, path: LoanPath, estimate: RateEs
  * as-of month or a later certificate). Null where the path does not reach back to, or without one.
  */
 export function shareAt(loan: HousingLoan, path: LoanPath | undefined, month: string): number | null {
-  if (loan.starts && month < monthOf(loan.starts)) return 0
+  const drawn = drawnOn(loan)
+  if (drawn && month < monthOf(drawn)) return 0
   const paidOff = paidOffOn(loan)
   if (paidOff && monthOf(paidOff) <= month) return 0
   const months = path?.months ?? []
@@ -445,9 +473,10 @@ export function nextReset(loan: HousingLoan): string | null {
  * `CERTIFICATE_STALE_MONTHS`, documents the rows have a place for but no voucher in (a
  * certificate's, a rahoitusvastike's notice), each skippable (ADR-030); with the paths
  * (`loanPath` + `paymentsMissing`), payments missing, a rate reset passed with no rate for it, and a
- * rahastoitu charge paid as a cost (a note: the ledger books it so).
+ * rahastoitu charge paid as a cost (a note: the ledger books it so). A loan with no rate row is
+ * counted on the estimate (`curve`, a note) or, without one, on the margin alone.
  */
-export function loanWarnings(loans: HousingLoan[], on: string, held: boolean, paths: LoanPath[] = []): Warning[] {
+export function loanWarnings(loans: HousingLoan[], on: string, held: boolean, paths: LoanPath[] = [], curve: RateForecast[] = []): Warning[] {
   if (!held) return []
   const out: Warning[] = []
   for (const loan of loans) {
@@ -457,6 +486,10 @@ export function loanWarnings(loans: HousingLoan[], on: string, held: boolean, pa
     }
     const reset = loanRunning(loan, on) ? nextReset(loan) : null
     if (reset && reset <= on) out.push({ code: 'loan_rate_missing', params: { loan: loan.name, reset_date: reset } })
+    if (!loan.rates?.length) {
+      const estimated = loan.reference !== 'fixed' && estimatesFor(loan, curve).length > 0
+      out.push({ code: estimated ? 'loan_rate_estimated' : 'loan_rate_none', params: { loan: loan.name } })
+    }
     if (path?.payments_known) {
       for (const [i, c] of (loan.charges ?? []).entries()) {
         if (!c.rahastoitu) continue

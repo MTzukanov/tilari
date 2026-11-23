@@ -79,7 +79,7 @@ describe('housing-company loan drafts', () => {
     })
   })
 
-  it('a new loan needs its name, last due date, margin, a share, a rahoitusvastike and a rate; each is named', () => {
+  it('a new loan needs its name, last due date, margin, a share and a rahoitusvastike; each is named', () => {
     const issues = buildLoan(t, newLoanDraft())
     expect(Array.isArray(issues) && issues.map((i) => [i.field, i.message])).toEqual([
       ['name', 'properties.form.issue.required'],
@@ -89,12 +89,25 @@ describe('housing-company loan drafts', () => {
       ['certificates.0.share', 'properties.form.issue.required'],
       ['charges.0.from', 'properties.form.issue.required'],
       ['charges.0.amount', 'properties.form.issue.required'],
-      ['rates.0.from', 'properties.form.issue.required'],
-      ['rates.0.rate', 'properties.form.issue.required'],
     ])
     // A section whose rows were all removed is itself to fix.
     const none = buildLoan(t, { ...complete(), charges: [] })
     expect(none).toEqual([{ field: 'charges', label: 'properties.housing.charges', message: 'properties.form.issue.atLeastOne' }])
+  })
+
+  it('a reference rate may stay out (the share is counted on the estimate); a fixed rate is needed', () => {
+    const unrated = buildLoan(t, { ...complete(), rates: [{ from: '', rate: '', voucherId: '' }] })
+    expect(Array.isArray(unrated)).toBe(false)
+    expect(unrated).not.toHaveProperty('rates')
+    expect(Array.isArray(buildLoan(t, { ...complete(), rates: [] }))).toBe(false)
+    const fixed = buildLoan(t, { ...complete(), reference: 'fixed', rates: [{ from: '', rate: '', voucherId: '' }] })
+    expect(Array.isArray(fixed) && fixed.map((i) => [i.field, i.message])).toEqual([
+      ['rates.0.from', 'properties.form.issue.required'],
+      ['rates.0.rate', 'properties.form.issue.required'],
+    ])
+    // A row begun is still checked whole.
+    const half = buildLoan(t, { ...complete(), rates: [{ from: '2024-03-01', rate: '', voucherId: '' }] })
+    expect(Array.isArray(half) && half.map((i) => [i.field, i.message])).toEqual([['rates.0.rate', 'properties.form.issue.required']])
   })
 
   it('the drawdown may stay empty: the loan counts from the purchase', () => {
@@ -145,7 +158,7 @@ describe('housing-company loan drafts', () => {
     expect(fixed).not.toHaveProperty('reset_months')
   })
 
-  it('rows must fit the loan: no share before the drawdown or over the whole loan, no grace past the term', () => {
+  it('rows must fit the loan: no share over the whole loan, no grace past the term; a share may come before the drawdown', () => {
     const issues = buildLoan(t, {
       ...complete(),
       total: '5 000,00',
@@ -153,10 +166,12 @@ describe('housing-company loan drafts', () => {
       grace: [{ from: '2023-05-01', to: '2044-01-01' }],
     })
     expect(Array.isArray(issues) && issues.map((i) => [i.field, i.message])).toEqual([
-      ['certificates.0.date', 'properties.form.issue.beforeStarts'],
       ['certificates.0.share', 'properties.form.issue.shareOverTotal'],
       ['grace.0.to', 'properties.form.issue.afterEnds'],
     ])
+    // The drawdown given was a later tranche: the deed's share before it is kept.
+    const earlier = buildLoan(t, { ...complete(), certificates: [{ date: '2023-04-01', share: '4 000,00', voucherId: '', noDocument: true }] })
+    expect(earlier).toMatchObject({ certificates: [{ date: '2023-04-01', share_snt: 4_000_00 }] })
   })
 
   it('every field to fix is named, rows by their section and number, in the form\'s order', () => {
