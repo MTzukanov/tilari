@@ -60,6 +60,7 @@ import {
   loadPartners,
   loadPnlRows,
   loadRecountedLines,
+  loadVastikeFacts,
   loadVoucherPnlRows,
   loadVoucherRefs,
   type CostCentre,
@@ -96,6 +97,16 @@ import { defaultAsOf, isIncome, portfolioChart } from './series'
 import { allocationSet, computeObject, resolveSaleCosts, type CountedLine, type ObjectInput, type ObjectResult } from './summary'
 import { pickBest, suggestEra, textScorer, type TextScorer } from './suggest'
 import {
+  assignCharges,
+  chargeSuggestions,
+  invoiceLabels,
+  invoicesByMonth,
+  invoiceWarnings,
+  objectInvoices,
+  paidByMonth,
+  type AssignedCharges,
+} from './vastikeFacts'
+import {
   PORTFOLIO_KEY,
   PROPERTY_KEY_PREFIX,
   type Disposal,
@@ -103,7 +114,10 @@ import {
   type HousingDetail,
   type HousingLoan,
   type Lease,
+  type InvoicedCharge,
+  type LoanChargeSuggestion,
   type LoanPath,
+  type VastikeFact,
   type LeaseView,
   type PortfolioAlerts,
   type PortfolioResponse,
@@ -196,6 +210,7 @@ function computeObjects(db: SqliteDb, loaded: Loaded, centres: CostCentre[], opt
   const allocations = new Set<number>()
   for (const c of centres) for (const a of allocationSet(c)) allocations.add(a)
   const recounted = loadRecountedLines(db)
+  const facts = loadVastikeFacts(db)
   const pnlByAllocation = groupBy(recountLines(attachVat(db, loadPnlRows(db, allocations)), recounted), (r) => r.allocation)
 
   const linkedEraids = [...loaded.owner.keys()]
@@ -246,7 +261,7 @@ function computeObjects(db: SqliteDb, loaded: Loaded, centres: CostCentre[], opt
     }
     let result = computeObject(input)
     const housingLoans = parsed.doc.housing_loans ?? []
-    const loans = followLoans(result, reversed, housingLoans, window)
+    const loans = followLoans(result, reversed, housingLoans, window, facts)
     if (housingLoans.length) {
       const held = result.status !== 'sold' && result.status !== 'excluded'
       const share = held ? housingShare(housingLoans, loans.paths, asOf.slice(0, 7)) : null
@@ -503,7 +518,12 @@ function remindersOf(c: Computed, ctx: LeaseContext): Warning[] {
     tenant: (lease) => tenantName(ctx)(lease) ?? '',
     pending,
   })
-  return [...leaseReminders, ...loanWarnings(c.parsed.doc.housing_loans ?? [], loanDay(ctx.asOf, ctx.today), held, c.loans.paths, ctx.curve)]
+  const loans = c.parsed.doc.housing_loans ?? []
+  return [
+    ...leaseReminders,
+    ...loanWarnings(loans, loanDay(ctx.asOf, ctx.today), held, c.loans.paths, ctx.curve),
+    ...invoiceWarnings(loans, c.loans.invoices.suggestions, c.loans.invoices.assigned.unmatched, held),
+  ]
 }
 
 /**
@@ -517,14 +537,25 @@ type LoanWindow = { asOf: string; today: string; booksStart: string; curve: Rate
  * the months the book follows them: `from` the later of the purchase and the books' start, `through`
  * the as-of month or the sale's.
  */
-type FollowedLoans = { payments: ReturnType<typeof housingPayments>; paths: LoanPath[]; from: string | null; through: string }
+type FollowedLoans = {
+  payments: ReturnType<typeof housingPayments>
+  paths: LoanPath[]
+  from: string | null
+  through: string
+  /** The vastike invoices the object paid (4e): every row, the rahoitus rows by loan, and the new charges they suggest. */
+  invoices: { all: InvoicedCharge[]; assigned: AssignedCharges; suggestions: LoanChargeSuggestion[] }
+}
 
 /**
  * Follows the loans: the payments count to the as-of date, the path to it or to a later
- * certificate, and both end at a sale.
+ * certificate, and both end at a sale. A month with vastike invoices (`facts`, 4e) pays each loan
+ * its rows on them.
  */
-function followLoans(result: ObjectResult, reversed: Set<number>, loans: HousingLoan[], window: LoanWindow): FollowedLoans {
+function followLoans(result: ObjectResult, reversed: Set<number>, loans: HousingLoan[], window: LoanWindow, facts: Map<number, VastikeFact[]>): FollowedLoans {
   const found = housingPayments(result.classified.operating, reversed)
+  const all = objectInvoices(result.classified.operating, facts, reversed)
+  const assigned = assignCharges(loans, all)
+  const invoices = invoicesByMonth(all)
   const units: PaymentUnits = { units: (m) => found.months.get(m)?.units ?? 0, known: found.known }
   const acquired = result.summary.acquired_on
   const from = [acquired?.slice(0, 7), window.booksStart.slice(0, 7)].filter((m): m is string => Boolean(m)).sort().at(-1) ?? null
@@ -534,9 +565,11 @@ function followLoans(result: ObjectResult, reversed: Set<number>, loans: Housing
   const paths = loans.map((loan): LoanPath => {
     const latest = latestCertificate(loan, day)?.date.slice(0, 7)
     const to = latest && latest > asOf && !sold ? latest : asOf
-    return { ...loanPath(loan, { payments: units, from, to, curve: window.curve }), missing: paymentsMissing(loan, units, from, asOf) }
+    const invoiced = { paid: paidByMonth(assigned.byLoan.get(loan.key) ?? []), invoices }
+    return { ...loanPath(loan, { payments: units, from, to, curve: window.curve, invoiced }), missing: paymentsMissing(loan, units, from, asOf) }
   })
-  return { payments: found, paths, from, through: asOf }
+  const suggestions = loans.flatMap((loan) => chargeSuggestions(loan, assigned.byLoan.get(loan.key) ?? []))
+  return { payments: found, paths, from, through: asOf, invoices: { all, assigned, suggestions } }
 }
 
 function resolveAsOf(db: SqliteDb, today: string, asOf?: string | null): { asOf: string; dataThrough: string | null } {
@@ -710,7 +743,8 @@ function housingDetail(db: SqliteDb, loaded: Loaded, c: Computed): HousingDetail
     .map(([month, m]) => ({ month, units: m.units, lines: m.rows.map((r) => bookedLine(r, -r.net_snt, lineCtx)) }))
   const others = loaded.centres.filter((centre) => centre.id !== c.centre.id && (docFor(loaded, centre.id).doc.housing_loans ?? []).length)
   const rate_forecast = loaded.settings.doc.rate_forecast ?? []
-  if (!others.length) return { vouchers, purchase, copy_sources: [], paths, payments, rate_forecast }
+  const invoiced = { charge_suggestions: c.loans.invoices.suggestions, invoice_labels: invoiceLabels(c.loans.invoices.all) }
+  if (!others.length) return { vouchers, purchase, copy_sources: [], paths, payments, rate_forecast, ...invoiced }
   const own = housingCompanyPartners(c.result.classified.operating, c.reversed)
   const rows = groupBy(loadPnlRows(db, new Set(others.flatMap((centre) => [...allocationSet(centre)]))), (r) => r.allocation)
   const sources: HousingCopySource[] = others.flatMap((centre) => {
@@ -726,6 +760,7 @@ function housingDetail(db: SqliteDb, loaded: Loaded, c: Computed): HousingDetail
     paths,
     payments,
     rate_forecast,
+    ...invoiced,
   }
 }
 

@@ -7,6 +7,32 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-23 - Rental objects: the rahoitusvastike paid read from the vastike invoices (`feature/vastike-facts`, ADR-034 step 4e)
+
+- Owner: "4e seems to be the most needed, go ahead". The importer side is tilari-bank-import's `vastike.py`
+  (branch `feat/vastike-facts` there): it reads the invoice attached to a vastike payment and lists its rows in
+  the voucher's notes, `[hki:vastike:<Vienti.id>:<YYYY-MM>:<hoito|rahoitus|vesi>=<snt>:<label>]`, only when they
+  add up to the invoice and the invoice to the line. Format decided on that branch; keep the two in step.
+- Tilari: `loadVastikeFacts` (`ledger.ts`, posted vouchers, a key on another voucher's line dropped);
+  `vastikeFacts.ts` (pure): rows to loans invoice by invoice (`invoice_label`, the only row to the only loan,
+  the charge in force's amount; a loan takes one regular row of an invoice; extras with their loan), the
+  suggestions and the two warnings. `loanPath` takes `invoiced` (rows by payment month + invoices by month):
+  a month with invoices pays the loan's rows, plus the charge in force for payments beyond the invoices.
+  `HousingLoan.invoice_label` (validated text); `HousingDetail.charge_suggestions` and `invoice_labels`;
+  `LoanMonth.invoiced` (dotted underline + title in the month table).
+- Card: "Vastikelaskuilta X €/kk alkaen kk · label · N laskua [Lisää]" above the charge rows
+  (`withSuggestedCharge`: the row of that month, else an empty row, else a new one; the invoice as its document;
+  the label when the loan has none). "Nimi vastikelaskulla" (datalist of the object's rahoitus labels) last in
+  the terms, shown when the object has invoices or the loan a label.
+- Seen on real invoice texts (counts only here): one company changed its invoice system mid-year and the
+  row's name with it, so a name only helps a match and never rules a loan out.
+- Pitfall: months where the invoice has two rahoitus rows and the one loan's charge in force is neither pay that
+  loan 0 until a row is taken (named, or the charge updated) - the warnings say so; the test book shows it.
+- Not done: no dismissal of a suggestion (a one-off amount stays suggested until a charge row covers it); hoito
+  and vesi rows are not used yet (the forecast's hoitovastike trend will).
+- Test book `testdb/tilari-properties-loans.kitsas`: A 1's 2026 invoices (invented): 95 to June, 102,40 from
+  July, a second loan's 12,00 from August. e2e "rental object vastike invoices".
+
 ## 2026-11-23 - Rental objects: loan entry eased, and a sold object's loans (`fix/loan-entry`, on 4d)
 
 Defects found 2026-11-20 while an agent entered the owner's loans by hand in a real book (Claude in Chrome on the

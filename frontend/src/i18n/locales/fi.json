@@ -1510,7 +1510,9 @@
       "loan_rate_estimated": "Yhtiölainalle {loan} ei ole annettu toteutunutta viitekorkoa: velkaosuus lasketaan korkoarvioiden mukaan.",
       "loan_rate_none": "Yhtiölainan {loan} korkoa ei ole annettu eikä sille ole korkoarviota: velkaosuus lasketaan ilman viitekorkoa. Lisää korko tai korkoarvio.",
       "loan_rahastoitu_expensed": "Yhtiölainan {loan} rahoitusvastike {from} alkaen on rahastoitu, mutta kirjattu kuluksi: verotuksessa se kuuluu osakkeiden hankintamenoon. Tarkista tilintarkastajan kanssa.",
-      "loan_grace_ending": "Yhtiölainan {loan} lyhennysvapaa päättyy {to}: rahoitusvastike nousee lyhennysten alkaessa."
+      "loan_grace_ending": "Yhtiölainan {loan} lyhennysvapaa päättyy {to}: rahoitusvastike nousee lyhennysten alkaessa.",
+      "loan_charge_invoiced": "Vastikelaskuilla yhtiölainan {loan} rahoitusvastike on {amount}/kk {from} alkaen: lisää se lainan rahoitusvastikkeisiin.",
+      "loan_invoice_unmatched": "Vastikelaskun rahoitusrivi {label} ({amount} {from} alkaen) ei kohdistu yhteenkään yhtiölainaan: lisää laina tai anna lainalle rivin nimi vastikelaskulla."
     },
     "warnCount": "Huomautuksia: {count}",
     "alerts": {
@@ -1769,7 +1771,8 @@
         "note": "Huomautus",
         "fixedRate": "Kiinteä korko %",
         "floor": "Lattia %",
-        "ceiling": "Katto %"
+        "ceiling": "Katto %",
+        "invoiceLabel": "Nimi vastikelaskulla"
       },
       "namePlaceholder": "esim. Putkiremontti 2019",
       "type": {
@@ -1833,6 +1836,13 @@
       "fromDate": "{date} alkaen",
       "perMonth": "{amount}/kk",
       "rateRow": "viitekorko {rate}, yhteensä {total}",
+      "invoiced": {
+        "title": "Vastikelaskuilta",
+        "row": "{amount}/kk {from} alkaen",
+        "count": "{count} laskua",
+        "count_one": "1 lasku",
+        "add": "Lisää"
+      },
       "loansTitle": "Yhtiölainat",
       "add": "+ Lisää laina",
       "copy": "Kopioi toisesta kohteesta",
@@ -1872,7 +1882,8 @@
           "fixed_payment": "Rahoitusvastike pysyy samana, kunnes velkaosuus on maksettu."
         },
         "paidSum": "Lyhennys + korko yhteensä",
-        "interestSum": "Korko yhteensä"
+        "interestSum": "Korko yhteensä",
+        "invoicedHint": "Vastikelaskun rahoitusrivi"
       },
       "alsoLead": "Lisää uudet viitekorot ({dates}) myös saman lainan kopioihin muissa kohteissa:",
       "alsoFailed": "Laina tallennettiin, mutta viitekorkoa ei saatu lisättyä kohteille: {objects}.",

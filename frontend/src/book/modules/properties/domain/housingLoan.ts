@@ -175,8 +175,14 @@ export function splitByWeight(total: number, weights: number[]): number[] {
  * paid (by the one who owned the object then), so a certificate dated before the purchase rolls on to
  * it, and the path shows only the months from it.
  * `curve`: the portfolio's reference rate estimates, for a loan with no rate row.
+ * `invoiced` (4e): the vastike invoices paid each month - how many (`invoices`) and this loan's
+ * rahoitus rows in them (`paid`). In a month with invoices the rows are what was paid, and only
+ * payments beyond the invoices count the rahoitusvastike in force.
  */
-export function loanPath(loan: HousingLoan, opts: { payments: PaymentUnits; from: string | null; to: string; curve?: RateForecast[] }): Omit<LoanPath, 'missing'> {
+export function loanPath(
+  loan: HousingLoan,
+  opts: { payments: PaymentUnits; from: string | null; to: string; curve?: RateForecast[]; invoiced?: { paid: Map<string, number>; invoices: Map<string, number> } },
+): Omit<LoanPath, 'missing'> {
   const known = opts.payments.known
   const certificates = loan.certificates ?? []
   if (!certificates.length) return { loan_key: loan.key, months: [], payments_known: known }
@@ -200,7 +206,10 @@ export function loanPath(loan: HousingLoan, opts: { payments: PaymentUnits; from
   const base = (m: string) => {
     const due = dueIn(loan, m)
     const count = payments(m)
-    return { month: m, due_snt: due, payments: count, paid_snt: due * count, rate_pcm: rateIn(loan, m, opts.curve), extra_snt: extraIn(m) }
+    const row = { month: m, due_snt: due, payments: count, paid_snt: due * count, rate_pcm: rateIn(loan, m, opts.curve), extra_snt: extraIn(m) }
+    const invoices = owned(m) ? (opts.invoiced?.invoices.get(m) ?? 0) : 0
+    if (!invoices) return row
+    return { ...row, paid_snt: (opts.invoiced!.paid.get(m) ?? 0) + due * Math.max(0, count - invoices), invoiced: true as const }
   }
   const forward = (m: string, opening: number): LoanMonth => {
     const b = base(m)

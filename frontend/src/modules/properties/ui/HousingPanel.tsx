@@ -398,7 +398,12 @@ function LoanMonths({
                       <span className="property-loan-unpaid">{t('properties.housing.path.unpaid')}</span>
                     ) : null}
                   </td>
-                  <td className="amount">{formatCents(m.paid_snt, { emptyZero: true })}</td>
+                  <td
+                    className={m.invoiced ? 'amount property-loan-invoiced' : 'amount'}
+                    title={m.invoiced ? t('properties.housing.path.invoicedHint') : undefined}
+                  >
+                    {formatCents(m.paid_snt, { emptyZero: true })}
+                  </td>
                   <td className="amount" title={t('properties.housing.path.rateHint', { rate: formatPcm(m.rate_pcm) })}>
                     {formatCents(m.interest_snt)}
                   </td>

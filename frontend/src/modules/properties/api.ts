@@ -20,6 +20,7 @@ export type {
   HousingLoanType,
   LoanCertificate,
   LoanCharge,
+  LoanChargeSuggestion,
   LoanEvent,
   LoanEventKind,
   LoanMonth,

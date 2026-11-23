@@ -1510,7 +1510,9 @@
       "loan_rate_estimated": "Ingen faktisk referensränta har angetts för bolagslånet {loan}: andelen räknas enligt ränteantagandena.",
       "loan_rate_none": "Bolagslånet {loan} saknar ränta och ränteantagande: andelen räknas utan referensränta. Lägg till räntan eller ett antagande.",
       "loan_rahastoitu_expensed": "Finansieringsvederlaget för bolagslånet {loan} från {from} är fonderat men bokfört som kostnad: i beskattningen hör det till aktiernas anskaffningsutgift. Kontrollera med revisorn.",
-      "loan_grace_ending": "Bolagslånet {loan}: den amorteringsfria perioden slutar {to}; finansieringsvederlaget stiger när amorteringarna börjar."
+      "loan_grace_ending": "Bolagslånet {loan}: den amorteringsfria perioden slutar {to}; finansieringsvederlaget stiger när amorteringarna börjar.",
+      "loan_charge_invoiced": "Enligt vederlagsfakturorna är finansieringsvederlaget för bolagslånet {loan} {amount}/mån från {from}: lägg till det bland lånets finansieringsvederlag.",
+      "loan_invoice_unmatched": "Finansieringsraden {label} på vederlagsfakturan ({amount} från {from}) hör inte till något bolagslån: lägg till lånet eller ge ett lån radens namn på fakturan."
     },
     "warnCount": "Anmärkningar: {count}",
     "alerts": {
@@ -1769,7 +1771,8 @@
         "note": "Anmärkning",
         "fixedRate": "Fast ränta %",
         "floor": "Golv %",
-        "ceiling": "Tak %"
+        "ceiling": "Tak %",
+        "invoiceLabel": "Namn på vederlagsfakturan"
       },
       "namePlaceholder": "t.ex. Rörrenovering 2019",
       "type": {
@@ -1833,6 +1836,13 @@
       "fromDate": "från {date}",
       "perMonth": "{amount}/mån",
       "rateRow": "referensränta {rate}, totalt {total}",
+      "invoiced": {
+        "title": "Från vederlagsfakturorna",
+        "row": "{amount}/mån från {from}",
+        "count": "{count} fakturor",
+        "count_one": "1 faktura",
+        "add": "Lägg till"
+      },
       "loansTitle": "Bolagslån",
       "add": "+ Lägg till lån",
       "copy": "Kopiera från ett annat objekt",
@@ -1872,7 +1882,8 @@
           "fixed_payment": "Finansieringsvederlaget förblir detsamma tills låneandelen är betald."
         },
         "paidSum": "Amortering + ränta totalt",
-        "interestSum": "Ränta totalt"
+        "interestSum": "Ränta totalt",
+        "invoicedHint": "Vederlagsfakturans finansieringsrad"
       },
       "alsoLead": "Lägg till de nya referensräntorna ({dates}) även i lånets kopior i andra objekt:",
       "alsoFailed": "Lånet sparades, men referensräntan kunde inte läggas till för objekten: {objects}.",

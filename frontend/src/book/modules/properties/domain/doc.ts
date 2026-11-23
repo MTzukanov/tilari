@@ -393,6 +393,7 @@ const LOAN_KEYS = new Set([
   'certificates',
   'charges',
   'events',
+  'invoice_label',
 ])
 const LOAN_GROUP = /^[A-Za-z0-9_-]{1,40}$/
 /** 100 % in 1/1000 % (`*_pcm`). */
@@ -437,6 +438,8 @@ function housingLoan(item: unknown, path: string): HousingLoan {
   }
   const lender = text(item.lender, `${path}.lender`, MAX_TEXT)
   if (lender) out.lender = lender
+  const label = text(item.invoice_label, `${path}.invoice_label`, MAX_TEXT)
+  if (label) out.invoice_label = label
   if (item.ends != null) {
     out.ends = date(item.ends, `${path}.ends`)
     if (out.starts && out.ends < out.starts) fail(`${path}.ends`)

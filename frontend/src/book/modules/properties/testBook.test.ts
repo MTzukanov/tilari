@@ -4,7 +4,9 @@
  * `testdb/tilari-properties-loans.kitsas`: the same book with housing-company loans stored on a held
  * and a sold object (ADR-034), for demos and manual checks of the loan figures - with a parking space's
  * vastike paid beside the flat's every month on A 1, rate estimates in the defaults, a loan with no
- * drawdown and no rate row under a ceiling, and the sold flat's share from the deed before its drawdown.
+ * drawdown and no rate row under a ceiling, the sold flat's share from the deed before its drawdown, and
+ * A 1's vastike invoices of 2026 read into its payments' notes (step 4e): the rahoitusvastike rises in
+ * July, and from August a second loan's row comes that no stored loan takes.
  * Rebuild after changing the fixture: `npm run build:testdb:properties` (writes both files). Without
  * that, these tests check the committed files still open as described.
  */
@@ -12,6 +14,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { parseJson } from '../../json'
 import { SqliteDb } from '../../sqlite'
 import { drawnOn } from './domain/housingLoan'
 import { applySetup, buildSetup, computeDetail, computePortfolio, savePortfolioSettings, saveProperty } from './domain/portfolio'
@@ -136,6 +139,40 @@ function addReviewCases(db: SqliteDb): void {
   saveProperty(db, sold.id, { ...soldDetail.doc, housing_loans: [{ ...loan, starts: '2024-01-01', certificates: [fromDeed, ...later] }] }, now)
 }
 
+/**
+ * A 1's vastike invoices of 2026 in its payments' notes, as tilari-bank-import writes them (step 4e):
+ * the flat's on the statement's vastike line, the parking space's on its own voucher. Rahoitusvastike
+ * 95 to June (the stored charge), 102,40 from July, and from August a second loan's 12,00 beside it.
+ */
+function addVastikeInvoices(db: SqliteDb): void {
+  const eur = (snt: number) => `${Math.floor(snt / 100)},${String(snt % 100).padStart(2, '0')} €`
+  const write = (title: string, month: string, rows: [string, number, string][]) => {
+    const [voucher] = db.all<{ id: number; json: unknown }>('SELECT id, json FROM Tosite WHERE otsikko = ?', [title])
+    const [line] = db.all<{ id: number }>('SELECT id FROM Vienti WHERE tosite = ? AND tili = 7300 AND kohdennus = ?', [voucher.id, CC.bundle])
+    const sums = ['hoito', 'rahoitus', 'vesi'].flatMap((kind) => {
+      const own = rows.filter(([k]) => k === kind)
+      return own.length ? [`${kind} ${eur(own.reduce((sum, [, amount]) => sum + amount, 0))}`] : []
+    })
+    const json = parseJson(voucher.json)
+    json.info = [
+      `Vastikelasku ${Number(month.slice(5))}/${month.slice(0, 4)}: ${sums.join(', ')}`,
+      ...rows.map(([kind, amount, label]) => `[hki:vastike:${line.id}:${month}:${kind}=${amount}:${label}]`),
+    ].join('\n')
+    db.run('UPDATE Tosite SET json = ? WHERE id = ?', [JSON.stringify(json), voucher.id])
+  }
+  for (let m = 1; m <= 9; m++) {
+    const month = `2026-${String(m).padStart(2, '0')}`
+    const rahoitus = m < 7 ? 95_00 : 102_40
+    const second = m >= 8 ? 12_00 : 0
+    write(`Tiliote ${month}`, month, [
+      ['hoito', 300_00 - rahoitus - second, 'Hoitovastike'],
+      ['rahoitus', rahoitus, 'Pääomavastike 1'],
+      ...(second ? [['rahoitus', second, 'Pääomavastike 2'] as [string, number, string]] : []),
+    ])
+    write(`Autopaikan vastike A 1 ${month}`, month, [['hoito', 25_00, 'Autopaikkavastike']])
+  }
+}
+
 async function buildBook(extra?: (fx: PropertyFixture) => void): Promise<Uint8Array> {
   const fx = await buildPropertyFixture()
   extra?.(fx)
@@ -159,6 +196,7 @@ describe('testdb/tilari-properties.kitsas', () => {
     const db = await SqliteDb.fromBytes(await buildBook(addParkingVastike))
     addLoans(db)
     addReviewCases(db)
+    addVastikeInvoices(db)
     db.vacuum()
     writeFileSync(LOANS_FILE, db.export())
   })
@@ -216,5 +254,15 @@ describe('testdb/tilari-properties-loans.kitsas', () => {
     expect(old.housing.paths[0].months.at(-1)!.rate_pcm).toBe(2400 + 850)
     expect(old.warnings.map((w) => w.code)).toContain('loan_rate_estimated')
     expect(p.settings.rate_forecast).toHaveLength(2)
+  })
+
+  it('reads A 1\'s vastike invoices: the rahoitusvastike paid, a raise to take, a second loan\'s row no loan takes', async () => {
+    const db = await SqliteDb.fromBytes(new Uint8Array(readFileSync(LOANS_FILE)))
+    const flat = computeDetail(db, computePortfolio(db, { today: TODAY }).rows.find((r) => /Esimerkkikatu 1 A 1/.test(r.name))!.id, { today: TODAY })
+    const months = flat.housing.paths[0].months
+    expect(months.filter((m) => m.invoiced).map((m) => m.month)).toEqual(['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09'])
+    expect(months.find((m) => m.month === '2026-07')!.paid_snt).toBe(102_40)
+    expect(flat.housing.charge_suggestions).toMatchObject([{ from: '2026-07-01', amount_snt: 102_40, label: 'Pääomavastike 1', invoices: 1 }])
+    expect(flat.warnings.filter((w) => w.code === 'loan_invoice_unmatched').map((w) => w.params?.label)).toEqual(['Pääomavastike 1', 'Pääomavastike 2'])
   })
 })

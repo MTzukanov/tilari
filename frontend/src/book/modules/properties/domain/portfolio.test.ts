@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { computeAllocationBalances } from '../../../allocations'
-import { stableJson } from '../../../json'
+import { parseJson, stableJson } from '../../../json'
 import { loadGoldenDb } from '../../../golden'
 import { hasTilariData, readTilariData, writeTilariData } from '../../../kernel/tilariData'
 import { Ledger } from '../../../ledger'
@@ -1149,6 +1149,56 @@ describe('rental objects: housing-company loans', () => {
     expect(path.months.at(-1)!.closing_snt).toBeLessThan(10_000 * E)
     const codes = detail.warnings.map((w) => w.code).filter((c) => c.startsWith('loan_'))
     expect(codes).toEqual(['loan_rate_missing', 'loan_rahastoitu_expensed'])
+  })
+
+  it('reads the vastike invoices on the payments (4e): the paid rahoitusvastike, a suggested charge, rows no loan takes', async () => {
+    const { db, vouchers } = await setUp()
+    /** Invoice rows in a statement's notes, on the bundle's vastike line (`onLineOf`: another month's), as tilari-bank-import writes them. */
+    const invoice = (month: string, rows: [string, number, string][], onLineOf = month) => {
+      const id = vouchers[`statement${month}`]
+      const line = db.all<{ id: number }>('SELECT id FROM Vienti WHERE tosite = ? AND tili = 7300 AND kohdennus = ?', [vouchers[`statement${onLineOf}`], CC.bundle])[0].id
+      const json = parseJson(db.all<{ json: unknown }>('SELECT json FROM Tosite WHERE id = ?', [id])[0].json)
+      json.info = ['Vastikelasku', ...rows.map(([kind, amount, label]) => `[hki:vastike:${line}:${month}:${kind}=${amount}:${label}]`)].join('\n')
+      db.run('UPDATE Tosite SET json = ? WHERE id = ?', [JSON.stringify(json), id])
+    }
+    // A key naming another voucher's line is not read.
+    invoice('2026-06', [['rahoitus', 10 * E, 'Pääomavastike 1']], '2026-07')
+    invoice('2026-07', [['hoito', 220 * E, 'Hoitovastike'], ['rahoitus', 80 * E, 'Pääomavastike 1']])
+    invoice('2026-08', [['hoito', 205 * E, 'Hoitovastike'], ['rahoitus', 95 * E, 'Pääomavastike 1']])
+    invoice('2026-09', [['hoito', 175 * E, 'Hoitovastike'], ['rahoitus', 95 * E, 'Pääomavastike 1'], ['rahoitus', 30 * E, 'Pääomavastike 2']])
+    const stored = loan({
+      reset_months: 12,
+      rates: [{ from: '2025-01-01', reference_pcm: 2200 }],
+      charges: [{ from: '2025-01-01', amount_snt: 80 * E, no_document: true }],
+      certificates: [{ date: '2025-12-31', share_snt: 10_000 * E, no_document: true }],
+    })
+    saveProperty(db, CC.bundle, { ...computeDetail(db, CC.bundle, { today: TODAY }).doc, housing_loans: [stored] }, 'now')
+    let detail = computeDetail(db, CC.bundle, { today: TODAY })
+    const month = (m: string) => detail.housing.paths[0].months.find((r) => r.month === m)!
+    const loanCodes = () => detail.warnings.filter((w) => w.code === 'loan_charge_invoiced' || w.code === 'loan_invoice_unmatched')
+    expect(month('2026-06')).toMatchObject({ paid_snt: 80 * E })
+    expect(month('2026-06').invoiced).toBeUndefined()
+    expect(month('2026-07')).toMatchObject({ paid_snt: 80 * E, invoiced: true })
+    expect(month('2026-08')).toMatchObject({ paid_snt: 95 * E, invoiced: true })
+    // September's two rows: neither is the charge in force, so the loan takes neither.
+    expect(month('2026-09')).toMatchObject({ paid_snt: 0, invoiced: true })
+    expect(detail.housing.charge_suggestions).toEqual([
+      { loan_key: 'h1', from: '2026-08-01', amount_snt: 95 * E, voucher_id: vouchers['statement2026-08'], label: 'Pääomavastike 1', invoices: 1 },
+    ])
+    expect(detail.housing.invoice_labels).toEqual(['Pääomavastike 1', 'Pääomavastike 2'])
+    expect(loanCodes().map((w) => [w.code, w.params?.label ?? w.params?.amount_snt])).toEqual([
+      ['loan_charge_invoiced', 95 * E],
+      ['loan_invoice_unmatched', 'Pääomavastike 1'],
+      ['loan_invoice_unmatched', 'Pääomavastike 2'],
+    ])
+    // The suggestion taken, with the invoice's name for the row: September's first row is the loan's.
+    const taken = { ...stored, invoice_label: 'Pääomavastike 1', charges: [...stored.charges, { from: '2026-08-01', amount_snt: 95 * E, voucher_id: vouchers['statement2026-08'] }] }
+    saveProperty(db, CC.bundle, { ...detail.doc, housing_loans: [taken] }, 'now')
+    detail = computeDetail(db, CC.bundle, { today: TODAY })
+    expect(detail.doc.housing_loans?.[0].invoice_label).toBe('Pääomavastike 1')
+    expect(month('2026-09')).toMatchObject({ paid_snt: 95 * E, invoiced: true })
+    expect(detail.housing.charge_suggestions).toEqual([])
+    expect(loanCodes().map((w) => [w.code, w.params?.label])).toEqual([['loan_invoice_unmatched', 'Pääomavastike 2']])
   })
 
   it('the share in the figures: the summary, the years\' rahoitusvastike split, the portfolio', async () => {
