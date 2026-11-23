@@ -7,6 +7,34 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-23 - Rental objects: loan entry eased, and a sold object's loans (`fix/loan-entry`, on 4d)
+
+Defects found 2026-11-20 while an agent entered the owner's loans by hand in a real book (Claude in Chrome on the
+Pages app; noted on the local branch `docs/loan-entry-defects`), fixed on the owner's word ("fix the issues found"):
+
+- **A share from the deed could not be linked:** the certificate's pick offered only Liitetieto vouchers, water
+  statement candidates and linked ones. `HousingDetail.purchase` now holds the purchase's vouchers (the tase-erät's
+  `acquisition` movements), offered in every pick of the card and starred in the certificate's.
+- **A rate row was required:** certificates often give only "Euribor 12 kk + margin". A reference rate row is
+  optional now (a fixed rate still needs one): without one `rateIn` takes the estimate in force from the portfolio's
+  `rate_forecast` (its first before any), held by a floor or ceiling, plus the margin; with no estimate the margin
+  alone. Warnings `loan_rate_estimated` (note) and `loan_rate_none` (to fix); the card's rate tile shows the estimate
+  ("korkoarvioiden mukaan; toteutunut puuttuu"). The forecast of such a loan takes the estimate at every reset
+  counted from the drawdown (else the path's first month); none without an estimate.
+- **A share before the drawdown was refused:** the certificate's "nostopäivä" can be a later tranche. Now allowed:
+  `drawnOn(loan)` is the earlier of `starts` and the first share, used by `loanRunning`, `shareAt`, `limitIn` and
+  `paymentsMissing`. A grace period before the drawdown is still refused.
+- **A sold object could not take its loans** (owner: "for past record even if they are sold"): the Taloyhtiö tab is on
+  every object; a sold one's loans are added, copied and edited like a held one's (`PropertyView` route + handlers,
+  the overview's "+ Yhtiölaina"). The domain already ended a sold object's paths at the sale month; its cards now read
+  the rows on the sale day, the forecast is off (`LoanMonths` gets no estimates), reminders stay off, and from the sale
+  month its share is left out of the portfolio's share total (`portfolioChart`; its own line keeps it).
+- Fixed on their own branches from main: two amounts paid to the housing company each month counted many times
+  (`fix/housing-payment-levels`), and `window.prompt` blocking browser automation (`fix/in-app-name-dialog`).
+- Still open, the owner's idea from the same session: an interest check against the real payments (with tasalyhennys
+  the repayment part is fixed; compare the interest the share gives with what the payment leaves, accumulate, warn on
+  overpaid or underpaid interest; extra charges and lump sums must not count). Also in the step-4 plan file, "Later".
+
 ## 2026-11-23 - Rental objects: two amounts paid to the housing company each month count as one payment (`fix/housing-payment-levels`)
 
 - Found entering real loans (2026-11-20): `housingPayments()` took a month's regular level from the last repeating

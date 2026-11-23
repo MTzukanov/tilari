@@ -1506,6 +1506,8 @@
       "loan_payment_missing": "No payment to the housing company is booked for {count} months from {from} (company loan {loan}): the loan share did not fall for them.",
       "loan_payment_missing_one": "No payment to the housing company is booked for the month {from} (company loan {loan}): the loan share did not fall.",
       "loan_rate_missing": "The reference rate of the company loan {loan} was reset on {reset}: add the new reference rate.",
+      "loan_rate_estimated": "No actual reference rate is given for the company loan {loan}: the share is counted by the rate estimates.",
+      "loan_rate_none": "The company loan {loan} has no rate and no rate estimate: the share is counted without a reference rate. Add the rate or an estimate.",
       "loan_rahastoitu_expensed": "The financing charge of the company loan {loan} from {from} is capitalised but booked as a cost: in taxation it belongs to the shares' acquisition cost. Check with the auditor.",
       "loan_grace_ending": "Housing-company loan {loan}: the interest-only period ends {to}; the financing charge rises when repayments start."
     },
@@ -1793,7 +1795,7 @@
       "charges": "Financing charges",
       "chargesHint": "At least one: this loan's financing charge a month, as the company's invoice or notice gives it. Capitalised: the company puts the charge into its equity instead of its income (rare).",
       "rates": "Reference rates",
-      "ratesHint": "At least one: the actual reference rate from each reset date. Total rate = reference rate + margin.",
+      "ratesHint": "The actual reference rate from each reset date. Total rate = reference rate + margin. With no row, the share is counted by the rate estimates.",
       "ratesHintFixed": "At least one: the fixed rate from its date.",
       "grace": "Interest-only periods",
       "events": "Events",
@@ -1884,6 +1886,7 @@
         "rate": "Interest rate",
         "rateParts": "{reference} {rate} + {margin}",
         "rateMissing": "{reference} + {margin}; reference rate missing",
+        "rateEstimated": "by the rate estimates; actual rate missing",
         "fixed": "fixed",
         "term": "Loan term",
         "span": "{from}–{to}"

@@ -422,7 +422,7 @@ export function PropertyView({
   }
 
   // Opened on a card (back from a voucher, or the address): open it once the object is here, if it
-  // can still be edited.
+  // can still be edited (a sold object's loans can: their history is entered afterwards).
   useEffect(() => {
     if (!d || !routeCard) return
     const kind: CardKind =
@@ -433,7 +433,7 @@ export function PropertyView({
           : 'water'
     const key = 'lease' in routeCard ? routeCard.lease : 'settlement' in routeCard ? routeCard.settlement : 'loan' in routeCard ? routeCard.loan : null
     const stored = kind === 'lease' ? (d.doc.leases ?? []) : kind === 'loan' ? (d.doc.housing_loans ?? []) : (d.doc.water_settlements ?? [])
-    const editable = d.status !== 'sold' && !d.read_only && (key == null || stored.some((x) => x.key === key))
+    const editable = (d.status !== 'sold' || kind === 'loan') && !d.read_only && (key == null || stored.some((x) => x.key === key))
     if (editable) void openCard(kind, key, undefined, true)
     else restoreLocationHash(hashOf(CARD_TAB[kind], selected, null))
     // When the data first arrives.
@@ -447,9 +447,8 @@ export function PropertyView({
   const showLeases = d ? held || d.leases.length > 0 || d.lease_suggestions.length > 0 : false
   // A parking space or garage has no water to settle: the tab shows only what is stored there.
   const showWater = d ? (held && !isParkingKind(d.kind)) || d.water.settlements.length > 0 || d.water.suggestions.length > 0 : false
-  // The housing company's loans and documents: on a held object, or when something is stored.
-  const showHousing = d ? held || Boolean(d.doc.housing_loans?.length || d.doc.housing_doc_voucher_ids?.length) : false
-  const shown = (key: ViewTab) => (key === 'leases' ? showLeases : key === 'water' ? showWater : key === 'housing' ? showHousing : true)
+  // The housing company's loans and documents on every object: a sold one's loans are its history.
+  const shown = (key: ViewTab) => (key === 'leases' ? showLeases : key === 'water' ? showWater : true)
   const active: ViewTab = shown(tab) ? tab : 'overview'
 
   const tabs: TabItem<ViewTab>[] = []
@@ -464,7 +463,7 @@ export function PropertyView({
     tabs.push({ id: 'overview', label: t('properties.tab.overview') })
     if (showLeases) tabs.push({ id: 'leases', label: t('properties.tab.leases'), count: d.leases.filter((l) => !l.suggested).length, mark: mark('leases') })
     if (showWater) tabs.push({ id: 'water', label: t('properties.tab.water'), count: d.water.settlements.length, mark: mark('water') })
-    if (showHousing) tabs.push({ id: 'housing', label: t('properties.tab.housing'), count: d.doc.housing_loans?.length ?? 0, mark: mark('housing') })
+    tabs.push({ id: 'housing', label: t('properties.tab.housing'), count: d.doc.housing_loans?.length ?? 0, mark: mark('housing') })
     tabs.push({
       id: 'docs',
       label: t('properties.tab.docs'),
@@ -616,7 +615,7 @@ export function PropertyView({
             {cardError ? <p className="error">{cardError}</p> : null}
             <HousingPanel
               d={d}
-              on={loanDay(d.as_of, today || localToday())}
+              on={held || !s?.sold_on ? loanDay(d.as_of, today || localToday()) : s.sold_on}
               held={held}
               editing={card?.kind === 'loan' && inputs ? (card.key ?? 'new') : null}
               form={
@@ -646,9 +645,9 @@ export function PropertyView({
                       onUpload: (files) => uploadHousingDoc(d.doc, d.name, files),
                     }
               }
-              onEditLoan={held && !d.read_only ? (key) => void openCard('loan', key) : undefined}
-              onAdd={held && !d.read_only ? () => void openCard('loan', null) : undefined}
-              onCopy={held && !d.read_only ? (source) => void openCard('loan', null, undefined, false, source) : undefined}
+              onEditLoan={!d.read_only ? (key) => void openCard('loan', key) : undefined}
+              onAdd={!d.read_only ? () => void openCard('loan', null) : undefined}
+              onCopy={!d.read_only ? (source) => void openCard('loan', null, undefined, false, source) : undefined}
               onOpenVoucher={(v) => openVoucher(v)}
             />
           </TabPanel>

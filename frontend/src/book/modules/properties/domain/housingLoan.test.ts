@@ -3,6 +3,7 @@ import {
   annuityPayment,
   chargeAt,
   copyGroup,
+  drawnOn,
   housingShare,
   housingShareMonths,
   housingVoucherIds,
@@ -91,23 +92,41 @@ describe('housing-company loans: what a loan holds on a day', () => {
 
 describe('housing-company loans: reminders', () => {
   const asOf = '2026-09-30'
+  /** A loan with its rate: the reminders here are about the other rows. */
+  const rated = (extra: Partial<HousingLoan> = {}) => loan({ rates: [{ from: '2020-01-01', reference_pcm: 2500 }], ...extra })
 
   it('a running loan with no share asks for a certificate; a share over a year old asks for a new one', () => {
-    expect(loanWarnings([loan()], asOf, true)).toEqual([{ code: 'loan_share_missing', params: { loan: 'Putkiremontti' } }])
-    const certified = (date: string) => loan({ certificates: [{ date, share_snt: 9_000_00, no_document: true }] })
+    expect(loanWarnings([rated()], asOf, true)).toEqual([{ code: 'loan_share_missing', params: { loan: 'Putkiremontti' } }])
+    const certified = (date: string) => rated({ certificates: [{ date, share_snt: 9_000_00, no_document: true }] })
     expect(loanWarnings([certified('2025-09-30')], asOf, true)).toEqual([])
     expect(loanWarnings([certified('2025-09-29')], asOf, true)).toEqual([
       { code: 'loan_certificate_stale', params: { loan: 'Putkiremontti', certificate_date: '2025-09-29' } },
     ])
     // Ended, paid off, not drawn yet, or the object sold: nothing to ask.
-    expect(loanWarnings([loan({ ends: '2026-06-30' })], asOf, true)).toEqual([])
-    expect(loanWarnings([loan({ events: [{ date: '2026-01-15', kind: 'paid_off' }] })], asOf, true)).toEqual([])
-    expect(loanWarnings([loan({ starts: '2026-10-01' })], asOf, true)).toEqual([])
-    expect(loanWarnings([loan()], asOf, false)).toEqual([])
+    expect(loanWarnings([rated({ ends: '2026-06-30' })], asOf, true)).toEqual([])
+    expect(loanWarnings([rated({ events: [{ date: '2026-01-15', kind: 'paid_off' }] })], asOf, true)).toEqual([])
+    expect(loanWarnings([rated({ starts: '2026-10-01' })], asOf, true)).toEqual([])
+    expect(loanWarnings([rated()], asOf, false)).toEqual([])
+    // A share before the drawdown: the loan was drawn by then (the date given was a later tranche).
+    expect(loanWarnings([rated({ starts: '2026-10-01', certificates: [{ date: '2025-12-31', share_snt: 9_000_00, no_document: true }] })], asOf, true)).toEqual([])
+    expect(drawnOn(rated({ starts: '2026-10-01', certificates: [{ date: '2025-12-31', share_snt: 9_000_00 }] }))).toBe('2025-12-31')
+    expect(drawnOn(rated({ starts: '2020-01-01', certificates: [{ date: '2025-12-31', share_snt: 9_000_00 }] }))).toBe('2020-01-01')
+    expect(drawnOn(rated({ starts: undefined }))).toBeNull()
+  })
+
+  it('a loan with no rate row is counted on the estimate, a note; without one on the margin alone, to fix', () => {
+    const curve: RateForecast[] = [{ reference: 'euribor_12m', from: '2027-01-01', reference_pcm: 3000 }]
+    const none = loan({ certificates: [{ date: '2026-06-30', share_snt: 9_000_00, no_document: true }] })
+    expect(loanWarnings([none], asOf, true)).toEqual([{ code: 'loan_rate_none', params: { loan: 'Putkiremontti' } }])
+    expect(loanWarnings([none], asOf, true, [], curve)).toEqual([{ code: 'loan_rate_estimated', params: { loan: 'Putkiremontti' } }])
+    // An estimate of another reference rate is none for this loan, and a fixed rate takes none.
+    expect(loanWarnings([none], asOf, true, [], [{ ...curve[0], reference: 'euribor_6m' }]).map((w) => w.code)).toEqual(['loan_rate_none'])
+    expect(loanWarnings([{ ...none, reference: 'fixed' }], asOf, true, [], curve).map((w) => w.code)).toEqual(['loan_rate_none'])
+    expect(loanWarnings([none], asOf, false, [], curve)).toEqual([])
   })
 
   it('a certificate or a rahoitusvastike without its document is missing until linked or skipped', () => {
-    const l = loan({
+    const l = rated({
       certificates: [{ date: '2026-02-01', share_snt: 9_000_00 }],
       charges: [
         { from: '2025-01-01', amount_snt: 80_00, voucher_id: 9 },
@@ -136,6 +155,42 @@ describe('housing-company loans: reminders', () => {
     ])
     // A skip for a loan that is gone changes nothing.
     expect(skipDocument(doc, { kind: 'loan_charge', loan_key: 'h9', from: '2026-01-01' }).housing_loans).toEqual(doc.housing_loans)
+  })
+})
+
+describe('housing-company loans: a loan with no rate row, a share before the drawdown', () => {
+  const each: PaymentUnits = { units: () => 1, known: true }
+  const unrated = (extra: Partial<HousingLoan> = {}) =>
+    loan({ margin_pcm: 800, charges: [{ from: '2025-01-01', amount_snt: 100_00 }], certificates: [{ date: '2025-01-31', share_snt: 10_000_00 }], ...extra })
+
+  it('counts the share on the estimate in force (its first before any), else on the margin alone', () => {
+    const curve: RateForecast[] = [
+      { reference: 'euribor_12m', from: '2025-03-01', reference_pcm: 2200 },
+      { reference: 'euribor_6m', from: '2025-01-01', reference_pcm: 9000 },
+    ]
+    const path = loanPath(unrated(), { payments: each, from: '2025-01', to: '2025-04', curve })
+    expect(path.months.map((m) => [m.month, m.rate_pcm])).toEqual([
+      ['2025-01', 3000],
+      ['2025-02', 3000],
+      ['2025-03', 3000],
+      ['2025-04', 3000],
+    ])
+    expect(path.months[1].interest_snt).toBe(25_00)
+    expect(loanPath(unrated(), { payments: each, from: '2025-01', to: '2025-02' }).months.map((m) => m.rate_pcm)).toEqual([800, 800])
+    // A floor holds the estimate as it holds a rate row.
+    const floored = unrated({ rate_limits: [{ to: '2025-12-31', floor_pcm: 2500 }] })
+    expect(loanPath(floored, { payments: each, from: '2025-01', to: '2025-02', curve }).months.map((m) => m.rate_pcm)).toEqual([3300, 3300])
+  })
+
+  it('a share dated before the drawdown: the loan was drawn by then, and its share is known from there', () => {
+    // The drawdown given is a later tranche; the deed at the purchase gave the share in January 2025.
+    const l = unrated({ starts: '2025-06-01', rates: [{ from: '2024-01-01', reference_pcm: 2200 }] })
+    const path = { ...loanPath(l, { payments: each, from: '2025-01', to: '2025-08' }), missing: null }
+    expect(path.months[0].month).toBe('2025-01')
+    expect(shareAt(l, path, '2025-01')).toBe(10_000_00)
+    expect(shareAt(l, path, '2025-03')).toBe(path.months[2].closing_snt)
+    expect(shareAt(l, path, '2024-12')).toBe(0)
+    expect(loanRunning(l, '2025-02-15')).toBe(true)
   })
 })
 
@@ -353,6 +408,25 @@ describe('housing-company loans: the share ahead', () => {
       ],
     })
     expect(pays(loanForecast(l, pathTo('2026-05', 500_00)))).toEqual([100_00, 200_00, 200_00])
+  })
+
+  it('a loan with no rate row takes the estimate at every reset from its drawdown; with no estimate there is none', () => {
+    // Drawn in January 2026, reset every 6 months: 2 % until the estimate's 3 % from 2027 is reached in July 2027.
+    const curve: RateForecast[] = [
+      { reference: 'euribor_12m', from: '2026-01-01', reference_pcm: 2000 },
+      { reference: 'euribor_12m', from: '2027-03-01', reference_pcm: 3000 },
+    ]
+    const l = loan({ starts: '2026-01-01', ends: '2027-12-31', margin_pcm: 1000, reset_months: 6, charges: [{ from: '2026-01-01', amount_snt: 100_00 }] })
+    const rows = loanForecast(l, pathTo('2026-05', 1_200_00), { curve })
+    expect(rows.map((r) => [r.month, r.rate_pcm]).filter(([m]) => ['2026-06', '2026-07', '2027-06', '2027-07'].includes(m as string))).toEqual([
+      ['2026-06', 3000],
+      ['2026-07', 3000],
+      ['2027-06', 3000],
+      ['2027-07', 4000],
+    ])
+    expect(rows.at(-1)!.closing_snt).toBe(0)
+    expect(loanForecast(l, pathTo('2026-05', 1_200_00))).toEqual([])
+    expect(loanForecast({ ...l, reference: 'fixed' }, pathTo('2026-05', 1_200_00), { curve })).toEqual([])
   })
 
   it('none without a rate, a share or a charge that clears it, once paid off, or after the end', () => {

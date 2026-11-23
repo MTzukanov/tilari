@@ -1506,6 +1506,8 @@
       "loan_payment_missing": "Für {count} Monate ab {from} ist keine Zahlung an die Wohnungsgesellschaft gebucht (Gesellschaftsdarlehen {loan}): der Darlehensanteil sank für sie nicht.",
       "loan_payment_missing_one": "Für den Monat {from} ist keine Zahlung an die Wohnungsgesellschaft gebucht (Gesellschaftsdarlehen {loan}): der Darlehensanteil sank nicht.",
       "loan_rate_missing": "Der Referenzzins des Gesellschaftsdarlehens {loan} wurde am {reset} angepasst: neuen Referenzzins hinzufügen.",
+      "loan_rate_estimated": "Für das Gesellschaftsdarlehen {loan} ist kein tatsächlicher Referenzzins angegeben: der Anteil wird nach den Zinsannahmen berechnet.",
+      "loan_rate_none": "Das Gesellschaftsdarlehen {loan} hat weder Zins noch Zinsannahme: der Anteil wird ohne Referenzzins berechnet. Zins oder Annahme hinzufügen.",
       "loan_rahastoitu_expensed": "Das Finanzierungsentgelt des Gesellschaftsdarlehens {loan} ab {from} ist kapitalisiert, aber als Aufwand gebucht: steuerlich gehört es zu den Anschaffungskosten der Anteile. Mit dem Abschlussprüfer klären.",
       "loan_grace_ending": "Gesellschaftsdarlehen {loan}: die tilgungsfreie Zeit endet am {to}; das Finanzierungsentgelt steigt, wenn die Tilgung beginnt."
     },
@@ -1793,7 +1795,7 @@
       "charges": "Finanzierungsentgelte",
       "chargesHint": "Mindestens eine: das Finanzierungsentgelt dieses Darlehens pro Monat laut Rechnung oder Mitteilung der Gesellschaft. Kapitalisiert: Die Gesellschaft führt das Entgelt ihrem Eigenkapital zu, statt es als Ertrag zu buchen (selten).",
       "rates": "Referenzzinsen",
-      "ratesHint": "Mindestens eine: der tatsächliche Referenzzins ab dem Anpassungstag. Zins gesamt = Referenzzins + Marge.",
+      "ratesHint": "Der tatsächliche Referenzzins ab dem Anpassungstag. Zins gesamt = Referenzzins + Marge. Ohne Zeile wird der Anteil nach den Zinsannahmen berechnet.",
       "ratesHintFixed": "Mindestens eine: der Festzins ab dem Datum.",
       "grace": "Tilgungsfreie Zeiten",
       "events": "Ereignisse",
@@ -1884,6 +1886,7 @@
         "rate": "Zinssatz",
         "rateParts": "{reference} {rate} + {margin}",
         "rateMissing": "{reference} + {margin}; Referenzzins fehlt",
+        "rateEstimated": "nach den Zinsannahmen; tatsächlicher Zins fehlt",
         "fixed": "fest",
         "term": "Laufzeit",
         "span": "{from}–{to}"

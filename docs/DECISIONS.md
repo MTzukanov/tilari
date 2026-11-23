@@ -824,7 +824,18 @@ correction would change the open year's income statement lines. The rental-objec
   its margin and reset interval (not for a fixed rate, which is all in its rate rows), and at least one share, one
   rahoitusvastike and one rate: what following the share and a forecast need. The company's whole loan is optional
   (nothing is computed from it), but no share may exceed it, nor come before the drawdown. The stored format stays
-  lenient, so data written elsewhere still reads.
+  lenient, so data written elsewhere still reads. Eased 2026-11-23 (found entering real loans, owner: fix): the
+  drawdown is optional (4d), a reference rate row too - a certificate often gives only "Euribor 12 kk + margin", so
+  without a row the share is counted on the rate estimate in force (its first before any; a note), and without one on
+  the margin alone (to fix); a fixed rate still needs its row. A share may come before the drawdown: the date given was
+  a later tranche or refinancing, so the loan counts as drawn by its first share (`drawnOn`).
+- **The share from the deed** (2026-11-23): the certificate's document pick offers the purchase's vouchers (the
+  tase-erät's acquisitions), starred, as the deed sits on the purchase voucher.
+- **A sold object's loans** (owner, 2026-11-23: "for past record even if they are sold"): the Taloyhtiö tab is on
+  every object, and a sold one's loans are added, copied and edited like a held one's - the one exception to the
+  step-1 rule that a sold object's cards are frozen (leases and water settlements stay frozen). Its paths end at the
+  sale month, its cards read the rows on the sale day, it has no forecast and no reminders, and from the sale month
+  its share is out of the portfolio's total (its own line still shows it).
 - **The day a loan is read on** is the later of the page's as-of date and the book's day: the rows are inputs, not
   bookings, so a share or rate dated after the last booked month counts at once.
 - **Reminders** (computed, ADR-030), while the object is held: a running loan with no share, a newest share older

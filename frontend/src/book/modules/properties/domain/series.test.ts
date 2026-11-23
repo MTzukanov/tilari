@@ -87,6 +87,13 @@ describe('portfolioChart', () => {
     // Before any share is known the total is not 0 but unknown.
     const later = portfolioChart([{ id: 1, status: 'active', months: ['2026-01', '2026-02'].map((k) => owed(month(k, 10, 0), 100)), shares: new Map([['2026-02', 900]]) }])
     expect(later.total_share_snt).toEqual([null, 900])
+    // A sold object's share goes with it: on its own line to the sale, out of the total from the sale month.
+    const sold = portfolioChart([
+      { id: 1, status: 'active', months: ['2026-01', '2026-02'].map((k) => owed(month(k, 10, 0), 100)), shares: new Map([['2026-01', 900], ['2026-02', 880]]) },
+      { id: 2, status: 'sold', months: ['2026-01', '2026-02'].map((k) => owed(month(k, 10, 0), 100)), shares: new Map([['2026-01', 500], ['2026-02', 490]]) },
+    ])
+    expect(sold.objects[1].share_snt).toEqual([500, 490])
+    expect(sold.total_share_snt).toEqual([1400, 880])
   })
 
   it('sums the capital put in and what came back over the objects the unrecovered total counts: their difference is it', () => {
