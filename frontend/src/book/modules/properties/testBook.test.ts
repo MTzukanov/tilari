@@ -2,7 +2,9 @@
  * `testdb/tilari-properties.kitsas`: the invented rental-object book (`buildPropertyFixture`) with its
  * suggested links applied, so objects have investments, a sale and payback for e2e and manual checks.
  * `testdb/tilari-properties-loans.kitsas`: the same book with housing-company loans stored on a held
- * and a sold object (ADR-034), for demos and manual checks of the loan figures.
+ * and a sold object (ADR-034), for demos and manual checks of the loan figures - with a parking space's
+ * vastike paid beside the flat's every month on A 1, rate estimates in the defaults, a loan with no
+ * drawdown and no rate row under a ceiling, and the sold flat's share from the deed before its drawdown.
  * Rebuild after changing the fixture: `npm run build:testdb:properties` (writes both files). Without
  * that, these tests check the committed files still open as described.
  */
@@ -11,9 +13,10 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { SqliteDb } from '../../sqlite'
-import { applySetup, buildSetup, computeDetail, computePortfolio, saveProperty } from './domain/portfolio'
+import { drawnOn } from './domain/housingLoan'
+import { applySetup, buildSetup, computeDetail, computePortfolio, savePortfolioSettings, saveProperty } from './domain/portfolio'
 import type { HousingLoan, SetupApplyInput } from './domain/types'
-import { buildPropertyFixture, CC } from './testFixture'
+import { buildPropertyFixture, CC, type PropertyFixture } from './testFixture'
 
 const TESTDB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../../testdb')
 const FILE = path.join(TESTDB, 'tilari-properties.kitsas')
@@ -70,8 +73,73 @@ function addLoans(db: SqliteDb): void {
   }
 }
 
-async function buildBook(): Promise<Uint8Array> {
-  const { db } = await buildPropertyFixture()
+/**
+ * A 1's parking space billed apart by the same housing company, paid on the flat's day every month:
+ * two repeating amounts a month to one payee (`housingPayments` counts them as one payment).
+ */
+function addParkingVastike(fx: PropertyFixture): void {
+  for (let y = 2023; y <= 2026; y++) {
+    for (let m = 1; m <= 12; m++) {
+      const key = `${y}-${String(m).padStart(2, '0')}`
+      if (key < '2023-03' || key > '2026-09') continue
+      fx.voucher(`parking${key}`, `${key}-05`, 100, `Autopaikan vastike A 1 ${key}`, [
+        { account: 7300, debit: 25 * E, allocation: CC.bundle, description: 'Vastike autopaikka A 1', partner: 'As Oy Esimerkkikatu 1' },
+        { account: 1910, credit: 25 * E },
+      ])
+    }
+  }
+}
+
+/**
+ * The review cases on top of `LOANS`: estimates of the 12-month Euribor in the defaults; on Vanhatie 7 C 9 a
+ * tasalyhennys with no drawdown (counted from the purchase) and no rate row (counted on the estimate),
+ * under a ceiling to the end of 2028; the sold flat's first share from the deed on its purchase voucher,
+ * dated before the drawdown its certificate gives.
+ */
+function addReviewCases(db: SqliteDb): void {
+  const now = `${TODAY}T10:00:00Z`
+  const { settings } = computePortfolio(db, { today: TODAY })
+  savePortfolioSettings(
+    db,
+    {
+      ...settings,
+      rate_forecast: [
+        { reference: 'euribor_12m', from: '2027-01-01', reference_pcm: 2400 },
+        { reference: 'euribor_12m', from: '2028-01-01', reference_pcm: 2800 },
+      ],
+    },
+    now,
+  )
+  const rows = computePortfolio(db, { today: TODAY }).rows
+  const old = rows.find((r) => /Vanhatie 7 C 9/.test(r.name))!
+  const detail = computeDetail(db, old.id, { today: TODAY })
+  const acquired = detail.summary.acquired_on!
+  const lift: HousingLoan = {
+    key: 'h1',
+    name: 'Hissi',
+    ends: '2039-12-31',
+    type: 'equal_principal',
+    reference: 'euribor_12m',
+    margin_pcm: 850,
+    reset_months: 12,
+    rate_limits: [{ to: '2028-12-31', ceiling_pcm: 2600 }],
+    certificates: [{ date: acquired, share_snt: 6_500 * E, no_document: true }],
+    charges: [{ from: acquired, amount_snt: 55 * E, no_document: true }],
+  }
+  saveProperty(db, old.id, { ...detail.doc, housing_loans: [lift] }, now)
+
+  const sold = rows.find((r) => /Mallitie 2 B 5/.test(r.name))!
+  const soldDetail = computeDetail(db, sold.id, { today: TODAY })
+  const [loan] = soldDetail.doc.housing_loans!
+  const [deed, ...later] = loan.certificates!
+  const fromDeed = { date: deed.date, share_snt: deed.share_snt, voucher_id: soldDetail.housing.purchase[0].voucher_id }
+  saveProperty(db, sold.id, { ...soldDetail.doc, housing_loans: [{ ...loan, starts: '2024-01-01', certificates: [fromDeed, ...later] }] }, now)
+}
+
+async function buildBook(extra?: (fx: PropertyFixture) => void): Promise<Uint8Array> {
+  const fx = await buildPropertyFixture()
+  extra?.(fx)
+  const { db } = fx
   const setup = buildSetup(db)
   const byCentre = new Map<number, { add_eras: number[]; add_docs: number[] }>()
   const entry = (id: number) => byCentre.get(id) ?? byCentre.set(id, { add_eras: [], add_docs: [] }).get(id)!
@@ -88,8 +156,9 @@ async function buildBook(): Promise<Uint8Array> {
 describe('testdb/tilari-properties.kitsas', () => {
   it.runIf(process.env.TILARI_WRITE_TESTDB === '1')('is rebuilt from the fixture', async () => {
     writeFileSync(FILE, await buildBook())
-    const db = await SqliteDb.fromBytes(await buildBook())
+    const db = await SqliteDb.fromBytes(await buildBook(addParkingVastike))
     addLoans(db)
+    addReviewCases(db)
     db.vacuum()
     writeFileSync(LOANS_FILE, db.export())
   })
@@ -120,8 +189,32 @@ describe('testdb/tilari-properties-loans.kitsas', () => {
     expect(path.payments_known).toBe(true)
     expect(detail.doc.housing_loans![0].certificates).toHaveLength(2)
     expect(detail.summary.housing_share_snt).toBeGreaterThan(0)
-    expect(p.totals.housing_share_snt).toBe(detail.summary.housing_share_snt)
-    const soldPath = computeDetail(db, sold.id, { today: TODAY }).housing.paths[0]
+    // The total is the held objects' shares: A 1's and Vanhatie's, not the sold flat's.
+    const heldShares = p.rows.filter((r) => r.status !== 'sold').reduce((sum, r) => sum + (r.summary.housing_share_snt ?? 0), 0)
+    expect(heldShares).toBeGreaterThan(detail.summary.housing_share_snt!)
+    expect(p.totals.housing_share_snt).toBe(heldShares)
+    const soldDetail = computeDetail(db, sold.id, { today: TODAY })
+    const soldPath = soldDetail.housing.paths[0]
     expect(soldPath.months.at(-1)!.month).toBe(sold.summary.sold_on!.slice(0, 7))
+    // Its first share is the deed's, on the purchase voucher, before the drawdown the certificate gives.
+    const soldLoan = soldDetail.doc.housing_loans![0]
+    expect(soldDetail.housing.purchase.map((v) => v.voucher_id)).toContain(soldLoan.certificates![0].voucher_id)
+    expect(drawnOn(soldLoan)! < soldLoan.starts!).toBe(true)
+  })
+
+  it('counts the flat\'s and the parking space\'s vastike as one payment a month, and a loan with no rate row on the estimate', async () => {
+    const db = await SqliteDb.fromBytes(new Uint8Array(readFileSync(LOANS_FILE)))
+    const p = computePortfolio(db, { today: TODAY })
+    const flat = computeDetail(db, p.rows.find((r) => /Esimerkkikatu 1 A 1/.test(r.name))!.id, { today: TODAY })
+    expect(flat.housing.payments.every((m) => m.lines.length === 2 && m.units === 1)).toBe(true)
+    expect(flat.housing.paths[0].months.every((m) => m.closing_snt > 0)).toBe(true)
+    const old = computeDetail(db, p.rows.find((r) => /Vanhatie 7 C 9/.test(r.name))!.id, { today: TODAY })
+    const [lift] = old.doc.housing_loans!
+    expect(lift.starts).toBeUndefined()
+    expect(lift.rates).toBeUndefined()
+    // Before the estimates begin, their first (2,4 %, under the 2,6 % ceiling), plus the margin.
+    expect(old.housing.paths[0].months.at(-1)!.rate_pcm).toBe(2400 + 850)
+    expect(old.warnings.map((w) => w.code)).toContain('loan_rate_estimated')
+    expect(p.settings.rate_forecast).toHaveLength(2)
   })
 })
