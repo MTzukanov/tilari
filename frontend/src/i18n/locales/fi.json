@@ -1521,6 +1521,7 @@
       "loan_rate_missing": "Yhtiölainan {loan} viitekorko tarkistettiin {reset}: lisää uusi viitekorko.",
       "loan_rate_estimated": "Yhtiölainalle {loan} ei ole annettu toteutunutta viitekorkoa: velkaosuus lasketaan korkoarvioiden mukaan.",
       "loan_rate_none": "Yhtiölainan {loan} korkoa ei ole annettu eikä sille ole korkoarviota: velkaosuus lasketaan ilman viitekorkoa. Lisää korko tai korkoarvio.",
+      "loan_type_retired": "Yhtiölainan {loan} tyyppi oli kiinteä tasaerä, jota Tilari ei enää käytä: se lasketaan annuiteettina. Valitse lainatyyppi lainan kortilla ja tallenna.",
       "loan_rahastoitu_expensed": "Yhtiölainan {loan} rahoitusvastike {from} alkaen on rahastoitu, mutta kirjattu kuluksi: verotuksessa se kuuluu osakkeiden hankintamenoon. Tarkista tilintarkastajan kanssa.",
       "loan_grace_ending": "Yhtiölainan {loan} lyhennysvapaa päättyy {to}: rahoitusvastike nousee lyhennysten alkaessa.",
       "loan_charge_invoiced": "Vastikelaskuilla yhtiölainan {loan} rahoitusvastike on {amount}/kk {from} alkaen: lisää se lainan rahoitusvastikkeisiin.",
@@ -1797,8 +1798,7 @@
       "namePlaceholder": "esim. Putkiremontti 2019",
       "type": {
         "annuity": "Annuiteetti",
-        "equal_principal": "Tasalyhennys",
-        "fixed_payment": "Kiinteä tasaerä"
+        "equal_principal": "Tasalyhennys"
       },
       "reference": {
         "euribor_12m": "12 kk Euribor",
@@ -1898,8 +1898,7 @@
         "forecastTotal": "Yhteensä",
         "forecastRule": {
           "annuity": "Rahoitusvastike lasketaan koronmuutoksissa uudelleen niin, että laina on maksettu laina-ajan loppuun.",
-          "equal_principal": "Koronmuutoksista alkaen lyhennys on velkaosuus jaettuna jäljellä olevilla kuukausilla, korko sen päälle.",
-          "fixed_payment": "Rahoitusvastike pysyy samana, kunnes velkaosuus on maksettu."
+          "equal_principal": "Koronmuutoksista alkaen lyhennys on velkaosuus jaettuna jäljellä olevilla kuukausilla, korko sen päälle."
         },
         "paidSum": "Lyhennys + korko yhteensä",
         "interestSum": "Korko yhteensä",

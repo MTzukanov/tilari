@@ -361,8 +361,8 @@ export function annuityPayment(share: number, pcm: number, months: number): numb
  * force - or a later row of it, the company's own figure - is paid until the next rate reset
  * or the end of an interest-only period;
  * from there an annuity pays what clears the share by `ends` and a tasalyhennys the share over the
- * months left plus the interest, both worked out again at each reset. A fixed payment stays as it is
- * and runs the share to 0, whatever `ends` says. An interest-only month pays the interest; the last
+ * months left plus the interest, both worked out again at each reset; without `ends` the charge in
+ * force runs the share to 0. An interest-only month pays the interest; the last
  * month pays what is left. A loan with no rate row takes the estimate at every reset from its
  * drawdown (the path's first month without one). None without a path, a share left or a rate (a row
  * or an estimate), once paid off, or when the charge would never clear the share.
@@ -373,7 +373,7 @@ export function loanForecast(loan: HousingLoan, path: LoanPath, estimate: RateEs
   const latest = loan.rates?.at(-1) ?? null
   const estimated = estimateFor(loan, estimate.rates)
   if (!latest && estimated == null) return []
-  const end = loan.type !== 'fixed_payment' && loan.ends ? monthOf(loan.ends) : null
+  const end = loan.ends ? monthOf(loan.ends) : null
   if (end && end <= last.month) return []
   const drawn = drawnOn(loan)
   const anchor = latest ? monthOf(latest.from) : drawn ? monthOf(drawn) : path.months[0].month
@@ -396,7 +396,7 @@ export function loanForecast(loan: HousingLoan, path: LoanPath, estimate: RateEs
     const since = monthsBetween(anchor, m)
     const reset = (since >= 0 && since % every === 0) || (rows.length > 0 && inGrace(rows.at(-1)!.month) && !inGrace(m))
     if (newCharge(m)) worked = null
-    if (end && loan.type !== 'fixed_payment' && reset && !inGrace(m)) {
+    if (end && reset && !inGrace(m)) {
       const left = monthsBetween(m, end) + 1
       worked = { annuity: annuityPayment(opening, rate, left), principal: Math.round(opening / left) }
     }
@@ -580,7 +580,7 @@ export function nextReset(loan: HousingLoan): string | null {
 
 /**
  * What the loans ask of the owner while the object is held, on `on` (the later of the as-of date and
- * the book's day): a running loan with no share, a newest share older than
+ * the book's day): a type no longer offered to pick again, a running loan with no share, a newest share older than
  * `CERTIFICATE_STALE_MONTHS`, documents the rows have a place for but no voucher in (a
  * certificate's, a rahoitusvastike's notice), each skippable (ADR-030); with the paths
  * (`loanPath` + `paymentsMissing`), payments missing, a rate reset passed with no rate for it, and a
@@ -592,6 +592,7 @@ export function loanWarnings(loans: HousingLoan[], on: string, held: boolean, pa
   const out: Warning[] = []
   for (const loan of loans) {
     const path = paths.find((p) => p.loan_key === loan.key)
+    if (loan.retired_type) out.push({ code: 'loan_type_retired', params: { loan: loan.name } })
     if (path?.missing) {
       out.push({ code: 'loan_payment_missing', params: { loan: loan.name, count: path.missing.count, from_date: `${path.missing.from}-01` } })
     }

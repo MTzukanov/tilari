@@ -149,7 +149,7 @@ export type WaterSettlement = {
 }
 
 /** A housing-company loan's kind: annuiteetti, tasalyhennys, kiinteä tasaerä (the payment stays, the term moves). */
-export const HOUSING_LOAN_TYPES = ['annuity', 'equal_principal', 'fixed_payment'] as const
+export const HOUSING_LOAN_TYPES = ['annuity', 'equal_principal'] as const
 export type HousingLoanType = (typeof HOUSING_LOAN_TYPES)[number]
 
 /** The reference rate (viitekorko) a loan's interest follows; `fixed` is a fixed rate, typed in its rate rows. */
@@ -229,6 +229,12 @@ export type HousingLoan = {
   /** The last due date in the loan's terms. */
   ends?: string
   type: HousingLoanType
+  /**
+   * The type it was stored with when that type is no longer offered: `fixed_payment` (kiinteä tasaerä,
+   * removed 2026-11-24: no housing-company loan pays so). Read as an annuity, with a warning, until the
+   * loan is saved on its card.
+   */
+  retired_type?: 'fixed_payment'
   /** The company's whole loan, for information. */
   total_snt?: number
   reference: RateReference

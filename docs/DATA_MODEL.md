@@ -108,7 +108,8 @@ negative.
 | `name` | What the loan is for ("Putkiremontti 2019") |
 | `lender?`, `total_snt?` | The bank, and the company's whole loan, for information |
 | `starts?`, `ends?` | Drawn (missing: the loan counts from the object's purchase; a share dated before it means drawn by then); the last due date in the terms |
-| `type` | `annuity` (annuiteetti), `equal_principal` (tasalyhennys) or `fixed_payment` (kiinteä tasaerä: the payment stays, the term moves) |
+| `type` | `annuity` (annuiteetti) or `equal_principal` (tasalyhennys) |
+| `retired_type?` | `fixed_payment`: the loan was stored as a kiinteä tasaerä, a type no longer offered (2026-11-24); read as an annuity with a warning until its card saves it. A stored `type: fixed_payment` reads the same way |
 | `reference`, `margin_pcm` | The reference rate (`euribor_12m`, `euribor_6m`, `euribor_3m`, `prime`, `fixed`, `other`) and the margin |
 | `reset_months?` | How often the reference rate is reset |
 | `rates[]?` | `{ from, reference_pcm, voucher_id? }`: the actual reference rate from `from` on, by hand; no two on one day. None: the share is counted on the portfolio's estimate (`forecast`, ADR-035; a fixed rate needs a row) |

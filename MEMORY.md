@@ -7,6 +7,13 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-24 - Housing-company loans: the fixed-payment type is gone (ADR-034)
+
+- Owner: no housing-company loan pays a fixed instalment, remove the option completely. First step of the plan to
+  count the share from the loan's terms only (next: the terms path, then the rahoitusvastike check at ±10 % over
+  12 months). A stored `fixed_payment` loan must not make the whole object unreadable (the parser refuses unknown
+  types), so it reads as an annuity marked `retired_type` with a warning until its card saves it.
+
 ## 2026-11-24 - Properties page: the cash flow table shows one figure at a time (ADR-035)
 
 - Owner asked whether a year's repayment was really that low: the figure read was the cash flow + repayment row, and

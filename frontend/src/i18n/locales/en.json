@@ -1521,6 +1521,7 @@
       "loan_rate_missing": "The reference rate of the company loan {loan} was reset on {reset}: add the new reference rate.",
       "loan_rate_estimated": "No actual reference rate is given for the company loan {loan}: the share is counted by the rate estimates.",
       "loan_rate_none": "The company loan {loan} has no rate and no rate estimate: the share is counted without a reference rate. Add the rate or an estimate.",
+      "loan_type_retired": "The company loan {loan} was stored as a fixed instalment, a type Tilari no longer uses: it is counted as an annuity. Pick the loan type on its card and save.",
       "loan_rahastoitu_expensed": "The financing charge of the company loan {loan} from {from} is capitalised but booked as a cost: in taxation it belongs to the shares' acquisition cost. Check with the auditor.",
       "loan_grace_ending": "Housing-company loan {loan}: the interest-only period ends {to}; the financing charge rises when repayments start.",
       "loan_charge_invoiced": "The housing company's invoices give the financing charge of the company loan {loan} as {amount}/month from {from}: add it to the loan's financing charges.",
@@ -1797,8 +1798,7 @@
       "namePlaceholder": "e.g. Pipe renovation 2019",
       "type": {
         "annuity": "Annuity",
-        "equal_principal": "Equal principal",
-        "fixed_payment": "Fixed instalment"
+        "equal_principal": "Equal principal"
       },
       "reference": {
         "euribor_12m": "12-month Euribor",
@@ -1898,8 +1898,7 @@
         "forecastTotal": "Total",
         "forecastRule": {
           "annuity": "The financing charge is worked out again at each rate reset so that the loan is paid off by the end of its term.",
-          "equal_principal": "From the rate resets on, the repayment is the share over the months left, with the interest on top.",
-          "fixed_payment": "The financing charge stays the same until the share is paid off."
+          "equal_principal": "From the rate resets on, the repayment is the share over the months left, with the interest on top."
         },
         "paidSum": "Repaid + interest in all",
         "interestSum": "Interest in all",

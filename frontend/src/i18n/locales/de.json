@@ -1521,6 +1521,7 @@
       "loan_rate_missing": "Der Referenzzins des Gesellschaftsdarlehens {loan} wurde am {reset} angepasst: neuen Referenzzins hinzufügen.",
       "loan_rate_estimated": "Für das Gesellschaftsdarlehen {loan} ist kein tatsächlicher Referenzzins angegeben: der Anteil wird nach den Zinsannahmen berechnet.",
       "loan_rate_none": "Das Gesellschaftsdarlehen {loan} hat weder Zins noch Zinsannahme: der Anteil wird ohne Referenzzins berechnet. Zins oder Annahme hinzufügen.",
+      "loan_type_retired": "Das Gesellschaftsdarlehen {loan} war als feste Rate gespeichert, eine Art, die Tilari nicht mehr verwendet: es wird als Annuität berechnet. Darlehensart auf seiner Karte wählen und speichern.",
       "loan_rahastoitu_expensed": "Das Finanzierungsentgelt des Gesellschaftsdarlehens {loan} ab {from} ist kapitalisiert, aber als Aufwand gebucht: steuerlich gehört es zu den Anschaffungskosten der Anteile. Mit dem Abschlussprüfer klären.",
       "loan_grace_ending": "Gesellschaftsdarlehen {loan}: die tilgungsfreie Zeit endet am {to}; das Finanzierungsentgelt steigt, wenn die Tilgung beginnt.",
       "loan_charge_invoiced": "Laut den Rechnungen der Wohnungsgesellschaft beträgt das Finanzierungsentgelt des Gesellschaftsdarlehens {loan} ab {from} {amount}/Monat: tragen Sie es beim Darlehen ein.",
@@ -1797,8 +1798,7 @@
       "namePlaceholder": "z. B. Rohrsanierung 2019",
       "type": {
         "annuity": "Annuität",
-        "equal_principal": "Ratentilgung",
-        "fixed_payment": "Feste Rate"
+        "equal_principal": "Ratentilgung"
       },
       "reference": {
         "euribor_12m": "12-Monats-Euribor",
@@ -1898,8 +1898,7 @@
         "forecastTotal": "Gesamt",
         "forecastRule": {
           "annuity": "Das Finanzierungsentgelt wird bei jeder Zinsanpassung neu berechnet, sodass das Darlehen zum Laufzeitende getilgt ist.",
-          "equal_principal": "Ab den Zinsanpassungen ist die Tilgung der Anteil geteilt durch die restlichen Monate, der Zins kommt hinzu.",
-          "fixed_payment": "Das Finanzierungsentgelt bleibt gleich, bis der Anteil getilgt ist."
+          "equal_principal": "Ab den Zinsanpassungen ist die Tilgung der Anteil geteilt durch die restlichen Monate, der Zins kommt hinzu."
         },
         "paidSum": "Tilgung + Zins insgesamt",
         "interestSum": "Zins insgesamt",

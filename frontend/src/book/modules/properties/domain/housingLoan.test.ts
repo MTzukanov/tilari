@@ -112,6 +112,11 @@ describe('housing-company loans: reminders', () => {
     expect(loanWarnings([rated({ events: [{ date: '2026-01-15', kind: 'paid_off' }] })], asOf, true)).toEqual([])
     expect(loanWarnings([rated({ starts: '2026-10-01' })], asOf, true)).toEqual([])
     expect(loanWarnings([rated()], asOf, false)).toEqual([])
+    // A type no longer offered asks for the type to be picked again.
+    const certifiedNow = { certificates: [{ date: '2026-06-30', share_snt: 9_000_00, no_document: true as const }] }
+    expect(loanWarnings([rated({ ...certifiedNow, retired_type: 'fixed_payment' })], asOf, true)).toEqual([
+      { code: 'loan_type_retired', params: { loan: 'Putkiremontti' } },
+    ])
     // A share before the drawdown: the loan was drawn by then (the date given was a later tranche).
     expect(loanWarnings([rated({ starts: '2026-10-01', certificates: [{ date: '2025-12-31', share_snt: 9_000_00, no_document: true }] })], asOf, true)).toEqual([])
     expect(drawnOn(rated({ starts: '2026-10-01', certificates: [{ date: '2025-12-31', share_snt: 9_000_00 }] }))).toBe('2025-12-31')
@@ -366,23 +371,6 @@ describe('housing-company loans: the share ahead', () => {
     expect(rows.at(-1)!.closing_snt).toBe(0)
   })
 
-  it('a fixed payment stays until the share is cleared, past the end in the terms', () => {
-    const l = loan({
-      type: 'fixed_payment',
-      reference: 'fixed',
-      ends: '2026-07-31',
-      rates: [{ from: '2026-01-01', reference_pcm: 0 }],
-      charges: [{ from: '2026-01-01', amount_snt: 300_00 }],
-    })
-    const rows = loanForecast(l, pathTo('2026-05', 1_000_00))
-    expect(rows.map((r) => [r.month, r.paid_snt, r.closing_snt])).toEqual([
-      ['2026-06', 300_00, 700_00],
-      ['2026-07', 300_00, 400_00],
-      ['2026-08', 300_00, 100_00],
-      ['2026-09', 100_00, 0],
-    ])
-  })
-
   it('an interest-only period pays the interest; its end works the payment out again, as a reset does', () => {
     const l = loan({
       reference: 'fixed',
@@ -400,8 +388,8 @@ describe('housing-company loans: the share ahead', () => {
   })
 
   it('a later rahoitusvastike row is the company figure until the next reset', () => {
+    // No last due date: the charge in force runs the share to 0.
     const l = loan({
-      type: 'fixed_payment',
       reference: 'fixed',
       rates: [{ from: '2026-01-01', reference_pcm: 0 }],
       charges: [
@@ -429,8 +417,8 @@ describe('housing-company loans: the share ahead', () => {
     expect(loanForecast(loan(base), pathTo('2026-05', 0))).toEqual([])
     expect(loanForecast(loan({ ...base, ends: '2026-05-31' }), pathTo('2026-05', 1_000_00))).toEqual([])
     expect(loanForecast(loan({ ...base, events: [{ date: '2026-04-01', kind: 'paid_off' }] }), pathTo('2026-05', 1_000_00))).toEqual([])
-    // 5,00 a month never covers 3,8 % on 3 000,00: no end in sight.
-    expect(loanForecast(loan({ ...base, type: 'fixed_payment' }), pathTo('2026-05', 3_000_00))).toEqual([])
+    // No last due date, and 5,00 a month never covers 3,8 % on 3 000,00: no end in sight.
+    expect(loanForecast(loan(base), pathTo('2026-05', 3_000_00))).toEqual([])
     expect(loanForecast(loan(base), { loan_key: 'h1', months: [], payments_known: true, missing: null })).toEqual([])
   })
 })

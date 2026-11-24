@@ -923,6 +923,10 @@ correction would change the open year's income statement lines. The rental-objec
   - **A row no loan takes** reminds (`loan_invoice_unmatched`), once per name from its first month: a loan not
     entered, or several loans the names and amounts cannot tell apart.
   - Hoito and vesi rows are read but not used yet: they are for the forecast's hoitovastike trend.
+- **No fixed-payment type** (owner, 2026-11-24: no housing-company loan pays so): a loan is an annuity or a
+  tasalyhennys. A loan stored as `fixed_payment` reads as an annuity marked `retired_type`, warns
+  (`loan_type_retired`) and keeps the mark through other saves of the page until its card saves it with the type
+  picked; nothing is converted silently. Without a last due date the forecast pays the charge in force.
 - **Next steps:** the object-wide forecast (rents, hoitovastike, vacancy, projected IRR) and the interest check
   against the payments; both are in the step-4 plan's "Later".
 
