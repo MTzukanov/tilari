@@ -1573,7 +1573,11 @@
       "gain": "Cashflow + Tilgungen",
       "pct": "Rendite pro Jahr, % von noch nicht zurück",
       "pctHint": "Cashflow + Tilgungen im Verhältnis zum Geld, das in jedem Monat in den Objekten gebunden war: investiert und der Cashflow früherer Monate, der noch nicht zurück ist (Noch nicht zurück zu Monatsbeginn, Käufe des Monats eingerechnet). Ein angebrochenes Jahr ist auf ein Jahr hochgerechnet.",
-      "pctHintNoLoans": "Cashflow im Verhältnis zum Geld, das in jedem Monat in den Objekten gebunden war: investiert und der Cashflow früherer Monate, der noch nicht zurück ist (Noch nicht zurück zu Monatsbeginn, Käufe des Monats eingerechnet). Ein angebrochenes Jahr ist auf ein Jahr hochgerechnet."
+      "pctHintNoLoans": "Cashflow im Verhältnis zum Geld, das in jedem Monat in den Objekten gebunden war: investiert und der Cashflow früherer Monate, der noch nicht zurück ist (Noch nicht zurück zu Monatsbeginn, Käufe des Monats eingerechnet). Ein angebrochenes Jahr ist auf ein Jahr hochgerechnet.",
+      "view": "In der Tabelle",
+      "viewRepaid": "Tilgungen",
+      "viewPct": "Rendite % im Jahr",
+      "partYear": "{label} ({months} Mon.)"
     },
     "sold": {
       "title": "Verkaufte Objekte ({n})",

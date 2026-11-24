@@ -1573,7 +1573,11 @@
       "gain": "Kassavirta + lyhennykset",
       "pct": "Tuotto vuodessa, % palauttamatta olevasta",
       "pctHint": "Kassavirta + lyhennykset suhteessa rahaan, joka oli kiinni kohteissa kunakin kuukautena: sijoitettu ja aiempien kuukausien kassavirta, jota ei ole vielä saatu takaisin (Palauttamatta kuun alussa, kuun hankinnat mukana). Vajaa vuosi on laskettu vuodeksi.",
-      "pctHintNoLoans": "Kassavirta suhteessa rahaan, joka oli kiinni kohteissa kunakin kuukautena: sijoitettu ja aiempien kuukausien kassavirta, jota ei ole vielä saatu takaisin (Palauttamatta kuun alussa, kuun hankinnat mukana). Vajaa vuosi on laskettu vuodeksi."
+      "pctHintNoLoans": "Kassavirta suhteessa rahaan, joka oli kiinni kohteissa kunakin kuukautena: sijoitettu ja aiempien kuukausien kassavirta, jota ei ole vielä saatu takaisin (Palauttamatta kuun alussa, kuun hankinnat mukana). Vajaa vuosi on laskettu vuodeksi.",
+      "view": "Taulukossa",
+      "viewRepaid": "Lyhennykset",
+      "viewPct": "Tuotto % vuodessa",
+      "partYear": "{label} ({months} kk)"
     },
     "sold": {
       "title": "Myydyt kohteet ({n})",

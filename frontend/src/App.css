@@ -5445,6 +5445,12 @@ tr.tax-total td {
   margin: 0.4rem 0 1rem;
 }
 
+/* What the cash flow table shows; wraps on a phone. */
+.property-cash-view {
+  flex-wrap: wrap;
+  margin: 0 0 0.6rem;
+}
+
 .property-defaults {
   margin: 1.25rem 0;
   border: 1px solid var(--line);

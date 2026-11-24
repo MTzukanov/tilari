@@ -1573,7 +1573,11 @@
       "gain": "Cash flow + repayments",
       "pct": "Return a year, % of not yet recovered",
       "pctHint": "Cash flow + repayments against the money tied up in the objects each month: invested, and earlier months' cash flow not yet recovered (Not yet recovered at the month's start, the month's purchases included). A part year is counted as a year.",
-      "pctHintNoLoans": "Cash flow against the money tied up in the objects each month: invested, and earlier months' cash flow not yet recovered (Not yet recovered at the month's start, the month's purchases included). A part year is counted as a year."
+      "pctHintNoLoans": "Cash flow against the money tied up in the objects each month: invested, and earlier months' cash flow not yet recovered (Not yet recovered at the month's start, the month's purchases included). A part year is counted as a year.",
+      "view": "In the table",
+      "viewRepaid": "Repayments",
+      "viewPct": "Return % a year",
+      "partYear": "{label} ({months} mo)"
     },
     "sold": {
       "title": "Sold objects ({n})",

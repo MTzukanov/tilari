@@ -7,6 +7,19 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-24 - Properties page: the cash flow table shows one figure at a time (ADR-035)
+
+- Owner asked whether a year's repayment was really that low: the figure read was the cash flow + repayment row, and
+  the year's column had ten months (the bank lines ended a month and a half before the page's date). Now a switch
+  above the table (Kassavirta | Lyhennykset | Kassavirta + lyhennykset | Tuotto % vuodessa, the middle two only with
+  loans) puts that figure in every object's cells, with its summary row in bold; remembered in this browser
+  (`tilari.properties.cash.view`). A year the as-of date ends inside is labelled with its months ("2026 (10 kk)",
+  `monthsCovered`), its header hint ending at the as-of date.
+- Seen on the owner's book while checking (figures not here): a repayment counted as the rahoitusvastike less the
+  interest shrinks when a typed rate goes up and the charge stays. For a tasalyhennys loan the bank's repayment is
+  fixed, so the share likely falls faster than counted until the next certificate shows the gap. That is the
+  rahoitusvastike-vs-loan check still on the list.
+
 ## 2026-11-24 - Properties page: payments in the cash flow's months; the return on the money in (ADR-034, ADR-035)
 
 - Defect found on the owner's book (figures not here): `housingPayments` counted only the payee's own lines by

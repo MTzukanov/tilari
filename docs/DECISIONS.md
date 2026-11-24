@@ -971,5 +971,9 @@ correction would change the open year's income statement lines. The rental-objec
   result is not (it is what is measured). Each month weighs a twelfth (`YearCashFlow.money_in_snt`; the last 12 months'
   average in `Trailing12.money_in_snt`), so a year held in part gives a year's rate, the total column the average a
   year, and nothing counts after a sale. Without loans the row is the cash flow's alone. Price changes are not in it.
+- **One figure per object** (owner, 2026-11-24): a switch above the table puts the cash flow, the repayment, the two
+  together or the return in every object's cells (the return per object from its own `money_in_snt`); the summary rows
+  stay, the one shown in bold. A year the as-of date ends inside says how many months it has, so a part year is not
+  read as a whole one.
 - **Later:** a payback month per object; a raise or other costs per object; the own bank loans; a forecast on the
   object's own page.

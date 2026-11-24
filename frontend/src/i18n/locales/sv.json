@@ -1573,7 +1573,11 @@
       "gain": "Kassaflöde + amorteringar",
       "pct": "Avkastning per år, % av ej återfått",
       "pctHint": "Kassaflöde + amorteringar i förhållande till pengarna bundna i objekten varje månad: investerat och tidigare månaders kassaflöde som ännu inte kommit tillbaka (Ej återfått vid månadens början, månadens köp inräknade). Ett ofullständigt år räknas som ett år.",
-      "pctHintNoLoans": "Kassaflöde i förhållande till pengarna bundna i objekten varje månad: investerat och tidigare månaders kassaflöde som ännu inte kommit tillbaka (Ej återfått vid månadens början, månadens köp inräknade). Ett ofullständigt år räknas som ett år."
+      "pctHintNoLoans": "Kassaflöde i förhållande till pengarna bundna i objekten varje månad: investerat och tidigare månaders kassaflöde som ännu inte kommit tillbaka (Ej återfått vid månadens början, månadens köp inräknade). Ett ofullständigt år räknas som ett år.",
+      "view": "I tabellen",
+      "viewRepaid": "Amorteringar",
+      "viewPct": "Avkastning % per år",
+      "partYear": "{label} ({months} mån)"
     },
     "sold": {
       "title": "Sålda objekt ({n})",
