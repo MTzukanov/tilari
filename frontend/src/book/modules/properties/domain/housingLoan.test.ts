@@ -24,7 +24,6 @@ import {
   rowAt,
   shareAt,
   repaidMonths,
-  splitByWeight,
   vastikeAhead,
   vastikeYears,
   type PaymentUnits,
@@ -33,7 +32,7 @@ import { skipDocument } from './reminders'
 import type { HousingLoan, LoanMonth, LoanPath, PropertyDoc, RateEstimates } from './types'
 
 function loan(extra: Partial<HousingLoan> = {}): HousingLoan {
-  return { key: 'h1', name: 'Putkiremontti', starts: '2020-01-01', type: 'annuity', reference: 'euribor_12m', margin_pcm: 800, ...extra }
+  return { key: 'h1', name: 'Putkiremontti', starts: '2020-01-01', ends: '2044-12-31', type: 'annuity', reference: 'euribor_12m', margin_pcm: 800, ...extra }
 }
 
 describe('housing-company loans: what a loan holds on a day', () => {
@@ -202,9 +201,15 @@ describe('housing-company loans: a loan with no rate row, a share before the dra
 })
 
 describe('housing-company loans: the share month by month', () => {
-  /** 3 % a year (2,2 % + 0,8 %), 100,00 € a month from January 2025, 10 000,00 € at the end of January. */
+  /**
+   * A tasalyhennys at 3 % a year (2,2 % + 0,8 %) to December 2034, 10 000,00 € at the end of January
+   * 2025, 100,00 € rahoitusvastike a month: the repayment is the share over the months left, whatever
+   * was paid.
+   */
   const base = () =>
     loan({
+      type: 'equal_principal',
+      ends: '2034-12-31',
       margin_pcm: 800,
       rates: [{ from: '2024-03-01', reference_pcm: 2200 }],
       charges: [{ from: '2025-01-01', amount_snt: 100_00 }],
@@ -213,35 +218,53 @@ describe('housing-company loans: the share month by month', () => {
   const each = (units: Record<string, number> = {}, fallback = 1): PaymentUnits => ({ units: (m) => units[m] ?? fallback, known: true })
   const view = (p: Pick<LoanPath, 'months'>) => p.months.map((m) => [m.month, m.opening_snt, m.interest_snt, m.principal_snt, m.closing_snt])
 
-  it('runs from a certificate: interest on the share at the start of the month, the rest of the payment lowers it', () => {
+  it('runs from a certificate on the terms: interest on the share at the start of the month, the share over the months left repaid', () => {
     const path = loanPath(base(), { payments: each(), from: '2025-01', to: '2025-04' })
     expect(view(path)).toEqual([
-      // The certificate's month, its opening worked back: (1 000 000 + 10 000) / (1 + 0,03 / 12).
-      ['2025-01', 1_007_481, 2_519, 7_481, 1_000_000],
-      ['2025-02', 1_000_000, 2_500, 7_500, 992_500],
-      ['2025-03', 992_500, 2_481, 7_519, 984_981],
-      ['2025-04', 984_981, 2_462, 7_538, 977_443],
+      // The certificate's month worked back: 120 months left, so 1 000 000 x 120 / 119.
+      ['2025-01', 1_008_403, 2_521, 8_403, 1_000_000],
+      // 119 months left from February: 8 403 a month, held as the bank's instalment is.
+      ['2025-02', 1_000_000, 2_500, 8_403, 991_597],
+      ['2025-03', 991_597, 2_479, 8_403, 983_194],
+      ['2025-04', 983_194, 2_458, 8_403, 974_791],
     ])
-    expect(path.months[0].certificate).toEqual({ date: '2025-01-31', share_snt: 10_000_00, gap_snt: null, implied_pcm: null })
+    expect(path.months[0].certificate).toEqual({ date: '2025-01-31', share_snt: 10_000_00, gap_snt: null })
+    // The rahoitusvastike paid is kept for the cash flow, apart from the share.
     expect(path.months.every((m) => m.rate_pcm === 3000 && m.paid_snt === 100_00)).toBe(true)
   })
 
-  it('a later certificate fits the months between: the gap comes off their interest by weight, to the cent', () => {
-    const l = base()
-    l.certificates!.push({ date: '2025-04-30', share_snt: 977_000, voucher_id: 9 })
-    const path = loanPath(l, { payments: each(), from: '2025-01', to: '2025-05' })
-    // Computed 977 443, certified 977 000: 443 taken from 2 500 / 2 481 / 2 462 as 149 / 148 / 146.
-    expect(view(path).slice(1, 4)).toEqual([
-      ['2025-02', 1_000_000, 2_351, 7_649, 992_351],
-      ['2025-03', 992_351, 2_333, 7_667, 984_684],
-      ['2025-04', 984_684, 2_316, 7_684, 977_000],
+  it('an annuity repays the level payment that clears the share by the last due date, less the interest; a new rate works it out again', () => {
+    const l = loan({
+      ends: '2034-12-31',
+      certificates: [{ date: '2025-01-31', share_snt: 10_000_00 }],
+      rates: [
+        { from: '2024-07-01', reference_pcm: 2200 },
+        { from: '2025-07-01', reference_pcm: 4200 },
+      ],
+    })
+    const path = loanPath(l, { payments: each(), from: '2025-01', to: '2025-08' })
+    const pays = path.months.slice(1).map((m) => m.interest_snt + m.principal_snt)
+    // 97,26 a month at 3 %, 106,37 at 5 % from July: the interest takes more, the repayment falls.
+    expect(pays).toEqual([9_726, 9_726, 9_726, 9_726, 9_726, 10_637, 10_637])
+    expect(view(path).slice(5)).toEqual([
+      ['2025-06', 970_988, 2_427, 7_299, 963_689],
+      ['2025-07', 963_689, 4_015, 6_622, 957_067],
+      ['2025-08', 957_067, 3_988, 6_649, 950_418],
     ])
-    // 7 000 of interest on 2 977 035 of opening shares is 2,822 % a year.
-    expect(path.months[3].certificate).toEqual({ date: '2025-04-30', share_snt: 977_000, voucher_id: 9, gap_snt: 443, implied_pcm: 2822 })
-    expect(path.months[4]).toMatchObject({ opening_snt: 977_000, interest_snt: 2_443 })
+    expect(path.months[0]).toMatchObject({ opening_snt: 1_007_208, interest_snt: 2_518, principal_snt: 7_208 })
   })
 
-  it('a month without a payment leaves the share; a catch-up pays two; unknown payments count each due month', () => {
+  it('a later certificate restarts the share from what it certifies, its month keeping the gap', () => {
+    const l = base()
+    l.certificates!.push({ date: '2025-04-30', share_snt: 974_000, voucher_id: 9 })
+    const path = loanPath(l, { payments: each(), from: '2025-01', to: '2025-05' })
+    // Computed 974 791, certified 974 000: the path goes on from 974 000, 116 months left.
+    expect(path.months[3]).toMatchObject({ month: '2025-04', principal_snt: 8_403, closing_snt: 974_000 })
+    expect(path.months[3].certificate).toEqual({ date: '2025-04-30', share_snt: 974_000, voucher_id: 9, gap_snt: 791 })
+    expect(view(path)[4]).toEqual(['2025-05', 974_000, 2_435, 8_397, 965_603])
+  })
+
+  it('a month without a payment still repays the share; a catch-up pays two; unknown payments count each due month', () => {
     const missed = loanPath(base(), { payments: each({ '2025-03': 0, '2025-04': 2 }), from: '2025-01', to: '2025-04' })
     expect(missed.months.map((m) => [m.month, m.payments, m.paid_snt])).toEqual([
       ['2025-01', 1, 100_00],
@@ -249,7 +272,7 @@ describe('housing-company loans: the share month by month', () => {
       ['2025-03', 0, 0],
       ['2025-04', 2, 200_00],
     ])
-    expect(missed.months[2]).toMatchObject({ principal_snt: -2_481, closing_snt: 994_981 })
+    expect(view(missed)).toEqual(view(loanPath(base(), { payments: each(), from: '2025-01', to: '2025-04' })))
     const unknown = loanPath(base(), { payments: { units: () => 0, known: false }, from: '2025-01', to: '2025-02' })
     expect(unknown.payments_known).toBe(false)
     expect(unknown.months.map((m) => m.paid_snt)).toEqual([100_00, 100_00])
@@ -257,7 +280,7 @@ describe('housing-company loans: the share month by month', () => {
 
   it('runs back from the first certificate to the later of the loan\'s start, the purchase and the first charge', () => {
     const l = base()
-    l.certificates = [{ date: '2025-03-31', share_snt: 984_981 }]
+    l.certificates = [{ date: '2025-03-31', share_snt: 983_194 }]
     const path = loanPath(l, { payments: each(), from: '2024-06', to: '2025-03' })
     expect(path.months.map((m) => [m.month, m.backward ?? false])).toEqual([
       ['2025-01', true],
@@ -265,6 +288,8 @@ describe('housing-company loans: the share month by month', () => {
       ['2025-03', false],
     ])
     expect(path.months[1].closing_snt).toBe(path.months[2].opening_snt)
+    // Worked back on the same terms: the months worked forwards, to the cent.
+    expect(path.months.map((m) => m.opening_snt)).toEqual([1_008_403, 1_000_000, 991_597])
   })
 
   it('an extra repayment lowers the share in its month; a payoff ends the path at 0', () => {
@@ -274,17 +299,34 @@ describe('housing-company loans: the share month by month', () => {
       { date: '2025-03-20', kind: 'paid_off' },
     ]
     const path = loanPath(l, { payments: each(), from: '2025-01', to: '2025-06' })
-    expect(path.months.map((m) => [m.month, m.extra_snt, m.closing_snt])).toEqual([
-      ['2025-01', 0, 1_000_000],
-      ['2025-02', 1_000_00, 892_500],
-      ['2025-03', 884_731, 0],
+    // After the extra repayment the instalment is worked out again: 891 597 over 118 months, 7 556.
+    expect(path.months.map((m) => [m.month, m.principal_snt, m.extra_snt, m.closing_snt])).toEqual([
+      ['2025-01', 8_403, 0, 1_000_000],
+      ['2025-02', 8_403, 1_000_00, 891_597],
+      ['2025-03', 7_556, 884_041, 0],
     ])
   })
 
-  it('splits a gap by weight in whole cents that add up, a negative one too', () => {
-    expect(splitByWeight(443, [2_500, 2_481, 2_462])).toEqual([149, 148, 146])
-    expect(splitByWeight(-10, [1, 1, 1])).toEqual([-4, -3, -3])
-    expect(splitByWeight(5, [0, 0])).toEqual([3, 2])
+  it('an interest-only period repays nothing; after it the share is spread over the months left', () => {
+    const path = loanPath({ ...base(), grace: [{ from: '2025-02-01', to: '2025-03-31' }] }, { payments: each(), from: '2025-01', to: '2025-04' })
+    expect(view(path).slice(1)).toEqual([
+      ['2025-02', 1_000_000, 2_500, 0, 1_000_000],
+      ['2025-03', 1_000_000, 2_500, 0, 1_000_000],
+      // 117 months left from April.
+      ['2025-04', 1_000_000, 2_500, 8_547, 991_453],
+    ])
+  })
+
+  it('without a last due date nothing is repaid, and the loan asks for one', () => {
+    const { ends: _ends, ...undated } = base()
+    const path = loanPath(undated, { payments: each(), from: '2025-01', to: '2025-03' })
+    expect(path.months.map((m) => [m.principal_snt, m.closing_snt])).toEqual([
+      [0, 1_000_000],
+      [0, 1_000_000],
+      [0, 1_000_000],
+    ])
+    const certified = { ...undated, certificates: [{ date: '2025-01-31', share_snt: 1_000_000, no_document: true as const }] }
+    expect(loanWarnings([certified], '2025-03-31', true).map((w) => w.code)).toContain('loan_ends_missing')
   })
 
   it('payments missing: due months not paid by the as-of month, made up for by a later catch-up', () => {
@@ -332,8 +374,8 @@ describe('housing-company loans: the share ahead', () => {
     expect(annuityPayment(500_00, 12_000, 1)).toBe(505_00)
   })
 
-  it('an annuity pays its charge until the rate reset, then what clears the share by its end', () => {
-    // Reset every 6 months from January: the charge in June, the worked-out payment from July, the rest in December.
+  it('an annuity\'s share follows its terms from the first month; it pays its charge until the rate reset, then the terms\' payment', () => {
+    // Reset every 6 months from January: the charge in June, the terms' payment from July, the rest in December.
     const l = loan({
       reference: 'fixed',
       margin_pcm: 0,
@@ -344,7 +386,9 @@ describe('housing-company loans: the share ahead', () => {
     })
     const rows = loanForecast(l, pathTo('2026-05', 1_200_00))
     expect(rows.map((r) => r.month)).toEqual(['2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12'])
-    expect(pays(rows)).toEqual([50_00, 191_67, 191_67, 191_67, 191_67, 191_67, 191_65])
+    expect(pays(rows)).toEqual([50_00, 171_43, 171_43, 171_43, 171_43, 171_43, 171_42])
+    // At 0 % 1 200,00 over the 7 months left, from June: the charge paid does not move the share.
+    expect(rows.map((r) => r.principal_snt)).toEqual([171_43, 171_43, 171_43, 171_43, 171_43, 171_43, 171_42])
     expect(rows.at(-1)!.closing_snt).toBe(0)
     expect(rows.every((r) => r.forecast)).toBe(true)
   })
@@ -382,13 +426,12 @@ describe('housing-company loans: the share ahead', () => {
       charges: [{ from: '2026-01-01', amount_snt: 50_00 }],
     })
     const rows = loanForecast(l, pathTo('2026-05', 1_200_00))
-    // Nothing in the grace months; from September 1 200,00 over 9 months; January's reset 666,64 over 5.
-    expect(pays(rows)).toEqual([0, 0, 0, 133_34, 133_34, 133_34, 133_34, 133_33, 133_33, 133_33, 133_33, 133_32])
+    // Nothing in the grace months; from September 1 200,00 over 9 months, the last month what is left.
+    expect(pays(rows)).toEqual([0, 0, 0, 133_34, 133_34, 133_34, 133_34, 133_34, 133_34, 133_34, 133_34, 133_28])
     expect(rows.at(-1)).toMatchObject({ month: '2027-05', closing_snt: 0 })
   })
 
   it('a later rahoitusvastike row is the company figure until the next reset', () => {
-    // No last due date: the charge in force runs the share to 0.
     const l = loan({
       reference: 'fixed',
       rates: [{ from: '2026-01-01', reference_pcm: 0 }],
@@ -397,7 +440,10 @@ describe('housing-company loans: the share ahead', () => {
         { from: '2026-07-01', amount_snt: 200_00 },
       ],
     })
-    expect(pays(loanForecast(l, pathTo('2026-05', 500_00)))).toEqual([100_00, 200_00, 200_00])
+    const rows = loanForecast(l, pathTo('2026-05', 500_00))
+    // June to December the charges, January's reset the terms: 500,00 over the 223 months to 2044 at 0 %.
+    expect(pays(rows).slice(0, 8)).toEqual([100_00, 200_00, 200_00, 200_00, 200_00, 200_00, 200_00, 2_25])
+    expect(rows.slice(0, 8).every((r) => r.principal_snt === 2_25)).toBe(true)
   })
 
   it('a loan with no rate row takes the estimate at every reset from its drawdown; with no estimate there is none', () => {
@@ -411,20 +457,20 @@ describe('housing-company loans: the share ahead', () => {
     expect(loanForecast({ ...l, reference: 'fixed' }, pathTo('2026-05', 1_200_00), { rates })).toEqual([])
   })
 
-  it('none without a rate, a share or a charge that clears it, once paid off, or after the end', () => {
+  it('none without a rate, a share or a last due date after the path, or once paid off', () => {
     const base = { rates: [{ from: '2026-01-01', reference_pcm: 3000 }], charges: [{ from: '2026-01-01', amount_snt: 5_00 }] }
     expect(loanForecast(loan({ ...base, rates: [] }), pathTo('2026-05', 1_000_00))).toEqual([])
     expect(loanForecast(loan(base), pathTo('2026-05', 0))).toEqual([])
     expect(loanForecast(loan({ ...base, ends: '2026-05-31' }), pathTo('2026-05', 1_000_00))).toEqual([])
     expect(loanForecast(loan({ ...base, events: [{ date: '2026-04-01', kind: 'paid_off' }] }), pathTo('2026-05', 1_000_00))).toEqual([])
-    // No last due date, and 5,00 a month never covers 3,8 % on 3 000,00: no end in sight.
-    expect(loanForecast(loan(base), pathTo('2026-05', 3_000_00))).toEqual([])
+    // No last due date: no terms to follow.
+    expect(loanForecast(loan({ ...base, ends: undefined }), pathTo('2026-05', 3_000_00))).toEqual([])
     expect(loanForecast(loan(base), { loan_key: 'h1', months: [], payments_known: true, missing: null })).toEqual([])
   })
 })
 
 describe('housing-company loans: the figures that use the share', () => {
-  /** 3 % a year, 100,00 € a month from January 2025, 10 000,00 € at the end of January (as above). */
+  /** An annuity to 2044 at 3 % a year, 100,00 € a month from January 2025, 10 000,00 € at the end of January. */
   const first = () =>
     loan({
       rates: [{ from: '2024-03-01', reference_pcm: 2200 }],
@@ -447,11 +493,11 @@ describe('housing-company loans: the figures that use the share', () => {
   it('the share at a month\'s end: 0 before the loan and from its payoff, the path\'s last after it, unknown before it', () => {
     const l = first()
     const path = follow(l)
-    expect(shareAt(l, path, '2025-03')).toBe(984_981)
+    expect(shareAt(l, path, '2025-03')).toBe(993_866)
     expect(shareAt(l, path, '2019-12')).toBe(0)
     // Drawn in 2020, followed from January 2025: before that the share is not known.
     expect(shareAt(l, path, '2024-12')).toBeNull()
-    expect(shareAt(l, path, '2025-08')).toBe(977_443)
+    expect(shareAt(l, path, '2025-08')).toBe(990_788)
     expect(shareAt(l, undefined, '2025-03')).toBeNull()
     expect(shareAt(loan({ ...l, events: [{ date: '2025-03-10', kind: 'paid_off' }] }), path, '2025-06')).toBe(0)
   })
@@ -459,27 +505,27 @@ describe('housing-company loans: the figures that use the share', () => {
   it('the object\'s share sums its loans, and is not known when one loan\'s is not', () => {
     const loans = [first(), second()]
     const paths = loans.map(follow)
-    expect(housingShare(loans, paths, '2025-02')).toBe(992_500)
-    expect(housingShare(loans, paths, '2025-04')).toBe(977_443 + 496_250)
+    expect(housingShare(loans, paths, '2025-02')).toBe(996_937)
+    expect(housingShare(loans, paths, '2025-04')).toBe(990_788 + 498_451)
     expect(housingShare(loans, paths.slice(0, 1), '2025-04')).toBeNull()
     expect(housingShare([], [], '2025-04')).toBeNull()
     expect([...housingShareMonths(loans, paths)]).toEqual([
       ['2025-01', 1_000_000],
-      ['2025-02', 992_500],
-      ['2025-03', 984_981 + 500_000],
-      ['2025-04', 977_443 + 496_250],
+      ['2025-02', 996_937],
+      ['2025-03', 993_866 + 500_000],
+      ['2025-04', 990_788 + 498_451],
     ])
   })
 
-  it('splits the rahoitusvastike paid in a fiscal year into interest and repayment; a month counts where its first day falls', () => {
+  it('sums the rahoitusvastike paid in a fiscal year and the terms\' interest and repayment; a month counts where its first day falls', () => {
     const paths = [follow(first())]
     const year = [{ starts: '2025-01-01', ends: '2025-12-31' }]
     expect(vastikeYears(paths, year, '2025-01', '2025-04')).toEqual([
-      { starts: '2025-01-01', paid_snt: 400_00, interest_snt: 2_519 + 2_500 + 2_481 + 2_462, principal_snt: 7_481 + 7_500 + 7_519 + 7_538 },
+      { starts: '2025-01-01', paid_snt: 400_00, interest_snt: 2_508 + 2_500 + 2_492 + 2_485, principal_snt: 3_055 + 3_063 + 3_071 + 3_078 },
     ])
     // Followed from February, to the as-of month March.
     expect(vastikeYears(paths, year, '2025-02', '2025-03')).toEqual([
-      { starts: '2025-01-01', paid_snt: 200_00, interest_snt: 2_500 + 2_481, principal_snt: 7_500 + 7_519 },
+      { starts: '2025-01-01', paid_snt: 200_00, interest_snt: 2_500 + 2_492, principal_snt: 3_063 + 3_071 },
     ])
     // A fiscal year from 15 March: March's first day is in the year before.
     const split = [
@@ -581,7 +627,7 @@ describe('housing-company loans: rate estimates, floors and ceilings (4d)', () =
 })
 
 describe('housing-company loans: the object\'s share on to the payoff', () => {
-  /** 0 % fixed, a charge a month from January 2026: the share falls by the charge. */
+  /** 0 % fixed, a charge a month from January 2026; the share falls evenly to the last due date. */
   const owing = (key: string, charge: number, extra: Partial<HousingLoan> = {}) =>
     loan({ key, reference: 'fixed', margin_pcm: 0, rates: [{ from: '2026-01-01', reference_pcm: 0 }], charges: [{ from: '2026-01-01', amount_snt: charge }], ...extra })
   const pathOf = (key: string, ...shares: [string, number][]): LoanPath => ({
@@ -590,7 +636,7 @@ describe('housing-company loans: the object\'s share on to the payoff', () => {
     payments_known: true,
     missing: null,
   })
-  const loans = [owing('h1', 100_00), owing('h2', 50_00)]
+  const loans = [owing('h1', 100_00, { ends: '2026-08-31' }), owing('h2', 50_00, { ends: '2026-07-31' })]
 
   it('sums each loan\'s estimate month by month, 0 once a loan is paid, to the month the share reaches 0', () => {
     const paths = [pathOf('h1', ['2026-05', 300_00]), pathOf('h2', ['2026-05', 100_00])]
@@ -605,17 +651,18 @@ describe('housing-company loans: the object\'s share on to the payoff', () => {
     const paths = [pathOf('h1', ['2026-05', 300_00], ['2026-06', 180_00]), pathOf('h2', ['2026-05', 100_00])]
     expect([...housingShareForecast(loans, paths, {}, '2026-05')]).toEqual([
       ['2026-06', 180_00 + 50_00],
-      ['2026-07', 80_00],
+      // 180,00 over the two months left.
+      ['2026-07', 90_00],
       ['2026-08', 0],
     ])
   })
 
   it('stops before a month a loan still owing has no estimate; an estimate gives one, a payoff ends it', () => {
-    const unrated = [owing('h1', 100_00), owing('h2', 50_00, { reference: 'euribor_12m', rates: [] })]
+    const unrated = [owing('h1', 100_00, { ends: '2026-08-31' }), owing('h2', 50_00, { ends: '2026-07-31', reference: 'euribor_12m', rates: [] })]
     const paths = [pathOf('h1', ['2026-05', 300_00]), pathOf('h2', ['2026-05', 100_00])]
     expect([...housingShareForecast(unrated, paths, {}, '2026-05')]).toEqual([])
     expect(housingShareForecast(unrated, paths, { euribor_12m: 0 }, '2026-05').get('2026-06')).toBe(250_00)
-    const paidOff = [owing('h1', 100_00), owing('h2', 50_00, { rates: [], events: [{ date: '2026-06-15', kind: 'paid_off' }] })]
+    const paidOff = [owing('h1', 100_00, { ends: '2026-08-31' }), owing('h2', 50_00, { rates: [], events: [{ date: '2026-06-15', kind: 'paid_off' }] })]
     expect([...housingShareForecast(paidOff, paths, {}, '2026-05')]).toEqual([
       ['2026-06', 200_00],
       ['2026-07', 100_00],
@@ -653,7 +700,8 @@ describe('housing-company loans: the estimates ahead (ADR-035)', () => {
       payments_known: true,
       missing: null,
     })
-    const paid = vastikeAhead([fixed('h1', 100_00), fixed('h2', 50_00)], [pathOf('h1', 300_00), pathOf('h2', 100_00)], {}, '2026-05')
+    const loans = [fixed('h1', 100_00, { ends: '2026-08-31' }), fixed('h2', 50_00, { ends: '2026-07-31' })]
+    const paid = vastikeAhead(loans, [pathOf('h1', 300_00), pathOf('h2', 100_00)], {}, '2026-05')
     // At 0 % all of it repays the shares.
     expect(['2026-06', '2026-07', '2026-08', '2026-09'].map(paid)).toEqual(
       [150_00, 150_00, 100_00, 0].map((v) => ({ paid_snt: v, principal_snt: v })),

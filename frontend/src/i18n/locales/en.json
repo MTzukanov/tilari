@@ -1244,9 +1244,9 @@
       "capexHint": "Change in acquisition cost. Negative = capital came back, e.g. a transfer-tax refund. The lines are listed below under the item.",
       "proceedsHint": "Money from the sale after sale costs",
       "housingInterest": "Company loan interest",
-      "housingInterestHint": "The interest on the loan share in the financing charge paid, worked out month by month",
+      "housingInterestHint": "The interest on the loan share by the loan's terms, worked out month by month",
       "housingPrincipal": "Company loan repaid",
-      "housingPrincipalHint": "The part of the financing charge paid that lowered the loan share. A month without a payment adds its interest to the share."
+      "housingPrincipalHint": "The repayment of the loan share by the loan's terms. It does not depend on the financing charge paid."
     },
     "eras": {
       "title": "Acquisition cost (balance-sheet items)",
@@ -1516,12 +1516,13 @@
       "loan_certificate_stale": "The loan share of the company loan {loan} is from a certificate dated {certificate}. Ask for a new property manager's certificate.",
       "loan_certificate_missing": "The certificate for the loan share on {certificate} of the company loan {loan} is missing.",
       "loan_charge_notice_missing": "The invoice or notice for the financing charge from {from} ({amount}/month) of the company loan {loan} is missing.",
-      "loan_payment_missing": "No payment to the housing company is booked for {count} months from {from} (company loan {loan}): the loan share did not fall for them.",
-      "loan_payment_missing_one": "No payment to the housing company is booked for the month {from} (company loan {loan}): the loan share did not fall.",
+      "loan_payment_missing": "No payment to the housing company is booked for {count} months from {from} (company loan {loan}): the financing charge is unpaid.",
+      "loan_payment_missing_one": "No payment to the housing company is booked for the month {from} (company loan {loan}): the financing charge is unpaid.",
       "loan_rate_missing": "The reference rate of the company loan {loan} was reset on {reset}: add the new reference rate.",
       "loan_rate_estimated": "No actual reference rate is given for the company loan {loan}: the share is counted by the rate estimates.",
       "loan_rate_none": "The company loan {loan} has no rate and no rate estimate: the share is counted without a reference rate. Add the rate or an estimate.",
       "loan_type_retired": "The company loan {loan} was stored as a fixed instalment, a type Tilari no longer uses: it is counted as an annuity. Pick the loan type on its card and save.",
+      "loan_ends_missing": "The company loan {loan} has no last due date: its repayment cannot be worked out from its terms. Add it on the loan's card.",
       "loan_rahastoitu_expensed": "The financing charge of the company loan {loan} from {from} is capitalised but booked as a cost: in taxation it belongs to the shares' acquisition cost. Check with the auditor.",
       "loan_grace_ending": "Housing-company loan {loan}: the interest-only period ends {to}; the financing charge rises when repayments start.",
       "loan_charge_invoiced": "The housing company's invoices give the financing charge of the company loan {loan} as {amount}/month from {from}: add it to the loan's financing charges.",
@@ -1890,15 +1891,14 @@
         "gapNone": "computed matches",
         "gapMore": "computed {amount} more",
         "gapLess": "computed {amount} less",
-        "implied": "actual rate {rate}",
         "paymentsUnknown": "No monthly payments from this object to the housing company were found in the books, so the calculation assumes each month's financing charge was paid.",
         "forecast": "Estimate to the loan's end",
         "forecastMonth": "{month} (estimate)",
         "forecastYears": "Estimate by year",
         "forecastTotal": "Total",
         "forecastRule": {
-          "annuity": "The financing charge is worked out again at each rate reset so that the loan is paid off by the end of its term.",
-          "equal_principal": "From the rate resets on, the repayment is the share over the months left, with the interest on top."
+          "annuity": "Repayment and interest are the level payment that clears the loan by the end of its term. The financing charge is worked out again to it at each rate reset.",
+          "equal_principal": "The repayment is the share over the months left, with the interest on top. The financing charge is worked out again to it at each rate reset."
         },
         "paidSum": "Repaid + interest in all",
         "interestSum": "Interest in all",

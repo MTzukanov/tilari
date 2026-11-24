@@ -848,24 +848,31 @@ correction would change the open year's income statement lines. The rental-objec
   payments - a month's total over the regular amount in force, rounded, so a catch-up counts two and a small extra
   invoice nothing. They count in the months the cash flow has them (2026-11-24): on the payee's account also a line
   without a partner (a year-end accrual moving a payment made early to the month it is for, a correction moving one to
-  the object; the account's largest payee takes it) and another partner's line naming the payee's own reference. Each payment pays the rahoitusvastike in force for the month; interest is the share at the
-  month's start times reference + margin over twelve; the rest lowers the share, as do extra repayments, and a
-  payoff ends it. A certificate gives the share at its month's end. Before the first one the path runs backwards (to
-  the later of the loan's start, the purchase, the books' start and the first charge); between two, the computed
-  months are fitted to the later one - its gap, computed less certified, is taken from their interest by weight in
-  whole cents - and the raw gap and the rate the fitted interest implies stay on the certificate's month; after the
-  last one it runs to the as-of month. Without any payee found, each due month counts as paid, and the card says so.
+  the object; the account's largest payee takes it) and another partner's line naming the payee's own reference. Each payment pays the rahoitusvastike in force for the month.
+  **The share follows the loan's terms, never the payments** (owner, 2026-11-24, replacing "what is left of the
+  payment lowers the share" and the interest fitted between certificates): interest is the share at the month's
+  start times reference + margin over twelve; the repayment (`termsRepayment`) is none in an interest-only month or
+  without a last due date (`loan_ends_missing`), a tasalyhennys the share over the months left to the last due date,
+  an annuity the level payment that clears it by then less the interest, all of it in the last due month. The amount
+  is worked out from a month's opening share and holds, as a bank's instalment does, until an annuity's rate changes,
+  an interest-only period ends, a certificate or an extra repayment moves the share. Extra repayments lower the share
+  and a payoff ends it. A certificate gives the share at its month's end. Before the first one the path runs
+  backwards on the same terms (to the later of the loan's start, the purchase, the books' start and the first
+  charge); each later one restarts the path from the certified share, its month keeping the gap (computed less
+  certified); after the last one it runs to the as-of month. What was paid (`paid_snt`) stays on each month for the
+  cash flow and the check against the terms; a month without a payment still repays. Without any payee found, each
+  due month counts as paid, and the card says so.
 - **Its reminders:** due months the payments have not covered by the as-of month (counted on, so an early or a
-  catch-up payment settles it), a rate reset date passed with no rate row for it, and - as a note, since the ledger
+  catch-up payment settles it; the rahoitusvastike is owed, the share still falls), a rate reset date passed with no rate row for it, and - as a note, since the ledger
   books it so - a rahastoitu rahoitusvastike paid as a cost.
 - **A rate row on copies:** a rate row new on a loan card can be added to the same loan on other objects (its
   `group`) in the same save, each ticked by default.
 - **The share ahead** (`loanForecast`, 2026-11-18, the owner's ask ahead of the rest of the forecast work): a
   checkbox on the loan's chart runs it on dashed to the loan's end and sums those months by year. The rates are the
-  rows and then the latest held. The rahoitusvastike in force (or a later row of it) is paid until the next rate
-  reset or the end of an interest-only period; from there an annuity pays what clears the share by `ends`, a
-  tasalyhennys the share over the months left plus interest, each worked out again at every reset; a fixed payment
-  stays and runs the share to 0. The last month pays what is left. No forecast when the charge would never clear it.
+  rows and then the latest held. The share falls on the same terms as the path (2026-11-24), the amount worked out
+  from the path's last share. What is paid - for the cash flow ahead - is the rahoitusvastike in force (or a later row
+  of it) until the next rate reset or the end of an interest-only period, then the terms' repayment and interest;
+  the last month pays what is left. No forecast without a last due date after the path.
   Two more checkboxes add the interest, and the repayment with it, summed from the path's first month: on the
   share's scale, where a month's own figures would not show. The chart's choices are remembered in the browser.
 - **The share in the figures** (2026-11-19, step 4c): `ObjectSummary.housing_share_snt` is the share of all the
@@ -878,14 +885,16 @@ correction would change the open year's income statement lines. The rental-objec
 - **The portfolio's shares ahead** (owner, 2026-11-23): a checkbox over the Properties page's shares chart runs each
   held object's line and the total on, faded, to the last payoff: each loan's `loanForecast` on the portfolio's
   curves, as its Taloyhtiö tab draws it, summed per object (`housingShareForecast`); a sold object has none. The
-  total stops where an object still owing has no estimate (no rate row and no curve, or a charge that never clears
-  it), rather than leaving that object out. Only a tasalyhennys falls the same at any rate; an annuity's path bends
-  with the rate (its end does not move), and a fixed payment's end moves with it.
+  total stops where an object still owing has no estimate (no rate row and no curve, or no last due date), rather
+  than leaving that object out. Only a tasalyhennys falls the same at any rate; an annuity's path bends with the rate
+  (its end does not move).
 - **Sale costs are a percentage of the debt-free price** (owner, 2026-11-19: a broker's fee is): the selling price
   plus the share the buyer takes over. The break-even, the target price, the IRR's sale at the estimate or book value
   and the portfolio's IRRs count it; without loans nothing changes.
 - **The rahoitusvastike split** on Talous: per fiscal year the paths' interest and repayment over the months the
-  book follows, each month in the year its first day falls in; extra repayments are not rahoitusvastike.
+  book follows, each month in the year its first day falls in; extra repayments are not rahoitusvastike. Since
+  2026-11-24 they are the terms', so they need not add up to the rahoitusvastike paid; the check against the terms
+  (±10 % over 12 months, the owner's next step) shows the difference.
 - **No "Rahastoitu rahoitusvastike pääomana" view** (2026-11-19): built on the 4c branch and taken out before merging,
   as the owner asked if it added complexity - they have not seen a rahastoitu vastike, and the view needed a second
   pass over the figures with made-up cost rows. The checkbox on a charge and its warning stay.
@@ -926,7 +935,7 @@ correction would change the open year's income statement lines. The rental-objec
 - **No fixed-payment type** (owner, 2026-11-24: no housing-company loan pays so): a loan is an annuity or a
   tasalyhennys. A loan stored as `fixed_payment` reads as an annuity marked `retired_type`, warns
   (`loan_type_retired`) and keeps the mark through other saves of the page until its card saves it with the type
-  picked; nothing is converted silently. Without a last due date the forecast pays the charge in force.
+  picked; nothing is converted silently.
 - **Next steps:** the object-wide forecast (rents, hoitovastike, vacancy, projected IRR) and the interest check
   against the payments; both are in the step-4 plan's "Later".
 

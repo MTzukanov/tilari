@@ -7,6 +7,19 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-24 - Housing-company loans: the share follows the loan's terms (ADR-034)
+
+- Owner: the repayment must depend only on the loan's terms, never on the rahoitusvastike. Before, `loanPath`
+  counted payment - interest as repayment and fitted the interest between certificates, so a rate rise with the
+  charge unchanged showed as a smaller repayment than the certificates did (seen on the owner's book; figures not
+  here). Now `termsRepayment` (tasalyhennys: share / months left; annuity: level payment - interest),
+  held like a bank instalment until a rate change (annuity), a grace end, a certificate or an extra repayment;
+  certificates restart the path and keep the gap; a missed payment still repays. The forecast runs on the same terms;
+  only its cash side pays the charge in force until the next reset. No last due date: no repayment, and
+  `loan_ends_missing`. The loans test book's e2e figures were re-derived by an independent calculation.
+- Next (step 3 of `~/.claude/plans/housing-loan-terms.md`): the rahoitusvastike charged (+ ylimääräinen, new event)
+  against the terms' repayment + interest over 12 months, warning past ±10 %.
+
 ## 2026-11-24 - Housing-company loans: the fixed-payment type is gone (ADR-034)
 
 - Owner: no housing-company loan pays a fixed instalment, remove the option completely. First step of the plan to

@@ -122,6 +122,12 @@ describe('vastike invoices (4e)', () => {
     // Two payments, one invoice: the other pays the charge in force.
     expect(month('2026-02')).toMatchObject({ paid_snt: 95 * E + 80 * E, invoiced: true })
     expect(month('2026-03')).toMatchObject({ paid_snt: 80 * E })
-    expect(month('2026-01').principal_snt).toBe(95 * E - month('2026-01').interest_snt)
+    // The share follows the loan's terms, not what the invoices say was paid.
+    const terms = { payments: { units: () => 1, known: true }, from: '2025-01', to: '2026-03' }
+    const plain = loanPath(loan({ ends: '2035-12-31' }), terms)
+    const withInvoices = loanPath(loan({ ends: '2035-12-31' }), { ...terms, invoiced: { paid: paidByMonth(own), invoices: invoicesByMonth(own) } })
+    expect(withInvoices.months.map((m) => m.closing_snt)).toEqual(plain.months.map((m) => m.closing_snt))
+    // 10 000,00 over the 120 months from January 2026.
+    expect(withInvoices.months.find((m) => m.month === '2026-01')!.principal_snt).toBe(8_333)
   })
 })

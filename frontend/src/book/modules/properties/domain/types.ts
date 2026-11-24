@@ -935,9 +935,9 @@ export type LoanMonth = {
   paid_snt: number
   /** Reference rate + margin in force (1/1000 %). */
   rate_pcm: number
-  /** Interest on the share; between two certificates, fitted so the path meets the later one. */
+  /** Interest on the share at the month's start at the rate in force. */
   interest_snt: number
-  /** What the payments left for the share: paid less interest. */
+  /** The repayment the loan's terms ask (owner, 2026-11-24): never from what was paid. */
   principal_snt: number
   /** Extra repayments of the month (events). */
   extra_snt: number
@@ -949,10 +949,10 @@ export type LoanMonth = {
   /** What was paid comes from the vastike invoices' rahoitus rows (4e), not from the charge in force. */
   invoiced?: true
   /**
-   * A certificate (its share at the month's end): with an earlier one, how far the computed path was
-   * from it (computed less certified, to the cent) and the rate the fitted months imply.
+   * A certificate (its share at the month's end, where the path goes on from): with an earlier one,
+   * how far the computed path was from it (computed less certified, to the cent).
    */
-  certificate?: { date: string; share_snt: number; voucher_id?: number; gap_snt: number | null; implied_pcm: number | null }
+  certificate?: { date: string; share_snt: number; voucher_id?: number; gap_snt: number | null }
 }
 
 /** A loan's share month by month (`loanPath`), and what the payments leave missing. */

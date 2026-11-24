@@ -1089,6 +1089,7 @@ describe('rental objects: housing-company loans', () => {
   const loan = (extra: Record<string, unknown> = {}) => ({
     name: 'Putkiremontti',
     starts: '2020-01-01',
+    ends: '2044-12-31',
     type: 'annuity',
     reference: 'euribor_12m',
     margin_pcm: 800,
@@ -1143,7 +1144,7 @@ describe('rental objects: housing-company loans', () => {
     expect(codes(CC.bundle)).toEqual(['loan_rate_none', 'loan_charge_notice_missing'])
   })
 
-  it('follows the share month by month from the payments to the housing company, and reminds of what they leave', async () => {
+  it('follows the share month by month on its terms, the payments to the housing company beside it, and reminds of what they leave', async () => {
     const { db } = await setUp()
     const doc = computeDetail(db, CC.bundle, { today: TODAY }).doc
     const stored = loan({
@@ -1236,10 +1237,12 @@ describe('rental objects: housing-company loans', () => {
     // Sale costs are a percentage of the debt-free price: the share's 3 % is still to be recovered.
     expect(detail.break_even!.price_snt).toBe(grossPriceFor(detail.summary.unrecovered_snt, costs, share))
     expect(detail.break_even!.price_snt).toBeGreaterThan(grossPriceFor(detail.summary.unrecovered_snt, costs))
-    // 2025: twelve payments of 80,00 split into the interest on the share and what repaid it.
+    // 2025: the terms' interest and repayment month by month, whatever the twelve payments of 80,00 paid.
     const y2025 = detail.years.find((y) => y.starts === '2025-01-01')!
-    expect(y2025.housing_interest_snt! + y2025.housing_principal_snt!).toBe(12 * 80 * E)
-    expect(y2025.housing_interest_snt).toBe(path.months.filter((m) => m.month.startsWith('2025')).reduce((s, m) => s + m.interest_snt, 0))
+    const months2025 = path.months.filter((m) => m.month.startsWith('2025'))
+    expect(y2025.housing_interest_snt).toBe(months2025.reduce((s, m) => s + m.interest_snt, 0))
+    expect(y2025.housing_principal_snt).toBe(months2025.reduce((s, m) => s + m.principal_snt, 0))
+    expect(y2025.housing_interest_snt! + y2025.housing_principal_snt!).not.toBe(12 * 80 * E)
     // An object without loans has no share and no split.
     const garage = computeDetail(db, CC.garage, { today: TODAY })
     expect(garage.summary.housing_share_snt).toBeNull()

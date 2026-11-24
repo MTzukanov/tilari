@@ -170,33 +170,70 @@ const dueIn = (loan: HousingLoan, month: string) => chargeAt(loan, monthEnd(mont
 /** A month's interest on `share` at `pcm` (1/1000 % a year), to the cent. */
 const interestOn = (share: number, pcm: number) => Math.round((share * pcm) / 1_200_000)
 
-/** `total` split by `weights` in whole cents (largest remainder): the parts add up to it exactly. */
-export function splitByWeight(total: number, weights: number[]): number[] {
-  const positive = weights.map((w) => Math.max(0, w))
-  const sum = positive.reduce((a, b) => a + b, 0)
-  const shares = sum > 0 ? positive.map((w) => w / sum) : weights.map(() => 1 / weights.length)
-  const sign = total < 0 ? -1 : 1
-  const exact = shares.map((w) => w * Math.abs(total))
-  const parts = exact.map(Math.floor)
-  let left = Math.abs(total) - parts.reduce((a, b) => a + b, 0)
-  const order = exact.map((x, i) => ({ i, rest: x - Math.floor(x) })).sort((a, b) => b.rest - a.rest || a.i - b.i)
-  for (const { i } of order) {
-    if (left <= 0) break
-    parts[i] += 1
-    left -= 1
+/** An interest-only month (lyhennysvapaa). */
+const inGrace = (loan: HousingLoan, month: string) => (loan.grace ?? []).some((g) => monthOf(g.from) <= month && month <= monthOf(g.to))
+
+/** The months from `month` to the loan's last due month, both counted; null without a last due date. */
+const monthsLeft = (loan: HousingLoan, month: string) => (loan.ends ? monthsBetween(month, monthOf(loan.ends)) + 1 : null)
+
+/** The repayment the terms ask, month after month in order (`termsRepayment`). */
+type TermsRepayment = { principal: (month: string, opening: number, pcm: number, interest: number) => number; restart: () => void }
+
+/**
+ * The repayment the loan's terms ask (ADR-034, owner 2026-11-24: the terms, never the
+ * rahoitusvastike), for months taken in order: none in an interest-only month or without a last due
+ * date; a tasalyhennys the share over the months left to the last due date; an annuity the level
+ * payment that clears the share by then at the month's rate, less the interest; from the last due
+ * month on, all of it. The amount is worked out from a month's opening share and then holds, as the
+ * bank's instalment does, until an annuity's rate changes, an interest-only period ends, or the share
+ * moves otherwise (`restart`: a certificate, an extra repayment).
+ */
+function termsRepayment(loan: HousingLoan): TermsRepayment {
+  /** A tasalyhennys's repayment, or an annuity's payment, and the rate it was worked out at. */
+  let worked: { amount: number; pcm: number } | null = null
+  return {
+    restart: () => {
+      worked = null
+    },
+    principal: (month, opening, pcm, interest) => {
+      const left = monthsLeft(loan, month)
+      if (left == null || opening <= 0 || inGrace(loan, month)) {
+        worked = null
+        return 0
+      }
+      if (left <= 1) return opening
+      if (!worked || (loan.type === 'annuity' && worked.pcm !== pcm)) {
+        worked = { amount: loan.type === 'equal_principal' ? Math.round(opening / left) : annuityPayment(opening, pcm, left), pcm }
+      }
+      return Math.min(opening, loan.type === 'equal_principal' ? worked.amount : worked.amount - interest)
+    },
   }
-  return parts.map((p) => p * sign)
 }
 
 /**
- * The loan's share month by month (ADR-034), from its certificates and the payments to the housing
- * company: each month pays the rahoitusvastike in force once per payment (each due month when
- * payments are not known), the interest is the share at the month's start times the rate, and what
- * is left of the payment lowers the share, as do extra repayments; a payoff ends it. A certificate
- * gives the share at its month's end. Before the first one the path runs backwards; between two, the
- * computed months are fitted to meet the later one - its gap, computed less certified, is taken from
- * their interest by weight - and the gap and the rate the fitted interest implies are kept on the
- * certificate's month. After the last one it runs on to `to`.
+ * The share at a month's start that the terms take down to `closing` (less `extra`): the month
+ * worked backwards, its amount worked out from that share. Without a repayment (interest-only, no last due date, the last due month or
+ * after) the share at the start is the closing and the extra.
+ */
+function termsOpening(loan: HousingLoan, month: string, closing: number, pcm: number, extra: number): number {
+  const left = monthsLeft(loan, month)
+  if (left == null || left <= 1 || inGrace(loan, month)) return closing + extra
+  if (loan.type === 'equal_principal') return Math.round(((closing + extra) * left) / (left - 1))
+  // closing + extra = opening x (1 + r - a), a the annuity factor of the months left.
+  const r = pcm / 1_200_000
+  const a = r === 0 ? 1 / left : r / (1 - (1 + r) ** -left)
+  return Math.round((closing + extra) / (1 + r - a))
+}
+
+/**
+ * The loan's share month by month (ADR-034), from its certificates and its terms: the interest is the
+ * share at the month's start times the rate, the repayment what the terms ask (`termsRepayment`), and
+ * extra repayments lower the share too; a payoff ends it. The rahoitusvastike paid never moves the
+ * share (owner, 2026-11-24): each month keeps it - the charge in force once per payment, each due
+ * month when payments are not known - for the cash flow and the check against the terms. A
+ * certificate gives the share at its month's end. Before the first one the path runs backwards on the
+ * same terms; each later one restarts it from the certified share, its month keeping the gap (computed
+ * less certified). After the last one it runs on to `to`.
  * `from`: the earliest month the book can follow (the object's purchase, the books' start). A loan with
  * no drawdown counts from it. Months before it are not the owner's: every due month there counts as
  * paid (by the one who owned the object then), so a certificate dated before the purchase rolls on to
@@ -238,32 +275,25 @@ export function loanPath(
     if (!invoices) return row
     return { ...row, paid_snt: (opts.invoiced!.paid.get(m) ?? 0) + due * Math.max(0, count - invoices), invoiced: true as const }
   }
+  const terms = termsRepayment(loan)
   const forward = (m: string, opening: number): LoanMonth => {
     const b = base(m)
     const interest = interestOn(opening, b.rate_pcm)
+    const principal = terms.principal(m, opening, b.rate_pcm, interest)
+    if (b.extra_snt) terms.restart()
     let extra = b.extra_snt
-    let closing = opening - (b.paid_snt - interest) - extra
+    let closing = opening - principal - extra
     // The share paid off: what was left goes with the payoff.
     if (paidOff && monthOf(paidOff) === m) {
       extra += closing
       closing = 0
     }
-    return { ...b, opening_snt: opening, interest_snt: interest, principal_snt: b.paid_snt - interest, extra_snt: extra, closing_snt: closing }
+    return { ...b, opening_snt: opening, interest_snt: interest, principal_snt: principal, extra_snt: extra, closing_snt: closing }
   }
   const backward = (m: string, closing: number): LoanMonth => {
     const b = base(m)
-    const opening = Math.round((closing + b.paid_snt + b.extra_snt) / (1 + b.rate_pcm / 1_200_000))
-    const principal = opening - closing - b.extra_snt
-    return { ...b, opening_snt: opening, interest_snt: b.paid_snt - principal, principal_snt: principal, closing_snt: closing }
-  }
-  /** Re-chains `rows` from `opening` after their interest changed. */
-  const rechain = (rows: LoanMonth[], opening: number) => {
-    for (const row of rows) {
-      row.opening_snt = opening
-      row.principal_snt = row.paid_snt - row.interest_snt
-      row.closing_snt = opening - row.principal_snt - row.extra_snt
-      opening = row.closing_snt
-    }
+    const opening = termsOpening(loan, m, closing, b.rate_pcm, b.extra_snt)
+    return { ...b, opening_snt: opening, interest_snt: interestOn(opening, b.rate_pcm), principal_snt: opening - closing - b.extra_snt, closing_snt: closing }
   }
 
   const rows: LoanMonth[] = []
@@ -276,38 +306,20 @@ export function loanPath(
     rows[i] = row
     closing = row.opening_snt
   }
-  rows[at(first)].certificate = { date: anchors[0][1].date, share_snt: anchors[0][1].share_snt, gap_snt: null, implied_pcm: null, ...voucherOf(anchors[0][1]) }
-  // Forwards, fitted between certificates.
-  for (let k = 1; k < anchors.length; k++) {
-    const [from, to] = [at(anchors[k - 1][0]), at(anchors[k][0])]
-    const span: LoanMonth[] = []
-    let opening = rows[from].closing_snt
-    for (let i = from + 1; i <= to; i++) {
-      const row = forward(keys[i], opening)
-      span.push(row)
-      opening = row.closing_snt
+  rows[at(first)].certificate = { date: anchors[0][1].date, share_snt: anchors[0][1].share_snt, gap_snt: null, ...voucherOf(anchors[0][1]) }
+  // Forwards; each later certificate restarts the share from what it certifies.
+  let opening = rows[at(first)].closing_snt
+  const certifiedIn = new Map(anchors.slice(1))
+  for (let i = at(first) + 1; i < keys.length; i++) {
+    const row = forward(keys[i], opening)
+    const certified = certifiedIn.get(keys[i])
+    if (certified) {
+      row.certificate = { date: certified.date, share_snt: certified.share_snt, gap_snt: row.closing_snt - certified.share_snt, ...voucherOf(certified) }
+      row.closing_snt = certified.share_snt
+      terms.restart()
     }
-    const certified = anchors[k][1]
-    const gap = span.at(-1)!.closing_snt - certified.share_snt
-    const parts = splitByWeight(gap, span.map((r) => r.interest_snt))
-    span.forEach((r, i) => (r.interest_snt -= parts[i]))
-    rechain(span, rows[from].closing_snt)
-    const openings = span.reduce((sum, r) => sum + r.opening_snt, 0)
-    const interest = span.reduce((sum, r) => sum + r.interest_snt, 0)
-    span.at(-1)!.certificate = {
-      date: certified.date,
-      share_snt: certified.share_snt,
-      gap_snt: gap,
-      implied_pcm: openings > 0 ? Math.round((interest * 1_200_000) / openings) : null,
-      ...voucherOf(certified),
-    }
-    span.forEach((r, i) => (rows[from + 1 + i] = r))
-  }
-  // On from the last certificate.
-  let opening = rows[at(anchors.at(-1)![0])].closing_snt
-  for (let i = at(anchors.at(-1)![0]) + 1; i < keys.length; i++) {
-    rows[i] = forward(keys[i], opening)
-    opening = rows[i].closing_snt
+    rows[i] = row
+    opening = row.closing_snt
   }
   return { loan_key: loan.key, months: rows.filter((r) => owned(r.month)), payments_known: known }
 }
@@ -341,7 +353,7 @@ export function paymentsMissing(loan: HousingLoan, payments: PaymentUnits, from:
 /** Months from `a` to `b` (`YYYY-MM`): 0 in the same month. */
 export const monthsBetween = (a: string, b: string) => (Number(b.slice(0, 4)) - Number(a.slice(0, 4))) * 12 + Number(b.slice(5, 7)) - Number(a.slice(5, 7))
 
-/** A forecast that has not cleared the share in this many months never will: there is none. */
+/** The longest an estimate runs, in months. */
 const FORECAST_MAX_MONTHS = 600
 
 /** The level payment that clears `share` in `months` at `pcm` (1/1000 % a year), to the cent. */
@@ -353,19 +365,17 @@ export function annuityPayment(share: number, pcm: number, months: number): numb
 }
 
 /**
- * The share's months after the path, to the loan's end (ADR-034): an estimate. The latest rate row
- * holds until the next rate reset (every `reset_months`, 12 when not known, from it); at each reset
- * after it the reference rate is the estimate (`estimate.rates`, the portfolio's for the loan's
- * reference; without one the latest row's), plus `estimate.shift_pcm` (the "+1 %-yks." view),
- * held between a floor and a ceiling in force. A fixed rate stays. The rahoitusvastike in
- * force - or a later row of it, the company's own figure - is paid until the next rate reset
- * or the end of an interest-only period;
- * from there an annuity pays what clears the share by `ends` and a tasalyhennys the share over the
- * months left plus the interest, both worked out again at each reset; without `ends` the charge in
- * force runs the share to 0. An interest-only month pays the interest; the last
- * month pays what is left. A loan with no rate row takes the estimate at every reset from its
- * drawdown (the path's first month without one). None without a path, a share left or a rate (a row
- * or an estimate), once paid off, or when the charge would never clear the share.
+ * The share's months after the path, to the loan's last due date (ADR-034): an estimate on the same
+ * terms as the path (`termsRepayment`, worked out from the path's last share). The latest rate row holds until the next rate reset (every
+ * `reset_months`, 12 when not known, from it); at each reset after it the reference rate is the
+ * estimate (`estimate.rates`, the portfolio's for the loan's reference; without one the latest row's),
+ * plus `estimate.shift_pcm` (the "+1 %-yks." view), held between a floor and a ceiling in force. A
+ * fixed rate stays. What is paid (`paid_snt`, for the cash flow ahead) is the rahoitusvastike in force
+ * - or a later row of it, the company's own figure - until the next rate reset or the end of an
+ * interest-only period, then the terms' repayment and interest; an interest-only month pays the
+ * interest, the last month what is left. A loan with no rate row takes the estimate at every reset
+ * from its drawdown (the path's first month without one). None without a path, a share left, a rate
+ * (a row or an estimate) or a last due date after the path, or once paid off.
  */
 export function loanForecast(loan: HousingLoan, path: LoanPath, estimate: RateEstimate = { rates: {} }): LoanMonth[] {
   const last = path.months.at(-1)
@@ -374,7 +384,7 @@ export function loanForecast(loan: HousingLoan, path: LoanPath, estimate: RateEs
   const estimated = estimateFor(loan, estimate.rates)
   if (!latest && estimated == null) return []
   const end = loan.ends ? monthOf(loan.ends) : null
-  if (end && end <= last.month) return []
+  if (!end || end <= last.month) return []
   const drawn = drawnOn(loan)
   const anchor = latest ? monthOf(latest.from) : drawn ? monthOf(drawn) : path.months[0].month
   const every = loan.reset_months ?? 12
@@ -385,30 +395,23 @@ export function loanForecast(loan: HousingLoan, path: LoanPath, estimate: RateEs
     const reference = (estimated ?? latest!.reference_pcm) + (estimate.shift_pcm ?? 0)
     return limitedReference(loan, m, reference) + loan.margin_pcm
   }
-  const inGrace = (m: string) => (loan.grace ?? []).some((g) => monthOf(g.from) <= m && m <= monthOf(g.to))
   const newCharge = (m: string) => (loan.charges ?? []).some((c) => monthOf(c.from) === m)
   const rows: LoanMonth[] = []
   let opening = last.closing_snt
-  let worked: { annuity: number; principal: number } | null = null
-  for (let m = addMonths(last.month, 1); rows.length < FORECAST_MAX_MONTHS; m = addMonths(m, 1)) {
+  const terms = termsRepayment(loan)
+  /** The company charges what the terms ask: from the first reset or interest-only end ahead, until a new charge row. */
+  let worked = false
+  for (let m = addMonths(last.month, 1); m <= end && rows.length < FORECAST_MAX_MONTHS; m = addMonths(m, 1)) {
     const rate = rateFor(m)
     const interest = interestOn(opening, rate)
+    const principal = terms.principal(m, opening, rate, interest)
     const since = monthsBetween(anchor, m)
-    const reset = (since >= 0 && since % every === 0) || (rows.length > 0 && inGrace(rows.at(-1)!.month) && !inGrace(m))
-    if (newCharge(m)) worked = null
-    if (end && reset && !inGrace(m)) {
-      const left = monthsBetween(m, end) + 1
-      worked = { annuity: annuityPayment(opening, rate, left), principal: Math.round(opening / left) }
-    }
-    let pay = inGrace(m)
-      ? interest
-      : worked
-        ? loan.type === 'annuity'
-          ? worked.annuity
-          : worked.principal + interest
-        : dueIn(loan, m)
+    const reset = (since >= 0 && since % every === 0) || (rows.length > 0 && inGrace(loan, rows.at(-1)!.month) && !inGrace(loan, m))
+    if (newCharge(m)) worked = false
+    if (reset) worked = true
+    let pay = inGrace(loan, m) ? interest : worked ? interest + principal : dueIn(loan, m)
     if (m === end || pay >= opening + interest) pay = opening + interest
-    const closing = opening - (pay - interest)
+    const closing = opening - principal
     rows.push({
       month: m,
       opening_snt: opening,
@@ -417,15 +420,15 @@ export function loanForecast(loan: HousingLoan, path: LoanPath, estimate: RateEs
       paid_snt: pay,
       rate_pcm: rate,
       interest_snt: interest,
-      principal_snt: pay - interest,
+      principal_snt: principal,
       extra_snt: 0,
       closing_snt: closing,
       forecast: true,
     })
-    if (closing <= 0) return rows
+    if (closing <= 0) break
     opening = closing
   }
-  return []
+  return rows
 }
 
 /**
@@ -534,8 +537,8 @@ export function vastikeAhead(
 }
 
 /**
- * The shares' repayment month by month as the paths follow them (the rahoitusvastike's part that
- * lowered them, unpaid months below 0; extra repayments are not rahoitusvastike), estimates left out.
+ * The shares' repayment month by month as the paths follow them, by the loans' terms (extra
+ * repayments are not in it), estimates left out.
  */
 export function repaidMonths(paths: LoanPath[]): Map<string, number> {
   const out = new Map<string, number>()
@@ -543,14 +546,14 @@ export function repaidMonths(paths: LoanPath[]): Map<string, number> {
   return out
 }
 
-/** A fiscal year's rahoitusvastike paid, all loans together, split by the paths into interest and repayment. */
+/** A fiscal year's rahoitusvastike paid, all loans together, and the interest and repayment the terms asked in it. */
 export type VastikeYear = { starts: string; paid_snt: number; interest_snt: number; principal_snt: number }
 
 /**
- * The rahoitusvastike paid in each fiscal year (ADR-034): the paths' months from `from` (the first the
- * book follows) to `through` (the as-of or sale month), each in the year its first day falls in. A
- * month left unpaid still has its interest, so its repayment is below 0. Extra repayments are not
- * rahoitusvastike and stay out. Only years with a month followed.
+ * The rahoitusvastike paid in each fiscal year (ADR-034), and the interest and repayment of the loans'
+ * terms: the paths' months from `from` (the first the book follows) to `through` (the as-of or sale
+ * month), each in the year its first day falls in. Paid and terms need not agree (owner, 2026-11-24).
+ * Extra repayments stay out. Only years with a month followed.
  */
 export function vastikeYears(paths: LoanPath[], periods: { starts: string; ends: string }[], from: string | null, through: string): VastikeYear[] {
   const years = new Map<string, VastikeYear>()
@@ -580,7 +583,7 @@ export function nextReset(loan: HousingLoan): string | null {
 
 /**
  * What the loans ask of the owner while the object is held, on `on` (the later of the as-of date and
- * the book's day): a type no longer offered to pick again, a running loan with no share, a newest share older than
+ * the book's day): a type no longer offered to pick again, no last due date, a running loan with no share, a newest share older than
  * `CERTIFICATE_STALE_MONTHS`, documents the rows have a place for but no voucher in (a
  * certificate's, a rahoitusvastike's notice), each skippable (ADR-030); with the paths
  * (`loanPath` + `paymentsMissing`), payments missing, a rate reset passed with no rate for it, and a
@@ -593,6 +596,8 @@ export function loanWarnings(loans: HousingLoan[], on: string, held: boolean, pa
   for (const loan of loans) {
     const path = paths.find((p) => p.loan_key === loan.key)
     if (loan.retired_type) out.push({ code: 'loan_type_retired', params: { loan: loan.name } })
+    // The terms' repayment runs to the last due date: without one, none is counted.
+    if (!loan.ends) out.push({ code: 'loan_ends_missing', params: { loan: loan.name } })
     if (path?.missing) {
       out.push({ code: 'loan_payment_missing', params: { loan: loan.name, count: path.missing.count, from_date: `${path.missing.from}-01` } })
     }

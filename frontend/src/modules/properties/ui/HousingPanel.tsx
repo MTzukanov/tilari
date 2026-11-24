@@ -224,7 +224,6 @@ function LoanMonths({
   const certificateText = (c: NonNullable<LoanMonth['certificate']>) => {
     const parts = [t('properties.housing.path.certificate', { date: formatDate(c.date), amount: formatCents(c.share_snt) })]
     if (c.gap_snt != null) parts.push(gapText(t, c.gap_snt))
-    if (c.implied_pcm != null) parts.push(t('properties.housing.path.implied', { rate: formatPcm(c.implied_pcm) }))
     return parts.join(' · ')
   }
   const tip = (i: number): PointTip => {

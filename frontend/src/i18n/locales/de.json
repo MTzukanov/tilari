@@ -1244,9 +1244,9 @@
       "capexHint": "Änderung der Anschaffungskosten. Negativ = Kapital floss zurück, z. B. Erstattung der Grunderwerbsteuer. Die Buchungen stehen unten beim Bilanzposten.",
       "proceedsHint": "Geld aus dem Verkauf nach Verkaufskosten",
       "housingInterest": "Zins Gesellschaftsdarlehen",
-      "housingInterestHint": "Der Zins auf den Darlehensanteil im gezahlten Finanzierungsentgelt, Monat für Monat berechnet",
+      "housingInterestHint": "Der Zins auf den Darlehensanteil nach den Darlehensbedingungen, Monat für Monat berechnet",
       "housingPrincipal": "Tilgung Gesellschaftsdarlehen",
-      "housingPrincipalHint": "Der Teil des gezahlten Finanzierungsentgelts, der den Darlehensanteil tilgte. Ein Monat ohne Zahlung erhöht den Anteil um den Zins."
+      "housingPrincipalHint": "Die Tilgung des Darlehensanteils nach den Darlehensbedingungen. Sie hängt nicht vom gezahlten Finanzierungsentgelt ab."
     },
     "eras": {
       "title": "Anschaffungskosten (Bilanzposten)",
@@ -1516,12 +1516,13 @@
       "loan_certificate_stale": "Der Darlehensanteil des Gesellschaftsdarlehens {loan} stammt aus einer Bescheinigung vom {certificate}. Eine neue Hausverwalterbescheinigung anfordern.",
       "loan_certificate_missing": "Die Bescheinigung zum Darlehensanteil vom {certificate} des Gesellschaftsdarlehens {loan} fehlt.",
       "loan_charge_notice_missing": "Die Rechnung oder Mitteilung zum Finanzierungsentgelt ab {from} ({amount}/Monat) des Gesellschaftsdarlehens {loan} fehlt.",
-      "loan_payment_missing": "Für {count} Monate ab {from} ist keine Zahlung an die Wohnungsgesellschaft gebucht (Gesellschaftsdarlehen {loan}): der Darlehensanteil sank für sie nicht.",
-      "loan_payment_missing_one": "Für den Monat {from} ist keine Zahlung an die Wohnungsgesellschaft gebucht (Gesellschaftsdarlehen {loan}): der Darlehensanteil sank nicht.",
+      "loan_payment_missing": "Für {count} Monate ab {from} ist keine Zahlung an die Wohnungsgesellschaft gebucht (Gesellschaftsdarlehen {loan}): das Finanzierungsentgelt ist unbezahlt.",
+      "loan_payment_missing_one": "Für den Monat {from} ist keine Zahlung an die Wohnungsgesellschaft gebucht (Gesellschaftsdarlehen {loan}): das Finanzierungsentgelt ist unbezahlt.",
       "loan_rate_missing": "Der Referenzzins des Gesellschaftsdarlehens {loan} wurde am {reset} angepasst: neuen Referenzzins hinzufügen.",
       "loan_rate_estimated": "Für das Gesellschaftsdarlehen {loan} ist kein tatsächlicher Referenzzins angegeben: der Anteil wird nach den Zinsannahmen berechnet.",
       "loan_rate_none": "Das Gesellschaftsdarlehen {loan} hat weder Zins noch Zinsannahme: der Anteil wird ohne Referenzzins berechnet. Zins oder Annahme hinzufügen.",
       "loan_type_retired": "Das Gesellschaftsdarlehen {loan} war als feste Rate gespeichert, eine Art, die Tilari nicht mehr verwendet: es wird als Annuität berechnet. Darlehensart auf seiner Karte wählen und speichern.",
+      "loan_ends_missing": "Dem Gesellschaftsdarlehen {loan} fehlt der letzte Fälligkeitstag: die Tilgung lässt sich nicht aus den Darlehensbedingungen berechnen. Auf der Karte des Darlehens ergänzen.",
       "loan_rahastoitu_expensed": "Das Finanzierungsentgelt des Gesellschaftsdarlehens {loan} ab {from} ist kapitalisiert, aber als Aufwand gebucht: steuerlich gehört es zu den Anschaffungskosten der Anteile. Mit dem Abschlussprüfer klären.",
       "loan_grace_ending": "Gesellschaftsdarlehen {loan}: die tilgungsfreie Zeit endet am {to}; das Finanzierungsentgelt steigt, wenn die Tilgung beginnt.",
       "loan_charge_invoiced": "Laut den Rechnungen der Wohnungsgesellschaft beträgt das Finanzierungsentgelt des Gesellschaftsdarlehens {loan} ab {from} {amount}/Monat: tragen Sie es beim Darlehen ein.",
@@ -1890,15 +1891,14 @@
         "gapNone": "Berechnung stimmt",
         "gapMore": "berechnet {amount} mehr",
         "gapLess": "berechnet {amount} weniger",
-        "implied": "tatsächlicher Zins {rate}",
         "paymentsUnknown": "In der Buchhaltung wurden keine monatlichen Zahlungen des Objekts an die Wohnungsgesellschaft gefunden; die Berechnung nimmt daher an, dass jedes monatliche Finanzierungsentgelt bezahlt wurde.",
         "forecast": "Schätzung bis Laufzeitende",
         "forecastMonth": "{month} (Schätzung)",
         "forecastYears": "Schätzung nach Jahren",
         "forecastTotal": "Gesamt",
         "forecastRule": {
-          "annuity": "Das Finanzierungsentgelt wird bei jeder Zinsanpassung neu berechnet, sodass das Darlehen zum Laufzeitende getilgt ist.",
-          "equal_principal": "Ab den Zinsanpassungen ist die Tilgung der Anteil geteilt durch die restlichen Monate, der Zins kommt hinzu."
+          "annuity": "Tilgung und Zins sind die gleichbleibende Rate, mit der das Darlehen zum Laufzeitende getilgt ist. Das Finanzierungsentgelt wird bei jeder Zinsanpassung darauf neu berechnet.",
+          "equal_principal": "Die Tilgung ist der Anteil geteilt durch die restlichen Monate, der Zins kommt hinzu. Das Finanzierungsentgelt wird bei jeder Zinsanpassung darauf neu berechnet."
         },
         "paidSum": "Tilgung + Zins insgesamt",
         "interestSum": "Zins insgesamt",
