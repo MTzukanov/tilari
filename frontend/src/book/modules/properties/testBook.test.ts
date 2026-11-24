@@ -94,7 +94,7 @@ function addParkingVastike(fx: PropertyFixture): void {
 }
 
 /**
- * The review cases on top of `LOANS`: estimates of the 12-month Euribor in the defaults; on Vanhatie 7 C 9 a
+ * The review cases on top of `LOANS`: an estimate of the 12-month Euribor in the defaults; on Vanhatie 7 C 9 a
  * tasalyhennys with no drawdown (counted from the purchase) and no rate row (counted on the estimate),
  * under a ceiling to the end of 2028; the sold flat's first share from the deed on its purchase voucher,
  * dated before the drawdown its certificate gives.
@@ -106,10 +106,7 @@ function addReviewCases(db: SqliteDb): void {
     db,
     {
       ...settings,
-      rate_forecast: [
-        { reference: 'euribor_12m', from: '2027-01-01', reference_pcm: 2400 },
-        { reference: 'euribor_12m', from: '2028-01-01', reference_pcm: 2800 },
-      ],
+      forecast: { euribor_12m_pcm: 2400 },
     },
     now,
   )
@@ -244,16 +241,18 @@ describe('testdb/tilari-properties-loans.kitsas', () => {
     const db = await SqliteDb.fromBytes(new Uint8Array(readFileSync(LOANS_FILE)))
     const p = computePortfolio(db, { today: TODAY })
     const flat = computeDetail(db, p.rows.find((r) => /Esimerkkikatu 1 A 1/.test(r.name))!.id, { today: TODAY })
-    expect(flat.housing.payments.every((m) => m.lines.length === 2 && m.units === 1)).toBe(true)
+    // One payment a month of two lines; the year-end accrual moves one from January 2024 to December, as the cash flow has it.
+    expect(flat.housing.payments.filter((m) => m.units !== 1).map((m) => [m.month, m.units, m.lines.length])).toEqual([['2024-01', 0, 3], ['2023-12', 2, 3]])
+    expect(flat.housing.payments.every((m) => m.units !== 1 || m.lines.length === 2)).toBe(true)
     expect(flat.housing.paths[0].months.every((m) => m.closing_snt > 0)).toBe(true)
     const old = computeDetail(db, p.rows.find((r) => /Vanhatie 7 C 9/.test(r.name))!.id, { today: TODAY })
     const [lift] = old.doc.housing_loans!
     expect(lift.starts).toBeUndefined()
     expect(lift.rates).toBeUndefined()
-    // Before the estimates begin, their first (2,4 %, under the 2,6 % ceiling), plus the margin.
+    // The estimate (2,4 %, under the 2,6 % ceiling), plus the margin.
     expect(old.housing.paths[0].months.at(-1)!.rate_pcm).toBe(2400 + 850)
     expect(old.warnings.map((w) => w.code)).toContain('loan_rate_estimated')
-    expect(p.settings.rate_forecast).toHaveLength(2)
+    expect(p.settings.forecast).toEqual({ euribor_12m_pcm: 2400 })
   })
 
   it('reads A 1\'s vastike invoices: the rahoitusvastike paid, a raise to take, a second loan\'s row no loan takes', async () => {

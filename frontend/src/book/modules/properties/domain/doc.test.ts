@@ -396,8 +396,16 @@ describe('housing-company loans', () => {
   })
 })
 
-describe('portfolio settings: reference rate estimates', () => {
-  it('keeps the curves by reference and day; a fixed rate has none, and a day is given once', () => {
+describe('portfolio settings: the estimates ahead (ADR-035)', () => {
+  it('keeps each estimate as a number for the whole period; empty ones are left out', () => {
+    const settings = normalizePortfolioSettings({ forecast: { euribor_12m_pcm: -100, raise_bp: 150, other_costs_months_x100: 0 } })
+    expect(settings.forecast).toEqual({ euribor_12m_pcm: -100, raise_bp: 150, other_costs_months_x100: 0 })
+    expect(normalizePortfolioSettings({ forecast: {} }).forecast).toBeUndefined()
+    expect(() => normalizePortfolioSettings({ forecast: { other_costs_months_x100: -1 } })).toThrow('invalid_field:forecast.other_costs_months_x100')
+    expect(() => normalizePortfolioSettings({ forecast: 2 })).toThrow('invalid_field:forecast')
+  })
+
+  it('carries a dated estimate of a book from before over as its newest row per Euribor; the rest are dropped', () => {
     const settings = normalizePortfolioSettings({
       rate_forecast: [
         { reference: 'euribor_12m', from: '2027-01-01', reference_pcm: 2000 },
@@ -405,21 +413,13 @@ describe('portfolio settings: reference rate estimates', () => {
         { reference: 'euribor_12m', from: '2026-01-01', reference_pcm: -100 },
       ],
     })
-    expect(settings.rate_forecast!.map((r) => `${r.reference} ${r.from} ${r.reference_pcm}`)).toEqual([
-      'euribor_12m 2026-01-01 -100',
-      'euribor_12m 2027-01-01 2000',
-      'euribor_3m 2026-01-01 1900',
-    ])
+    expect(settings.forecast).toEqual({ euribor_12m_pcm: 2000 })
+    expect(settings.rate_forecast).toBeUndefined()
+    // A typed estimate stands over the old row.
+    const typed = normalizePortfolioSettings({ forecast: { euribor_12m_pcm: 2500 }, rate_forecast: [{ reference: 'euribor_12m', from: '2027-01-01', reference_pcm: 2000 }] })
+    expect(typed.forecast).toEqual({ euribor_12m_pcm: 2500 })
     expect(() => normalizePortfolioSettings({ rate_forecast: [{ reference: 'fixed', from: '2026-01-01', reference_pcm: 1 }] })).toThrow(
       'invalid_field:rate_forecast[0].reference',
     )
-    expect(() =>
-      normalizePortfolioSettings({
-        rate_forecast: [
-          { reference: 'prime', from: '2026-01-01', reference_pcm: 1 },
-          { reference: 'prime', from: '2026-01-01', reference_pcm: 2 },
-        ],
-      }),
-    ).toThrow('invalid_field:rate_forecast[1].from')
   })
 })

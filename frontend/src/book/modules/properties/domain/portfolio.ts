@@ -1,5 +1,6 @@
 /** Loads ledger + stored documents and assembles the portfolio, one object, or the setup view. */
 import { getPeriods } from '../../../access'
+import { addMonths, monthKeys } from '../../../months'
 import { rentAccount, rentBalance, rentEnd, rentStart, vatWarnings, waterCharges, type RentLine } from './arrears'
 import { BookError } from '../../../errors'
 import { readTilariData, readTilariDataPrefix, writeTilariData } from '../../../kernel/tilariData'
@@ -31,8 +32,22 @@ import {
 } from './deposits'
 import { listNoteVouchers } from './documents'
 import {
+  DEFAULT_OTHER_COSTS_X100,
+  DEFAULT_RAISE_BP,
+  FORECAST_YEARS,
+  forecastAssumptions,
+  objectForecast,
+  otherCostsMonths,
+  trailingCosts,
+  usualHoitovastike,
+} from './forecast'
+import {
   housingShare,
   housingShareForecast,
+  newestRates,
+  rateEstimates,
+  repaidMonths,
+  vastikeAhead,
   housingShareMonths,
   housingVoucherIds,
   latestCertificate,
@@ -127,7 +142,8 @@ import {
   type PropertyDetail,
   type PropertyDoc,
   type PropertyRow,
-  type RateForecast,
+  type ForecastDefaults,
+  type RateEstimates,
   type RentEnd,
   type RentStart,
   type SetupApplyInput,
@@ -151,6 +167,10 @@ type Loaded = {
   loanOwners: Map<number, number[]>
   /** Deposit key (`depositKeys`) -> the lease linking it, over every stored document. */
   depositOwner: Map<string, { object_id: number; lease_key: string }>
+  /** Every stored loan, for the latest known rates (`newestRates`). */
+  loans: HousingLoan[]
+  /** The reference rates the loans' forecasts take (ADR-035): typed, else the latest known. */
+  rates: RateEstimates
 }
 
 function loadStored(db: SqliteDb): Loaded {
@@ -172,7 +192,9 @@ function loadStored(db: SqliteDb): Loaded {
       for (const key of depositKeys(lease.deposit)) depositOwner.set(key, { object_id: id, lease_key: lease.key })
     }
   }
-  return { centres, docs, settings: parsePortfolioSettings(readTilariData(db, PORTFOLIO_KEY)), owner, loanOwners, depositOwner }
+  const settings = parsePortfolioSettings(readTilariData(db, PORTFOLIO_KEY))
+  const loans = [...docs.values()].flatMap((d) => d.doc.housing_loans ?? [])
+  return { centres, docs, settings, owner, loanOwners, depositOwner, loans, rates: rateEstimates(settings.doc.forecast, loans) }
 }
 
 function docFor(loaded: Loaded, id: number): ParsedDoc<PropertyDoc> {
@@ -234,7 +256,7 @@ function computeObjects(db: SqliteDb, loaded: Loaded, centres: CostCentre[], opt
   // Bookings a correction moved away, and the correction lines that did it.
   const reversed = new Set([...corrections].flatMap(([id, c]) => (c.reverses != null ? [id, c.reverses] : [])))
   const periods = getPeriods(db).map((p) => ({ starts: p.starts, ends: p.ends }))
-  const window: LoanWindow = { asOf, today: opts.today, booksStart: periods[0]?.starts ?? asOf, curve: loaded.settings.doc.rate_forecast ?? [] }
+  const window: LoanWindow = { asOf, today: opts.today, booksStart: periods[0]?.starts ?? asOf, rates: loaded.rates }
 
   return centres.map((centre) => {
     const parsed = docFor(loaded, centre.id)
@@ -267,8 +289,9 @@ function computeObjects(db: SqliteDb, loaded: Loaded, centres: CostCentre[], opt
       const held = result.status !== 'sold' && result.status !== 'excluded'
       const share = held ? housingShare(housingLoans, loans.paths, asOf.slice(0, 7)) : null
       // Sale costs are a percentage of the debt-free price: a sale now takes the share along. The loans
-      // follow the payments and the purchase, which the share does not change.
-      if (share) result = computeObject({ ...input, housingShare: share })
+      // follow the payments and the purchase, which the share does not change. The repayment goes on
+      // the cash flow's months (ADR-035).
+      result = computeObject({ ...input, ...(share ? { housingShare: share } : {}), repaid: repaidMonths(loans.paths) })
       result.summary.housing_share_snt = share
       const split = new Map(vastikeYears(loans.paths, periods, loans.from, loans.through).map((y) => [y.starts, y]))
       for (const year of result.years) {
@@ -302,8 +325,8 @@ type LeaseContext = {
   deductions: Map<number, DeductionLine[]>
   /** Every deposit the book could hold, for the candidates and the unlinked ones (ADR-029). */
   pool: DepositPool
-  /** The reference rate estimates (ADR-034): a loan with no rate row is counted on them. */
-  curve: RateForecast[]
+  /** The reference rate estimates (ADR-035): a loan with no rate row is counted on them. */
+  rates: RateEstimates
 }
 
 /** Item roots and loose lines on liability accounts, their items' lines, and the roots' partners. */
@@ -370,7 +393,7 @@ function leaseContext(db: SqliteDb, loaded: Loaded, computed: Computed[], asOf: 
     depositLines,
     deductions,
     pool: depositPool(db, loaded),
-    curve: loaded.settings.doc.rate_forecast ?? [],
+    rates: loaded.rates,
   }
 }
 
@@ -522,7 +545,7 @@ function remindersOf(c: Computed, ctx: LeaseContext): Warning[] {
   const loans = c.parsed.doc.housing_loans ?? []
   return [
     ...leaseReminders,
-    ...loanWarnings(loans, loanDay(ctx.asOf, ctx.today), held, c.loans.paths, ctx.curve),
+    ...loanWarnings(loans, loanDay(ctx.asOf, ctx.today), held, c.loans.paths, ctx.rates),
     ...invoiceWarnings(loans, c.loans.invoices.suggestions, c.loans.invoices.assigned.unmatched, held),
   ]
 }
@@ -531,7 +554,7 @@ function remindersOf(c: Computed, ctx: LeaseContext): Warning[] {
  * The days the loans are followed by: the as-of date, the book's day, the first fiscal year's start;
  * and the reference rate estimates for a loan with no rate row.
  */
-type LoanWindow = { asOf: string; today: string; booksStart: string; curve: RateForecast[] }
+type LoanWindow = { asOf: string; today: string; booksStart: string; rates: RateEstimates }
 
 /**
  * The object's payments to its housing company and each loan's share month by month (ADR-034), and
@@ -567,7 +590,7 @@ function followLoans(result: ObjectResult, reversed: Set<number>, loans: Housing
     const latest = latestCertificate(loan, day)?.date.slice(0, 7)
     const to = latest && latest > asOf && !sold ? latest : asOf
     const invoiced = { paid: paidByMonth(assigned.byLoan.get(loan.key) ?? []), invoices }
-    return { ...loanPath(loan, { payments: units, from, to, curve: window.curve, invoiced }), missing: paymentsMissing(loan, units, from, asOf) }
+    return { ...loanPath(loan, { payments: units, from, to, rates: window.rates, invoiced }), missing: paymentsMissing(loan, units, from, asOf) }
   })
   const suggestions = loans.flatMap((loan) => chargeSuggestions(loan, assigned.byLoan.get(loan.key) ?? []))
   return { payments: found, paths, from, through: asOf, invoices: { all, assigned, suggestions } }
@@ -576,6 +599,76 @@ function followLoans(result: ObjectResult, reversed: Set<number>, loans: Housing
 function resolveAsOf(db: SqliteDb, today: string, asOf?: string | null): { asOf: string; dataThrough: string | null } {
   const dataThrough = loadDataThrough(db)
   return { asOf: asOf || defaultAsOf(today, dataThrough), dataThrough }
+}
+
+/**
+ * The objects' lines for the chart with their estimates ahead (ADR-035), and the defaults an empty
+ * forecast field takes. A held object's share runs on to its payoff (`housingShareForecast`) and its
+ * cash flow (`objectForecast`) as far as the last share does, else `FORECAST_YEARS`; a sold one has none.
+ */
+function forecastObjects(computed: Computed[], loaded: Loaded, asOf: string): { objects: Parameters<typeof portfolioChart>[0]; defaults: ForecastDefaults } {
+  const month = asOf.slice(0, 7)
+  const assumptions = forecastAssumptions(loaded.settings.doc.forecast)
+  const lines = computed.map((c) => {
+    const loans = c.parsed.doc.housing_loans ?? []
+    const held = c.result.status !== 'sold'
+    return { c, loans, held, ahead: held ? housingShareForecast(loans, c.loans.paths, loaded.rates, month) : undefined }
+  })
+  const until = lines.flatMap((l) => [...(l.ahead?.keys() ?? [])]).sort().at(-1) ?? addMonths(month, FORECAST_YEARS * 12)
+  const keys = monthKeys(`${addMonths(month, 1)}-01`, `${until}-01`)
+  const costs: ReturnType<typeof trailingCosts>[] = []
+  const objects = lines.map(({ c, loans, held, ahead }) => {
+    const paid = (m: string) => (c.loans.payments.months.get(m)?.rows ?? []).reduce((sum, r) => sum - r.net_snt, 0)
+    const trailing = trailingCosts(c.result.months, paid, month)
+    if (held) costs.push(trailing)
+    const flows = held
+      ? objectForecast({
+          keys,
+          asOf: month,
+          leases: c.parsed.doc.leases ?? [],
+          income_snt: trailing.months ? Math.round(trailing.income_snt / trailing.months) : 0,
+          hoitovastike_snt: hoitovastikeIn(c, month),
+          rahoitus: vastikeAhead(loans, c.loans.paths, loaded.rates, month),
+          assumptions,
+        })
+      : undefined
+    return {
+      id: c.centre.id,
+      status: c.result.status,
+      months: c.result.months,
+      shares: housingShareMonths(loans, c.loans.paths),
+      ahead,
+      flows,
+      sold_on: c.result.summary.sold_on,
+    }
+  })
+  const newest = newestRates(loaded.loans)
+  return {
+    objects,
+    defaults: {
+      euribor_12m_pcm: newest.euribor_12m ?? null,
+      euribor_6m_pcm: newest.euribor_6m ?? null,
+      raise_bp: DEFAULT_RAISE_BP,
+      other_costs_months_x100: DEFAULT_OTHER_COSTS_X100,
+      other_costs_actual_x100: otherCostsMonths(costs),
+    },
+  }
+}
+
+/**
+ * The hoitovastike a month on `month` (ADR-035, `usualHoitovastike`): over the months by then that paid
+ * the housing company one month's worth, what each paid less the rahoitusvastike the loans' paths have in it.
+ */
+function hoitovastikeIn(c: Computed, month: string): number {
+  return usualHoitovastike(
+    [...c.loans.payments.months]
+      .filter(([m, p]) => m <= month && p.units === 1)
+      .map(([m, { rows }]) => ({
+        month: m,
+        paid_snt: rows.reduce((sum, r) => sum - r.net_snt, 0),
+        rahoitus_snt: c.loans.paths.reduce((sum, p) => sum + (p.months.find((pm) => pm.month === m)?.paid_snt ?? 0), 0),
+      })),
+  )
 }
 
 export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: string | null }): PortfolioResponse {
@@ -610,7 +703,9 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
     if (exit > 0) heldFlows.push({ date: asOf, amount_snt: saleNet(exit, costs, share) })
   }
   const linkedRows = computed.filter((c) => c.result.status !== 'unlinked')
+  const ahead = forecastObjects(computed, loaded, asOf)
   const shares = computed.flatMap((c) => (c.result.summary.housing_share_snt != null ? [c.result.summary.housing_share_snt] : []))
+  const repaid = holding.flatMap((c) => (c.result.t12m?.principal_snt != null ? [c.result.t12m.principal_snt] : []))
   return {
     as_of: asOf,
     data_through: dataThrough,
@@ -619,18 +714,8 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
       .filter((p) => p.starts <= asOf)
       .map((p) => ({ starts: p.starts, ends: p.ends })),
     rows,
-    chart: portfolioChart(
-      computed.map((c) => ({
-        id: c.centre.id,
-        status: c.result.status,
-        months: c.result.months,
-        shares: housingShareMonths(c.parsed.doc.housing_loans ?? [], c.loans.paths),
-        ahead:
-          c.result.status === 'sold'
-            ? undefined
-            : housingShareForecast(c.parsed.doc.housing_loans ?? [], c.loans.paths, loaded.settings.doc.rate_forecast ?? [], asOf.slice(0, 7)),
-      })),
-    ),
+    chart: portfolioChart(ahead.objects),
+    forecast_defaults: ahead.defaults,
     undecided: loaded.centres.filter((c) => !loaded.docs.has(c.id)).length,
     totals: {
       invested_snt: linkedRows.reduce((s, c) => s + c.result.summary.invested_snt, 0),
@@ -643,6 +728,8 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
       held_irr_bp: toBp(xirr(heldFlows).rate),
       sold_irr_bp: toBp(xirr(soldFlows).rate),
       housing_share_snt: shares.length ? shares.reduce((s, n) => s + n, 0) : null,
+      t12m_principal_snt: repaid.length ? repaid.reduce((s, n) => s + n, 0) : null,
+      t12m_money_in_snt: holding.reduce((s, c) => s + (c.result.t12m?.money_in_snt ?? 0), 0),
     },
   }
 }
@@ -747,9 +834,9 @@ function housingDetail(db: SqliteDb, loaded: Loaded, c: Computed): HousingDetail
     .sort(([a], [b]) => b.localeCompare(a))
     .map(([month, m]) => ({ month, units: m.units, lines: m.rows.map((r) => bookedLine(r, -r.net_snt, lineCtx)) }))
   const others = loaded.centres.filter((centre) => centre.id !== c.centre.id && (docFor(loaded, centre.id).doc.housing_loans ?? []).length)
-  const rate_forecast = loaded.settings.doc.rate_forecast ?? []
+  const rate_estimates = loaded.rates
   const invoiced = { charge_suggestions: c.loans.invoices.suggestions, invoice_labels: invoiceLabels(c.loans.invoices.all) }
-  if (!others.length) return { vouchers, purchase, copy_sources: [], paths, payments, rate_forecast, ...invoiced }
+  if (!others.length) return { vouchers, purchase, copy_sources: [], paths, payments, rate_estimates, ...invoiced }
   const own = housingCompanyPartners(c.result.classified.operating, c.reversed)
   const rows = groupBy(loadPnlRows(db, new Set(others.flatMap((centre) => [...allocationSet(centre)]))), (r) => r.allocation)
   const sources: HousingCopySource[] = others.flatMap((centre) => {
@@ -764,7 +851,7 @@ function housingDetail(db: SqliteDb, loaded: Loaded, c: Computed): HousingDetail
     copy_sources: sources.sort((a, b) => order(a) - order(b) || a.object_name.localeCompare(b.object_name, 'fi') || a.loan.name.localeCompare(b.loan.name, 'fi')),
     paths,
     payments,
-    rate_forecast,
+    rate_estimates,
     ...invoiced,
   }
 }

@@ -1067,7 +1067,10 @@
       "housingShare": "Darlehensanteil",
       "housingShares": "Darlehensanteile",
       "housingShareUnknown": "am Stichtag nicht bekannt",
-      "debtFreeUnrecovered": "schuldenfrei noch nicht zurück {amount}"
+      "debtFreeUnrecovered": "schuldenfrei noch nicht zurück {amount}",
+      "cashRepaid": "Cashflow + Tilgungen 12 Monate",
+      "cashRepaidPart": "Tilgungen {amount}",
+      "cashRepaidPct": "{pct} pro Jahr von noch nicht zurück"
     },
     "col": {
       "object": "Objekt",
@@ -1122,7 +1125,7 @@
     "defaults": {
       "title": "Standardwerte für alle Objekte",
       "lead": "Verkaufskosten (z. B. Maklerprovision und Verwalterbescheinigung) und Zielrendite. Eigene Werte eines Objekts gehen vor.",
-      "estimates": "Zinsannahmen"
+      "forecast": "Prognose"
     },
     "field": {
       "kind": "Art",
@@ -1130,6 +1133,11 @@
       "salePct": "Verkaufskosten, % vom schuldenfreien Preis",
       "saleFixed": "Verkaufskosten, fest €",
       "targetReturn": "Zielrendite, % pro Jahr",
+      "euribor12": "12-Monats-Euribor %",
+      "euribor6": "6-Monats-Euribor %",
+      "raise": "Erhöhung %/Jahr (Mieten und Hausgeld)",
+      "otherCosts": "Sonstige Kosten, Monatsmieten pro Jahr",
+      "otherCostsActual": "letzte 12 Monate: {months}",
       "price": "Verkaufspreis (ohne Darlehensanteil)",
       "debtFreePrice": "Schuldenfreier Preis",
       "source": "Quelle",
@@ -1196,14 +1204,17 @@
       "allMonths": "Alle Monate",
       "lead": "Die Summenlinie zählt immer alle Objekte: die Kästchen blenden nur Linien aus. Ein verkauftes Objekt fällt ab dem Verkaufsmonat aus der Summe des noch nicht Zurückgeflossenen, bleibt aber in der Cashflow-Summe.",
       "shares": "Darlehensanteile am Monatsende",
-      "forecast": "Schätzung bis zum Ende der Darlehen",
+      "forecast": "Prognose",
       "objects": "Objekte",
       "checkAll": "Alle auswählen",
       "uncheckAll": "Auswahl aufheben",
       "combined": "Gemeinsames Diagramm",
       "combinedTitle": "Alle Objekte zusammen am Monatsende",
       "back": "Zurückgekommen",
-      "percent": "In Prozent des eingesetzten Kapitals"
+      "percent": "In Prozent des eingesetzten Kapitals",
+      "repaidTitle": "Cashflow und Tilgungen zum Monatsende",
+      "repaid": "Getilgt insgesamt",
+      "gain": "Cashflow + Tilgungen"
     },
     "chart": {
       "cashFlow": "Cashflow pro Monat",
@@ -1547,9 +1558,7 @@
       "loan_linked": "Darlehenskonto {path} ist bereits das Bankdarlehen eines anderen Objekts. Ein Darlehen kann nur zu einem Objekt gehören, sonst würden die Zinsen doppelt gezählt.",
       "deposit_linked": "Die Kaution gehört bereits zu einem anderen Mietverhältnis.",
       "overlap": "Zeiträume überschneiden sich: Feld {path} prüfen.",
-      "rentDates": "Der letzte Miettag liegt vor dem ersten.",
-      "estimateRow": "Zinsannahme Zeile {n}: Anfangstag und Referenzzins angeben.",
-      "estimateSameDay": "Zinsannahme Zeile {n}: für diesen Referenzzins gibt es an diesem Tag schon eine Annahme."
+      "rentDates": "Der letzte Miettag liegt vor dem ersten."
     },
     "total": "Summe",
     "holding": "{years} J. {months} Mon.",
@@ -1558,7 +1567,17 @@
     },
     "cash": {
       "title": "Cashflow pro Jahr",
-      "lead": "Erträge - Kosten im Monat, zu dem sie gehören (Abgrenzungen und Korrekturen enthalten); ohne Investitionen und Verkäufe."
+      "lead": "Erträge - Kosten im Monat, zu dem sie gehören (Abgrenzungen und Korrekturen enthalten); ohne Investitionen und Verkäufe.",
+      "net": "Cashflow",
+      "repaid": "Tilgungen der Gesellschaftsdarlehen",
+      "gain": "Cashflow + Tilgungen",
+      "pct": "Rendite pro Jahr, % von noch nicht zurück",
+      "pctHint": "Cashflow + Tilgungen im Verhältnis zum Geld, das in jedem Monat in den Objekten gebunden war: investiert und der Cashflow früherer Monate, der noch nicht zurück ist (Noch nicht zurück zu Monatsbeginn, Käufe des Monats eingerechnet). Ein angebrochenes Jahr ist auf ein Jahr hochgerechnet.",
+      "pctHintNoLoans": "Cashflow im Verhältnis zum Geld, das in jedem Monat in den Objekten gebunden war: investiert und der Cashflow früherer Monate, der noch nicht zurück ist (Noch nicht zurück zu Monatsbeginn, Käufe des Monats eingerechnet). Ein angebrochenes Jahr ist auf ein Jahr hochgerechnet.",
+      "view": "In der Tabelle",
+      "viewRepaid": "Tilgungen",
+      "viewPct": "Rendite % im Jahr",
+      "partYear": "{label} ({months} Mon.)"
     },
     "sold": {
       "title": "Verkaufte Objekte ({n})",

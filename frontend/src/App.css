@@ -2541,6 +2541,12 @@ tfoot td {
   padding-top: 0.65rem;
 }
 
+/* A properties table's summary of several lines: the total's rule above the first only. */
+.property-table tfoot tr + tr td {
+  border-top: none;
+  padding-top: 0.35rem;
+}
+
 tr.clickable {
   cursor: pointer;
 }
@@ -5439,6 +5445,12 @@ tr.tax-total td {
   margin: 0.4rem 0 1rem;
 }
 
+/* What the cash flow table shows; wraps on a phone. */
+.property-cash-view {
+  flex-wrap: wrap;
+  margin: 0 0 0.6rem;
+}
+
 .property-defaults {
   margin: 1.25rem 0;
   border: 1px solid var(--line);
@@ -5482,6 +5494,22 @@ tr.tax-total td {
 
 .property-form-grid label.allocation-check {
   flex-direction: row;
+}
+
+/* A figure under a field (the last 12 months' other costs) keeps the row's fields level: it hangs below. */
+.property-form-grid label.property-field-hinted {
+  position: relative;
+}
+
+.property-field-hinted .property-field-hint {
+  position: absolute;
+  top: 100%;
+  margin-top: 0.2rem;
+  white-space: nowrap;
+}
+
+.property-form-grid:has(.property-field-hint) {
+  margin-bottom: 1.9rem;
 }
 
 .property-form-row {

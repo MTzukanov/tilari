@@ -333,6 +333,33 @@ describe('water settlements: the company\'s statement without water in its text'
     expect(housingPayments([pnl(40, '2027-09-10', -250_00, 'Putkimies', { partner_id: 8 })]).known).toBe(false)
   })
 
+  it('payments count in the month the cash flow has them: a year-end accrual, a correction, the payee under another name', () => {
+    const rows = [
+      // March to October 2027.
+      ...vastike().slice(0, 8),
+      // November's paid on the 5th, December's early on the 21st; the accrual moves it to December.
+      pnl(20, '2027-11-05', -412_30, REF),
+      pnl(21, '2027-11-21', -412_30, REF),
+      pnl(22, '2027-11-30', 412_30, 'Jaksotus', { partner_id: undefined, voucher_type: 9920 }),
+      pnl(23, '2027-12-01', -412_30, 'Jaksotus', { partner_id: undefined, voucher_type: 9920 }),
+      // January's booked to another partner, the apartment's reference named.
+      pnl(24, '2028-01-05', -412_30, REF, { partner_id: 7 }),
+      // A plumber on the same account is no payment, nor a line on another account.
+      pnl(40, '2027-09-10', -250_00, 'Putkimies', { partner_id: 8 }),
+      pnl(41, '2027-10-10', -412_30, 'Muu', { partner_id: undefined, account: 7310 }),
+    ]
+    const units = [...housingPayments(rows).months].map(([m, x]) => [m, x.units]).sort()
+    expect(units).toEqual([
+      ['2027-03', 1], ['2027-04', 1], ['2027-05', 1], ['2027-06', 1], ['2027-07', 1], ['2027-08', 1], ['2027-09', 1],
+      ['2027-10', 1], ['2027-11', 1], ['2027-12', 1], ['2028-01', 1],
+    ])
+    // A line without a partner goes with the account's largest payee only: here the vastike, not the water.
+    const water = Array.from({ length: 8 }, (_, i) => pnl(60 + i, `2027-${String(i + 3).padStart(2, '0')}-12`, -30_00, 'Vesi', { partner_id: 6 }))
+    const both = housingPayments([...vastike().slice(0, 8), ...water, pnl(70, '2027-10-01', -412_30, 'Jaksotus', { partner_id: undefined })])
+    expect(both.months.get('2027-10')!.units).toBe(2)
+    expect(both.months.get('2027-10')!.rows.map((r) => r.id).sort((a, b) => a - b)).toEqual([8, 67, 70])
+  })
+
   it('two amounts paid apart every month count as one payment, in either order on the same day', () => {
     // An apartment and a parking space bought as one object: two invoices, same day, same company.
     const months = ['2027-03', '2027-04', '2027-05', '2027-06', '2027-07', '2027-08']

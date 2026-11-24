@@ -309,6 +309,24 @@ describe('rental objects: figures', () => {
     expect(d.t12m).toBeNull()
   })
 
+  it('a sold object\'s bill paid after the sale is in its months, so the chart\'s cash flow meets the table\'s', async () => {
+    const { db } = await setUp()
+    const id = db.run("INSERT INTO Tosite (pvm, tyyppi, tila, tunniste, otsikko, json) VALUES ('2025-08-20', 100, 100, 901, 'Vesitasaus B 5', '{}')").lastInsertRowid
+    const line = 'INSERT INTO Vienti (rivi, tosite, pvm, tili, kohdennus, selite, debetsnt, kreditsnt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    db.run(line, [1, id, '2025-08-20', 7300, CC.sold, 'Vesitasaus B 5', 40 * E, 0])
+    db.run(line, [2, id, '2025-08-20', 1910, 0, 'Vesitasaus B 5', 0, 40 * E])
+    const d = computeDetail(db, CC.sold, { today: TODAY })
+    expect(d.summary.operating.net_snt).toBe(14_810 * E)
+    expect(d.months.at(-1)).toMatchObject({ key: '2025-08', expense_snt: 40 * E })
+    const p = computePortfolio(db, { today: TODAY })
+    const rows = p.rows.filter((r) => r.status !== 'excluded')
+    expect(p.chart.total_cash_snt.at(-1)).toBe(rows.reduce((s, r) => s + r.summary.operating.net_snt - (r.summary.interest_snt ?? 0), 0))
+    // Its own line runs on to the bill; the total still to recover leaves it at the sale month.
+    const charted = p.chart.objects.find((o) => o.id === CC.sold)!
+    expect(charted.unrecovered_snt[p.chart.keys.indexOf('2025-08')]).toBe(-8_310 * E)
+    expect(p.chart.total_unrecovered_snt.at(-1)).toBe(p.totals.unrecovered_snt)
+  })
+
   it('two objects sold on one voucher each get their own proceeds', async () => {
     const { db } = await setUp()
     for (const id of [CC.parkingA, CC.parkingB]) {
@@ -1227,7 +1245,18 @@ describe('rental objects: housing-company loans', () => {
     expect(garage.summary.housing_share_snt).toBeNull()
     expect(garage.years.every((y) => y.housing_interest_snt === undefined)).toBe(true)
 
+    // The cash flow table's year, its last 12 months and the chart take the repayment from the same months (ADR-035).
+    expect(detail.cash_years.find((y) => y.starts === '2025-01-01')!.principal_snt).toBe(y2025.housing_principal_snt)
+    const t12m = detail.t12m!
+    const window = path.months.filter((m) => m.month >= t12m.from.slice(0, 7) && m.month <= t12m.to.slice(0, 7))
+    expect(t12m.annualized).toBe(false)
+    expect(t12m.principal_snt).toBe(window.reduce((s, m) => s + m.principal_snt, 0))
+    expect(garage.cash_years.every((y) => y.principal_snt === undefined)).toBe(true)
+
     const portfolio = computePortfolio(db, { today: TODAY })
+    expect(portfolio.totals.t12m_principal_snt).toBe(t12m.principal_snt)
+    const months = path.months.filter((m) => m.month <= detail.as_of.slice(0, 7))
+    expect(portfolio.chart.total_repaid_snt.at(-1)).toBe(months.reduce((s, m) => s + m.principal_snt, 0))
     expect(portfolio.totals.housing_share_snt).toBe(share)
     const charted = portfolio.chart.objects.find((o) => o.id === CC.bundle)!
     expect(charted.share_snt.at(-1)).toBe(share)

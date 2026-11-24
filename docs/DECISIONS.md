@@ -846,7 +846,9 @@ correction would change the open year's income statement lines. The rental-objec
 - **The share month by month** (`loanPath`, computed every time): the payments to the housing company are the
   expense lines of the payees the object pays repeating amounts on one account (`housingPayments`), counted as whole
   payments - a month's total over the regular amount in force, rounded, so a catch-up counts two and a small extra
-  invoice nothing. Each payment pays the rahoitusvastike in force for the month; interest is the share at the
+  invoice nothing. They count in the months the cash flow has them (2026-11-24): on the payee's account also a line
+  without a partner (a year-end accrual moving a payment made early to the month it is for, a correction moving one to
+  the object; the account's largest payee takes it) and another partner's line naming the payee's own reference. Each payment pays the rahoitusvastike in force for the month; interest is the share at the
   month's start times reference + margin over twelve; the rest lowers the share, as do extra repayments, and a
   payoff ends it. A certificate gives the share at its month's end. Before the first one the path runs backwards (to
   the later of the loan's start, the purchase, the books' start and the first charge); between two, the computed
@@ -887,7 +889,7 @@ correction would change the open year's income statement lines. The rental-objec
 - **No "Rahastoitu rahoitusvastike pääomana" view** (2026-11-19): built on the 4c branch and taken out before merging,
   as the owner asked if it added complexity - they have not seen a rahastoitu vastike, and the view needed a second
   pass over the figures with made-up cost rows. The checkbox on a charge and its warning stay.
-- **Rate estimates** (2026-11-20, step 4d): nothing is fetched (owner: rates by hand; Euribor history could be
+- **Rate estimates** (2026-11-20, step 4d; the dated rows replaced by one number per Euribor in ADR-035): nothing is fetched (owner: rates by hand; Euribor history could be
   fetched later, a future rate cannot). The Properties defaults hold one curve per reference rate
   (`rate_forecast`). The forecast keeps the latest actual rate until the next reset, then at each reset takes the
   curve's value for that reset (else keeps the latest). "+1 %-yks." adds a point from the next reset on, not to
@@ -924,3 +926,54 @@ correction would change the open year's income statement lines. The rental-objec
 - **Next steps:** the object-wide forecast (rents, hoitovastike, vacancy, projected IRR) and the interest check
   against the payments; both are in the step-4 plan's "Later".
 
+## ADR-035 The portfolio's months ahead, on one estimate each for the whole period (2026-11-23)
+
+**Status:** accepted. The Properties page's forecast; the ledger is not changed and nothing computed is stored.
+
+- **One number each, no dated rows** (owner, 2026-11-23: "we don't need to overengineer ... an average for the
+  whole period"). `PortfolioSettings.forecast` holds four optional inputs: 12 kk and 6 kk Euribor (1/1000 %), a raise
+  a year (bp) for rents and hoitovastike, and other costs in hundredths of a month's rent a year. Market rates
+  (futures, swaps) were dropped; nothing is fetched.
+- **An empty field takes its default, worked out each time** (owner agreed): a Euribor's is the newest rate row typed
+  on any loan with that reference (`newestRates`), so it follows the rows as they are entered; the raise is 1 %, other
+  costs one month's rent. The form shows each default in its empty field, and the last 12 months' other costs (their
+  expenses less the payments to the housing company, against their income) below their field.
+- **The loans** take the estimate of their reference at every reset after their latest rate, and a loan with no rate
+  row all along (`rateEstimates`); 3 kk Euribor and prime keep their latest rate. A book's dated `rate_forecast`
+  rows from step 4d read as their newest row per Euribor and are dropped on the next save.
+- **An object's month ahead** (`objectForecast`): what the tenant pays (rent, water, parking) of the lease's step in
+  force - the lease running at the month's end, else the last one, re-let at its rent; a later step typed on it from
+  its day - raised each year in the lease's increase month, else the month it started; an object with no lease at all
+  takes its last 12 months' income a month, raised each January. Out: the hoitovastike - of the latest three months that paid
+  the housing company one month's worth, the middle one of each less the loans' rahoitusvastike in it (a one-off
+  on top in one month does not count), so water paid there stays in, as
+  the tenant's water does - raised each **June** (owner); the rahoitusvastike the loans' estimates pay
+  (`vastikeAhead`; a loan still owing with no estimate pays its charge in force to its last due date); other costs, the
+  month's income times the months a year over 12. The owner's own bank loans' interest is left out for now (owner:
+  later); taxes and sales are not counted.
+- **How far:** to the last loan share's payoff, so every chart's months line up with the shares chart's; with no
+  share to pay, `FORECAST_YEARS` (10). A sold object has none; its cash flow stays in the total as it ended.
+- **The charts:** one checkbox "Ennuste" over all of them runs every line on faded from the as-of month, the combined
+  chart's too: the cash flow summed on, still to recover falling by it (its percentage over the capital put in, which
+  stays), what came back rising, and the shares (ADR-034). A month's box says "(arvio)". Off by default, remembered.
+- **Cash flow against the repayment** (owner, 2026-11-23: "I am gaining if downpaid more than negative cash flow"):
+  the rahoitusvastike's repayment part lowers the shares, so it is saved, not spent. The repayment sits on the cash
+  flow's months (`MonthPoint.housing_principal_snt` from `repaidMonths`), and every figure sums those months: the cash
+  flow by year table's summary rows "Yhtiölainojen lyhennykset" and "Kassavirta + lyhennykset" (a year as on Talous),
+  its last 12 months (`Trailing12.principal_snt`, scaled like the cash flow; none for a sold object), a tile
+  "Kassavirta + lyhennykset 12 kk", and a chart of the cumulative cash flow, the repayments summed (then the estimates'
+  principal) and their sum, forecast included. A sold object's months run on to a bill paid after the sale, so the
+  chart's cash flow meets the table's. Above 0 the owner gains before any change in the prices; the owner's own bank
+  loans' repayment and a rahastoitu rahoitusvastike booked as capital are not counted.
+- **The return a year on the money in** (owner, 2026-11-24): the table's last summary row and the tile give cash flow
+  + repayment over the owner's money in the objects (`moneyIn`): each month what had not come back by the month's
+  start and the capital put in during it - the earlier months' short cash flow is money put in too, the month's own
+  result is not (it is what is measured). Each month weighs a twelfth (`YearCashFlow.money_in_snt`; the last 12 months'
+  average in `Trailing12.money_in_snt`), so a year held in part gives a year's rate, the total column the average a
+  year, and nothing counts after a sale. Without loans the row is the cash flow's alone. Price changes are not in it.
+- **One figure per object** (owner, 2026-11-24): a switch above the table puts the cash flow, the repayment, the two
+  together or the return in every object's cells (the return per object from its own `money_in_snt`); the summary rows
+  stay, the one shown in bold. A year the as-of date ends inside says how many months it has, so a part year is not
+  read as a whole one.
+- **Later:** a payback month per object; a raise or other costs per object; the own bank loans; a forecast on the
+  object's own page.

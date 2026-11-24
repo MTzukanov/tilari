@@ -1067,7 +1067,10 @@
       "housingShare": "Loan share",
       "housingShares": "Housing-company loan shares",
       "housingShareUnknown": "not known on the as-of date",
-      "debtFreeUnrecovered": "debt-free not yet recovered {amount}"
+      "debtFreeUnrecovered": "debt-free not yet recovered {amount}",
+      "cashRepaid": "Cash flow + repayments, 12 months",
+      "cashRepaidPart": "repayments {amount}",
+      "cashRepaidPct": "{pct} a year of not yet recovered"
     },
     "col": {
       "object": "Object",
@@ -1122,7 +1125,7 @@
     "defaults": {
       "title": "Defaults for all objects",
       "lead": "Sale costs (e.g. broker fee and manager's certificate) and target return. An object's own values override these.",
-      "estimates": "Rate estimates"
+      "forecast": "Forecast"
     },
     "field": {
       "kind": "Kind",
@@ -1130,6 +1133,11 @@
       "salePct": "Sale costs, % of debt-free price",
       "saleFixed": "Sale costs, fixed €",
       "targetReturn": "Target return, % per year",
+      "euribor12": "12-month Euribor %",
+      "euribor6": "6-month Euribor %",
+      "raise": "Raise % a year (rents and maintenance charge)",
+      "otherCosts": "Other costs, months' rent a year",
+      "otherCostsActual": "last 12 months: {months}",
       "price": "Selling price (without loan share)",
       "debtFreePrice": "Debt-free price",
       "source": "Source",
@@ -1196,14 +1204,17 @@
       "allMonths": "All months",
       "lead": "The total line always counts every object: the checkboxes only hide lines. A sold object leaves the unrecovered total from its sale month but stays in the cash flow total.",
       "shares": "Housing-company loan shares at month end",
-      "forecast": "Estimate to the loans' end",
+      "forecast": "Forecast",
       "objects": "Objects",
       "checkAll": "Select all",
       "uncheckAll": "Clear all",
       "combined": "Combined chart",
       "combinedTitle": "All objects together at month end",
       "back": "Come back",
-      "percent": "As a percentage of capital put in"
+      "percent": "As a percentage of capital put in",
+      "repaidTitle": "Cash flow and repayments at month end",
+      "repaid": "Repaid in total",
+      "gain": "Cash flow + repayments"
     },
     "chart": {
       "cashFlow": "Cash flow by month",
@@ -1547,9 +1558,7 @@
       "loan_linked": "Loan account {path} is already another object's bank loan. A loan can belong to one object only; otherwise its interest would count twice.",
       "deposit_linked": "The deposit already belongs to another lease.",
       "overlap": "Periods overlap: check the field {path}.",
-      "rentDates": "The last day of rent is before the first.",
-      "estimateRow": "Rate estimate row {n}: give a first day and a reference rate.",
-      "estimateSameDay": "Rate estimate row {n}: that reference rate already has an estimate on that day."
+      "rentDates": "The last day of rent is before the first."
     },
     "total": "Total",
     "holding": "{years} y {months} mo",
@@ -1558,7 +1567,17 @@
     },
     "cash": {
       "title": "Cash flow by year",
-      "lead": "Income - costs in the month they belong to (accruals and corrections included); no investments or sales."
+      "lead": "Income - costs in the month they belong to (accruals and corrections included); no investments or sales.",
+      "net": "Cash flow",
+      "repaid": "Housing-company loan repayments",
+      "gain": "Cash flow + repayments",
+      "pct": "Return a year, % of not yet recovered",
+      "pctHint": "Cash flow + repayments against the money tied up in the objects each month: invested, and earlier months' cash flow not yet recovered (Not yet recovered at the month's start, the month's purchases included). A part year is counted as a year.",
+      "pctHintNoLoans": "Cash flow against the money tied up in the objects each month: invested, and earlier months' cash flow not yet recovered (Not yet recovered at the month's start, the month's purchases included). A part year is counted as a year.",
+      "view": "In the table",
+      "viewRepaid": "Repayments",
+      "viewPct": "Return % a year",
+      "partYear": "{label} ({months} mo)"
     },
     "sold": {
       "title": "Sold objects ({n})",

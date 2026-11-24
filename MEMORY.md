@@ -7,6 +7,68 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-24 - Properties page: the cash flow table shows one figure at a time (ADR-035)
+
+- Owner asked whether a year's repayment was really that low: the figure read was the cash flow + repayment row, and
+  the year's column had ten months (the bank lines ended a month and a half before the page's date). Now a switch
+  above the table (Kassavirta | Lyhennykset | Kassavirta + lyhennykset | Tuotto % vuodessa, the middle two only with
+  loans) puts that figure in every object's cells, with its summary row in bold; remembered in this browser
+  (`tilari.properties.cash.view`). A year the as-of date ends inside is labelled with its months ("2026 (10 kk)",
+  `monthsCovered`), its header hint ending at the as-of date.
+- Seen on the owner's book while checking (figures not here): a repayment counted as the rahoitusvastike less the
+  interest shrinks when a typed rate goes up and the charge stays. For a tasalyhennys loan the bank's repayment is
+  fixed, so the share likely falls faster than counted until the next certificate shows the gap. That is the
+  rahoitusvastike-vs-loan check still on the list.
+
+## 2026-11-24 - Properties page: payments in the cash flow's months; the return on the money in (ADR-034, ADR-035)
+
+- Defect found on the owner's book (figures not here): `housingPayments` counted only the payee's own lines by
+  their date, while the cash flow counts year-end accruals (9920) and later corrections in the month they belong
+  to. A January payment made on 21.12. counted two payments in December and none in January; an accrual's reversal
+  carrying the partner counted the same payment twice; a payment booked under another partner counted none. Now a
+  payee's account also gives it the lines without a partner (the account's largest payee takes them) and another
+  partner's lines naming its own reference. The loans test book's accrual now shows as 2 payments in December 2023
+  and 0 in January 2024, as its cash flow does.
+- The repayment moved onto `MonthPoint.housing_principal_snt` (`computeObject` runs again with `repaid` for every
+  object with loans); `cash_years`, `Trailing12.principal_snt` (scaled like the cash flow, so a part year no longer
+  mixes scaled cash with unscaled repayment) and the chart sum those months. `PropertyRow.t12m_principal_snt` and
+  `totals.held_invested_snt` are gone; `totals.t12m_money_in_snt` is new. Before, a sold object's repayment could
+  sit in the 12-month column while its cash flow did not.
+- A sold object's months now run on to its last line before the as-of date (a bill after the sale): the chart's
+  cumulative cash flow met the table's only without one. `portfolioChart` takes `sold_on` for where its money and
+  share leave the totals.
+- `moneyIn` and the return row: see ADR-035. Owner's question was whether earlier negative cash flow is invested money:
+  yes, it is in the base (it is what "Palauttamatta" counts), the month's own result is not.
+- Known, left as is: the table's cash flow is before the owner's own loan interest, the chart's after it (no book
+  links financing yet; matters with the own bank loans step). A month whose extra payments come to over half the
+  regular amount still rounds to two payments (4e invoices settle it when the importer writes them).
+
+## 2026-11-23 - Properties page: the portfolio's months ahead (`feature/portfolio-forecast`, ADR-035)
+
+- Owner simplified the forecast to four inputs, each one number for the whole period: 12 kk and 6 kk Euribor, a raise
+  a year (rents and hoitovastike, default 1 %, hoitovastike in June), other costs as months of rent a year (default
+  1,0). Empty = default, computed each time; a Euribor's default is the newest rate row on any loan (`newestRates`).
+  `PortfolioSettings.forecast`; the 4d `rate_forecast` rows are read as their newest per Euribor and dropped on save.
+- Internals: `RateEstimates` (one number per reference) replaced the curve everywhere (`loanPath`, `loanForecast`,
+  `loanWarnings`, `HousingDetail.rate_estimates`). `forecast.ts` (pure): `rentAhead`, `leaseFor`, `objectForecast`,
+  `trailingCosts`, `otherCostsMonths`; `vastikeAhead` in `housingLoan.ts`; `forecastObjects` + `hoitovastikeIn` in
+  `portfolio.ts`; `portfolioChart` takes `flows` and gives `cash/unrecovered/invested_ahead_snt` and their totals.
+- UI: the shares-only checkbox from #93 became one "Ennuste" checkbox over all charts (same `forecast` option key).
+  The defaults form's rate table became four fields; the last 12 months' other costs hang below their field
+  (`.property-field-hint`, absolutely placed so the row's inputs stay level).
+- The loans test book stores `forecast: { euribor_12m_pcm: 2400 }` now (rebuilt; the base properties book was
+  rebuilt too by the script but only its timestamps changed, so it was left as committed).
+- Pitfall: with no typed estimate the default makes almost every Euribor loan "estimated", so the forecast tile
+  reads "korkoarvioiden mukaan" where it said "viimeisin korko pysyy" before.
+- Found on the owner's book (figures not here): the latest month's payment to the housing company can carry a
+  one-off on top (a water settlement), which made that object's hoitovastike far too high. `usualHoitovastike` takes
+  the middle of the latest three months that paid one month's worth, each less its rahoitusvastike.
+- Owner asked to see the cash flow against the loans' repayment ("gaining if repaid more than the negative cash
+  flow"): `YearCashFlow.principal_snt`, `PropertyRow.t12m_principal_snt`, `totals.t12m_principal_snt` /
+  `held_invested_snt`, `PortfolioChart.total_repaid(_ahead)_snt`, `ForecastMonth.principal_snt` (`vastikeAhead`
+  returns paid + principal). `SortableTable` columns take `footers` (more summary rows; the rule above the first
+  only, `.property-table`). The tile's label has a "+": the e2e `kpi()` helper takes a regex, so escape it.
+
 ## 2026-11-23 - Properties page: the loan shares chart on to the payoff (`feature/portfolio-share-forecast`, ADR-034)
 
 - Owner asked for the shares chart projected to 0, as each object's Taloyhtiö tab already does.

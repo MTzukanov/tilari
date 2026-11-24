@@ -229,6 +229,12 @@ export function periodLabel(p: { starts: string; ends: string }): string {
   return `${Number(p.starts.slice(8, 10))}.${Number(p.starts.slice(5, 7))}.–${p.ends.slice(0, 4)}`
 }
 
+/** The months of a fiscal year the figures reach by `asOf`, from its first; null when they reach its end or it has not begun. */
+export function monthsCovered(p: { starts: string; ends: string }, asOf: string): number | null {
+  if (asOf >= p.ends || asOf < p.starts) return null
+  return (Number(asOf.slice(0, 4)) - Number(p.starts.slice(0, 4))) * 12 + Number(asOf.slice(5, 7)) - Number(p.starts.slice(5, 7)) + 1
+}
+
 /** "2 v 3 kk" style holding time between two ISO dates. */
 export function holdingText(t: T, from: string | null, to: string | null): string {
   if (!from || !to) return ''

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import fi from '../../../i18n/locales/fi.json'
 import { formatDate } from '../../../shared/dates'
-import { dueTile, sortWarnings, tabMarks, WARNING_TABS, WARNING_WORDS, warningTone } from './format'
+import { dueTile, monthsCovered, sortWarnings, tabMarks, WARNING_TABS, WARNING_WORDS, warningTone } from './format'
 
 const t = (key: string, vars?: Record<string, string | number>) => `${key}${vars ? JSON.stringify(vars) : ''}`
 
@@ -78,5 +78,22 @@ describe('due tiles', () => {
 
   it('is only for the two dated reminders', () => {
     expect(dueTile(t, { code: 'rent_arrears', params: { amount_snt: 100 } }, '2026-03-10')).toBeNull()
+  })
+})
+
+describe('months covered', () => {
+  const year = { starts: '2026-01-01', ends: '2026-12-31' }
+
+  it('counts the months a year has figures for, from its first', () => {
+    expect(monthsCovered(year, '2026-10-31')).toBe(10)
+    expect(monthsCovered(year, '2026-01-31')).toBe(1)
+    expect(monthsCovered({ starts: '2022-03-22', ends: '2022-12-31' }, '2022-10-31')).toBe(8)
+    expect(monthsCovered({ starts: '2025-07-01', ends: '2026-06-30' }, '2026-02-28')).toBe(8)
+  })
+
+  it('is null for a year the figures reach the end of, and for one not begun', () => {
+    expect(monthsCovered(year, '2026-12-31')).toBeNull()
+    expect(monthsCovered(year, '2027-03-31')).toBeNull()
+    expect(monthsCovered(year, '2025-12-31')).toBeNull()
   })
 })

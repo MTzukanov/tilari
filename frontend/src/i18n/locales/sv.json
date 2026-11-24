@@ -1067,7 +1067,10 @@
       "housingShare": "Låneandel",
       "housingShares": "Bolagslåneandelar",
       "housingShareUnknown": "inte känd på lägesdagen",
-      "debtFreeUnrecovered": "skuldfritt ej återfått {amount}"
+      "debtFreeUnrecovered": "skuldfritt ej återfått {amount}",
+      "cashRepaid": "Kassaflöde + amorteringar 12 mån",
+      "cashRepaidPart": "amorteringar {amount}",
+      "cashRepaidPct": "{pct} per år av ej återfått"
     },
     "col": {
       "object": "Objekt",
@@ -1122,7 +1125,7 @@
     "defaults": {
       "title": "Standardvärden för alla objekt",
       "lead": "Försäljningskostnader (t.ex. mäklararvode och disponentintyg) och målavkastning. Objektets egna värden går före.",
-      "estimates": "Ränteantaganden"
+      "forecast": "Prognos"
     },
     "field": {
       "kind": "Typ",
@@ -1130,6 +1133,11 @@
       "salePct": "Försäljningskostnader, % av skuldfritt pris",
       "saleFixed": "Försäljningskostnader, fast €",
       "targetReturn": "Målavkastning, % per år",
+      "euribor12": "12 mån Euribor %",
+      "euribor6": "6 mån Euribor %",
+      "raise": "Höjning %/år (hyror och skötselvederlag)",
+      "otherCosts": "Övriga kostnader, månadshyror per år",
+      "otherCostsActual": "senaste 12 mån: {months}",
       "price": "Försäljningspris (utan låneandel)",
       "debtFreePrice": "Skuldfritt pris",
       "source": "Källa",
@@ -1196,14 +1204,17 @@
       "allMonths": "Alla månader",
       "lead": "Totallinjen räknar alltid alla objekt: kryssrutorna döljer bara linjer. Ett sålt objekt lämnar det ej återfångna från försäljningsmånaden men stannar i kassaflödets total.",
       "shares": "Bolagslåneandelar vid månadens slut",
-      "forecast": "Uppskattning till lånens slut",
+      "forecast": "Prognos",
       "objects": "Objekt",
       "checkAll": "Markera alla",
       "uncheckAll": "Avmarkera alla",
       "combined": "Gemensamt diagram",
       "combinedTitle": "Alla objekt tillsammans vid månadens slut",
       "back": "Tillbaka",
-      "percent": "I procent av det investerade"
+      "percent": "I procent av det investerade",
+      "repaidTitle": "Kassaflöde och amorteringar vid månadens slut",
+      "repaid": "Amorterat totalt",
+      "gain": "Kassaflöde + amorteringar"
     },
     "chart": {
       "cashFlow": "Kassaflöde per månad",
@@ -1547,9 +1558,7 @@
       "loan_linked": "Lånekonto {path} är redan ett annat objekts banklån. Ett lån kan höra till bara ett objekt, annars räknas räntan två gånger.",
       "deposit_linked": "Depositionen hör redan till ett annat hyresförhållande.",
       "overlap": "Perioder överlappar: kontrollera fältet {path}.",
-      "rentDates": "Hyrans sista dag ligger före den första.",
-      "estimateRow": "Ränteantagande rad {n}: ange startdag och referensränta.",
-      "estimateSameDay": "Ränteantagande rad {n}: samma referensränta har redan ett antagande samma dag."
+      "rentDates": "Hyrans sista dag ligger före den första."
     },
     "total": "Totalt",
     "holding": "{years} år {months} mån",
@@ -1558,7 +1567,17 @@
     },
     "cash": {
       "title": "Kassaflöde per år",
-      "lead": "Intäkter - kostnader för den månad de gäller (periodiseringar och rättelser ingår); inga investeringar eller försäljningar."
+      "lead": "Intäkter - kostnader för den månad de gäller (periodiseringar och rättelser ingår); inga investeringar eller försäljningar.",
+      "net": "Kassaflöde",
+      "repaid": "Amorteringar på bolagslån",
+      "gain": "Kassaflöde + amorteringar",
+      "pct": "Avkastning per år, % av ej återfått",
+      "pctHint": "Kassaflöde + amorteringar i förhållande till pengarna bundna i objekten varje månad: investerat och tidigare månaders kassaflöde som ännu inte kommit tillbaka (Ej återfått vid månadens början, månadens köp inräknade). Ett ofullständigt år räknas som ett år.",
+      "pctHintNoLoans": "Kassaflöde i förhållande till pengarna bundna i objekten varje månad: investerat och tidigare månaders kassaflöde som ännu inte kommit tillbaka (Ej återfått vid månadens början, månadens köp inräknade). Ett ofullständigt år räknas som ett år.",
+      "view": "I tabellen",
+      "viewRepaid": "Amorteringar",
+      "viewPct": "Avkastning % per år",
+      "partYear": "{label} ({months} mån)"
     },
     "sold": {
       "title": "Sålda objekt ({n})",

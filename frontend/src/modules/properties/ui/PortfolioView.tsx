@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
@@ -8,20 +8,20 @@ import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import {
   fetchPortfolio,
-  RATE_REFERENCES,
   savePortfolioSettings,
   skipPropertyDocument,
   type DocumentSkip,
+  type ForecastDefaults,
+  type ForecastSettings,
   type PortfolioResponse,
   type PortfolioSettings,
   type PropertyRow,
-  type RateForecast,
-  type RateReference,
+  type YearCashFlow,
 } from '../api'
 import { rowAlerts } from '../../../book/modules/properties/domain/reminders'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
-import { formatEuro, holdingText, periodLabel, saveErrorText, statusClass, tenantSide, warningText } from './format'
-import { PortfolioCharts } from './PortfolioCharts'
+import { formatEuro, holdingText, monthsCovered, periodLabel, saveErrorText, statusClass, tenantSide, warningText } from './format'
+import { PortfolioCharts, shareBp } from './PortfolioCharts'
 import { Warnings } from './Warnings'
 
 function Kpi({ label, value, neg, hint }: { label: string; value: string; neg?: boolean; hint?: string }) {
@@ -34,53 +34,55 @@ function Kpi({ label, value, neg, hint }: { label: string; value: string; neg?: 
   )
 }
 
-/** A reference rate estimate being edited: the rate as typed. */
-type EstimateDraft = { reference: RateReference; from: string; rate: string }
+/** Hundredths as the form shows them, one decimal at least: 100 -> "1,0". */
+function hundredths(n: number | null): string {
+  if (n == null) return ''
+  return (n / 100).toFixed(n % 10 ? 2 : 1).replace('.', ',')
+}
 
-/** The references a curve can be drawn for: a fixed rate has none. */
-const CURVE_REFERENCES = RATE_REFERENCES.filter((r) => r !== 'fixed')
-
-function DefaultsForm({ settings, onSaved }: { settings: PortfolioSettings; onSaved: () => void }) {
+/**
+ * The portfolio's defaults: sale costs and the target return, and the estimates for the months ahead
+ * (ADR-035), each one number for the whole period. An empty estimate takes its default, shown in the
+ * field: the newest rate typed on a loan, 1 % a year, one month's rent; the last 12 months' other
+ * costs stand beside theirs.
+ */
+function DefaultsForm({ settings, defaults, onSaved }: { settings: PortfolioSettings; defaults: ForecastDefaults; onSaved: () => void }) {
   const { t } = useI18n()
   const [pct, setPct] = useState(formatPercentInput(settings.sale_costs?.pct_bp))
   const [fixed, setFixed] = useState(settings.sale_costs ? formatEurInput(settings.sale_costs.fixed_snt) : '')
   const [target, setTarget] = useState(formatPercentInput(settings.target_return_bp))
-  const [estimates, setEstimates] = useState<EstimateDraft[]>(() =>
-    (settings.rate_forecast ?? []).map((r) => ({ reference: r.reference, from: r.from, rate: formatPcmInput(r.reference_pcm) })),
-  )
+  const typed = settings.forecast ?? {}
+  const [euribor12, setEuribor12] = useState(formatPcmInput(typed.euribor_12m_pcm))
+  const [euribor6, setEuribor6] = useState(formatPcmInput(typed.euribor_6m_pcm))
+  const [raise, setRaise] = useState(formatPercentInput(typed.raise_bp))
+  // Months of rent a year travel in hundredths, as percentages do in basis points.
+  const [other, setOther] = useState(formatPercentInput(typed.other_costs_months_x100))
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const setEstimate = (i: number, patch: Partial<EstimateDraft>) => setEstimates(estimates.map((e, j) => (j === i ? { ...e, ...patch } : e)))
 
   async function save() {
     const pctBp = parsePercentInput(pct)
     const targetBp = parsePercentInput(target)
-    if (Number.isNaN(pctBp) || Number.isNaN(targetBp)) {
+    const raiseBp = parsePercentInput(raise)
+    const otherX100 = parsePercentInput(other)
+    const rate12 = parsePcmInput(euribor12)
+    const rate6 = parsePcmInput(euribor6)
+    if ([pctBp, targetBp, raiseBp, otherX100, rate12, rate6].some((n) => Number.isNaN(n)) || (otherX100 != null && otherX100 < 0)) {
       setError(t('properties.error.percent'))
       return
     }
-    // The reference rate estimates: a row needs its first day and a rate; one left empty is dropped.
-    const curve: RateForecast[] = []
-    for (const [i, e] of estimates.entries()) {
-      if (!e.from && !e.rate.trim()) continue
-      const rate = parsePcmInput(e.rate)
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(e.from) || rate == null || Number.isNaN(rate)) {
-        setError(t('properties.error.estimateRow', { n: i + 1 }))
-        return
-      }
-      if (curve.some((c) => c.reference === e.reference && c.from === e.from)) {
-        setError(t('properties.error.estimateSameDay', { n: i + 1 }))
-        return
-      }
-      curve.push({ reference: e.reference, from: e.from, reference_pcm: rate })
-    }
+    const forecast: ForecastSettings = {}
+    if (rate12 != null) forecast.euribor_12m_pcm = rate12
+    if (rate6 != null) forecast.euribor_6m_pcm = rate6
+    if (raiseBp != null) forecast.raise_bp = raiseBp
+    if (otherX100 != null) forecast.other_costs_months_x100 = otherX100
     const next: PortfolioSettings = { ...settings }
     if (pctBp != null || fixed) next.sale_costs = { pct_bp: pctBp ?? 0, fixed_snt: parseEurInput(fixed) }
     else delete next.sale_costs
     if (targetBp != null) next.target_return_bp = targetBp
     else delete next.target_return_bp
-    if (curve.length) next.rate_forecast = curve
-    else delete next.rate_forecast
+    if (Object.keys(forecast).length) next.forecast = forecast
+    else delete next.forecast
     setSaving(true)
     try {
       await savePortfolioSettings(next)
@@ -111,39 +113,28 @@ function DefaultsForm({ settings, onSaved }: { settings: PortfolioSettings; onSa
           <input type="text" inputMode="decimal" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="4,0" />
         </label>
       </div>
-      <h4>{t('properties.defaults.estimates')}</h4>
-      {estimates.map((e, i) => (
-        <div key={i} className="property-form-grid property-estimate-row">
-          <label>
-            {t('properties.housing.field.reference')}
-            <select value={e.reference} onChange={(ev) => setEstimate(i, { reference: ev.target.value as RateReference })}>
-              {CURVE_REFERENCES.map((r) => (
-                <option key={r} value={r}>
-                  {t(`properties.housing.reference.${r}`)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            {t('properties.housing.field.from')}
-            <input type="date" value={e.from} onChange={(ev) => setEstimate(i, { from: ev.target.value })} />
-          </label>
-          <label>
-            {t('properties.housing.field.rate')}
-            <input type="text" inputMode="decimal" value={e.rate} placeholder="2,500" onChange={(ev) => setEstimate(i, { rate: ev.target.value })} />
-          </label>
-          <button type="button" className="btn-link property-delete" onClick={() => setEstimates(estimates.filter((_, j) => j !== i))}>
-            {t('properties.housing.removeRow')}
-          </button>
-        </div>
-      ))}
-      <button
-        type="button"
-        className="btn-link property-lease-add"
-        onClick={() => setEstimates([...estimates, { reference: estimates.at(-1)?.reference ?? 'euribor_12m', from: '', rate: '' }])}
-      >
-        {t('properties.housing.addRow')}
-      </button>
+      <h4>{t('properties.defaults.forecast')}</h4>
+      <div className="property-form-grid">
+        <label>
+          {t('properties.field.euribor12')}
+          <input type="text" inputMode="decimal" value={euribor12} placeholder={formatPcmInput(defaults.euribor_12m_pcm)} onChange={(e) => setEuribor12(e.target.value)} />
+        </label>
+        <label>
+          {t('properties.field.euribor6')}
+          <input type="text" inputMode="decimal" value={euribor6} placeholder={formatPcmInput(defaults.euribor_6m_pcm)} onChange={(e) => setEuribor6(e.target.value)} />
+        </label>
+        <label>
+          {t('properties.field.raise')}
+          <input type="text" inputMode="decimal" value={raise} placeholder={hundredths(defaults.raise_bp)} onChange={(e) => setRaise(e.target.value)} />
+        </label>
+        <label className="property-field-hinted">
+          {t('properties.field.otherCosts')}
+          <input type="text" inputMode="decimal" value={other} placeholder={hundredths(defaults.other_costs_months_x100)} onChange={(e) => setOther(e.target.value)} />
+          {defaults.other_costs_actual_x100 != null ? (
+            <span className="muted property-field-hint">{t('properties.field.otherCostsActual', { months: hundredths(defaults.other_costs_actual_x100) })}</span>
+          ) : null}
+        </label>
+      </div>
       {error ? <p className="error">{error}</p> : null}
       <button type="button" className="btn-primary" disabled={saving} onClick={() => void save()}>
         {saving ? t('common.saving') : t('common.save')}
@@ -423,36 +414,144 @@ function heldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
   return cols
 }
 
-function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableColumn<PropertyRow>[] {
-  const yearValue = (r: PropertyRow, starts: string) => r.cash_years.find((y) => y.starts === starts)?.net_snt ?? null
+/** A footer figure, red below 0. */
+function footerEuro(n: number): ReactNode {
+  return <span className={negClass(n)}>{formatEuro(n)}</span>
+}
+
+/** A footer percentage, red below 0; empty without a base. */
+function footerPct(bp: number | null): ReactNode {
+  return bp == null ? '' : <span className={negClass(bp)}>{formatBp(bp)}</span>
+}
+
+/** What the cash flow table's cells show: the cash flow, the housing-company loans' repayment, the two together, or the yearly return. */
+type CashView = 'net' | 'repaid' | 'gain' | 'pct'
+
+const CASH_VIEW_KEY = 'tilari.properties.cash.view'
+
+function readCashView(): CashView {
+  try {
+    const v = localStorage.getItem(CASH_VIEW_KEY)
+    return v === 'repaid' || v === 'gain' || v === 'pct' ? v : 'net'
+  } catch {
+    return 'net'
+  }
+}
+
+/** A span's figures as one view shows them: no repayment without loans. */
+type CashFigures = { net: number; repaid: number | undefined; money: number }
+
+/** The figure a view shows: euros, or the return in basis points (null without money in). */
+function cashFigure(view: CashView, f: CashFigures): number | null {
+  if (view === 'net') return f.net
+  if (view === 'repaid') return f.repaid ?? null
+  if (view === 'gain') return f.net + (f.repaid ?? 0)
+  return shareBp(f.net + (f.repaid ?? 0), f.money)
+}
+
+function formatCashFigure(view: CashView, n: number | null): string {
+  if (n == null) return ''
+  return view === 'pct' ? formatBp(n) : formatEuro(n)
+}
+
+/** The views on offer: the repayment and the two together only with housing-company loans. */
+function cashViews(loans: boolean): CashView[] {
+  return loans ? ['net', 'repaid', 'gain', 'pct'] : ['net', 'pct']
+}
+
+/** Picks what the cash flow table's cells show; the choice is remembered in this browser. */
+function CashViewPick({ t, views, view, onPick }: { t: T; views: CashView[]; view: CashView; onPick: (v: CashView) => void }) {
+  const label: Record<CashView, string> = {
+    net: t('properties.cash.net'),
+    repaid: t('properties.cash.viewRepaid'),
+    gain: t('properties.cash.gain'),
+    pct: t('properties.cash.viewPct'),
+  }
+  return (
+    <div className="nav-mode property-cash-view" role="radiogroup" aria-label={t('properties.cash.view')}>
+      {views.map((v) => (
+        <label key={v} className={`nav-radio ${v === view ? 'is-active' : ''}`}>
+          <input type="radio" name="property-cash-view" checked={v === view} onChange={() => onPick(v)} />
+          {label[v]}
+        </label>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * The cash flow by fiscal year, each object a row; `view` picks what the cells show. With
+ * housing-company loans the summary adds the loans' repayment and the two together (ADR-035): above 0
+ * the shares fell by more than the cash flow fell short, so the owner gained before any change in the
+ * prices. The last summary row is that gain (the cash flow alone without loans) over the money the
+ * owner had in the objects, as a year's rate. The summary row of the view shown is in bold. A year the
+ * figures do not reach the end of says how many months it has.
+ */
+function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: CashView): TableColumn<PropertyRow>[] {
+  const yearOf = (r: PropertyRow, starts: string) => r.cash_years.find((y) => y.starts === starts)
+  const loans = rows.some((r) => r.cash_years.some((y) => y.principal_snt != null))
+  const ownLoans = (r: PropertyRow) => r.cash_years.some((y) => y.principal_snt != null)
+  const allYears = (r: PropertyRow, value: (y: YearCashFlow) => number | undefined) => r.cash_years.reduce((s, y) => s + (value(y) ?? 0), 0)
+  const bold = (v: CashView, node: ReactNode) => (v === view ? <strong>{node}</strong> : node)
+  /** A column of figures: each object's in the chosen view, and the summary rows of them all. */
+  const figures = (figuresOf: (r: PropertyRow) => CashFigures | null): Pick<TableColumn<PropertyRow>, 'sortValue' | 'cellClass' | 'render' | 'footer' | 'footers'> => {
+    const value = (r: PropertyRow) => {
+      const f = figuresOf(r)
+      return f ? cashFigure(view, f) : null
+    }
+    const net = sum(rows, (r) => figuresOf(r)?.net)
+    const repaid = sum(rows, (r) => figuresOf(r)?.repaid)
+    const money = sum(rows, (r) => figuresOf(r)?.money)
+    return {
+      sortValue: (r) => value(r) ?? -1e9,
+      cellClass: (r) => negClass(value(r)),
+      render: (r) => formatCashFigure(view, value(r)),
+      footer: bold('net', formatEuro(net)),
+      footers: [
+        ...(loans ? [bold('repaid', footerEuro(repaid)), bold('gain', footerEuro(net + repaid))] : []),
+        bold('pct', footerPct(shareBp(net + repaid, money))),
+      ],
+    }
+  }
+  const t12m = figures((r) => (r.t12m ? { net: r.t12m.net_snt, repaid: r.t12m.principal_snt, money: r.t12m.money_in_snt } : null))
+  const total = figures((r) => ({
+    net: r.summary.operating.net_snt,
+    repaid: ownLoans(r) ? allYears(r, (y) => y.principal_snt) : undefined,
+    money: allYears(r, (y) => y.money_in_snt),
+  }))
   return [
-    nameColumn(t, 'none'),
-    ...data.periods.map(
-      (p): TableColumn<PropertyRow> => ({
+    {
+      ...nameColumn(t, 'none'),
+      footer: bold('net', t('properties.cash.net')),
+      footers: [
+        ...(loans ? [bold('repaid', t('properties.cash.repaid')), bold('gain', t('properties.cash.gain'))] : []),
+        <span key="pct" title={t(loans ? 'properties.cash.pctHint' : 'properties.cash.pctHintNoLoans')}>
+          {bold('pct', t('properties.cash.pct'))}
+        </span>,
+      ],
+    },
+    ...data.periods.map((p): TableColumn<PropertyRow> => {
+      const months = monthsCovered(p, data.as_of)
+      return {
         id: `y${p.starts}`,
-        label: periodLabel(p),
-        title: `${formatDate(p.starts)}–${formatDate(p.ends)}`,
+        label: months == null ? periodLabel(p) : t('properties.cash.partYear', { label: periodLabel(p), months }),
+        title: `${formatDate(p.starts)}–${formatDate(months == null ? p.ends : data.as_of)}`,
         width: 105,
         align: 'right',
-        sortValue: (r) => yearValue(r, p.starts) ?? 0,
-        cellClass: (r) => negClass(yearValue(r, p.starts)),
-        render: (r) => {
-          const v = yearValue(r, p.starts)
-          return v == null ? '' : formatEuro(v)
-        },
-        footer: formatEuro(sum(rows, (r) => yearValue(r, p.starts))),
-      }),
-    ),
+        ...figures((r) => {
+          const y = yearOf(r, p.starts)
+          return y ? { net: y.net_snt, repaid: y.principal_snt, money: y.money_in_snt } : null
+        }),
+      }
+    }),
     {
       id: 'total',
       label: t('properties.col.cashTotal'),
       title: t('properties.col.cashTotalHint'),
       width: 120,
       align: 'right',
-      sortValue: (r) => r.summary.operating.net_snt,
-      cellClass: (r) => `property-strong ${negClass(r.summary.operating.net_snt)}`,
-      render: (r) => formatEuro(r.summary.operating.net_snt),
-      footer: formatEuro(sum(rows, (r) => r.summary.operating.net_snt)),
+      ...total,
+      cellClass: (r) => `property-strong ${total.cellClass!(r)}`,
     },
     {
       id: 't12m',
@@ -460,10 +559,11 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
       title: t('properties.col.t12mHint'),
       width: 110,
       align: 'right',
-      sortValue: (r) => r.t12m?.net_snt ?? 0,
-      cellClass: (r) => negClass(r.t12m?.net_snt),
-      render: (r) => (r.t12m ? `${formatEuro(r.t12m.net_snt)}${r.t12m.annualized ? '*' : ''}` : ''),
-      footer: formatEuro(sum(rows, (r) => r.t12m?.net_snt)),
+      ...t12m,
+      render: (r) => {
+        const shown = t12m.render(r)
+        return shown && r.t12m?.annualized ? `${shown}*` : shown
+      },
     },
   ]
 }
@@ -556,6 +656,17 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
   const held = all.filter((r) => r.status !== 'sold')
   const sold = all.filter((r) => r.status === 'sold')
   const openRow = (r: PropertyRow) => onOpen(r.id)
+  const [cashView, setCashView] = useState<CashView>(readCashView)
+  const views = cashViews(all.some((r) => r.cash_years.some((y) => y.principal_snt != null)))
+  const shownView = views.includes(cashView) ? cashView : 'net'
+  const pickCashView = (v: CashView) => {
+    setCashView(v)
+    try {
+      localStorage.setItem(CASH_VIEW_KEY, v)
+    } catch {
+      // Not remembered; the table still switches.
+    }
+  }
 
   return (
     <div className="ledger properties">
@@ -595,6 +706,19 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
             neg={data.totals.t12m_net_snt < 0}
             hint={data.totals.net_yield_bp != null ? t('properties.kpi.yieldHint', { pct: formatBp(data.totals.net_yield_bp) }) : undefined}
           />
+          {data.totals.t12m_principal_snt != null ? (
+            <Kpi
+              label={t('properties.kpi.cashRepaid')}
+              value={formatEuro(data.totals.t12m_net_snt + data.totals.t12m_principal_snt)}
+              neg={data.totals.t12m_net_snt + data.totals.t12m_principal_snt < 0}
+              hint={[
+                t('properties.kpi.cashRepaidPart', { amount: formatEuro(data.totals.t12m_principal_snt) }),
+                ...(data.totals.t12m_money_in_snt > 0
+                  ? [t('properties.kpi.cashRepaidPct', { pct: formatBp(shareBp(data.totals.t12m_net_snt + data.totals.t12m_principal_snt, data.totals.t12m_money_in_snt)) })]
+                  : []),
+              ].join(' · ')}
+            />
+          ) : null}
           <Kpi label={t('properties.kpi.unrecovered')} value={formatEuro(data.totals.unrecovered_snt)} hint={t('properties.kpi.unrecoveredHint')} />
           {data.totals.housing_share_snt != null ? (
             <Kpi
@@ -652,9 +776,10 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
             <section className="property-section">
               <h3>{t('properties.cash.title')}</h3>
               <p className="muted">{t('properties.cash.lead')}</p>
+              <CashViewPick t={t} views={views} view={shownView} onPick={pickCashView} />
               <SortableTable
                 storageKey="tilari.properties.cash.cols"
-                columns={cashColumns(t, all, data)}
+                columns={cashColumns(t, all, data, shownView)}
                 rows={all}
                 rowKey={(r) => r.id}
                 onRowClick={openRow}
@@ -678,7 +803,7 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
             </section>
           ) : null}
 
-          <DefaultsForm key={data.settings.rev} settings={data.settings} onSaved={() => setReload((n) => n + 1)} />
+          <DefaultsForm key={data.settings.rev} settings={data.settings} defaults={data.forecast_defaults} onSaved={() => setReload((n) => n + 1)} />
         </>
       ) : null}
     </div>
