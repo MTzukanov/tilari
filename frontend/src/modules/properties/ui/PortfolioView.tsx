@@ -16,6 +16,7 @@ import {
   type PortfolioResponse,
   type PortfolioSettings,
   type PropertyRow,
+  type YearCashFlow,
 } from '../api'
 import { rowAlerts } from '../../../book/modules/properties/domain/reminders'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
@@ -418,24 +419,36 @@ function footerEuro(n: number): ReactNode {
   return <span className={negClass(n)}>{formatEuro(n)}</span>
 }
 
+/** A footer percentage, red below 0; empty without a base. */
+function footerPct(bp: number | null): ReactNode {
+  return bp == null ? '' : <span className={negClass(bp)}>{formatBp(bp)}</span>
+}
+
 /**
  * The cash flow by fiscal year, each object a row. With housing-company loans the summary adds the
  * loans' repayment and the two together (ADR-035): above 0 the shares fell by more than the cash flow
- * fell short, so the owner gained before any change in the prices.
+ * fell short, so the owner gained before any change in the prices. The last summary row is that gain
+ * (the cash flow alone without loans) over the money the owner had in the objects, as a year's rate.
  */
 function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableColumn<PropertyRow>[] {
   const yearOf = (r: PropertyRow, starts: string) => r.cash_years.find((y) => y.starts === starts)
   const yearValue = (r: PropertyRow, starts: string) => yearOf(r, starts)?.net_snt ?? null
-  const loans = rows.some((r) => r.t12m_principal_snt != null)
-  /** The summary's repayment and cash flow + repayment rows under a column's cash flow total. */
-  const summary = (net: number, repaid: number): Pick<TableColumn<PropertyRow>, 'footers'> =>
-    loans ? { footers: [footerEuro(repaid), footerEuro(net + repaid)] } : {}
-  const repaidIn = (starts: string) => sum(rows, (r) => yearOf(r, starts)?.principal_snt)
-  const repaidAll = sum(rows, (r) => r.cash_years.reduce((s, y) => s + (y.principal_snt ?? 0), 0))
+  const loans = rows.some((r) => r.cash_years.some((y) => y.principal_snt != null))
+  /** The summary rows under a column's cash flow total: the repayment and the two together (with loans), and the yearly return. */
+  const summary = (net: number, repaid: number, money: number): Pick<TableColumn<PropertyRow>, 'footers'> => ({
+    footers: [...(loans ? [footerEuro(repaid), footerEuro(net + repaid)] : []), footerPct(shareBp(net + repaid, money))],
+  })
+  const allYears = (r: PropertyRow, value: (y: YearCashFlow) => number | undefined) => r.cash_years.reduce((s, y) => s + (value(y) ?? 0), 0)
   return [
     {
       ...nameColumn(t, 'none'),
-      ...(loans ? { footer: t('properties.cash.net'), footers: [t('properties.cash.repaid'), t('properties.cash.gain')] } : {}),
+      footer: t('properties.cash.net'),
+      footers: [
+        ...(loans ? [t('properties.cash.repaid'), t('properties.cash.gain')] : []),
+        <span key="pct" title={t(loans ? 'properties.cash.pctHint' : 'properties.cash.pctHintNoLoans')}>
+          {t('properties.cash.pct')}
+        </span>,
+      ],
     },
     ...data.periods.map(
       (p): TableColumn<PropertyRow> => ({
@@ -451,7 +464,11 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
           return v == null ? '' : formatEuro(v)
         },
         footer: formatEuro(sum(rows, (r) => yearValue(r, p.starts))),
-        ...summary(sum(rows, (r) => yearValue(r, p.starts)), repaidIn(p.starts)),
+        ...summary(
+          sum(rows, (r) => yearValue(r, p.starts)),
+          sum(rows, (r) => yearOf(r, p.starts)?.principal_snt),
+          sum(rows, (r) => yearOf(r, p.starts)?.money_in_snt),
+        ),
       }),
     ),
     {
@@ -464,7 +481,11 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
       cellClass: (r) => `property-strong ${negClass(r.summary.operating.net_snt)}`,
       render: (r) => formatEuro(r.summary.operating.net_snt),
       footer: formatEuro(sum(rows, (r) => r.summary.operating.net_snt)),
-      ...summary(sum(rows, (r) => r.summary.operating.net_snt), repaidAll),
+      ...summary(
+        sum(rows, (r) => r.summary.operating.net_snt),
+        sum(rows, (r) => allYears(r, (y) => y.principal_snt)),
+        sum(rows, (r) => allYears(r, (y) => y.money_in_snt)),
+      ),
     },
     {
       id: 't12m',
@@ -476,7 +497,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
       cellClass: (r) => negClass(r.t12m?.net_snt),
       render: (r) => (r.t12m ? `${formatEuro(r.t12m.net_snt)}${r.t12m.annualized ? '*' : ''}` : ''),
       footer: formatEuro(sum(rows, (r) => r.t12m?.net_snt)),
-      ...summary(sum(rows, (r) => r.t12m?.net_snt), sum(rows, (r) => r.t12m_principal_snt)),
+      ...summary(sum(rows, (r) => r.t12m?.net_snt), sum(rows, (r) => r.t12m?.principal_snt), sum(rows, (r) => r.t12m?.money_in_snt)),
     },
   ]
 }
@@ -615,8 +636,8 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
               neg={data.totals.t12m_net_snt + data.totals.t12m_principal_snt < 0}
               hint={[
                 t('properties.kpi.cashRepaidPart', { amount: formatEuro(data.totals.t12m_principal_snt) }),
-                ...(data.totals.held_invested_snt > 0
-                  ? [t('properties.kpi.cashRepaidPct', { pct: formatBp(shareBp(data.totals.t12m_net_snt + data.totals.t12m_principal_snt, data.totals.held_invested_snt)) })]
+                ...(data.totals.t12m_money_in_snt > 0
+                  ? [t('properties.kpi.cashRepaidPct', { pct: formatBp(shareBp(data.totals.t12m_net_snt + data.totals.t12m_principal_snt, data.totals.t12m_money_in_snt)) })]
                   : []),
               ].join(' · ')}
             />

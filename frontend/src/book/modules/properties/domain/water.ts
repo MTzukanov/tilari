@@ -503,24 +503,40 @@ export function housingCompanyPartners(rows: PnlRow[], reversed: ReadonlySet<num
 }
 
 /**
- * The object's payments to its housing company, month by month (ADR-034): every expense line in a
- * `regularPayees` group, counted as whole payments - the month's total over the regular amount in
- * force then (`regularLevel`), rounded. A month that pays two months counts 2, a small extra
- * invoice 0, a raised amount still 1, two amounts paid apart each month (an apartment and a parking
- * space) 1. With several groups (vastike and water paid apart) a month counts as its most.
+ * The object's payments to its housing company, month by month (ADR-034), in the months the cash flow
+ * counts them (`rows` on the dates they count on): every expense line in a `regularPayees` group,
+ * and on its account the lines of no payee that belong with it - one without a partner (a year-end
+ * accrual moving a payment paid early to the month it is for, a correction moving one to the
+ * object; the account's largest payee takes it) or another partner's naming a reference the
+ * group's repeating payments use in three or more months (the payee booked under another name).
+ * Counted as whole payments: the month's total over the regular amount in force then
+ * (`regularLevel`), rounded. A month that pays two months counts 2, a small extra invoice 0, a
+ * raised amount still 1, two amounts paid apart each month (an apartment and a parking space) 1.
+ * With several groups (vastike and water paid apart) a month counts as its most.
  * `known`: some payee was found.
  */
 export function housingPayments(rows: PnlRow[], reversed: ReadonlySet<number> = new Set()): { months: Map<string, { units: number; rows: PnlRow[] }>; known: boolean } {
   const months = new Map<string, { units: number; rows: PnlRow[] }>()
   const payees = regularPayees(rows, reversed)
-  for (const { group, regular } of payees) {
+  const claimed = new Set(payees.flatMap((p) => p.group.map((r) => r.id)))
+  const loose = rows.filter((r) => !isIncome(r) && !reversed.has(r.id) && !claimed.has(r.id))
+  const paid = (list: PnlRow[]) => list.reduce((sum, r) => sum - r.net_snt, 0)
+  const largest = new Map<number, (typeof payees)[number]>()
+  for (const p of payees) {
+    const best = largest.get(p.group[0].account)
+    if (!best || paid(p.regular) > paid(best.regular)) largest.set(p.group[0].account, p)
+  }
+  for (const payee of payees) {
+    const { group, regular } = payee
+    const own = new Set([...monthsBy(regular, (r) => referenceOf(r.text))].filter(([, m]) => m.size >= 3).map(([ref]) => ref))
+    const belongs = (r: PnlRow) =>
+      r.account === group[0].account && (r.partner_id == null ? largest.get(r.account) === payee : own.has(referenceOf(r.text) ?? ''))
     const levelAt = regularLevel(regular)
     const byMonth = new Map<string, PnlRow[]>()
-    for (const r of group) byMonth.set(r.date.slice(0, 7), [...(byMonth.get(r.date.slice(0, 7)) ?? []), r])
+    for (const r of [...group, ...loose.filter(belongs)]) byMonth.set(r.date.slice(0, 7), [...(byMonth.get(r.date.slice(0, 7)) ?? []), r])
     for (const [month, list] of byMonth) {
       const level = levelAt(month)
-      const total = list.reduce((sum, r) => sum - r.net_snt, 0)
-      const units = level > 0 ? Math.max(0, Math.round(total / level)) : 0
+      const units = level > 0 ? Math.max(0, Math.round(paid(list) / level)) : 0
       const prev = months.get(month)
       months.set(month, { units: Math.max(prev?.units ?? 0, units), rows: [...(prev?.rows ?? []), ...list] })
     }

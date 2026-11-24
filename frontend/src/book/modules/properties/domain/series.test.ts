@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultAsOf, portfolioChart, trailing12 } from './series'
+import { defaultAsOf, moneyIn, portfolioChart, trailing12 } from './series'
 import type { MonthPoint } from './types'
 
 function month(key: string, income: number, expense: number): MonthPoint {
@@ -41,6 +41,23 @@ describe('trailing12', () => {
     const t = trailing12(months, '2026-09-30', { from: '2026-04-15', to: null }, 100_000)!
     expect(t).toMatchObject({ months: 6, annualized: true, net_snt: 7_200, from: '2026-04-01' })
     expect(trailing12(months, '2026-09-30', { from: '2026-08-01', to: null }, 100_000)).toBeNull()
+  })
+
+  it('the repayment scaled like the cash flow, the money in as the months\' average (ADR-035)', () => {
+    const loaned = months.map((m) => ({ ...m, unrecovered_snt: 10_000, housing_principal_snt: 30 }))
+    expect(trailing12(loaned, '2026-09-30', { from: '2020-01-01', to: null }, 100_000)).toMatchObject({ net_snt: 7_200, principal_snt: 360, money_in_snt: 10_600 })
+    expect(trailing12(loaned, '2026-09-30', { from: '2026-04-15', to: null }, 100_000)).toMatchObject({ months: 6, net_snt: 7_200, principal_snt: 360, money_in_snt: 10_600 })
+    expect(trailing12(months, '2026-09-30', { from: '2020-01-01', to: null }, 100_000)!.principal_snt).toBeUndefined()
+  })
+})
+
+describe('moneyIn', () => {
+  it('what had not come back by the month\'s start and the capital put in during it, not the month\'s own result; never below 0', () => {
+    // Bought for 1 000 in January with 10 back; 50 short in February; sold for 1 200 in March.
+    expect(moneyIn({ ...month('2026-01', 100, 90), capex_snt: 1_000, unrecovered_snt: 990 })).toBe(1_000)
+    expect(moneyIn({ ...month('2026-02', 100, 150), unrecovered_snt: 1_040 })).toBe(990)
+    expect(moneyIn({ ...month('2026-03', 0, 0), proceeds_snt: 1_200, unrecovered_snt: -160 })).toBe(1_040)
+    expect(moneyIn({ ...month('2026-04', 0, 0), unrecovered_snt: -160 })).toBe(0)
   })
 })
 
@@ -118,6 +135,21 @@ describe('portfolioChart', () => {
     chart.keys.forEach((_, i) => expect(chart.total_invested_snt[i] - chart.total_back_snt[i]).toBe(chart.total_unrecovered_snt[i]))
   })
 
+  it('a sold object\'s bill after the sale is in the cash flow; what it had in and owed stops at the sale', () => {
+    const chart = portfolioChart([
+      {
+        id: 1,
+        status: 'sold',
+        sold_on: '2026-02-15',
+        months: [owed(month('2026-01', 100, 0), 900), { ...owed(month('2026-02', 0, 0), -300), proceeds_snt: 1_200 }, owed(month('2026-03', 0, 20), -280)],
+        shares: new Map([['2026-01', 500], ['2026-02', 490]]),
+      },
+    ])
+    expect(chart.total_cash_snt).toEqual([100, 100, 80])
+    expect(chart.total_unrecovered_snt).toEqual([900, 0, 0])
+    expect(chart.total_share_snt).toEqual([500, null, null])
+  })
+
   it('is empty without objects', () => {
     expect(portfolioChart([]).keys).toEqual([])
   })
@@ -130,12 +162,11 @@ describe('portfolioChart', () => {
       {
         id: 1,
         status: 'active',
-        months: [at(month('2026-01', 0, 0), 1_000, 1_000), at(month('2026-02', 10, 0), 0, 990)],
+        months: [at(month('2026-01', 0, 0), 1_000, 1_000), at(month('2026-02', 10, 0), 0, 990)].map((m) => ({ ...m, housing_principal_snt: 5 })),
         flows: flows(20, 30),
-        repaid: new Map([['2026-01', 5], ['2026-02', 5]]),
       },
       // Sold in January with 40 of cash flow: it stays in the cash total as it ended.
-      { id: 2, status: 'sold', months: [at(month('2026-01', 40, 0), 0, 0)], flows: flows(99, 99), repaid: new Map([['2026-01', 3]]) },
+      { id: 2, status: 'sold', months: [{ ...at(month('2026-01', 40, 0), 0, 0), housing_principal_snt: 3 }], flows: flows(99, 99) },
       // Nothing invested linked: only a cash flow, run on.
       { id: 3, status: 'unlinked', months: [at(month('2026-02', 7, 0), 0, -7)], flows: flows(-5, -5) },
     ])

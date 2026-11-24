@@ -1070,7 +1070,7 @@
       "debtFreeUnrecovered": "skuldfritt ej återfått {amount}",
       "cashRepaid": "Kassaflöde + amorteringar 12 mån",
       "cashRepaidPart": "amorteringar {amount}",
-      "cashRepaidPct": "{pct} av investerat kapital"
+      "cashRepaidPct": "{pct} per år av ej återfått"
     },
     "col": {
       "object": "Objekt",
@@ -1570,7 +1570,10 @@
       "lead": "Intäkter - kostnader för den månad de gäller (periodiseringar och rättelser ingår); inga investeringar eller försäljningar.",
       "net": "Kassaflöde",
       "repaid": "Amorteringar på bolagslån",
-      "gain": "Kassaflöde + amorteringar"
+      "gain": "Kassaflöde + amorteringar",
+      "pct": "Avkastning per år, % av ej återfått",
+      "pctHint": "Kassaflöde + amorteringar i förhållande till pengarna bundna i objekten varje månad: investerat och tidigare månaders kassaflöde som ännu inte kommit tillbaka (Ej återfått vid månadens början, månadens köp inräknade). Ett ofullständigt år räknas som ett år.",
+      "pctHintNoLoans": "Kassaflöde i förhållande till pengarna bundna i objekten varje månad: investerat och tidigare månaders kassaflöde som ännu inte kommit tillbaka (Ej återfått vid månadens början, månadens köp inräknade). Ett ofullständigt år räknas som ett år."
     },
     "sold": {
       "title": "Sålda objekt ({n})",

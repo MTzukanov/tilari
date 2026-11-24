@@ -7,6 +7,29 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-24 - Properties page: payments in the cash flow's months; the return on the money in (ADR-034, ADR-035)
+
+- Defect found on the owner's book (figures not here): `housingPayments` counted only the payee's own lines by
+  their date, while the cash flow counts year-end accruals (9920) and later corrections in the month they belong
+  to. A January payment made on 21.12. counted two payments in December and none in January; an accrual's reversal
+  carrying the partner counted the same payment twice; a payment booked under another partner counted none. Now a
+  payee's account also gives it the lines without a partner (the account's largest payee takes them) and another
+  partner's lines naming its own reference. The loans test book's accrual now shows as 2 payments in December 2023
+  and 0 in January 2024, as its cash flow does.
+- The repayment moved onto `MonthPoint.housing_principal_snt` (`computeObject` runs again with `repaid` for every
+  object with loans); `cash_years`, `Trailing12.principal_snt` (scaled like the cash flow, so a part year no longer
+  mixes scaled cash with unscaled repayment) and the chart sum those months. `PropertyRow.t12m_principal_snt` and
+  `totals.held_invested_snt` are gone; `totals.t12m_money_in_snt` is new. Before, a sold object's repayment could
+  sit in the 12-month column while its cash flow did not.
+- A sold object's months now run on to its last line before the as-of date (a bill after the sale): the chart's
+  cumulative cash flow met the table's only without one. `portfolioChart` takes `sold_on` for where its money and
+  share leave the totals.
+- `moneyIn` and the return row: see ADR-035. Owner's question was whether earlier negative cash flow is invested money:
+  yes, it is in the base (it is what "Palauttamatta" counts), the month's own result is not.
+- Known, left as is: the table's cash flow is before the owner's own loan interest, the chart's after it (no book
+  links financing yet; matters with the own bank loans step). A month whose extra payments come to over half the
+  regular amount still rounds to two payments (4e invoices settle it when the importer writes them).
+
 ## 2026-11-23 - Properties page: the portfolio's months ahead (`feature/portfolio-forecast`, ADR-035)
 
 - Owner simplified the forecast to four inputs, each one number for the whole period: 12 kk and 6 kk Euribor, a raise

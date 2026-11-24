@@ -73,6 +73,7 @@ export type {
   WaterSettlementView,
   WaterShare,
   WaterShareStatus,
+  YearCashFlow,
   WaterShareView,
   WaterStatementCandidate,
   WaterSuggestionView,

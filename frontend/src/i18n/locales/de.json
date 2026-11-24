@@ -1070,7 +1070,7 @@
       "debtFreeUnrecovered": "schuldenfrei noch nicht zurück {amount}",
       "cashRepaid": "Cashflow + Tilgungen 12 Monate",
       "cashRepaidPart": "Tilgungen {amount}",
-      "cashRepaidPct": "{pct} des investierten Kapitals"
+      "cashRepaidPct": "{pct} pro Jahr von noch nicht zurück"
     },
     "col": {
       "object": "Objekt",
@@ -1570,7 +1570,10 @@
       "lead": "Erträge - Kosten im Monat, zu dem sie gehören (Abgrenzungen und Korrekturen enthalten); ohne Investitionen und Verkäufe.",
       "net": "Cashflow",
       "repaid": "Tilgungen der Gesellschaftsdarlehen",
-      "gain": "Cashflow + Tilgungen"
+      "gain": "Cashflow + Tilgungen",
+      "pct": "Rendite pro Jahr, % von noch nicht zurück",
+      "pctHint": "Cashflow + Tilgungen im Verhältnis zum Geld, das in jedem Monat in den Objekten gebunden war: investiert und der Cashflow früherer Monate, der noch nicht zurück ist (Noch nicht zurück zu Monatsbeginn, Käufe des Monats eingerechnet). Ein angebrochenes Jahr ist auf ein Jahr hochgerechnet.",
+      "pctHintNoLoans": "Cashflow im Verhältnis zum Geld, das in jedem Monat in den Objekten gebunden war: investiert und der Cashflow früherer Monate, der noch nicht zurück ist (Noch nicht zurück zu Monatsbeginn, Käufe des Monats eingerechnet). Ein angebrochenes Jahr ist auf ein Jahr hochgerechnet."
     },
     "sold": {
       "title": "Verkaufte Objekte ({n})",

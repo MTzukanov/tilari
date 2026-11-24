@@ -846,7 +846,9 @@ correction would change the open year's income statement lines. The rental-objec
 - **The share month by month** (`loanPath`, computed every time): the payments to the housing company are the
   expense lines of the payees the object pays repeating amounts on one account (`housingPayments`), counted as whole
   payments - a month's total over the regular amount in force, rounded, so a catch-up counts two and a small extra
-  invoice nothing. Each payment pays the rahoitusvastike in force for the month; interest is the share at the
+  invoice nothing. They count in the months the cash flow has them (2026-11-24): on the payee's account also a line
+  without a partner (a year-end accrual moving a payment made early to the month it is for, a correction moving one to
+  the object; the account's largest payee takes it) and another partner's line naming the payee's own reference. Each payment pays the rahoitusvastike in force for the month; interest is the share at the
   month's start times reference + margin over twelve; the rest lowers the share, as do extra repayments, and a
   payoff ends it. A certificate gives the share at its month's end. Before the first one the path runs backwards (to
   the later of the loan's start, the purchase, the books' start and the first charge); between two, the computed
@@ -955,11 +957,19 @@ correction would change the open year's income statement lines. The rental-objec
   chart's too: the cash flow summed on, still to recover falling by it (its percentage over the capital put in, which
   stays), what came back rising, and the shares (ADR-034). A month's box says "(arvio)". Off by default, remembered.
 - **Cash flow against the repayment** (owner, 2026-11-23: "I am gaining if downpaid more than negative cash flow"):
-  the rahoitusvastike's repayment part lowers the shares, so it is saved, not spent. The cash flow by year table's
-  summary adds "Yhtiölainojen lyhennykset" (`vastikeYears`' principal, as on Talous) and "Kassavirta + lyhennykset";
-  a tile "Kassavirta + lyhennykset 12 kk" with the repayment and its percentage of the capital put in the held
-  objects; a chart of the cumulative cash flow, the repayments summed (`repaidMonths`, then the estimates'
-  principal) and their sum, forecast included. Above 0 the owner gains before any change in the prices; the
-  owner's own bank loans' repayment and a rahastoitu rahoitusvastike booked as capital are not counted.
+  the rahoitusvastike's repayment part lowers the shares, so it is saved, not spent. The repayment sits on the cash
+  flow's months (`MonthPoint.housing_principal_snt` from `repaidMonths`), and every figure sums those months: the cash
+  flow by year table's summary rows "Yhtiölainojen lyhennykset" and "Kassavirta + lyhennykset" (a year as on Talous),
+  its last 12 months (`Trailing12.principal_snt`, scaled like the cash flow; none for a sold object), a tile
+  "Kassavirta + lyhennykset 12 kk", and a chart of the cumulative cash flow, the repayments summed (then the estimates'
+  principal) and their sum, forecast included. A sold object's months run on to a bill paid after the sale, so the
+  chart's cash flow meets the table's. Above 0 the owner gains before any change in the prices; the owner's own bank
+  loans' repayment and a rahastoitu rahoitusvastike booked as capital are not counted.
+- **The return a year on the money in** (owner, 2026-11-24): the table's last summary row and the tile give cash flow
+  + repayment over the owner's money in the objects (`moneyIn`): each month what had not come back by the month's
+  start and the capital put in during it - the earlier months' short cash flow is money put in too, the month's own
+  result is not (it is what is measured). Each month weighs a twelfth (`YearCashFlow.money_in_snt`; the last 12 months'
+  average in `Trailing12.money_in_snt`), so a year held in part gives a year's rate, the total column the average a
+  year, and nothing counts after a sale. Without loans the row is the cash flow's alone. Price changes are not in it.
 - **Later:** a payback month per object; a raise or other costs per object; the own bank loans; a forecast on the
   object's own page.

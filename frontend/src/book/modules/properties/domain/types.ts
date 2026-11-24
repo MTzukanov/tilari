@@ -375,6 +375,10 @@ export type Trailing12 = {
   net_snt: number
   gross_yield_bp: number | null
   net_yield_bp: number | null
+  /** The housing-company loans' repayment in the months, scaled like the rest; missing without loans (ADR-035). */
+  principal_snt?: number
+  /** The owner's money in the object, the months' average (`moneyIn`). */
+  money_in_snt: number
 }
 
 export type MonthPoint = {
@@ -387,6 +391,11 @@ export type MonthPoint = {
   proceeds_snt: number
   /** Unrecovered money at the end of the month. */
   unrecovered_snt: number
+  /**
+   * The housing-company loans' repayment in the month (ADR-035): the rahoitusvastike's part that
+   * lowered the shares, as the loans' paths follow the payments; missing without loans.
+   */
+  housing_principal_snt?: number
 }
 
 export type YearRow = {
@@ -450,12 +459,14 @@ export type EraState = EraLink & {
   }[]
 }
 
-/** Cash flow of one fiscal year: operating net and interest (if financing is linked). */
 /**
- * A fiscal year's operating cash flow; `principal_snt` the housing-company loans' repayment in it (the
- * rahoitusvastike's part that lowered the shares, ADR-034), missing without loans.
+ * A fiscal year's operating cash flow and interest (if financing is linked); `principal_snt` the
+ * housing-company loans' repayment in its months (the rahoitusvastike's part that lowered the shares,
+ * ADR-034), missing without loans; `money_in_snt` the owner's money in the object over its months
+ * (`moneyIn`), each month a twelfth: the cash flow and repayment over it is a year's return, however
+ * few months the year held it (ADR-035).
  */
-export type YearCashFlow = { starts: string; ends: string; net_snt: number; interest_snt: number; principal_snt?: number }
+export type YearCashFlow = { starts: string; ends: string; net_snt: number; interest_snt: number; principal_snt?: number; money_in_snt: number }
 
 export type BreakEven = {
   price_snt: number
@@ -489,8 +500,6 @@ export type PropertyRow = {
   valuation: Valuation | null
   /** Operating cash flow per fiscal year with activity. */
   cash_years: YearCashFlow[]
-  /** The housing-company loans' repayment in the 12 months to the as-of month; null without loans. */
-  t12m_principal_snt: number | null
   /** The lease running on the as-of date (the latest started when several run); a suggested one when none is stored. */
   lease: LeaseView | null
   /** Rent balances from the stored leases; null without any. */
@@ -791,10 +800,10 @@ export type PortfolioResponse = {
     sold_irr_bp: number | null
     /** The held objects' housing-company loan shares where known; null when none has a loan. */
     housing_share_snt: number | null
-    /** The held objects' housing-company loan repayment in the last 12 months; null when none has a loan. */
+    /** The held objects' housing-company loan repayment in the last 12 months (`Trailing12`); null when none has a loan. */
     t12m_principal_snt: number | null
-    /** The capital put in the held objects (linked to an investment). */
-    held_invested_snt: number
+    /** The owner's money in the held objects over the last 12 months (`Trailing12`). */
+    t12m_money_in_snt: number
   }
 }
 

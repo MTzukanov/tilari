@@ -24,7 +24,12 @@ export function defaultAsOf(today: string, dataThrough: string | null): string {
   return covered < previousMonthEnd ? covered : previousMonthEnd
 }
 
-export function monthlySeries(flows: CashFlow[], operating: PnlRow[], fromKey: string, toKey: string): MonthPoint[] {
+/**
+ * The object's months from `fromKey` to `toKey`: the operating lines by the month they count in, the
+ * flows' capital, proceeds and interest, the money not yet back at each month's end; with `repaid`
+ * (`repaidMonths`) the housing-company loans' repayment in each month.
+ */
+export function monthlySeries(flows: CashFlow[], operating: PnlRow[], fromKey: string, toKey: string, repaid?: Map<string, number>): MonthPoint[] {
   const keys = monthKeys(`${fromKey}-01`, `${toKey}-01`)
   const points = new Map<string, MonthPoint>(
     keys.map((key) => [
@@ -58,8 +63,19 @@ export function monthlySeries(flows: CashFlow[], operating: PnlRow[], fromKey: s
       flowIndex += 1
     }
     point.unrecovered_snt = running
+    if (repaid) point.housing_principal_snt = repaid.get(key) ?? 0
   }
   return keys.map((key) => points.get(key)!)
+}
+
+/**
+ * The owner's money in the object during the month (ADR-035): what had not come back by the previous
+ * month's end, and the capital put in during the month - every euro invested or paid on top of the
+ * rent and not back yet, the earlier years' short cash flow too. The month's own result counts
+ * against it, not in it. Never below 0.
+ */
+export function moneyIn(m: MonthPoint): number {
+  return Math.max(0, m.unrecovered_snt + m.net_snt - m.interest_snt + m.proceeds_snt)
 }
 
 /**
@@ -84,6 +100,7 @@ export function trailing12(
   const income = scale(inWindow.reduce((s, m) => s + m.income_snt, 0))
   const expense = scale(inWindow.reduce((s, m) => s + m.expense_snt, 0))
   const net = income - expense
+  const loans = inWindow.some((m) => m.housing_principal_snt != null)
   return {
     from: `${inWindow[0].key}-01`,
     to: monthEnd(inWindow[inWindow.length - 1].key),
@@ -94,6 +111,8 @@ export function trailing12(
     net_snt: net,
     gross_yield_bp: yieldBp(income, base_snt),
     net_yield_bp: yieldBp(net, base_snt),
+    ...(loans ? { principal_snt: scale(inWindow.reduce((s, m) => s + (m.housing_principal_snt ?? 0), 0)) } : {}),
+    money_in_snt: Math.round(inWindow.reduce((s, m) => s + moneyIn(m), 0) / inWindow.length),
   }
 }
 
@@ -150,7 +169,7 @@ export function yearTable(
  * `shares` its housing-company loan share by month where known (`housingShareMonths`), and `ahead`
  * its estimate after the last month (`housingShareForecast`; a sold object's is the buyer's, so none);
  * `flows` its estimated months after the last (`objectForecast`, ADR-035; none for a sold object);
- * `repaid` its housing-company loans' repayment by month (`repaidMonths`).
+ * `sold_on` a sold object's sale: its months can run on to a bill paid after it.
  */
 export function portfolioChart(
   objects: {
@@ -160,7 +179,7 @@ export function portfolioChart(
     shares?: Map<string, number>
     ahead?: Map<string, number>
     flows?: ForecastMonth[]
-    repaid?: Map<string, number>
+    sold_on?: string | null
   }[],
 ): PortfolioChart {
   const shown = objects.filter((o) => o.months.length && o.status !== 'excluded')
@@ -208,7 +227,7 @@ export function portfolioChart(
   const totalRepaidAhead = aheadKeys.map(() => 0)
   const rows = shown.map((o, index) => {
     const at = new Map(o.months.map((m) => [m.key, m]))
-    const sold = o.status === 'sold' ? o.months[o.months.length - 1].key : null
+    const sold = o.status === 'sold' ? (o.sold_on?.slice(0, 7) ?? o.months[o.months.length - 1].key) : null
     // Nothing invested is linked: there is nothing to recover, only a cash flow.
     const invested = o.status !== 'unlinked'
     let sum = 0
@@ -225,10 +244,10 @@ export function portfolioChart(
       if (m) {
         capital += m.capex_snt
         proceeds += m.proceeds_snt
+        repaid += m.housing_principal_snt ?? 0
       }
       // A sold object's cash flow and repayment stay in the totals after its last month.
       if (key >= o.months[0].key) totalCash[i] += sum
-      repaid += o.repaid?.get(key) ?? 0
       totalRepaid[i] += repaid
       if (m && invested && !(sold && key >= sold)) {
         totalUnrecovered[i] += m.unrecovered_snt

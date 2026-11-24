@@ -241,7 +241,9 @@ describe('testdb/tilari-properties-loans.kitsas', () => {
     const db = await SqliteDb.fromBytes(new Uint8Array(readFileSync(LOANS_FILE)))
     const p = computePortfolio(db, { today: TODAY })
     const flat = computeDetail(db, p.rows.find((r) => /Esimerkkikatu 1 A 1/.test(r.name))!.id, { today: TODAY })
-    expect(flat.housing.payments.every((m) => m.lines.length === 2 && m.units === 1)).toBe(true)
+    // One payment a month of two lines; the year-end accrual moves one from January 2024 to December, as the cash flow has it.
+    expect(flat.housing.payments.filter((m) => m.units !== 1).map((m) => [m.month, m.units, m.lines.length])).toEqual([['2024-01', 0, 3], ['2023-12', 2, 3]])
+    expect(flat.housing.payments.every((m) => m.units !== 1 || m.lines.length === 2)).toBe(true)
     expect(flat.housing.paths[0].months.every((m) => m.closing_snt > 0)).toBe(true)
     const old = computeDetail(db, p.rows.find((r) => /Vanhatie 7 C 9/.test(r.name))!.id, { today: TODAY })
     const [lift] = old.doc.housing_loans!

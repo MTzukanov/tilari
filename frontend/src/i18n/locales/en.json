@@ -1070,7 +1070,7 @@
       "debtFreeUnrecovered": "debt-free not yet recovered {amount}",
       "cashRepaid": "Cash flow + repayments, 12 months",
       "cashRepaidPart": "repayments {amount}",
-      "cashRepaidPct": "{pct} of capital invested"
+      "cashRepaidPct": "{pct} a year of not yet recovered"
     },
     "col": {
       "object": "Object",
@@ -1570,7 +1570,10 @@
       "lead": "Income - costs in the month they belong to (accruals and corrections included); no investments or sales.",
       "net": "Cash flow",
       "repaid": "Housing-company loan repayments",
-      "gain": "Cash flow + repayments"
+      "gain": "Cash flow + repayments",
+      "pct": "Return a year, % of not yet recovered",
+      "pctHint": "Cash flow + repayments against the money tied up in the objects each month: invested, and earlier months' cash flow not yet recovered (Not yet recovered at the month's start, the month's purchases included). A part year is counted as a year.",
+      "pctHintNoLoans": "Cash flow against the money tied up in the objects each month: invested, and earlier months' cash flow not yet recovered (Not yet recovered at the month's start, the month's purchases included). A part year is counted as a year."
     },
     "sold": {
       "title": "Sold objects ({n})",

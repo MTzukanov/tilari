@@ -723,15 +723,17 @@ test.describe('rental object housing-company loans', () => {
     await expect(kpi('Yhtiölainaosuudet')).toContainText(/11\s898\s€/)
     await expect(page.locator('.property-table').first().locator('thead')).toContainText('Velkaosuus')
     await expect(page.getByRole('heading', { name: 'Yhtiölainaosuudet kuukauden lopussa' })).toBeVisible()
-    // The cash flow against the loans' repayment (ADR-035): a tile for 12 months, the yearly table's summary,
-    // and a chart of the two and their sum.
-    await expect(kpi('Kassavirta \\+ lyhennykset 12 kk')).toContainText(/lyhennykset 254\s€ · -?[\d,]+\s%\ssijoitetusta$/)
+    // The cash flow against the loans' repayment (ADR-035): a tile for 12 months, the yearly table's summary
+    // with the return on the money still in, and a chart of the two and their sum.
+    await expect(kpi('Kassavirta \\+ lyhennykset 12 kk')).toContainText(/lyhennykset 254\s€ · -?[\d,]+\s%\svuodessa palauttamatta olevasta$/)
     const cashTable = page.locator('.property-section', { has: page.getByRole('heading', { name: 'Kassavirta vuosittain' }) })
     const summaryRows = cashTable.locator('tfoot tr')
-    await expect(summaryRows).toHaveCount(3)
+    await expect(summaryRows).toHaveCount(4)
     await expect(summaryRows.nth(0).locator('td').first()).toHaveText('Kassavirta')
     await expect(summaryRows.nth(1)).toContainText(/^Yhtiölainojen lyhennykset.*254\s€/)
     await expect(summaryRows.nth(2).locator('td').first()).toHaveText('Kassavirta + lyhennykset')
+    await expect(summaryRows.nth(3).locator('td').first()).toHaveText('Tuotto vuodessa, % palauttamatta olevasta')
+    await expect(summaryRows.nth(3).locator('td').last()).toHaveText(/^-?[\d,]+\s%$/)
     const repaidChart = page.getByRole('group', { name: 'Kassavirta ja lyhennykset kuukauden lopussa' })
     await expect(repaidChart.locator('.portfolio-line')).toHaveCount(2)
     await expect(repaidChart.locator('.portfolio-total')).toHaveCount(1)

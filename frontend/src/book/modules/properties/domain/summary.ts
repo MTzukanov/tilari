@@ -3,7 +3,7 @@ import { addMonths } from '../../../months'
 import { classifyObject, NON_CASH_TYPES, type CashFlow, type Classified, type SaleShare } from './classify'
 import type { CostCentre, EraRoot, EraRow, PnlRow } from './ledger'
 import { breakEvenPrice, requiredSalePrice, saleNet, toBp, xirr, type Flow } from './returns'
-import { isIncome, monthlySeries, trailing12, yearTable } from './series'
+import { isIncome, moneyIn, monthlySeries, trailing12, yearTable } from './series'
 import { TYPE_DEPRECIATION } from '../../../vouchers'
 import type {
   BreakEven,
@@ -41,6 +41,36 @@ export type ObjectInput = {
   targetBp?: number | null
   /** The housing-company loan share at the as-of date: sale costs are a percentage of the debt-free price (ADR-034). */
   housingShare?: number | null
+  /** The housing-company loans' repayment by month (`repaidMonths`, ADR-035): on the months, the years and the last 12 months. */
+  repaid?: Map<string, number>
+}
+
+/**
+ * The cash flow table's years (ADR-035): each year's operating net and interest, with loans the
+ * housing-company loans' repayment in its months, and the owner's money in the object over them
+ * (`moneyIn`; nothing after a sale) - a month in the year its first day falls in.
+ */
+function cashYears(years: YearRow[], months: MonthPoint[], soldMonth: string | null, loans: boolean): YearCashFlow[] {
+  const sums = new Map<string, { principal: number; money: number }>()
+  for (const m of months) {
+    const year = years.find((y) => y.starts <= `${m.key}-01` && `${m.key}-01` <= y.ends)
+    if (!year) continue
+    const sum = sums.get(year.starts) ?? { principal: 0, money: 0 }
+    sum.principal += m.housing_principal_snt ?? 0
+    if (!soldMonth || m.key <= soldMonth) sum.money += moneyIn(m)
+    sums.set(year.starts, sum)
+  }
+  return years.map((y) => {
+    const sum = sums.get(y.starts)
+    return {
+      starts: y.starts,
+      ends: y.ends,
+      net_snt: y.net_snt,
+      interest_snt: y.interest_snt,
+      ...(loans ? { principal_snt: sum?.principal ?? 0 } : {}),
+      money_in_snt: Math.round((sum?.money ?? 0) / 12),
+    }
+  })
 }
 
 /** A line behind a month's bars (`MonthLine` without the ledger details). */
@@ -157,10 +187,13 @@ export function computeObject(input: ObjectInput): ObjectResult {
 
   // Months from the first activity to the as-of month (at most 25 years back).
   const firstDate = [flows[0]?.date, input.pnl[0]?.date].filter(Boolean).sort()[0] as string | undefined
-  const toKey = (soldOn ?? asOf).slice(0, 7)
+  const operatingUpTo = classified.operating.filter((r) => r.date <= asOf)
+  // A sold object's months run on to its last line: a bill paid after the sale is its cash flow too.
+  const lastLine = soldOn ? operatingUpTo.reduce((last, r) => (r.date > last ? r.date : last), soldOn) : null
+  const toKey = (lastLine ?? asOf).slice(0, 7)
   const fromKey = firstDate ? (firstDate.slice(0, 7) < toKey ? firstDate.slice(0, 7) : toKey) : toKey
   const earliest = addMonths(toKey, -300)
-  const months = monthlySeries(upTo, classified.operating.filter((r) => r.date <= asOf), fromKey < earliest ? earliest : fromKey, toKey)
+  const months = monthlySeries(upTo, operatingUpTo, fromKey < earliest ? earliest : fromKey, toKey, input.repaid)
 
   // The same lines as the bars: operating P&L (corrections on their booking's date) and interest.
   const shown = new Set(months.map((m) => m.key))
@@ -253,7 +286,7 @@ export function computeObject(input: ObjectInput): ObjectResult {
 
   return {
     cash,
-    cash_years: years.map((y) => ({ starts: y.starts, ends: y.ends, net_snt: y.net_snt, interest_snt: y.interest_snt })),
+    cash_years: cashYears(years, months, soldOn?.slice(0, 7) ?? null, input.repaid != null),
     status,
     summary,
     classified,
