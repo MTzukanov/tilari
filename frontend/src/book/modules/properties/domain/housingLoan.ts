@@ -210,6 +210,24 @@ function termsRepayment(loan: HousingLoan): TermsRepayment {
   }
 }
 
+/** `total` split by `weights` in whole cents (largest remainder): the parts add up to it exactly; without a weight, evenly. */
+export function splitByWeight(total: number, weights: number[]): number[] {
+  const positive = weights.map((w) => Math.max(0, w))
+  const sum = positive.reduce((a, b) => a + b, 0)
+  const shares = sum > 0 ? positive.map((w) => w / sum) : weights.map(() => 1 / weights.length)
+  const sign = total < 0 ? -1 : 1
+  const exact = shares.map((w) => w * Math.abs(total))
+  const parts = exact.map(Math.floor)
+  let left = Math.abs(total) - parts.reduce((a, b) => a + b, 0)
+  const order = exact.map((x, i) => ({ i, rest: x - Math.floor(x) })).sort((a, b) => b.rest - a.rest || a.i - b.i)
+  for (const { i } of order) {
+    if (left <= 0) break
+    parts[i] += 1
+    left -= 1
+  }
+  return parts.map((p) => p * sign)
+}
+
 /**
  * The share at a month's start that the terms take down to `closing` (less `extra`): the month
  * worked backwards, its amount worked out from that share. Without a repayment (interest-only, no last due date, the last due month or
@@ -232,8 +250,10 @@ function termsOpening(loan: HousingLoan, month: string, closing: number, pcm: nu
  * share (owner, 2026-11-24): each month keeps it - the charge in force once per payment, each due
  * month when payments are not known - for the cash flow and the check against the terms. A
  * certificate gives the share at its month's end. Before the first one the path runs backwards on the
- * same terms; each later one restarts it from the certified share, its month keeping the gap (computed
- * less certified). After the last one it runs on to `to`.
+ * same terms. Between two the share's fall is known (owner, 2026-11-26): the months between repay it
+ * exactly, each in proportion to what the terms would repay in it (evenly when the terms repay
+ * nothing), the interest on the share so worked out, and the later one's month keeps the gap the
+ * terms alone would have left (computed less certified). After the last one the terms run on to `to`.
  * `from`: the first month that is the owner's - the month their rent counts from (ADR-026: by default
  * the one after the purchase), or the books' start. A loan with no drawdown counts from it. Months
  * before it are not the owner's: every due month there counts as paid (by the one who owned the object
@@ -307,19 +327,31 @@ export function loanPath(
     closing = row.opening_snt
   }
   rows[at(first)].certificate = { date: anchors[0][1].date, share_snt: anchors[0][1].share_snt, gap_snt: null, ...voucherOf(anchors[0][1]) }
-  // Forwards; each later certificate restarts the share from what it certifies.
+  // Forwards on the terms; at each later certificate the months since the last one take the known fall.
   let opening = rows[at(first)].closing_snt
+  let since = at(first) + 1
   const certifiedIn = new Map(anchors.slice(1))
   for (let i = at(first) + 1; i < keys.length; i++) {
     const row = forward(keys[i], opening)
-    const certified = certifiedIn.get(keys[i])
-    if (certified) {
-      row.certificate = { date: certified.date, share_snt: certified.share_snt, gap_snt: row.closing_snt - certified.share_snt, ...voucherOf(certified) }
-      row.closing_snt = certified.share_snt
-      terms.restart()
-    }
     rows[i] = row
     opening = row.closing_snt
+    const certified = certifiedIn.get(keys[i])
+    if (!certified) continue
+    const gap = row.closing_snt - certified.share_snt
+    const span = rows.slice(since, i + 1)
+    const parts = splitByWeight(gap, span.map((r) => r.principal_snt))
+    let share = rows[since - 1].closing_snt
+    span.forEach((r, j) => {
+      r.opening_snt = share
+      r.interest_snt = interestOn(share, r.rate_pcm)
+      r.principal_snt += parts[j]
+      r.closing_snt = share - r.principal_snt - r.extra_snt
+      share = r.closing_snt
+    })
+    row.certificate = { date: certified.date, share_snt: certified.share_snt, gap_snt: gap, ...voucherOf(certified) }
+    terms.restart()
+    opening = certified.share_snt
+    since = i + 1
   }
   return { loan_key: loan.key, months: rows.filter((r) => owned(r.month)), payments_known: known }
 }
@@ -590,8 +622,8 @@ export function nextReset(loan: HousingLoan): string | null {
  * rahastoitu charge paid as a cost (a note: the ledger books it so). A loan with no rate row is
  * counted on the estimate (`rates`, a note) or, without one, on the margin alone.
  */
-export function loanWarnings(loans: HousingLoan[], on: string, held: boolean, paths: LoanPath[] = [], rates: RateEstimates = {}): Warning[] {
-  if (!held) return []
+export function loanWarnings(loans: HousingLoan[], on: string, held: boolean, paths: LoanPath[] = [], rates: RateEstimates = {}, soldOn: string | null = null): Warning[] {
+  if (!held) return soldOn ? saleShareWarnings(loans, soldOn) : []
   const out: Warning[] = []
   for (const loan of loans) {
     const path = paths.find((p) => p.loan_key === loan.key)
@@ -644,6 +676,18 @@ export function loanWarnings(loans: HousingLoan[], on: string, held: boolean, pa
     }
   }
   return out
+}
+
+/**
+ * A sold object's loans that were running at the sale with no share in the sale's month (owner,
+ * 2026-11-26): the sale deed gives it, and with it the repayments while the object was the owner's
+ * are known, not the terms' estimate.
+ */
+export function saleShareWarnings(loans: HousingLoan[], soldOn: string): Warning[] {
+  const month = monthOf(soldOn)
+  return loans
+    .filter((loan) => loanRunning(loan, soldOn) && !(loan.certificates ?? []).some((c) => monthOf(c.date) === month))
+    .map((loan) => ({ code: 'loan_sale_share_missing', params: { loan: loan.name, sale_date: soldOn } }))
 }
 
 /** The group named after an original loan (`loanKey` on object `objectId`), which its copies join. */

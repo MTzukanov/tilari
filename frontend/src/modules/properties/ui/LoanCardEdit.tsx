@@ -44,7 +44,7 @@ import { candidateDoc } from './waterDrafts'
 
 /**
  * Titles that name a certificate (isännöitsijäntodistus), a vastike notice, or a rate notice: starred
- * in the picks; a certificate's also stars the purchase's vouchers (the deed).
+ * in the picks; a certificate's also stars the purchase's and the sale's vouchers (the deeds).
  */
 const CERTIFICATE_WORDS = /is[äa]nn[öo]itsij[äa]ntodistu|lainaosuu|velkaosuu/i
 const CHARGE_WORDS = /vastike|yhti[öo]kokou/i
@@ -165,7 +165,7 @@ export function LoanCardEdit({
 
   /**
    * What a row's document can be: the Liitetieto documents, the object's vouchers with files, those
-   * already linked, and the purchase's (a share from the deed).
+   * already linked, and the purchase's and the sale's (a share from a deed).
    */
   const docs = [
     ...new Map(
@@ -173,11 +173,11 @@ export function LoanCardEdit({
         ...writer.allDocs,
         ...detail.water.statement_candidates.map(candidateDoc),
         ...detail.housing.vouchers.map(voucherDoc),
-        ...detail.housing.purchase.map(voucherDoc),
+        ...detail.housing.deeds.map(voucherDoc),
       ].map((d) => [d.voucher_id, d]),
     ).values(),
   ]
-  const purchase = new Set(detail.housing.purchase.map((v) => v.voucher_id))
+  const deeds = new Set(detail.housing.deeds.map((v) => v.voucher_id))
 
   async function write(remove = false) {
     setError(null)
@@ -417,7 +417,7 @@ export function LoanCardEdit({
               {docRow({
                 label: t('properties.housing.field.certificate'),
                 voucherId: c.voucherId,
-                starred: (d) => CERTIFICATE_WORDS.test(d.title) || purchase.has(d.voucher_id),
+                starred: (d) => CERTIFICATE_WORDS.test(d.title) || deeds.has(d.voucher_id),
                 onPick: (voucherId) => setRow('certificates', i, { voucherId }),
                 noDocument: { checked: c.noDocument, onChange: (noDocument) => setRow('certificates', i, { noDocument }) },
                 onUpload: (files) => void upload('certificates', i, files),

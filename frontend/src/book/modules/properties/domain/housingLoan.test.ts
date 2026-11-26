@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  splitByWeight,
   annuityPayment,
   chargeAt,
   copyGroup,
@@ -254,14 +255,35 @@ describe('housing-company loans: the share month by month', () => {
     expect(path.months[0]).toMatchObject({ opening_snt: 1_007_208, interest_snt: 2_518, principal_snt: 7_208 })
   })
 
-  it('a later certificate restarts the share from what it certifies, its month keeping the gap', () => {
+  it('between two certificates the months repay the known fall, spread by the terms; the later one keeps the gap the terms left', () => {
     const l = base()
     l.certificates!.push({ date: '2025-04-30', share_snt: 974_000, voucher_id: 9 })
     const path = loanPath(l, { payments: each(), from: '2025-01', to: '2025-05' })
-    // Computed 974 791, certified 974 000: the path goes on from 974 000, 116 months left.
-    expect(path.months[3]).toMatchObject({ month: '2025-04', principal_snt: 8_403, closing_snt: 974_000 })
+    // The terms alone end April at 974 791, certified 974 000: February to April repay 791 more, by
+    // their equal repayments 264 / 264 / 263, the interest on the share so worked out.
+    expect(view(path).slice(1)).toEqual([
+      ['2025-02', 1_000_000, 2_500, 8_667, 991_333],
+      ['2025-03', 991_333, 2_478, 8_667, 982_666],
+      ['2025-04', 982_666, 2_457, 8_666, 974_000],
+      // From the certified share on the terms again: 116 months left.
+      ['2025-05', 974_000, 2_435, 8_397, 965_603],
+    ])
     expect(path.months[3].certificate).toEqual({ date: '2025-04-30', share_snt: 974_000, voucher_id: 9, gap_snt: 791 })
-    expect(view(path)[4]).toEqual(['2025-05', 974_000, 2_435, 8_397, 965_603])
+  })
+
+  it('splits a gap by weight in whole cents that add up, a negative one too; without a weight evenly', () => {
+    expect(splitByWeight(791, [8_403, 8_403, 8_403])).toEqual([264, 264, 263])
+    expect(splitByWeight(-10, [1, 1, 1])).toEqual([-4, -3, -3])
+    expect(splitByWeight(5, [0, 0])).toEqual([3, 2])
+  })
+
+  it('a share known before and after an interest-only period: the fall goes to the months that repay, else evenly', () => {
+    const l = { ...base(), grace: [{ from: '2025-02-01', to: '2025-02-28' }] }
+    l.certificates!.push({ date: '2025-03-31', share_snt: 990_000 })
+    const graced = loanPath(l, { payments: each(), from: '2025-01', to: '2025-03' })
+    expect(graced.months.slice(1).map((m) => m.principal_snt)).toEqual([0, 10_000])
+    const allGrace = loanPath({ ...l, grace: [{ from: '2025-02-01', to: '2025-03-31' }] }, { payments: each(), from: '2025-01', to: '2025-03' })
+    expect(allGrace.months.slice(1).map((m) => m.principal_snt)).toEqual([5_000, 5_000])
   })
 
   it('a month without a payment still repays the share; a catch-up pays two; unknown payments count each due month', () => {

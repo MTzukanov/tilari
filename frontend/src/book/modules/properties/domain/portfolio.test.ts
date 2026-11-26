@@ -1125,13 +1125,20 @@ describe('rental objects: housing-company loans', () => {
     expect(detail.housing.copy_sources).toEqual([])
   })
 
-  it('reminds of a missing share and missing documents while held; a sold object is not reminded', async () => {
+  it('reminds of a missing share and missing documents while held; a sold object only of its share at the sale', async () => {
     const { db } = await setUp()
     const loans = [loan({ charges: [{ from: '2026-01-01', amount_snt: 80 * E }] })]
     for (const id of [CC.bundle, CC.sold]) saveProperty(db, id, { ...computeDetail(db, id, { today: TODAY }).doc, housing_loans: loans }, 'now')
     const codes = (id: number) => computeDetail(db, id, { today: TODAY }).warnings.map((w) => w.code).filter((c) => c.startsWith('loan_'))
     // No rate row and no estimate: the share is counted on the margin alone.
     expect(codes(CC.bundle)).toEqual(['loan_rate_none', 'loan_share_missing', 'loan_charge_notice_missing'])
+    // Sold on 15 June 2025: the deed of sale's share makes its repayments known.
+    expect(computeDetail(db, CC.sold, { today: TODAY }).warnings.filter((w) => w.code.startsWith('loan_'))).toEqual([
+      { code: 'loan_sale_share_missing', params: { loan: 'Putkiremontti', sale_date: '2025-06-15' } },
+    ])
+    const sold = computeDetail(db, CC.sold, { today: TODAY })
+    const fromDeed = [{ ...loans[0], certificates: [{ date: '2025-06-15', share_snt: 4_000 * E, no_document: true }] }]
+    saveProperty(db, CC.sold, { ...sold.doc, housing_loans: fromDeed }, 'now')
     expect(codes(CC.sold)).toEqual([])
     expect(computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.bundle)?.warnings.map((w) => w.code)).toEqual(
       expect.arrayContaining(['loan_share_missing', 'loan_charge_notice_missing']),

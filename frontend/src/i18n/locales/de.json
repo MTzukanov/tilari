@@ -1523,6 +1523,7 @@
       "loan_rate_none": "Das Gesellschaftsdarlehen {loan} hat weder Zins noch Zinsannahme: der Anteil wird ohne Referenzzins berechnet. Zins oder Annahme hinzufügen.",
       "loan_type_retired": "Das Gesellschaftsdarlehen {loan} war als feste Rate gespeichert, eine Art, die Tilari nicht mehr verwendet: es wird als Annuität berechnet. Darlehensart auf seiner Karte wählen und speichern.",
       "loan_ends_missing": "Dem Gesellschaftsdarlehen {loan} fehlt der letzte Fälligkeitstag: die Tilgung lässt sich nicht aus den Darlehensbedingungen berechnen. Auf der Karte des Darlehens ergänzen.",
+      "loan_sale_share_missing": "Dem Gesellschaftsdarlehen {loan} des verkauften Objekts fehlt der Anteil für den Verkaufsmonat (verkauft {sale}): den Anteil aus dem Kaufvertrag bei den Anteilen des Darlehens ergänzen. Bis dahin sind die Tilgungen vom letzten Anteil bis zum Verkauf die Schätzung der Darlehensbedingungen.",
       "loan_rahastoitu_expensed": "Das Finanzierungsentgelt des Gesellschaftsdarlehens {loan} ab {from} ist kapitalisiert, aber als Aufwand gebucht: steuerlich gehört es zu den Anschaffungskosten der Anteile. Mit dem Abschlussprüfer klären.",
       "loan_grace_ending": "Gesellschaftsdarlehen {loan}: die tilgungsfreie Zeit endet am {to}; das Finanzierungsentgelt steigt, wenn die Tilgung beginnt.",
       "loan_charge_invoiced": "Laut den Rechnungen der Wohnungsgesellschaft beträgt das Finanzierungsentgelt des Gesellschaftsdarlehens {loan} ab {from} {amount}/Monat: tragen Sie es beim Darlehen ein.",

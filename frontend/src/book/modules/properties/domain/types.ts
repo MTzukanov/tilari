@@ -937,7 +937,10 @@ export type LoanMonth = {
   rate_pcm: number
   /** Interest on the share at the month's start at the rate in force. */
   interest_snt: number
-  /** The repayment the loan's terms ask (owner, 2026-11-24): never from what was paid. */
+  /**
+   * The repayment, never from what was paid (owner, 2026-11-24): between two known shares their
+   * difference, spread by what the loan's terms would repay each month; after the last one the terms'.
+   */
   principal_snt: number
   /** Extra repayments of the month (events). */
   extra_snt: number
@@ -950,7 +953,8 @@ export type LoanMonth = {
   invoiced?: true
   /**
    * A certificate (its share at the month's end, where the path goes on from): with an earlier one,
-   * how far the computed path was from it (computed less certified, to the cent).
+   * how far the terms alone would have been from it (computed less certified, to the cent); the
+   * months between repay the difference.
    */
   certificate?: { date: string; share_snt: number; voucher_id?: number; gap_snt: number | null }
 }
@@ -970,8 +974,8 @@ export type LoanPath = {
 export type HousingDetail = {
   /** The tab's documents and every voucher a loan links, posted ones only; a missing id was deleted. */
   vouchers: LeaseVoucher[]
-  /** The purchase's vouchers (the tase-erät's acquisitions): a share can come from the deed on one. */
-  purchase: LeaseVoucher[]
+  /** The purchase's and the sale's vouchers (the tase-erät's acquisitions and sale): a share can come from the deed on one. */
+  deeds: LeaseVoucher[]
   /** Other objects' loans, those paying the same housing company first. */
   copy_sources: HousingCopySource[]
   /** Each stored loan's share month by month, in the loans' order. */

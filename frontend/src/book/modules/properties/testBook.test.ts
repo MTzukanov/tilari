@@ -132,7 +132,7 @@ function addReviewCases(db: SqliteDb): void {
   const soldDetail = computeDetail(db, sold.id, { today: TODAY })
   const [loan] = soldDetail.doc.housing_loans!
   const [deed, ...later] = loan.certificates!
-  const fromDeed = { date: deed.date, share_snt: deed.share_snt, voucher_id: soldDetail.housing.purchase[0].voucher_id }
+  const fromDeed = { date: deed.date, share_snt: deed.share_snt, voucher_id: soldDetail.housing.deeds[0].voucher_id }
   saveProperty(db, sold.id, { ...soldDetail.doc, housing_loans: [{ ...loan, starts: '2024-01-01', certificates: [fromDeed, ...later] }] }, now)
 }
 
@@ -233,7 +233,7 @@ describe('testdb/tilari-properties-loans.kitsas', () => {
     expect(soldPath.months.at(-1)!.month).toBe(sold.summary.sold_on!.slice(0, 7))
     // Its first share is the deed's, on the purchase voucher, before the drawdown the certificate gives.
     const soldLoan = soldDetail.doc.housing_loans![0]
-    expect(soldDetail.housing.purchase.map((v) => v.voucher_id)).toContain(soldLoan.certificates![0].voucher_id)
+    expect(soldDetail.housing.deeds.map((v) => v.voucher_id)).toContain(soldLoan.certificates![0].voucher_id)
     expect(drawnOn(soldLoan)! < soldLoan.starts!).toBe(true)
   })
 

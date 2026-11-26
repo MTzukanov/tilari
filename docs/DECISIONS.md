@@ -858,8 +858,13 @@ correction would change the open year's income statement lines. The rental-objec
   an interest-only period ends, a certificate or an extra repayment moves the share. Extra repayments lower the share
   and a payoff ends it. A certificate gives the share at its month's end. Before the first one the path runs
   backwards on the same terms (to the later of the loan's start, the owner's first month, the books' start and the first
-  charge); each later one restarts the path from the certified share, its month keeping the gap (computed less
-  certified); after the last one it runs to the as-of month. What was paid (`paid_snt`) stays on each month for the
+  charge). Between two certificates the share's fall is known (owner, 2026-11-26, replacing a restart at each): the
+  months between repay exactly that fall, each in proportion to what the terms would repay in it (evenly when the
+  terms repay nothing), the interest on the share so worked out, and the later certificate's month keeps the gap the
+  terms alone would have left (computed less certified) as a measure of how well the stored terms fit. After the
+  last one the terms run to the as-of month. A sold object's share in its sale month (the deed of sale, a deed's
+  voucher offered as the document like the purchase's) makes all its repayments known; a sold object without one
+  is reminded (`loan_sale_share_missing`), its only loan reminder. What was paid (`paid_snt`) stays on each month for the
   cash flow and the check against the terms; a month without a payment still repays. Without any payee found, each
   due month counts as paid, and the card says so.
 - **Its reminders:** due months the payments have not covered by the as-of month (counted on, so an early or a

@@ -551,7 +551,7 @@ function remindersOf(c: Computed, ctx: LeaseContext): Warning[] {
   const loans = c.parsed.doc.housing_loans ?? []
   return [
     ...leaseReminders,
-    ...loanWarnings(loans, loanDay(ctx.asOf, ctx.today), held, c.loans.paths, ctx.rates),
+    ...loanWarnings(loans, loanDay(ctx.asOf, ctx.today), held, c.loans.paths, ctx.rates, c.result.status === 'sold' ? c.result.summary.sold_on : null),
     ...invoiceWarnings(loans, c.loans.invoices.suggestions, c.loans.invoices.assigned.unmatched, held),
   ]
 }
@@ -826,20 +826,20 @@ export function computeDetail(
 }
 
 /**
- * The Taloyhtiö tab's vouchers, the purchase's (a share can come from the deed), each loan's share
+ * The Taloyhtiö tab's vouchers, the purchase's and the sale's (a share can come from a deed), each loan's share
  * month by month with the payments behind it, and the loans of other objects to copy from (ADR-034):
  * those whose object pays one of this object's housing-company partners first.
  */
 function housingDetail(db: SqliteDb, loaded: Loaded, c: Computed): HousingDetail {
   const doc = c.parsed.doc
-  const purchaseIds = new Set(c.result.eras.flatMap((e) => e.movements.filter((m) => m.kind === 'acquisition').map((m) => m.voucher_id)))
-  const refs = loadVoucherRefs(db, new Set([...(doc.housing_doc_voucher_ids ?? []), ...housingVoucherIds(doc.housing_loans ?? []), ...purchaseIds]))
+  const deedIds = new Set(c.result.eras.flatMap((e) => e.movements.filter((m) => m.kind === 'acquisition' || m.kind === 'sale').map((m) => m.voucher_id)))
+  const refs = loadVoucherRefs(db, new Set([...(doc.housing_doc_voucher_ids ?? []), ...housingVoucherIds(doc.housing_loans ?? []), ...deedIds]))
   const posted = [...refs.values()]
     .filter((r) => r.posted)
     .map((r) => ({ voucher_id: r.id, date: r.date, doc_number: r.doc_number, series: r.series, title: r.title, files: r.files ?? [] }))
   const linked = new Set([...(doc.housing_doc_voucher_ids ?? []), ...housingVoucherIds(doc.housing_loans ?? [])])
   const vouchers = posted.filter((v) => linked.has(v.voucher_id))
-  const purchase = posted.filter((v) => purchaseIds.has(v.voucher_id))
+  const deeds = posted.filter((v) => deedIds.has(v.voucher_id))
   const { payments: found, paths } = c.loans
   const paid = [...found.months.values()].flatMap((m) => m.rows)
   const lineRefs = loadVoucherRefs(db, new Set(paid.map((r) => r.voucher_id)))
@@ -851,7 +851,7 @@ function housingDetail(db: SqliteDb, loaded: Loaded, c: Computed): HousingDetail
   const others = loaded.centres.filter((centre) => centre.id !== c.centre.id && (docFor(loaded, centre.id).doc.housing_loans ?? []).length)
   const rate_estimates = loaded.rates
   const invoiced = { charge_suggestions: c.loans.invoices.suggestions, invoice_labels: invoiceLabels(c.loans.invoices.all) }
-  if (!others.length) return { vouchers, purchase, copy_sources: [], paths, payments, rate_estimates, ...invoiced }
+  if (!others.length) return { vouchers, deeds, copy_sources: [], paths, payments, rate_estimates, ...invoiced }
   const own = housingCompanyPartners(c.result.classified.operating, c.reversed)
   const rows = groupBy(loadPnlRows(db, new Set(others.flatMap((centre) => [...allocationSet(centre)]))), (r) => r.allocation)
   const sources: HousingCopySource[] = others.flatMap((centre) => {
@@ -862,7 +862,7 @@ function housingDetail(db: SqliteDb, loaded: Loaded, c: Computed): HousingDetail
   const order = (s: HousingCopySource) => (s.same_company ? 0 : 1)
   return {
     vouchers,
-    purchase,
+    deeds,
     copy_sources: sources.sort((a, b) => order(a) - order(b) || a.object_name.localeCompare(b.object_name, 'fi') || a.loan.name.localeCompare(b.loan.name, 'fi')),
     paths,
     payments,

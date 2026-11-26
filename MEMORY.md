@@ -7,6 +7,14 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-26 - Housing-company loans: between known shares the repayment is the known fall (ADR-034)
+
+- Owner: for a sold object nothing should be theoretical. With certificates restarting the path, the terms' error
+  stayed in the repayments and the residual (the sale's part of the total result) took the other side. Now the
+  months between two known shares repay exactly the certified fall, spread by the terms' monthly repayment; the
+  certificate keeps the terms' gap as a fit measure. The sale's deed is offered as a share's document
+  (`HousingDetail.deeds`, was `purchase`), and a sold object with no share in its sale month is reminded.
+
 ## 2026-11-26 - Housing-company loans: the owner's months start where the rent does (ADR-034, ADR-026)
 
 - Defect the owner found in the terms demo: the loans counted from the purchase month, so an object bought late in a

@@ -1523,6 +1523,7 @@
       "loan_rate_none": "The company loan {loan} has no rate and no rate estimate: the share is counted without a reference rate. Add the rate or an estimate.",
       "loan_type_retired": "The company loan {loan} was stored as a fixed instalment, a type Tilari no longer uses: it is counted as an annuity. Pick the loan type on its card and save.",
       "loan_ends_missing": "The company loan {loan} has no last due date: its repayment cannot be worked out from its terms. Add it on the loan's card.",
+      "loan_sale_share_missing": "The sold object's company loan {loan} has no share for the month of the sale (sold {sale}): add the share in the deed of sale to the loan's shares. Until then the repayments from the last share to the sale are the terms' estimate.",
       "loan_rahastoitu_expensed": "The financing charge of the company loan {loan} from {from} is capitalised but booked as a cost: in taxation it belongs to the shares' acquisition cost. Check with the auditor.",
       "loan_grace_ending": "Housing-company loan {loan}: the interest-only period ends {to}; the financing charge rises when repayments start.",
       "loan_charge_invoiced": "The housing company's invoices give the financing charge of the company loan {loan} as {amount}/month from {from}: add it to the loan's financing charges.",
