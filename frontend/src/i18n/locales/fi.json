@@ -1591,6 +1591,8 @@
       "result": "Tulos yhteensä",
       "pctSales": "Tuotto vuodessa myynnit mukaan, %",
       "pctSalesHint": "Tulos yhteensä suhteessa rahaan, joka oli kiinni kohteissa kunakin kuukautena, kuten edellisellä rivillä.",
+      "pctSofar": "Tuotto kertynyt, % palauttamatta olevasta",
+      "pctSofarHint": "Tulos alusta vuoden loppuun suhteessa rahaan, joka oli vuoden lopussa kiinni kohteissa: rahavirta yhteensä alusta, eli sijoitettu pääoma ja kassavirta, jota ei ole vielä saatu takaisin. Yhteensä-sarakkeessa koko ajalta.",
       "purchases": "Ostot",
       "purchasesHint": "Sijoitettu pääoma: kauppahinnat varainsiirtoveroineen ja muut hankinnat.",
       "proceeds": "Myyntihinnat",

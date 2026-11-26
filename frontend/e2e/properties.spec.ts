@@ -739,12 +739,18 @@ test.describe('rental object housing-company loans', () => {
       'Tulos yhteensä',
       'Tuotto vuodessa, % palauttamatta olevasta',
       'Tuotto vuodessa myynnit mukaan, %',
+      'Tuotto kertynyt, % palauttamatta olevasta',
       'Ostot',
       'Myyntihinnat',
       'Rahavirta yhteensä',
     ])
     await expect(summaryRows.nth(1)).toContainText(/201\s€/)
     await expect(summaryRows.nth(4).locator('td').last()).toHaveText(/^-?[\d,]+\s%$/)
+    // The return so far: each year from the first, all time in the total column; none for the last 12 months.
+    const total = await cashTable.locator('thead th').allInnerTexts()
+    const totalAt = total.findIndex((h) => /^Yhteensä/i.test(h.trim()))
+    await expect(summaryRows.nth(6).locator('td').nth(totalAt)).toHaveText(/^-?[\d,]+\s%$/)
+    await expect(summaryRows.nth(6).locator('td').last()).toHaveText('')
     // Its sale year's result is marked, with its parts on hover.
     await expect(cashTable.locator('.property-cash-sale')).toHaveCount(0)
     // What the cells show is picked above the table, the summary row it matches in bold, and remembered.
@@ -770,7 +776,15 @@ test.describe('rental object housing-company loans', () => {
     // Without them: the objects held now, no sale row, a note why the cash flow differs from the company's.
     const withSold = cashTable.getByRole('checkbox', { name: 'Myydyt kohteet mukana' })
     await withSold.uncheck()
-    await expect(labels).toHaveText(['Kassavirta', 'Yhtiölainojen lyhennykset', 'Kassavirta + lyhennykset', 'Tuotto vuodessa, % palauttamatta olevasta', 'Ostot', 'Rahavirta yhteensä'])
+    await expect(labels).toHaveText([
+      'Kassavirta',
+      'Yhtiölainojen lyhennykset',
+      'Kassavirta + lyhennykset',
+      'Tuotto vuodessa, % palauttamatta olevasta',
+      'Tuotto kertynyt, % palauttamatta olevasta',
+      'Ostot',
+      'Rahavirta yhteensä',
+    ])
     await expect(cashTable.locator('.property-footnote')).toContainText('Vain omistetut kohteet')
     await expect(repaidChart.locator('.portfolio-line')).toHaveCount(2)
     // One choice for the table and the charts, remembered.
@@ -778,7 +792,7 @@ test.describe('rental object housing-company loans', () => {
     await page.reload()
     await expect(withSold).not.toBeChecked()
     await withSold.check()
-    await expect(labels).toHaveCount(9)
+    await expect(labels).toHaveCount(10)
     // On to the payoff with the estimate on: each line runs on faded, the last month's box at 0.
     const sharesChart = page.getByRole('group', { name: 'Yhtiölainaosuudet kuukauden lopussa' })
     await expect(sharesChart.locator('.portfolio-ahead')).toHaveCount(0)

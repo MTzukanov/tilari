@@ -1008,6 +1008,10 @@ correction would change the open year's income statement lines. The rental-objec
   with the cash flow - the company's money in and out, whose running total is the unrecovered with its sign turned.
   A purchase is no loss and a gross sale price no gain, so neither is in the result rows. The 12-month column has
   no money rows; the tile is always the objects held now.
+- **The return so far** (owner, 2026-11-26: the total column's return is a year's rate, show all time too): a row
+  under the yearly return - the result from the first year to the column's end over the money still in the objects
+  then, the money flow from the start turned (capital put in and cash flow not yet back, as the yearly return's
+  base counts it); all time in the total column, none for the last 12 months.
 - **One figure per object** (owner, 2026-11-24): a switch above the table puts the cash flow, the repayment, the two
   together or the return in every object's cells (the return per object from its own `money_in_snt`); the summary rows
   stay, the one shown in bold. A year the as-of date ends inside says how many months it has, so a part year is not

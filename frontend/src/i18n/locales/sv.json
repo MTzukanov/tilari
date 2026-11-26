@@ -1591,6 +1591,8 @@
       "result": "Resultat",
       "pctSales": "Avkastning per år inklusive försäljningar, %",
       "pctSalesHint": "Resultatet i förhållande till pengarna som var bundna i objekten varje månad, som på raden ovan.",
+      "pctSofar": "Avkastning hittills, % av ej återfått",
+      "pctSofarHint": "Resultatet från början till årets slut i förhållande till pengarna som var bundna i objekten vid årets slut: penningflödet från början, det insatta kapitalet och kassaflöde som ännu inte återfåtts. I kolumnen totalt för hela tiden.",
       "purchases": "Köp",
       "purchasesHint": "Insatt kapital: köpeskillingar med överlåtelseskatt och andra anskaffningar.",
       "proceeds": "Försäljningspriser",

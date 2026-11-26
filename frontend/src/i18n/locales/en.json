@@ -1591,6 +1591,8 @@
       "result": "Result",
       "pctSales": "Return a year including sales, %",
       "pctSalesHint": "The result against the money tied up in the objects each month, as in the row above.",
+      "pctSofar": "Return so far, % of not yet recovered",
+      "pctSofarHint": "The result from the start to the year's end against the money tied up in the objects at the year's end: the money flow from the start, the capital put in and cash flow not yet recovered. In the total column for all time.",
       "purchases": "Purchases",
       "purchasesHint": "Capital put in: purchase prices with transfer tax and other acquisitions.",
       "proceeds": "Sale prices",

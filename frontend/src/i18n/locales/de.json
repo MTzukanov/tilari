@@ -1591,6 +1591,8 @@
       "result": "Ergebnis",
       "pctSales": "Rendite im Jahr mit Verkäufen, %",
       "pctSalesHint": "Das Ergebnis im Verhältnis zum Geld, das jeden Monat in den Objekten gebunden war, wie in der Zeile darüber.",
+      "pctSofar": "Rendite bisher, % des noch nicht Zurückgeflossenen",
+      "pctSofarHint": "Das Ergebnis vom Anfang bis zum Jahresende im Verhältnis zum Geld, das am Jahresende in den Objekten gebunden war: der Geldfluss seit Beginn, das eingesetzte Kapital und noch nicht zurückgeflossener Cashflow. In der Spalte insgesamt für die ganze Zeit.",
       "purchases": "Käufe",
       "purchasesHint": "Eingesetztes Kapital: Kaufpreise mit Grunderwerbsteuer und andere Anschaffungen.",
       "proceeds": "Verkaufspreise",
