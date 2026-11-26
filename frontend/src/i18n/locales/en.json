@@ -1214,7 +1214,9 @@
       "percent": "As a percentage of capital put in",
       "repaidTitle": "Cash flow and repayments at month end",
       "repaid": "Repaid in total",
-      "gain": "Cash flow + repayments"
+      "gain": "Cash flow + repayments",
+      "realized": "Realized in sales",
+      "result": "Result"
     },
     "chart": {
       "cashFlow": "Cash flow by month",
@@ -1570,7 +1572,7 @@
     },
     "cash": {
       "title": "Cash flow by year",
-      "lead": "Income - costs in the month they belong to (accruals and corrections included); no investments or sales.",
+      "lead": "Cash flow: income - costs in the month they belong to (accruals and corrections included). Purchases and sales are on their own rows below.",
       "net": "Cash flow",
       "repaid": "Housing-company loan repayments",
       "gain": "Cash flow + repayments",
@@ -1580,7 +1582,22 @@
       "view": "In the table",
       "viewRepaid": "Repayments",
       "viewPct": "Return % a year",
-      "partYear": "{label} ({months} mo)"
+      "partYear": "{label} ({months} mo)",
+      "withSold": "Sold objects included",
+      "withSoldHint": "Sold objects for the years they were owned: cash flow, repayments and, in the year of the sale, the sale's result. The years add up to the object's whole result.",
+      "heldOnly": "Objects held now only: in the years the sold objects were owned, the cash flow differs from the company's.",
+      "sale": "Sales: price change and costs",
+      "saleHint": "In the year of the sale, the sale price after costs less the capital put in and the shares repaid while owned: the change in the debt-free price and the purchase and sale costs.",
+      "result": "Result",
+      "pctSales": "Return a year including sales, %",
+      "pctSalesHint": "The result against the money tied up in the objects each month, as in the row above.",
+      "purchases": "Purchases",
+      "purchasesHint": "Capital put in: purchase prices with transfer tax and other acquisitions.",
+      "proceeds": "Sale prices",
+      "proceedsHint": "The money from the sales after costs.",
+      "moneyFlow": "Money flow",
+      "moneyFlowHint": "Cash flow, own loan interest, purchases and sale prices together: the money that went from the company's account into the objects or came back. Its running total is Not yet recovered with the sign reversed.",
+      "saleParts": "Cash flow {net} · repayments {repaid} · sale {sale}"
     },
     "sold": {
       "title": "Sold objects ({n})",

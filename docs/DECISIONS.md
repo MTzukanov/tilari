@@ -995,6 +995,19 @@ correction would change the open year's income statement lines. The rental-objec
   result is not (it is what is measured). Each month weighs a twelfth (`YearCashFlow.money_in_snt`; the last 12 months'
   average in `Trailing12.money_in_snt`), so a year held in part gives a year's rate, the total column the average a
   year, and nothing counts after a sale. Without loans the row is the cash flow's alone. Price changes are not in it.
+- **Sold objects, counted or not** (owner, 2026-11-26): one choice, remembered in the browser, for the yearly
+  table and the cash flow and repayment charts; on by default. On, a sold object counts for the years it was the
+  owner's, and its sale in the year of its sale month (`YearCashFlow.sale_snt`): the proceeds less the capital put in
+  and the shares repaid while held - the debt-free price's change with the purchase and sale costs. Its years and
+  the sale add up to its whole result in the sold objects' table, so its repaid shares never look unrealized: the
+  summary gets a sale row, the sum is the result ("Tulos yhteensä"), and a second return row counts the sales (the
+  first stays the operating one, comparable year to year). The repayment chart's repaid line keeps only the shares
+  still held and a "Toteutunut myynneissä" line takes a sale's proceeds less capital from its sale month. Off, the
+  objects held now only (`held_*` totals), with a note that the cash flow then differs from the company's in the
+  years the sold ones were owned. Either way three money rows follow: the purchases, the sale prices and all of it
+  with the cash flow - the company's money in and out, whose running total is the unrecovered with its sign turned.
+  A purchase is no loss and a gross sale price no gain, so neither is in the result rows. The 12-month column has
+  no money rows; the tile is always the objects held now.
 - **One figure per object** (owner, 2026-11-24): a switch above the table puts the cash flow, the repayment, the two
   together or the return in every object's cells (the return per object from its own `money_in_snt`); the summary rows
   stay, the one shown in bold. A year the as-of date ends inside says how many months it has, so a part year is not

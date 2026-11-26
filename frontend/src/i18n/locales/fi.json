@@ -1214,7 +1214,9 @@
       "percent": "Prosentteina sijoitetusta",
       "repaidTitle": "Kassavirta ja lyhennykset kuukauden lopussa",
       "repaid": "Lyhennetty yhteensä",
-      "gain": "Kassavirta + lyhennykset"
+      "gain": "Kassavirta + lyhennykset",
+      "realized": "Toteutunut myynneissä",
+      "result": "Tulos yhteensä"
     },
     "chart": {
       "cashFlow": "Kassavirta kuukausittain",
@@ -1570,7 +1572,7 @@
     },
     "cash": {
       "title": "Kassavirta vuosittain",
-      "lead": "Tuotot - kulut kuukaudelle, jota ne koskevat (jaksotukset ja oikaisut mukana); ei sijoituksia eikä myyntiä.",
+      "lead": "Kassavirta: tuotot - kulut kuukaudelle, jota ne koskevat (jaksotukset ja oikaisut mukana). Ostot ja myynnit ovat omilla riveillään alla.",
       "net": "Kassavirta",
       "repaid": "Yhtiölainojen lyhennykset",
       "gain": "Kassavirta + lyhennykset",
@@ -1580,7 +1582,22 @@
       "view": "Taulukossa",
       "viewRepaid": "Lyhennykset",
       "viewPct": "Tuotto % vuodessa",
-      "partYear": "{label} ({months} kk)"
+      "partYear": "{label} ({months} kk)",
+      "withSold": "Myydyt kohteet mukana",
+      "withSoldHint": "Myydyt kohteet omistusvuosiltaan: kassavirta, lyhennykset ja myyntivuonna myynnin tulos. Vuodet laskevat yhteen kohteen kokonaistulokseksi.",
+      "heldOnly": "Vain omistetut kohteet: myytyjen kohteiden omistusvuosina kassavirta poikkeaa yhtiön kassavirrasta.",
+      "sale": "Myynnit: hinnanmuutos ja kulut",
+      "saleHint": "Myyntivuonna myyntihinta kulujen jälkeen, josta on vähennetty sijoitettu pääoma ja omistusaikana lyhennetyt velkaosuudet: velattoman hinnan muutos sekä osto- ja myyntikulut.",
+      "result": "Tulos yhteensä",
+      "pctSales": "Tuotto vuodessa myynnit mukaan, %",
+      "pctSalesHint": "Tulos yhteensä suhteessa rahaan, joka oli kiinni kohteissa kunakin kuukautena, kuten edellisellä rivillä.",
+      "purchases": "Ostot",
+      "purchasesHint": "Sijoitettu pääoma: kauppahinnat varainsiirtoveroineen ja muut hankinnat.",
+      "proceeds": "Myyntihinnat",
+      "proceedsHint": "Myynneistä saatu raha kulujen jälkeen.",
+      "moneyFlow": "Rahavirta yhteensä",
+      "moneyFlowHint": "Kassavirta, oman lainan korot, ostot ja myyntihinnat yhteensä: raha, joka meni yhtiön tililtä kohteisiin tai tuli niistä. Sen juokseva summa on Palauttamatta vastakkaisella merkillä.",
+      "saleParts": "Kassavirta {net} · lyhennykset {repaid} · myynti {sale}"
     },
     "sold": {
       "title": "Myydyt kohteet ({n})",

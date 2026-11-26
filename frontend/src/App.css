@@ -5445,10 +5445,23 @@ tr.tax-total td {
   margin: 0.4rem 0 1rem;
 }
 
-/* What the cash flow table shows; wraps on a phone. */
+/* What the cash flow table shows, and whether the sold objects count; wraps on a phone. */
+.property-cash-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0 0 0.6rem;
+}
+
 .property-cash-view {
   flex-wrap: wrap;
-  margin: 0 0 0.6rem;
+}
+
+/* A sold object's sale year in the result: its parts on hover. */
+.property-cash-sale {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
 }
 
 .property-defaults {

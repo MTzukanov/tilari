@@ -70,8 +70,8 @@ describe('portfolioChart', () => {
       { id: 2, status: 'active', months: [owed(month('2026-02', 50, 0), 500), owed(month('2026-03', 50, 80), 530)] },
     ])
     expect(chart.keys).toEqual(['2026-01', '2026-02', '2026-03'])
-    expect(chart.objects[0]).toEqual({ id: 1, cash_snt: [60, 120, 180], unrecovered_snt: [900, 840, 780], invested_snt: [0, 0, 0], share_snt: [null, null, null], share_ahead_snt: [], cash_ahead_snt: [], unrecovered_ahead_snt: [], invested_ahead_snt: [] })
-    expect(chart.objects[1]).toEqual({ id: 2, cash_snt: [null, 50, 20], unrecovered_snt: [null, 500, 530], invested_snt: [null, 0, 0], share_snt: [null, null, null], share_ahead_snt: [], cash_ahead_snt: [], unrecovered_ahead_snt: [], invested_ahead_snt: [] })
+    expect(chart.objects[0]).toEqual({ id: 1, sold: false, cash_snt: [60, 120, 180], unrecovered_snt: [900, 840, 780], invested_snt: [0, 0, 0], share_snt: [null, null, null], share_ahead_snt: [], cash_ahead_snt: [], unrecovered_ahead_snt: [], invested_ahead_snt: [] })
+    expect(chart.objects[1]).toEqual({ id: 2, sold: false, cash_snt: [null, 50, 20], unrecovered_snt: [null, 500, 530], invested_snt: [null, 0, 0], share_snt: [null, null, null], share_ahead_snt: [], cash_ahead_snt: [], unrecovered_ahead_snt: [], invested_ahead_snt: [] })
     expect(chart.total_cash_snt).toEqual([60, 170, 200])
     expect(chart.total_unrecovered_snt).toEqual([900, 1340, 1310])
   })
@@ -86,7 +86,7 @@ describe('portfolioChart', () => {
     expect(chart.objects.map((o) => o.id)).toEqual([1, 2, 3])
     expect(chart.objects[1].cash_snt).toEqual([30, 60, null])
     // Nothing invested linked: a cash flow, nothing to recover.
-    expect(chart.objects[2]).toEqual({ id: 3, cash_snt: [5, null, null], unrecovered_snt: [null, null, null], invested_snt: [null, null, null], share_snt: [null, null, null], share_ahead_snt: [], cash_ahead_snt: [], unrecovered_ahead_snt: [], invested_ahead_snt: [] })
+    expect(chart.objects[2]).toEqual({ id: 3, sold: false, cash_snt: [5, null, null], unrecovered_snt: [null, null, null], invested_snt: [null, null, null], share_snt: [null, null, null], share_ahead_snt: [], cash_ahead_snt: [], unrecovered_ahead_snt: [], invested_ahead_snt: [] })
     expect(chart.total_cash_snt).toEqual([45, 85, 95])
     expect(chart.total_unrecovered_snt).toEqual([500, 100, 100])
   })
@@ -183,9 +183,34 @@ describe('portfolioChart', () => {
     expect(chart.total_unrecovered_ahead_snt).toEqual([970, 940])
     expect(chart.total_invested_ahead_snt).toEqual([1_000, 1_000])
     expect(chart.total_back_ahead_snt).toEqual([30, 60])
-    // The loans' repayment summed: a sold object's stays as it ended, the held ones' run on with their estimates.
-    expect(chart.total_repaid_snt).toEqual([8, 13])
-    expect(chart.total_repaid_ahead_snt).toEqual([14 + 3 + 4, 18 + 3 + 8])
+    // The loans' repayment summed over the shares still held: a sold object's goes from its sale month
+    // (into what it realized), the held ones' run on with their estimates.
+    expect(chart.total_repaid_snt).toEqual([5, 10])
+    expect(chart.total_repaid_ahead_snt).toEqual([14 + 4, 18 + 8])
+    expect(chart.held_cash_ahead_snt).toEqual([30 + 2, 60 - 3])
+  })
+
+  it('with the sold objects, a sale moves the shares it repaid out of the repayment and what it realized into its own line; held totals leave it out', () => {
+    const at = (key: string, net: number, capex: number, proceeds: number, principal: number): MonthPoint => ({
+      ...month(key, net, 0),
+      capex_snt: capex,
+      proceeds_snt: proceeds,
+      unrecovered_snt: 0,
+      housing_principal_snt: principal,
+    })
+    const chart = portfolioChart([
+      { id: 1, status: 'active', months: [at('2026-01', 10, 0, 0, 5), at('2026-02', 10, 0, 0, 5), at('2026-03', 10, 0, 0, 5)] },
+      // Bought for 1 000 in January, 20 a month into the share, sold in March for 1 010 after costs.
+      { id: 2, status: 'sold', sold_on: '2026-03-15', months: [at('2026-01', -5, 1_000, 0, 20), at('2026-02', -5, 0, 0, 20), at('2026-03', -5, 0, 1_010, 20)] },
+    ])
+    expect(chart.objects.map((o) => o.sold)).toEqual([false, true])
+    expect(chart.total_repaid_snt).toEqual([25, 50, 15])
+    expect(chart.total_realized_snt).toEqual([0, 0, 10])
+    // All three together are the results: the held object's cash flow and repayment, 30 + 15, and the
+    // sold one's whole result, -15 of cash flow and 10 the sale brought over what was put in.
+    expect(chart.total_cash_snt[2] + chart.total_repaid_snt[2] + chart.total_realized_snt[2]).toBe(30 + 15 - 15 + 10)
+    expect(chart.held_cash_snt).toEqual([10, 20, 30])
+    expect(chart.held_repaid_snt).toEqual([5, 10, 15])
   })
 
   it('runs the held objects\' shares on to their payoff; the total stops where an object still owing has no estimate', () => {

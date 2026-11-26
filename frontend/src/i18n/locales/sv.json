@@ -1214,7 +1214,9 @@
       "percent": "I procent av det investerade",
       "repaidTitle": "Kassaflöde och amorteringar vid månadens slut",
       "repaid": "Amorterat totalt",
-      "gain": "Kassaflöde + amorteringar"
+      "gain": "Kassaflöde + amorteringar",
+      "realized": "Realiserat i försäljningar",
+      "result": "Resultat"
     },
     "chart": {
       "cashFlow": "Kassaflöde per månad",
@@ -1570,7 +1572,7 @@
     },
     "cash": {
       "title": "Kassaflöde per år",
-      "lead": "Intäkter - kostnader för den månad de gäller (periodiseringar och rättelser ingår); inga investeringar eller försäljningar.",
+      "lead": "Kassaflöde: intäkter - kostnader för den månad de gäller (periodiseringar och rättelser ingår). Köp och försäljningar står på egna rader nedan.",
       "net": "Kassaflöde",
       "repaid": "Amorteringar på bolagslån",
       "gain": "Kassaflöde + amorteringar",
@@ -1580,7 +1582,22 @@
       "view": "I tabellen",
       "viewRepaid": "Amorteringar",
       "viewPct": "Avkastning % per år",
-      "partYear": "{label} ({months} mån)"
+      "partYear": "{label} ({months} mån)",
+      "withSold": "Sålda objekt med",
+      "withSoldHint": "Sålda objekt för de år de ägdes: kassaflöde, amorteringar och försäljningsåret försäljningens resultat. Åren summeras till objektets hela resultat.",
+      "heldOnly": "Endast objekt som ägs nu: under de år de sålda objekten ägdes avviker kassaflödet från bolagets.",
+      "sale": "Försäljningar: prisförändring och kostnader",
+      "saleHint": "Försäljningsåret: försäljningspriset efter kostnader minus insatt kapital och de låneandelar som amorterades under ägandet: förändringen i det skuldfria priset samt köp- och försäljningskostnaderna.",
+      "result": "Resultat",
+      "pctSales": "Avkastning per år inklusive försäljningar, %",
+      "pctSalesHint": "Resultatet i förhållande till pengarna som var bundna i objekten varje månad, som på raden ovan.",
+      "purchases": "Köp",
+      "purchasesHint": "Insatt kapital: köpeskillingar med överlåtelseskatt och andra anskaffningar.",
+      "proceeds": "Försäljningspriser",
+      "proceedsHint": "Pengarna från försäljningarna efter kostnader.",
+      "moneyFlow": "Penningflöde",
+      "moneyFlowHint": "Kassaflöde, räntor på eget lån, köp och försäljningspriser tillsammans: pengarna som gick från bolagets konto till objekten eller kom tillbaka. Den löpande summan är Ej återfått med omvänt tecken.",
+      "saleParts": "Kassaflöde {net} · amorteringar {repaid} · försäljning {sale}"
     },
     "sold": {
       "title": "Sålda objekt ({n})",

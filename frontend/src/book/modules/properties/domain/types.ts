@@ -397,10 +397,7 @@ export type MonthPoint = {
   proceeds_snt: number
   /** Unrecovered money at the end of the month. */
   unrecovered_snt: number
-  /**
-   * The housing-company loans' repayment in the month (ADR-035): the rahoitusvastike's part that
-   * lowered the shares, as the loans' paths follow the payments; missing without loans.
-   */
+  /** The housing-company loans' repayment in the month (ADR-034, ADR-035), as the loans' paths have it; missing without loans. */
   housing_principal_snt?: number
 }
 
@@ -415,7 +412,7 @@ export type YearRow = {
   proceeds_snt: number
   /** Every posted P&L line of the cost centre in the year, as Kitsas reports it. */
   kitsas_result_snt: number
-  /** The rahoitusvastike paid in the year split by the loans' paths (ADR-034): only on an object with loans. */
+  /** The interest and repayment the loans' paths have in the year (ADR-034): only on an object with loans. */
   housing_interest_snt?: number
   housing_principal_snt?: number
 }
@@ -472,7 +469,23 @@ export type EraState = EraLink & {
  * (`moneyIn`), each month a twelfth: the cash flow and repayment over it is a year's return, however
  * few months the year held it (ADR-035).
  */
-export type YearCashFlow = { starts: string; ends: string; net_snt: number; interest_snt: number; principal_snt?: number; money_in_snt: number }
+export type YearCashFlow = {
+  starts: string
+  ends: string
+  net_snt: number
+  interest_snt: number
+  principal_snt?: number
+  money_in_snt: number
+  /** The capital put in (purchases and additions) and the sale proceeds in the year: the money that moved besides the cash flow. */
+  capex_snt: number
+  proceeds_snt: number
+  /**
+   * A sold object's sale, in the year of its sale month (owner, 2026-11-26): its proceeds less the
+   * capital put in and the shares repaid while it was the owner's - the debt-free price's change with
+   * the purchase and sale costs - so its years and the sale add up to its whole result.
+   */
+  sale_snt?: number
+}
 
 export type BreakEven = {
   price_snt: number
@@ -824,6 +837,8 @@ export type PortfolioChart = {
   /** `invested_snt`: the capital put in so far, in the months `unrecovered_snt` has (the base of its percentage). */
   objects: {
     id: number
+    /** Sold by the as-of date: the cash flow charts leave it out unless sold objects are included. */
+    sold: boolean
     cash_snt: (number | null)[]
     unrecovered_snt: (number | null)[]
     invested_snt: (number | null)[]
@@ -855,10 +870,23 @@ export type PortfolioChart = {
   total_share_ahead_snt: (number | null)[]
   /**
    * The housing-company loans' repayment summed from the first month any loan is followed (ADR-035): what
-   * the rahoitusvastike paid into the shares rather than spent; a sold object's stays as it ended.
+   * the rahoitusvastike paid into the shares rather than spent - the shares still held: a sold object's
+   * leaves from its sale month, into `total_realized_snt`.
    */
   total_repaid_snt: number[]
   total_repaid_ahead_snt: number[]
+  /**
+   * What the sales realized (owner, 2026-11-26): from each sold object's sale month its proceeds less the
+   * capital put in - the shares it repaid and the sale's own result. Cash flow, repayment and it add up
+   * to the objects' results.
+   */
+  total_realized_snt: number[]
+  total_realized_ahead_snt: number[]
+  /** The cash flow and the repayment of the objects held on the as-of date only (sold objects left out). */
+  held_cash_snt: number[]
+  held_cash_ahead_snt: number[]
+  held_repaid_snt: number[]
+  held_repaid_ahead_snt: number[]
   /** The totals run on over `ahead_keys` as in `keys` (a sold object's cash flow stays in its total). */
   total_cash_ahead_snt: number[]
   total_unrecovered_ahead_snt: number[]

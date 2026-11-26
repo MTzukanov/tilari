@@ -1214,7 +1214,9 @@
       "percent": "In Prozent des eingesetzten Kapitals",
       "repaidTitle": "Cashflow und Tilgungen zum Monatsende",
       "repaid": "Getilgt insgesamt",
-      "gain": "Cashflow + Tilgungen"
+      "gain": "Cashflow + Tilgungen",
+      "realized": "Durch Verkäufe realisiert",
+      "result": "Ergebnis"
     },
     "chart": {
       "cashFlow": "Cashflow pro Monat",
@@ -1570,7 +1572,7 @@
     },
     "cash": {
       "title": "Cashflow pro Jahr",
-      "lead": "Erträge - Kosten im Monat, zu dem sie gehören (Abgrenzungen und Korrekturen enthalten); ohne Investitionen und Verkäufe.",
+      "lead": "Cashflow: Erträge - Kosten im Monat, zu dem sie gehören (Abgrenzungen und Korrekturen enthalten). Käufe und Verkäufe stehen unten in eigenen Zeilen.",
       "net": "Cashflow",
       "repaid": "Tilgungen der Gesellschaftsdarlehen",
       "gain": "Cashflow + Tilgungen",
@@ -1580,7 +1582,22 @@
       "view": "In der Tabelle",
       "viewRepaid": "Tilgungen",
       "viewPct": "Rendite % im Jahr",
-      "partYear": "{label} ({months} Mon.)"
+      "partYear": "{label} ({months} Mon.)",
+      "withSold": "Verkaufte Objekte einbeziehen",
+      "withSoldHint": "Verkaufte Objekte für die Jahre, in denen sie gehalten wurden: Cashflow, Tilgungen und im Verkaufsjahr das Ergebnis des Verkaufs. Die Jahre ergeben zusammen das Gesamtergebnis des Objekts.",
+      "heldOnly": "Nur jetzt gehaltene Objekte: in den Jahren, in denen die verkauften Objekte gehalten wurden, weicht der Cashflow von dem der Gesellschaft ab.",
+      "sale": "Verkäufe: Preisänderung und Kosten",
+      "saleHint": "Im Verkaufsjahr der Verkaufspreis nach Kosten abzüglich des eingesetzten Kapitals und der während des Haltens getilgten Anteile: die Änderung des schuldenfreien Preises sowie die Kauf- und Verkaufskosten.",
+      "result": "Ergebnis",
+      "pctSales": "Rendite im Jahr mit Verkäufen, %",
+      "pctSalesHint": "Das Ergebnis im Verhältnis zum Geld, das jeden Monat in den Objekten gebunden war, wie in der Zeile darüber.",
+      "purchases": "Käufe",
+      "purchasesHint": "Eingesetztes Kapital: Kaufpreise mit Grunderwerbsteuer und andere Anschaffungen.",
+      "proceeds": "Verkaufspreise",
+      "proceedsHint": "Das Geld aus den Verkäufen nach Kosten.",
+      "moneyFlow": "Geldfluss",
+      "moneyFlowHint": "Cashflow, Zinsen eigener Darlehen, Käufe und Verkaufspreise zusammen: das Geld, das vom Konto der Gesellschaft in die Objekte ging oder zurückkam. Seine laufende Summe ist Noch nicht zurück mit umgekehrtem Vorzeichen.",
+      "saleParts": "Cashflow {net} · Tilgungen {repaid} · Verkauf {sale}"
     },
     "sold": {
       "title": "Verkaufte Objekte ({n})",

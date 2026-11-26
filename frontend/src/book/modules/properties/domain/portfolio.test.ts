@@ -274,6 +274,19 @@ describe('rental objects: figures', () => {
     expect(() => saveProperty(db, CC.sold, { ...d.doc, rent_from: '2025-07-01' }, 'now')).toThrow('invalid_field:rent_until')
   })
 
+  it('a sold object\'s years and its sale, in the sale month\'s year, add up to its whole result; the money rows are its capital and proceeds', async () => {
+    const { db } = await setUp()
+    const row = computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.sold)!
+    expect(row.cash_years.filter((y) => y.sale_snt != null).map((y) => y.starts)).toEqual(['2025-01-01'])
+    const years = (value: (y: (typeof row.cash_years)[number]) => number) => row.cash_years.reduce((sum, y) => sum + value(y), 0)
+    expect(years((y) => y.net_snt - y.interest_snt + (y.principal_snt ?? 0) + (y.sale_snt ?? 0))).toBe(-row.summary.unrecovered_snt)
+    expect(years((y) => y.proceeds_snt)).toBe(row.summary.proceeds_snt)
+    expect(years((y) => y.capex_snt)).toBe(row.summary.invested_snt)
+    // A held object has no sale.
+    const held = computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.bundle)!
+    expect(held.cash_years.some((y) => y.sale_snt != null)).toBe(false)
+  })
+
   it('sold object: sale proceeds include the later broker invoice; actual IRR', async () => {
     const { db, vouchers } = await setUp()
     const d = computeDetail(db, CC.sold, { today: TODAY })

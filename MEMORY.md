@@ -7,6 +7,13 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-26 - Properties page: sold objects in the cash flow, with their sale (ADR-035)
+
+- Owner noticed the repayment row jump when the sold objects' loans were entered: their repayments counted as gains
+  while the sales' losses were nowhere in the table. Now a "Myydyt kohteet mukana" choice (table + charts): on, a
+  sale row (proceeds - capital - repaid) closes each sold object so its years add up to its result to the cent;
+  off, the objects held now. Money rows (purchases, sale prices, money flow) show the company's real money.
+
 ## 2026-11-26 - Housing-company loans: between known shares the repayment is the known fall (ADR-034)
 
 - Owner: for a sold object nothing should be theoretical. With certificates restarting the path, the terms' error

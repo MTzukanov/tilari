@@ -438,14 +438,25 @@ function readCashView(): CashView {
   }
 }
 
-/** A span's figures as one view shows them: no repayment without loans. */
-type CashFigures = { net: number; repaid: number | undefined; money: number }
+/**
+ * A span's figures as one view shows them: no repayment without loans; a sold object's sale in its
+ * sale year; the money that moved besides the cash flow, where the span has it (not the last 12 months).
+ */
+type CashFigures = {
+  net: number
+  repaid: number | undefined
+  money: number
+  sale?: number
+  capex?: number
+  proceeds?: number
+  interest?: number
+}
 
-/** The figure a view shows: euros, or the return in basis points (null without money in). */
+/** The figure a view shows: euros, or the return in basis points (null without money in). The return is the operating one, sales left out. */
 function cashFigure(view: CashView, f: CashFigures): number | null {
   if (view === 'net') return f.net
   if (view === 'repaid') return f.repaid ?? null
-  if (view === 'gain') return f.net + (f.repaid ?? 0)
+  if (view === 'gain') return f.net + (f.repaid ?? 0) + (f.sale ?? 0)
   return shareBp(f.net + (f.repaid ?? 0), f.money)
 }
 
@@ -460,11 +471,11 @@ function cashViews(loans: boolean): CashView[] {
 }
 
 /** Picks what the cash flow table's cells show; the choice is remembered in this browser. */
-function CashViewPick({ t, views, view, onPick }: { t: T; views: CashView[]; view: CashView; onPick: (v: CashView) => void }) {
+function CashViewPick({ t, views, view, onPick, sales }: { t: T; views: CashView[]; view: CashView; onPick: (v: CashView) => void; sales: boolean }) {
   const label: Record<CashView, string> = {
     net: t('properties.cash.net'),
     repaid: t('properties.cash.viewRepaid'),
-    gain: t('properties.cash.gain'),
+    gain: t(sales ? 'properties.cash.result' : 'properties.cash.gain'),
     pct: t('properties.cash.viewPct'),
   }
   return (
@@ -479,38 +490,107 @@ function CashViewPick({ t, views, view, onPick }: { t: T; views: CashView[]; vie
   )
 }
 
+/** Whether the cash flow table and charts count the sold objects (owner, 2026-11-26); remembered in this browser. */
+const WITH_SOLD_KEY = 'tilari.properties.cash.withSold'
+
+function readWithSold(): boolean {
+  try {
+    return localStorage.getItem(WITH_SOLD_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+
+/** Whether `rows` hold a sale (with the sold objects counted). */
+function hasSales(rows: PropertyRow[]): boolean {
+  return rows.some((r) => r.cash_years.some((y) => y.sale_snt != null))
+}
+
 /**
  * The cash flow by fiscal year, each object a row; `view` picks what the cells show. With
  * housing-company loans the summary adds the loans' repayment and the two together (ADR-035): above 0
  * the shares fell by more than the cash flow fell short, so the owner gained before any change in the
- * prices. The last summary row is that gain (the cash flow alone without loans) over the money the
- * owner had in the objects, as a year's rate. The summary row of the view shown is in bold. A year the
- * figures do not reach the end of says how many months it has.
+ * prices. With sold objects among `rows` (owner, 2026-11-26) a sale row adds each sale's own result in
+ * its year - proceeds less the capital and the shares repaid - and the sum is the result: a sold
+ * object's years add up to its whole result, its repaid shares never left looking unrealized. The
+ * return rows set that over the money the owner had in the objects, as a year's rate: the operating one
+ * and, with sales, one with them. Then the money that moved: the purchases, the proceeds and all of it
+ * with the cash flow. The summary row of the view shown is in bold. A year the figures do not reach the
+ * end of says how many months it has.
  */
 function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: CashView): TableColumn<PropertyRow>[] {
   const yearOf = (r: PropertyRow, starts: string) => r.cash_years.find((y) => y.starts === starts)
   const loans = rows.some((r) => r.cash_years.some((y) => y.principal_snt != null))
+  const sales = hasSales(rows)
+  const proceeds = rows.some((r) => r.cash_years.some((y) => y.proceeds_snt !== 0))
   const ownLoans = (r: PropertyRow) => r.cash_years.some((y) => y.principal_snt != null)
   const allYears = (r: PropertyRow, value: (y: YearCashFlow) => number | undefined) => r.cash_years.reduce((s, y) => s + (value(y) ?? 0), 0)
   const bold = (v: CashView, node: ReactNode) => (v === view ? <strong>{node}</strong> : node)
+  const hinted = (key: string, label: string, hint: string, node: ReactNode = label) => (
+    <span key={key} title={t(hint)}>
+      {node}
+    </span>
+  )
+  /** The summary rows under the cash flow, each a label and a column's figure from its sums (money rows blank without them). */
+  type Sums = { net: number; repaid: number; sale: number; money: number; capex: number | null; proceeds: number | null; interest: number | null }
+  const summaryRows: { label: ReactNode; cell: (s: Sums) => ReactNode }[] = [
+    ...(loans ? [{ label: bold('repaid', t('properties.cash.repaid')), cell: (s: Sums) => bold('repaid', footerEuro(s.repaid)) }] : []),
+    ...(sales ? [{ label: hinted('sale', t('properties.cash.sale'), 'properties.cash.saleHint'), cell: (s: Sums) => footerEuro(s.sale) }] : []),
+    ...(loans || sales
+      ? [{ label: bold('gain', t(sales ? 'properties.cash.result' : 'properties.cash.gain')), cell: (s: Sums) => bold('gain', footerEuro(s.net + s.repaid + s.sale)) }]
+      : []),
+    {
+      label: hinted('pct', '', loans ? 'properties.cash.pctHint' : 'properties.cash.pctHintNoLoans', bold('pct', t('properties.cash.pct'))),
+      cell: (s: Sums) => bold('pct', footerPct(shareBp(s.net + s.repaid, s.money))),
+    },
+    ...(sales
+      ? [{ label: hinted('pctSales', t('properties.cash.pctSales'), 'properties.cash.pctSalesHint'), cell: (s: Sums) => footerPct(shareBp(s.net + s.repaid + s.sale, s.money)) }]
+      : []),
+    { label: hinted('purchases', t('properties.cash.purchases'), 'properties.cash.purchasesHint'), cell: (s: Sums) => (s.capex == null ? '' : footerEuro(-s.capex)) },
+    ...(proceeds
+      ? [{ label: hinted('proceeds', t('properties.cash.proceeds'), 'properties.cash.proceedsHint'), cell: (s: Sums) => (s.proceeds == null ? '' : footerEuro(s.proceeds)) }]
+      : []),
+    {
+      label: hinted('moneyFlow', t('properties.cash.moneyFlow'), 'properties.cash.moneyFlowHint'),
+      cell: (s: Sums) => (s.capex == null || s.proceeds == null || s.interest == null ? '' : footerEuro(s.net - s.interest - s.capex + s.proceeds)),
+    },
+  ]
   /** A column of figures: each object's in the chosen view, and the summary rows of them all. */
   const figures = (figuresOf: (r: PropertyRow) => CashFigures | null): Pick<TableColumn<PropertyRow>, 'sortValue' | 'cellClass' | 'render' | 'footer' | 'footers'> => {
     const value = (r: PropertyRow) => {
       const f = figuresOf(r)
       return f ? cashFigure(view, f) : null
     }
-    const net = sum(rows, (r) => figuresOf(r)?.net)
-    const repaid = sum(rows, (r) => figuresOf(r)?.repaid)
-    const money = sum(rows, (r) => figuresOf(r)?.money)
+    const money = (pick: (f: CashFigures) => number | undefined) => {
+      const all = rows.map(figuresOf).filter((f): f is CashFigures => f != null)
+      return all.some((f) => pick(f) == null) && all.length ? null : all.reduce((s, f) => s + (pick(f) ?? 0), 0)
+    }
+    const sums: Sums = {
+      net: sum(rows, (r) => figuresOf(r)?.net),
+      repaid: sum(rows, (r) => figuresOf(r)?.repaid),
+      sale: sum(rows, (r) => figuresOf(r)?.sale),
+      money: sum(rows, (r) => figuresOf(r)?.money),
+      capex: money((f) => f.capex),
+      proceeds: money((f) => f.proceeds),
+      interest: money((f) => f.interest),
+    }
     return {
       sortValue: (r) => value(r) ?? -1e9,
       cellClass: (r) => negClass(value(r)),
-      render: (r) => formatCashFigure(view, value(r)),
-      footer: bold('net', formatEuro(net)),
-      footers: [
-        ...(loans ? [bold('repaid', footerEuro(repaid)), bold('gain', footerEuro(net + repaid))] : []),
-        bold('pct', footerPct(shareBp(net + repaid, money))),
-      ],
+      render: (r) => {
+        const f = figuresOf(r)
+        const shown = formatCashFigure(view, value(r))
+        // A sale's year in the result: marked, its parts on hover.
+        if (view !== 'gain' || f?.sale == null) return shown
+        const parts = t('properties.cash.saleParts', { net: formatEuro(f.net), repaid: formatEuro(f.repaid ?? 0), sale: formatEuro(f.sale) })
+        return (
+          <span className="property-cash-sale" title={parts}>
+            {shown}
+          </span>
+        )
+      },
+      footer: bold('net', formatEuro(sums.net)),
+      footers: summaryRows.map((row) => row.cell(sums)),
     }
   }
   const t12m = figures((r) => (r.t12m ? { net: r.t12m.net_snt, repaid: r.t12m.principal_snt, money: r.t12m.money_in_snt } : null))
@@ -518,17 +598,16 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
     net: r.summary.operating.net_snt,
     repaid: ownLoans(r) ? allYears(r, (y) => y.principal_snt) : undefined,
     money: allYears(r, (y) => y.money_in_snt),
+    ...(r.cash_years.some((y) => y.sale_snt != null) ? { sale: allYears(r, (y) => y.sale_snt) } : {}),
+    capex: allYears(r, (y) => y.capex_snt),
+    proceeds: allYears(r, (y) => y.proceeds_snt),
+    interest: allYears(r, (y) => y.interest_snt),
   }))
   return [
     {
       ...nameColumn(t, 'none'),
       footer: bold('net', t('properties.cash.net')),
-      footers: [
-        ...(loans ? [bold('repaid', t('properties.cash.repaid')), bold('gain', t('properties.cash.gain'))] : []),
-        <span key="pct" title={t(loans ? 'properties.cash.pctHint' : 'properties.cash.pctHintNoLoans')}>
-          {bold('pct', t('properties.cash.pct'))}
-        </span>,
-      ],
+      footers: summaryRows.map((row) => row.label),
     },
     ...data.periods.map((p): TableColumn<PropertyRow> => {
       const months = monthsCovered(p, data.as_of)
@@ -540,7 +619,17 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
         align: 'right',
         ...figures((r) => {
           const y = yearOf(r, p.starts)
-          return y ? { net: y.net_snt, repaid: y.principal_snt, money: y.money_in_snt } : null
+          return y
+            ? {
+                net: y.net_snt,
+                repaid: y.principal_snt,
+                money: y.money_in_snt,
+                ...(y.sale_snt != null ? { sale: y.sale_snt } : {}),
+                capex: y.capex_snt,
+                proceeds: y.proceeds_snt,
+                interest: y.interest_snt,
+              }
+            : null
         }),
       }
     }),
@@ -562,7 +651,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
       ...t12m,
       render: (r) => {
         const shown = t12m.render(r)
-        return shown && r.t12m?.annualized ? `${shown}*` : shown
+        return shown && r.t12m?.annualized ? <>{shown}*</> : shown
       },
     },
   ]
@@ -667,6 +756,16 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
       // Not remembered; the table still switches.
     }
   }
+  const [withSold, setWithSoldState] = useState(readWithSold)
+  const setWithSold = (next: boolean) => {
+    setWithSoldState(next)
+    try {
+      localStorage.setItem(WITH_SOLD_KEY, next ? '1' : '0')
+    } catch {
+      // Not remembered; the table and charts still switch.
+    }
+  }
+  const cashRows = withSold ? all : held
 
   return (
     <div className="ledger properties">
@@ -770,21 +869,30 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
             </p>
           </section>
 
-          <PortfolioCharts chart={data.chart} rows={data.rows} />
+          <PortfolioCharts chart={data.chart} rows={data.rows} withSold={withSold} onWithSold={setWithSold} />
 
           {all.length ? (
             <section className="property-section">
               <h3>{t('properties.cash.title')}</h3>
               <p className="muted">{t('properties.cash.lead')}</p>
-              <CashViewPick t={t} views={views} view={shownView} onPick={pickCashView} />
+              <div className="property-cash-controls">
+                <CashViewPick t={t} views={views} view={shownView} onPick={pickCashView} sales={hasSales(cashRows)} />
+                {sold.length ? (
+                  <label className="allocation-check" title={t('properties.cash.withSoldHint')}>
+                    <input type="checkbox" checked={withSold} onChange={() => setWithSold(!withSold)} />
+                    {t('properties.cash.withSold')}
+                  </label>
+                ) : null}
+              </div>
               <SortableTable
                 storageKey="tilari.properties.cash.cols"
-                columns={cashColumns(t, all, data, shownView)}
-                rows={all}
+                columns={cashColumns(t, cashRows, data, shownView)}
+                rows={cashRows}
                 rowKey={(r) => r.id}
                 onRowClick={openRow}
                 className="property-table"
               />
+              {sold.length && !withSold ? <p className="muted property-footnote">{t('properties.cash.heldOnly')}</p> : null}
             </section>
           ) : null}
 

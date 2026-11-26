@@ -65,10 +65,11 @@ export function shareBp(part: number | null, whole: number | null): number | nul
   return part == null || whole == null || whole <= 0 ? null : Math.round((part * 10000) / whole)
 }
 
-/** The cash flow and repayments chart: what went out of pocket, what went into the shares, and the two together (ink). */
+/** The cash flow and repayments chart: what went out of pocket, what went into the shares, what the sales realized, and all together (ink). */
 const REPAID = {
   cash: '#c45c26',
   repaid: '#1baf7a',
+  realized: '#6250d6',
 } as const
 
 /** An object's colour and dash by its place in the chart (not by what is shown, so hiding one repaints none). */
@@ -96,8 +97,20 @@ function Swatch({ color, dashed }: { color: string; dashed: boolean }) {
  * share, one coloured line each, with all of them together. With the forecast chosen every line runs
  * on faded over the months ahead (`ahead_keys`, ADR-035). One set of checkboxes serves them: the total,
  * the combined chart, the months and the forecast, then the objects in columns with "all" and "none".
+ * The cash flow charts count the sold objects only with `withSold` (owner, 2026-11-26), a choice the
+ * cash flow table shares: then what the sales realized is a line of its own.
  */
-export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: PropertyRow[] }) {
+export function PortfolioCharts({
+  chart,
+  rows,
+  withSold,
+  onWithSold,
+}: {
+  chart: PortfolioChart
+  rows: PropertyRow[]
+  withSold: boolean
+  onWithSold: (next: boolean) => void
+}) {
   const { t } = useI18n()
   const locale = getBcp47()
   const [options, setOptionsState] = useState(loadPortfolioChartOptions)
@@ -120,14 +133,16 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
   /** A line's values over the months shown: followed, then estimated with the forecast on. */
   const runOn = (values: (number | null)[], after: (number | null)[]) => (ahead ? [...values.slice(from), ...after] : values.slice(from))
 
+  const anySold = chart.objects.some((o) => o.sold)
   const seriesOf = (
     pick: (o: (typeof objects)[number]) => (number | null)[],
     total: (number | null)[],
     pickAhead: (o: (typeof objects)[number]) => (number | null)[],
     totalAhead: (number | null)[],
+    soldToo = true,
   ): LineSeries[] => [
     ...objects
-      .filter((o) => !hidden.has(o.id))
+      .filter((o) => !hidden.has(o.id) && (soldToo || !o.sold))
       .map((o) => ({ key: String(o.id), label: o.name, values: runOn(pick(o), pickAhead(o)), className: 'portfolio-line', color: o.color, dashed: o.dashed })),
     ...(options.total ? [{ key: 'total', label: totalLabel, values: runOn(total, totalAhead), className: 'portfolio-total' }] : []),
   ]
@@ -161,7 +176,9 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
   // "All" and "none" act on the objects' lines only: the total and the months are choices of their own.
   const noneHidden = objects.every((o) => !hidden.has(o.id))
   const allHidden = objects.every((o) => hidden.has(o.id))
-  const cash = seriesOf((o) => o.cash_snt, chart.total_cash_snt, (o) => o.cash_ahead_snt, chart.total_cash_ahead_snt)
+  const cash = withSold
+    ? seriesOf((o) => o.cash_snt, chart.total_cash_snt, (o) => o.cash_ahead_snt, chart.total_cash_ahead_snt)
+    : seriesOf((o) => o.cash_snt, chart.held_cash_snt, (o) => o.cash_ahead_snt, chart.held_cash_ahead_snt, false)
   // Objects without an investment linked have nothing to recover: no line there, maybe no chart.
   // In percent: each object's still to recover against its own capital put in, the total against the total.
   const unrecovered = (
@@ -213,16 +230,23 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
       : []),
   ]
   // Cash flow against the loans' repayment (ADR-035): above 0 together, the shares fell by more than
-  // the cash flow fell short.
-  const cashLine = runOn(chart.total_cash_snt, chart.total_cash_ahead_snt)
-  const repaidLine = runOn(chart.total_repaid_snt, chart.total_repaid_ahead_snt)
+  // the cash flow fell short. With the sold objects, what their sales realized: the sum is their results.
+  const realizing = withSold && anySold
+  const cashLine = withSold ? runOn(chart.total_cash_snt, chart.total_cash_ahead_snt) : runOn(chart.held_cash_snt, chart.held_cash_ahead_snt)
+  const repaidLine = withSold ? runOn(chart.total_repaid_snt, chart.total_repaid_ahead_snt) : runOn(chart.held_repaid_snt, chart.held_repaid_ahead_snt)
+  const realizedLine = runOn(chart.total_realized_snt, chart.total_realized_ahead_snt)
   const repaidLines: LineSeries[] = [
     { key: 'cash', label: t('properties.portfolioChart.cash'), values: cashLine, className: 'portfolio-line', color: REPAID.cash },
     { key: 'repaid', label: t('properties.portfolioChart.repaid'), values: repaidLine, className: 'portfolio-line', color: REPAID.repaid },
+    ...(realizing
+      ? [{ key: 'realized', label: t('properties.portfolioChart.realized'), values: realizedLine, className: 'portfolio-line', color: REPAID.realized }]
+      : []),
     {
       key: 'gain',
-      label: t('properties.portfolioChart.gain'),
-      values: cashLine.map((v, i) => (v == null || repaidLine[i] == null ? null : v + repaidLine[i]!)),
+      label: t(realizing ? 'properties.portfolioChart.result' : 'properties.portfolioChart.gain'),
+      values: cashLine.map((v, i) =>
+        v == null || repaidLine[i] == null ? null : v + repaidLine[i]! + (realizing ? (realizedLine[i] ?? 0) : 0),
+      ),
       className: 'portfolio-total',
     },
   ]
@@ -258,6 +282,12 @@ export function PortfolioCharts({ chart, rows }: { chart: PortfolioChart; rows: 
             <input type="checkbox" checked={options.forecast} onChange={() => setOptions({ ...options, forecast: !options.forecast })} />
             <i className="overview-swatch portfolio-swatch-ahead" />
             {t('properties.portfolioChart.forecast')}
+          </label>
+        ) : null}
+        {anySold ? (
+          <label className="allocation-check" title={t('properties.cash.withSoldHint')}>
+            <input type="checkbox" checked={withSold} onChange={() => onWithSold(!withSold)} />
+            {t('properties.cash.withSold')}
           </label>
         ) : null}
       </div>
