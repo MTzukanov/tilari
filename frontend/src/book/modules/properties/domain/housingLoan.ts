@@ -234,10 +234,10 @@ function termsOpening(loan: HousingLoan, month: string, closing: number, pcm: nu
  * certificate gives the share at its month's end. Before the first one the path runs backwards on the
  * same terms; each later one restarts it from the certified share, its month keeping the gap (computed
  * less certified). After the last one it runs on to `to`.
- * `from`: the earliest month the book can follow (the object's purchase, the books' start). A loan with
- * no drawdown counts from it. Months before it are not the owner's: every due month there counts as
- * paid (by the one who owned the object then), so a certificate dated before the purchase rolls on to
- * it, and the path shows only the months from it.
+ * `from`: the first month that is the owner's - the month their rent counts from (ADR-026: by default
+ * the one after the purchase), or the books' start. A loan with no drawdown counts from it. Months
+ * before it are not the owner's: every due month there counts as paid (by the one who owned the object
+ * then), so a certificate dated before rolls on to it, and the path shows only the months from it.
  * `rates`: the portfolio's reference rate estimates, for a loan with no rate row.
  * `invoiced` (4e): the vastike invoices paid each month - how many (`invoices`) and this loan's
  * rahoitus rows in them (`paid`). In a month with invoices the rows are what was paid, and only

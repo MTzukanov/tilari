@@ -1170,6 +1170,34 @@ describe('rental objects: housing-company loans', () => {
     expect(codes).toEqual(['loan_rate_missing', 'loan_rahastoitu_expensed'])
   })
 
+  it('the loans are the owner\'s from the month the rent is: the purchase month is the seller\'s, unless agreed otherwise', async () => {
+    const { db, voucher, eras } = await buildPropertyFixture()
+    db.run('INSERT INTO Kohdennus (id, tyyppi, kuuluu, json) VALUES (?, ?, ?, ?)', [91, 1, null, JSON.stringify({ nimi: { fi: 'As Oy Ostotie 3 B 8' } })])
+    voucher('buy', '2024-03-12', 0, 'Kauppahinta Ostotie 3 B 8', [
+      { account: 1441, debit: 50_000 * E, era: 'new' },
+      { account: 1910, credit: 50_000 * E },
+    ])
+    const held = loan({
+      type: 'equal_principal',
+      ends: '2033-12-31',
+      rates: [{ from: '2024-01-01', reference_pcm: 2200 }],
+      charges: [{ from: '2024-01-01', amount_snt: 80 * E, no_document: true }],
+      certificates: [{ date: '2024-02-29', share_snt: 10_000 * E, no_document: true }],
+    })
+    const base = { v: 1, rev: 0, kind: 'apartment', eras: [{ account: 1441, eraid: eras['buy:0'] }], housing_loans: [held] }
+    saveProperty(db, 91, base, 'now')
+    const asOf = '2024-06-30'
+    const months = () => computeDetail(db, 91, { today: TODAY, asOf }).housing.paths[0].months
+    // Bought on 12 March: March's vastike, and its repayment, are the seller's.
+    expect(months().map((m) => m.month)).toEqual(['2024-04', '2024-05', '2024-06'])
+    // Agreed in the sale that March's rent is the buyer's: March's repayment is too.
+    let d = computeDetail(db, 91, { today: TODAY, asOf })
+    saveProperty(db, 91, { ...d.doc, rent_from: '2024-03-01' }, 'now')
+    d = computeDetail(db, 91, { today: TODAY, asOf })
+    expect(d.housing.paths[0].months.map((m) => m.month)).toEqual(['2024-03', '2024-04', '2024-05', '2024-06'])
+    expect(d.years.find((y) => y.starts === '2024-01-01')!.housing_principal_snt).toBe(d.housing.paths[0].months.reduce((sum, m) => sum + m.principal_snt, 0))
+  })
+
   it('reads the vastike invoices on the payments (4e): the paid rahoitusvastike, a suggested charge, rows no loan takes', async () => {
     const { db, vouchers } = await setUp()
     /** Invoice rows in a statement's notes, on the bundle's vastike line (`onLineOf`: another month's), as tilari-bank-import writes them. */

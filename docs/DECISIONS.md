@@ -857,7 +857,7 @@ correction would change the open year's income statement lines. The rental-objec
   is worked out from a month's opening share and holds, as a bank's instalment does, until an annuity's rate changes,
   an interest-only period ends, a certificate or an extra repayment moves the share. Extra repayments lower the share
   and a payoff ends it. A certificate gives the share at its month's end. Before the first one the path runs
-  backwards on the same terms (to the later of the loan's start, the purchase, the books' start and the first
+  backwards on the same terms (to the later of the loan's start, the owner's first month, the books' start and the first
   charge); each later one restarts the path from the certified share, its month keeping the gap (computed less
   certified); after the last one it runs to the as-of month. What was paid (`paid_snt`) stays on each month for the
   cash flow and the check against the terms; a month without a payment still repays. Without any payee found, each
@@ -913,6 +913,12 @@ correction would change the open year's income statement lines. The rental-objec
   the object was the owner's (before the purchase, or the books' first year) count every due month as paid - by
   whoever owned it - and the path shows only the owner's months, so a certificate from before the purchase rolls
   on to it instead of growing with unpaid interest.
+- **The owner's months are the rent's** (owner, 2026-11-26: count from the day the income comes): the loans, their
+  payments missing and the Talous split run from the month ADR-026's rent start gives - the owner's own
+  `rent_from`, else the first of the month after the purchase (the purchase day if it is a first), an earlier first
+  rent, or the books' start - to the last month the rent is the owner's (the sale's, or `rent_until`). The purchase
+  month's vastike and repayment are the seller's. Found when the terms (above) began to repay every month: an
+  object bought late in a month showed one repayment too many in its first year.
 - **Vastike invoices** (2026-11-23, step 4e): the book has one vastike line a month (hoito and rahoitus
   together); the invoice attached to the payment splits it. tilari-bank-import reads it and lists its rows in the
   payment voucher's notes, one key per row: `[hki:vastike:<Vienti.id>:<YYYY-MM>:<hoito|rahoitus|vesi>=<snt>:<label>]`

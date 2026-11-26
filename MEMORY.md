@@ -7,6 +7,13 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-26 - Housing-company loans: the owner's months start where the rent does (ADR-034, ADR-026)
+
+- Defect the owner found in the terms demo: the loans counted from the purchase month, so an object bought late in a
+  month repaid once too often in its first year (with the payment-based path the purchase month had no payment, which
+  hid it). Now `followLoans` takes `rentStart` / `rentEnd`: the owner's own `rent_from`, else the month after the
+  purchase, an earlier first rent or the books' start, to the sale month or `rent_until`.
+
 ## 2026-11-24 - Housing-company loans: the share follows the loan's terms (ADR-034)
 
 - Owner: the repayment must depend only on the loan's terms, never on the rahoitusvastike. Before, `loanPath`
