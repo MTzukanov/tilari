@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
 import { getBcp47, useI18n } from '../../../i18n'
+import { BarChart } from '../../../shared/BarChart'
 import { LineChart, type LineSeries, type PointTip } from '../../../shared/LineChart'
 import { formatCents } from '../../../shared/money'
 import { formatBp } from '../../../shared/percent'
@@ -94,7 +95,8 @@ function Swatch({ color, dashed }: { color: string; dashed: boolean }) {
  * the gap between them that is still to recover, and the housing-company loan shares (ADR-034) - on
  * one scale, where they meet or part.
  * Then each measure on its own chart: every object's money still to recover, its cash flow, its
- * share, one coloured line each, with all of them together. With the forecast chosen every line runs
+ * share, one coloured line each, with all of them together; under the cash flow summed, its months as
+ * bars with the sum over them, as on an object's page. With the forecast chosen every line runs
  * on faded over the months ahead (`ahead_keys`, ADR-035). One set of checkboxes serves them: the total,
  * the combined chart, the months and the forecast, then the objects in columns with "all" and "none".
  * The cash flow charts count the sold objects only with `withSold` (owner, 2026-11-26), a choice the
@@ -179,6 +181,11 @@ export function PortfolioCharts({
   const cash = withSold
     ? seriesOf((o) => o.cash_snt, chart.total_cash_snt, (o) => o.cash_ahead_snt, chart.total_cash_ahead_snt)
     : seriesOf((o) => o.cash_snt, chart.held_cash_snt, (o) => o.cash_ahead_snt, chart.held_cash_ahead_snt, false)
+  // The cash flow month by month (owner, 2026-11-27): each month's change of the total line as a bar and
+  // the line over them, as on an object's page; the months followed, all objects (with the sold ones by choice).
+  const cashTotal = withSold ? chart.total_cash_snt : chart.held_cash_snt
+  const monthCash = chart.keys.map((key, i) => ({ key, net_snt: cashTotal[i] - (i > 0 ? cashTotal[i - 1] : 0) })).slice(from)
+  const monthTip = (label: string) => (key: string, value: number) => `${label}, ${monthName(key, locale)}: ${formatCents(value)}`
   // Objects without an investment linked have nothing to recover: no line there, maybe no chart.
   // In percent: each object's still to recover against its own capital put in, the total against the total.
   const unrecovered = (
@@ -351,6 +358,30 @@ export function PortfolioCharts({
       ) : null}
       <h4>{t('properties.portfolioChart.cash')}</h4>
       <LineChart {...chartProps} series={drawn(cash)} label={t('properties.portfolioChart.cash')} pointTip={pointTip(cash)} />
+      <h4>{t('properties.chart.cashFlow')}</h4>
+      <div className="overview-legend">
+        <span className="allocation-check">
+          <i className="overview-swatch property-swatch-net" />
+          {t('properties.chart.net')}
+        </span>
+        <span className="allocation-check">
+          <i className="overview-swatch property-swatch-total" />
+          {t('properties.chart.total')}
+        </span>
+      </div>
+      <div role="group" aria-label={t('properties.chart.cashFlow')}>
+        <BarChart
+          className="overview-chart property-chart"
+          points={monthCash}
+          series={[{ key: 'net_snt', className: 'property-bar-net', label: t('properties.chart.net') }]}
+          line={{ values: cashTotal.slice(from), className: 'property-total', label: t('properties.chart.total'), tooltip: monthTip(t('properties.chart.total')) }}
+          labelFor={(key) => monthLabel(key, locale, true)}
+          labelGap={48}
+          locale={locale}
+          tooltip={(key, _series, value) => monthTip(t('properties.chart.net'))(key, value)}
+          nameFor={(key) => monthName(key, locale)}
+        />
+      </div>
       {owed ? (
         <>
           <h4>{t('properties.portfolioChart.repaidTitle')}</h4>

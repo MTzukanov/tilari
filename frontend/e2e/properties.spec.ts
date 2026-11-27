@@ -99,6 +99,11 @@ test.describe('rental objects chart', () => {
     await expect(cash.locator('.portfolio-line')).toHaveCount(3)
     await expect(cash.locator('.portfolio-total')).toHaveCount(1)
     await expect(panel.getByRole('group', { name: 'Palauttamatta kuukauden lopussa' })).toHaveCount(0)
+    // Under it the cash flow month by month: a bar a month, the sum as a line over them.
+    const months = panel.getByRole('group', { name: 'Kassavirta kuukausittain' })
+    await expect(months.locator('rect.property-bar-net').first()).toBeVisible()
+    await expect(months.locator('rect.property-bar-net title').first()).toHaveText(/^Kassavirta, \S+ \d{4}: -?[\d\s,]+\s€$/)
+    await expect(months.locator('.property-total .chart-line')).toHaveCount(1)
 
     await panel.getByRole('checkbox', { name: 'Asunto' }).uncheck()
     await expect(cash.locator('.portfolio-line')).toHaveCount(2)
@@ -159,7 +164,12 @@ test.describe('rental objects chart', () => {
     await expect(unrecovered).toBeVisible()
     // The totals on one chart first: the capital put in, what came back and what is still to recover on one
     // scale (no loan shares in this book). Then still to recover, the cash flow under it: they meet or part.
-    await expect(panel.locator('h4')).toHaveText(['Kaikki kohteet yhdessä kuukauden lopussa', 'Palauttamatta kuukauden lopussa', 'Kertynyt kassavirta'])
+    await expect(panel.locator('h4')).toHaveText([
+      'Kaikki kohteet yhdessä kuukauden lopussa',
+      'Palauttamatta kuukauden lopussa',
+      'Kertynyt kassavirta',
+      'Kassavirta kuukausittain',
+    ])
     const combined = panel.getByRole('group', { name: 'Kaikki kohteet yhdessä kuukauden lopussa' })
     await expect(combined.locator('.portfolio-line')).toHaveCount(3)
     await combined.locator('.chart-point-hit').last().hover()
@@ -168,7 +178,7 @@ test.describe('rental objects chart', () => {
     await panel.getByRole('checkbox', { name: 'Yhteiskaavio' }).uncheck()
     await expect(combined).toHaveCount(0)
     await page.reload()
-    await expect(panel.locator('h4')).toHaveText(['Palauttamatta kuukauden lopussa', 'Kertynyt kassavirta'])
+    await expect(panel.locator('h4')).toHaveText(['Palauttamatta kuukauden lopussa', 'Kertynyt kassavirta', 'Kassavirta kuukausittain'])
     await panel.getByRole('checkbox', { name: 'Yhteiskaavio' }).check()
     await expect(combined).toBeVisible()
     // Still to recover as a percentage of each object's capital put in: objects of any size on one scale.

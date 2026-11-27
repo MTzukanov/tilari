@@ -7,6 +7,13 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-27 - Properties page: the cash flow month by month as bars (ADR-035)
+
+- Owner wanted the running cash flow per month, not only summed: under "Kertynyt kassavirta" a "Kassavirta
+  kuukausittain" bar chart (the total line's monthly change, the sum as a line over it) on the shared `BarChart`
+  with the object page's styles. Months followed only, no forecast bars. Its years add up to the table's
+  Kassavirta (checked on the owner's book, both with and without the sold objects).
+
 ## 2026-11-27 - Properties page: where the sold objects' figures go; 12 kk stays held-only for now (ADR-035)
 
 - Owner asked for rows that show where the numbers go: "josta toteutuneet yhtiölainojen lyhennykset" under the sale
