@@ -521,7 +521,13 @@ function readWithSold(): boolean {
 }
 
 /** The cash flow table's notes behind an "i": the open one shows under the table. */
-const CASH_NOTES = { repaid: 'properties.cash.repaidHint', pctTotal: 'properties.cash.pctTotalHint' } as const
+const CASH_NOTES = {
+  repaid: 'properties.cash.repaidHint',
+  realized: 'properties.cash.realizedHint',
+  soldResult: 'properties.cash.soldResultHint',
+  pctTotal: 'properties.cash.pctTotalHint',
+  t12m: 'properties.cash.t12mHeldHint',
+} as const
 type CashNote = keyof typeof CASH_NOTES
 type CashNotes = { open: CashNote | null; onToggle: (note: CashNote) => void }
 
@@ -544,7 +550,10 @@ function hasSales(rows: PropertyRow[]): boolean {
  * the yearly return of the row above chained from the first year to the column's end; all time in the
  * total column. Then the money that moved: the purchases, the proceeds and all of it with the cash flow.
  * The summary row of the view shown is in bold. A year the money was in for fewer months than 12 says how many.
- * The repayment row and the total column's returns have an "i" (`notes`).
+ * With sales two "of which" rows show where a sold object's figures went (owner, 2026-11-27): the shares
+ * its sale realized, in the sale row, and the sold objects' part of the result. The last 12 months are the
+ * objects held now, sold ones or not (owner, 2026-11-27: for now, to be reviewed). The repayment row, the
+ * "of which" rows, the total column's returns and the last 12 months have an "i" (`notes`).
  */
 function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: CashView, notes: CashNotes): TableColumn<PropertyRow>[] {
   const yearOf = (r: PropertyRow, starts: string) => r.cash_years.find((y) => y.starts === starts)
@@ -588,8 +597,21 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
     months: number | null
     /** The total column, whose return is the average a year. */
     total: boolean
+    /** The last 12 months: the objects held now, no sale. */
+    window: boolean
+    /** The sold objects' result. */
+    soldResult: number
   }
   const info = (note: CashNote) => <InfoButton note={t(CASH_NOTES[note])} open={notes.open === note} onToggle={() => notes.onToggle(note)} />
+  /** A label with its "i". */
+  const noted = (key: string, label: ReactNode, note: CashNote, className = '') => (
+    <span key={key} className={`property-cash-info ${className}`.trim()}>
+      <span>{label}</span>
+      {info(note)}
+    </span>
+  )
+  /** An "of which" row's figure: not in the sum, so quieter; none for the last 12 months. */
+  const ofWhich = (s: Sums, n: number) => (s.window ? '' : <span className="property-cash-of">{footerEuro(n)}</span>)
   /** The total column's return, with the "i" that says it is the average a year. */
   const averaged = (s: Sums, node: ReactNode) =>
     s.total && node ? (
@@ -605,10 +627,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
       ? [
           {
             label: (
-              <span key="repaid" className="property-cash-info">
-                <span>{bold('repaid', t('properties.cash.repaid'))}</span>
-                {info('repaid')}
-              </span>
+              noted('repaid', bold('repaid', t('properties.cash.repaid')), 'repaid')
             ),
             cell: (s: Sums) => bold('repaid', footerEuro(s.repaid - s.realized)),
           },
@@ -625,6 +644,9 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
                 footerEuro(s.sale)
               ),
           },
+          ...(loans
+            ? [{ label: noted('realized', t('properties.cash.realized'), 'realized', 'property-cash-of'), cell: (s: Sums) => ofWhich(s, s.realized) }]
+            : []),
         ]
       : []),
     ...(loans || sales
@@ -633,6 +655,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
             label: bold('gain', t(sales ? 'properties.cash.result' : 'properties.cash.gain')),
             cell: (s: Sums) => bold('gain', footerEuro(s.net + s.repaid - s.realized + s.sale)),
           },
+          ...(sales ? [{ label: noted('soldResult', t('properties.cash.soldResult'), 'soldResult', 'property-cash-of'), cell: (s: Sums) => ofWhich(s, s.soldResult) }] : []),
         ]
       : []),
     {
@@ -663,7 +686,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
   /** A column of figures: each object's in the chosen view, and the summary rows of them all. */
   const figures = (
     figuresOf: (r: PropertyRow) => CashFigures | null,
-    column: { sofar?: number | null; months?: number | null; total?: boolean } = {},
+    column: { sofar?: number | null; months?: number | null; total?: boolean; window?: boolean } = {},
   ): Pick<TableColumn<PropertyRow>, 'sortValue' | 'cellClass' | 'render' | 'footer' | 'footers'> => {
     const value = (r: PropertyRow) => {
       const f = figuresOf(r)
@@ -685,6 +708,14 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
       sofar: column.sofar ?? null,
       months: column.months ?? null,
       total: column.total ?? false,
+      window: column.window ?? false,
+      soldResult: sum(
+        rows.filter((r) => r.status === 'sold'),
+        (r) => {
+          const f = figuresOf(r)
+          return f ? (cashFigure('gain', f) ?? 0) : undefined
+        },
+      ),
     }
     return {
       sortValue: (r) => value(r) ?? -1e9,
@@ -717,7 +748,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
   }
   const t12m = figures(
     (r) => (r.t12m ? { net: r.t12m.net_snt, repaid: r.t12m.principal_snt, money: r.t12m.money_in_snt, months: r.t12m.money_months.length } : null),
-    { months: new Set(rows.flatMap((r) => r.t12m?.money_months ?? [])).size },
+    { months: new Set(rows.flatMap((r) => r.t12m?.money_months ?? [])).size, window: true },
   )
   const all = data.periods.length ? (sofar.get(data.periods[data.periods.length - 1].starts) ?? null) : null
   const total = figures((r) => ({
@@ -774,9 +805,17 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
     },
     {
       id: 't12m',
-      label: t('properties.col.t12m'),
+      // The "i" must not sort the column.
+      label: (
+        <span className="property-cash-info">
+          <span>{t('properties.col.t12m')}</span>
+          <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+            {info('t12m')}
+          </span>
+        </span>
+      ),
       title: t('properties.col.t12mHint'),
-      width: 110,
+      width: 130,
       align: 'right',
       ...t12m,
       render: (r) => {

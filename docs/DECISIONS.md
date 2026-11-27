@@ -1014,8 +1014,12 @@ correction would change the open year's income statement lines. The rental-objec
   objects held now only (`held_*` totals), with a note that the cash flow then differs from the company's in the
   years the sold ones were owned. Either way three money rows follow: the purchases, the sale prices and all of it
   with the cash flow - the company's money in and out, whose running total is the unrecovered with its sign turned.
-  A purchase is no loss and a gross sale price no gain, so neither is in the result rows. The 12-month column has
-  no money rows; the tile is always the objects held now.
+  A purchase is no loss and a gross sale price no gain, so neither is in the result rows. Two "of which" rows, quieter
+  and not added to the sum, show where a sold object's figures went (owner, 2026-11-27): the shares its sale
+  realized, under the sale row (the year's repayments paid = the repayment row + this row), and the sold objects'
+  part of the result, whose total is their whole result in the sold objects' table. The 12-month column has no money
+  rows and, like the tile, is always the objects held now, also with the sold ones counted; an "i" in its heading
+  says so (owner, 2026-11-27: for now, to be reviewed later).
 - **The return so far** (owner, 2026-11-26: the total column's return is a year's rate, show all time too): a row
   under the yearly return. 2026-11-27 the owner expected it to build on the yearly returns ("the first year the same,
   then 5 % on top"), so it is the row above chained, year by year, each year as earned. A year the money was in for

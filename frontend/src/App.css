@@ -5962,6 +5962,22 @@ tr.tax-total td {
   text-overflow: ellipsis;
 }
 
+/* Headers are in capitals; the "i" stays an i. */
+.property-cash-info .property-info {
+  text-transform: none;
+}
+
+/* An "of which" row of the cash flow table's summary: part of a row above, not added to the sum. */
+.property-table tfoot .property-cash-of {
+  color: var(--muted);
+  font-weight: normal;
+}
+
+.property-table tfoot td > .property-cash-info.property-cash-of {
+  box-sizing: border-box;
+  padding-left: 1rem;
+}
+
 /* A card's lists as small tabs, like the page's own: one opens under them, a click on it closes it. */
 .property-folds {
   display: flex;

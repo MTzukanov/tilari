@@ -7,6 +7,15 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-27 - Properties page: where the sold objects' figures go; 12 kk stays held-only for now (ADR-035)
+
+- Owner asked for rows that show where the numbers go: "josta toteutuneet yhtiölainojen lyhennykset" under the sale
+  row and "josta myydyt kohteet" under the result - "of which" rows, muted, not in the sum, each with an "i".
+- OPEN, to review with the owner later: the 12 kk column (and tile) count only the objects held now, also with
+  "Myydyt kohteet mukana" on, so an object sold inside the window drops its months there. Owner 2026-11-27: keep it
+  so for now, with an "i" in the column heading saying it. Counting sold objects there would need the same
+  realized-at-sale handling as the years.
+
 ## 2026-11-27 - Properties page: the return so far chains the yearly returns (ADR-035)
 
 - Owner could not read "Tuotto kertynyt" next to the yearly return: the first year differed and the later ones did

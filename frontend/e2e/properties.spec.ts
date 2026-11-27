@@ -736,7 +736,9 @@ test.describe('rental object housing-company loans', () => {
       'Kassavirta',
       /^Yhtiölainojen lyhennykset/,
       'Myynnit: toteutunut tulos',
+      /^josta toteutuneet yhtiölainojen lyhennykset/,
       'Tulos yhteensä',
+      /^josta myydyt kohteet/,
       'Tuotto vuodessa, % palauttamatta olevasta',
       'Tuotto vuodessa myynnit mukaan, %',
       'Tuotto kertynyt alusta, %',
@@ -751,12 +753,21 @@ test.describe('rental object housing-company loans', () => {
     await expect(cashTable.locator('.property-info-note')).toContainText('Lyhennykset lasketaan lainojen ehdoista')
     await repaidInfo.click()
     await expect(cashTable.locator('.property-info-note')).toHaveCount(0)
-    await expect(summaryRows.nth(4).locator('td').last()).toHaveText(/^-?[\d,]+\s%$/)
+    // The last 12 months are the objects held now, its "i" in the header, which it does not sort.
+    const t12mHead = cashTable.locator('thead th').last()
+    await t12mHead.locator('.property-info').click()
+    await expect(cashTable.locator('.property-info-note')).toContainText('nyt omistetut kohteet')
+    await expect(t12mHead).toHaveAttribute('aria-sort', 'none')
+    await t12mHead.locator('.property-info').click()
+    await expect(summaryRows.nth(6).locator('td').last()).toHaveText(/^-?[\d,]+\s%$/)
     // The return so far: each year from the first, all time in the total column; none for the last 12 months.
     const total = await cashTable.locator('thead th').allInnerTexts()
     const totalAt = total.findIndex((h) => /^Yhteensä/i.test(h.trim()))
-    await expect(summaryRows.nth(6).locator('td').nth(totalAt)).toHaveText(/^-?[\d,]+\s%$/)
-    await expect(summaryRows.nth(6).locator('td').last()).toHaveText('')
+    await expect(summaryRows.nth(8).locator('td').nth(totalAt)).toHaveText(/^-?[\d,]+\s%$/)
+    await expect(summaryRows.nth(8).locator('td').last()).toHaveText('')
+    // The "of which" rows have no figure for the last 12 months.
+    await expect(summaryRows.nth(3).locator('td').last()).toHaveText('')
+    await expect(summaryRows.nth(5).locator('td').last()).toHaveText('')
     // Its sale year's result is marked, with its parts on hover.
     await expect(cashTable.locator('.property-cash-sale')).toHaveCount(0)
     // What the cells show is picked above the table, the summary row it matches in bold, and remembered.
@@ -798,7 +809,7 @@ test.describe('rental object housing-company loans', () => {
     await page.reload()
     await expect(withSold).not.toBeChecked()
     await withSold.check()
-    await expect(labels).toHaveCount(10)
+    await expect(labels).toHaveCount(12)
     // On to the payoff with the estimate on: each line runs on faded, the last month's box at 0.
     const sharesChart = page.getByRole('group', { name: 'Yhtiölainaosuudet kuukauden lopussa' })
     await expect(sharesChart.locator('.portfolio-ahead')).toHaveCount(0)
