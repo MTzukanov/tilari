@@ -13,7 +13,13 @@ function moved(line: MonthLine): boolean {
   return line.counted_date !== line.entry.date
 }
 
-/** The month's lines behind the cash-flow bars; rows open their voucher. */
+/** A month line, over several objects with the one it counts for. */
+type PanelLine = MonthLine & { object?: { id: number; name: string } }
+
+/**
+ * The month's lines behind the cash-flow bars; rows open their voucher. Lines of several objects (the
+ * Properties page) get a column for the object; `onOpenAllocation` offers the object's cost centre.
+ */
 export function MonthLinesPanel({
   month,
   lines,
@@ -22,19 +28,33 @@ export function MonthLinesPanel({
   onClose,
   onOpenVoucher,
   onOpenAllocation,
+  storageKey = 'tilari.properties.monthLines.cols',
 }: {
   month: string
-  lines: MonthLine[]
+  lines: PanelLine[]
   locale: string
   labels: { income: string; expense: string; net: string }
   onClose: () => void
   onOpenVoucher: (voucherId: number, entryId: number) => void
-  onOpenAllocation: () => void
+  onOpenAllocation?: () => void
+  storageKey?: string
 }) {
   const { t } = useI18n()
+  const objects = lines.some((l) => l.object)
   const income = lines.filter((l) => l.kind === 'income').reduce((s, l) => s + l.amount_snt, 0)
   const costs = lines.filter((l) => l.kind !== 'income').reduce((s, l) => s + l.amount_snt, 0)
-  const columns: TableColumn<MonthLine>[] = [
+  const columns: TableColumn<PanelLine>[] = [
+    ...(objects
+      ? [
+          {
+            id: 'object',
+            label: t('properties.col.object'),
+            width: 200,
+            sortValue: (l: PanelLine) => l.object?.name ?? '',
+            render: (l: PanelLine) => l.object?.name ?? '',
+          },
+        ]
+      : []),
     {
       id: 'date',
       label: t('table.date'),
@@ -124,16 +144,18 @@ export function MonthLinesPanel({
             {labels.net} {formatCents(income + costs)}
           </strong>
         </span>
-        <button type="button" className="btn-link" onClick={onOpenAllocation} title={t('properties.month.openAllocationHint')}>
-          {t('properties.month.openAllocation')}
-        </button>
+        {onOpenAllocation ? (
+          <button type="button" className="btn-link" onClick={onOpenAllocation} title={t('properties.month.openAllocationHint')}>
+            {t('properties.month.openAllocation')}
+          </button>
+        ) : null}
         <button type="button" className="btn-link" onClick={onClose}>
           {t('properties.month.close')}
         </button>
       </div>
       {lines.length ? (
         <SortableTable
-          storageKey="tilari.properties.monthLines.cols"
+          storageKey={storageKey}
           columns={columns}
           rows={lines}
           rowKey={(l) => l.entry.id}

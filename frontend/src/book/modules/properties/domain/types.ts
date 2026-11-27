@@ -1049,6 +1049,12 @@ export type MonthLine = {
   entry: BrowseEntry
 }
 
+/** A month's lines over the portfolio (`computePortfolioMonth`): each with the object it counts for. */
+export type PortfolioMonth = {
+  month: string
+  lines: (MonthLine & { object: { id: number; name: string } })[]
+}
+
 export type DocumentGroupKind = 'linked' | 'acquisition' | 'other' | 'bank'
 
 export type DocumentVoucher = {

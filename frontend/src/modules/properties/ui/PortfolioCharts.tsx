@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
 import { getBcp47, useI18n } from '../../../i18n'
 import { BarChart } from '../../../shared/BarChart'
 import { LineChart, type LineSeries, type PointTip } from '../../../shared/LineChart'
@@ -24,9 +24,19 @@ export type PortfolioChartOptions = {
   percent: boolean
   /** Every chart run on over the months ahead, an estimate (`PortfolioChart.ahead_keys`, ADR-035). */
   forecast: boolean
+  /** The cash flow chart as each month's bars instead of summed (owner, 2026-11-27). */
+  cashMonthly: boolean
 }
 
-const DEFAULTS: PortfolioChartOptions = { hidden: [], total: true, allMonths: false, combined: true, percent: false, forecast: false }
+const DEFAULTS: PortfolioChartOptions = {
+  hidden: [],
+  total: true,
+  allMonths: false,
+  combined: true,
+  percent: false,
+  forecast: false,
+  cashMonthly: false,
+}
 
 export function loadPortfolioChartOptions(): PortfolioChartOptions {
   try {
@@ -39,6 +49,7 @@ export function loadPortfolioChartOptions(): PortfolioChartOptions {
       combined: typeof stored.combined === 'boolean' ? stored.combined : DEFAULTS.combined,
       percent: typeof stored.percent === 'boolean' ? stored.percent : DEFAULTS.percent,
       forecast: typeof stored.forecast === 'boolean' ? stored.forecast : DEFAULTS.forecast,
+      cashMonthly: typeof stored.cashMonthly === 'boolean' ? stored.cashMonthly : DEFAULTS.cashMonthly,
     }
   } catch {
     return { ...DEFAULTS }
@@ -95,28 +106,42 @@ function Swatch({ color, dashed }: { color: string; dashed: boolean }) {
  * the gap between them that is still to recover, and the housing-company loan shares (ADR-034) - on
  * one scale, where they meet or part.
  * Then each measure on its own chart: every object's money still to recover, its cash flow, its
- * share, one coloured line each, with all of them together; under the cash flow summed, its months as
- * bars, the estimate's faded. With the forecast chosen every line runs
+ * share, one coloured line each, with all of them together. The cash flow summed or, switched, each
+ * month's as a bar, the estimate's faded. With the forecast chosen every line runs
  * on faded over the months ahead (`ahead_keys`, ADR-035). One set of checkboxes serves them: the total,
  * the combined chart, the months and the forecast, then the objects in columns with "all" and "none".
  * The cash flow charts count the sold objects only with `withSold` (owner, 2026-11-26), a choice the
- * cash flow table shares: then what the sales realized is a line of its own.
+ * cash flow table shares: then what the sales realized is a line of its own. A click on a month's bar
+ * picks `selectedMonth` (none ahead), whose lines the caller gives as `monthPanel`, shown under it.
  */
 export function PortfolioCharts({
   chart,
   rows,
   withSold,
   onWithSold,
+  selectedMonth = null,
+  onSelectMonth,
+  monthPanel,
 }: {
   chart: PortfolioChart
   rows: PropertyRow[]
   withSold: boolean
   onWithSold: (next: boolean) => void
+  selectedMonth?: string | null
+  onSelectMonth?: (month: string | null) => void
+  monthPanel?: ReactNode
 }) {
   const { t } = useI18n()
   const locale = getBcp47()
   const [options, setOptionsState] = useState(loadPortfolioChartOptions)
   const objectsLabelId = useId()
+  const long = chart.keys.length > 24
+  // A month asked for further back than the last 24: all of them.
+  useEffect(() => {
+    if (selectedMonth && long && !options.allMonths && chart.keys.indexOf(selectedMonth) >= 0 && chart.keys.indexOf(selectedMonth) < chart.keys.length - 24) {
+      setOptionsState((o) => ({ ...o, allMonths: true }))
+    }
+  }, [selectedMonth, long, options.allMonths, chart.keys])
   if (!chart.keys.length) return null
   const setOptions = (next: PortfolioChartOptions) => {
     setOptionsState(next)
@@ -125,7 +150,6 @@ export function PortfolioCharts({
   const names = new Map(rows.map((r) => [r.id, r.name]))
   const objects = chart.objects.map((o, i) => ({ ...o, name: names.get(o.id) ?? String(o.id), ...objectStyle(i) }))
   const hidden = new Set(options.hidden)
-  const long = chart.keys.length > 24
   const from = options.allMonths || !long ? 0 : chart.keys.length - 24
   const keys = chart.keys.slice(from)
   const totalLabel = t('properties.portfolioChart.total')
@@ -181,9 +205,8 @@ export function PortfolioCharts({
   const cash = withSold
     ? seriesOf((o) => o.cash_snt, chart.total_cash_snt, (o) => o.cash_ahead_snt, chart.total_cash_ahead_snt)
     : seriesOf((o) => o.cash_snt, chart.held_cash_snt, (o) => o.cash_ahead_snt, chart.held_cash_ahead_snt, false)
-  // The cash flow month by month (owner, 2026-11-27): each month's change of the total line above as a
-  // bar - all objects, the sold ones by choice - and with the forecast the months ahead faded. The sum is
-  // the line above, not drawn again.
+  // The cash flow month by month (owner, 2026-11-27), switched with the summed lines: each month's change
+  // of their total as a bar - all objects, the sold ones by choice - and with the forecast the months ahead faded.
   const cashTotal = withSold ? chart.total_cash_snt : chart.held_cash_snt
   const cashAhead = withSold ? chart.total_cash_ahead_snt : chart.held_cash_ahead_snt
   const monthCash = [
@@ -363,22 +386,44 @@ export function PortfolioCharts({
           />
         </>
       ) : null}
-      <h4>{t('properties.portfolioChart.cash')}</h4>
-      <LineChart {...chartProps} series={drawn(cash)} label={t('properties.portfolioChart.cash')} pointTip={pointTip(cash)} />
-      <h4>{t('properties.chart.cashFlow')}</h4>
-      <div role="group" aria-label={t('properties.chart.cashFlow')}>
-        <BarChart
-          className="overview-chart property-chart"
-          points={monthCash}
-          series={[{ key: 'net_snt', className: 'property-bar-net', label: t('properties.chart.net') }]}
-          labelFor={(key) => monthLabel(key, locale, true)}
-          labelGap={48}
-          locale={locale}
-          tooltip={(key, series, value) => `${series.label}, ${monthTitle(key)}: ${formatCents(value)}`}
-          nameFor={monthTitle}
-          pointClass={(key) => (estimated.has(key) ? 'portfolio-ahead' : undefined)}
-        />
+      <h4>{t(options.cashMonthly ? 'properties.chart.cashFlow' : 'properties.portfolioChart.cash')}</h4>
+      <div className="overview-legend">
+        <div className="nav-mode property-cash-view" role="radiogroup" aria-label={t('properties.portfolioChart.cashView')}>
+          {[false, true].map((monthly) => (
+            <label key={String(monthly)} className={`nav-radio ${monthly === options.cashMonthly ? 'is-active' : ''}`}>
+              <input
+                type="radio"
+                name="portfolio-cash-chart"
+                checked={monthly === options.cashMonthly}
+                onChange={() => setOptions({ ...options, cashMonthly: monthly })}
+              />
+              {t(monthly ? 'properties.portfolioChart.cashMonths' : 'properties.portfolioChart.cashSum')}
+            </label>
+          ))}
+        </div>
       </div>
+      {options.cashMonthly ? (
+        <div role="group" aria-label={t('properties.chart.cashFlow')}>
+          <BarChart
+            className="overview-chart property-chart"
+            points={monthCash}
+            series={[{ key: 'net_snt', className: 'property-bar-net', label: t('properties.chart.net') }]}
+            labelFor={(key) => monthLabel(key, locale, true)}
+            labelGap={48}
+            locale={locale}
+            tooltip={(key, series, value) =>
+              `${series.label}, ${monthTitle(key)}: ${formatCents(value)}${onSelectMonth && !estimated.has(key) ? `\n${t('properties.chart.clickHint')}` : ''}`
+            }
+            nameFor={monthTitle}
+            pointClass={(key) => (estimated.has(key) ? 'portfolio-ahead' : undefined)}
+            selectedKey={selectedMonth}
+            onSelect={onSelectMonth ? (key) => !estimated.has(key) && onSelectMonth(key === selectedMonth ? null : key) : undefined}
+          />
+        </div>
+      ) : (
+        <LineChart {...chartProps} series={drawn(cash)} label={t('properties.portfolioChart.cash')} pointTip={pointTip(cash)} />
+      )}
+      {monthPanel}
       {owed ? (
         <>
           <h4>{t('properties.portfolioChart.repaidTitle')}</h4>

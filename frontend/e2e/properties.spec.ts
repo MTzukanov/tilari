@@ -99,11 +99,29 @@ test.describe('rental objects chart', () => {
     await expect(cash.locator('.portfolio-line')).toHaveCount(3)
     await expect(cash.locator('.portfolio-total')).toHaveCount(1)
     await expect(panel.getByRole('group', { name: 'Palauttamatta kuukauden lopussa' })).toHaveCount(0)
-    // Under it the cash flow month by month: a bar a month, the sum being the line above.
+    // Switched to the months, the same chart is a bar a month; a click on one opens its lines with the object
+    // of each, in the address; a voucher opened from them comes back to the month.
+    await panel.getByRole('radiogroup', { name: 'Kassavirta' }).getByText('Kuukausittain', { exact: true }).click()
+    await expect(cash).toHaveCount(0)
     const months = panel.getByRole('group', { name: 'Kassavirta kuukausittain' })
     await expect(months.locator('rect.property-bar-net').first()).toBeVisible()
-    await expect(months.locator('rect.property-bar-net title').first()).toHaveText(/^Kassavirta, \S+ \d{4}: -?[\d\s,]+\s€$/)
-    await expect(months.locator('.chart-line')).toHaveCount(0)
+    await expect(months.locator('rect.property-bar-net title').first()).toHaveText(/^Kassavirta, \S+ \d{4}: -?[\d\s,]+\s€\s+Klikkaa: kuukauden viennit$/)
+    await months.locator('rect.property-bar-net').first().click()
+    const lines = panel.locator('.property-month-lines')
+    await expect(lines.locator('h4')).toHaveText(/^Viennit: /)
+    await expect(lines.locator('thead')).toContainText('Kohde')
+    await expect(page).toHaveURL(/#\/properties\/month\/\d{4}-\d{2}$/)
+    const at = new URL(page.url()).hash
+    await lines.locator('tbody tr').first().click()
+    await expect(page).toHaveURL(new RegExp(`${at}/voucher/\\d+/v/\\d+/edit$`))
+    await page.goBack()
+    await expect(page).toHaveURL(new RegExp(`${at}$`))
+    await expect(lines.locator('tbody tr').first()).toBeVisible()
+    await lines.getByRole('button', { name: 'Sulje' }).click()
+    await expect(lines).toHaveCount(0)
+    await expect(page).toHaveURL(/#\/properties$/)
+    await panel.getByRole('radiogroup', { name: 'Kassavirta' }).getByText('Kertynyt', { exact: true }).click()
+    await expect(cash).toBeVisible()
 
     await panel.getByRole('checkbox', { name: 'Asunto' }).uncheck()
     await expect(cash.locator('.portfolio-line')).toHaveCount(2)
@@ -133,6 +151,7 @@ test.describe('rental objects chart', () => {
       combined: true,
       percent: false,
       forecast: false,
+      cashMonthly: false,
     })
     await panel.getByRole('checkbox', { name: 'Kaikki yhteensä' }).uncheck()
     await expect(cash.locator('.portfolio-total')).toHaveCount(0)
@@ -164,12 +183,7 @@ test.describe('rental objects chart', () => {
     await expect(unrecovered).toBeVisible()
     // The totals on one chart first: the capital put in, what came back and what is still to recover on one
     // scale (no loan shares in this book). Then still to recover, the cash flow under it: they meet or part.
-    await expect(panel.locator('h4')).toHaveText([
-      'Kaikki kohteet yhdessä kuukauden lopussa',
-      'Palauttamatta kuukauden lopussa',
-      'Kertynyt kassavirta',
-      'Kassavirta kuukausittain',
-    ])
+    await expect(panel.locator('h4')).toHaveText(['Kaikki kohteet yhdessä kuukauden lopussa', 'Palauttamatta kuukauden lopussa', 'Kertynyt kassavirta'])
     const combined = panel.getByRole('group', { name: 'Kaikki kohteet yhdessä kuukauden lopussa' })
     await expect(combined.locator('.portfolio-line')).toHaveCount(3)
     await combined.locator('.chart-point-hit').last().hover()
@@ -178,7 +192,7 @@ test.describe('rental objects chart', () => {
     await panel.getByRole('checkbox', { name: 'Yhteiskaavio' }).uncheck()
     await expect(combined).toHaveCount(0)
     await page.reload()
-    await expect(panel.locator('h4')).toHaveText(['Palauttamatta kuukauden lopussa', 'Kertynyt kassavirta', 'Kassavirta kuukausittain'])
+    await expect(panel.locator('h4')).toHaveText(['Palauttamatta kuukauden lopussa', 'Kertynyt kassavirta'])
     await panel.getByRole('checkbox', { name: 'Yhteiskaavio' }).check()
     await expect(combined).toBeVisible()
     // Still to recover as a percentage of each object's capital put in: objects of any size on one scale.
@@ -824,10 +838,14 @@ test.describe('rental object housing-company loans', () => {
     const sharesChart = page.getByRole('group', { name: 'Yhtiölainaosuudet kuukauden lopussa' })
     await expect(sharesChart.locator('.portfolio-ahead')).toHaveCount(0)
     await page.getByRole('checkbox', { name: 'Ennuste' }).check()
-    // The months ahead as faded bars too.
+    // The months ahead as faded bars too, by month; none of them opens lines.
+    await page.getByRole('radiogroup', { name: 'Kassavirta' }).getByText('Kuukausittain', { exact: true }).click()
     const monthBars = page.getByRole('group', { name: 'Kassavirta kuukausittain' })
     await expect(monthBars.locator('.portfolio-ahead rect.property-bar-net').first()).toBeVisible()
     await expect(monthBars.locator('.portfolio-ahead rect.property-bar-net title').first()).toHaveText(/\(arvio\): -?[\d\s,]+\s€$/)
+    await monthBars.locator('g.portfolio-ahead rect.property-bar-net').first().click()
+    await expect(page.locator('.property-month-lines')).toHaveCount(0)
+    await page.getByRole('radiogroup', { name: 'Kassavirta' }).getByText('Kertynyt', { exact: true }).click()
     await expect(sharesChart.locator('.portfolio-total.portfolio-ahead')).toHaveCount(1)
     await sharesChart.locator('.chart-point-hit').last().hover()
     const sharesTip = sharesChart.locator('xpath=..').locator('.chart-tip')

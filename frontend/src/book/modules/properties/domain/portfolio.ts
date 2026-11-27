@@ -136,6 +136,7 @@ import {
   type VastikeFact,
   type LeaseView,
   type PortfolioAlerts,
+  type PortfolioMonth,
   type PortfolioResponse,
   type MonthLine,
   type PortfolioSettings,
@@ -748,6 +749,28 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
       t12m_money_months: new Set(holding.flatMap((c) => c.result.t12m?.money_months ?? [])).size,
     },
   }
+}
+
+/**
+ * A month's lines over the portfolio (owner, 2026-11-27): every object's lines behind its cash-flow bar,
+ * as its own page lists them, with the object - the sold ones only with `withSold`, as the charts count
+ * them. Together they make the portfolio's bar for the month.
+ */
+export function computePortfolioMonth(
+  db: SqliteDb,
+  opts: { today: string; asOf?: string | null; month: string; withSold: boolean },
+): PortfolioMonth {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(opts.month)) throw new BookError('invalid_month', 400)
+  const loaded = loadStored(db)
+  const { asOf } = resolveAsOf(db, opts.today, opts.asOf)
+  const centres = loaded.centres.filter((c) => !docFor(loaded, c.id).doc.excluded)
+  const computed = computeObjects(db, loaded, centres, { asOf, today: opts.today })
+  const counted = computed.filter((c) => c.result.status !== 'excluded' && (opts.withSold || c.result.status !== 'sold'))
+  const lines = counted.flatMap((c) =>
+    monthLines(db, c.result.lines.filter((l) => l.month === opts.month)).map((l) => ({ ...l, object: { id: c.centre.id, name: c.centre.name } })),
+  )
+  lines.sort((a, b) => a.counted_date.localeCompare(b.counted_date) || a.entry.id - b.entry.id)
+  return { month: opts.month, lines }
 }
 
 /**

@@ -1199,6 +1199,9 @@
     "portfolioChart": {
       "title": "Kohteet kuukausittain",
       "cash": "Kertynyt kassavirta",
+      "cashView": "Kassavirta",
+      "cashSum": "Kertynyt",
+      "cashMonths": "Kuukausittain",
       "unrecovered": "Palauttamatta kuukauden lopussa",
       "total": "Kaikki yhteensä",
       "allMonths": "Kaikki kuukaudet",

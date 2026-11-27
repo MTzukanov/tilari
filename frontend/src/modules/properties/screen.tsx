@@ -51,6 +51,8 @@ function PropertiesScreen({ route, goTo, meta }: BookViewCtx) {
         onOpen={(id) => goTo(`#/property/${id}`)}
         onSetup={() => goTo('#/properties/setup')}
         focusAlerts={route.section === 'alerts'}
+        month={route.month}
+        onOpenVoucher={(voucherId, entryId, month) => goTo(voucherHash({ kind: 'properties', ...(month ? { month } : {}) }, voucherId, entryId))}
       />
     )
   }
@@ -66,5 +68,5 @@ export const propertiesUi: UiModule = {
   Screen: PropertiesScreen,
   TopbarItem: AlertsButton,
   activeNav: (route) =>
-    VIEWS.has(route.view) || ['property', 'propertiesSetup'].includes(viaKind(route) ?? '') ? 'properties' : null,
+    VIEWS.has(route.view) || ['property', 'properties', 'propertiesSetup'].includes(viaKind(route) ?? '') ? 'properties' : null,
 }

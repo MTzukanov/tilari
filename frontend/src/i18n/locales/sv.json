@@ -1199,6 +1199,9 @@
     "portfolioChart": {
       "title": "Objekt per månad",
       "cash": "Ackumulerat kassaflöde",
+      "cashView": "Kassaflöde",
+      "cashSum": "Ackumulerat",
+      "cashMonths": "Per månad",
       "unrecovered": "Ej återfått vid månadens slut",
       "total": "Alla tillsammans",
       "allMonths": "Alla månader",

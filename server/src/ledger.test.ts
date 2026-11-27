@@ -12,6 +12,7 @@ import {
   computeAlerts,
   computeDetail,
   computePortfolio,
+  computePortfolioMonth,
   saveProperty,
 } from '../../frontend/src/book/modules/properties/domain/portfolio.ts'
 import {
@@ -258,6 +259,11 @@ describe('ledger http', () => {
     const alerts = await fetch(`${base}/api/properties/alerts?as_of=${asOf}`).then((r) => r.json())
     assert.deepEqual(alerts, computeAlerts(local, { today: asOf, asOf }))
     assert.ok((alerts as { warnings: number }).warnings > 0)
+    // A month's lines over the objects, as the browser computes them; a month that is none is refused.
+    const month = await fetch(`${base}/api/properties/month/2025-02?as_of=${asOf}&sold=1`).then((r) => r.json())
+    assert.deepEqual(month, JSON.parse(JSON.stringify(computePortfolioMonth(local, { today: asOf, asOf, month: '2025-02', withSold: true }))))
+    assert.ok((month as { lines: unknown[] }).lines.length > 0)
+    assert.equal((await fetch(`${base}/api/properties/month/2025-13`)).status, 400)
 
     const stale = await fetch(`${base}/api/properties/4`, {
       method: 'PUT',

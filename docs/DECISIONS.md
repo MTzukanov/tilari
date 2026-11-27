@@ -1030,6 +1030,11 @@ correction would change the open year's income statement lines. The rental-objec
   together or the return in every object's cells (the return per object from its own `money_in_snt`); the summary rows
   stay, the one shown in bold. A year the as-of date ends inside says how many months it has, so a part year is not
   read as a whole one.
+- **The cash flow by month, and its lines** (owner, 2026-11-27): the cash flow chart switches between the summed
+  lines and a bar a month (the total's change, the forecast's faded), and a click on a month's bar lists its lines
+  over the objects under it - the object page's month panel with the object in a column, the sold objects only when
+  counted, loaded for that month only (`computePortfolioMonth`), the month in the address
+  (`#/properties/month/{YYYY-MM}`). The lines add up to the bar.
 - **Open** (noted 2026-11-27, to settle with the owner): the charts' cash flow takes the owner's own bank-loan
   interest off an object's cash flow; the cash flow table's "Kassavirta" leaves it to the money flow row. They
   agree while no object carries such interest.

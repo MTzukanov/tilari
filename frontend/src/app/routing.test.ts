@@ -49,6 +49,13 @@ describe('parseRoute', () => {
   it('parses rental-object routes and returns to the object from a voucher', () => {
     expect(parseRoute('#/properties')).toEqual({ view: 'properties' })
     expect(parseRoute('#/properties/alerts')).toEqual({ view: 'properties', section: 'alerts' })
+    expect(parseRoute('#/properties/month/2025-11')).toEqual({ view: 'properties', month: '2025-11' })
+    // A voucher opened from a month's lines goes back to that month.
+    const fromMonth = { kind: 'properties' as const, month: '2025-11' }
+    expect(voucherHash(fromMonth, 12, 34)).toBe('#/properties/month/2025-11/voucher/12/v/34/edit')
+    expect(parseRoute('#/properties/month/2025-11/voucher/12/v/34/edit')).toEqual({ view: 'edit', voucherId: 12, type: null, via: fromMonth, entryId: 34 })
+    expect(voucherParentHash(fromMonth)).toBe('#/properties/month/2025-11')
+    expect(parseRoute('#/properties/voucher/12/edit')).toEqual({ view: 'edit', voucherId: 12, type: null, via: { kind: 'properties' }, entryId: null })
     expect(parseRoute('#/properties/setup')).toEqual({ view: 'propertiesSetup' })
     expect(parseRoute('#/property/15')).toEqual({ view: 'property', id: 15 })
     expect(parseRoute('#/property/15/edit')).toEqual({ view: 'propertyEdit', id: 15 })
