@@ -997,11 +997,14 @@ correction would change the open year's income statement lines. The rental-objec
   year, and nothing counts after a sale. Without loans the row is the cash flow's alone. Price changes are not in it.
 - **Sold objects, counted or not** (owner, 2026-11-26): one choice, remembered in the browser, for the yearly
   table and the cash flow and repayment charts; on by default. On, a sold object counts for the years it was the
-  owner's, and its sale in the year of its sale month (`YearCashFlow.sale_snt`): the proceeds less the capital put in
-  and the shares repaid while held - the debt-free price's change with the purchase and sale costs. Its years and
-  the sale add up to its whole result in the sold objects' table, so its repaid shares never look unrealized: the
-  summary gets a sale row, the sum is the result ("Tulos yhteensä"), and a second return row counts the sales (the
-  first stays the operating one, comparable year to year). The repayment chart's repaid line keeps only the shares
+  owner's, and its sale in the year of its sale month (`YearCashFlow.sale_snt`): what the sale realized, the proceeds
+  less the capital put in - the debt-free price's change with the purchase and sale costs, and the shares repaid
+  while held. Those shares (`realized_snt`) leave the repayment row in the sale year (owner, 2026-11-27: the
+  repayment total is the unrealized gain in the loans, so it must not change with the choice): a sold object's
+  repayment adds up to 0, and the row's total is what the objects held now have repaid, the same on or off. Its
+  years and the sale add up to its whole result in the sold objects' table: the summary gets a sale row, the sum is
+  the result ("Tulos yhteensä"), and a second return row counts the sales (the first stays the operating one,
+  comparable year to year, with the repayment as paid). The repayment chart's repaid line keeps only the shares
   still held and a "Toteutunut myynneissä" line takes a sale's proceeds less capital from its sale month. Off, the
   objects held now only (`held_*` totals), with a note that the cash flow then differs from the company's in the
   years the sold ones were owned. Either way three money rows follow: the purchases, the sale prices and all of it

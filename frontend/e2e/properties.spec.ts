@@ -735,7 +735,7 @@ test.describe('rental object housing-company loans', () => {
     await expect(labels).toHaveText([
       'Kassavirta',
       'Yhtiölainojen lyhennykset',
-      'Myynnit: hinnanmuutos ja kulut',
+      'Myynnit: toteutunut tulos',
       'Tulos yhteensä',
       'Tuotto vuodessa, % palauttamatta olevasta',
       'Tuotto vuodessa myynnit mukaan, %',
@@ -758,7 +758,7 @@ test.describe('rental object housing-company loans', () => {
     await expect(views.getByRole('radio')).toHaveCount(4)
     await expect(cashTable.locator('tfoot strong').first()).toHaveText('Kassavirta')
     await views.getByText('Tulos yhteensä', { exact: true }).click()
-    await expect(cashTable.locator('tbody .property-cash-sale').first()).toHaveAttribute('title', /^Kassavirta .+ · lyhennykset .+ · myynti .+$/)
+    await expect(cashTable.locator('tbody .property-cash-sale').first()).toHaveAttribute('title', /^Kassavirta .+ · myynnin tulos .+$/)
     await views.getByText('Lyhennykset', { exact: true }).click()
     await expect(cashTable.locator('tfoot td:first-child strong')).toHaveText('Yhtiölainojen lyhennykset')
     await expect(cashTable.locator('tbody td', { hasText: /^201\s€$/ }).first()).toBeVisible()

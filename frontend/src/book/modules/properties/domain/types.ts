@@ -480,11 +480,17 @@ export type YearCashFlow = {
   capex_snt: number
   proceeds_snt: number
   /**
-   * A sold object's sale, in the year of its sale month (owner, 2026-11-26): its proceeds less the
-   * capital put in and the shares repaid while it was the owner's - the debt-free price's change with
-   * the purchase and sale costs - so its years and the sale add up to its whole result.
+   * A sold object's sale, in the year of its sale month (owner, 2026-11-26): what it realized, its
+   * proceeds less the capital put in - the debt-free price's change with the purchase and sale costs,
+   * and the shares repaid while it was the owner's.
    */
   sale_snt?: number
+  /**
+   * With loans, in the sale year: the shares repaid while the object was the owner's, which its sale
+   * realized (owner, 2026-11-27). They leave the repayment there, so a sold object's repayment adds up
+   * to 0 and the repayment of all the years is what the objects still held have repaid, unrealized.
+   */
+  realized_snt?: number
 }
 
 export type BreakEven = {

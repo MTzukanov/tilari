@@ -7,6 +7,13 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-27 - Properties page: the repayment total is the unrealized one (ADR-035)
+
+- Owner: the repayment row's total changed with "Myydyt kohteet mukana", but it should be the unrealized gain in
+  the loans, which no sold object has. Now a sold object's repaid shares (`realized_snt`) leave the repayment row in
+  its sale year and the sale row is what the sale realized (proceeds - capital, repaid shares included): the
+  repayment total is the objects held now on or off, the result rows and both % rows are unchanged.
+
 ## 2026-11-26 - Properties page: sold objects in the cash flow, with their sale (ADR-035)
 
 - Owner noticed the repayment row jump when the sold objects' loans were entered: their repayments counted as gains

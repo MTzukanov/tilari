@@ -49,13 +49,15 @@ export type ObjectInput = {
  * The cash flow table's years (ADR-035): each year's operating net and interest, with loans the
  * housing-company loans' repayment in its months, and the owner's money in the object over them
  * (`moneyIn`; nothing after a sale) - a month in the year its first day falls in. Also the capital
- * put in and the proceeds of each year, and a sold object's sale in its sale month's year.
+ * put in and the proceeds of each year, and a sold object's sale in its sale month's year with the
+ * shares it realized.
  */
 function cashYears(years: YearRow[], months: MonthPoint[], soldMonth: string | null, loans: boolean): YearCashFlow[] {
   const sums = new Map<string, { principal: number; money: number }>()
   const total = (value: (m: MonthPoint) => number) => months.reduce((sum, m) => sum + value(m), 0)
   const saleYear = soldMonth ? years.find((y) => y.starts <= `${soldMonth}-01` && `${soldMonth}-01` <= y.ends)?.starts : undefined
-  const sale = total((m) => m.proceeds_snt) - total((m) => m.capex_snt) - total((m) => m.housing_principal_snt ?? 0)
+  const sale = total((m) => m.proceeds_snt) - total((m) => m.capex_snt)
+  const realized = total((m) => m.housing_principal_snt ?? 0)
   for (const m of months) {
     const year = years.find((y) => y.starts <= `${m.key}-01` && `${m.key}-01` <= y.ends)
     if (!year) continue
@@ -75,7 +77,7 @@ function cashYears(years: YearRow[], months: MonthPoint[], soldMonth: string | n
       money_in_snt: Math.round((sum?.money ?? 0) / 12),
       capex_snt: y.capex_snt,
       proceeds_snt: y.proceeds_snt,
-      ...(y.starts === saleYear ? { sale_snt: sale } : {}),
+      ...(y.starts === saleYear ? { sale_snt: sale, ...(loans ? { realized_snt: realized } : {}) } : {}),
     }
   })
 }
