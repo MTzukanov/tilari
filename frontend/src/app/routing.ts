@@ -18,6 +18,8 @@ export type VoucherVia =
   | { kind: 'allocation'; id: number; month?: string }
   /** Opened from a rental object's page (`#/property/{id}`), `month` its open month panel, `tab` its open tab. */
   | { kind: 'property'; id: number; month?: string; tab?: PropertyTab; card?: PropertyCard }
+  /** Opened from the Properties page (`#/properties`), `month` its open month panel. */
+  | { kind: 'properties'; month?: string }
   /** Opened from the rental-object setup (`#/properties/setup`); its unsaved choices are kept. */
   | { kind: 'propertiesSetup' }
   | { kind: 'balanceSheetItems' }
@@ -36,8 +38,11 @@ export type Route =
   | { view: 'balanceSheetItems' }
   | { view: 'allocations' }
   | { view: 'allocation'; id: number; month?: string }
-  /** `section: 'alerts'` (`#/properties/alerts`): opened on the list of warnings. */
-  | { view: 'properties'; section?: 'alerts' }
+  /**
+   * `section: 'alerts'` (`#/properties/alerts`): opened on the list of warnings; `month`
+   * (`#/properties/month/{YYYY-MM}`): that month's lines open under the cash flow chart.
+   */
+  | { view: 'properties'; section?: 'alerts'; month?: string }
   | { view: 'propertiesSetup' }
   /**
    * `month` opens that month's lines under the overview's chart; `tab` another tab than the overview;
@@ -73,6 +78,11 @@ type VoucherRef = { voucherId: number; entryId: number | null }
 /** `#/allocation/{id}`, or `#/allocation/{id}/month/{YYYY-MM}` opened on that month. */
 export function allocationHash(id: number, month?: string): string {
   return `#/allocation/${id}${month ? `/month/${month}` : ''}`
+}
+
+/** `#/properties`, or `#/properties/month/{YYYY-MM}` with that month's lines open. */
+export function propertiesHash(month?: string): string {
+  return month ? `#/properties/month/${month}` : '#/properties'
 }
 
 /**
@@ -158,6 +168,8 @@ export function voucherHash(
       return `${allocationHash(via.id, via.month)}${tail}`
     case 'property':
       return `${propertyHash(via.id, via)}${tail}`
+    case 'properties':
+      return `${propertiesHash(via.month)}${tail}`
     case 'propertiesSetup':
       return `#/properties/setup${tail}`
     case 'balanceSheetItems':
@@ -185,6 +197,8 @@ export function voucherParentHash(via: VoucherVia): string {
       return allocationHash(via.id, via.month)
     case 'property':
       return propertyHash(via.id, via)
+    case 'properties':
+      return propertiesHash(via.month)
     case 'propertiesSetup':
       return '#/properties/setup'
     case 'balanceSheetItems':
@@ -214,6 +228,8 @@ export function voucherUpI18n(via: VoucherVia): { key: string; vars?: Record<str
       return { key: 'up.allocation' }
     case 'property':
       return { key: 'up.property' }
+    case 'properties':
+      return { key: 'up.properties' }
     case 'propertiesSetup':
       return { key: 'up.propertiesSetup' }
     case 'balanceSheetItems':
@@ -293,6 +309,14 @@ export function parseRoute(hash: string = window.location.hash): Route {
     if (!setup[1]) return { view: 'propertiesSetup' }
     const ref = parseVoucherSegment(setup[1])
     if (ref) return voucherRoute({ kind: 'propertiesSetup' }, ref)
+  }
+
+  const portfolio = hash.match(new RegExp(`^#/properties(?:/month/${MONTH})?(?:/(.+))?$`))
+  if (portfolio && portfolio[2] !== 'alerts') {
+    const month = portfolio[1] ? { month: portfolio[1] } : {}
+    if (!portfolio[2]) return { view: 'properties', ...month }
+    const ref = parseVoucherSegment(portfolio[2])
+    if (ref) return voucherRoute({ kind: 'properties', ...month }, ref)
   }
 
   const property = hash.match(new RegExp(`^#/property/(\\d+)(?:/month/${MONTH})?(?:/(.+))?$`))

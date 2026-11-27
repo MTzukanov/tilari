@@ -1,10 +1,11 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
 import { getBcp47, useI18n } from '../../../i18n'
 import { LineChart, type LineSeries, type PointTip } from '../../../shared/LineChart'
 import { formatCents } from '../../../shared/money'
 import { formatBp } from '../../../shared/percent'
 import type { PortfolioChart, PropertyRow } from '../api'
-import { monthLabel } from './Charts'
+import { CashFlowChart, CashFlowChecks, monthLabel } from './Charts'
+import { loadCashFlowOptions, saveCashFlowOptions, type CashFlowOptions } from './chartOptions'
 import { monthName } from './format'
 
 /** Categorical hues in fixed order (validated on white); a 9th object repeats them dashed. */
@@ -25,7 +26,14 @@ export type PortfolioChartOptions = {
   forecast: boolean
 }
 
-const DEFAULTS: PortfolioChartOptions = { hidden: [], total: true, allMonths: false, combined: true, percent: false, forecast: false }
+const DEFAULTS: PortfolioChartOptions = {
+  hidden: [],
+  total: true,
+  allMonths: false,
+  combined: true,
+  percent: false,
+  forecast: false,
+}
 
 export function loadPortfolioChartOptions(): PortfolioChartOptions {
   try {
@@ -94,27 +102,47 @@ function Swatch({ color, dashed }: { color: string; dashed: boolean }) {
  * the gap between them that is still to recover, and the housing-company loan shares (ADR-034) - on
  * one scale, where they meet or part.
  * Then each measure on its own chart: every object's money still to recover, its cash flow, its
- * share, one coloured line each, with all of them together. With the forecast chosen every line runs
+ * share, one coloured line each, with all of them together. The cash flow summed or, switched, each
+ * month's as a bar, the estimate's faded. With the forecast chosen every line runs
  * on faded over the months ahead (`ahead_keys`, ADR-035). One set of checkboxes serves them: the total,
  * the combined chart, the months and the forecast, then the objects in columns with "all" and "none".
  * The cash flow charts count the sold objects only with `withSold` (owner, 2026-11-26), a choice the
- * cash flow table shares: then what the sales realized is a line of its own.
+ * cash flow table shares: then what the sales realized is a line of its own. A click on a month's bar
+ * picks `selectedMonth` (none ahead), whose lines the caller gives as `monthPanel`, shown under it.
  */
 export function PortfolioCharts({
   chart,
   rows,
   withSold,
   onWithSold,
+  selectedMonth = null,
+  onSelectMonth,
+  monthPanel,
 }: {
   chart: PortfolioChart
   rows: PropertyRow[]
   withSold: boolean
   onWithSold: (next: boolean) => void
+  selectedMonth?: string | null
+  onSelectMonth?: (month: string | null) => void
+  monthPanel?: ReactNode
 }) {
   const { t } = useI18n()
   const locale = getBcp47()
   const [options, setOptionsState] = useState(loadPortfolioChartOptions)
+  const [cashOptions, setCashOptionsState] = useState(loadCashFlowOptions)
+  const setCashOptions = (next: CashFlowOptions) => {
+    setCashOptionsState(next)
+    saveCashFlowOptions(next)
+  }
   const objectsLabelId = useId()
+  const long = chart.keys.length > 24
+  // A month asked for further back than the last 24: all of them.
+  useEffect(() => {
+    if (selectedMonth && long && !options.allMonths && chart.keys.indexOf(selectedMonth) >= 0 && chart.keys.indexOf(selectedMonth) < chart.keys.length - 24) {
+      setOptionsState((o) => ({ ...o, allMonths: true }))
+    }
+  }, [selectedMonth, long, options.allMonths, chart.keys])
   if (!chart.keys.length) return null
   const setOptions = (next: PortfolioChartOptions) => {
     setOptionsState(next)
@@ -123,7 +151,6 @@ export function PortfolioCharts({
   const names = new Map(rows.map((r) => [r.id, r.name]))
   const objects = chart.objects.map((o, i) => ({ ...o, name: names.get(o.id) ?? String(o.id), ...objectStyle(i) }))
   const hidden = new Set(options.hidden)
-  const long = chart.keys.length > 24
   const from = options.allMonths || !long ? 0 : chart.keys.length - 24
   const keys = chart.keys.slice(from)
   const totalLabel = t('properties.portfolioChart.total')
@@ -139,10 +166,9 @@ export function PortfolioCharts({
     total: (number | null)[],
     pickAhead: (o: (typeof objects)[number]) => (number | null)[],
     totalAhead: (number | null)[],
-    soldToo = true,
   ): LineSeries[] => [
     ...objects
-      .filter((o) => !hidden.has(o.id) && (soldToo || !o.sold))
+      .filter((o) => !hidden.has(o.id))
       .map((o) => ({ key: String(o.id), label: o.name, values: runOn(pick(o), pickAhead(o)), className: 'portfolio-line', color: o.color, dashed: o.dashed })),
     ...(options.total ? [{ key: 'total', label: totalLabel, values: runOn(total, totalAhead), className: 'portfolio-total' }] : []),
   ]
@@ -176,9 +202,19 @@ export function PortfolioCharts({
   // "All" and "none" act on the objects' lines only: the total and the months are choices of their own.
   const noneHidden = objects.every((o) => !hidden.has(o.id))
   const allHidden = objects.every((o) => hidden.has(o.id))
-  const cash = withSold
-    ? seriesOf((o) => o.cash_snt, chart.total_cash_snt, (o) => o.cash_ahead_snt, chart.total_cash_ahead_snt)
-    : seriesOf((o) => o.cash_snt, chart.held_cash_snt, (o) => o.cash_ahead_snt, chart.held_cash_ahead_snt, false)
+  // The cash flow by month as on an object's page (owner, 2026-11-27): all the objects' income and costs
+  // as bars, the sold ones by choice, and the cash flow summed as a line; with the forecast the months ahead faded.
+  const income = withSold ? chart.total_income_snt : chart.held_income_snt
+  const costs = withSold ? chart.total_costs_snt : chart.held_costs_snt
+  const cashTotal = withSold ? chart.total_cash_snt : chart.held_cash_snt
+  const cashAhead = withSold ? chart.total_cash_ahead_snt : chart.held_cash_ahead_snt
+  const cashMonths = [
+    ...chart.keys.map((key, i) => ({ key, income_snt: income[i], expense_snt: costs[i], interest_snt: 0 })).slice(from),
+    ...(ahead ? chart.ahead_keys.map((key, i) => ({ key, income_snt: chart.income_ahead_snt[i], expense_snt: chart.costs_ahead_snt[i], interest_snt: 0 })) : []),
+  ]
+  const estimated = new Set(ahead ? chart.ahead_keys : [])
+  const monthTitle = (key: string) =>
+    estimated.has(key) ? t('properties.housing.path.forecastMonth', { month: monthName(key, locale) }) : monthName(key, locale)
   // Objects without an investment linked have nothing to recover: no line there, maybe no chart.
   // In percent: each object's still to recover against its own capital put in, the total against the total.
   const unrecovered = (
@@ -196,6 +232,8 @@ export function PortfolioCharts({
     (s) => s.key === 'total' || s.values.some((v) => v != null),
   )
   const owed = chart.objects.some((o) => o.share_snt.some((v) => v != null))
+  // The objects' own lines are on the charts of the money to recover and the shares; without them, no choice of objects.
+  const perObject = invested || owed
   const combined: LineSeries[] = [
     {
       key: 'invested',
@@ -262,11 +300,13 @@ export function PortfolioCharts({
     <section className="overview-panel property-section portfolio-charts">
       <h3>{t('properties.portfolioChart.title')}</h3>
       <div className="overview-legend legend-columns">
-        <label className="allocation-check">
-          <input type="checkbox" checked={options.total} onChange={() => setOptions({ ...options, total: !options.total })} />
-          <i className="overview-swatch portfolio-swatch-total" />
-          {totalLabel}
-        </label>
+        {perObject ? (
+          <label className="allocation-check">
+            <input type="checkbox" checked={options.total} onChange={() => setOptions({ ...options, total: !options.total })} />
+            <i className="overview-swatch portfolio-swatch-total" />
+            {totalLabel}
+          </label>
+        ) : null}
         <label className="allocation-check">
           <input type="checkbox" checked={options.combined} onChange={() => setOptions({ ...options, combined: !options.combined })} />
           {t('properties.portfolioChart.combined')}
@@ -291,32 +331,36 @@ export function PortfolioCharts({
           </label>
         ) : null}
       </div>
-      <div className="portfolio-objects-head">
-        <span id={objectsLabelId} className="portfolio-objects-label">
-          {t('properties.portfolioChart.objects')}
-        </span>
-        <button type="button" className="btn-link btn-quiet" disabled={noneHidden} onClick={() => setOptions({ ...options, hidden: [] })}>
-          {t('properties.portfolioChart.checkAll')}
-        </button>
-        <button
-          type="button"
-          className="btn-link btn-quiet"
-          disabled={allHidden}
-          onClick={() => setOptions({ ...options, hidden: objects.map((o) => o.id) })}
-        >
-          {t('properties.portfolioChart.uncheckAll')}
-        </button>
-      </div>
-      <div className="overview-legend legend-columns portfolio-objects" role="group" aria-labelledby={objectsLabelId}>
-        {objects.map((o) => (
-          <label key={o.id} className="allocation-check">
-            <input type="checkbox" checked={!hidden.has(o.id)} onChange={() => toggle(o.id)} />
-            <Swatch color={o.color} dashed={o.dashed} />
-            {o.name}
-          </label>
-        ))}
-      </div>
-      <p className="muted property-kpi-hint">{t('properties.portfolioChart.lead')}</p>
+      {perObject ? (
+        <>
+          <div className="portfolio-objects-head">
+            <span id={objectsLabelId} className="portfolio-objects-label">
+              {t('properties.portfolioChart.objects')}
+            </span>
+            <button type="button" className="btn-link btn-quiet" disabled={noneHidden} onClick={() => setOptions({ ...options, hidden: [] })}>
+              {t('properties.portfolioChart.checkAll')}
+            </button>
+            <button
+              type="button"
+              className="btn-link btn-quiet"
+              disabled={allHidden}
+              onClick={() => setOptions({ ...options, hidden: objects.map((o) => o.id) })}
+            >
+              {t('properties.portfolioChart.uncheckAll')}
+            </button>
+          </div>
+          <div className="overview-legend legend-columns portfolio-objects" role="group" aria-labelledby={objectsLabelId}>
+            {objects.map((o) => (
+              <label key={o.id} className="allocation-check">
+                <input type="checkbox" checked={!hidden.has(o.id)} onChange={() => toggle(o.id)} />
+                <Swatch color={o.color} dashed={o.dashed} />
+                {o.name}
+              </label>
+            ))}
+          </div>
+          <p className="muted property-kpi-hint">{t('properties.portfolioChart.lead')}</p>
+        </>
+      ) : null}
       {options.combined ? (
         <>
           <h4>{t('properties.portfolioChart.combinedTitle')}</h4>
@@ -349,8 +393,27 @@ export function PortfolioCharts({
           />
         </>
       ) : null}
-      <h4>{t('properties.portfolioChart.cash')}</h4>
-      <LineChart {...chartProps} series={drawn(cash)} label={t('properties.portfolioChart.cash')} pointTip={pointTip(cash)} />
+      <h4>{t('properties.chart.cashFlow')}</h4>
+      <CashFlowChecks options={cashOptions} onOptions={setCashOptions} />
+      <div role="group" aria-label={t('properties.chart.cashFlow')}>
+        <CashFlowChart
+          months={cashMonths}
+          options={cashOptions}
+          totals={cashOptions.total ? [...cashTotal.slice(from), ...(ahead ? cashAhead : [])] : undefined}
+          estimateFrom={ahead ? keys.length : undefined}
+          monthTitle={monthTitle}
+          selectedKey={selectedMonth}
+          onSelect={onSelectMonth ? (key) => onSelectMonth(key === selectedMonth ? null : key) : undefined}
+          labels={{
+            income: t('properties.chart.income'),
+            expense: t('properties.chart.expense'),
+            net: t('properties.chart.net'),
+            total: t('properties.chart.total'),
+            clickHint: t('properties.chart.clickHint'),
+          }}
+        />
+      </div>
+      {monthPanel}
       {owed ? (
         <>
           <h4>{t('properties.portfolioChart.repaidTitle')}</h4>

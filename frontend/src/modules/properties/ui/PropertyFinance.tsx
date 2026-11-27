@@ -8,7 +8,7 @@ import { formatBp, formatPercentInput, parsePercentInput } from '../../../shared
 import { showCutText } from '../../../shared/cutText'
 import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import type { Disposal, PropertyDetail, PropertyDoc, YearRow } from '../api'
-import { CashFlowChart, PaybackChart } from './Charts'
+import { CashFlowChart, CashFlowChecks, PaybackChart } from './Charts'
 import { CapitalSection, ErasSection, FinancingSection, SaleSection, ValuationsSection } from './FinanceEdits'
 import { runningTotals, type CashFlowOptions } from './chartOptions'
 import { VoucherOpen } from './FormParts'
@@ -217,29 +217,10 @@ export function CashFlowPanel({
   const owed = housingShareMonths(d.doc.housing_loans ?? [], d.housing.paths)
   const shares = owed.size ? d.months.map((m) => owed.get(m.key) ?? null) : undefined
   if (!d.months.length) return null
-  const check = (key: keyof CashFlowOptions, label: string, swatch?: string, disabled = false) => (
-    <label className="allocation-check">
-      <input
-        type="checkbox"
-        checked={options[key]}
-        disabled={disabled}
-        onChange={() => onOptions({ ...options, [key]: !options[key] })}
-      />
-      {swatch ? <i className={`overview-swatch ${swatch}`} /> : null}
-      {label}
-    </label>
-  )
   return (
     <section className="overview-panel">
       <h3>{t('properties.chart.cashFlow')}</h3>
-      <div className="overview-legend legend-columns">
-        {check('income', t('properties.chart.income'), 'property-swatch-income')}
-        {check('expense', t('properties.chart.expense'), 'property-swatch-expense')}
-        {check('net', t('properties.chart.net'), 'property-swatch-net')}
-        {check('total', t('properties.chart.total'), 'property-swatch-total')}
-        {check('costsUp', t('properties.chart.costsUp'), undefined, !options.expense)}
-        {d.months.length > 24 ? check('allMonths', t('properties.chart.allMonths')) : null}
-      </div>
+      <CashFlowChecks options={options} onOptions={onOptions} allMonths={d.months.length > 24} />
       <CashFlowChart
         months={months}
         lines={d.month_lines}

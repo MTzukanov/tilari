@@ -15,6 +15,7 @@ import {
   computeAlerts,
   computeDetail,
   computePortfolio,
+  computePortfolioMonth,
   deleteProperty,
   saveProperty,
 } from './portfolio'
@@ -315,6 +316,24 @@ describe('rental objects: figures', () => {
     // A held object has no sale.
     const held = computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.bundle)!
     expect(held.cash_years.some((y) => y.sale_snt != null)).toBe(false)
+  })
+
+  it('a month\'s lines over the objects add up to the cash flow chart\'s bar; the sold objects only when chosen', async () => {
+    const { db } = await setUp()
+    const p = computePortfolio(db, { today: TODAY })
+    let soldLines = 0
+    for (const withSold of [true, false]) {
+      const total = withSold ? p.chart.total_cash_snt : p.chart.held_cash_snt
+      p.chart.keys.forEach((month, i) => {
+        const m = computePortfolioMonth(db, { today: TODAY, month, withSold })
+        expect(m.lines.reduce((s, l) => s + l.amount_snt, 0), month).toBe(total[i] - (i > 0 ? total[i - 1] : 0))
+        const sold = m.lines.filter((l) => l.object.id === CC.sold).length
+        if (withSold) soldLines += sold
+        else expect(sold).toBe(0)
+      })
+    }
+    expect(soldLines).toBeGreaterThan(0)
+    expect(() => computePortfolioMonth(db, { today: TODAY, month: '2025-13', withSold: true })).toThrow('invalid_month')
   })
 
   it('sold object: sale proceeds include the later broker invoice; actual IRR', async () => {

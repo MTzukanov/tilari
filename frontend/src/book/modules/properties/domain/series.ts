@@ -206,6 +206,12 @@ export function portfolioChart(
       held_cash_ahead_snt: [],
       held_repaid_snt: [],
       held_repaid_ahead_snt: [],
+      total_income_snt: [],
+      total_costs_snt: [],
+      held_income_snt: [],
+      held_costs_snt: [],
+      income_ahead_snt: [],
+      costs_ahead_snt: [],
     }
   }
   const from = shown.map((o) => o.months[0].key).sort()[0]
@@ -220,6 +226,10 @@ export function portfolioChart(
   const totalRealized = keys.map(() => 0)
   const heldCash = keys.map(() => 0)
   const heldRepaid = keys.map(() => 0)
+  const totalIncome = keys.map(() => 0)
+  const totalCosts = keys.map(() => 0)
+  const heldIncome = keys.map(() => 0)
+  const heldCosts = keys.map(() => 0)
   // On from the last month: the held objects' estimates, to the last share's payoff.
   const last = keys[keys.length - 1]
   const held = shown.map((o) => (o.status === 'sold' ? null : o))
@@ -237,6 +247,8 @@ export function portfolioChart(
   const totalRealizedAhead = aheadKeys.map(() => 0)
   const heldCashAhead = aheadKeys.map(() => 0)
   const heldRepaidAhead = aheadKeys.map(() => 0)
+  const incomeAhead = aheadKeys.map(() => 0)
+  const costsAhead = aheadKeys.map(() => 0)
   const rows = shown.map((o, index) => {
     const at = new Map(o.months.map((m) => [m.key, m]))
     const sold = o.status === 'sold' ? (o.sold_on?.slice(0, 7) ?? o.months[o.months.length - 1].key) : null
@@ -246,7 +258,6 @@ export function portfolioChart(
     let capital = 0
     let proceeds = 0
     let repaid = 0
-    const cash: (number | null)[] = []
     const unrecovered: (number | null)[] = []
     const capitalIn: (number | null)[] = []
     const share: (number | null)[] = []
@@ -257,6 +268,12 @@ export function portfolioChart(
         capital += m.capex_snt
         proceeds += m.proceeds_snt
         repaid += m.housing_principal_snt ?? 0
+        totalIncome[i] += m.income_snt
+        totalCosts[i] += m.expense_snt + m.interest_snt
+        if (!sold) {
+          heldIncome[i] += m.income_snt
+          heldCosts[i] += m.expense_snt + m.interest_snt
+        }
       }
       // A sold object's cash flow stays in the totals after its last month; from its sale month its
       // repaid shares are the buyer's, and what the sale realized - proceeds less capital - counts instead.
@@ -272,7 +289,6 @@ export function portfolioChart(
         totalInvested[i] += capital
         totalBack[i] += sum + proceeds
       }
-      cash.push(m ? sum : null)
       unrecovered.push(m && invested ? m.unrecovered_snt : null)
       capitalIn.push(m && invested ? capital : null)
       const owed = o.shares?.get(key) ?? null
@@ -284,15 +300,18 @@ export function portfolioChart(
     // cash flow stays in the total as it ended.
     const flows = new Map((held[index]?.flows ?? []).map((f) => [f.key, f]))
     const lastPoint = at.get(last)
-    const cashAhead: (number | null)[] = []
     const unrecoveredAhead: (number | null)[] = []
     const investedAhead: (number | null)[] = []
     let gained = 0
     let repaidAhead = repaid
     aheadKeys.forEach((key, i) => {
       const f = flows.get(key)
-      if (f) gained += f.income_snt - f.expense_snt
-      if (f) repaidAhead += f.principal_snt
+      if (f) {
+        gained += f.income_snt - f.expense_snt
+        repaidAhead += f.principal_snt
+        incomeAhead[i] += f.income_snt
+        costsAhead[i] += f.expense_snt
+      }
       totalCashAhead[i] += sum + gained
       if (sold) totalRealizedAhead[i] += proceeds - capital
       else {
@@ -301,7 +320,6 @@ export function portfolioChart(
         heldRepaidAhead[i] += repaidAhead
       }
       const on = f != null && lastPoint != null
-      cashAhead.push(on ? sum + gained : null)
       if (on && invested) {
         totalUnrecoveredAhead[i] += lastPoint.unrecovered_snt - gained
         totalInvestedAhead[i] += capital
@@ -313,12 +331,10 @@ export function portfolioChart(
     return {
       id: o.id,
       sold: sold != null,
-      cash_snt: cash,
       unrecovered_snt: unrecovered,
       invested_snt: capitalIn,
       share_snt: share,
       share_ahead_snt: aheadKeys.map((key) => held[index]?.ahead?.get(key) ?? null),
-      cash_ahead_snt: cashAhead,
       unrecovered_ahead_snt: unrecoveredAhead,
       invested_ahead_snt: investedAhead,
     }
@@ -362,5 +378,11 @@ export function portfolioChart(
     held_cash_ahead_snt: heldCashAhead,
     held_repaid_snt: heldRepaid,
     held_repaid_ahead_snt: heldRepaidAhead,
+    total_income_snt: totalIncome,
+    total_costs_snt: totalCosts,
+    held_income_snt: heldIncome,
+    held_costs_snt: heldCosts,
+    income_ahead_snt: incomeAhead,
+    costs_ahead_snt: costsAhead,
   }
 }

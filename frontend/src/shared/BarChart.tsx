@@ -13,6 +13,8 @@ export type BarLine = {
   values: number[]
   className: string
   label: string
+  /** The first point that is an estimate: the line from the point before it on is drawn faded. */
+  estimateFrom?: number
   /** Dot hover text; default "label: amount". */
   tooltip?: (key: string, value: number) => string
 }
@@ -54,7 +56,8 @@ export function chartGrid(bars: number[] | null, line: number[] | null) {
  * Grouped bars per point (one per series); negative values hang below the zero line. The side with
  * the larger values gets two grid steps, the other side only the steps its values need. A `line`
  * is drawn over the bars on the same grid (`chartGrid`: its own scale on the right if larger). With
- * `onSelect` each point's column is a button (click, Enter or Space) and `selectedKey` is shaded.
+ * `onSelect` each point's column is a button (click, Enter or Space) and `selectedKey` is shaded;
+ * `pointClass` classes a point's column (e.g. an estimate drawn faded).
  * Drawn at its box's width (`useChartWidth`), so labels thin out instead of shrinking on a phone.
  */
 export function BarChart<K extends string>({
@@ -69,6 +72,7 @@ export function BarChart<K extends string>({
   selectedKey,
   onSelect,
   labelGap = 44,
+  pointClass,
 }: {
   points: ({ key: string } & Record<K, number>)[]
   series: BarSeries<K>[]
@@ -84,6 +88,7 @@ export function BarChart<K extends string>({
   onSelect?: (key: string) => void
   /** Least room per point label (px); labels between are left out. */
   labelGap?: number
+  pointClass?: (key: string) => string | undefined
 }) {
   const { ref, width } = useChartWidth(680)
   const { up, down, leftStep, lineStep, rightStep } = chartGrid(
@@ -138,7 +143,7 @@ export function BarChart<K extends string>({
         return (
           <g
             key={p.key}
-            className={onSelect ? 'chart-col' : undefined}
+            className={[onSelect ? 'chart-col' : '', pointClass?.(p.key) ?? ''].filter(Boolean).join(' ') || undefined}
             onClick={onSelect ? () => onSelect(p.key) : undefined}
           >
             {onSelect ? (
@@ -190,14 +195,26 @@ export function BarChart<K extends string>({
       })}
       {line && lineStep ? (
         <g className={line.className}>
-          <path
-            className="chart-line"
-            d={line.values.map((v, i) => `${i ? 'L' : 'M'}${centre(i).toFixed(1)},${yOf(v, lineStep).toFixed(1)}`).join(' ')}
-          />
+          {(line.estimateFrom != null && line.estimateFrom > 0
+            ? [
+                { from: 0, to: line.estimateFrom, className: 'chart-line' },
+                { from: line.estimateFrom - 1, to: line.values.length, className: 'chart-line chart-estimate' },
+              ]
+            : [{ from: 0, to: line.values.length, className: 'chart-line' }]
+          ).map((part) => (
+            <path
+              key={part.from}
+              className={part.className}
+              d={line.values
+                .slice(part.from, part.to)
+                .map((v, j) => `${j ? 'L' : 'M'}${centre(part.from + j).toFixed(1)},${yOf(v, lineStep).toFixed(1)}`)
+                .join(' ')}
+            />
+          ))}
           {points.map((p, i) => (
             <circle
               key={p.key}
-              className="chart-line-dot"
+              className={line.estimateFrom != null && i >= line.estimateFrom ? 'chart-line-dot chart-estimate' : 'chart-line-dot'}
               cx={centre(i)}
               cy={yOf(line.values[i], lineStep)}
               r={Math.min(2.4, groupW / 5)}

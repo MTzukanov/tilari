@@ -5,6 +5,7 @@ import {
   computeAlerts,
   computeDetail,
   computePortfolio,
+  computePortfolioMonth,
   deleteProperty,
   getPortfolioSettings,
   requireCostCentre,
@@ -15,6 +16,7 @@ import { parsePropertyDoc, propertyKey } from './domain/doc'
 import { readTilariData } from '../../kernel/tilariData'
 import type {
   PortfolioAlerts,
+  PortfolioMonth,
   PortfolioResponse,
   PortfolioSettings,
   PropertyDetail,
@@ -40,6 +42,11 @@ export class PropertiesService {
 
   async listProperties(query: PropertyQuery = {}): Promise<PortfolioResponse> {
     return computePortfolio(this.kernel.requireDb(), { today: this.kernel.today(), asOf: query.asOf })
+  }
+
+  /** A month's lines over the objects, the sold ones with `withSold` (the cash flow chart's bar). */
+  async fetchPortfolioMonth(month: string, withSold: boolean, query: PropertyQuery = {}): Promise<PortfolioMonth> {
+    return computePortfolioMonth(this.kernel.requireDb(), { today: this.kernel.today(), asOf: query.asOf, month, withSold })
   }
 
   /** The header's count of warnings to act on (ADR-030). */

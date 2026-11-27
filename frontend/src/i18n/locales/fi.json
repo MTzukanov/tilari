@@ -1202,7 +1202,7 @@
       "unrecovered": "Palauttamatta kuukauden lopussa",
       "total": "Kaikki yhteensä",
       "allMonths": "Kaikki kuukaudet",
-      "lead": "Yhteensä-viiva laskee aina kaikki kohteet: valinnat piilottavat vain viivoja. Myyty kohde jää pois palauttamattomasta myyntikuusta alkaen, mutta pysyy kassavirran summassa.",
+      "lead": "Yhteensä-viiva laskee aina kaikki kohteet: valinnat piilottavat vain viivoja. Myyty kohde jää pois palauttamattomasta ja velkaosuuksista myyntikuusta alkaen.",
       "shares": "Yhtiölainaosuudet kuukauden lopussa",
       "forecast": "Ennuste",
       "objects": "Kohteet",

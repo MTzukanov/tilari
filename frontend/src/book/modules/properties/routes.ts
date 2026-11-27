@@ -3,6 +3,8 @@ import type { SetupApplyInput } from './domain/types'
 import type { PropertyQuery } from './service'
 
 const ROUTE = /^\/api\/properties(?:\/(setup|settings|alerts|\d+)(?:\/(documents))?)?$/
+/** A month's lines over the objects: `?sold=1` counts the sold ones too. */
+const MONTH_ROUTE = /^\/api\/properties\/month\/(\d{4}-\d{2})$/
 
 function propertyQuery(query: URLSearchParams): PropertyQuery {
   const target = query.get('target_bp')
@@ -14,6 +16,12 @@ function propertyQuery(query: URLSearchParams): PropertyQuery {
 
 /** /api/properties* - rental objects. */
 export async function handlePropertiesRoutes(ctx: ModuleRouteCtx): Promise<boolean> {
+  const month = ctx.path.match(MONTH_ROUTE)
+  if (month) {
+    if (ctx.method !== 'GET') return false
+    ctx.sendJson(200, await ctx.modules.properties.fetchPortfolioMonth(month[1], ctx.query.get('sold') === '1', propertyQuery(ctx.query)))
+    return true
+  }
   const m = ctx.path.match(ROUTE)
   if (!m) return false
   const [, segment, sub] = m

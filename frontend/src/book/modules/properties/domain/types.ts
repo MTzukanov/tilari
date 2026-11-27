@@ -853,14 +853,12 @@ export type PortfolioChart = {
     id: number
     /** Sold by the as-of date: the cash flow charts leave it out unless sold objects are included. */
     sold: boolean
-    cash_snt: (number | null)[]
     unrecovered_snt: (number | null)[]
     invested_snt: (number | null)[]
     share_snt: (number | null)[]
     /** The share's estimate in `ahead_keys`: null where there is none, and after its payoff. */
     share_ahead_snt: (number | null)[]
-    /** The cash flow, still to recover and capital put in, run on over `ahead_keys` (ADR-035); null where the object has none. */
-    cash_ahead_snt: (number | null)[]
+    /** Still to recover and the capital put in, run on over `ahead_keys` (ADR-035); null where the object has none. */
     unrecovered_ahead_snt: (number | null)[]
     invested_ahead_snt: (number | null)[]
   }[]
@@ -901,6 +899,17 @@ export type PortfolioChart = {
   held_cash_ahead_snt: number[]
   held_repaid_snt: number[]
   held_repaid_ahead_snt: number[]
+  /**
+   * Each month's income and costs (with the interest) of all the objects, and of the objects held now
+   * (owner, 2026-11-27: the cash flow chart's bars, as on an object's page); ahead the held objects'
+   * estimate. Income less costs is the month's change of `total_cash_snt` / `held_cash_snt`.
+   */
+  total_income_snt: number[]
+  total_costs_snt: number[]
+  held_income_snt: number[]
+  held_costs_snt: number[]
+  income_ahead_snt: number[]
+  costs_ahead_snt: number[]
   /** The totals run on over `ahead_keys` as in `keys` (a sold object's cash flow stays in its total). */
   total_cash_ahead_snt: number[]
   total_unrecovered_ahead_snt: number[]
@@ -1047,6 +1056,12 @@ export type MonthLine = {
   counted_account?: { account: number; name: string }
   /** The line as Selaa shows it. */
   entry: BrowseEntry
+}
+
+/** A month's lines over the portfolio (`computePortfolioMonth`): each with the object it counts for. */
+export type PortfolioMonth = {
+  month: string
+  lines: (MonthLine & { object: { id: number; name: string } })[]
 }
 
 export type DocumentGroupKind = 'linked' | 'acquisition' | 'other' | 'bank'

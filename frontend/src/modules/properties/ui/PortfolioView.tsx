@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { useI18n } from '../../../i18n'
+import { restoreLocationHash } from '../../../app/leaveGuard'
+import { parseRoute, propertiesHash } from '../../../app/routing'
+import { getBcp47, useI18n } from '../../../i18n'
 import { formatDate } from '../../../shared/dates'
 import { EuroInput } from '../../../shared/EuroInput'
 import { formatCents, formatEurInput, parseEurInput } from '../../../shared/money'
@@ -8,6 +10,7 @@ import { SortableTable, type TableColumn } from '../../../shared/SortableTable'
 import { usePeriodQuery } from '../../../shared/usePeriodQuery'
 import {
   fetchPortfolio,
+  fetchPortfolioMonth,
   savePortfolioSettings,
   skipPropertyDocument,
   type DocumentSkip,
@@ -22,6 +25,7 @@ import { rowAlerts } from '../../../book/modules/properties/domain/reminders'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
 import { formatEuro, holdingText, monthsCovered, periodLabel, returnSoFar, yearReturnBp, saveErrorText, statusClass, tenantSide, warningText } from './format'
 import { InfoButton, InfoNote } from './FigureTiles'
+import { MonthLinesPanel } from './MonthLines'
 import { PortfolioCharts, shareBp } from './PortfolioCharts'
 import { Warnings } from './Warnings'
 
@@ -905,10 +909,79 @@ function soldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
   ]
 }
 
-export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen: (id: number) => void; onSetup: () => void; focusAlerts?: boolean }) {
+/**
+ * A month's lines over the objects under the cash flow chart (owner, 2026-11-27), loaded when picked:
+ * the panel an object's page has, with a column for the object.
+ */
+function PortfolioMonthLines({
+  month,
+  withSold,
+  onClose,
+  onOpenVoucher,
+}: {
+  month: string
+  withSold: boolean
+  onClose: () => void
+  onOpenVoucher: (voucherId: number, entryId: number) => void
+}) {
   const { t } = useI18n()
+  const { data, error, loading } = usePeriodQuery(() => fetchPortfolioMonth(month, withSold), [month, withSold])
+  if (error) return <p className="error">{error}</p>
+  if (loading || !data) return <p className="muted">{t('app.loadingGeneric')}</p>
+  return (
+    <MonthLinesPanel
+      month={month}
+      lines={data.lines}
+      locale={getBcp47()}
+      labels={{ income: t('properties.chart.income'), expense: t('properties.chart.expense'), net: t('properties.chart.net') }}
+      onClose={onClose}
+      onOpenVoucher={onOpenVoucher}
+      storageKey="tilari.properties.portfolioMonthLines.cols"
+    />
+  )
+}
+
+export function PortfolioView({
+  onOpen,
+  onSetup,
+  focusAlerts = false,
+  month,
+  onOpenVoucher,
+}: {
+  onOpen: (id: number) => void
+  onSetup: () => void
+  focusAlerts?: boolean
+  /** The month whose lines are open under the cash flow chart (`#/properties/month/{YYYY-MM}`). */
+  month?: string
+  /** `month`: the open month, kept for the way back. */
+  onOpenVoucher: (voucherId: number, entryId: number | null, month?: string) => void
+}) {
+  const { t } = useI18n()
+  const [selected, setSelected] = useState<string | null>(month ?? null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  // A month typed or linked in the address while the page is open (a bar click changes it without a route change).
+  useEffect(() => {
+    const onHash = () => {
+      const route = parseRoute()
+      if (route.view === 'properties') setSelected(route.month ?? null)
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+  /** Open or close a month's lines; the URL follows without a new history entry. */
+  const selectMonth = (key: string | null) => {
+    setSelected(key)
+    restoreLocationHash(propertiesHash(key ?? undefined))
+  }
   const [reload, setReload] = useState(0)
   const { data, error, loading } = usePeriodQuery(() => fetchPortfolio(), [reload])
+  // Opened on a month (back from one of its vouchers, or the address): bring its lines into view.
+  const loaded = data != null
+  useEffect(() => {
+    if (loaded && month) panelRef.current?.scrollIntoView({ block: 'nearest' })
+    // Once, when the data first arrives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded])
 
   const all = (data?.rows ?? []).filter((r) => r.status !== 'excluded')
   const held = all.filter((r) => r.status !== 'sold')
@@ -1045,7 +1118,26 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
             </p>
           </section>
 
-          <PortfolioCharts chart={data.chart} rows={data.rows} withSold={withSold} onWithSold={setWithSold} />
+          <PortfolioCharts
+            chart={data.chart}
+            rows={data.rows}
+            withSold={withSold}
+            onWithSold={setWithSold}
+            selectedMonth={selected}
+            onSelectMonth={selectMonth}
+            monthPanel={
+              selected ? (
+                <div ref={panelRef}>
+                  <PortfolioMonthLines
+                    month={selected}
+                    withSold={withSold}
+                    onClose={() => selectMonth(null)}
+                    onOpenVoucher={(voucherId, entryId) => onOpenVoucher(voucherId, entryId, selected)}
+                  />
+                </div>
+              ) : null
+            }
+          />
 
           {all.length ? (
             <section className="property-section">

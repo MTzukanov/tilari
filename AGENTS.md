@@ -175,7 +175,8 @@ Rules already encoded:
   row tooltips such as "Avaa tosite" there - the full text is more useful.
 - **Always write source files as UTF-8.** Never introduce Windows-1252 bytes (especially `0x97` en-dash). Prefer ASCII `-`.
 - No react-router in v1; hashes: `#/browse`, `#/journal`, `#/vat`, `#/settings`, `#/voucher/new/100`, `#/account/{n}`, `#/allocation/{id}`,
-  `#/properties`, `#/properties/alerts` (opened on its list of warnings), `#/properties/setup`,
+  `#/properties`, `#/properties/alerts` (opened on its list of warnings), `#/properties/month/{YYYY-MM}` (that
+  month's lines over the objects under the cash flow chart; stays on the way back from a voucher), `#/properties/setup`,
   `#/property/{id}`, `#/property/{id}/{tab}` (`leases`, `water`, `housing`, `docs`, `finance`; none is the overview),
   `#/property/{id}/leases/new`, `#/property/{id}/leases/lease/{key}`, `#/property/{id}/water/new`,
   `#/property/{id}/water/settlement/{key}`, `#/property/{id}/housing/new` and `#/property/{id}/housing/loan/{key}`

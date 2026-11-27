@@ -45,6 +45,7 @@ export type {
   MonthPoint,
   PortfolioAlerts,
   PortfolioChart,
+  PortfolioMonth,
   PortfolioResponse,
   PortfolioSettings,
   PropertyDetail,
@@ -87,6 +88,9 @@ function service() {
 
 export function fetchPortfolio(query?: PropertyQuery) {
   return service().listProperties(query)
+}
+export function fetchPortfolioMonth(month: string, withSold: boolean) {
+  return service().fetchPortfolioMonth(month, withSold)
 }
 export function fetchPropertyAlerts() {
   return service().fetchAlerts()
