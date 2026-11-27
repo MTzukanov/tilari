@@ -258,7 +258,6 @@ export function portfolioChart(
     let capital = 0
     let proceeds = 0
     let repaid = 0
-    const cash: (number | null)[] = []
     const unrecovered: (number | null)[] = []
     const capitalIn: (number | null)[] = []
     const share: (number | null)[] = []
@@ -290,7 +289,6 @@ export function portfolioChart(
         totalInvested[i] += capital
         totalBack[i] += sum + proceeds
       }
-      cash.push(m ? sum : null)
       unrecovered.push(m && invested ? m.unrecovered_snt : null)
       capitalIn.push(m && invested ? capital : null)
       const owed = o.shares?.get(key) ?? null
@@ -302,7 +300,6 @@ export function portfolioChart(
     // cash flow stays in the total as it ended.
     const flows = new Map((held[index]?.flows ?? []).map((f) => [f.key, f]))
     const lastPoint = at.get(last)
-    const cashAhead: (number | null)[] = []
     const unrecoveredAhead: (number | null)[] = []
     const investedAhead: (number | null)[] = []
     let gained = 0
@@ -323,7 +320,6 @@ export function portfolioChart(
         heldRepaidAhead[i] += repaidAhead
       }
       const on = f != null && lastPoint != null
-      cashAhead.push(on ? sum + gained : null)
       if (on && invested) {
         totalUnrecoveredAhead[i] += lastPoint.unrecovered_snt - gained
         totalInvestedAhead[i] += capital
@@ -335,12 +331,10 @@ export function portfolioChart(
     return {
       id: o.id,
       sold: sold != null,
-      cash_snt: cash,
       unrecovered_snt: unrecovered,
       invested_snt: capitalIn,
       share_snt: share,
       share_ahead_snt: aheadKeys.map((key) => held[index]?.ahead?.get(key) ?? null),
-      cash_ahead_snt: cashAhead,
       unrecovered_ahead_snt: unrecoveredAhead,
       invested_ahead_snt: investedAhead,
     }

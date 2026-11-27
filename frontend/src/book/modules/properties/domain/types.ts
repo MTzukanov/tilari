@@ -853,14 +853,12 @@ export type PortfolioChart = {
     id: number
     /** Sold by the as-of date: the cash flow charts leave it out unless sold objects are included. */
     sold: boolean
-    cash_snt: (number | null)[]
     unrecovered_snt: (number | null)[]
     invested_snt: (number | null)[]
     share_snt: (number | null)[]
     /** The share's estimate in `ahead_keys`: null where there is none, and after its payoff. */
     share_ahead_snt: (number | null)[]
-    /** The cash flow, still to recover and capital put in, run on over `ahead_keys` (ADR-035); null where the object has none. */
-    cash_ahead_snt: (number | null)[]
+    /** Still to recover and the capital put in, run on over `ahead_keys` (ADR-035); null where the object has none. */
     unrecovered_ahead_snt: (number | null)[]
     invested_ahead_snt: (number | null)[]
   }[]

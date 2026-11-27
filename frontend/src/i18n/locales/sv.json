@@ -1202,7 +1202,7 @@
       "unrecovered": "Ej återfått vid månadens slut",
       "total": "Alla tillsammans",
       "allMonths": "Alla månader",
-      "lead": "Totallinjen räknar alltid alla objekt: kryssrutorna döljer bara linjer. Ett sålt objekt lämnar det ej återfångna från försäljningsmånaden men stannar i kassaflödets total.",
+      "lead": "Totallinjen räknar alltid alla objekt: kryssrutorna döljer bara linjer. Ett sålt objekt lämnar det ej återfångna och låneandelarna från försäljningsmånaden.",
       "shares": "Bolagslåneandelar vid månadens slut",
       "forecast": "Prognos",
       "objects": "Objekt",

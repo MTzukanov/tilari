@@ -7,6 +7,22 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-27 - OPEN: the forecast's realized "other costs" (toteutunut 12 kk) misses costs and lost rent
+
+Found with the owner on their book. The code is from #94 (on main); the fix is its own PR, planned in the forecast
+plan file.
+- `trailingCosts` takes off everything `housingPayments` claims, and `housingPayments` claims every line to the
+  housing company's payee group, one-off invoices too (an invoice from the property manager under its own reference,
+  an extra charge on the vastike reference): they vanish as "paid to the housing company". Only the usual vastike
+  (hoitovastike + rahoitusvastike) should come off.
+- Lost rent (months without a tenant, rent never paid) only lowers the income, so it is not counted, though the
+  setting is meant to include it. Owner: lost rent is what defines the losses.
+- Costs booked without an object's cost centre are not counted. Some company-level costs concern the objects
+  (vastike or housing-company refunds without a cost centre, insurance, contract and ad services): an allocation
+  question for the owner.
+- "Muut kulut" undersells it: to be renamed "Menetykset" (lost rent and the costs other than vastike, in months of
+  rent a year), the realized figure counted the same way, with its lines shown.
+
 ## 2026-11-27 - Properties page: the cash flow month by month as bars, a month's lines on a click (ADR-035)
 
 - Owner wanted the running cash flow per month, not only summed, in one chart exactly like an object's page:
@@ -16,6 +32,7 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   ahead are faded bars and line (`chart-estimate`). It replaced the per-object "Kertynyt kassavirta" lines; the
   objects' checkboxes now show only when a chart of their lines (to recover, shares) does. Its years add up to
   the table's Kassavirta (checked on the owner's book, both with and without the sold objects).
+  The objects' own summed cash flow lines went with it (`PortfolioChart.objects[].cash_snt`, `cash_ahead_snt` dropped).
 - Forecast "jumps" with raises at 0, explained to the owner (not a bug): a loan's payoff ends its rahoitusvastike
   at once, a loan's first rate reset moves today's charge to the loan's terms (where the charges disagree with the
   terms), and an interest cap (korkokatto) ending lets the full Euribor in.
