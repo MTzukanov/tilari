@@ -9,11 +9,16 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ## 2026-11-27 - Properties page: the cash flow month by month as bars, a month's lines on a click (ADR-035)
 
-- Owner wanted the running cash flow per month, not only summed: the cash flow chart switches (Kertynyt |
-  Kuukausittain, remembered as `cashMonthly`) between the summed lines and a bar a month (the total line's
-  monthly change) on the shared `BarChart` with the object page's styles; with the forecast on the months ahead
-  are faded bars (`BarChart.pointClass`). Its years add up to the table's Kassavirta (checked on the owner's
-  book, both with and without the sold objects).
+- Owner wanted the running cash flow per month, not only summed, in one chart exactly like an object's page:
+  "Kassavirta kuukausittain" is the object page's `CashFlowChart` with its checkboxes (`CashFlowChecks`, one
+  remembered choice for both pages) over all the objects' income and costs (`PortfolioChart.total_income_snt`,
+  `total_costs_snt`, `held_*`, `*_ahead_snt`), the summed cash flow its line; with the forecast on the months
+  ahead are faded bars and line (`chart-estimate`). It replaced the per-object "Kertynyt kassavirta" lines; the
+  objects' checkboxes now show only when a chart of their lines (to recover, shares) does. Its years add up to
+  the table's Kassavirta (checked on the owner's book, both with and without the sold objects).
+- Forecast "jumps" with raises at 0, explained to the owner (not a bug): a loan's payoff ends its rahoitusvastike
+  at once, a loan's first rate reset moves today's charge to the loan's terms (where the charges disagree with the
+  terms), and an interest cap (korkokatto) ending lets the full Euribor in.
 - A click on a month's bar opens its lines over the objects under the chart: the object page's
   `MonthLinesPanel` with a "Kohde" column, loaded on demand (`computePortfolioMonth`, GET
   `/api/properties/month/{YYYY-MM}?sold=1`, about 70 ms on the owner's book), in the address

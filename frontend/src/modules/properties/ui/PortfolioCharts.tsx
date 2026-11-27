@@ -1,11 +1,11 @@
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { getBcp47, useI18n } from '../../../i18n'
-import { BarChart } from '../../../shared/BarChart'
 import { LineChart, type LineSeries, type PointTip } from '../../../shared/LineChart'
 import { formatCents } from '../../../shared/money'
 import { formatBp } from '../../../shared/percent'
 import type { PortfolioChart, PropertyRow } from '../api'
-import { monthLabel } from './Charts'
+import { CashFlowChart, CashFlowChecks, monthLabel } from './Charts'
+import { loadCashFlowOptions, saveCashFlowOptions, type CashFlowOptions } from './chartOptions'
 import { monthName } from './format'
 
 /** Categorical hues in fixed order (validated on white); a 9th object repeats them dashed. */
@@ -24,8 +24,6 @@ export type PortfolioChartOptions = {
   percent: boolean
   /** Every chart run on over the months ahead, an estimate (`PortfolioChart.ahead_keys`, ADR-035). */
   forecast: boolean
-  /** The cash flow chart as each month's bars instead of summed (owner, 2026-11-27). */
-  cashMonthly: boolean
 }
 
 const DEFAULTS: PortfolioChartOptions = {
@@ -35,7 +33,6 @@ const DEFAULTS: PortfolioChartOptions = {
   combined: true,
   percent: false,
   forecast: false,
-  cashMonthly: false,
 }
 
 export function loadPortfolioChartOptions(): PortfolioChartOptions {
@@ -49,7 +46,6 @@ export function loadPortfolioChartOptions(): PortfolioChartOptions {
       combined: typeof stored.combined === 'boolean' ? stored.combined : DEFAULTS.combined,
       percent: typeof stored.percent === 'boolean' ? stored.percent : DEFAULTS.percent,
       forecast: typeof stored.forecast === 'boolean' ? stored.forecast : DEFAULTS.forecast,
-      cashMonthly: typeof stored.cashMonthly === 'boolean' ? stored.cashMonthly : DEFAULTS.cashMonthly,
     }
   } catch {
     return { ...DEFAULTS }
@@ -134,6 +130,11 @@ export function PortfolioCharts({
   const { t } = useI18n()
   const locale = getBcp47()
   const [options, setOptionsState] = useState(loadPortfolioChartOptions)
+  const [cashOptions, setCashOptionsState] = useState(loadCashFlowOptions)
+  const setCashOptions = (next: CashFlowOptions) => {
+    setCashOptionsState(next)
+    saveCashFlowOptions(next)
+  }
   const objectsLabelId = useId()
   const long = chart.keys.length > 24
   // A month asked for further back than the last 24: all of them.
@@ -165,10 +166,9 @@ export function PortfolioCharts({
     total: (number | null)[],
     pickAhead: (o: (typeof objects)[number]) => (number | null)[],
     totalAhead: (number | null)[],
-    soldToo = true,
   ): LineSeries[] => [
     ...objects
-      .filter((o) => !hidden.has(o.id) && (soldToo || !o.sold))
+      .filter((o) => !hidden.has(o.id))
       .map((o) => ({ key: String(o.id), label: o.name, values: runOn(pick(o), pickAhead(o)), className: 'portfolio-line', color: o.color, dashed: o.dashed })),
     ...(options.total ? [{ key: 'total', label: totalLabel, values: runOn(total, totalAhead), className: 'portfolio-total' }] : []),
   ]
@@ -202,16 +202,15 @@ export function PortfolioCharts({
   // "All" and "none" act on the objects' lines only: the total and the months are choices of their own.
   const noneHidden = objects.every((o) => !hidden.has(o.id))
   const allHidden = objects.every((o) => hidden.has(o.id))
-  const cash = withSold
-    ? seriesOf((o) => o.cash_snt, chart.total_cash_snt, (o) => o.cash_ahead_snt, chart.total_cash_ahead_snt)
-    : seriesOf((o) => o.cash_snt, chart.held_cash_snt, (o) => o.cash_ahead_snt, chart.held_cash_ahead_snt, false)
-  // The cash flow month by month (owner, 2026-11-27), switched with the summed lines: each month's change
-  // of their total as a bar - all objects, the sold ones by choice - and with the forecast the months ahead faded.
+  // The cash flow by month as on an object's page (owner, 2026-11-27): all the objects' income and costs
+  // as bars, the sold ones by choice, and the cash flow summed as a line; with the forecast the months ahead faded.
+  const income = withSold ? chart.total_income_snt : chart.held_income_snt
+  const costs = withSold ? chart.total_costs_snt : chart.held_costs_snt
   const cashTotal = withSold ? chart.total_cash_snt : chart.held_cash_snt
   const cashAhead = withSold ? chart.total_cash_ahead_snt : chart.held_cash_ahead_snt
-  const monthCash = [
-    ...chart.keys.map((key, i) => ({ key, net_snt: cashTotal[i] - (i > 0 ? cashTotal[i - 1] : 0) })).slice(from),
-    ...(ahead ? chart.ahead_keys.map((key, i) => ({ key, net_snt: cashAhead[i] - (i > 0 ? cashAhead[i - 1] : cashTotal[cashTotal.length - 1]) })) : []),
+  const cashMonths = [
+    ...chart.keys.map((key, i) => ({ key, income_snt: income[i], expense_snt: costs[i], interest_snt: 0 })).slice(from),
+    ...(ahead ? chart.ahead_keys.map((key, i) => ({ key, income_snt: chart.income_ahead_snt[i], expense_snt: chart.costs_ahead_snt[i], interest_snt: 0 })) : []),
   ]
   const estimated = new Set(ahead ? chart.ahead_keys : [])
   const monthTitle = (key: string) =>
@@ -233,6 +232,8 @@ export function PortfolioCharts({
     (s) => s.key === 'total' || s.values.some((v) => v != null),
   )
   const owed = chart.objects.some((o) => o.share_snt.some((v) => v != null))
+  // The objects' own lines are on the charts of the money to recover and the shares; without them, no choice of objects.
+  const perObject = invested || owed
   const combined: LineSeries[] = [
     {
       key: 'invested',
@@ -299,11 +300,13 @@ export function PortfolioCharts({
     <section className="overview-panel property-section portfolio-charts">
       <h3>{t('properties.portfolioChart.title')}</h3>
       <div className="overview-legend legend-columns">
-        <label className="allocation-check">
-          <input type="checkbox" checked={options.total} onChange={() => setOptions({ ...options, total: !options.total })} />
-          <i className="overview-swatch portfolio-swatch-total" />
-          {totalLabel}
-        </label>
+        {perObject ? (
+          <label className="allocation-check">
+            <input type="checkbox" checked={options.total} onChange={() => setOptions({ ...options, total: !options.total })} />
+            <i className="overview-swatch portfolio-swatch-total" />
+            {totalLabel}
+          </label>
+        ) : null}
         <label className="allocation-check">
           <input type="checkbox" checked={options.combined} onChange={() => setOptions({ ...options, combined: !options.combined })} />
           {t('properties.portfolioChart.combined')}
@@ -328,32 +331,36 @@ export function PortfolioCharts({
           </label>
         ) : null}
       </div>
-      <div className="portfolio-objects-head">
-        <span id={objectsLabelId} className="portfolio-objects-label">
-          {t('properties.portfolioChart.objects')}
-        </span>
-        <button type="button" className="btn-link btn-quiet" disabled={noneHidden} onClick={() => setOptions({ ...options, hidden: [] })}>
-          {t('properties.portfolioChart.checkAll')}
-        </button>
-        <button
-          type="button"
-          className="btn-link btn-quiet"
-          disabled={allHidden}
-          onClick={() => setOptions({ ...options, hidden: objects.map((o) => o.id) })}
-        >
-          {t('properties.portfolioChart.uncheckAll')}
-        </button>
-      </div>
-      <div className="overview-legend legend-columns portfolio-objects" role="group" aria-labelledby={objectsLabelId}>
-        {objects.map((o) => (
-          <label key={o.id} className="allocation-check">
-            <input type="checkbox" checked={!hidden.has(o.id)} onChange={() => toggle(o.id)} />
-            <Swatch color={o.color} dashed={o.dashed} />
-            {o.name}
-          </label>
-        ))}
-      </div>
-      <p className="muted property-kpi-hint">{t('properties.portfolioChart.lead')}</p>
+      {perObject ? (
+        <>
+          <div className="portfolio-objects-head">
+            <span id={objectsLabelId} className="portfolio-objects-label">
+              {t('properties.portfolioChart.objects')}
+            </span>
+            <button type="button" className="btn-link btn-quiet" disabled={noneHidden} onClick={() => setOptions({ ...options, hidden: [] })}>
+              {t('properties.portfolioChart.checkAll')}
+            </button>
+            <button
+              type="button"
+              className="btn-link btn-quiet"
+              disabled={allHidden}
+              onClick={() => setOptions({ ...options, hidden: objects.map((o) => o.id) })}
+            >
+              {t('properties.portfolioChart.uncheckAll')}
+            </button>
+          </div>
+          <div className="overview-legend legend-columns portfolio-objects" role="group" aria-labelledby={objectsLabelId}>
+            {objects.map((o) => (
+              <label key={o.id} className="allocation-check">
+                <input type="checkbox" checked={!hidden.has(o.id)} onChange={() => toggle(o.id)} />
+                <Swatch color={o.color} dashed={o.dashed} />
+                {o.name}
+              </label>
+            ))}
+          </div>
+          <p className="muted property-kpi-hint">{t('properties.portfolioChart.lead')}</p>
+        </>
+      ) : null}
       {options.combined ? (
         <>
           <h4>{t('properties.portfolioChart.combinedTitle')}</h4>
@@ -386,43 +393,26 @@ export function PortfolioCharts({
           />
         </>
       ) : null}
-      <h4>{t(options.cashMonthly ? 'properties.chart.cashFlow' : 'properties.portfolioChart.cash')}</h4>
-      <div className="overview-legend">
-        <div className="nav-mode property-cash-view" role="radiogroup" aria-label={t('properties.portfolioChart.cashView')}>
-          {[false, true].map((monthly) => (
-            <label key={String(monthly)} className={`nav-radio ${monthly === options.cashMonthly ? 'is-active' : ''}`}>
-              <input
-                type="radio"
-                name="portfolio-cash-chart"
-                checked={monthly === options.cashMonthly}
-                onChange={() => setOptions({ ...options, cashMonthly: monthly })}
-              />
-              {t(monthly ? 'properties.portfolioChart.cashMonths' : 'properties.portfolioChart.cashSum')}
-            </label>
-          ))}
-        </div>
+      <h4>{t('properties.chart.cashFlow')}</h4>
+      <CashFlowChecks options={cashOptions} onOptions={setCashOptions} />
+      <div role="group" aria-label={t('properties.chart.cashFlow')}>
+        <CashFlowChart
+          months={cashMonths}
+          options={cashOptions}
+          totals={cashOptions.total ? [...cashTotal.slice(from), ...(ahead ? cashAhead : [])] : undefined}
+          estimateFrom={ahead ? keys.length : undefined}
+          monthTitle={monthTitle}
+          selectedKey={selectedMonth}
+          onSelect={onSelectMonth ? (key) => onSelectMonth(key === selectedMonth ? null : key) : undefined}
+          labels={{
+            income: t('properties.chart.income'),
+            expense: t('properties.chart.expense'),
+            net: t('properties.chart.net'),
+            total: t('properties.chart.total'),
+            clickHint: t('properties.chart.clickHint'),
+          }}
+        />
       </div>
-      {options.cashMonthly ? (
-        <div role="group" aria-label={t('properties.chart.cashFlow')}>
-          <BarChart
-            className="overview-chart property-chart"
-            points={monthCash}
-            series={[{ key: 'net_snt', className: 'property-bar-net', label: t('properties.chart.net') }]}
-            labelFor={(key) => monthLabel(key, locale, true)}
-            labelGap={48}
-            locale={locale}
-            tooltip={(key, series, value) =>
-              `${series.label}, ${monthTitle(key)}: ${formatCents(value)}${onSelectMonth && !estimated.has(key) ? `\n${t('properties.chart.clickHint')}` : ''}`
-            }
-            nameFor={monthTitle}
-            pointClass={(key) => (estimated.has(key) ? 'portfolio-ahead' : undefined)}
-            selectedKey={selectedMonth}
-            onSelect={onSelectMonth ? (key) => !estimated.has(key) && onSelectMonth(key === selectedMonth ? null : key) : undefined}
-          />
-        </div>
-      ) : (
-        <LineChart {...chartProps} series={drawn(cash)} label={t('properties.portfolioChart.cash')} pointTip={pointTip(cash)} />
-      )}
       {monthPanel}
       {owed ? (
         <>

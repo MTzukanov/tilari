@@ -1,5 +1,8 @@
 import type { MonthPoint } from '../api'
 
+/** What a cash-flow chart needs of a month: an object's (`MonthPoint`) or all the objects' together. */
+export type CashFlowMonth = Pick<MonthPoint, 'key' | 'income_snt' | 'expense_snt' | 'interest_snt'>
+
 /** The cash-flow chart's checkboxes, remembered in this browser across visits and objects. */
 export type CashFlowOptions = {
   income: boolean
@@ -84,7 +87,7 @@ export function saveLoanChartOptions(options: LoanChartOptions): void {
 }
 
 /** Income less expenses and interest: the month's cash flow (the net bar, the month lines' sum). */
-export function monthNet(m: MonthPoint): number {
+export function monthNet(m: CashFlowMonth): number {
   return m.income_snt - m.expense_snt - m.interest_snt
 }
 

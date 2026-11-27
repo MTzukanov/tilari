@@ -901,6 +901,17 @@ export type PortfolioChart = {
   held_cash_ahead_snt: number[]
   held_repaid_snt: number[]
   held_repaid_ahead_snt: number[]
+  /**
+   * Each month's income and costs (with the interest) of all the objects, and of the objects held now
+   * (owner, 2026-11-27: the cash flow chart's bars, as on an object's page); ahead the held objects'
+   * estimate. Income less costs is the month's change of `total_cash_snt` / `held_cash_snt`.
+   */
+  total_income_snt: number[]
+  total_costs_snt: number[]
+  held_income_snt: number[]
+  held_costs_snt: number[]
+  income_ahead_snt: number[]
+  costs_ahead_snt: number[]
   /** The totals run on over `ahead_keys` as in `keys` (a sold object's cash flow stays in its total). */
   total_cash_ahead_snt: number[]
   total_unrecovered_ahead_snt: number[]

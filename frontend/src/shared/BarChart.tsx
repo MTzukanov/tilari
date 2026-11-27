@@ -13,6 +13,8 @@ export type BarLine = {
   values: number[]
   className: string
   label: string
+  /** The first point that is an estimate: the line from the point before it on is drawn faded. */
+  estimateFrom?: number
   /** Dot hover text; default "label: amount". */
   tooltip?: (key: string, value: number) => string
 }
@@ -193,14 +195,26 @@ export function BarChart<K extends string>({
       })}
       {line && lineStep ? (
         <g className={line.className}>
-          <path
-            className="chart-line"
-            d={line.values.map((v, i) => `${i ? 'L' : 'M'}${centre(i).toFixed(1)},${yOf(v, lineStep).toFixed(1)}`).join(' ')}
-          />
+          {(line.estimateFrom != null && line.estimateFrom > 0
+            ? [
+                { from: 0, to: line.estimateFrom, className: 'chart-line' },
+                { from: line.estimateFrom - 1, to: line.values.length, className: 'chart-line chart-estimate' },
+              ]
+            : [{ from: 0, to: line.values.length, className: 'chart-line' }]
+          ).map((part) => (
+            <path
+              key={part.from}
+              className={part.className}
+              d={line.values
+                .slice(part.from, part.to)
+                .map((v, j) => `${j ? 'L' : 'M'}${centre(part.from + j).toFixed(1)},${yOf(v, lineStep).toFixed(1)}`)
+                .join(' ')}
+            />
+          ))}
           {points.map((p, i) => (
             <circle
               key={p.key}
-              className="chart-line-dot"
+              className={line.estimateFrom != null && i >= line.estimateFrom ? 'chart-line-dot chart-estimate' : 'chart-line-dot'}
               cx={centre(i)}
               cy={yOf(line.values[i], lineStep)}
               r={Math.min(2.4, groupW / 5)}

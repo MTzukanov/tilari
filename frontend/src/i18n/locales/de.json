@@ -1199,9 +1199,6 @@
     "portfolioChart": {
       "title": "Objekte nach Monat",
       "cash": "Kumulierter Cashflow",
-      "cashView": "Cashflow",
-      "cashSum": "Kumuliert",
-      "cashMonths": "Monatlich",
       "unrecovered": "Noch nicht zurück am Monatsende",
       "total": "Alle zusammen",
       "allMonths": "Alle Monate",

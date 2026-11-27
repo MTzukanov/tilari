@@ -1,9 +1,9 @@
-import { getBcp47 } from '../../../i18n'
+import { getBcp47, useI18n } from '../../../i18n'
 import { BarChart, type BarSeries } from '../../../shared/BarChart'
 import { LineChart, type LineSeries } from '../../../shared/LineChart'
 import { formatCents } from '../../../shared/money'
 import type { MonthLine, MonthPoint } from '../api'
-import { monthNet, type CashFlowOptions } from './chartOptions'
+import { monthNet, type CashFlowMonth, type CashFlowOptions } from './chartOptions'
 import { lineText, monthName } from './format'
 
 const TOOLTIP_LINES = 8
@@ -20,10 +20,44 @@ function shortDate(iso: string): string {
 }
 
 /**
+ * The cash-flow chart's checkboxes (an object's page and the Properties page): the bars, the running
+ * total, the costs up; with `allMonths` the months to show too. One choice for both, remembered.
+ */
+export function CashFlowChecks({
+  options,
+  onOptions,
+  allMonths = false,
+}: {
+  options: CashFlowOptions
+  onOptions: (options: CashFlowOptions) => void
+  allMonths?: boolean
+}) {
+  const { t } = useI18n()
+  const check = (key: keyof CashFlowOptions, label: string, swatch?: string, disabled = false) => (
+    <label className="allocation-check">
+      <input type="checkbox" checked={options[key]} disabled={disabled} onChange={() => onOptions({ ...options, [key]: !options[key] })} />
+      {swatch ? <i className={`overview-swatch ${swatch}`} /> : null}
+      {label}
+    </label>
+  )
+  return (
+    <div className="overview-legend legend-columns">
+      {check('income', t('properties.chart.income'), 'property-swatch-income')}
+      {check('expense', t('properties.chart.expense'), 'property-swatch-expense')}
+      {check('net', t('properties.chart.net'), 'property-swatch-net')}
+      {check('total', t('properties.chart.total'), 'property-swatch-total')}
+      {check('costsUp', t('properties.chart.costsUp'), undefined, !options.expense)}
+      {allMonths ? check('allMonths', t('properties.chart.allMonths')) : null}
+    </div>
+  )
+}
+
+/**
  * Income up, expenses (incl. interest) down, per month, each when its option is on; `costsUp` draws
  * the expenses up beside the income, `net` adds the cash flow as a bar and `totals` (one per month)
  * its running total as a line. With `lines` a bar's hover text lists the month's lines; with
- * `onSelect` a click on a month opens them (MonthLinesPanel).
+ * `onSelect` a click on a month opens them (MonthLinesPanel). From `estimateFrom` on the months are an
+ * estimate, drawn faded, named by `monthTitle` and not to be picked.
  */
 export function CashFlowChart({
   months,
@@ -33,16 +67,22 @@ export function CashFlowChart({
   totals,
   selectedKey,
   onSelect,
+  estimateFrom,
+  monthTitle,
 }: {
-  months: MonthPoint[]
+  months: CashFlowMonth[]
   labels: { income: string; expense: string; net: string; total: string; clickHint?: string; more?: (n: number) => string }
   lines?: MonthLine[]
   options: Pick<CashFlowOptions, 'income' | 'expense' | 'net' | 'costsUp'>
   totals?: number[]
   selectedKey?: string | null
   onSelect?: (key: string) => void
+  estimateFrom?: number
+  monthTitle?: (key: string) => string
 }) {
   const locale = getBcp47()
+  const nameOf = monthTitle ?? ((key: string) => monthName(key, locale))
+  const estimated = new Set(estimateFrom != null ? months.slice(estimateFrom).map((m) => m.key) : [])
   const byMonth = new Map<string, MonthLine[]>()
   for (const line of lines ?? []) byMonth.set(line.month, [...(byMonth.get(line.month) ?? []), line])
   const points = months.map((m) => ({
@@ -55,7 +95,7 @@ export function CashFlowChart({
     const m = months.find((p) => p.key === key)!
     const signed =
       series.key === 'income_snt' ? m.income_snt : series.key === 'net_snt' ? monthNet(m) : -(m.expense_snt + m.interest_snt)
-    const out = [`${series.label}, ${monthName(key, locale)}: ${formatCents(signed)}`]
+    const out = [`${series.label}, ${nameOf(key)}: ${formatCents(signed)}`]
     if (series.key !== 'net_snt') {
       const incomeBar = series.key === 'income_snt'
       const rows = (byMonth.get(key) ?? []).filter((l) => (l.kind === 'income') === incomeBar)
@@ -64,7 +104,7 @@ export function CashFlowChart({
       }
       if (rows.length > TOOLTIP_LINES && labels.more) out.push(labels.more(rows.length - TOOLTIP_LINES))
     }
-    if (onSelect && labels.clickHint) out.push(labels.clickHint)
+    if (onSelect && labels.clickHint && !estimated.has(key)) out.push(labels.clickHint)
     return out.join('\n')
   }
   const series: BarSeries<'income_snt' | 'expense_snt' | 'net_snt'>[] = [
@@ -83,17 +123,19 @@ export function CashFlowChart({
               values: totals,
               className: 'property-total',
               label: labels.total,
-              tooltip: (key, value) => `${labels.total}, ${monthName(key, locale)}: ${formatCents(value)}`,
+              tooltip: (key, value) => `${labels.total}, ${nameOf(key)}: ${formatCents(value)}`,
+              estimateFrom,
             }
           : undefined
       }
       labelFor={(key) => monthLabel(key, locale, points.length > 12)}
       labelGap={points.length > 12 ? 48 : 36}
       locale={locale}
-      tooltip={lines ? tooltip : undefined}
-      nameFor={(key) => monthName(key, locale)}
+      tooltip={tooltip}
+      nameFor={nameOf}
       selectedKey={selectedKey}
-      onSelect={onSelect}
+      onSelect={onSelect ? (key) => !estimated.has(key) && onSelect(key) : undefined}
+      pointClass={(key) => (estimated.has(key) ? 'chart-estimate' : undefined)}
     />
   )
 }
