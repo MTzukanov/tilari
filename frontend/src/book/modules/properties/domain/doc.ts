@@ -384,6 +384,7 @@ const LOAN_KEYS = new Set([
   'starts',
   'ends',
   'type',
+  'retired_type',
   'total_snt',
   'reference',
   'margin_pcm',
@@ -418,16 +419,20 @@ function housingLoan(item: unknown, path: string): HousingLoan {
   if (!isObject(item)) fail(path)
   const name = text(item.name, `${path}.name`, MAX_TEXT)
   if (!name) fail(`${path}.name`)
-  if (!HOUSING_LOAN_TYPES.includes(item.type as HousingLoanType)) fail(`${path}.type`)
+  // A fixed payment is no longer offered: read as an annuity, marked until the loan's card saves it.
+  const retired = item.type === 'fixed_payment' || item.retired_type === 'fixed_payment'
+  const type = item.type === 'fixed_payment' ? 'annuity' : item.type
+  if (!HOUSING_LOAN_TYPES.includes(type as HousingLoanType)) fail(`${path}.type`)
   if (!RATE_REFERENCES.includes(item.reference as RateReference)) fail(`${path}.reference`)
   const out: HousingLoan = {
     key: '',
     name,
-    type: item.type as HousingLoanType,
+    type: type as HousingLoanType,
     reference: item.reference as RateReference,
     margin_pcm: int(item.margin_pcm ?? 0, `${path}.margin_pcm`, 0, MAX_PCM),
   }
   keep(out, item, LOAN_KEYS)
+  if (retired) out.retired_type = 'fixed_payment'
   if (item.starts != null && item.starts !== '') out.starts = date(item.starts, `${path}.starts`)
   if (item.key != null && item.key !== '') {
     if (typeof item.key !== 'string' || !LEASE_KEY.test(item.key)) fail(`${path}.key`)

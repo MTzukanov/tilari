@@ -1244,9 +1244,9 @@
       "capexHint": "Ändring i anskaffningsutgiften. Negativt = kapital kom tillbaka, t.ex. återbäring av överlåtelseskatt. Posterna visas nedan under balansposten.",
       "proceedsHint": "Pengar från försäljningen efter försäljningskostnader",
       "housingInterest": "Bolagslånets ränta",
-      "housingInterestHint": "Låneandelens ränta i det betalda finansieringsvederlaget, beräknad månad för månad",
+      "housingInterestHint": "Låneandelens ränta enligt lånevillkoren, beräknad månad för månad",
       "housingPrincipal": "Bolagslånets amortering",
-      "housingPrincipalHint": "Den del av det betalda finansieringsvederlaget som amorterade låneandelen. En månad utan betalning ökar låneandelen med räntan."
+      "housingPrincipalHint": "Låneandelens amortering enligt lånevillkoren. Den beror inte på det betalda finansieringsvederlaget."
     },
     "eras": {
       "title": "Anskaffningsutgift (balansposter)",
@@ -1516,11 +1516,14 @@
       "loan_certificate_stale": "Låneandelen för bolagslånet {loan} är från ett intyg daterat {certificate}. Begär ett nytt disponentintyg.",
       "loan_certificate_missing": "Intyget för låneandelen {certificate} i bolagslånet {loan} saknas.",
       "loan_charge_notice_missing": "Fakturan eller meddelandet om finansieringsvederlaget från {from} ({amount}/mån) för bolagslånet {loan} saknas.",
-      "loan_payment_missing": "Ingen betalning till bostadsbolaget är bokförd för {count} månader från {from} (bolagslånet {loan}): låneandelen minskade inte för dem.",
-      "loan_payment_missing_one": "Ingen betalning till bostadsbolaget är bokförd för månaden {from} (bolagslånet {loan}): låneandelen minskade inte.",
+      "loan_payment_missing": "Ingen betalning till bostadsbolaget är bokförd för {count} månader från {from} (bolagslånet {loan}): finansieringsvederlaget är obetalt.",
+      "loan_payment_missing_one": "Ingen betalning till bostadsbolaget är bokförd för månaden {from} (bolagslånet {loan}): finansieringsvederlaget är obetalt.",
       "loan_rate_missing": "Referensräntan för bolagslånet {loan} justerades {reset}: lägg till den nya referensräntan.",
       "loan_rate_estimated": "Ingen faktisk referensränta har angetts för bolagslånet {loan}: andelen räknas enligt ränteantagandena.",
       "loan_rate_none": "Bolagslånet {loan} saknar ränta och ränteantagande: andelen räknas utan referensränta. Lägg till räntan eller ett antagande.",
+      "loan_type_retired": "Bolagslånet {loan} var sparat som fast rat, en typ som Tilari inte längre använder: det räknas som annuitetslån. Välj lånetyp på lånets kort och spara.",
+      "loan_ends_missing": "Bolagslånet {loan} saknar sista förfallodag: amorteringen kan inte räknas ut ur lånevillkoren. Lägg till den på lånets kort.",
+      "loan_sale_share_missing": "Det sålda objektets bolagslån {loan} saknar låneandel för försäljningsmånaden (sålt {sale}): lägg till köpebrevets låneandel bland lånets andelar. Tills dess är amorteringarna från den senaste andelen till försäljningen lånevillkorens uppskattning.",
       "loan_rahastoitu_expensed": "Finansieringsvederlaget för bolagslånet {loan} från {from} är fonderat men bokfört som kostnad: i beskattningen hör det till aktiernas anskaffningsutgift. Kontrollera med revisorn.",
       "loan_grace_ending": "Bolagslånet {loan}: den amorteringsfria perioden slutar {to}; finansieringsvederlaget stiger när amorteringarna börjar.",
       "loan_charge_invoiced": "Enligt vederlagsfakturorna är finansieringsvederlaget för bolagslånet {loan} {amount}/mån från {from}: lägg till det bland lånets finansieringsvederlag.",
@@ -1797,8 +1800,7 @@
       "namePlaceholder": "t.ex. Rörrenovering 2019",
       "type": {
         "annuity": "Annuitet",
-        "equal_principal": "Rak amortering",
-        "fixed_payment": "Fast rat"
+        "equal_principal": "Rak amortering"
       },
       "reference": {
         "euribor_12m": "12 mån Euribor",
@@ -1890,16 +1892,14 @@
         "gapNone": "beräkningen stämmer",
         "gapMore": "beräknat {amount} större",
         "gapLess": "beräknat {amount} mindre",
-        "implied": "faktisk ränta {rate}",
         "paymentsUnknown": "Inga månatliga betalningar från objektet till bostadsbolaget hittades i bokföringen, så beräkningen antar att varje månads finansieringsvederlag är betalt.",
         "forecast": "Uppskattning till lånets slut",
         "forecastMonth": "{month} (uppskattning)",
         "forecastYears": "Uppskattning per år",
         "forecastTotal": "Totalt",
         "forecastRule": {
-          "annuity": "Finansieringsvederlaget räknas om vid ränteändringar så att lånet är betalt vid lånetidens slut.",
-          "equal_principal": "Från ränteändringarna är amorteringen låneandelen delad med de återstående månaderna, räntan ovanpå.",
-          "fixed_payment": "Finansieringsvederlaget förblir detsamma tills låneandelen är betald."
+          "annuity": "Amortering och ränta är den jämna rat som betalar lånet vid lånetidens slut. Finansieringsvederlaget räknas om till den vid ränteändringar.",
+          "equal_principal": "Amorteringen är låneandelen delad med de återstående månaderna, räntan ovanpå. Finansieringsvederlaget räknas om till den vid ränteändringar."
         },
         "paidSum": "Amortering + ränta totalt",
         "interestSum": "Ränta totalt",

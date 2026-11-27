@@ -361,7 +361,8 @@ export function buildLoan(t: T, d: LoanDraft): HousingLoan | FormIssue[] {
     reference: d.reference,
     margin_pcm: margin ?? 0,
   }
-  for (const key of ['group', 'lender', 'starts', 'ends', 'total_snt', 'reset_months', 'rates', 'grace', 'rate_limits', 'certificates', 'charges', 'events', 'invoice_label'] as const) delete loan[key]
+  // Saved on the card, the type is the one picked: a retired one's mark goes.
+  for (const key of ['retired_type', 'group', 'lender', 'starts', 'ends', 'total_snt', 'reset_months', 'rates', 'grace', 'rate_limits', 'certificates', 'charges', 'events', 'invoice_label'] as const) delete loan[key]
   if (d.starts) loan.starts = d.starts
   if (d.group) loan.group = d.group
   if (d.lender.trim()) loan.lender = d.lender.trim()

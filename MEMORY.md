@@ -7,6 +7,41 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-26 - Housing-company loans: between known shares the repayment is the known fall (ADR-034)
+
+- Owner: for a sold object nothing should be theoretical. With certificates restarting the path, the terms' error
+  stayed in the repayments and the residual (the sale's part of the total result) took the other side. Now the
+  months between two known shares repay exactly the certified fall, spread by the terms' monthly repayment; the
+  certificate keeps the terms' gap as a fit measure. The sale's deed is offered as a share's document
+  (`HousingDetail.deeds`, was `purchase`), and a sold object with no share in its sale month is reminded.
+
+## 2026-11-26 - Housing-company loans: the owner's months start where the rent does (ADR-034, ADR-026)
+
+- Defect the owner found in the terms demo: the loans counted from the purchase month, so an object bought late in a
+  month repaid once too often in its first year (with the payment-based path the purchase month had no payment, which
+  hid it). Now `followLoans` takes `rentStart` / `rentEnd`: the owner's own `rent_from`, else the month after the
+  purchase, an earlier first rent or the books' start, to the sale month or `rent_until`.
+
+## 2026-11-24 - Housing-company loans: the share follows the loan's terms (ADR-034)
+
+- Owner: the repayment must depend only on the loan's terms, never on the rahoitusvastike. Before, `loanPath`
+  counted payment - interest as repayment and fitted the interest between certificates, so a rate rise with the
+  charge unchanged showed as a smaller repayment than the certificates did (seen on the owner's book; figures not
+  here). Now `termsRepayment` (tasalyhennys: share / months left; annuity: level payment - interest),
+  held like a bank instalment until a rate change (annuity), a grace end, a certificate or an extra repayment;
+  certificates restart the path and keep the gap; a missed payment still repays. The forecast runs on the same terms;
+  only its cash side pays the charge in force until the next reset. No last due date: no repayment, and
+  `loan_ends_missing`. The loans test book's e2e figures were re-derived by an independent calculation.
+- Next (step 3 of `~/.claude/plans/housing-loan-terms.md`): the rahoitusvastike charged (+ ylimääräinen, new event)
+  against the terms' repayment + interest over 12 months, warning past ±10 %.
+
+## 2026-11-24 - Housing-company loans: the fixed-payment type is gone (ADR-034)
+
+- Owner: no housing-company loan pays a fixed instalment, remove the option completely. First step of the plan to
+  count the share from the loan's terms only (next: the terms path, then the rahoitusvastike check at ±10 % over
+  12 months). A stored `fixed_payment` loan must not make the whole object unreadable (the parser refuses unknown
+  types), so it reads as an annuity marked `retired_type` with a warning until its card saves it.
+
 ## 2026-11-24 - Properties page: the cash flow table shows one figure at a time (ADR-035)
 
 - Owner asked whether a year's repayment was really that low: the figure read was the cash flow + repayment row, and

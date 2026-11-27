@@ -149,7 +149,7 @@ export type WaterSettlement = {
 }
 
 /** A housing-company loan's kind: annuiteetti, tasalyhennys, kiinteä tasaerä (the payment stays, the term moves). */
-export const HOUSING_LOAN_TYPES = ['annuity', 'equal_principal', 'fixed_payment'] as const
+export const HOUSING_LOAN_TYPES = ['annuity', 'equal_principal'] as const
 export type HousingLoanType = (typeof HOUSING_LOAN_TYPES)[number]
 
 /** The reference rate (viitekorko) a loan's interest follows; `fixed` is a fixed rate, typed in its rate rows. */
@@ -229,6 +229,12 @@ export type HousingLoan = {
   /** The last due date in the loan's terms. */
   ends?: string
   type: HousingLoanType
+  /**
+   * The type it was stored with when that type is no longer offered: `fixed_payment` (kiinteä tasaerä,
+   * removed 2026-11-24: no housing-company loan pays so). Read as an annuity, with a warning, until the
+   * loan is saved on its card.
+   */
+  retired_type?: 'fixed_payment'
   /** The company's whole loan, for information. */
   total_snt?: number
   reference: RateReference
@@ -929,9 +935,12 @@ export type LoanMonth = {
   paid_snt: number
   /** Reference rate + margin in force (1/1000 %). */
   rate_pcm: number
-  /** Interest on the share; between two certificates, fitted so the path meets the later one. */
+  /** Interest on the share at the month's start at the rate in force. */
   interest_snt: number
-  /** What the payments left for the share: paid less interest. */
+  /**
+   * The repayment, never from what was paid (owner, 2026-11-24): between two known shares their
+   * difference, spread by what the loan's terms would repay each month; after the last one the terms'.
+   */
   principal_snt: number
   /** Extra repayments of the month (events). */
   extra_snt: number
@@ -943,10 +952,11 @@ export type LoanMonth = {
   /** What was paid comes from the vastike invoices' rahoitus rows (4e), not from the charge in force. */
   invoiced?: true
   /**
-   * A certificate (its share at the month's end): with an earlier one, how far the computed path was
-   * from it (computed less certified, to the cent) and the rate the fitted months imply.
+   * A certificate (its share at the month's end, where the path goes on from): with an earlier one,
+   * how far the terms alone would have been from it (computed less certified, to the cent); the
+   * months between repay the difference.
    */
-  certificate?: { date: string; share_snt: number; voucher_id?: number; gap_snt: number | null; implied_pcm: number | null }
+  certificate?: { date: string; share_snt: number; voucher_id?: number; gap_snt: number | null }
 }
 
 /** A loan's share month by month (`loanPath`), and what the payments leave missing. */
@@ -964,8 +974,8 @@ export type LoanPath = {
 export type HousingDetail = {
   /** The tab's documents and every voucher a loan links, posted ones only; a missing id was deleted. */
   vouchers: LeaseVoucher[]
-  /** The purchase's vouchers (the tase-erät's acquisitions): a share can come from the deed on one. */
-  purchase: LeaseVoucher[]
+  /** The purchase's and the sale's vouchers (the tase-erät's acquisitions and sale): a share can come from the deed on one. */
+  deeds: LeaseVoucher[]
   /** Other objects' loans, those paying the same housing company first. */
   copy_sources: HousingCopySource[]
   /** Each stored loan's share month by month, in the loans' order. */

@@ -374,6 +374,15 @@ describe('housing-company loans', () => {
     ).toThrow('invalid_field:housing_loans[0].rate_limits[1].from')
   })
 
+  it('reads a fixed payment, no longer offered, as an annuity marked until its card saves it', () => {
+    const read = (extra: Record<string, unknown>) => normalizePropertyDoc({ eras: [], housing_loans: [loan(extra)] }).housing_loans![0]
+    expect(read({ type: 'fixed_payment' })).toMatchObject({ type: 'annuity', retired_type: 'fixed_payment' })
+    // Saved again by another part of the page, the mark stays; only the loan's card drops it.
+    expect(read({ type: 'annuity', retired_type: 'fixed_payment' })).toMatchObject({ type: 'annuity', retired_type: 'fixed_payment' })
+    expect(read({ type: 'equal_principal' })).not.toHaveProperty('retired_type')
+    expect(read({ type: 'annuity', retired_type: 'balloon' })).not.toHaveProperty('retired_type')
+  })
+
   it('keeps a loan without a drawdown, and its floors and ceilings in order', () => {
     const { starts: _starts, ...undated } = loan({})
     const doc = normalizePropertyDoc({

@@ -1089,6 +1089,7 @@ describe('rental objects: housing-company loans', () => {
   const loan = (extra: Record<string, unknown> = {}) => ({
     name: 'Putkiremontti',
     starts: '2020-01-01',
+    ends: '2044-12-31',
     type: 'annuity',
     reference: 'euribor_12m',
     margin_pcm: 800,
@@ -1124,13 +1125,20 @@ describe('rental objects: housing-company loans', () => {
     expect(detail.housing.copy_sources).toEqual([])
   })
 
-  it('reminds of a missing share and missing documents while held; a sold object is not reminded', async () => {
+  it('reminds of a missing share and missing documents while held; a sold object only of its share at the sale', async () => {
     const { db } = await setUp()
     const loans = [loan({ charges: [{ from: '2026-01-01', amount_snt: 80 * E }] })]
     for (const id of [CC.bundle, CC.sold]) saveProperty(db, id, { ...computeDetail(db, id, { today: TODAY }).doc, housing_loans: loans }, 'now')
     const codes = (id: number) => computeDetail(db, id, { today: TODAY }).warnings.map((w) => w.code).filter((c) => c.startsWith('loan_'))
     // No rate row and no estimate: the share is counted on the margin alone.
     expect(codes(CC.bundle)).toEqual(['loan_rate_none', 'loan_share_missing', 'loan_charge_notice_missing'])
+    // Sold on 15 June 2025: the deed of sale's share makes its repayments known.
+    expect(computeDetail(db, CC.sold, { today: TODAY }).warnings.filter((w) => w.code.startsWith('loan_'))).toEqual([
+      { code: 'loan_sale_share_missing', params: { loan: 'Putkiremontti', sale_date: '2025-06-15' } },
+    ])
+    const sold = computeDetail(db, CC.sold, { today: TODAY })
+    const fromDeed = [{ ...loans[0], certificates: [{ date: '2025-06-15', share_snt: 4_000 * E, no_document: true }] }]
+    saveProperty(db, CC.sold, { ...sold.doc, housing_loans: fromDeed }, 'now')
     expect(codes(CC.sold)).toEqual([])
     expect(computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.bundle)?.warnings.map((w) => w.code)).toEqual(
       expect.arrayContaining(['loan_share_missing', 'loan_charge_notice_missing']),
@@ -1143,7 +1151,7 @@ describe('rental objects: housing-company loans', () => {
     expect(codes(CC.bundle)).toEqual(['loan_rate_none', 'loan_charge_notice_missing'])
   })
 
-  it('follows the share month by month from the payments to the housing company, and reminds of what they leave', async () => {
+  it('follows the share month by month on its terms, the payments to the housing company beside it, and reminds of what they leave', async () => {
     const { db } = await setUp()
     const doc = computeDetail(db, CC.bundle, { today: TODAY }).doc
     const stored = loan({
@@ -1167,6 +1175,34 @@ describe('rental objects: housing-company loans', () => {
     expect(path.months.at(-1)!.closing_snt).toBeLessThan(10_000 * E)
     const codes = detail.warnings.map((w) => w.code).filter((c) => c.startsWith('loan_'))
     expect(codes).toEqual(['loan_rate_missing', 'loan_rahastoitu_expensed'])
+  })
+
+  it('the loans are the owner\'s from the month the rent is: the purchase month is the seller\'s, unless agreed otherwise', async () => {
+    const { db, voucher, eras } = await buildPropertyFixture()
+    db.run('INSERT INTO Kohdennus (id, tyyppi, kuuluu, json) VALUES (?, ?, ?, ?)', [91, 1, null, JSON.stringify({ nimi: { fi: 'As Oy Ostotie 3 B 8' } })])
+    voucher('buy', '2024-03-12', 0, 'Kauppahinta Ostotie 3 B 8', [
+      { account: 1441, debit: 50_000 * E, era: 'new' },
+      { account: 1910, credit: 50_000 * E },
+    ])
+    const held = loan({
+      type: 'equal_principal',
+      ends: '2033-12-31',
+      rates: [{ from: '2024-01-01', reference_pcm: 2200 }],
+      charges: [{ from: '2024-01-01', amount_snt: 80 * E, no_document: true }],
+      certificates: [{ date: '2024-02-29', share_snt: 10_000 * E, no_document: true }],
+    })
+    const base = { v: 1, rev: 0, kind: 'apartment', eras: [{ account: 1441, eraid: eras['buy:0'] }], housing_loans: [held] }
+    saveProperty(db, 91, base, 'now')
+    const asOf = '2024-06-30'
+    const months = () => computeDetail(db, 91, { today: TODAY, asOf }).housing.paths[0].months
+    // Bought on 12 March: March's vastike, and its repayment, are the seller's.
+    expect(months().map((m) => m.month)).toEqual(['2024-04', '2024-05', '2024-06'])
+    // Agreed in the sale that March's rent is the buyer's: March's repayment is too.
+    let d = computeDetail(db, 91, { today: TODAY, asOf })
+    saveProperty(db, 91, { ...d.doc, rent_from: '2024-03-01' }, 'now')
+    d = computeDetail(db, 91, { today: TODAY, asOf })
+    expect(d.housing.paths[0].months.map((m) => m.month)).toEqual(['2024-03', '2024-04', '2024-05', '2024-06'])
+    expect(d.years.find((y) => y.starts === '2024-01-01')!.housing_principal_snt).toBe(d.housing.paths[0].months.reduce((sum, m) => sum + m.principal_snt, 0))
   })
 
   it('reads the vastike invoices on the payments (4e): the paid rahoitusvastike, a suggested charge, rows no loan takes', async () => {
@@ -1236,10 +1272,12 @@ describe('rental objects: housing-company loans', () => {
     // Sale costs are a percentage of the debt-free price: the share's 3 % is still to be recovered.
     expect(detail.break_even!.price_snt).toBe(grossPriceFor(detail.summary.unrecovered_snt, costs, share))
     expect(detail.break_even!.price_snt).toBeGreaterThan(grossPriceFor(detail.summary.unrecovered_snt, costs))
-    // 2025: twelve payments of 80,00 split into the interest on the share and what repaid it.
+    // 2025: the terms' interest and repayment month by month, whatever the twelve payments of 80,00 paid.
     const y2025 = detail.years.find((y) => y.starts === '2025-01-01')!
-    expect(y2025.housing_interest_snt! + y2025.housing_principal_snt!).toBe(12 * 80 * E)
-    expect(y2025.housing_interest_snt).toBe(path.months.filter((m) => m.month.startsWith('2025')).reduce((s, m) => s + m.interest_snt, 0))
+    const months2025 = path.months.filter((m) => m.month.startsWith('2025'))
+    expect(y2025.housing_interest_snt).toBe(months2025.reduce((s, m) => s + m.interest_snt, 0))
+    expect(y2025.housing_principal_snt).toBe(months2025.reduce((s, m) => s + m.principal_snt, 0))
+    expect(y2025.housing_interest_snt! + y2025.housing_principal_snt!).not.toBe(12 * 80 * E)
     // An object without loans has no share and no split.
     const garage = computeDetail(db, CC.garage, { today: TODAY })
     expect(garage.summary.housing_share_snt).toBeNull()

@@ -32,6 +32,10 @@ describe('housing-company loan drafts', () => {
     expect(buildLoan(t, loanDraft(stored))).toEqual(stored)
   })
 
+  it('saved on its card, a loan read from a retired type loses the mark: the type is the one picked', () => {
+    expect(buildLoan(t, loanDraft({ ...stored, retired_type: 'fixed_payment' }))).toEqual(stored)
+  })
+
   it('a copy takes the terms, rates and grace into the original\'s group, and asks for the object\'s own share and charge', () => {
     const copy = copiedLoanDraft({ object_id: 12, object_name: 'Toinen', same_company: true, loan: { ...stored, group: undefined } })
     expect(copy).toMatchObject({
