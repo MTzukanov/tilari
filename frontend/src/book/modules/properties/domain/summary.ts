@@ -48,12 +48,12 @@ export type ObjectInput = {
 /**
  * The cash flow table's years (ADR-035): each year's operating net and interest, with loans the
  * housing-company loans' repayment in its months, and the owner's money in the object over them
- * (`moneyIn`; nothing after a sale) - a month in the year its first day falls in. Also the capital
+ * (`moneyIn`; nothing after a sale) and the months it was in - a month in the year its first day falls in. Also the capital
  * put in and the proceeds of each year, and a sold object's sale in its sale month's year with the
  * shares it realized.
  */
 function cashYears(years: YearRow[], months: MonthPoint[], soldMonth: string | null, loans: boolean): YearCashFlow[] {
-  const sums = new Map<string, { principal: number; money: number }>()
+  const sums = new Map<string, { principal: number; money: number; months: string[] }>()
   const total = (value: (m: MonthPoint) => number) => months.reduce((sum, m) => sum + value(m), 0)
   const saleYear = soldMonth ? years.find((y) => y.starts <= `${soldMonth}-01` && `${soldMonth}-01` <= y.ends)?.starts : undefined
   const sale = total((m) => m.proceeds_snt) - total((m) => m.capex_snt)
@@ -61,9 +61,12 @@ function cashYears(years: YearRow[], months: MonthPoint[], soldMonth: string | n
   for (const m of months) {
     const year = years.find((y) => y.starts <= `${m.key}-01` && `${m.key}-01` <= y.ends)
     if (!year) continue
-    const sum = sums.get(year.starts) ?? { principal: 0, money: 0 }
+    const sum = sums.get(year.starts) ?? { principal: 0, money: 0, months: [] }
     sum.principal += m.housing_principal_snt ?? 0
-    if (!soldMonth || m.key <= soldMonth) sum.money += moneyIn(m)
+    if ((!soldMonth || m.key <= soldMonth) && moneyIn(m) > 0) {
+      sum.money += moneyIn(m)
+      sum.months.push(m.key)
+    }
     sums.set(year.starts, sum)
   }
   return years.map((y) => {
@@ -75,6 +78,7 @@ function cashYears(years: YearRow[], months: MonthPoint[], soldMonth: string | n
       interest_snt: y.interest_snt,
       ...(loans ? { principal_snt: sum?.principal ?? 0 } : {}),
       money_in_snt: Math.round((sum?.money ?? 0) / 12),
+      money_months: sum?.months ?? [],
       capex_snt: y.capex_snt,
       proceeds_snt: y.proceeds_snt,
       ...(y.starts === saleYear ? { sale_snt: sale, ...(loans ? { realized_snt: realized } : {}) } : {}),

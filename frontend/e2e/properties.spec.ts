@@ -739,7 +739,7 @@ test.describe('rental object housing-company loans', () => {
       'Tulos yhteensä',
       'Tuotto vuodessa, % palauttamatta olevasta',
       'Tuotto vuodessa myynnit mukaan, %',
-      'Tuotto kertynyt, % palauttamatta olevasta',
+      'Tuotto kertynyt alusta, %',
       'Ostot',
       'Myyntihinnat',
       'Rahavirta yhteensä',
@@ -781,7 +781,7 @@ test.describe('rental object housing-company loans', () => {
       'Yhtiölainojen lyhennykset',
       'Kassavirta + lyhennykset',
       'Tuotto vuodessa, % palauttamatta olevasta',
-      'Tuotto kertynyt, % palauttamatta olevasta',
+      'Tuotto kertynyt alusta, %',
       'Ostot',
       'Rahavirta yhteensä',
     ])

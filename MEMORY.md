@@ -7,6 +7,14 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-27 - Properties page: the return so far chains the yearly returns (ADR-035)
+
+- Owner could not read "Tuotto kertynyt" next to the yearly return: the first year differed and the later ones did
+  not build on it. It was the result so far over the money in at the year's end, which mixes old and new money. Now
+  the yearly return of the row above is chained, each year for the months the money was in (`money_months`), and a
+  year with money in for under 12 months says how many in its heading: the first year's yearly figure is a year's
+  rate over its few months, so the chain starts from what those months earned.
+
 ## 2026-11-27 - Properties page: the repayment total is the unrealized one (ADR-035)
 
 - Owner: the repayment row's total changed with "Myydyt kohteet mukana", but it should be the unrealized gain in

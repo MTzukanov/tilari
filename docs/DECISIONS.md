@@ -1012,9 +1012,13 @@ correction would change the open year's income statement lines. The rental-objec
   A purchase is no loss and a gross sale price no gain, so neither is in the result rows. The 12-month column has
   no money rows; the tile is always the objects held now.
 - **The return so far** (owner, 2026-11-26: the total column's return is a year's rate, show all time too): a row
-  under the yearly return - the result from the first year to the column's end over the money still in the objects
-  then, the money flow from the start turned (capital put in and cash flow not yet back, as the yearly return's
-  base counts it); all time in the total column, none for the last 12 months.
+  under the yearly return. 2026-11-27 the owner expected it to build on the yearly returns ("the first year the same,
+  then 5 % on top"), so it is the row above chained, year by year: each year's return - its result over the money in,
+  a year's rate - for the months the money was in that year (`YearCashFlow.money_months`, the objects' together), so
+  a part year counts for its months (6 % a year over 6 months is 3 %). A year the money was in for fewer than 12
+  months says how many in its heading. With the sold objects the row above is the one with the sales. All time in the
+  total column, none for the last 12 months. (The first version, the result so far over the money in at the end,
+  mixed money that had been in for years with money just put in.)
 - **One figure per object** (owner, 2026-11-24): a switch above the table puts the cash flow, the repayment, the two
   together or the return in every object's cells (the return per object from its own `money_in_snt`); the summary rows
   stay, the one shown in bold. A year the as-of date ends inside says how many months it has, so a part year is not

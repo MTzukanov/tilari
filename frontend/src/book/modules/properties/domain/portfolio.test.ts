@@ -288,6 +288,8 @@ describe('rental objects: figures', () => {
     // What the sale realized is its proceeds less the capital.
     expect(years((y) => y.sale_snt ?? 0)).toBe(row.summary.proceeds_snt - row.summary.invested_snt)
     expect(row.cash_years.some((y) => y.realized_snt != null)).toBe(false)
+    // The money is in up to the sale month, which counts.
+    expect(row.cash_years.find((y) => y.starts === '2025-01-01')?.money_months).toEqual(['2025-01', '2025-02', '2025-03', '2025-04', '2025-05', '2025-06'])
     // With a loan the shares repaid while held are in it too: they leave the repayment in the sale year, so
     // the object's repayment adds up to 0 and its years still to its whole result.
     const housing_loans = [

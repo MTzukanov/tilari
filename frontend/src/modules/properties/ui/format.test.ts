@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import fi from '../../../i18n/locales/fi.json'
 import { formatDate } from '../../../shared/dates'
-import { dueTile, monthsCovered, sortWarnings, tabMarks, WARNING_TABS, WARNING_WORDS, warningTone } from './format'
+import { dueTile, monthsCovered, returnSoFar, sortWarnings, tabMarks, WARNING_TABS, WARNING_WORDS, warningTone } from './format'
 
 const t = (key: string, vars?: Record<string, string | number>) => `${key}${vars ? JSON.stringify(vars) : ''}`
 
@@ -95,5 +95,24 @@ describe('months covered', () => {
     expect(monthsCovered(year, '2026-12-31')).toBeNull()
     expect(monthsCovered(year, '2027-03-31')).toBeNull()
     expect(monthsCovered(year, '2025-12-31')).toBeNull()
+  })
+})
+
+describe('the return so far', () => {
+  it('chains the years, a part year counting for the months the money was in', () => {
+    // 60 000 in for 2 months, 300 earned: 3 % a year, 0,5 % in those months; then 4 % on top; then nothing in.
+    const years = [
+      { result_snt: 300_00, money_in_snt: 10_000_00, months: 2 },
+      { result_snt: 2_400_00, money_in_snt: 60_000_00, months: 12 },
+      { result_snt: 0, money_in_snt: 0, months: 0 },
+    ]
+    expect(returnSoFar(years)).toEqual([50, 452, 452])
+  })
+
+  it('takes a losing year off what had grown', () => {
+    expect(returnSoFar([
+      { result_snt: 1_000_00, money_in_snt: 10_000_00, months: 12 },
+      { result_snt: -1_000_00, money_in_snt: 10_000_00, months: 12 },
+    ])).toEqual([1_000, -100])
   })
 })

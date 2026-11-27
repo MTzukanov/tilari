@@ -476,6 +476,11 @@ export type YearCashFlow = {
   interest_snt: number
   principal_snt?: number
   money_in_snt: number
+  /**
+   * The months of the year the owner had money in the object (`YYYY-MM`, up to a sale): a year's return
+   * counts for these months when the years are chained into the return so far (owner, 2026-11-27).
+   */
+  money_months: string[]
   /** The capital put in (purchases and additions) and the sale proceeds in the year: the money that moved besides the cash flow. */
   capex_snt: number
   proceeds_snt: number

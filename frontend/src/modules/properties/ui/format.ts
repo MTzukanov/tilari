@@ -235,6 +235,18 @@ export function periodLabel(p: { starts: string; ends: string }): string {
   return `${Number(p.starts.slice(8, 10))}.${Number(p.starts.slice(5, 7))}.–${p.ends.slice(0, 4)}`
 }
 
+/**
+ * The return so far at the end of each year, in basis points (ADR-035): each year's return - its result
+ * over the money in, a year's rate - for the months the money was in, chained from the first year.
+ */
+export function returnSoFar(years: { result_snt: number; money_in_snt: number; months: number }[]): number[] {
+  let grown = 1
+  return years.map((y) => {
+    if (y.money_in_snt > 0) grown *= 1 + (y.result_snt / y.money_in_snt) * (y.months / 12)
+    return Math.round((grown - 1) * 10_000)
+  })
+}
+
 /** The months of a fiscal year the figures reach by `asOf`, from its first; null when they reach its end or it has not begun. */
 export function monthsCovered(p: { starts: string; ends: string }, asOf: string): number | null {
   if (asOf >= p.ends || asOf < p.starts) return null

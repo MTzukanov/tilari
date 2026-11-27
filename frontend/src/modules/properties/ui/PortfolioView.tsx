@@ -20,7 +20,7 @@ import {
 } from '../api'
 import { rowAlerts } from '../../../book/modules/properties/domain/reminders'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
-import { formatEuro, holdingText, monthsCovered, periodLabel, saveErrorText, statusClass, tenantSide, warningText } from './format'
+import { formatEuro, holdingText, monthsCovered, periodLabel, returnSoFar, saveErrorText, statusClass, tenantSide, warningText } from './format'
 import { PortfolioCharts, shareBp } from './PortfolioCharts'
 import { Warnings } from './Warnings'
 
@@ -521,11 +521,11 @@ function hasSales(rows: PropertyRow[]): boolean {
  * move there in its sale year (owner, 2026-11-27): the repayment row adds up to what the objects still
  * held have repaid, the same with the sold objects or without. The return rows set the result over the
  * money the owner had in the objects, as a year's rate: the operating one (the repayment as paid) and,
- * with sales, one with them. Then the return so far (owner, 2026-11-26): the result from the first
- * year to the column's end over the money still in the objects then - the money flow from the start,
- * turned - all time in the total column. Then the money that moved: the purchases, the proceeds and all
- * of it with the cash flow. The summary row of the view shown is in bold. A year the figures do not
- * reach the end of says how many months it has.
+ * with sales, one with them. Then the return so far (owner, 2026-11-26/27): the yearly return of the row
+ * above chained from the first year to the column's end, a year counting for the months the money was in
+ * (a year's rate of 6 % over 6 months is 3 %); all time in the total column. Then the money that moved:
+ * the purchases, the proceeds and all of it with the cash flow. The summary row of the view shown is in
+ * bold. A year the money was in for fewer months than 12 says how many, as its return is a year's rate.
  */
 function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: CashView): TableColumn<PropertyRow>[] {
   const yearOf = (r: PropertyRow, starts: string) => r.cash_years.find((y) => y.starts === starts)
@@ -540,17 +540,21 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
       {node}
     </span>
   )
-  /** A year's result (with loans the repayment, with a sale what it realized) and the money that moved in it. */
+  /** A year's result (with loans the repayment, with a sale what it realized). */
   const resultOf = (y: YearCashFlow) => y.net_snt + (y.principal_snt ?? 0) - (y.realized_snt ?? 0) + (y.sale_snt ?? 0)
-  const flowOf = (y: YearCashFlow) => y.net_snt - y.interest_snt - y.capex_snt + y.proceeds_snt
-  /** The result and the money flow from the first year to the end of each. */
-  const sofar = new Map<string, { result: number; flow: number }>()
-  let run = { result: 0, flow: 0 }
-  for (const p of data.periods) {
-    const years = rows.flatMap((r) => r.cash_years.filter((y) => y.starts === p.starts))
-    run = { result: run.result + years.reduce((s, y) => s + resultOf(y), 0), flow: run.flow + years.reduce((s, y) => s + flowOf(y), 0) }
-    sofar.set(p.starts, run)
-  }
+  /** The months of each year any object had the owner's money in. */
+  const moneyMonths = new Map(data.periods.map((p) => [p.starts, new Set(rows.flatMap((r) => yearOf(r, p.starts)?.money_months ?? []))]))
+  const chained = returnSoFar(
+    data.periods.map((p) => {
+      const years = rows.flatMap((r) => r.cash_years.filter((y) => y.starts === p.starts))
+      return {
+        result_snt: years.reduce((s, y) => s + resultOf(y), 0),
+        money_in_snt: years.reduce((s, y) => s + y.money_in_snt, 0),
+        months: moneyMonths.get(p.starts)!.size,
+      }
+    }),
+  )
+  const sofar = new Map(data.periods.map((p, i) => [p.starts, chained[i]]))
   /** The summary rows under the cash flow, each a label and a column's figure from its sums (money rows and the return so far blank without them). */
   type Sums = {
     net: number
@@ -561,7 +565,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
     capex: number | null
     proceeds: number | null
     interest: number | null
-    sofar: { result: number; flow: number } | null
+    sofar: number | null
   }
   const summaryRows: { label: ReactNode; cell: (s: Sums) => ReactNode }[] = [
     ...(loans
@@ -607,7 +611,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
       : []),
     {
       label: hinted('pctSofar', t('properties.cash.pctSofar'), 'properties.cash.pctSofarHint'),
-      cell: (s: Sums) => (s.sofar == null ? '' : footerPct(shareBp(s.sofar.result, -s.sofar.flow))),
+      cell: (s: Sums) => (s.sofar == null ? '' : footerPct(s.sofar)),
     },
     { label: hinted('purchases', t('properties.cash.purchases'), 'properties.cash.purchasesHint'), cell: (s: Sums) => (s.capex == null ? '' : footerEuro(s.capex ? -s.capex : 0)) },
     ...(proceeds
@@ -621,7 +625,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
   /** A column of figures: each object's in the chosen view, and the summary rows of them all. */
   const figures = (
     figuresOf: (r: PropertyRow) => CashFigures | null,
-    upTo: { result: number; flow: number } | null = null,
+    upTo: number | null = null,
   ): Pick<TableColumn<PropertyRow>, 'sortValue' | 'cellClass' | 'render' | 'footer' | 'footers'> => {
     const value = (r: PropertyRow) => {
       const f = figuresOf(r)
@@ -689,11 +693,14 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
       footers: summaryRows.map((row) => row.label),
     },
     ...data.periods.map((p): TableColumn<PropertyRow> => {
-      const months = monthsCovered(p, data.as_of)
+      const covered = monthsCovered(p, data.as_of)
+      const held = moneyMonths.get(p.starts)!.size
+      const months = held > 0 && held < 12 ? held : covered
+      const span = `${formatDate(p.starts)}–${formatDate(covered == null ? p.ends : data.as_of)}`
       return {
         id: `y${p.starts}`,
         label: months == null ? periodLabel(p) : t('properties.cash.partYear', { label: periodLabel(p), months }),
-        title: `${formatDate(p.starts)}–${formatDate(months == null ? p.ends : data.as_of)}`,
+        title: held > 0 && held < 12 ? `${span}. ${t('properties.cash.moneyMonths', { months: held })}` : span,
         width: 105,
         align: 'right',
         ...figures((r) => {
