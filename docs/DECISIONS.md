@@ -1030,5 +1030,8 @@ correction would change the open year's income statement lines. The rental-objec
   together or the return in every object's cells (the return per object from its own `money_in_snt`); the summary rows
   stay, the one shown in bold. A year the as-of date ends inside says how many months it has, so a part year is not
   read as a whole one.
+- **Open** (noted 2026-11-27, to settle with the owner): the charts' cash flow takes the owner's own bank-loan
+  interest off an object's cash flow; the cash flow table's "Kassavirta" leaves it to the money flow row. They
+  agree while no object carries such interest.
 - **Later:** a payback month per object; a raise or other costs per object; the own bank loans; a forecast on the
   object's own page.

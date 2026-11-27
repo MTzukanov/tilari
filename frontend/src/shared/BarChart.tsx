@@ -54,7 +54,8 @@ export function chartGrid(bars: number[] | null, line: number[] | null) {
  * Grouped bars per point (one per series); negative values hang below the zero line. The side with
  * the larger values gets two grid steps, the other side only the steps its values need. A `line`
  * is drawn over the bars on the same grid (`chartGrid`: its own scale on the right if larger). With
- * `onSelect` each point's column is a button (click, Enter or Space) and `selectedKey` is shaded.
+ * `onSelect` each point's column is a button (click, Enter or Space) and `selectedKey` is shaded;
+ * `pointClass` classes a point's column (e.g. an estimate drawn faded).
  * Drawn at its box's width (`useChartWidth`), so labels thin out instead of shrinking on a phone.
  */
 export function BarChart<K extends string>({
@@ -69,6 +70,7 @@ export function BarChart<K extends string>({
   selectedKey,
   onSelect,
   labelGap = 44,
+  pointClass,
 }: {
   points: ({ key: string } & Record<K, number>)[]
   series: BarSeries<K>[]
@@ -84,6 +86,7 @@ export function BarChart<K extends string>({
   onSelect?: (key: string) => void
   /** Least room per point label (px); labels between are left out. */
   labelGap?: number
+  pointClass?: (key: string) => string | undefined
 }) {
   const { ref, width } = useChartWidth(680)
   const { up, down, leftStep, lineStep, rightStep } = chartGrid(
@@ -138,7 +141,7 @@ export function BarChart<K extends string>({
         return (
           <g
             key={p.key}
-            className={onSelect ? 'chart-col' : undefined}
+            className={[onSelect ? 'chart-col' : '', pointClass?.(p.key) ?? ''].filter(Boolean).join(' ') || undefined}
             onClick={onSelect ? () => onSelect(p.key) : undefined}
           >
             {onSelect ? (

@@ -99,11 +99,11 @@ test.describe('rental objects chart', () => {
     await expect(cash.locator('.portfolio-line')).toHaveCount(3)
     await expect(cash.locator('.portfolio-total')).toHaveCount(1)
     await expect(panel.getByRole('group', { name: 'Palauttamatta kuukauden lopussa' })).toHaveCount(0)
-    // Under it the cash flow month by month: a bar a month, the sum as a line over them.
+    // Under it the cash flow month by month: a bar a month, the sum being the line above.
     const months = panel.getByRole('group', { name: 'Kassavirta kuukausittain' })
     await expect(months.locator('rect.property-bar-net').first()).toBeVisible()
     await expect(months.locator('rect.property-bar-net title').first()).toHaveText(/^Kassavirta, \S+ \d{4}: -?[\d\s,]+\s€$/)
-    await expect(months.locator('.property-total .chart-line')).toHaveCount(1)
+    await expect(months.locator('.chart-line')).toHaveCount(0)
 
     await panel.getByRole('checkbox', { name: 'Asunto' }).uncheck()
     await expect(cash.locator('.portfolio-line')).toHaveCount(2)
@@ -824,6 +824,10 @@ test.describe('rental object housing-company loans', () => {
     const sharesChart = page.getByRole('group', { name: 'Yhtiölainaosuudet kuukauden lopussa' })
     await expect(sharesChart.locator('.portfolio-ahead')).toHaveCount(0)
     await page.getByRole('checkbox', { name: 'Ennuste' }).check()
+    // The months ahead as faded bars too.
+    const monthBars = page.getByRole('group', { name: 'Kassavirta kuukausittain' })
+    await expect(monthBars.locator('.portfolio-ahead rect.property-bar-net').first()).toBeVisible()
+    await expect(monthBars.locator('.portfolio-ahead rect.property-bar-net title').first()).toHaveText(/\(arvio\): -?[\d\s,]+\s€$/)
     await expect(sharesChart.locator('.portfolio-total.portfolio-ahead')).toHaveCount(1)
     await sharesChart.locator('.chart-point-hit').last().hover()
     const sharesTip = sharesChart.locator('xpath=..').locator('.chart-tip')

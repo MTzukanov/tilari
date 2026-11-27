@@ -10,9 +10,16 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 ## 2026-11-27 - Properties page: the cash flow month by month as bars (ADR-035)
 
 - Owner wanted the running cash flow per month, not only summed: under "Kertynyt kassavirta" a "Kassavirta
-  kuukausittain" bar chart (the total line's monthly change, the sum as a line over it) on the shared `BarChart`
-  with the object page's styles. Months followed only, no forecast bars. Its years add up to the table's
-  Kassavirta (checked on the owner's book, both with and without the sold objects).
+  kuukausittain" bar chart (the total line's monthly change) on the shared `BarChart` with the object page's
+  styles; the sum is the line above, not drawn again (owner: one is enough), and with the forecast on the months
+  ahead are faded bars (`BarChart.pointClass`). Its years add up to the table's Kassavirta (checked on the
+  owner's book, both with and without the sold objects).
+- OPEN, to come back to with the owner: the charts' cash flow counts the company's own bank-loan interest on an
+  object (`income - expense - interest`, series.ts `portfolioChart` and the object page's `monthNet`), but the
+  cash flow table's "Kassavirta" does not (`YearRow.net_snt`; the interest is its own figure, in "Rahavirta
+  yhteensä" only). No object in the owner's book has such interest today, so they agree; once one has, the
+  charts and the table differ by it. Decide which way both count it.
+- Next, asked about (not built): a month's lines on a click of a bar, as on an object's page.
 
 ## 2026-11-27 - Properties page: where the sold objects' figures go; 12 kk stays held-only for now (ADR-035)
 

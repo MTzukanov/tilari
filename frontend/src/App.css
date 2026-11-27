@@ -6195,7 +6195,8 @@ tr.tax-total td {
 }
 
 /* A share line's estimate after the months followed: the line's own colour and dash, faded. */
-.portfolio-ahead .chart-line {
+.portfolio-ahead .chart-line,
+.portfolio-ahead > rect {
   opacity: 0.45;
 }
 
