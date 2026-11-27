@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import fi from '../../../i18n/locales/fi.json'
 import { formatDate } from '../../../shared/dates'
-import { dueTile, monthsCovered, returnSoFar, sortWarnings, tabMarks, WARNING_TABS, WARNING_WORDS, warningTone } from './format'
+import { dueTile, monthsCovered, returnSoFar, sortWarnings, yearReturnBp, tabMarks, WARNING_TABS, WARNING_WORDS, warningTone } from './format'
 
 const t = (key: string, vars?: Record<string, string | number>) => `${key}${vars ? JSON.stringify(vars) : ''}`
 
@@ -98,9 +98,16 @@ describe('months covered', () => {
   })
 })
 
-describe('the return so far', () => {
-  it('chains the years, a part year counting for the months the money was in', () => {
-    // 60 000 in for 2 months, 300 earned: 3 % a year, 0,5 % in those months; then 4 % on top; then nothing in.
+describe('the return of a year and so far', () => {
+  it('gives a part year what its months earned, not a year\'s rate', () => {
+    // 60 000 in for 2 months weighs 10 000 over a year; 300 earned is 0,5 %.
+    expect(yearReturnBp(300_00, 10_000_00, 2)).toBe(50)
+    expect(yearReturnBp(2_400_00, 60_000_00, 12)).toBe(400)
+    expect(yearReturnBp(300_00, 0, 0)).toBeNull()
+  })
+
+  it('chains the years', () => {
+    // 0,5 % in the first year's 2 months; then 4 % on top; then nothing in.
     const years = [
       { result_snt: 300_00, money_in_snt: 10_000_00, months: 2 },
       { result_snt: 2_400_00, money_in_snt: 60_000_00, months: 12 },

@@ -236,13 +236,25 @@ export function periodLabel(p: { starts: string; ends: string }): string {
 }
 
 /**
- * The return so far at the end of each year, in basis points (ADR-035): each year's return - its result
- * over the money in, a year's rate - for the months the money was in, chained from the first year.
+ * A year's return as earned (owner, 2026-11-27: no part year scaled to a year): its result over the
+ * money that was in on average over the months it was in - `money_in_snt` weighs each month a twelfth.
+ * Null without money in.
  */
+function yearReturn(result_snt: number, money_in_snt: number, months: number): number | null {
+  return money_in_snt > 0 && months > 0 ? (result_snt * months) / (money_in_snt * 12) : null
+}
+
+/** `yearReturn` in basis points. */
+export function yearReturnBp(result_snt: number, money_in_snt: number, months: number): number | null {
+  const r = yearReturn(result_snt, money_in_snt, months)
+  return r == null ? null : Math.round(r * 10_000)
+}
+
+/** The return so far at the end of each year, in basis points (ADR-035): the years' returns, chained from the first. */
 export function returnSoFar(years: { result_snt: number; money_in_snt: number; months: number }[]): number[] {
   let grown = 1
   return years.map((y) => {
-    if (y.money_in_snt > 0) grown *= 1 + (y.result_snt / y.money_in_snt) * (y.months / 12)
+    grown *= 1 + (yearReturn(y.result_snt, y.money_in_snt, y.months) ?? 0)
     return Math.round((grown - 1) * 10_000)
   })
 }

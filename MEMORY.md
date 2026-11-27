@@ -11,9 +11,9 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 - Owner could not read "Tuotto kertynyt" next to the yearly return: the first year differed and the later ones did
   not build on it. It was the result so far over the money in at the year's end, which mixes old and new money. Now
-  the yearly return of the row above is chained, each year for the months the money was in (`money_months`), and a
-  year with money in for under 12 months says how many in its heading: the first year's yearly figure is a year's
-  rate over its few months, so the chain starts from what those months earned.
+  the yearly return of the row above is chained, and a year with money in for under 12 months says how many in its
+  heading. Then the owner: no part year scaled to a year - a year's column is what it earned over the average money
+  in its months with money in (`money_months`); only the total column is an average a year.
 
 ## 2026-11-27 - Properties page: the repayment total is the unrealized one (ADR-035)
 

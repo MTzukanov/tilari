@@ -20,7 +20,7 @@ import {
 } from '../api'
 import { rowAlerts } from '../../../book/modules/properties/domain/reminders'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
-import { formatEuro, holdingText, monthsCovered, periodLabel, returnSoFar, saveErrorText, statusClass, tenantSide, warningText } from './format'
+import { formatEuro, holdingText, monthsCovered, periodLabel, returnSoFar, yearReturnBp, saveErrorText, statusClass, tenantSide, warningText } from './format'
 import { PortfolioCharts, shareBp } from './PortfolioCharts'
 import { Warnings } from './Warnings'
 
@@ -439,14 +439,15 @@ function readCashView(): CashView {
 }
 
 /**
- * A span's figures as one view shows them: no repayment without loans; a sold object's sale in its
- * sale year, with the shares it realized; the money that moved besides the cash flow, where the span
- * has it (not the last 12 months).
+ * A span's figures as one view shows them: no repayment without loans; a year's months with money in;
+ * a sold object's sale in its sale year, with the shares it realized; the money that moved besides the
+ * cash flow, where the span has it (not the last 12 months).
  */
 type CashFigures = {
   net: number
   repaid: number | undefined
   money: number
+  months?: number
   sale?: number
   realized?: number
   capex?: number
@@ -457,13 +458,19 @@ type CashFigures = {
 /**
  * The figure a view shows: euros, or the return in basis points (null without money in). The repayment
  * is the unrealized one: a sale year's less the shares the sale realized. The return is the operating
- * one, the repayment as paid and sales left out.
+ * one, the repayment as paid and sales left out: a year's as earned in its months, a span without
+ * months (all time, the last 12 months) a year's rate.
  */
 function cashFigure(view: CashView, f: CashFigures): number | null {
   if (view === 'net') return f.net
   if (view === 'repaid') return f.repaid == null ? null : f.repaid - (f.realized ?? 0)
   if (view === 'gain') return f.net + (f.repaid ?? 0) - (f.realized ?? 0) + (f.sale ?? 0)
-  return shareBp(f.net + (f.repaid ?? 0), f.money)
+  return returnOn(f.net + (f.repaid ?? 0), f.money, f.months)
+}
+
+/** A return in basis points: over a year's months as earned, else as a year's rate. */
+function returnOn(result: number, money: number, months: number | null | undefined): number | null {
+  return months == null ? shareBp(result, money) : yearReturnBp(result, money, months)
 }
 
 function formatCashFigure(view: CashView, n: number | null): string {
@@ -520,12 +527,12 @@ function hasSales(rows: PropertyRow[]): boolean {
  * its year - proceeds less the capital - and the sum is the result. The shares a sold object repaid
  * move there in its sale year (owner, 2026-11-27): the repayment row adds up to what the objects still
  * held have repaid, the same with the sold objects or without. The return rows set the result over the
- * money the owner had in the objects, as a year's rate: the operating one (the repayment as paid) and,
- * with sales, one with them. Then the return so far (owner, 2026-11-26/27): the yearly return of the row
- * above chained from the first year to the column's end, a year counting for the months the money was in
- * (a year's rate of 6 % over 6 months is 3 %); all time in the total column. Then the money that moved:
- * the purchases, the proceeds and all of it with the cash flow. The summary row of the view shown is in
- * bold. A year the money was in for fewer months than 12 says how many, as its return is a year's rate.
+ * money the owner had in the objects: the operating one (the repayment as paid) and, with sales, one
+ * with them - a year's as earned over the months the money was in, never scaled to a year (owner,
+ * 2026-11-27), the total column's the average a year. Then the return so far (owner, 2026-11-26/27):
+ * the yearly return of the row above chained from the first year to the column's end; all time in the
+ * total column. Then the money that moved: the purchases, the proceeds and all of it with the cash flow.
+ * The summary row of the view shown is in bold. A year the money was in for fewer months than 12 says how many.
  */
 function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: CashView): TableColumn<PropertyRow>[] {
   const yearOf = (r: PropertyRow, starts: string) => r.cash_years.find((y) => y.starts === starts)
@@ -566,6 +573,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
     proceeds: number | null
     interest: number | null
     sofar: number | null
+    months: number | null
   }
   const summaryRows: { label: ReactNode; cell: (s: Sums) => ReactNode }[] = [
     ...(loans
@@ -599,13 +607,13 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
       : []),
     {
       label: hinted('pct', '', loans ? (sales ? 'properties.cash.pctHintSales' : 'properties.cash.pctHint') : 'properties.cash.pctHintNoLoans', bold('pct', t('properties.cash.pct'))),
-      cell: (s: Sums) => bold('pct', footerPct(shareBp(s.net + s.repaid, s.money))),
+      cell: (s: Sums) => bold('pct', footerPct(returnOn(s.net + s.repaid, s.money, s.months))),
     },
     ...(sales
       ? [
           {
             label: hinted('pctSales', t('properties.cash.pctSales'), 'properties.cash.pctSalesHint'),
-            cell: (s: Sums) => footerPct(shareBp(s.net + s.repaid - s.realized + s.sale, s.money)),
+            cell: (s: Sums) => footerPct(returnOn(s.net + s.repaid - s.realized + s.sale, s.money, s.months)),
           },
         ]
       : []),
@@ -625,7 +633,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
   /** A column of figures: each object's in the chosen view, and the summary rows of them all. */
   const figures = (
     figuresOf: (r: PropertyRow) => CashFigures | null,
-    upTo: number | null = null,
+    column: { sofar?: number | null; months?: number | null } = {},
   ): Pick<TableColumn<PropertyRow>, 'sortValue' | 'cellClass' | 'render' | 'footer' | 'footers'> => {
     const value = (r: PropertyRow) => {
       const f = figuresOf(r)
@@ -644,7 +652,8 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
       capex: money((f) => f.capex),
       proceeds: money((f) => f.proceeds),
       interest: money((f) => f.interest),
-      sofar: upTo,
+      sofar: column.sofar ?? null,
+      months: column.months ?? null,
     }
     return {
       sortValue: (r) => value(r) ?? -1e9,
@@ -685,7 +694,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
     capex: allYears(r, (y) => y.capex_snt),
     proceeds: allYears(r, (y) => y.proceeds_snt),
     interest: allYears(r, (y) => y.interest_snt),
-  }), all)
+  }), { sofar: all })
   return [
     {
       ...nameColumn(t, 'none'),
@@ -710,13 +719,14 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
                 net: y.net_snt,
                 repaid: y.principal_snt,
                 money: y.money_in_snt,
+                months: y.money_months.length,
                 ...(y.sale_snt != null ? { sale: y.sale_snt, realized: y.realized_snt } : {}),
                 capex: y.capex_snt,
                 proceeds: y.proceeds_snt,
                 interest: y.interest_snt,
               }
             : null
-        }, sofar.get(p.starts) ?? null),
+        }, { sofar: sofar.get(p.starts) ?? null, months: held }),
       }
     }),
     {

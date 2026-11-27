@@ -993,8 +993,10 @@ correction would change the open year's income statement lines. The rental-objec
   + repayment over the owner's money in the objects (`moneyIn`): each month what had not come back by the month's
   start and the capital put in during it - the earlier months' short cash flow is money put in too, the month's own
   result is not (it is what is measured). Each month weighs a twelfth (`YearCashFlow.money_in_snt`; the last 12 months'
-  average in `Trailing12.money_in_snt`), so a year held in part gives a year's rate, the total column the average a
-  year, and nothing counts after a sale. Without loans the row is the cash flow's alone. Price changes are not in it.
+  average in `Trailing12.money_in_snt`); the total column gives the average a year, and nothing counts after a sale.
+  A year's column shows what the year earned over the average money in its months with money in
+  (`YearCashFlow.money_months`, the objects' together): a part year is not scaled to a year (owner, 2026-11-27, after
+  first seeing a year's rate there). Without loans the row is the cash flow's alone. Price changes are not in it.
 - **Sold objects, counted or not** (owner, 2026-11-26): one choice, remembered in the browser, for the yearly
   table and the cash flow and repayment charts; on by default. On, a sold object counts for the years it was the
   owner's, and its sale in the year of its sale month (`YearCashFlow.sale_snt`): what the sale realized, the proceeds
@@ -1013,10 +1015,8 @@ correction would change the open year's income statement lines. The rental-objec
   no money rows; the tile is always the objects held now.
 - **The return so far** (owner, 2026-11-26: the total column's return is a year's rate, show all time too): a row
   under the yearly return. 2026-11-27 the owner expected it to build on the yearly returns ("the first year the same,
-  then 5 % on top"), so it is the row above chained, year by year: each year's return - its result over the money in,
-  a year's rate - for the months the money was in that year (`YearCashFlow.money_months`, the objects' together), so
-  a part year counts for its months (6 % a year over 6 months is 3 %). A year the money was in for fewer than 12
-  months says how many in its heading. With the sold objects the row above is the one with the sales. All time in the
+  then 5 % on top"), so it is the row above chained, year by year, each year as earned. A year the money was in for
+  fewer than 12 months says how many in its heading. With the sold objects the row above is the one with the sales. All time in the
   total column, none for the last 12 months. (The first version, the result so far over the money in at the end,
   mixed money that had been in for years with money just put in.)
 - **One figure per object** (owner, 2026-11-24): a switch above the table puts the cash flow, the repayment, the two
