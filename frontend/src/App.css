@@ -5445,10 +5445,23 @@ tr.tax-total td {
   margin: 0.4rem 0 1rem;
 }
 
-/* What the cash flow table shows; wraps on a phone. */
+/* What the cash flow table shows, and whether the sold objects count; wraps on a phone. */
+.property-cash-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0 0 0.6rem;
+}
+
 .property-cash-view {
   flex-wrap: wrap;
-  margin: 0 0 0.6rem;
+}
+
+/* A sold object's sale year in the result: its parts on hover. */
+.property-cash-sale {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
 }
 
 .property-defaults {
@@ -5932,6 +5945,37 @@ tr.tax-total td {
   display: flex;
   align-items: center;
   gap: 0.35rem;
+}
+
+/* A cash flow table cell with its "i" beside the figure or label: in a narrow column the text is cut, never the "i". */
+.property-cash-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.property-cash-info > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Headers are in capitals; the "i" stays an i. */
+.property-cash-info .property-info {
+  text-transform: none;
+}
+
+/* An "of which" row of the cash flow table's summary: part of a row above, not added to the sum. */
+.property-table tfoot .property-cash-of {
+  color: var(--muted);
+  font-weight: normal;
+}
+
+.property-table tfoot td > .property-cash-info.property-cash-of {
+  box-sizing: border-box;
+  padding-left: 1rem;
 }
 
 /* A card's lists as small tabs, like the page's own: one opens under them, a click on it closes it. */

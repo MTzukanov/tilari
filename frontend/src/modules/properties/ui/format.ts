@@ -235,6 +235,30 @@ export function periodLabel(p: { starts: string; ends: string }): string {
   return `${Number(p.starts.slice(8, 10))}.${Number(p.starts.slice(5, 7))}.–${p.ends.slice(0, 4)}`
 }
 
+/**
+ * A year's return as earned (owner, 2026-11-27: no part year scaled to a year): its result over the
+ * money that was in on average over the months it was in - `money_in_snt` weighs each month a twelfth.
+ * Null without money in.
+ */
+function yearReturn(result_snt: number, money_in_snt: number, months: number): number | null {
+  return money_in_snt > 0 && months > 0 ? (result_snt * months) / (money_in_snt * 12) : null
+}
+
+/** `yearReturn` in basis points. */
+export function yearReturnBp(result_snt: number, money_in_snt: number, months: number): number | null {
+  const r = yearReturn(result_snt, money_in_snt, months)
+  return r == null ? null : Math.round(r * 10_000)
+}
+
+/** The return so far at the end of each year, in basis points (ADR-035): the years' returns, chained from the first. */
+export function returnSoFar(years: { result_snt: number; money_in_snt: number; months: number }[]): number[] {
+  let grown = 1
+  return years.map((y) => {
+    grown *= 1 + (yearReturn(y.result_snt, y.money_in_snt, y.months) ?? 0)
+    return Math.round((grown - 1) * 10_000)
+  })
+}
+
 /** The months of a fiscal year the figures reach by `asOf`, from its first; null when they reach its end or it has not begun. */
 export function monthsCovered(p: { starts: string; ends: string }, asOf: string): number | null {
   if (asOf >= p.ends || asOf < p.starts) return null

@@ -219,7 +219,7 @@ describe('rental objects: figures', () => {
     // No sale costs set: none (0 % and 0 €), and nothing to warn about.
     expect(d.break_even).toMatchObject({ price_snt: 58_100 * E, sale_costs: { pct_bp: 0, fixed_snt: 0 }, already_recovered: false })
     expect(d.warnings.map((w) => w.code)).not.toContain('sale_costs_unset')
-    expect(d.t12m).toMatchObject({ months: 12, annualized: false, net_snt: 8_400 * E })
+    expect(d.t12m).toMatchObject({ months: 12, net_snt: 8_400 * E })
     expect(d.t12m?.net_yield_bp).toBe(Math.round((8_400 * 10000) / 86_200))
     expect(d.returns.at_cost_bp).toBeGreaterThan(0)
     expect(d.eras.map((e) => e.balance_snt).sort((a, b) => a - b)).toEqual([5_000 * E, 81_200 * E])
@@ -272,6 +272,49 @@ describe('rental objects: figures', () => {
     // June by days: 14 of 30 days of 800,00 = 373,33; the rest was paid ahead, owed to the buyer.
     expect(d.rent_account?.leases[0]).toMatchObject({ counted_until: '2025-06-14', balance_snt: 37_333 - 800 * E })
     expect(() => saveProperty(db, CC.sold, { ...d.doc, rent_from: '2025-07-01' }, 'now')).toThrow('invalid_field:rent_until')
+  })
+
+  it('a sold object\'s years and its sale, in the sale month\'s year, add up to its whole result; the money rows are its capital and proceeds', async () => {
+    const { db } = await setUp()
+    const soldRow = () => computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.sold)!
+    const sums = (row: ReturnType<typeof soldRow>) => (value: (y: (typeof row.cash_years)[number]) => number) =>
+      row.cash_years.reduce((sum, y) => sum + value(y), 0)
+    let row = soldRow()
+    expect(row.cash_years.filter((y) => y.sale_snt != null).map((y) => y.starts)).toEqual(['2025-01-01'])
+    let years = sums(row)
+    expect(years((y) => y.net_snt - y.interest_snt + (y.sale_snt ?? 0))).toBe(-row.summary.unrecovered_snt)
+    expect(years((y) => y.proceeds_snt)).toBe(row.summary.proceeds_snt)
+    expect(years((y) => y.capex_snt)).toBe(row.summary.invested_snt)
+    // What the sale realized is its proceeds less the capital.
+    expect(years((y) => y.sale_snt ?? 0)).toBe(row.summary.proceeds_snt - row.summary.invested_snt)
+    expect(row.cash_years.some((y) => y.realized_snt != null)).toBe(false)
+    // The money is in up to the sale month, which counts.
+    expect(row.cash_years.find((y) => y.starts === '2025-01-01')?.money_months).toEqual(['2025-01', '2025-02', '2025-03', '2025-04', '2025-05', '2025-06'])
+    // With a loan the shares repaid while held are in it too: they leave the repayment in the sale year, so
+    // the object's repayment adds up to 0 and its years still to its whole result.
+    const housing_loans = [
+      {
+        name: 'Putkiremontti',
+        starts: '2020-01-01',
+        ends: '2044-12-31',
+        type: 'equal_principal',
+        reference: 'euribor_12m',
+        margin_pcm: 800,
+        certificates: [{ date: '2025-06-15', share_snt: 4_000 * E, no_document: true }],
+      },
+    ]
+    saveProperty(db, CC.sold, { ...computeDetail(db, CC.sold, { today: TODAY }).doc, housing_loans }, 'now')
+    row = soldRow()
+    years = sums(row)
+    const repaid = years((y) => y.principal_snt ?? 0)
+    expect(repaid).toBeGreaterThan(0)
+    expect(row.cash_years.find((y) => y.starts === '2025-01-01')?.realized_snt).toBe(repaid)
+    expect(years((y) => (y.principal_snt ?? 0) - (y.realized_snt ?? 0))).toBe(0)
+    expect(years((y) => y.sale_snt ?? 0)).toBe(row.summary.proceeds_snt - row.summary.invested_snt)
+    expect(years((y) => y.net_snt - y.interest_snt + (y.principal_snt ?? 0) - (y.realized_snt ?? 0) + (y.sale_snt ?? 0))).toBe(-row.summary.unrecovered_snt)
+    // A held object has no sale.
+    const held = computePortfolio(db, { today: TODAY }).rows.find((r) => r.id === CC.bundle)!
+    expect(held.cash_years.some((y) => y.sale_snt != null)).toBe(false)
   })
 
   it('sold object: sale proceeds include the later broker invoice; actual IRR', async () => {
@@ -1287,7 +1330,7 @@ describe('rental objects: housing-company loans', () => {
     expect(detail.cash_years.find((y) => y.starts === '2025-01-01')!.principal_snt).toBe(y2025.housing_principal_snt)
     const t12m = detail.t12m!
     const window = path.months.filter((m) => m.month >= t12m.from.slice(0, 7) && m.month <= t12m.to.slice(0, 7))
-    expect(t12m.annualized).toBe(false)
+    expect(t12m.months).toBe(12)
     expect(t12m.principal_snt).toBe(window.reduce((s, m) => s + m.principal_snt, 0))
     expect(garage.cash_years.every((y) => y.principal_snt === undefined)).toBe(true)
 

@@ -7,6 +7,40 @@ This repo is public: keep book contents (company names, amounts, counterparties)
 
 ---
 
+## 2026-11-27 - Properties page: where the sold objects' figures go; 12 kk stays held-only for now (ADR-035)
+
+- Owner asked for rows that show where the numbers go: "josta toteutuneet yhtiölainojen lyhennykset" under the sale
+  row and "josta myydyt kohteet" under the result - "of which" rows, muted, not in the sum, each with an "i".
+- OPEN, to review with the owner later: the 12 kk column (and tile) count only the objects held now, also with
+  "Myydyt kohteet mukana" on, so an object sold inside the window drops its months there. Owner 2026-11-27: keep it
+  so for now, with an "i" in the column heading saying it. Counting sold objects there would need the same
+  realized-at-sale handling as the years.
+
+## 2026-11-27 - Properties page: the return so far chains the yearly returns (ADR-035)
+
+- Owner could not read "Tuotto kertynyt" next to the yearly return: the first year differed and the later ones did
+  not build on it. It was the result so far over the money in at the year's end, which mixes old and new money. Now
+  the yearly return of the row above is chained, and a year with money in for under 12 months says how many in its
+  heading. Then the owner: no part year scaled to a year - a year's column is what it earned over the average money
+  in its months with money in (`money_months`); only the total column is an average a year, now with the existing `InfoButton` "i" (the repayment row has one too,
+  explaining the terms and the sold objects; the note opens under the table).
+  Then the 12 kk figures too: `trailing12` no longer scales 3-11 owned months to a year (nor drops under 3) - every
+  12 kk place (tables, tiles, object page) shows those months' real figures, marked *.
+
+## 2026-11-27 - Properties page: the repayment total is the unrealized one (ADR-035)
+
+- Owner: the repayment row's total changed with "Myydyt kohteet mukana", but it should be the unrealized gain in
+  the loans, which no sold object has. Now a sold object's repaid shares (`realized_snt`) leave the repayment row in
+  its sale year and the sale row is what the sale realized (proceeds - capital, repaid shares included): the
+  repayment total is the objects held now on or off, the result rows and both % rows are unchanged.
+
+## 2026-11-26 - Properties page: sold objects in the cash flow, with their sale (ADR-035)
+
+- Owner noticed the repayment row jump when the sold objects' loans were entered: their repayments counted as gains
+  while the sales' losses were nowhere in the table. Now a "Myydyt kohteet mukana" choice (table + charts): on, a
+  sale row (proceeds - capital - repaid) closes each sold object so its years add up to its result to the cent;
+  off, the objects held now. Money rows (purchases, sale prices, money flow) show the company's real money.
+
 ## 2026-11-26 - Housing-company loans: between known shares the repayment is the known fall (ADR-034)
 
 - Owner: for a sold object nothing should be theoretical. With certificates restarting the path, the terms' error

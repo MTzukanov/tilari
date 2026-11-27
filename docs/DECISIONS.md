@@ -984,7 +984,7 @@ correction would change the open year's income statement lines. The rental-objec
   the rahoitusvastike's repayment part lowers the shares, so it is saved, not spent. The repayment sits on the cash
   flow's months (`MonthPoint.housing_principal_snt` from `repaidMonths`), and every figure sums those months: the cash
   flow by year table's summary rows "Yhtiölainojen lyhennykset" and "Kassavirta + lyhennykset" (a year as on Talous),
-  its last 12 months (`Trailing12.principal_snt`, scaled like the cash flow; none for a sold object), a tile
+  its last 12 months (`Trailing12.principal_snt`; none for a sold object), a tile
   "Kassavirta + lyhennykset 12 kk", and a chart of the cumulative cash flow, the repayments summed (then the estimates'
   principal) and their sum, forecast included. A sold object's months run on to a bill paid after the sale, so the
   chart's cash flow meets the table's. Above 0 the owner gains before any change in the prices; the owner's own bank
@@ -992,9 +992,40 @@ correction would change the open year's income statement lines. The rental-objec
 - **The return a year on the money in** (owner, 2026-11-24): the table's last summary row and the tile give cash flow
   + repayment over the owner's money in the objects (`moneyIn`): each month what had not come back by the month's
   start and the capital put in during it - the earlier months' short cash flow is money put in too, the month's own
-  result is not (it is what is measured). Each month weighs a twelfth (`YearCashFlow.money_in_snt`; the last 12 months'
-  average in `Trailing12.money_in_snt`), so a year held in part gives a year's rate, the total column the average a
-  year, and nothing counts after a sale. Without loans the row is the cash flow's alone. Price changes are not in it.
+  result is not (it is what is measured). Each month weighs a twelfth (`YearCashFlow.money_in_snt`,
+  `Trailing12.money_in_snt`); the total column gives the average a year - the result over the money times the years
+  it was in, no compounding, which an info mark says - and nothing counts after a sale. A year's column and the last
+  12 months show what they earned over the average money in their months with money in (`money_months`, the
+  objects' together): nothing is scaled to a year (owner, 2026-11-27, after first seeing a year's rate there). The
+  last 12 months of an object owned for part of them are those months' figures, marked *, in every place
+  (`trailing12`; before, 3-11 months were scaled to a year and fewer left out). Without loans the row is the cash
+  flow's alone. Price changes are not in it.
+- **Sold objects, counted or not** (owner, 2026-11-26): one choice, remembered in the browser, for the yearly
+  table and the cash flow and repayment charts; on by default. On, a sold object counts for the years it was the
+  owner's, and its sale in the year of its sale month (`YearCashFlow.sale_snt`): what the sale realized, the proceeds
+  less the capital put in - the debt-free price's change with the purchase and sale costs, and the shares repaid
+  while held. Those shares (`realized_snt`) leave the repayment row in the sale year (owner, 2026-11-27: the
+  repayment total is the unrealized gain in the loans, so it must not change with the choice): a sold object's
+  repayment adds up to 0, and the row's total is what the objects held now have repaid, the same on or off. Its
+  years and the sale add up to its whole result in the sold objects' table: the summary gets a sale row, the sum is
+  the result ("Tulos yhteensä"), and a second return row counts the sales (the first stays the operating one,
+  comparable year to year, with the repayment as paid). The repayment chart's repaid line keeps only the shares
+  still held and a "Toteutunut myynneissä" line takes a sale's proceeds less capital from its sale month. Off, the
+  objects held now only (`held_*` totals), with a note that the cash flow then differs from the company's in the
+  years the sold ones were owned. Either way three money rows follow: the purchases, the sale prices and all of it
+  with the cash flow - the company's money in and out, whose running total is the unrecovered with its sign turned.
+  A purchase is no loss and a gross sale price no gain, so neither is in the result rows. Two "of which" rows, quieter
+  and not added to the sum, show where a sold object's figures went (owner, 2026-11-27): the shares its sale
+  realized, under the sale row (the year's repayments paid = the repayment row + this row), and the sold objects'
+  part of the result, whose total is their whole result in the sold objects' table. The 12-month column has no money
+  rows and, like the tile, is always the objects held now, also with the sold ones counted; an "i" in its heading
+  says so (owner, 2026-11-27: for now, to be reviewed later).
+- **The return so far** (owner, 2026-11-26: the total column's return is a year's rate, show all time too): a row
+  under the yearly return. 2026-11-27 the owner expected it to build on the yearly returns ("the first year the same,
+  then 5 % on top"), so it is the row above chained, year by year, each year as earned. A year the money was in for
+  fewer than 12 months says how many in its heading. With the sold objects the row above is the one with the sales. All time in the
+  total column, none for the last 12 months. (The first version, the result so far over the money in at the end,
+  mixed money that had been in for years with money just put in.)
 - **One figure per object** (owner, 2026-11-24): a switch above the table puts the cash flow, the repayment, the two
   together or the return in every object's cells (the return per object from its own `money_in_snt`); the summary rows
   stay, the one shown in bold. A year the as-of date ends inside says how many months it has, so a part year is not

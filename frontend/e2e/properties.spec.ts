@@ -729,16 +729,53 @@ test.describe('rental object housing-company loans', () => {
     await expect(kpi('Kassavirta \\+ lyhennykset 12 kk')).toContainText(/lyhennykset 201\s€ · -?[\d,]+\s%\svuodessa palauttamatta olevasta$/)
     const cashTable = page.locator('.property-section', { has: page.getByRole('heading', { name: 'Kassavirta vuosittain' }) })
     const summaryRows = cashTable.locator('tfoot tr')
-    await expect(summaryRows).toHaveCount(4)
-    await expect(summaryRows.nth(0).locator('td').first()).toHaveText('Kassavirta')
-    await expect(summaryRows.nth(1)).toContainText(/^Yhtiölainojen lyhennykset.*201\s€/)
-    await expect(summaryRows.nth(2).locator('td').first()).toHaveText('Kassavirta + lyhennykset')
-    await expect(summaryRows.nth(3).locator('td').first()).toHaveText('Tuotto vuodessa, % palauttamatta olevasta')
-    await expect(summaryRows.nth(3).locator('td').last()).toHaveText(/^-?[\d,]+\s%$/)
+    const labels = summaryRows.locator('td:first-child')
+    // The book has a sold object: counted by default for its owned years, its sale in the sale's year,
+    // the sum the result; then the money that moved - purchases, sale prices and all of it.
+    await expect(labels).toHaveText([
+      'Kassavirta',
+      /^Yhtiölainojen lyhennykset/,
+      'Myynnit: toteutunut tulos',
+      /^josta toteutuneet yhtiölainojen lyhennykset/,
+      'Tulos yhteensä',
+      /^josta myydyt kohteet/,
+      'Tuotto vuodessa, % palauttamatta olevasta',
+      'Tuotto vuodessa myynnit mukaan, %',
+      'Tuotto kertynyt alusta, %',
+      'Ostot',
+      'Myyntihinnat',
+      'Rahavirta yhteensä',
+    ])
+    await expect(summaryRows.nth(1)).toContainText(/201\s€/)
+    // The repayment row and the total column's returns explain themselves behind an "i", the note under the table.
+    const repaidInfo = summaryRows.nth(1).locator('td:first-child .property-info')
+    await repaidInfo.click()
+    await expect(cashTable.locator('.property-info-note')).toContainText('Lyhennykset lasketaan lainojen ehdoista')
+    await repaidInfo.click()
+    await expect(cashTable.locator('.property-info-note')).toHaveCount(0)
+    // The last 12 months are the objects held now, its "i" in the header, which it does not sort.
+    const t12mHead = cashTable.locator('thead th').last()
+    await t12mHead.locator('.property-info').click()
+    await expect(cashTable.locator('.property-info-note')).toContainText('nyt omistetut kohteet')
+    await expect(t12mHead).toHaveAttribute('aria-sort', 'none')
+    await t12mHead.locator('.property-info').click()
+    await expect(summaryRows.nth(6).locator('td').last()).toHaveText(/^-?[\d,]+\s%$/)
+    // The return so far: each year from the first, all time in the total column; none for the last 12 months.
+    const total = await cashTable.locator('thead th').allInnerTexts()
+    const totalAt = total.findIndex((h) => /^Yhteensä/i.test(h.trim()))
+    await expect(summaryRows.nth(8).locator('td').nth(totalAt)).toHaveText(/^-?[\d,]+\s%$/)
+    await expect(summaryRows.nth(8).locator('td').last()).toHaveText('')
+    // The "of which" rows have no figure for the last 12 months.
+    await expect(summaryRows.nth(3).locator('td').last()).toHaveText('')
+    await expect(summaryRows.nth(5).locator('td').last()).toHaveText('')
+    // Its sale year's result is marked, with its parts on hover.
+    await expect(cashTable.locator('.property-cash-sale')).toHaveCount(0)
     // What the cells show is picked above the table, the summary row it matches in bold, and remembered.
     const views = cashTable.getByRole('radiogroup', { name: 'Taulukossa' })
     await expect(views.getByRole('radio')).toHaveCount(4)
     await expect(cashTable.locator('tfoot strong').first()).toHaveText('Kassavirta')
+    await views.getByText('Tulos yhteensä', { exact: true }).click()
+    await expect(cashTable.locator('tbody .property-cash-sale').first()).toHaveAttribute('title', /^Kassavirta .+ · myynnin tulos .+$/)
     await views.getByText('Lyhennykset', { exact: true }).click()
     await expect(cashTable.locator('tfoot td:first-child strong')).toHaveText('Yhtiölainojen lyhennykset')
     await expect(cashTable.locator('tbody td', { hasText: /^201\s€$/ }).first()).toBeVisible()
@@ -750,8 +787,29 @@ test.describe('rental object housing-company loans', () => {
     await views.getByText('Kassavirta', { exact: true }).click()
     await expect(cashTable.locator('tbody td', { hasText: /\s%$/ })).toHaveCount(0)
     const repaidChart = page.getByRole('group', { name: 'Kassavirta ja lyhennykset kuukauden lopussa' })
-    await expect(repaidChart.locator('.portfolio-line')).toHaveCount(2)
+    // With the sold objects, what their sales realized is a line of its own.
+    await expect(repaidChart.locator('.portfolio-line')).toHaveCount(3)
     await expect(repaidChart.locator('.portfolio-total')).toHaveCount(1)
+    // Without them: the objects held now, no sale row, a note why the cash flow differs from the company's.
+    const withSold = cashTable.getByRole('checkbox', { name: 'Myydyt kohteet mukana' })
+    await withSold.uncheck()
+    await expect(labels).toHaveText([
+      'Kassavirta',
+      /^Yhtiölainojen lyhennykset/,
+      'Kassavirta + lyhennykset',
+      'Tuotto vuodessa, % palauttamatta olevasta',
+      'Tuotto kertynyt alusta, %',
+      'Ostot',
+      'Rahavirta yhteensä',
+    ])
+    await expect(cashTable.locator('.property-footnote')).toContainText('Vain omistetut kohteet')
+    await expect(repaidChart.locator('.portfolio-line')).toHaveCount(2)
+    // One choice for the table and the charts, remembered.
+    await expect(page.locator('.portfolio-charts').getByRole('checkbox', { name: 'Myydyt kohteet mukana' })).not.toBeChecked()
+    await page.reload()
+    await expect(withSold).not.toBeChecked()
+    await withSold.check()
+    await expect(labels).toHaveCount(12)
     // On to the payoff with the estimate on: each line runs on faded, the last month's box at 0.
     const sharesChart = page.getByRole('group', { name: 'Yhtiölainaosuudet kuukauden lopussa' })
     await expect(sharesChart.locator('.portfolio-ahead')).toHaveCount(0)
