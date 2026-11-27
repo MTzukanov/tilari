@@ -21,6 +21,7 @@ import {
 import { rowAlerts } from '../../../book/modules/properties/domain/reminders'
 import { yieldBp } from '../../../book/modules/properties/domain/returns'
 import { formatEuro, holdingText, monthsCovered, periodLabel, returnSoFar, yearReturnBp, saveErrorText, statusClass, tenantSide, warningText } from './format'
+import { InfoButton, InfoNote } from './FigureTiles'
 import { PortfolioCharts, shareBp } from './PortfolioCharts'
 import { Warnings } from './Warnings'
 
@@ -419,15 +420,6 @@ function partWindow(r: PropertyRow): string {
   return r.t12m && r.t12m.months < 12 ? '*' : ''
 }
 
-/** A small "i" beside a figure; its hover explains it. */
-function InfoMark({ text }: { text: string }) {
-  return (
-    <span className="property-info" title={text} role="img" aria-label={text}>
-      ⓘ
-    </span>
-  )
-}
-
 /** A footer figure, red below 0. */
 function footerEuro(n: number): ReactNode {
   return <span className={negClass(n)}>{formatEuro(n)}</span>
@@ -528,6 +520,11 @@ function readWithSold(): boolean {
   }
 }
 
+/** The cash flow table's notes behind an "i": the open one shows under the table. */
+const CASH_NOTES = { repaid: 'properties.cash.repaidHint', pctTotal: 'properties.cash.pctTotalHint' } as const
+type CashNote = keyof typeof CASH_NOTES
+type CashNotes = { open: CashNote | null; onToggle: (note: CashNote) => void }
+
 /** Whether `rows` hold a sale (with the sold objects counted). */
 function hasSales(rows: PropertyRow[]): boolean {
   return rows.some((r) => r.cash_years.some((y) => y.sale_snt != null))
@@ -547,8 +544,9 @@ function hasSales(rows: PropertyRow[]): boolean {
  * the yearly return of the row above chained from the first year to the column's end; all time in the
  * total column. Then the money that moved: the purchases, the proceeds and all of it with the cash flow.
  * The summary row of the view shown is in bold. A year the money was in for fewer months than 12 says how many.
+ * The repayment row and the total column's returns have an "i" (`notes`).
  */
-function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: CashView): TableColumn<PropertyRow>[] {
+function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: CashView, notes: CashNotes): TableColumn<PropertyRow>[] {
   const yearOf = (r: PropertyRow, starts: string) => r.cash_years.find((y) => y.starts === starts)
   const loans = rows.some((r) => r.cash_years.some((y) => y.principal_snt != null))
   const sales = hasSales(rows)
@@ -591,13 +589,14 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
     /** The total column, whose return is the average a year. */
     total: boolean
   }
-  /** The total column's return, with the mark that says it is the average a year. */
+  const info = (note: CashNote) => <InfoButton note={t(CASH_NOTES[note])} open={notes.open === note} onToggle={() => notes.onToggle(note)} />
+  /** The total column's return, with the "i" that says it is the average a year. */
   const averaged = (s: Sums, node: ReactNode) =>
     s.total && node ? (
-      <>
-        {node}
-        <InfoMark text={t('properties.cash.pctTotalHint')} />
-      </>
+      <span className="property-cash-info">
+        <span>{node}</span>
+        {info('pctTotal')}
+      </span>
     ) : (
       node
     )
@@ -605,7 +604,12 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
     ...(loans
       ? [
           {
-            label: sales ? hinted('repaid', '', 'properties.cash.repaidHint', bold('repaid', t('properties.cash.repaid'))) : bold('repaid', t('properties.cash.repaid')),
+            label: (
+              <span key="repaid" className="property-cash-info">
+                <span>{bold('repaid', t('properties.cash.repaid'))}</span>
+                {info('repaid')}
+              </span>
+            ),
             cell: (s: Sums) => bold('repaid', footerEuro(s.repaid - s.realized)),
           },
         ]
@@ -883,6 +887,7 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
     }
   }
   const [withSold, setWithSoldState] = useState(readWithSold)
+  const [cashNote, setCashNote] = useState<CashNote | null>(null)
   const setWithSold = (next: boolean) => {
     setWithSoldState(next)
     try {
@@ -1018,12 +1023,13 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
               </div>
               <SortableTable
                 storageKey="tilari.properties.cash.cols"
-                columns={cashColumns(t, cashRows, data, shownView)}
+                columns={cashColumns(t, cashRows, data, shownView, { open: cashNote, onToggle: (n) => setCashNote(cashNote === n ? null : n) })}
                 rows={cashRows}
                 rowKey={(r) => r.id}
                 onRowClick={openRow}
                 className="property-table"
               />
+              {cashNote ? <InfoNote note={t(CASH_NOTES[cashNote])} /> : null}
               {sold.length && !withSold ? <p className="muted property-footnote">{t('properties.cash.heldOnly')}</p> : null}
             </section>
           ) : null}

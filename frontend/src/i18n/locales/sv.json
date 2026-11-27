@@ -1575,7 +1575,7 @@
       "lead": "Kassaflöde: intäkter - kostnader för den månad de gäller (periodiseringar och rättelser ingår). Köp och försäljningar står på egna rader nedan.",
       "net": "Kassaflöde",
       "repaid": "Amorteringar på bolagslån",
-      "repaidHint": "Orealiserad avkastning i bolagslånen: årets amorteringar, minus försäljningsåret de låneandelar som det sålda objektet amorterat under ägandet, eftersom försäljningen realiserade dem (raden Försäljningar). Totalen är de ägda objektens amorteringar, med de sålda eller utan.",
+      "repaidHint": "Amorteringarna följer lånevillkoren, inte betalda finansieringsvederlag: vid rak amortering låneandelen delad med återstående månader, vid annuitet annuiteten minus ränta, och mellan två kända låneandelar deras skillnad. Med räknas de månader objektet ägdes (från hyrans början till försäljningen). Sålda objekt med: ett sålt objekts amorteringar räknas de år det ägdes och dras av försäljningsåret, eftersom försäljningen realiserade dem - de finns på raden Försäljningar. Utan dem: bara de objekt som ägs nu. Totalen är densamma i båda fallen: vad de ägda objekten har amorterat, den orealiserade avkastningen i lånen.",
       "gain": "Kassaflöde + amorteringar",
       "pct": "Avkastning per år, % av ej återfått",
       "pctHint": "Kassaflöde + amorteringar i förhållande till pengarna bundna i objekten varje månad: investerat och tidigare månaders kassaflöde som ännu inte kommit tillbaka (Ej återfått vid månadens början, månadens köp inräknade). Ett ofullständigt år visar vad dess månader gav, inte omräknat till helår; totalen är genomsnittet per år.",

@@ -5464,13 +5464,6 @@ tr.tax-total td {
   text-underline-offset: 3px;
 }
 
-.property-info {
-  margin-left: 0.3em;
-  color: var(--muted);
-  font-weight: normal;
-  cursor: help;
-}
-
 .property-defaults {
   margin: 1.25rem 0;
   border: 1px solid var(--line);
@@ -5952,6 +5945,21 @@ tr.tax-total td {
   display: flex;
   align-items: center;
   gap: 0.35rem;
+}
+
+/* A cash flow table cell with its "i" beside the figure or label: in a narrow column the text is cut, never the "i". */
+.property-cash-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.property-cash-info > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* A card's lists as small tabs, like the page's own: one opens under them, a click on it closes it. */

@@ -734,7 +734,7 @@ test.describe('rental object housing-company loans', () => {
     // the sum the result; then the money that moved - purchases, sale prices and all of it.
     await expect(labels).toHaveText([
       'Kassavirta',
-      'Yhtiölainojen lyhennykset',
+      /^Yhtiölainojen lyhennykset/,
       'Myynnit: toteutunut tulos',
       'Tulos yhteensä',
       'Tuotto vuodessa, % palauttamatta olevasta',
@@ -745,6 +745,12 @@ test.describe('rental object housing-company loans', () => {
       'Rahavirta yhteensä',
     ])
     await expect(summaryRows.nth(1)).toContainText(/201\s€/)
+    // The repayment row and the total column's returns explain themselves behind an "i", the note under the table.
+    const repaidInfo = summaryRows.nth(1).locator('td:first-child .property-info')
+    await repaidInfo.click()
+    await expect(cashTable.locator('.property-info-note')).toContainText('Lyhennykset lasketaan lainojen ehdoista')
+    await repaidInfo.click()
+    await expect(cashTable.locator('.property-info-note')).toHaveCount(0)
     await expect(summaryRows.nth(4).locator('td').last()).toHaveText(/^-?[\d,]+\s%$/)
     // The return so far: each year from the first, all time in the total column; none for the last 12 months.
     const total = await cashTable.locator('thead th').allInnerTexts()
@@ -778,7 +784,7 @@ test.describe('rental object housing-company loans', () => {
     await withSold.uncheck()
     await expect(labels).toHaveText([
       'Kassavirta',
-      'Yhtiölainojen lyhennykset',
+      /^Yhtiölainojen lyhennykset/,
       'Kassavirta + lyhennykset',
       'Tuotto vuodessa, % palauttamatta olevasta',
       'Tuotto kertynyt alusta, %',

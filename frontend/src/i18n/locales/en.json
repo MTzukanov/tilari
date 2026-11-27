@@ -1575,7 +1575,7 @@
       "lead": "Cash flow: income - costs in the month they belong to (accruals and corrections included). Purchases and sales are on their own rows below.",
       "net": "Cash flow",
       "repaid": "Housing-company loan repayments",
-      "repaidHint": "Unrealized gain in the housing-company loans: the year's repayments, less in a sale year the loan shares the sold object repaid while owned, which the sale realized (Sales row). The total is what the objects held now have repaid, with the sold ones or without.",
+      "repaidHint": "Repayments follow the loans' terms, not the rahoitusvastike paid: for equal principal the loan share over the months left, for an annuity the instalment less interest, and between two known loan shares their difference. The months counted are those the object was owned (from the rent's start to the sale). Sold objects included: a sold object's repayments count in the years it was owned and come off in its sale year, as the sale realized them - they are in the Sales row. Without them: the objects held now only. The total is the same either way: what the objects held now have repaid, the unrealized gain in the loans.",
       "gain": "Cash flow + repayments",
       "pct": "Return a year, % of not yet recovered",
       "pctHint": "Cash flow + repayments against the money tied up in the objects each month: invested, and earlier months' cash flow not yet recovered (Not yet recovered at the month's start, the month's purchases included). A part year shows what its months earned, not scaled to a year; the total is the average a year.",

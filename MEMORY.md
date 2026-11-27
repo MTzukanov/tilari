@@ -13,7 +13,8 @@ This repo is public: keep book contents (company names, amounts, counterparties)
   not build on it. It was the result so far over the money in at the year's end, which mixes old and new money. Now
   the yearly return of the row above is chained, and a year with money in for under 12 months says how many in its
   heading. Then the owner: no part year scaled to a year - a year's column is what it earned over the average money
-  in its months with money in (`money_months`); only the total column is an average a year, now with an info mark.
+  in its months with money in (`money_months`); only the total column is an average a year, now with the existing `InfoButton` "i" (the repayment row has one too,
+  explaining the terms and the sold objects; the note opens under the table).
   Then the 12 kk figures too: `trailing12` no longer scales 3-11 owned months to a year (nor drops under 3) - every
   12 kk place (tables, tiles, object page) shows those months' real figures, marked *.
 
