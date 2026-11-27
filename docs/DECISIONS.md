@@ -984,7 +984,7 @@ correction would change the open year's income statement lines. The rental-objec
   the rahoitusvastike's repayment part lowers the shares, so it is saved, not spent. The repayment sits on the cash
   flow's months (`MonthPoint.housing_principal_snt` from `repaidMonths`), and every figure sums those months: the cash
   flow by year table's summary rows "Yhtiölainojen lyhennykset" and "Kassavirta + lyhennykset" (a year as on Talous),
-  its last 12 months (`Trailing12.principal_snt`, scaled like the cash flow; none for a sold object), a tile
+  its last 12 months (`Trailing12.principal_snt`; none for a sold object), a tile
   "Kassavirta + lyhennykset 12 kk", and a chart of the cumulative cash flow, the repayments summed (then the estimates'
   principal) and their sum, forecast included. A sold object's months run on to a bill paid after the sale, so the
   chart's cash flow meets the table's. Above 0 the owner gains before any change in the prices; the owner's own bank
@@ -992,11 +992,14 @@ correction would change the open year's income statement lines. The rental-objec
 - **The return a year on the money in** (owner, 2026-11-24): the table's last summary row and the tile give cash flow
   + repayment over the owner's money in the objects (`moneyIn`): each month what had not come back by the month's
   start and the capital put in during it - the earlier months' short cash flow is money put in too, the month's own
-  result is not (it is what is measured). Each month weighs a twelfth (`YearCashFlow.money_in_snt`; the last 12 months'
-  average in `Trailing12.money_in_snt`); the total column gives the average a year, and nothing counts after a sale.
-  A year's column shows what the year earned over the average money in its months with money in
-  (`YearCashFlow.money_months`, the objects' together): a part year is not scaled to a year (owner, 2026-11-27, after
-  first seeing a year's rate there). Without loans the row is the cash flow's alone. Price changes are not in it.
+  result is not (it is what is measured). Each month weighs a twelfth (`YearCashFlow.money_in_snt`,
+  `Trailing12.money_in_snt`); the total column gives the average a year - the result over the money times the years
+  it was in, no compounding, which an info mark says - and nothing counts after a sale. A year's column and the last
+  12 months show what they earned over the average money in their months with money in (`money_months`, the
+  objects' together): nothing is scaled to a year (owner, 2026-11-27, after first seeing a year's rate there). The
+  last 12 months of an object owned for part of them are those months' figures, marked *, in every place
+  (`trailing12`; before, 3-11 months were scaled to a year and fewer left out). Without loans the row is the cash
+  flow's alone. Price changes are not in it.
 - **Sold objects, counted or not** (owner, 2026-11-26): one choice, remembered in the browser, for the yearly
   table and the cash flow and repayment charts; on by default. On, a sold object counts for the years it was the
   owner's, and its sale in the year of its sale month (`YearCashFlow.sale_snt`): what the sale realized, the proceeds

@@ -31,7 +31,7 @@ export function RentKpi({ rent }: { rent: RentBalance }) {
   )
 }
 
-/** The last twelve months' net, with the yield and whether it is annualized in the hint. */
+/** The last twelve months' net, with the yield and, when owned for fewer of them, how many in the hint. */
 export function T12mKpi({ d }: { d: PropertyDetail }) {
   const { t } = useI18n()
   if (!d.t12m) return null
@@ -42,7 +42,7 @@ export function T12mKpi({ d }: { d: PropertyDetail }) {
       neg={d.t12m.net_snt < 0}
       hint={
         (d.t12m.net_yield_bp != null ? t('properties.kpi.yieldHint', { pct: formatBp(d.t12m.net_yield_bp) }) : '') +
-        (d.t12m.annualized ? ` · ${t('properties.kpi.annualized', { n: d.t12m.months })}` : '')
+        (d.t12m.months < 12 ? ` · ${t('properties.kpi.heldMonths', { n: d.t12m.months })}` : '')
       }
     />
   )

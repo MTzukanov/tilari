@@ -219,7 +219,7 @@ describe('rental objects: figures', () => {
     // No sale costs set: none (0 % and 0 €), and nothing to warn about.
     expect(d.break_even).toMatchObject({ price_snt: 58_100 * E, sale_costs: { pct_bp: 0, fixed_snt: 0 }, already_recovered: false })
     expect(d.warnings.map((w) => w.code)).not.toContain('sale_costs_unset')
-    expect(d.t12m).toMatchObject({ months: 12, annualized: false, net_snt: 8_400 * E })
+    expect(d.t12m).toMatchObject({ months: 12, net_snt: 8_400 * E })
     expect(d.t12m?.net_yield_bp).toBe(Math.round((8_400 * 10000) / 86_200))
     expect(d.returns.at_cost_bp).toBeGreaterThan(0)
     expect(d.eras.map((e) => e.balance_snt).sort((a, b) => a - b)).toEqual([5_000 * E, 81_200 * E])
@@ -1330,7 +1330,7 @@ describe('rental objects: housing-company loans', () => {
     expect(detail.cash_years.find((y) => y.starts === '2025-01-01')!.principal_snt).toBe(y2025.housing_principal_snt)
     const t12m = detail.t12m!
     const window = path.months.filter((m) => m.month >= t12m.from.slice(0, 7) && m.month <= t12m.to.slice(0, 7))
-    expect(t12m.annualized).toBe(false)
+    expect(t12m.months).toBe(12)
     expect(t12m.principal_snt).toBe(window.reduce((s, m) => s + m.principal_snt, 0))
     expect(garage.cash_years.every((y) => y.principal_snt === undefined)).toBe(true)
 

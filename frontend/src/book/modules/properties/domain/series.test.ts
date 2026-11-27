@@ -32,21 +32,25 @@ describe('trailing12', () => {
 
   it('sums a full year and gives yields on the base', () => {
     const t = trailing12(months, '2026-09-30', { from: '2020-01-01', to: null }, 100_000)!
-    expect(t).toMatchObject({ months: 12, annualized: false, income_snt: 12_000, expense_snt: 4_800, net_snt: 7_200 })
+    expect(t).toMatchObject({ months: 12, income_snt: 12_000, expense_snt: 4_800, net_snt: 7_200 })
     expect(t.net_yield_bp).toBe(720)
     expect(t.gross_yield_bp).toBe(1200)
   })
 
-  it('scales a shorter ownership to a year and gives up under three months', () => {
+  it('gives a shorter ownership what its months had, not scaled to a year', () => {
     const t = trailing12(months, '2026-09-30', { from: '2026-04-15', to: null }, 100_000)!
-    expect(t).toMatchObject({ months: 6, annualized: true, net_snt: 7_200, from: '2026-04-01' })
-    expect(trailing12(months, '2026-09-30', { from: '2026-08-01', to: null }, 100_000)).toBeNull()
+    expect(t).toMatchObject({ months: 6, income_snt: 6_000, net_snt: 3_600, from: '2026-04-01' })
+    expect(t.net_yield_bp).toBe(360)
+    expect(trailing12(months, '2026-09-30', { from: '2026-09-01', to: null }, 100_000)).toMatchObject({ months: 1, net_snt: 600 })
+    expect(trailing12(months, '2026-09-30', { from: '2026-10-01', to: null }, 100_000)).toBeNull()
   })
 
-  it('the repayment scaled like the cash flow, the money in as the months\' average (ADR-035)', () => {
+  it('the repayment as the cash flow, the money in a twelfth a month with its months (ADR-035)', () => {
     const loaned = months.map((m) => ({ ...m, unrecovered_snt: 10_000, housing_principal_snt: 30 }))
     expect(trailing12(loaned, '2026-09-30', { from: '2020-01-01', to: null }, 100_000)).toMatchObject({ net_snt: 7_200, principal_snt: 360, money_in_snt: 10_600 })
-    expect(trailing12(loaned, '2026-09-30', { from: '2026-04-15', to: null }, 100_000)).toMatchObject({ months: 6, net_snt: 7_200, principal_snt: 360, money_in_snt: 10_600 })
+    const half = trailing12(loaned, '2026-09-30', { from: '2026-04-15', to: null }, 100_000)!
+    expect(half).toMatchObject({ months: 6, net_snt: 3_600, principal_snt: 180, money_in_snt: 5_300 })
+    expect(half.money_months).toEqual(['2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09'])
     expect(trailing12(months, '2026-09-30', { from: '2020-01-01', to: null }, 100_000)!.principal_snt).toBeUndefined()
   })
 })

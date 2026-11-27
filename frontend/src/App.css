@@ -5464,6 +5464,13 @@ tr.tax-total td {
   text-underline-offset: 3px;
 }
 
+.property-info {
+  margin-left: 0.3em;
+  color: var(--muted);
+  font-weight: normal;
+  cursor: help;
+}
+
 .property-defaults {
   margin: 1.25rem 0;
   border: 1px solid var(--line);

@@ -374,17 +374,19 @@ export type ObjectSummary = {
 export type Trailing12 = {
   from: string
   to: string
+  /** The months of the window the object was owned; fewer than 12 are not scaled to a year. */
   months: number
-  annualized: boolean
   income_snt: number
   expense_snt: number
   net_snt: number
   gross_yield_bp: number | null
   net_yield_bp: number | null
-  /** The housing-company loans' repayment in the months, scaled like the rest; missing without loans (ADR-035). */
+  /** The housing-company loans' repayment in the months; missing without loans (ADR-035). */
   principal_snt?: number
-  /** The owner's money in the object, the months' average (`moneyIn`). */
+  /** The owner's money in the object (`moneyIn`), each month a twelfth, as in `YearCashFlow.money_in_snt`. */
   money_in_snt: number
+  /** The months the owner had money in it, for the return over them (`YearCashFlow.money_months`). */
+  money_months: string[]
 }
 
 export type MonthPoint = {
@@ -832,8 +834,9 @@ export type PortfolioResponse = {
     housing_share_snt: number | null
     /** The held objects' housing-company loan repayment in the last 12 months (`Trailing12`); null when none has a loan. */
     t12m_principal_snt: number | null
-    /** The owner's money in the held objects over the last 12 months (`Trailing12`). */
+    /** The owner's money in the held objects over the last 12 months (`Trailing12`), and the months it was in. */
     t12m_money_in_snt: number
+    t12m_money_months: number
   }
 }
 

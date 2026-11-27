@@ -328,7 +328,7 @@ function heldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
       align: 'right',
       sortValue: (r) => r.t12m?.net_snt ?? 0,
       cellClass: (r) => negClass(r.t12m?.net_snt),
-      render: (r) => (r.t12m ? `${formatEuro(r.t12m.net_snt)}${r.t12m.annualized ? '*' : ''}` : ''),
+      render: (r) => (r.t12m ? `${formatEuro(r.t12m.net_snt)}${partWindow(r)}` : ''),
       footer: formatEuro(sum(rows, (r) => r.t12m?.net_snt)),
     },
     {
@@ -339,7 +339,7 @@ function heldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
       align: 'right',
       sortValue: (r) => r.t12m?.net_yield_bp ?? -1e9,
       cellClass: (r) => negClass(r.t12m?.net_yield_bp),
-      render: (r) => formatBp(r.t12m?.net_yield_bp),
+      render: (r) => (r.t12m?.net_yield_bp != null ? `${formatBp(r.t12m.net_yield_bp)}${partWindow(r)}` : ''),
       footer: formatBp(data.totals.net_yield_bp),
     },
     {
@@ -412,6 +412,20 @@ function heldColumns(t: T, rows: PropertyRow[], data: PortfolioResponse): TableC
     })
   }
   return cols
+}
+
+/** The mark of an object owned for only part of the last 12 months: its figures are those months', not a year's. */
+function partWindow(r: PropertyRow): string {
+  return r.t12m && r.t12m.months < 12 ? '*' : ''
+}
+
+/** A small "i" beside a figure; its hover explains it. */
+function InfoMark({ text }: { text: string }) {
+  return (
+    <span className="property-info" title={text} role="img" aria-label={text}>
+      ⓘ
+    </span>
+  )
 }
 
 /** A footer figure, red below 0. */
@@ -574,7 +588,19 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
     interest: number | null
     sofar: number | null
     months: number | null
+    /** The total column, whose return is the average a year. */
+    total: boolean
   }
+  /** The total column's return, with the mark that says it is the average a year. */
+  const averaged = (s: Sums, node: ReactNode) =>
+    s.total && node ? (
+      <>
+        {node}
+        <InfoMark text={t('properties.cash.pctTotalHint')} />
+      </>
+    ) : (
+      node
+    )
   const summaryRows: { label: ReactNode; cell: (s: Sums) => ReactNode }[] = [
     ...(loans
       ? [
@@ -607,13 +633,13 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
       : []),
     {
       label: hinted('pct', '', loans ? (sales ? 'properties.cash.pctHintSales' : 'properties.cash.pctHint') : 'properties.cash.pctHintNoLoans', bold('pct', t('properties.cash.pct'))),
-      cell: (s: Sums) => bold('pct', footerPct(returnOn(s.net + s.repaid, s.money, s.months))),
+      cell: (s: Sums) => bold('pct', averaged(s, footerPct(returnOn(s.net + s.repaid, s.money, s.months)))),
     },
     ...(sales
       ? [
           {
             label: hinted('pctSales', t('properties.cash.pctSales'), 'properties.cash.pctSalesHint'),
-            cell: (s: Sums) => footerPct(returnOn(s.net + s.repaid - s.realized + s.sale, s.money, s.months)),
+            cell: (s: Sums) => averaged(s, footerPct(returnOn(s.net + s.repaid - s.realized + s.sale, s.money, s.months))),
           },
         ]
       : []),
@@ -633,7 +659,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
   /** A column of figures: each object's in the chosen view, and the summary rows of them all. */
   const figures = (
     figuresOf: (r: PropertyRow) => CashFigures | null,
-    column: { sofar?: number | null; months?: number | null } = {},
+    column: { sofar?: number | null; months?: number | null; total?: boolean } = {},
   ): Pick<TableColumn<PropertyRow>, 'sortValue' | 'cellClass' | 'render' | 'footer' | 'footers'> => {
     const value = (r: PropertyRow) => {
       const f = figuresOf(r)
@@ -654,6 +680,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
       interest: money((f) => f.interest),
       sofar: column.sofar ?? null,
       months: column.months ?? null,
+      total: column.total ?? false,
     }
     return {
       sortValue: (r) => value(r) ?? -1e9,
@@ -684,7 +711,10 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
       footers: summaryRows.map((row) => row.cell(sums)),
     }
   }
-  const t12m = figures((r) => (r.t12m ? { net: r.t12m.net_snt, repaid: r.t12m.principal_snt, money: r.t12m.money_in_snt } : null))
+  const t12m = figures(
+    (r) => (r.t12m ? { net: r.t12m.net_snt, repaid: r.t12m.principal_snt, money: r.t12m.money_in_snt, months: r.t12m.money_months.length } : null),
+    { months: new Set(rows.flatMap((r) => r.t12m?.money_months ?? [])).size },
+  )
   const all = data.periods.length ? (sofar.get(data.periods[data.periods.length - 1].starts) ?? null) : null
   const total = figures((r) => ({
     net: r.summary.operating.net_snt,
@@ -694,7 +724,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
     capex: allYears(r, (y) => y.capex_snt),
     proceeds: allYears(r, (y) => y.proceeds_snt),
     interest: allYears(r, (y) => y.interest_snt),
-  }), { sofar: all })
+  }), { sofar: all, total: true })
   return [
     {
       ...nameColumn(t, 'none'),
@@ -747,7 +777,7 @@ function cashColumns(t: T, rows: PropertyRow[], data: PortfolioResponse, view: C
       ...t12m,
       render: (r) => {
         const shown = t12m.render(r)
-        return shown && r.t12m?.annualized ? <>{shown}*</> : shown
+        return shown && partWindow(r) ? <>{shown}*</> : shown
       },
     },
   ]
@@ -909,7 +939,13 @@ export function PortfolioView({ onOpen, onSetup, focusAlerts = false }: { onOpen
               hint={[
                 t('properties.kpi.cashRepaidPart', { amount: formatEuro(data.totals.t12m_principal_snt) }),
                 ...(data.totals.t12m_money_in_snt > 0
-                  ? [t('properties.kpi.cashRepaidPct', { pct: formatBp(shareBp(data.totals.t12m_net_snt + data.totals.t12m_principal_snt, data.totals.t12m_money_in_snt)) })]
+                  ? [
+                      t('properties.kpi.cashRepaidPct', {
+                        pct: formatBp(
+                          yearReturnBp(data.totals.t12m_net_snt + data.totals.t12m_principal_snt, data.totals.t12m_money_in_snt, data.totals.t12m_money_months),
+                        ),
+                      }),
+                    ]
                   : []),
               ].join(' · ')}
             />

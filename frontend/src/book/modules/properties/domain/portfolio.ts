@@ -745,6 +745,7 @@ export function computePortfolio(db: SqliteDb, opts: { today: string; asOf?: str
       housing_share_snt: shares.length ? shares.reduce((s, n) => s + n, 0) : null,
       t12m_principal_snt: repaid.length ? repaid.reduce((s, n) => s + n, 0) : null,
       t12m_money_in_snt: holding.reduce((s, c) => s + (c.result.t12m?.money_in_snt ?? 0), 0),
+      t12m_money_months: new Set(holding.flatMap((c) => c.result.t12m?.money_months ?? [])).size,
     },
   }
 }

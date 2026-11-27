@@ -79,8 +79,8 @@ export function moneyIn(m: MonthPoint): number {
 }
 
 /**
- * Twelve months ending at `windowEnd`, limited to the months the object was owned. Shorter
- * ownership (3+ months) is scaled to a year and flagged; less than that gives null.
+ * Twelve months ending at `windowEnd`, limited to the months the object was owned: what those months
+ * had, never scaled to a year (owner, 2026-11-27). Null when it was owned in none of them.
  */
 export function trailing12(
   months: MonthPoint[],
@@ -95,24 +95,24 @@ export function trailing12(
   const inWindow = months.filter(
     (m) => m.key >= startKey && m.key <= endKey && (!fromKey || m.key >= fromKey) && (!toKey || m.key <= toKey),
   )
-  if (inWindow.length < 3) return null
-  const scale = (n: number) => (inWindow.length < 12 ? Math.round((n * 12) / inWindow.length) : n)
-  const income = scale(inWindow.reduce((s, m) => s + m.income_snt, 0))
-  const expense = scale(inWindow.reduce((s, m) => s + m.expense_snt, 0))
+  if (!inWindow.length) return null
+  const income = inWindow.reduce((s, m) => s + m.income_snt, 0)
+  const expense = inWindow.reduce((s, m) => s + m.expense_snt, 0)
   const net = income - expense
   const loans = inWindow.some((m) => m.housing_principal_snt != null)
+  const withMoney = inWindow.filter((m) => moneyIn(m) > 0)
   return {
     from: `${inWindow[0].key}-01`,
     to: monthEnd(inWindow[inWindow.length - 1].key),
     months: inWindow.length,
-    annualized: inWindow.length < 12,
     income_snt: income,
     expense_snt: expense,
     net_snt: net,
     gross_yield_bp: yieldBp(income, base_snt),
     net_yield_bp: yieldBp(net, base_snt),
-    ...(loans ? { principal_snt: scale(inWindow.reduce((s, m) => s + (m.housing_principal_snt ?? 0), 0)) } : {}),
-    money_in_snt: Math.round(inWindow.reduce((s, m) => s + moneyIn(m), 0) / inWindow.length),
+    ...(loans ? { principal_snt: inWindow.reduce((s, m) => s + (m.housing_principal_snt ?? 0), 0) } : {}),
+    money_in_snt: Math.round(withMoney.reduce((s, m) => s + moneyIn(m), 0) / 12),
+    money_months: withMoney.map((m) => m.key),
   }
 }
 
